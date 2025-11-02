@@ -32,8 +32,8 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 10, nullable = true, unique = true)
-    private String code; // Thêm này cho mã sản phẩm (PR_SỐ SẢN PHẨM HIỆN TẠI NGƯỜI DÙNG + 1)
+    @Column(length = 20, nullable = true, unique = true)
+    private String code; // Thêm này cho mã sản phẩm (PROD_SỐ SẢN PHẨM HIỆN TẠI NGƯỜI DÙNG + 1)
 
     // ------------------- Người bán / chủ sở hữu -------------------
     @ManyToOne

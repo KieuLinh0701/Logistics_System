@@ -31,7 +31,7 @@ public class Office {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(nullable = false, unique = true, length = 50)
     private String code; // Mã nội bộ, phải unique (PO_ID)
 
     // Thêm này cho in vận đơn

@@ -30,7 +30,7 @@ public class IncidentReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 20, nullable = true, unique = true)
+    @Column(length = 50, nullable = true, unique = true)
     private String code; // Thêm này cho mã báo cáo (IR_NGÀY THÁNG NĂM TẠO_id)
 
     // Quan hệ với đơn hàng

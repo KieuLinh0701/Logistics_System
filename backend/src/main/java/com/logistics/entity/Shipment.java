@@ -32,7 +32,7 @@ public class Shipment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 20, nullable = true, unique = true)
+    @Column(length = 50, nullable = true, unique = true)
     private String code; // Thêm này cho mã chuyến (SM_NGÀY THÁNG NĂM TẠO_id)
 
     // Liên kết tới Vehicle

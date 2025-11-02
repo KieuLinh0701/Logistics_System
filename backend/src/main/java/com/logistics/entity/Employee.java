@@ -27,7 +27,7 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 20, nullable = true, unique = true)
+    @Column(length = 50, nullable = true, unique = true)
     private String code; // Thêm này cho mã nhân viên (EP_ID bưu cục_ID nhân viên)
 
     // Mỗi nhân viên liên kết với 1 user
