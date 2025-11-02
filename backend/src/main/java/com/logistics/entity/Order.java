@@ -1,0 +1,139 @@
+package com.logistics.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import org.hibernate.envers.Audited;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.logistics.enums.Order.OrderStatus;
+import com.logistics.enums.Order.OrderCreatorType;
+import com.logistics.enums.Order.OrderPayerType;
+import com.logistics.enums.Order.OrderPaymentStatus;
+import com.logistics.enums.Order.OrderPickupType;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@Setter
+@Table(name = "orders")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Audited
+@EntityListeners(AuditingEntityListener.class)
+public class Order {
+
+    // Id đơn hàng
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    // Mã vận đơn
+    @Column(length = 50, unique = true, nullable = false)
+    private String trackingNumber; // Mã vận đơn kiểu UTE_11 chữ số khác
+
+    // Trạng thái
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30, nullable = false)
+    private OrderStatus status = OrderStatus.PENDING;
+
+    // ------------------- Người tạo đơn -------------------
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private OrderCreatorType createdByType;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
+
+    // ------------------- Người gửi -------------------
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String senderName;
+
+    @Column(nullable = false)
+    private String senderPhone;
+
+    @ManyToOne
+    @JoinColumn(name = "sender_address_id")
+    private Address senderAddress;
+
+    // ------------------- Người nhận -------------------
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String recipientName;
+
+    @Column(nullable = false)
+    private String recipientPhone;
+
+    @ManyToOne
+    @JoinColumn(name = "recipient_address_id")
+    private Address recipientAddress;
+
+    // ------------------- Hình thức lấy hàng -------------------
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30, nullable = false)
+    private OrderPickupType pickupType = OrderPickupType.PICKUP_BY_COURIER;
+
+    // ------------------- Thông tin đơn hàng -------------------
+    @Column(precision = 10, scale = 2, nullable = false)
+    private BigDecimal weight;
+
+    @ManyToOne
+    @JoinColumn(name = "service_type_id", nullable = false)
+    private ServiceType serviceType;
+
+    @ManyToOne
+    @JoinColumn(name = "promotion_id")
+    private Promotion promotion;
+
+    @Column(nullable = false)
+    private Integer discountAmount = 0;
+
+    @Column(nullable = false)
+    private Integer shippingFee;
+
+    @Column(nullable = false)
+    private Integer cod = 0;
+
+    @Column(nullable = false)
+    private Integer orderValue = 0;
+
+    @Column(nullable = false)
+    private Integer totalFee = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private OrderPayerType payer = OrderPayerType.CUSTOMER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private OrderPaymentStatus paymentStatus = OrderPaymentStatus.UNPAID;
+
+    // ------------------- Thông tin khác -------------------
+    @Lob
+    private String notes;
+
+    private LocalDateTime deliveredAt;
+
+    @ManyToOne
+    @JoinColumn(name = "from_office_id")
+    private Office fromOffice;
+
+    @ManyToOne
+    @JoinColumn(name = "to_office_id")
+    private Office toOffice;
+
+    private LocalDateTime paidAt;
+    private LocalDateTime refundedAt;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+}
