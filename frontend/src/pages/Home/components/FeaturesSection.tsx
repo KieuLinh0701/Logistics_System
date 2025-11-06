@@ -58,7 +58,7 @@ const FeaturesSection: React.FC = () => {
         <div className="cta-section">
           <div className="cta-content">
             <div className="cta-text">
-              <Title level={2} className="cta-title">
+              <Title level={4} className="cta-title">
                 Bắt Đầu Hành Trình Cùng Chúng Tôi
               </Title>
               <Paragraph className="cta-subtitle">

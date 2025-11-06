@@ -51,7 +51,7 @@ const InformationServices: React.FC = () => {
               <Paragraph className="card-description">
                 Tìm hiểu về hành trình phát triển và những giá trị cốt lõi của UTE Logistics
               </Paragraph>
-              <Button type="default" className="info-btn secondary">
+              <Button type="default" className="info-btn">
                 Khám Phá
               </Button>
             </Card>

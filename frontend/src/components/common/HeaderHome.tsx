@@ -18,6 +18,7 @@ import {
 import type { MenuProps } from "antd";
 import authApi from "../../api/authApi";
 import "./HeaderHome.css";
+import logo from "../../assets/images/home/logo.png"; 
 
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
@@ -70,14 +71,35 @@ const HeaderHome: React.FC = () => {
     },
   ];
 
+  const menuItems: MenuProps["items"] = [
+    { key: "/", label: <Link to="/">Trang chủ</Link> },
+    { key: "/info/services", label: <Link to="/info/services">Dịch vụ</Link> },
+    {
+      key: "tracking",
+      label: "Tra cứu",
+      children: [
+        { key: "/tracking/shipping-fee", label: <Link to="/tracking/shipping-fee">Cước vận chuyển</Link> },
+        { key: "/tracking/office-search", label: <Link to="/tracking/office-search">Bưu cục</Link> },
+        { key: "/tracking/order-tracking", label: <Link to="/tracking/order-tracking">Vận đơn</Link> },
+        { key: "/info/shipping-rates", label: <Link to="/info/shipping-rates">Bảng giá</Link> },
+      ],
+    },
+    { key: "/info/promotions", label: <Link to="/info/promotions">Khuyến mãi</Link> },
+    { key: "/info/company", label: <Link to="/info/company">Về chúng tôi</Link> },
+    { key: "/info/contact", label: <Link to="/info/contact">Liên hệ</Link> },
+  ];
+
   return (
     <AntHeader className="header-home">
       <div className="header-container">
         <Row justify="space-between" align="middle" style={{ height: "100%" }}>
-          <Col flex="200px">
-            <Title level={2} className="header-logo">
-              UTE Logistics
-            </Title>
+          <Col className="logo-section">
+            <div className="logo-container">
+              <img src={logo} alt="UTE Logistics" className="header-logo-image" />
+              <Title level={2} className="header-logo-text">
+                UTE Logistics
+              </Title>
+            </div>
           </Col>
 
           {/* Menu desktop */}
@@ -88,27 +110,8 @@ const HeaderHome: React.FC = () => {
               mode="horizontal"
               selectable={false}
               theme="light"
-            >
-              <Menu.Item key="/"><Link to="/">Trang chủ</Link></Menu.Item>
-              <Menu.Item key="/info/services"><Link to="/info/services">Dịch vụ</Link></Menu.Item>
-              <Menu.SubMenu key="tracking" title="Tra cứu">
-                <Menu.Item key="/tracking/shipping-fee">
-                  <Link to="/tracking/shipping-fee">Cước vận chuyển</Link>
-                </Menu.Item>
-                <Menu.Item key="/tracking/office-search">
-                  <Link to="/tracking/office-search">Bưu cục</Link>
-                </Menu.Item>
-                <Menu.Item key="/tracking/order-tracking">
-                  <Link to="/tracking/order-tracking">Vận đơn</Link>
-                </Menu.Item>
-                <Menu.Item key="/info/shipping-rates">
-                  <Link to="/info/shipping-rates">Bảng giá</Link>
-                </Menu.Item>
-              </Menu.SubMenu>
-              <Menu.Item key="/info/promotions"><Link to="/info/promotions">Khuyến mãi</Link></Menu.Item>
-              <Menu.Item key="/info/company"><Link to="/info/company">Về chúng tôi</Link></Menu.Item>
-              <Menu.Item key="/info/contact"><Link to="/info/contact">Liên hệ</Link></Menu.Item>
-            </Menu>
+              items={menuItems}
+            />
           </div>
 
           {/* Avatar hoặc nút đăng nhập/đăng ký */}

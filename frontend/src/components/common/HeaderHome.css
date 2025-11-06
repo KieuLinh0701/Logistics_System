@@ -15,11 +15,30 @@
   box-sizing: border-box;
 }
 
-.header-logo {
+/* Logo section */
+.logo-section {
+  flex: 0 0 auto;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100px;
+}
+
+.header-logo-image {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
+
+.header-logo-text {
   margin: 0 !important;
   color: #1c3d90 !important;
-  line-height: 100px !important;
   font-weight: 700;
+  font-size: 1.75rem !important;
+  white-space: nowrap;
 }
 
 /* Menu chính */
@@ -147,8 +166,31 @@
     height: 80px;
   }
 
-  .header-logo {
-    font-size: 20px !important;
-    line-height: 80px !important;
+  .logo-container {
+    height: 80px;
+  }
+
+  .header-logo-image {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-logo-text {
+    font-size: 1.25rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-container {
+    gap: 8px;
+  }
+  
+  .header-logo-image {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .header-logo-text {
+    font-size: 1.1rem !important;
   }
 }
