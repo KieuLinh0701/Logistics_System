@@ -11,14 +11,21 @@ import {
 } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
+  BarChartOutlined,
+  ClockCircleOutlined,
   DashboardOutlined,
+  DollarOutlined,
+  HomeOutlined,
+  InboxOutlined,
   LogoutOutlined,
+  RocketOutlined,
+  ThunderboltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import authApi from "../../api/authApi";
 import "./HeaderHome.css";
-import logo from "../../assets/images/home/logo.png"; 
+import logo from "../../assets/images/home/logo.png";
 
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
@@ -73,15 +80,51 @@ const HeaderHome: React.FC = () => {
 
   const menuItems: MenuProps["items"] = [
     { key: "/", label: <Link to="/">Trang chủ</Link> },
-    { key: "/info/services", label: <Link to="/info/services">Dịch vụ</Link> },
     {
-      key: "tracking",
+      key: "/info/services",
+      label: "Dịch vụ",
+      children: [
+        {
+          key: "/info/services/standard",
+          label: <Link to="/info/services/standard">Giao hàng tiêu chuẩn</Link>,
+          icon: <ClockCircleOutlined />,
+        },
+        {
+          key: "/info/services/express",
+          label: <Link to="/info/services/express">Giao hàng nhanh</Link>,
+          icon: <RocketOutlined />,
+        },
+        {
+          key: "/info/services/flash",
+          label: <Link to="/info/services/flash">Hỏa tốc</Link>,
+          icon: <ThunderboltOutlined />,
+        },
+      ],
+    },
+    {
+      key: "/tracking",
       label: "Tra cứu",
       children: [
-        { key: "/tracking/shipping-fee", label: <Link to="/tracking/shipping-fee">Cước vận chuyển</Link> },
-        { key: "/tracking/office-search", label: <Link to="/tracking/office-search">Bưu cục</Link> },
-        { key: "/tracking/order-tracking", label: <Link to="/tracking/order-tracking">Vận đơn</Link> },
-        { key: "/info/shipping-rates", label: <Link to="/info/shipping-rates">Bảng giá</Link> },
+        {
+          key: "/tracking/shipping-fee",
+          label: <Link to="/tracking/shipping-fee">Cước vận chuyển</Link>,
+          icon: <DollarOutlined />,
+        },
+        {
+          key: "/tracking/office-search",
+          label: <Link to="/tracking/office-search">Bưu cục</Link>,
+          icon: <HomeOutlined />,
+        },
+        {
+          key: "/tracking/order-tracking",
+          label: <Link to="/tracking/order-tracking">Vận đơn</Link>,
+          icon: <InboxOutlined />,
+        },
+        {
+          key: "/info/shipping-rates",
+          label: <Link to="/info/shipping-rates">Bảng giá</Link>,
+          icon: <BarChartOutlined />,
+        },
       ],
     },
     { key: "/info/promotions", label: <Link to="/info/promotions">Khuyến mãi</Link> },

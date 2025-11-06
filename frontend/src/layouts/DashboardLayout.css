@@ -1,0 +1,131 @@
+/* Dashboard Layout */
+.base-layout {
+  min-height: 100vh;
+}
+
+/* Header */
+.base-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fff;
+  height: 64px;
+  box-shadow: 0 2px 8px #f0f1f2;
+  padding: 0;
+}
+
+/* Content Layout */
+.base-content-layout {
+  padding: 8px;
+  margin-top: 64px;
+}
+
+/* Sider */
+.base-sider {
+  position: fixed;
+  top: 72px;
+  left: 8px;
+  height: calc(100vh - 80px); 
+  background: #fff;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+/* Sider Collapse Button */
+.sider-collapse-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  border-radius: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sider-collapse-btn:hover {
+  background: #f5f5f5 !important;
+}
+
+/* Main Content */
+.base-main-content {
+  background: #fff;
+  padding: 8px;
+  border-radius: 6px;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.base-main-content.expanded {
+  margin-left: 248px; 
+}
+
+.base-main-content.collapsed {
+  margin-left: 68px; 
+}
+
+/* Content Area */
+.base-content {
+  background: #fff;
+  padding: 8px;
+  border-radius: 6px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .base-sider {
+    position: fixed;
+    top: 72px;
+    left: 8px;
+    z-index: 999;
+  }
+  
+  .base-main-content.expanded,
+  .base-main-content.collapsed {
+    margin-left: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .base-content-layout {
+    padding: 4px;
+    margin-top: 64px;
+  }
+  
+  .base-sider {
+    top: 68px;
+    left: 4px;
+    height: calc(100vh - 72px); 
+  }
+  
+  .base-main-content {
+    padding: 4px;
+  }
+  
+  .base-content {
+    padding: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .base-header {
+    height: 56px;
+  }
+  
+  .base-content-layout {
+    margin-top: 56px;
+  }
+  
+  .base-sider {
+    top: 60px; 
+    height: calc(100vh - 64px); 
+  }
+}
