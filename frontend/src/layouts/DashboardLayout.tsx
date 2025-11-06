@@ -1,27 +1,24 @@
 import React, { useState } from "react";
 import { Layout, Button } from "antd";
-import { MenuUnfoldOutlined, MenuFoldOutlined } from "@ant-design/icons";
+import {
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+} from "@ant-design/icons";
 import { Outlet } from "react-router-dom";
+import Header from "../components/common/Header";
+import Sidenav from "../components/common/sidenav/Sidenav";
 
 const { Header: AntHeader, Sider, Content } = Layout;
 
-interface BaseLayoutProps {
-  header?: React.ReactNode;
-  sidenav?: React.ReactNode;
-  backgroundColor?: string;
-}
-
-const BaseLayout: React.FC<BaseLayoutProps> = ({
-  header,
-  sidenav,
-  backgroundColor = "#f0f2f5",
-}) => {
+const DashboardLayout: React.FC = () => {
   const HEADER_HEIGHT = 64;
   const GAP = 8;
+
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Layout style={{ minHeight: "100vh", background: backgroundColor }}>
+    <Layout style={{ minHeight: "100vh", background: "#f0f2f5" }}>
+      {/* Header cố định */}
       <AntHeader
         style={{
           position: "fixed",
@@ -35,9 +32,10 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
           padding: 0,
         }}
       >
-        {header}
+        <Header />
       </AntHeader>
 
+      {/* Layout chính */}
       <Layout style={{ padding: GAP, marginTop: HEADER_HEIGHT }}>
         <Sider
           width={240}
@@ -45,8 +43,8 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
           collapsed={collapsed}
           collapsedWidth={60}
           trigger={null}
-          breakpoint="lg"
-          onBreakpoint={(broken) => setCollapsed(broken)}
+          breakpoint="lg" 
+          onBreakpoint={(broken) => setCollapsed(broken)} 
           style={{
             position: "fixed",
             top: HEADER_HEIGHT + GAP,
@@ -57,7 +55,11 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
             overflow: "auto",
           }}
         >
-          {sidenav}
+          <div style={{ paddingBottom: 40 }}>
+            <Sidenav color="#fff" />
+          </div>
+
+          {/* Nút toggle cố định đáy */}
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -75,6 +77,7 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
           />
         </Sider>
 
+        {/* Nội dung */}
         <Layout
           style={{
             marginLeft: collapsed ? 60 + GAP : 220 + GAP,
@@ -102,4 +105,4 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
   );
 };
 
-export default BaseLayout;
+export default DashboardLayout;

@@ -41,14 +41,14 @@ type Props = {
   color: string;
 };
 
-const Sidenav: React.FC<Props> = ({ color }) => {
+const Sidenav: React.FC<Props> = () => {
   const { pathname } = useLocation();
 
-  // ✅ Lấy role từ localStorage
+  // Lấy role từ localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "user";
 
-  // ✅ Config menu theo role
+  // Config menu theo role
   const menuConfig: Record<string, MenuItem[]> = {
     admin: [
       {
@@ -391,7 +391,7 @@ const Sidenav: React.FC<Props> = ({ color }) => {
 
   const menuItems = menuConfig[role] || menuConfig.user;
 
-  // ✅ mở submenu theo path hiện tại
+  // mở submenu theo path hiện tại
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   useEffect(() => {
     const keys: string[] = [];
@@ -423,7 +423,7 @@ const Sidenav: React.FC<Props> = ({ color }) => {
             </SubMenu>
           ) : (
             <Menu.Item key={item.key} icon={item.icon}>
-              <NavLink to={item.path || "#"}>{item.label}</NavLink> {/* ← SỬA LỖI: item.label thay vì child.label */}
+              <NavLink to={item.path || "#"}>{item.label}</NavLink>
             </Menu.Item>
           )
         )}
