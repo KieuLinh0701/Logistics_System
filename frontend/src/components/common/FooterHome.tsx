@@ -2,18 +2,23 @@ import React from 'react';
 import { Layout, Row, Col, Typography, Divider } from 'antd';
 import { Link } from 'react-router-dom';
 import { EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
-import { aboutLinks, styles } from '../../style/FooterStyles';
+import './FooterHome.css'; 
 
 const { Footer: AntFooter } = Layout;
 const { Text, Title } = Typography;
 
-// === Component: About ===
+const aboutLinks = [
+  { key: 'about', path: '/info/company', text: 'Về chúng tôi' },
+  { key: 'contact', path: '/info/contact', text: 'Liên hệ' },
+  { key: 'consulting', path: '/consulting', text: 'Tư vấn' },
+];
+
 const AboutSection = () => (
   <div>
-    <Title level={5} style={styles.sectionTitle}>About</Title>
-    <div style={styles.linkList}>
+    <Title level={5} className="footer-section-title">Về Chúng Tôi</Title>
+    <div className="footer-link-list">
       {aboutLinks.map(link => (
-        <Link key={link.key} to={link.path} style={styles.link}>
+        <Link key={link.key} to={link.path} className="footer-link">
           {link.text}
         </Link>
       ))}
@@ -21,64 +26,64 @@ const AboutSection = () => (
   </div>
 );
 
-// === Component: Contact ===
 const ContactSection = () => (
   <div>
-    <Title level={5} style={styles.sectionTitle}>Contact</Title>
-    <Text style={styles.text}>
-      <EnvironmentOutlined style={styles.icon} /> 01 Đ. Võ Văn Ngân, Linh Chiểu, Thủ Đức, TP. Hồ Chí Minh, Việt Nam
-    </Text><br />
-    <Text style={styles.text}>
-      <MailOutlined style={styles.icon} /> kieulinh@gmail.com
-    </Text><br />
-    <Text style={styles.text}>
-      <PhoneOutlined style={styles.icon} /> +84 123 4556 789
-    </Text>
+    <Title level={5} className="footer-section-title">Liên Hệ</Title>
+    <div className="contact-info">
+      <Text className="footer-text">
+        <EnvironmentOutlined className="footer-icon" /> 
+        01 Đ. Võ Văn Ngân, Linh Chiểu, Thủ Đức, TP. Hồ Chí Minh
+      </Text>
+      <Text className="footer-text">
+        <MailOutlined className="footer-icon" /> 
+        kieulinh@gmail.com
+      </Text>
+      <Text className="footer-text">
+        <PhoneOutlined className="footer-icon" /> 
+        +84 123 4556 789
+      </Text>
+    </div>
   </div>
 );
 
-// === Component: main ===
 const FooterHome: React.FC = () => {
   return (
-    <AntFooter style={styles.footer} role="contentinfo">
-      {/* Title trên cùng */}
-      <Row>
-        <Col>
-          <Title level={3} style={styles.title}>UTE Logistics</Title>
-        </Col>
-      </Row>
+    <AntFooter className="footer" role="contentinfo">
+      <div className="container">
+        <Row>
+          <Col>
+            <Title level={2} className="footer-title">UTE Logistics</Title>
+          </Col>
+        </Row>
 
-      {/* Divider */}
-      <Divider style={styles.divider} />
+        <Divider className="footer-divider" />
 
-      {/* 3 cột nội dung */}
-      <Row justify="start" gutter={[48, 32]} align="top">
-        {/* Mô tả */}
-        <Col xs={24} sm={24} md={10}>
-          <Text style={styles.text}>
-            Chúng tôi cung cấp dịch vụ chất lượng cao, uy tín và<br />
-            tận tâm, luôn mang lại giá trị tốt nhất cho khách hàng.
+        <Row justify="start" gutter={[48, 32]} align="top">
+          <Col xs={24} md={10}>
+            <Text className="footer-description">
+              Chúng tôi cung cấp dịch vụ vận chuyển chất lượng cao, uy tín và tận tâm, 
+              luôn mang lại giá trị tốt nhất cho khách hàng với đội ngũ chuyên nghiệp 
+              và hệ thống hiện đại.
+            </Text>
+          </Col>
+
+          <Col xs={24} md={6}>
+            <AboutSection />
+          </Col>
+
+          <Col xs={24} md={8}>
+            <ContactSection />
+          </Col>
+        </Row>
+
+        <Row justify="center" className="footer-bottom">
+          <Text className="footer-copyright">
+            © 2025 UTE Logistics. All rights reserved.
           </Text>
-        </Col>
-
-        {/* About */}
-        <Col xs={24} sm={24} md={6}>
-          <AboutSection />
-        </Col>
-
-        {/* Contact */}
-        <Col xs={24} sm={24} md={6}>
-          <ContactSection />
-        </Col>
-      </Row>
-
-      {/* Footer nhỏ */}
-      <Row justify="center" style={{ marginTop: '40px' }}>
-        <Text style={styles.subText}>© 2025 My Website. All rights reserved.</Text>
-      </Row>
+        </Row>
+      </div>
     </AntFooter>
   );
 };
 
-FooterHome.displayName = 'FooterHome';
 export default FooterHome;

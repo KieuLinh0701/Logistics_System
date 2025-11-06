@@ -71,7 +71,7 @@ const TrackingServices: React.FC = () => {
               <div className="card-icon-wrapper">
                 <FileSearchOutlined className="service-icon" />
               </div>
-              <Title level={4} className="card-title">Theo Dõi Đơn Hàng</Title>
+              <Title level={4} className="card-title">Tra cứu vận đơn</Title>
               <Paragraph className="card-description">
                 Theo dõi trạng thái và lịch trình giao hàng theo thời gian thực với mã vận đơn
               </Paragraph>

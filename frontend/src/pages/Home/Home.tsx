@@ -9,7 +9,7 @@ import ShippingServices from './components/ShippingServices';
 
 const HomePage: React.FC = () => {
   return (
-    <div>
+    <>
       <HeaderHome />
 
       <HeroSection />
@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
       <FeaturesSection />
 
       <FooterHome />
-    </div>
+    </>
   );
 };
 
