@@ -14,7 +14,6 @@ const axiosClient: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
-// Thêm token vào header
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = sessionStorage.getItem("accessToken");
@@ -32,7 +31,6 @@ axiosClient.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response) {
       const status = error.response.status;
-
       if (status === 401) {
         console.warn("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!");
         sessionStorage.clear();
@@ -52,14 +50,14 @@ axiosClient.interceptors.response.use(
 type AxiosResponseData<T> = Promise<T>;
 
 const typedAxios = {
-  get: <T>(url: string, config?: any): AxiosResponseData<T> =>
-    axiosClient.get(url, config),
+  get: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
+    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>, 
   post: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.post(url, data, config),
+    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>, 
   put: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.put(url, data, config),
-  delete: <T>(url: string, config?: any): AxiosResponseData<T> =>
-    axiosClient.delete(url, config),
+    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,
+  delete: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
+    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,
 };
 
 export default typedAxios;

@@ -60,39 +60,36 @@
 }
 
 .custom-menu .ant-menu-overflow {
-  display: flex !important;
-  justify-content: center !important;
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr); 
   width: 100%;
+  gap: 4px;
 }
 
 .custom-menu .ant-menu-item,
+.custom-menu .ant-menu-submenu,
 .custom-menu .ant-menu-submenu-title {
-  height: 100px !important;
-  display: flex !important;
-  align-items: center !important;
+  text-align: center;
+  margin: 0 !important;
   font-size: 16px;
   font-weight: 500;
-  padding: 0 18px !important;
   white-space: nowrap;
   position: relative;
   color: #000 !important;
   transition: color 0.3s ease;
 }
 
-/* Bỏ hoàn toàn gạch dưới mặc định của AntD */
 .custom-menu .ant-menu-item::after,
 .custom-menu .ant-menu-submenu::after {
   display: none !important;
   content: none !important;
 }
 
-/* Hover: chỉ đổi màu chữ */
 .custom-menu .ant-menu-item:hover,
 .custom-menu .ant-menu-submenu-title:hover {
   color: #1c3d90 !important;
 }
 
-/* Active: giữ màu chữ xanh */
 .custom-menu .ant-menu-item-selected,
 .custom-menu .ant-menu-submenu-selected {
   color: #1c3d90  !important;

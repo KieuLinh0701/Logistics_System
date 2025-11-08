@@ -1,23 +1,23 @@
 import { useParams, Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import Forbidden from "../../pages/Forbidden";
-import authApi from "../../api/authApi";
+import { getUserRole } from "../../utils/authUtils";
 
 interface PrivateRouteProps {
   children: ReactNode;
 }
 
 export const PrivateRoute = ({ children }: PrivateRouteProps) => {
-  const user = authApi.getCurrentUser();
-  const { role: paramRole } = useParams<{ role: string }>();
+  const roleFromUrl = useParams<{ role: string }>().role?.toLowerCase();
+  const userRole = getUserRole(); 
 
-  // Chưa login hoặc chưa xác thực → chuyển về login
-  if (!user || !user.isVerified) {
+  // Chưa login hoặc token hết hạn
+  if (!userRole) {
     return <Navigate to="/login" replace />;
   }
 
   // Role URL không trùng với user.role → hiển thị Forbidden
-  if (paramRole && paramRole !== user.role) {
+  if (roleFromUrl && roleFromUrl !== userRole) {
     return <Forbidden />;
   }
 

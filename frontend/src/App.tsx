@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { ConfigProvider } from "antd";
 import viVN from "antd/locale/vi_VN";
 
-import LoginForm from "./pages/LoginForm";
-import RegisterForm from "./pages/RegisterForm";
+import LoginForm from "./pages/Login";
+import RegisterForm from "./pages/Register";
 import Home from "./pages/Home/Home";
 import { AuthRoute } from "./components/route/AuthRoute";
 import { PrivateRoute } from "./components/route/PrivateRoute";
