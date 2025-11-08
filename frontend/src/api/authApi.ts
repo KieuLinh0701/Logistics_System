@@ -1,38 +1,39 @@
-import type { AuthResponse, LoginData, RegisterData } from "../type/auth";
+import type { AuthResponse, LoginData, RegisterData, VerifyOTPData } from "../types/auth";
 import axiosClient from "./axiosClient";
 
 const authApi = {
-  // Đăng nhập
-  async login(data: LoginData): Promise<AuthResponse> {
-    const res = await axiosClient.post<AuthResponse>("/auth/login", data);
+  async login(data: LoginData): Promise<AuthResponse<string>> {
+    const res = await axiosClient.post<AuthResponse<string>>("/auth/login", data);
 
-    // Lưu token & user tạm thời
-    sessionStorage.setItem("accessToken", res.accessToken);
-    sessionStorage.setItem("user", JSON.stringify(res.user));
+    if (res.success && res.data) {
+      const token = res.data;
+      sessionStorage.setItem("token", token);
+    }
 
     return res;
   },
 
-  // Đăng ký
-  register(data: RegisterData): Promise<AuthResponse> {
-    return axiosClient.post("/auth/register", data);
+  register(data: RegisterData): Promise<AuthResponse<null>> {
+    return axiosClient.post<AuthResponse<null>>("/auth/register", data);
   },
 
-  // Lấy thông tin người dùng hiện tại
-  getProfile(): Promise<AuthResponse["user"]> {
-    return axiosClient.get("/auth/me");
+  async verifyOTP(data: VerifyOTPData): Promise<AuthResponse<string>> {
+    const res = await axiosClient.post<AuthResponse<string>>("/auth/register/verify-otp", data);
+
+    if (res.success && res.data) {
+      const token = res.data;
+      sessionStorage.setItem("token", token);
+    }
+
+    return res;
   },
 
-  // Đăng xuất
+  // getProfile(): Promise<AuthResponse["user"]> {
+  //   return axiosClient.get("/auth/me");
+  // },
+
   logout() {
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("user");
-  },
-
-  // Lấy người dùng hiện tại
-  getCurrentUser() {
-    const user = sessionStorage.getItem("user");
-    return user ? JSON.parse(user) : null;
+    sessionStorage.removeItem("token");
   },
 };
 

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -69,11 +71,8 @@ public class Product {
 
     // ------------------- Quan hệ với OrderProduct -------------------
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @NotAudited
     private List<OrderProduct> orderProducts;
-
-    // ------------------- Quan hệ nhiều-nhiều với Order -------------------
-    @ManyToMany(mappedBy = "products")
-    private Set<Order> orders;
 
     // ------------------- Thời gian tạo / cập nhật -------------------
     @CreatedDate

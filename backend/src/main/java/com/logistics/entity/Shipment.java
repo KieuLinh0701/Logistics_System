@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -47,6 +49,7 @@ public class Shipment {
 
     // Liên kết 1-n với ShipmentOrder
     @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @NotAudited
     private List<ShipmentOrder> shipmentOrders;
 
     // Trạng thái chuyến hàng

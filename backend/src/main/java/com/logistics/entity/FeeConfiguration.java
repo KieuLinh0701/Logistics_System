@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -31,6 +32,7 @@ public class FeeConfiguration {
     // Áp dụng theo loại dịch vụ (ShippingService)
     @ManyToOne
     @JoinColumn(name = "service_type_id")
+    @NotAudited
     private ServiceType serviceType;
 
     // Loại phí

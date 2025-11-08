@@ -1,0 +1,54 @@
+.otp-input {
+  width: 60px;
+  height: 60px;
+  text-align: center;
+  font-size: 24px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  background-color: #f5f7fb;
+  padding: 0;
+}
+
+.otp-input:hover {
+  border-color: #1C3D90;
+  background-color: #e8ecf1;
+}
+
+.otp-input:focus {
+  border-color: #1C3D90;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(28, 61, 144, 0.1);
+}
+
+.form-input-prefix {
+  color: #1C3D90;
+  font-size: 16px;
+}
+.otp-input {
+  width: 60px;
+  height: 60px;
+  text-align: center;
+  font-size: 24px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  background-color: #f5f7fb;
+  padding: 0;
+}
+
+.otp-input:hover {
+  border-color: #1C3D90;
+  background-color: #e8ecf1;
+}
+
+.otp-input:focus {
+  border-color: #1C3D90;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(28, 61, 144, 0.1);
+}
+
+.form-input-prefix {
+  color: #1C3D90;
+  font-size: 16px;
+}

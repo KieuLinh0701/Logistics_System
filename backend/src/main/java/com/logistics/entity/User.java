@@ -42,7 +42,7 @@ public class User {
 
     @Transient
     public String getFullName() {
-        return firstName + " " + lastName;
+        return lastName + " " + firstName;
     }
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

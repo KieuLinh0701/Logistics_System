@@ -1,23 +1,16 @@
 export interface User {
   id: number;
+  fullName: string;
+  images: string;
+}
+
+export interface Account {
   email: string;
-  firstName: string;
-  lastName: string;
   phoneNumber: string;
-  role: 'admin' | 'manager' | 'shipper' | 'driver' | 'user';
-  isVerified: boolean;
-  isActive: boolean;
-  lastLoginAt?: string;
-  images?: string;
-  detailAddress?: string;
-  codeWard?: number;
-  codeCity?: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface LoginData {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -29,7 +22,17 @@ export interface RegisterData {
   phoneNumber: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  user: User;
+export interface VerifyOTPData {
+  email: string;
+  otp: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+}
+
+export interface AuthResponse<T> {
+  success: boolean;
+  message: string;
+  data: T | null;
 }

@@ -3,6 +3,7 @@ package com.logistics.entity;
 import java.time.LocalDateTime;
 
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -36,6 +37,7 @@ public class Account {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
+    @NotAudited
     private Role role;
 
     @Column(nullable = false)

@@ -1,0 +1,171 @@
+.register-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1C3D90;
+  box-sizing: border-box;
+  padding: 20px;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 1200px; /* Tăng từ 1000px lên 1200px */
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+
+.register-card-body {
+  padding: 0;
+}
+
+.register-layout {
+  display: flex;
+  min-height: 500px; /* Tăng chiều cao */
+}
+
+.register-image-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 20px;
+  background-color: #f9f9f9;
+}
+
+.register-image {
+  width: 85%;
+  max-width: 500px; 
+  height: auto;
+  object-fit: contain;
+}
+
+.register-form-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 30px 40px;
+  background-color: #fff;
+}
+
+.register-form-wrapper {
+  width: 100%;
+  max-width: 500px; 
+  margin: 0 auto; 
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.register-title {
+  color: #1C3D90 !important;
+  margin: 0 0 12px 0;
+  font-size: 28px;
+}
+
+.register-subtitle {
+  color: #666;
+  font-size: 16px;
+}
+
+.steps-container {
+  margin-bottom: 30px;
+}
+
+/* Input */
+.form-input {
+  background-color: #f5f7fb;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  font-size: 16px; 
+  padding: 12px 16px; 
+}
+
+.form-input:hover {
+  background-color: #e8ecf1;
+  border-color: #1C3D90;
+}
+
+.form-input:focus {
+  background-color: #fff;
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 3px rgba(28, 61, 144, 0.1);
+}
+
+.form-input-prefix {
+  color: #1C3D90;
+  font-size: 16px; 
+}
+
+.register-button {
+  width: 100%;
+  background-color: #1C3D90;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  font-size: 16px;
+  padding: 12px; 
+}
+
+.register-button:hover {
+  background-color: #5A7FD4;
+  transform: translateY(-2px);
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.login-link-text {
+  color: #1C3D90;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 16px; 
+}
+
+.login-link-text:hover {
+  color: #5A7FD4;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .register-container {
+    padding: 15px;
+    align-items: flex-start;
+  }
+  
+  .register-card {
+    max-width: 100%; 
+  }
+  
+  .register-layout {
+    flex-direction: column;
+    min-height: auto;
+  }
+  
+  .register-image-section {
+    padding: 40px 30px 20px;
+  }
+  
+  .register-form-section {
+    flex: 1;
+    padding: 30px 35px 40px;
+  }
+  
+  .register-form-wrapper {
+    max-width: 100%; 
+  }
+  
+  .register-image {
+    max-width: 280px;
+  }
+}

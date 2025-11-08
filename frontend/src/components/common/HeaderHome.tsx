@@ -102,7 +102,7 @@ const HeaderHome: React.FC = () => {
       ],
     },
     {
-      key: "/tracking",
+      key: "tracking",
       label: "Tra cứu",
       children: [
         {
