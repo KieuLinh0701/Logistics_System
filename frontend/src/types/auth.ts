@@ -22,13 +22,27 @@ export interface RegisterData {
   phoneNumber: string;
 }
 
-export interface VerifyOTPData {
+export interface VerifyRegisterOtpData {
   email: string;
   otp: string;
   password: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
+}
+
+export interface ForgotPasswordData {
+  identifier: string;
+}
+
+export interface VerifyResetOTPData {
+  identifier: string;
+  otp: string;
+}
+
+export interface ResetPasswordData {
+  identifier: string;
+  newPassword: string;
 }
 
 export interface AuthResponse<T> {

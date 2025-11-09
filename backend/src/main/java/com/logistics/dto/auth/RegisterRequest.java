@@ -1,13 +1,16 @@
-package com.logistics.dto;
+package com.logistics.dto.auth;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class VerifyOtpRequest {
+@AllArgsConstructor
+@NoArgsConstructor
+public class RegisterRequest {
     private String email;
-    private String otp;
     private String password;
     private String firstName;
     private String lastName;

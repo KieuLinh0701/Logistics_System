@@ -1,4 +1,4 @@
-package com.logistics.dto;
+package com.logistics.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginRequest {
+public class ForgotPasswordRequest {
     private String identifier;
-    private String password;
 }

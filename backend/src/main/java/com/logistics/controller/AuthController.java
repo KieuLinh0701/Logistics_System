@@ -1,13 +1,18 @@
 package com.logistics.controller;
 
+import java.io.Console;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.logistics.dto.LoginRequest;
-import com.logistics.dto.RegisterRequest;
-import com.logistics.dto.VerifyOtpRequest;
+import com.logistics.dto.auth.ForgotPasswordRequest;
+import com.logistics.dto.auth.LoginRequest;
+import com.logistics.dto.auth.RegisterRequest;
+import com.logistics.dto.auth.ResetPasswordRequest;
+import com.logistics.dto.auth.VerifyRegisterOtpRequest;
+import com.logistics.dto.auth.VerifyResetOtpRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.AuthService;
 
@@ -44,7 +49,7 @@ public class AuthController {
     }
 
     @PostMapping("/register/verify-otp")
-    public ResponseEntity<?> verifyOTP(@RequestBody VerifyOtpRequest request) {
+    public ResponseEntity<?> verifyAndRegisterUser(@RequestBody VerifyRegisterOtpRequest request) {
         if (request.getEmail() == null || request.getOtp() == null ||
                 request.getPassword() == null || request.getFirstName() == null ||
                 request.getLastName() == null || request.getPhoneNumber() == null) {
@@ -58,11 +63,39 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         if (request.getIdentifier() == null || request.getPassword() == null) {
-            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng nhập email hoặc số điện thoại và mật khẩu", null));
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, "Vui lòng nhập email hoặc số điện thoại và mật khẩu", null));
         }
 
-        return ResponseEntity.ok(authService.login(request.getIdentifier(),
-                request.getPassword()));
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/password/forgot")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        if (request.getIdentifier() == null) {
+            return ResponseEntity.badRequest()
+                    .body(new ApiResponse<>(false, "Vui lòng nhập email hoặc số điện thoại", null));
+        }
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+
+    @PostMapping("/password/verify-otp")
+    public ResponseEntity<?> verifyResetOtp(@RequestBody VerifyResetOtpRequest request) {
+        if (request.getOtp() == null) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng nhập mã OTP", null));
+        }
+
+        return ResponseEntity.ok(authService.verifyResetOtp(request));
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        System.out.println("Debug message");
+        if (request.getNewPassword() == null) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng nhập mật khẩu", null));
+        }
+
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 
     // // 🟢 Get profile
@@ -91,44 +124,6 @@ public class AuthController {
     // }
 
     // return ResponseEntity.ok(authService.updateUserAvatar(userId, file));
-    // }
-
-    // // 🟢 Forgot password
-    // @PostMapping("/forgot-password")
-    // public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest
-    // request) {
-    // if (request.getEmail() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng nhập
-    // email"));
-    // }
-
-    // return ResponseEntity.ok(authService.forgotPassword(request.getEmail()));
-    // }
-
-    // // 🟢 Verify reset OTP
-    // @PostMapping("/verify-reset-otp")
-    // public ResponseEntity<?> verifyResetOtp(@RequestBody VerifyResetOtpRequest
-    // request) {
-    // if (request.getOtp() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng nhập
-    // mã OTP"));
-    // }
-
-    // return ResponseEntity.ok(authService.verifyResetOtp(request.getEmail(),
-    // request.getOtp()));
-    // }
-
-    // // 🟢 Reset password
-    // @PostMapping("/reset-password")
-    // public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest
-    // request) {
-    // if (request.getNewPassword() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng nhập
-    // mật khẩu"));
-    // }
-
-    // return ResponseEntity.ok(authService.resetPassword(request.getEmail(),
-    // request.getNewPassword()));
     // }
 
     // // 🟢 Get assignable roles
