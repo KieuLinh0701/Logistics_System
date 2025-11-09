@@ -20,7 +20,28 @@ public class EmailService {
         message.setFrom(fromEmail);
         message.setTo(to);
         message.setSubject(subject);
-        message.setText("Mã OTP của bạn là: " + otp + "\nHiệu lực 5 phút.");
+
+        String content = "Xin chào,\n"
+                + "Mã OTP của bạn là: " + otp + "\n"
+                + "Có hiệu lực trong 5 phút.\n"
+                + "Trân trọng,\nĐội ngũ hỗ trợ.";
+
+        message.setText(content);
+        mailSender.send(message);
+    }
+
+    public void sendAlertEmail(String to, String subject, String alertMessage) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(to);
+        message.setSubject(subject);
+
+        String content = "Xin chào,\n"
+                + alertMessage + "\n"
+                + "Nếu bạn không thực hiện hành động này, vui lòng liên hệ bộ phận hỗ trợ ngay.\n"
+                + "Trân trọng,\nĐội ngũ hỗ trợ.";
+
+        message.setText(content);
         mailSender.send(message);
     }
 }

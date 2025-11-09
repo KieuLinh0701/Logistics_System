@@ -80,11 +80,11 @@ const Login: React.FC = () => {
                         validator: (_, value) => {
                           if (!value) return Promise.resolve();
                           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                          const phoneRegex = /^[0-9]{10,11}$/;
+                          const phoneRegex = /^[0-9]{10}$/;
                           if (emailRegex.test(value) || phoneRegex.test(value)) {
                             return Promise.resolve();
                           }
-                          return Promise.reject(new Error("Vui lòng nhập email hợp lệ hoặc số điện thoại 10-11 số!"));
+                          return Promise.reject(new Error("Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số!"));
                         },
                       },
                     ]}

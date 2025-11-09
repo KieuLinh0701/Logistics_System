@@ -1,4 +1,4 @@
-import type { AuthResponse, LoginData, RegisterData, VerifyOTPData } from "../types/auth";
+import type { AuthResponse, ForgotPasswordData, LoginData, RegisterData, ResetPasswordData, VerifyRegisterOtpData, VerifyResetOTPData } from "../types/auth";
 import axiosClient from "./axiosClient";
 
 const authApi = {
@@ -17,7 +17,7 @@ const authApi = {
     return axiosClient.post<AuthResponse<null>>("/auth/register", data);
   },
 
-  async verifyOTP(data: VerifyOTPData): Promise<AuthResponse<string>> {
+  async verifyAndRegisterUser(data: VerifyRegisterOtpData): Promise<AuthResponse<string>> {
     const res = await axiosClient.post<AuthResponse<string>>("/auth/register/verify-otp", data);
 
     if (res.success && res.data) {
@@ -34,6 +34,19 @@ const authApi = {
 
   logout() {
     sessionStorage.removeItem("token");
+  },
+
+  forgotPassword(data: ForgotPasswordData): Promise<AuthResponse<null>> {
+    return axiosClient.post<AuthResponse<null>>("/auth/password/forgot", data);
+  },
+
+  resetPassword(data: ResetPasswordData): Promise<AuthResponse<null>> {
+    return axiosClient.post<AuthResponse<null>>("/auth/password/reset", data);
+  },
+
+  async verifyResetOtp(data: VerifyResetOTPData): Promise<AuthResponse<string>> {
+    const res = await axiosClient.post<AuthResponse<string>>("/auth/password/verify-otp", data);
+    return res;
   },
 };
 

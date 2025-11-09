@@ -9,6 +9,7 @@ import Home from "./pages/Home/Home";
 import { AuthRoute } from "./components/route/AuthRoute";
 import { PrivateRoute } from "./components/route/PrivateRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const App: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ const App: React.FC = () => {
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />
+          <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword /></AuthRoute>} />
 
           {/* Services */}
           {/* <Route path="/info/services/standard" element={<YourComponent />} />

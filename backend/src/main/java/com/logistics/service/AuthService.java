@@ -7,8 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.logistics.dto.RegisterRequest;
-import com.logistics.dto.VerifyOtpRequest;
+import com.logistics.dto.auth.ForgotPasswordRequest;
+import com.logistics.dto.auth.LoginRequest;
+import com.logistics.dto.auth.RegisterRequest;
+import com.logistics.dto.auth.ResetPasswordRequest;
+import com.logistics.dto.auth.VerifyRegisterOtpRequest;
+import com.logistics.dto.auth.VerifyResetOtpRequest;
 import com.logistics.entity.Account;
 import com.logistics.entity.OTP;
 import com.logistics.entity.Role;
@@ -41,6 +45,7 @@ public class AuthService {
         private final UserRepository userRepository;
         private final OTPRepository otpRepository;
         private final EmailService emailService;
+        private final NotificationService notificationService;
 
         public ApiResponse<String> register(RegisterRequest request) {
                 if (accountRepository.existsByEmail(request.getEmail()) ||
@@ -63,7 +68,7 @@ public class AuthService {
                 return new ApiResponse<>(true, "Mã OTP đã được gửi đến email của bạn", null);
         }
 
-        public ApiResponse<String> verifyAndRegisterUser(VerifyOtpRequest request) {
+        public ApiResponse<String> verifyAndRegisterUser(VerifyRegisterOtpRequest request) {
                 OTP otpEntity = otpRepository
                                 .findByEmailAndOtpAndTypeAndIsUsedFalseAndExpiresAtAfter(
                                                 request.getEmail(),
@@ -107,9 +112,12 @@ public class AuthService {
                 return new ApiResponse<>(true, "Đăng ký thành công", token);
         }
 
-        public ApiResponse<String> login(String indentifier, String password) {
-                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(indentifier,
-                                indentifier);
+        public ApiResponse<String> login(LoginRequest request) {
+                String identifier = request.getIdentifier();
+                String password = request.getPassword();
+
+                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier,
+                                identifier);
 
                 if (optionalAccount.isEmpty()) {
                         return new ApiResponse<>(false, "Email hoặc số điện thoại hoặc mật khẩu không đúng", null);
@@ -141,5 +149,95 @@ public class AuthService {
                 String token = jwtUtils.generateToken(account, user);
 
                 return new ApiResponse<>(true, "Đăng nhập thành công", token);
+        }
+
+        public ApiResponse<String> forgotPassword(ForgotPasswordRequest request) {
+                String identifier = request.getIdentifier();
+
+                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+                if (optionalAccount.isEmpty()) {
+                        return new ApiResponse<>(false, "Không tìm thấy tài khoản với email hoặc số điện thoại này",
+                                        null);
+                }
+
+                Account account = optionalAccount.get();
+
+                otpRepository.updateIsUsedByEmailAndType(account.getEmail(), OTPType.RESET, true);
+
+                String otp = OTPUtils.generateOTP();
+
+                OTP otpEntity = new OTP(
+                                null,
+                                account.getEmail(),
+                                otp,
+                                OTPType.RESET,
+                                LocalDateTime.now().plusMinutes(5),
+                                false);
+                otpRepository.save(otpEntity);
+
+                emailService.sendOTPEmail(account.getEmail(), otp, "Xác thực quên mật khẩu");
+
+                return new ApiResponse<>(true, "Mã OTP đã được gửi đến email của bạn", null);
+        }
+
+        public ApiResponse<String> verifyResetOtp(VerifyResetOtpRequest request) {
+                String identifier = request.getIdentifier();
+                String otp = request.getOtp();
+
+                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+                if (optionalAccount.isEmpty()) {
+                        return new ApiResponse<>(false, "Không tìm thấy tài khoản với email hoặc số điện thoại này",
+                                        null);
+                }
+
+                Account account = optionalAccount.get();
+
+                Optional<OTP> optionalOtp = otpRepository.findByEmailAndOtpAndTypeAndIsUsedFalseAndExpiresAtAfter(
+                                account.getEmail(), otp, OTPType.RESET, LocalDateTime.now());
+
+                if (optionalOtp.isEmpty()) {
+                        return new ApiResponse<>(false, "Mã OTP không hợp lệ hoặc đã hết hạn", null);
+                }
+
+                OTP otpEntity = optionalOtp.get();
+                otpEntity.setIsUsed(true);
+                otpRepository.save(otpEntity);
+
+                return new ApiResponse<>(true, "Xác thực OTP thành công, bạn có thể đặt lại mật khẩu.", null);
+        }
+
+        public ApiResponse<String> resetPassword(ResetPasswordRequest request) {
+                String identifier = request.getIdentifier();
+                String newPassword = request.getNewPassword();
+
+                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+                if (optionalAccount.isEmpty()) {
+                        return new ApiResponse<>(false, "Không tìm thấy tài khoản để đặt lại mật khẩu", null);
+                }
+
+                Account account = optionalAccount.get();
+
+                String hashedPassword = PasswordUtils.hashPassword(newPassword);
+
+                account.setPassword(hashedPassword);
+                accountRepository.save(account);
+
+                Optional<User> optionalUser = userRepository.findByAccountId(account.getId());
+                optionalUser.ifPresent(user -> {
+                        notificationService.create(
+                                        "Đổi mật khẩu thành công",
+                                        "Mật khẩu của bạn đã được thay đổi. Nếu bạn không thực hiện hành động này, vui lòng liên hệ bộ phận hỗ trợ ngay.",
+                                        "system",
+                                        user.getId(),
+                                        "user",
+                                        null);
+                });
+
+                emailService.sendAlertEmail(
+                                account.getEmail(),
+                                "Cảnh báo thay đổi mật khẩu",
+                                "Mật khẩu của bạn đã được thay đổi thành công.");
+
+                return new ApiResponse<>(true, "Đặt lại mật khẩu thành công", null);
         }
 }

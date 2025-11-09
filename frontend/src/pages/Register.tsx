@@ -3,7 +3,7 @@ import { Form, Input, Button, Card, Typography, Steps, Row, Col } from "antd";
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
 import bg1 from "../assets/images/bg-1.jpg";
-import type { RegisterData, VerifyOTPData } from "../types/auth";
+import type { RegisterData, VerifyRegisterOtpData } from "../types/auth";
 import "./Register.css";
 import authApi from "../api/authApi";
 import OtpInput from "../components/common/input/OtpInput";
@@ -45,8 +45,8 @@ const Register: React.FC = () => {
     if (!registerData) return;
     setLoading(true);
     try {
-      const verifyData: VerifyOTPData = { ...registerData, otp: values.otp };
-      const result = await authApi.verifyOTP(verifyData);
+      const verifyData: VerifyRegisterOtpData = { ...registerData, otp: values.otp };
+      const result = await authApi.verifyAndRegisterUser(verifyData);
 
       if (result.success) {
         message.success("Đăng ký thành công!");
