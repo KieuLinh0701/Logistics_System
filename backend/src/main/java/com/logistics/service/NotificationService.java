@@ -56,17 +56,21 @@ public class NotificationService {
 
         // gửi notification riêng cho user
         messagingTemplate.convertAndSendToUser(
-                userId.toString(), 
-                "/queue/notifications", 
+                user.getId().toString(),
+                "/queue/notifications",
                 dto);
     }
 
-    @Transactional(readOnly = true)
-    public NotificationResponse getNotifications(Integer userId, int page, int limit, String type, Boolean isRead) {
+    @Transactional
+    public NotificationResponse getNotifications(Integer userId, int page, int limit, String search, Boolean isRead) {
         try {
             Pageable pageable = PageRequest.of(page - 1, limit);
 
-            Page<NotificationDTO> notificationPage = notificationRepository.findAllByUserId(userId, pageable);
+            String searchValue = (search != null && !search.isBlank()) ? search : null;
+
+            Page<NotificationDTO> notificationPage = notificationRepository
+                    .findAllByUserIdAndFilters(userId, isRead, searchValue, pageable);
+
             List<NotificationDTO> notifications = notificationPage.getContent();
             int total = (int) notificationPage.getTotalElements();
             int unreadCount = notificationRepository.countUnreadByUserId(userId);
@@ -110,22 +114,6 @@ public class NotificationService {
             return new NotificationResponse(true, null, "Đã đánh dấu tất cả thông báo đã đọc");
         } catch (Exception e) {
             return new NotificationResponse(false, null, "Lỗi khi đánh dấu tất cả thông báo đã đọc: " + e.getMessage());
-        }
-    }
-
-    @Transactional
-    public NotificationResponse deleteNotification(Integer userId, Integer notificationId) {
-        try {
-            Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId);
-            if (notification == null) {
-                return new NotificationResponse(false, null, "Không tìm thấy thông báo");
-            }
-
-            notificationRepository.delete(notification);
-            return new NotificationResponse(true, null, "Xóa thông báo thành công");
-
-        } catch (Exception e) {
-            return new NotificationResponse(false, null, "Lỗi khi xóa thông báo: " + e.getMessage());
         }
     }
 }

@@ -1,0 +1,257 @@
+.notification-layout {
+  background: #fafbfc !important;
+  min-height: 100vh;
+}
+
+.notification-content {
+  padding: 0 30px 30px 30px;
+  width: 100%; 
+  max-width: none; 
+  margin: 0 auto;
+}
+
+.notification-header {
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.notification-title-main {
+  color: #1C3D90 !important;
+  margin-bottom: 8px !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-icon {
+  color: #1C3D90;
+  font-size: 22px;
+}
+
+.notification-subtitle {
+  color: #666;
+  font-size: 15px;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.notification-search {
+  flex: 1;
+}
+
+.notification-search .ant-input {
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.notification-search .ant-input:focus {
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1);
+}
+
+.refresh-button {
+  background: #1C3D90 !important;
+  border-color: #1C3D90 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 400;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: #0d2a6e !important;
+  border-color: #0d2a6e !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(28, 61, 144, 0.2);
+}
+
+.loading-container {
+  text-align: center;
+  padding: 60px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-text {
+  color: #666;
+  font-size: 16px;
+}
+
+.empty-container {
+  text-align: center;
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: #666;
+  font-weight: 500;
+}
+
+.empty-subtext {
+  font-size: 14px;
+}
+
+/* Table Styles */
+.notification-table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); 
+  border: 1px solid #f0f0f0; 
+  background: #fff;
+  padding: 0 12px;
+}
+
+.notification-table .ant-table-thead > tr > th {
+  background: #fafafa !important; 
+  color: #1C3D90 !important;
+  font-weight: 500;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 12px;
+}
+
+.notification-table .ant-table-tbody > tr > td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f5f5f5;
+  transition: all 0.2s ease;
+}
+
+.notification-row {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-row:hover > td {
+  background: inherit !important; /* KHÔNG MÀU KHI HOVER */
+}
+
+.unread-row > td {
+  background: #f0fff0 !important; /* MÀU XANH LÁ CHO HÀNG CHƯA ĐỌC */
+}
+
+.read-row > td {
+  background: #fff;
+}
+
+/* Notification Title Styles */
+.notification-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unread-text {
+  color: #000 !important; 
+  font-weight: 600 !important;
+}
+
+.read-text {
+  color: #666 !important;
+}
+
+.notification-tag {
+  display: inline-block;
+  background: #f0f8ff;
+  color: #1C3D90;
+  border: 1px solid #1C3D90;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Checkbox chỉ hiển thị chưa đọc */
+.notification-actions .ant-checkbox-wrapper {
+  padding: 8px 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+  transition: all 0.2s ease;
+  margin: 0 !important;
+}
+
+.notification-actions .ant-checkbox-wrapper:hover {
+  border-color: #1C3D90;
+  background: #f8f9ff;
+}
+
+.notification-actions .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #1C3D90;
+  border-color: #1C3D90;
+}
+
+.notification-actions .ant-checkbox-wrapper .ant-checkbox + span {
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Nút đánh dấu tất cả đã đọc */
+.mark-all-read-button {
+  background: #52c41a !important;
+  border-color: #52c41a !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 400;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.mark-all-read-button:hover {
+  background: #389e0d !important;
+  border-color: #389e0d !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
+}
+
+.mark-all-read-button:disabled {
+  background: #f5f5f5 !important;
+  border-color: #d9d9d9 !important;
+  color: #bfbfbf !important;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .notification-content {
+    padding: 16px;
+  }
+  
+  .notification-actions {
+    flex-direction: column;
+  }
+  
+  .notification-search {
+    width: 100%;
+  }
+  
+  .refresh-button {
+    width: 100%;
+  }
+  
+  .notification-table .ant-table-thead > tr > th,
+  .notification-table .ant-table-tbody > tr > td {
+    padding: 12px 8px;
+  }
+}

@@ -48,7 +48,7 @@ const Header: React.FC = () => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await notificationApi.getNotifications({ page: 1, limit: 10 });
+      const res = await notificationApi.getNotifications({ page: 1, limit: 7 });
       if (res.success && res.data) {
         setNotifications(res.data.notifications);
       }

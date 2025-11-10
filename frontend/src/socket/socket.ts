@@ -4,7 +4,7 @@ import SockJS from 'sockjs-client';
 let stompClient: Client;
 
 export const connectWebSocket = (userId: number, onMessage: (msg: any) => void) => {
-  const socket = new SockJS('http://localhost:8080/ws');
+  const socket = new SockJS(`http://localhost:8080/ws?userId=${userId}`);
   stompClient = new Client({
     webSocketFactory: () => socket,
     debug: (str) => console.log(str),
@@ -14,7 +14,7 @@ export const connectWebSocket = (userId: number, onMessage: (msg: any) => void) 
   stompClient.onConnect = () => {
     console.log('Connected to WebSocket');
 
-    stompClient.subscribe(`/user/${userId}/queue/notifications`, (message) => {
+    stompClient.subscribe(`/user/queue/notifications`, (message) => {
       onMessage(JSON.parse(message.body));
     });
   };

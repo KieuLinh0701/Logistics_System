@@ -92,6 +92,19 @@
 
 .ant-badge .ant-badge-count {
   box-shadow: none;
+  background: #d32029 !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  line-height: 20px !important; 
+  border: 1px solid #fff !important;
+  text-align: center !important; 
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
 }
 
 /* Remove focus styles from the entire dropdown trigger */
@@ -186,8 +199,7 @@
 
 /* Notification Dropdown Styles - CHỈ 1 LỚP */
 .notification-dropdown {
-  width: 350px;
-  max-height: 500px;
+  width: 400px;
   overflow-y: auto;
   background-color: #fff;
   border-radius: 12px;
@@ -205,7 +217,7 @@
 }
 
 .notification-title {
-  font-size: 20px !important;
+  font-size: 16px !important;
   color: #000 !important;
 }
 
@@ -266,6 +278,11 @@
   border-radius: 0 0 12px 12px;
 }
 
+.notification-footer .ant-btn:hover {
+  color: #0d2a6e !important;
+  border-radius: 4px !important;
+}
+
 /* Modal Styles */
 .notification-modal .ant-modal-header {
   background: #fafafa;
@@ -307,7 +324,7 @@
   }
 
   .notification-dropdown {
-    width: 300px;
+    width: 500px;
   }
 }
 

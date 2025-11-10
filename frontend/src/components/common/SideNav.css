@@ -21,12 +21,13 @@
 }
 
 .sidenav-menu .ant-menu-item:hover {
-  background-color: #e6eeff !important;
+  background-color: #f0f8ff !important;
   color: #1C3D90 !important;
 }
 
 .sidenav-menu .ant-menu-item-selected {
-  background-color: #d6e0ff  !important;
+  background-color: #f0f8ff  !important;
+  border-radius: 6px !important;
   color: #1C3D90 !important;
   font-weight: 500;
 }
@@ -55,7 +56,7 @@
 }
 
 .sidenav-menu .ant-menu-submenu-title:hover {
-  background-color: #e6eeff !important;
+  background-color: #f0f8ff !important;
   color: #1C3D90 !important;
 }
 
@@ -80,12 +81,12 @@
 }
 
 .sidenav-menu .ant-menu-submenu .ant-menu-item:hover {
-  background-color: #e6eeff !important;
+  background-color: #f0f8ff !important;
   color: #1C3D90 !important;
 }
 
 .sidenav-menu .ant-menu-submenu .ant-menu-item-selected {
-  background-color: #e6eeff  !important;
+  background-color: #f0f8ff  !important;
   border-radius: 6px !important;
   color: #1C3D90 !important;
   font-weight: 500;

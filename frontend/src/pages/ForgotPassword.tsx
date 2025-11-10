@@ -105,7 +105,7 @@ const ForgotPassword: React.FC = () => {
                 newPassword: values.newPassword 
             });
             if (result.success) {
-                message.success('Đặt lại mật khẩu thành công!');
+                message.success('Đặt lại mật khẩu thành công! Vui lòng đăng nhập để tiếp tục.');
                 navigate('/login');
             } else {
                 message.error(result.message || "Đặt lại mật khẩu thất bại!");

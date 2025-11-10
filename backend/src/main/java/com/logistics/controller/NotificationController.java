@@ -19,13 +19,13 @@ public class NotificationController {
     public ResponseEntity<NotificationResponse> getNotifications(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isRead
     ) {
         UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Integer userId = principal.getUser().getId();
 
-        NotificationResponse result = notificationService.getNotifications(userId, page, limit, type, isRead);
+        NotificationResponse result = notificationService.getNotifications(userId, page, limit, search, isRead);
         return ResponseEntity.ok(result);
     }
 
@@ -46,17 +46,6 @@ public class NotificationController {
         Integer userId = principal.getUser().getId();
 
         NotificationResponse result = notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok(result);
-    }
-
-    @DeleteMapping("/{notificationId}")
-    public ResponseEntity<NotificationResponse> deleteNotification(
-            @PathVariable Integer notificationId
-    ) {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Integer userId = principal.getUser().getId();
-
-        NotificationResponse result = notificationService.deleteNotification(userId, notificationId);
         return ResponseEntity.ok(result);
     }
 

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Avatar, Typography, Row, Col, Tag, message, Space, Modal, Form, Input, Upload, Divider } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Card, Button, Avatar, Typography, Row, Col, Tag, message, Modal, Form, Input, Upload, Divider } from 'antd';
 import { UserOutlined, EditOutlined, MailOutlined, PhoneOutlined, IdcardOutlined, CheckCircleOutlined, CloseCircleOutlined, LoginOutlined, CalendarOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Select, Spin } from 'antd';
+import { Select } from 'antd';
 import axios from 'axios';
 import type { City, Ward } from '../types/location';
 

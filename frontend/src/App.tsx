@@ -11,6 +11,8 @@ import { PrivateRoute } from "./components/route/PrivateRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
+import NotificationList from "./pages/notification/NotificationList";
+import NotificationDetail from "./pages/notification/NotificationDetail";
 
 const App: React.FC = () => {
   return (
@@ -37,7 +39,8 @@ const App: React.FC = () => {
           >
             {/* Nested routes */}
             <Route path="profile" element={<Profile />} />
-            {/* Thêm các route khác cho role tại đây */}
+            <Route path="notifications" element={<NotificationList />} />
+            <Route path="notifications/:id" element={<NotificationDetail />} />
           </Route>
         </Routes>
       </Router>

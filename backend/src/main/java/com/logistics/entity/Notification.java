@@ -32,7 +32,7 @@ public class Notification {
     private String title;
 
     // Nội dung thông báo
-    @Lob
+    @Column(name = "message", columnDefinition = "VARCHAR(500)")
     private String message;
 
     // Loại thông báo

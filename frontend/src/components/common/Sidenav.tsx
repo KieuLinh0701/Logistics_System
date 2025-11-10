@@ -27,7 +27,7 @@ import {
   BankOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
-import { getCurrentUser, getUserRole } from "../../utils/authUtils";
+import { getUserRole } from "../../utils/authUtils";
 
 const { SubMenu } = Menu;
 
@@ -46,7 +46,6 @@ type Props = {
 const Sidenav: React.FC<Props> = () => {
   const { pathname } = useLocation();
 
-  const user = getCurrentUser();
   const role = getUserRole();
 
   const menuConfig: Record<string, MenuItem[]> = {
