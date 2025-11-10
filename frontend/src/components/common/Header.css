@@ -1,0 +1,331 @@
+.main-header {
+  background: #1C3D90 !important;
+  padding: 0 24px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  height: 64px !important;
+  line-height: 64px !important;
+}
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-logo-image {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+}
+
+.header-logo-text {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: 1.25rem !important;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* Fix notification button border and background */
+.notification-button {
+  color: #fff !important;
+  font-size: 20px !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.notification-button:hover,
+.notification-button:focus,
+.notification-button:active {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+
+.notification-button .anticon {
+  color: #fff !important;
+}
+
+/* Remove all borders and outlines from button states */
+.ant-btn.ant-btn-text:not(:disabled):not(.ant-btn-disabled):hover {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.ant-btn.ant-btn-text:not(:disabled):not(.ant-btn-disabled):focus {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.ant-btn.ant-btn-text:not(:disabled):not(.ant-btn-disabled):active {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Remove border from Badge wrapper */
+.ant-badge {
+  border: none !important;
+}
+
+.ant-badge .ant-badge-count {
+  box-shadow: none;
+}
+
+/* Remove focus styles from the entire dropdown trigger */
+.ant-dropdown-trigger {
+  border: none !important;
+  outline: none !important;
+}
+
+.ant-dropdown-trigger:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.user-profile {
+  cursor: pointer;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #3a7bd5, #00d2ff) !important;
+}
+
+.user-name {
+  color: #fff !important;
+  font-weight: 500;
+}
+
+/* FIX: Vô hiệu hóa hoàn toàn style mặc định cho notification dropdown */
+.ant-dropdown:has(.notification-dropdown) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ant-dropdown:has(.notification-dropdown) .ant-dropdown-menu {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.ant-dropdown:has(.notification-dropdown) .ant-dropdown-menu-item {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+.ant-dropdown:has(.notification-dropdown) .ant-dropdown-menu-item:hover {
+  background: transparent !important;
+}
+
+/* Profile Dropdown Styles - GIỮ NGUYÊN */
+.ant-dropdown {
+  background: transparent !important;
+}
+
+.ant-dropdown .ant-dropdown-menu {
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  padding: 8px 0 !important;
+}
+
+.ant-dropdown .ant-dropdown-menu-item {
+  background: #fff !important;
+  padding: 8px 16px !important;
+  margin: 0 !important;
+  color: #000 !important;
+  transition: all 0.2s ease !important;
+}
+
+.ant-dropdown .ant-dropdown-menu-item:hover {
+  background: #f0f6ff !important;
+  color: #1C3D90 !important;
+}
+
+.ant-dropdown .ant-dropdown-menu-item .anticon {
+  color: #1C3D90 !important;
+}
+
+.ant-dropdown .ant-dropdown-menu-item:hover .anticon {
+  color: #1C3D90 !important;
+}
+
+.ant-dropdown .ant-dropdown-menu-item-divider {
+  background-color: #e6f7ff !important;
+  margin: 4px 0 !important;
+}
+
+/* Notification Dropdown Styles - CHỈ 1 LỚP */
+.notification-dropdown {
+  width: 350px;
+  max-height: 500px;
+  overflow-y: auto;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+}
+
+.notification-header {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+}
+
+.notification-title {
+  font-size: 20px !important;
+  color: #000 !important;
+}
+
+.notification-divider {
+  margin: 0 !important;
+}
+
+.notification-divider-bottom {
+  margin: 4px 0 !important;
+}
+
+.notification-empty {
+  padding: 32px;
+  text-align: center;
+  color: #999;
+  background: #fff;
+}
+
+.empty-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: #d9d9d9;
+}
+
+.notification-item {
+  padding: 12px 16px !important;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.notification-item.unread {
+  background-color: #f6ffed;
+}
+
+.notification-item-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-time {
+  font-size: 12px !important;
+}
+
+.notification-footer {
+  padding: 8px 16px;
+  text-align: center;
+  background: #fff;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Modal Styles */
+.notification-modal .ant-modal-header {
+  background: #fafafa;
+}
+
+.notification-modal-link {
+  text-align: right;
+  margin-top: 16px;
+}
+
+.notification-modal-link a {
+  color: #1C3D90;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.notification-modal-link a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-header {
+    padding: 0 16px !important;
+  }
+
+  .header-logo-image {
+    width: 44px;
+    height: 44px;
+  }
+
+  .header-logo-text {
+    font-size: 1.25rem !important;
+    color: white !important;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .notification-dropdown {
+    width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-container {
+    gap: 4px;
+  }
+
+  .header-logo-image {
+    width: 28px;
+    height: 28px;
+  }
+
+  .header-logo-text {
+    font-size: 1.1rem !important;
+  }
+
+  .notification-dropdown {
+    width: 280px;
+  }
+}

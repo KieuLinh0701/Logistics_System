@@ -8,7 +8,7 @@
   overflow: visible !important;
 }
 
-.header-container {
+.header-home-container {
   width: 100%;
   height: 100%;
   padding: 0 80px;
@@ -16,33 +16,33 @@
 }
 
 /* Logo section */
-.logo-section {
+.header-home-logo-section {
   flex: 0 0 auto;
 }
 
-.logo-container {
+.header-home-logo-container {
   display: flex;
   align-items: center;
   gap: 12px;
   height: 100px;
 }
 
-.header-logo-image {
-  width: 90px;
-  height: 90px;
+.header-home-logo-image {
+  width: 70px;
+  height: 70px;
   object-fit: contain;
 }
 
-.header-logo-text {
+.header-home-logo-text {
   margin: 0 !important;
   color: #1c3d90 !important;
   font-weight: 700;
-  font-size: 1.75rem !important;
+  font-size: 1.7rem !important;
   white-space: nowrap;
 }
 
 /* Menu chính */
-.desktop-menu {
+.header-home-desktop-menu {
   flex: 1;
   display: flex;
   justify-content: center;
@@ -50,7 +50,7 @@
   overflow: visible;
 }
 
-.custom-menu {
+.header-home-custom-menu {
   border-bottom: none !important;
   display: flex !important;
   justify-content: center !important;
@@ -59,19 +59,19 @@
   background: transparent !important;
 }
 
-.custom-menu .ant-menu-overflow {
+.header-home-custom-menu .ant-menu-overflow {
   display: grid !important;
   grid-template-columns: repeat(6, 1fr); 
   width: 100%;
   gap: 4px;
 }
 
-.custom-menu .ant-menu-item,
-.custom-menu .ant-menu-submenu,
-.custom-menu .ant-menu-submenu-title {
+.header-home-custom-menu .ant-menu-item,
+.header-home-custom-menu .ant-menu-submenu,
+.header-home-custom-menu .ant-menu-submenu-title {
   text-align: center;
   margin: 0 !important;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
   position: relative;
@@ -79,31 +79,31 @@
   transition: color 0.3s ease;
 }
 
-.custom-menu .ant-menu-item::after,
-.custom-menu .ant-menu-submenu::after {
+.header-home-custom-menu .ant-menu-item::after,
+.header-home-custom-menu .ant-menu-submenu::after {
   display: none !important;
   content: none !important;
 }
 
-.custom-menu .ant-menu-item:hover,
-.custom-menu .ant-menu-submenu-title:hover {
+.header-home-custom-menu .ant-menu-item:hover,
+.header-home-custom-menu .ant-menu-submenu-title:hover {
   color: #1c3d90 !important;
 }
 
-.custom-menu .ant-menu-item-selected,
-.custom-menu .ant-menu-submenu-selected {
+.header-home-custom-menu .ant-menu-item-selected,
+.header-home-custom-menu .ant-menu-submenu-selected {
   color: #1c3d90  !important;
 }
 
 /* Nút đăng nhập/đăng ký */
-.auth-section {
+.header-home-auth-section {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
 
-.btn-login {
+.header-home-btn-login {
   border-radius: 4px;
   background-color: #1c3d90 !important;
   border-color: #1c3d90 !important;
@@ -112,7 +112,7 @@
   height: 44px;
 }
 
-.btn-register {
+.header-home-btn-register {
   border-radius: 4px;
   background-color: #fff !important;
   border-color: #1c3d90 !important;
@@ -122,40 +122,122 @@
 }
 
 /* Avatar */
-.user-avatar {
+.header-home-user-avatar {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
 
-.avatar-icon {
+.header-home-avatar-icon {
   background-color: #1c3d90 !important;
   color: #f5f5f5 !important;
 }
 
-.avatar-name {
+.header-home-avatar-name {
   color: #000;
   font-weight: 500;
 }
 
-.dropdown-item {
+.header-home-dropdown-item {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Dropdown Styles - FIXED FOR AVATAR DROPDOWN */
+.header-home .ant-dropdown {
+  background: transparent !important;
+}
+
+/* Stronger selector for avatar dropdown */
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu,
+.header-home .ant-dropdown .ant-dropdown-menu {
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #f0f0f0 !important;
+  padding: 8px 0 !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item,
+.header-home .ant-dropdown .ant-dropdown-menu-item {
+  background: #fff !important;
+  padding: 8px 16px !important;
+  margin: 0 !important;
+  color: #000 !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item:hover,
+.header-home .ant-dropdown .ant-dropdown-menu-item:hover {
+  background: #f5f5f5 !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item-divider,
+.header-home .ant-dropdown .ant-dropdown-menu-item-divider {
+  background-color: #f0f0f0 !important;
+  margin: 4px 0 !important;
+}
+
+/* Specific styles for avatar dropdown items */
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item .header-home-dropdown-item {
+  color: #000 !important;
+  font-weight: 500;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item:hover .header-home-dropdown-item {
+  color: #1c3d90 !important;
+}
+
+/* Submenu dropdown styles */
+.header-home .ant-menu-submenu-popup {
+  background: transparent !important;
+}
+
+.header-home .ant-menu-submenu-popup .ant-menu {
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.header-home .ant-menu-submenu-popup .ant-menu-item {
+  background: #fff !important;
+  margin: 0 !important;
+}
+
+.header-home .ant-menu-submenu-popup .ant-menu-item:hover {
+  background: #f5f5f5 !important;
+}
+
+/* Global fix for all dropdowns in header-home */
+.ant-dropdown:has(.header-home-dropdown-item) .ant-dropdown-menu {
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.ant-dropdown:has(.header-home-dropdown-item) .ant-dropdown-menu-item {
+  background: #fff !important;
+  padding: 8px 16px !important;
+}
+
+.ant-dropdown:has(.header-home-dropdown-item) .ant-dropdown-menu-item:hover {
+  background: #f5f5f5 !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
-  .header-container {
+  .header-home-container {
     padding: 0 20px;
   }
 
-  .desktop-menu {
+  .header-home-desktop-menu {
     display: none !important;
   }
 
-  .auth-section {
+  .header-home-auth-section {
     gap: 6px;
   }
 
@@ -163,31 +245,31 @@
     height: 80px;
   }
 
-  .logo-container {
+  .header-home-logo-container {
     height: 80px;
   }
 
-  .header-logo-image {
+  .header-home-logo-image {
     width: 32px;
     height: 32px;
   }
 
-  .header-logo-text {
+  .header-home-logo-text {
     font-size: 1.25rem !important;
   }
 }
 
 @media (max-width: 480px) {
-  .logo-container {
+  .header-home-logo-container {
     gap: 8px;
   }
   
-  .header-logo-image {
+  .header-home-logo-image {
     width: 28px;
     height: 28px;
   }
   
-  .header-logo-text {
+  .header-home-logo-text {
     font-size: 1.1rem !important;
   }
 }

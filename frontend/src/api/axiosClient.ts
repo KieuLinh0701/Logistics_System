@@ -12,11 +12,13 @@ const axiosClient: AxiosInstance = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 10000,
+  withCredentials: false, 
 });
 
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = sessionStorage.getItem("accessToken");
+    const token = sessionStorage.getItem("token");
+    console.log("Interceptor - token:", token); // debug xem token có không
     if (token) {
       config.headers = config.headers || {};
       (config.headers as any).Authorization = `Bearer ${token}`;
@@ -26,6 +28,7 @@ axiosClient.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
+// Interceptor response để xử lý lỗi
 axiosClient.interceptors.response.use(
   (response: AxiosResponse) => response.data,
   (error: AxiosError) => {
@@ -50,14 +53,17 @@ axiosClient.interceptors.response.use(
 type AxiosResponseData<T> = Promise<T>;
 
 const typedAxios = {
-  get: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>, 
+  get: <T>(url: string, config?: any): AxiosResponseData<T> =>
+    axiosClient.get<T>(url, config) as AxiosResponseData<T>,
+
   post: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>, 
+    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,
+
   put: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,
-  delete: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,
+    axiosClient.put<T>(url, data, config) as AxiosResponseData<T>,
+
+  delete: <T>(url: string, config?: any): AxiosResponseData<T> =>
+    axiosClient.delete<T>(url, config) as AxiosResponseData<T>,
 };
 
 export default typedAxios;

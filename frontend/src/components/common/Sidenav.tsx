@@ -26,6 +26,8 @@ import {
   EnvironmentOutlined,
   BankOutlined,
 } from "@ant-design/icons";
+import "./Sidenav.css";
+import { getCurrentUser, getUserRole } from "../../utils/authUtils";
 
 const { SubMenu } = Menu;
 
@@ -44,11 +46,9 @@ type Props = {
 const Sidenav: React.FC<Props> = () => {
   const { pathname } = useLocation();
 
-  // Lấy role từ localStorage
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const role = user?.role || "user";
+  const user = getCurrentUser();
+  const role = getUserRole();
 
-  // Config menu theo role
   const menuConfig: Record<string, MenuItem[]> = {
     admin: [
       {
@@ -225,14 +225,14 @@ const Sidenav: React.FC<Props> = () => {
         icon: <DashboardOutlined />,
       },
       {
-        key: "orders",
+        key: "/user/orders",
         label: "Quản lý đơn hàng",
         icon: <ShoppingOutlined />,
         children: [
           {
-            key: "/user/orders",
+            key: "/user/orders/list",
             label: "Danh sách đơn hàng",
-            path: "/user/orders",
+            path: "/user/orders/list",
           },
           {
             key: "/user/orders/request",
@@ -389,9 +389,9 @@ const Sidenav: React.FC<Props> = () => {
     ],
   };
 
-  const menuItems = menuConfig[role] || menuConfig.user;
+  const menuItems = menuConfig[role!] || menuConfig.user;
 
-  // mở submenu theo path hiện tại
+  // ✅ mở submenu theo path hiện tại
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   useEffect(() => {
     const keys: string[] = [];
@@ -411,6 +411,7 @@ const Sidenav: React.FC<Props> = () => {
         selectedKeys={[pathname]}
         openKeys={openKeys}
         onOpenChange={(keys) => setOpenKeys(keys as string[])}
+        className="sidenav-menu"
       >
         {menuItems.map((item) =>
           item.children ? (

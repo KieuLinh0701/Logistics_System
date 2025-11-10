@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 import { Outlet } from "react-router-dom";
 import Header from "../components/common/Header";
-import Sidenav from "../components/common/sidenav/Sidenav";
+import Sidenav from "../components/common/Sidenav";
 
 const { Header: AntHeader, Sider, Content } = Layout;
 
