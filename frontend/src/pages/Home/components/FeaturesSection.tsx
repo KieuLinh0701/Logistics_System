@@ -2,14 +2,13 @@ import React from "react";
 import { Typography, Button } from "antd";
 import { StarOutlined, TruckOutlined, DollarOutlined, UserOutlined, LoginOutlined } from "@ant-design/icons";
 import "./FeaturesSection.css";
-import { getCurrentUser, getUserRole } from "../../../utils/authUtils";
+import { getCurrentUser } from "../../../utils/authUtils";
 import { getFullName } from "../../../types/auth";
 
 const { Title, Text } = Typography;
 
 const FeaturesSection: React.FC = () => {
   const user = getCurrentUser();
-  const role = getUserRole();
 
   return (
     <div className="features-section">
@@ -104,7 +103,7 @@ const FeaturesSection: React.FC = () => {
                   size="large"
                   className="cta-primary-btn"
                   icon={<UserOutlined />}
-                  onClick={() => (window.location.href = `/${role}/dashboard`)}
+                  onClick={() => (window.location.href = `/dashboard`)}
                 >
                   Vào Trang Quản Lý
                 </Button>

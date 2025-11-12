@@ -7,14 +7,12 @@ import {
     Spin,
     Input,
     Checkbox,
-    Popconfirm,
     message,
 } from "antd";
 import {
     BellOutlined,
     ReloadOutlined,
     SearchOutlined,
-    DeleteOutlined,
     CheckCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -161,7 +159,7 @@ const NotificationList: React.FC = () => {
         },
     ];
 
-    const columns = role === "User"
+    const columns = role === "user"
         ? baseColumns.filter(col => col.key !== "creatorName")
         : baseColumns;
 
