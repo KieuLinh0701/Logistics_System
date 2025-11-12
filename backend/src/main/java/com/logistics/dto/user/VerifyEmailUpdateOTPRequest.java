@@ -1,4 +1,4 @@
-package com.logistics.dto.auth;
+package com.logistics.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResetPasswordRequest {
-    private String identifier;
-    private String newPassword;
+public class VerifyEmailUpdateOTPRequest {
+    private String newEmail;
+    private String otp;
 }

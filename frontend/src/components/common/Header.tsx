@@ -24,27 +24,38 @@ import {
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import authApi from "../../api/authApi";
-import { getCurrentUser, getUserRole } from "../../utils/authUtils";
+import { getCurrentUser } from "../../utils/authUtils";
 import notificationApi from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import { connectWebSocket, disconnectWebSocket } from "../../socket/socket";
 import "./Header.css";
 import logo from "../../assets/images/home/logo_white.png";
+import { getFullName, type User } from "../../types/auth";
 
 const { Header: AntHeader } = Layout;
 const { Text, Title } = Typography;
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const user = getCurrentUser();
-  const role = getUserRole();
+  const [currentUser, setCurrentUser] = useState<User | null>(getCurrentUser());
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
-  const fileName = user?.images ? String(user.images).split("/").pop() : undefined;
-  const avatarSrc = fileName ? `/uploads/${fileName}` : undefined;
+  const avatarSrc = currentUser?.images || undefined;
+
+  useEffect(() => {
+    const handleUserUpdate = (e: any) => {
+      setCurrentUser(e.detail);
+    };
+
+    window.addEventListener('userUpdated', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdated', handleUserUpdate);
+    };
+  }, []);
 
   const fetchNotifications = async () => {
     try {
@@ -103,22 +114,22 @@ const Header: React.FC = () => {
   const getNotificationLink = (type?: string) => {
     switch (type) {
       case "new_order":
-        return `/${role}/orders`;
+        return `/orders`;
       case "delivery_assigned":
-        return `/${role}/deliveries`;
+        return `/deliveries`;
       case "cod_reminder":
-        return `/${role}/payments`;
+        return `/payments`;
       case "ShippingRequest":
-        return `/${role}/orders/requests`;
+        return `/orders/requests`;
       case "order":
-        return `/${role}/orders`;
+        return `/orders`;
       default:
         return null;
     }
   };
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!currentUser?.id) return;
 
     fetchNotifications();
 
@@ -126,19 +137,19 @@ const Header: React.FC = () => {
       setNotifications((prev) => [payload, ...prev].slice(0, 10));
     };
 
-    connectWebSocket(user.id, handleRealtimeNotification);
+    connectWebSocket(currentUser.id, handleRealtimeNotification);
 
     return () => {
       disconnectWebSocket();
     };
-  }, [user?.id]);
+  }, [currentUser?.id]);
 
   const profileMenuItems = [
     {
-      key: "profile",
-      label: "Profile",
+      key: "account/settings",
+      label: "Cài đặt tài khoản",
       icon: <ProfileOutlined />,
-      onClick: () => navigate(`/${role}/profile`)
+      onClick: () => navigate(`/account/settings`)
     },
     {
       key: "logout",
@@ -187,7 +198,7 @@ const Header: React.FC = () => {
           )}
           <Divider className="notification-divider-bottom" />
           <div className="notification-footer">
-            <Button type="text" onClick={() => navigate(`/${role}/notifications`)}>Xem thêm</Button>
+            <Button type="text" onClick={() => navigate(`/notifications`)}>Xem thêm</Button>
           </div>
         </div>
       )
@@ -220,7 +231,7 @@ const Header: React.FC = () => {
           <Dropdown menu={{ items: profileMenuItems }} placement="bottomRight" trigger={["click"]}>
             <Space className="user-profile">
               <Avatar src={avatarSrc} icon={<UserOutlined />} className="user-avatar" />
-              <Text className="user-name">{user?.fullName}</Text>
+              <Text className="user-name">{getFullName(currentUser!)}</Text>
             </Space>
           </Dropdown>
         </Space>

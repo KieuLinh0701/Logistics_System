@@ -29,9 +29,6 @@ public class Account {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, unique = true, length = 15)
-    private String phoneNumber;
-
     @Column(nullable = false)
     private String password;
 

@@ -24,6 +24,7 @@ import authApi from "../../api/authApi";
 import "./HeaderHome.css";
 import logo from "../../assets/images/home/logo.png";
 import { getCurrentUser, getUserRole } from "../../utils/authUtils";
+import { getFullName } from "../../types/auth";
 
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;
@@ -141,7 +142,7 @@ const HeaderHome: React.FC = () => {
                 <div className="header-home-user-avatar">
                   <Avatar size="default" className="header-home-avatar-icon" icon={<UserOutlined />} />
                   <span className="header-home-avatar-name">
-                    {user?.fullName}
+                    {getFullName(user!)}
                   </span>
                 </div>
               </Dropdown>

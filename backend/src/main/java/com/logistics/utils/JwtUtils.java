@@ -30,11 +30,9 @@ public class JwtUtils {
 
                 Map<String, Object> userMap = new HashMap<>();
                 userMap.put("id", user.getId());
-                userMap.put("fullName", user.getFullName());
-                userMap.put("images",
-                                user.getImages() != null && !user.getImages().isEmpty() ? user.getImages() : null);
 
                 Map<String, Object> accountMap = new HashMap<>();
+                accountMap.put("id", account.getId());
                 accountMap.put("email", account.getEmail());
                 accountMap.put("role", account.getRole() != null ? account.getRole().getName() : null);
 

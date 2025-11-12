@@ -59,6 +59,11 @@
   margin-bottom: 30px;
 }
 
+.login-title-link {
+  color: inherit !important;     
+  text-decoration: none !important; 
+}
+
 .login-title {
   color: #1C3D90 !important;
   margin: 0;

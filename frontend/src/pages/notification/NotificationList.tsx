@@ -85,7 +85,7 @@ const NotificationList: React.FC = () => {
                 )
             );
         }
-        navigate(`/${role}/notifications/${notification.id}`, {
+        navigate(`/notifications/${notification.id}`, {
             state: { notification },
         });
     };

@@ -8,9 +8,6 @@ import type {
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
   timeout: 10000,
   withCredentials: false, 
 });
@@ -18,7 +15,7 @@ const axiosClient: AxiosInstance = axios.create({
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = sessionStorage.getItem("token");
-    console.log("Interceptor - token:", token); // debug xem token có không
+    console.log("Interceptor - token:", token);
     if (token) {
       config.headers = config.headers || {};
       (config.headers as any).Authorization = `Bearer ${token}`;
@@ -28,7 +25,6 @@ axiosClient.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-// Interceptor response để xử lý lỗi
 axiosClient.interceptors.response.use(
   (response: AxiosResponse) => response.data,
   (error: AxiosError) => {

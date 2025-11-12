@@ -3,6 +3,7 @@ import { Typography, Button } from "antd";
 import { StarOutlined, TruckOutlined, DollarOutlined, UserOutlined, LoginOutlined } from "@ant-design/icons";
 import "./FeaturesSection.css";
 import { getCurrentUser, getUserRole } from "../../../utils/authUtils";
+import { getFullName } from "../../../types/auth";
 
 const { Title, Text } = Typography;
 
@@ -72,7 +73,7 @@ const FeaturesSection: React.FC = () => {
               <Text className="cta-subtitle">
                 {!user
                   ? "Đăng ký tài khoản ngay để trải nghiệm dịch vụ tốt nhất và nhận nhiều ưu đãi đặc biệt!"
-                  : `Chào ${user.fullName}! Truy cập ngay trang quản lý của bạn để theo dõi đơn hàng và nhận thông báo.`}
+                  : `Chào ${getFullName(user!)}! Truy cập ngay trang quản lý của bạn để theo dõi đơn hàng và nhận thông báo.`}
               </Text>
             </div>
 

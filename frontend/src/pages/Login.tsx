@@ -24,7 +24,7 @@ const Login: React.FC = () => {
         const role = getUserRole();
 
         if (role) {
-          navigate(`/${role}/dashboard`);
+          navigate(`/dashboard`);
         } else {
           console.warn("Token không hợp lệ hoặc chưa lưu");
         }
@@ -57,7 +57,9 @@ const Login: React.FC = () => {
             <div className="login-form-wrapper">
               <div className="login-header">
                 <Title level={2} className="login-title">
-                  UTE Logistics
+                  <Link to="/home" className="login-title-link">
+                    UTE Logistics
+                  </Link>
                 </Title>
                 <Text className="login-subtitle">
                   Đăng nhập để tiếp tục trải nghiệm
@@ -72,26 +74,25 @@ const Login: React.FC = () => {
               >
                 <div className="form-item">
                   <Form.Item
-                    label="Email hoặc Số điện thoại"
-                    name="identifier"
+                    label="Email"
+                    name="email"
                     rules={[
-                      { required: true, message: "Vui lòng nhập email hoặc số điện thoại!" },
+                      { required: true, message: "Vui lòng nhập email!" },
                       {
                         validator: (_, value) => {
                           if (!value) return Promise.resolve();
                           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                          const phoneRegex = /^[0-9]{10}$/;
-                          if (emailRegex.test(value) || phoneRegex.test(value)) {
+                          if (emailRegex.test(value)) {
                             return Promise.resolve();
                           }
-                          return Promise.reject(new Error("Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số!"));
+                          return Promise.reject(new Error("Vui lòng nhập email hợp lệ!"));
                         },
                       },
                     ]}
                   >
                     <Input
                       prefix={<UserOutlined className="form-input-prefix" />}
-                      placeholder="Nhập email hoặc số điện thoại"
+                      placeholder="Nhập email"
                       className="form-input"
                       size="large"
                     />
@@ -99,20 +100,20 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="form-item">
-                    <Form.Item
-                      name="password"
-                      label="Mật khẩu"
-                      rules={[
-                        { required: true, message: "Vui lòng nhập mật khẩu!" },
-                      ]}
-                    >
-                      <Input.Password
-                        prefix={<LockOutlined className="form-input-prefix" />}
-                        placeholder="Nhập mật khẩu"
-                        size="large"
-                        className="form-input"
-                      />
-                    </Form.Item>
+                  <Form.Item
+                    name="password"
+                    label="Mật khẩu"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mật khẩu!" },
+                    ]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined className="form-input-prefix" />}
+                      placeholder="Nhập mật khẩu"
+                      size="large"
+                      className="form-input"
+                    />
+                  </Form.Item>
                 </div>
 
                 <div style={{ textAlign: "right", marginBottom: 24 }}>

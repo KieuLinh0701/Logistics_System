@@ -4,10 +4,9 @@ export interface DecodedToken {
   sub: string;
   user: {
     id: number;
-    fullName: string;
-    images: string;
   };
   account: {
+    id: number;
     email: string;
     role: string;
   };

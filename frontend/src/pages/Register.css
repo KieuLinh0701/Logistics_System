@@ -61,6 +61,12 @@
   margin-bottom: 30px;
 }
 
+.register-title-link {
+  color: inherit !important;     
+  text-decoration: none !important; 
+}
+
+
 .register-title {
   color: #1C3D90 !important;
   margin: 0 0 12px 0;

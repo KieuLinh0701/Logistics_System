@@ -45,6 +45,9 @@ public class User {
         return lastName + " " + firstName;
     }
 
+    @Column(nullable = false, unique = true, length = 15)
+    private String phoneNumber;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses;
 

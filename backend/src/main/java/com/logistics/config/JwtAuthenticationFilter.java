@@ -42,6 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -77,9 +82,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
 
                     Account account = new Account();
-                    account.setEmail((String) accountMap.get("email"));
-                    account.setPhoneNumber(
-                            accountMap.get("phoneNumber") != null ? (String) accountMap.get("phoneNumber") : null);
+                    if (accountMap.get("id") != null) {
+                        account.setId(((Number) accountMap.get("id")).intValue());
+                    }
+
                     if (roleName != null) {
                         Role role = new Role();
                         role.setName(roleName);
@@ -92,9 +98,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
 
                     UserPrincipal principal = new UserPrincipal(account, user, authorities);
-
-                    System.out.println("user: " + user.getId());
-                    System.out.println("account: " + account.getEmail());
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(principal,
                             null, authorities);

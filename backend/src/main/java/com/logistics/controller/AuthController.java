@@ -3,12 +3,11 @@ package com.logistics.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import com.logistics.dto.auth.ForgotPasswordRequest;
+import com.logistics.dto.auth.ForgotPasswordEmailRequest;
 import com.logistics.dto.auth.LoginRequest;
 import com.logistics.dto.auth.RegisterRequest;
-import com.logistics.dto.auth.ResetPasswordRequest;
+import com.logistics.dto.auth.ForgotPasswordResetRequest;
 import com.logistics.dto.auth.VerifyRegisterOtpRequest;
 import com.logistics.dto.auth.VerifyResetOtpRequest;
 import com.logistics.response.ApiResponse;
@@ -60,21 +59,21 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        if (request.getIdentifier() == null || request.getPassword() == null) {
+        if (request.getEmail() == null || request.getPassword() == null) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập email hoặc số điện thoại và mật khẩu", null));
+                    .body(new ApiResponse<>(false, "Vui lòng nhập email", null));
         }
 
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/password/forgot")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        if (request.getIdentifier() == null) {
+    public ResponseEntity<?> forgotPasswordEmail(@RequestBody ForgotPasswordEmailRequest request) {
+        if (request.getEmail() == null) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập email hoặc số điện thoại", null));
+                    .body(new ApiResponse<>(false, "Vui lòng nhập email", null));
         }
-        return ResponseEntity.ok(authService.forgotPassword(request));
+        return ResponseEntity.ok(authService.forgotPasswordEmail(request));
     }
 
     @PostMapping("/password/verify-otp")
@@ -87,13 +86,13 @@ public class AuthController {
     }
 
     @PostMapping("/password/reset")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> forgotPasswordReset(@RequestBody ForgotPasswordResetRequest request) {
         System.out.println("Debug message");
         if (request.getNewPassword() == null) {
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng nhập mật khẩu", null));
         }
 
-        return ResponseEntity.ok(authService.resetPassword(request));
+        return ResponseEntity.ok(authService.forgotPasswordReset(request));
     }
 
     // // 🟢 Get profile

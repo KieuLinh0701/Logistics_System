@@ -1,10 +1,24 @@
-export interface User {
-  id: number;
-  code: string;
+export interface UpdateProfileRequest {
+  id?: number;
   firstName: string;
   lastName: string;
-  fullName: string;
-  images: string;
+  phoneNumber: string;
+  avatarFile?: File;
+}
+
+export interface UpadtePasswordData {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface UpadteEmailData {
+  newEmail: string;
+  password: string;
+}
+
+export interface VerifyEmailUpdateOTPData {
+  newEmail: string;
+  otp: string;
 }
 
 export interface UserResponse<T> {

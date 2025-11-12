@@ -15,7 +15,7 @@ const ForgotPassword: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
     const [currentStep, setCurrentStep] = useState(0);
-    const [identifier, setIdentifier] = useState('');
+    const [email, setEmail] = useState('');
     const [otpCountdown, setOtpCountdown] = useState(300);
     const [canResend, setCanResend] = useState(false);
 
@@ -36,12 +36,12 @@ const ForgotPassword: React.FC = () => {
         return () => clearInterval(interval);
     }, [otpCountdown, canResend]);
 
-    const handleEmailSubmit = async (values: { identifier: string }) => {
+    const handleEmailSubmit = async (values: { email: string }) => {
         setLoading(true);
         try {
-            const result = await authApi.forgotPassword(values);
+            const result = await authApi.forgotPasswordEmail(values);
             if (result.success) {
-                setIdentifier(values.identifier);
+                setEmail(values.email);
                 setCurrentStep(1);
                 message.success('Mã OTP đã được gửi đến email của bạn!');
                 setOtpCountdown(300);
@@ -58,10 +58,10 @@ const ForgotPassword: React.FC = () => {
     };
 
     const handleOtpSubmit = async (values: { otp: string }) => {
-        if (!identifier) return;
+        if (!email) return;
         setLoading(true);
         try {
-            const result = await authApi.verifyResetOtp({ identifier, otp: values.otp });
+            const result = await authApi.verifyResetOtp({ email, otp: values.otp });
             if (result.success) {
                 setCurrentStep(2);
                 message.success('Xác thực OTP thành công!');
@@ -77,10 +77,10 @@ const ForgotPassword: React.FC = () => {
     };
 
     const handleResendOTP = async () => {
-        if (!identifier) return;
+        if (!email) return;
         setLoading(true);
         try {
-            const result = await authApi.forgotPassword({ identifier });
+            const result = await authApi.forgotPasswordEmail({ email });
             if (result.success) {
                 message.success('Mã OTP mới đã được gửi đến email của bạn!');
                 setOtpCountdown(300);
@@ -97,12 +97,12 @@ const ForgotPassword: React.FC = () => {
     };
 
     const handleResetPassword = async (values: { newPassword: string; confirmPassword: string }) => {
-        if (!identifier) return;
+        if (!email) return;
         setLoading(true);
         try {
-            const result = await authApi.resetPassword({
-                identifier,
-                newPassword: values.newPassword 
+            const result = await authApi.forgotPasswordReset({
+                email,
+                newPassword: values.newPassword
             });
             if (result.success) {
                 message.success('Đặt lại mật khẩu thành công! Vui lòng đăng nhập để tiếp tục.');
@@ -124,26 +124,25 @@ const ForgotPassword: React.FC = () => {
             content: (
                 <Form layout="vertical" onFinish={handleEmailSubmit} autoComplete="off">
                     <Form.Item
-                        label="Email hoặc Số điện thoại"
-                        name="identifier"
+                        label="Email"
+                        name="email"
                         rules={[
-                            { required: true, message: "Vui lòng nhập email hoặc số điện thoại!" },
+                            { required: true, message: "Vui lòng nhập email!" },
                             {
                                 validator: (_, value) => {
                                     if (!value) return Promise.resolve();
                                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                                    const phoneRegex = /^[0-9]{10}$/;
-                                    if (emailRegex.test(value) || phoneRegex.test(value)) {
+                                    if (emailRegex.test(value)) {
                                         return Promise.resolve();
                                     }
-                                    return Promise.reject(new Error("Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số!"));
+                                    return Promise.reject(new Error("Vui lòng nhập email hợp lệ!"));
                                 },
                             },
                         ]}
                     >
                         <Input
                             prefix={<UserOutlined className="form-input-prefix" />}
-                            placeholder="Nhập email hoặc số điện thoại"
+                            placeholder="Nhập email"
                             className="form-input"
                             size="large"
                         />
@@ -275,7 +274,9 @@ const ForgotPassword: React.FC = () => {
                         <div className="forgot-form">
                             <div className="forgot-header">
                                 <Title level={2} className="title-primary">
-                                    UTE Logistics
+                                    <Link to="/home" className="forgot-title-link">
+                                        UTE Logistics
+                                    </Link>
                                 </Title>
                                 <Text type="secondary">
                                     Làm theo các bước để đặt lại mật khẩu

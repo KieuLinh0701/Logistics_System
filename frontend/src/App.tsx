@@ -10,7 +10,8 @@ import { AuthRoute } from "./components/route/AuthRoute";
 import { PrivateRoute } from "./components/route/PrivateRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ForgotPassword from "./pages/ForgotPassword";
-import Profile from "./pages/Profile";
+import AccountSettings from "./pages/profile/AccountSettings";
+import DashboardRouter from "./pages/DashboardRouter";
 import NotificationList from "./pages/notification/NotificationList";
 import NotificationDetail from "./pages/notification/NotificationDetail";
 
@@ -27,20 +28,13 @@ const App: React.FC = () => {
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />
           <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword /></AuthRoute>} />
-          
+
           {/* Dynamic role routes */}
-          <Route
-            path="/:role/*"
-            element={
-              <PrivateRoute>
-                <DashboardLayout />
-              </PrivateRoute>
-            }
-          >
-            {/* Nested routes */}
-            <Route path="profile" element={<Profile />} />
-            <Route path="notifications" element={<NotificationList />} />
-            <Route path="notifications/:id" element={<NotificationDetail />} />
+          <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+            <Route path="/account/settings" element={<PrivateRoute><AccountSettings /></PrivateRoute>} />
+            <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
+            <Route path="/notifications" element={<PrivateRoute><NotificationList /></PrivateRoute>} />
+            <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

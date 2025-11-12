@@ -29,7 +29,7 @@ public class OTP {
     private String otp;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10, nullable = false)
+    @Column(length = 20, nullable = false)
     private OTPType type;
 
     @Column(nullable = false)

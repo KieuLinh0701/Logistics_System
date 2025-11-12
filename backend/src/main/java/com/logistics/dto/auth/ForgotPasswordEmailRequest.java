@@ -9,7 +9,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginRequest {
+public class ForgotPasswordEmailRequest {
     private String email;
-    private String password;
 }

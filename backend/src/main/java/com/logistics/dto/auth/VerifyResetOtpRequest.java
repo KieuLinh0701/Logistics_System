@@ -10,6 +10,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VerifyResetOtpRequest {
-    private String identifier;
+    private String email;
     private String otp;
 }

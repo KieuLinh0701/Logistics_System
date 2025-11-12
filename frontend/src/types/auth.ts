@@ -1,16 +1,22 @@
 export interface User {
   id: number;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   images: string;
-}
-
-export interface Account {
-  email: string;
   phoneNumber: string;
 }
 
+export function getFullName(user: User): string {
+  return `${user.lastName} ${user.firstName}`.trim();
+}
+
+export interface Account {
+  id: number;
+  email: string;
+}
+
 export interface LoginData {
-  identifier: string;
+  email: string;
   password: string;
 }
 
@@ -31,18 +37,23 @@ export interface VerifyRegisterOtpData {
   phoneNumber: string;
 }
 
-export interface ForgotPasswordData {
-  identifier: string;
+export interface ForgotPasswordEmailData  {
+  email: string;
 }
 
 export interface VerifyResetOTPData {
-  identifier: string;
+  email: string;
   otp: string;
 }
 
-export interface ResetPasswordData {
-  identifier: string;
+export interface ForgotPasswordResetData {
+  email: string;
   newPassword: string;
+}
+
+export interface TokenResponse {
+  token: string;
+  user: User;
 }
 
 export interface AuthResponse<T> {

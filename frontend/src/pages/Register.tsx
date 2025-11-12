@@ -23,9 +23,7 @@ const Register: React.FC = () => {
     setLoading(true);
     try {
       const result = await authApi.register(values);
-      console.log(result);
-      console.log(result.success)
-      console.log(result.message)
+
       if (result.success) {
         setRegisterData(values);
         setCurrentStep(1);
@@ -54,7 +52,7 @@ const Register: React.FC = () => {
         const role = getUserRole();
 
         if (role) {
-          navigate(`/${role}/dashboard`);
+          navigate(`/dashboard`);
         } else {
           console.warn("Token không hợp lệ hoặc chưa lưu");
         }
@@ -255,7 +253,9 @@ const Register: React.FC = () => {
             <div className="register-form-wrapper">
               <div className="register-header">
                 <Title level={2} className="register-title">
-                  UTE Logistics
+                  <Link to="/home" className="register-title-link">
+                    UTE Logistics
+                  </Link>
                 </Title>
                 <Text className="register-subtitle">
                   Đăng ký tài khoản mới

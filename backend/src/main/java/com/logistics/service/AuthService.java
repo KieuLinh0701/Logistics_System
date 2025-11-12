@@ -7,10 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.logistics.dto.auth.ForgotPasswordRequest;
+import com.logistics.dto.auth.ForgotPasswordEmailRequest;
 import com.logistics.dto.auth.LoginRequest;
 import com.logistics.dto.auth.RegisterRequest;
-import com.logistics.dto.auth.ResetPasswordRequest;
+import com.logistics.dto.auth.ForgotPasswordResetRequest;
 import com.logistics.dto.auth.VerifyRegisterOtpRequest;
 import com.logistics.dto.auth.VerifyResetOtpRequest;
 import com.logistics.entity.Account;
@@ -23,6 +23,7 @@ import com.logistics.repository.OTPRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.AuthResponse;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
@@ -49,7 +50,7 @@ public class AuthService {
 
         public ApiResponse<String> register(RegisterRequest request) {
                 if (accountRepository.existsByEmail(request.getEmail()) ||
-                                accountRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                                userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
                         return new ApiResponse<>(false, "Email hoặc số điện thoại đã được sử dụng", null);
                 }
 
@@ -68,7 +69,7 @@ public class AuthService {
                 return new ApiResponse<>(true, "Mã OTP đã được gửi đến email của bạn", null);
         }
 
-        public ApiResponse<String> verifyAndRegisterUser(VerifyRegisterOtpRequest request) {
+        public ApiResponse<AuthResponse> verifyAndRegisterUser(VerifyRegisterOtpRequest request) {
                 OTP otpEntity = otpRepository
                                 .findByEmailAndOtpAndTypeAndIsUsedFalseAndExpiresAtAfter(
                                                 request.getEmail(),
@@ -84,7 +85,6 @@ public class AuthService {
 
                 Account newAccount = new Account();
                 newAccount.setEmail(request.getEmail());
-                newAccount.setPhoneNumber(request.getPhoneNumber());
                 newAccount.setPassword(hashed);
                 newAccount.setRole(userRole);
                 newAccount.setIsVerified(true);
@@ -96,6 +96,7 @@ public class AuthService {
                 User newUser = new User();
                 newUser.setFirstName(request.getFirstName());
                 newUser.setLastName(request.getLastName());
+                newUser.setPhoneNumber(request.getPhoneNumber());
                 newUser.setAccount(newAccount);
                 newUser.setCreatedAt(LocalDateTime.now());
 
@@ -109,18 +110,27 @@ public class AuthService {
 
                 String token = jwtUtils.generateToken(newAccount, newUser);
 
-                return new ApiResponse<>(true, "Đăng ký thành công", token);
+                AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
+                                newUser.getId(),
+                                newUser.getFirstName(),
+                                newUser.getLastName(),
+                                newUser.getPhoneNumber(),
+                                newUser.getImages()
+                );
+
+                AuthResponse authResponse = new AuthResponse(token, userResponse);
+
+                return new ApiResponse<>(true, "Đăng ký thành công", authResponse);
         }
 
-        public ApiResponse<String> login(LoginRequest request) {
-                String identifier = request.getIdentifier();
+        public ApiResponse<AuthResponse> login(LoginRequest request) {
+                String email = request.getEmail();
                 String password = request.getPassword();
 
-                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier,
-                                identifier);
+                Optional<Account> optionalAccount = accountRepository.findByEmail(email);
 
                 if (optionalAccount.isEmpty()) {
-                        return new ApiResponse<>(false, "Email hoặc số điện thoại hoặc mật khẩu không đúng", null);
+                        return new ApiResponse<>(false, "Email hoặc mật khẩu không đúng", null);
                 }
 
                 Account account = optionalAccount.get();
@@ -134,7 +144,7 @@ public class AuthService {
                 }
 
                 if (!passwordEncoder.matches(password, account.getPassword())) {
-                        return new ApiResponse<>(false, "Email hoặc số điện thoại hoặc mật khẩu không đúng", null);
+                        return new ApiResponse<>(false, "Email hoặc mật khẩu không đúng", null);
                 }
 
                 account.setLastLoginAt(LocalDateTime.now());
@@ -148,15 +158,25 @@ public class AuthService {
 
                 String token = jwtUtils.generateToken(account, user);
 
-                return new ApiResponse<>(true, "Đăng nhập thành công", token);
+                AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
+                                user.getId(),
+                                user.getFirstName(),
+                                user.getLastName(),
+                                user.getPhoneNumber(),
+                                user.getImages()
+                );
+
+                AuthResponse authResponse = new AuthResponse(token, userResponse);
+
+                return new ApiResponse<>(true, "Đăng nhập thành công", authResponse);
         }
 
-        public ApiResponse<String> forgotPassword(ForgotPasswordRequest request) {
-                String identifier = request.getIdentifier();
+        public ApiResponse<String> forgotPasswordEmail(ForgotPasswordEmailRequest request) {
+                String email = request.getEmail();
 
-                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+                Optional<Account> optionalAccount = accountRepository.findByEmail(email);
                 if (optionalAccount.isEmpty()) {
-                        return new ApiResponse<>(false, "Không tìm thấy tài khoản với email hoặc số điện thoại này",
+                        return new ApiResponse<>(false, "Không tìm thấy tài khoản với email này",
                                         null);
                 }
 
@@ -181,12 +201,12 @@ public class AuthService {
         }
 
         public ApiResponse<String> verifyResetOtp(VerifyResetOtpRequest request) {
-                String identifier = request.getIdentifier();
+                String email = request.getEmail();
                 String otp = request.getOtp();
 
-                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+                Optional<Account> optionalAccount = accountRepository.findByEmail(email);
                 if (optionalAccount.isEmpty()) {
-                        return new ApiResponse<>(false, "Không tìm thấy tài khoản với email hoặc số điện thoại này",
+                        return new ApiResponse<>(false, "Không tìm thấy tài khoản với email này",
                                         null);
                 }
 
@@ -206,11 +226,11 @@ public class AuthService {
                 return new ApiResponse<>(true, "Xác thực OTP thành công, bạn có thể đặt lại mật khẩu.", null);
         }
 
-        public ApiResponse<String> resetPassword(ResetPasswordRequest request) {
-                String identifier = request.getIdentifier();
+        public ApiResponse<String> forgotPasswordReset(ForgotPasswordResetRequest request) {
+                String email = request.getEmail();
                 String newPassword = request.getNewPassword();
 
-                Optional<Account> optionalAccount = accountRepository.findByEmailOrPhoneNumber(identifier, identifier);
+                Optional<Account> optionalAccount = accountRepository.findByEmail(email);
                 if (optionalAccount.isEmpty()) {
                         return new ApiResponse<>(false, "Không tìm thấy tài khoản để đặt lại mật khẩu", null);
                 }
