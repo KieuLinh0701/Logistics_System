@@ -109,35 +109,50 @@ const NotificationList: React.FC = () => {
         fetchNotifications();
     }, []);
 
-    const columns = [
+    const baseColumns = [
         {
             title: "Tiêu đề",
             dataIndex: "title",
             key: "title",
-            width: 230,
+            width: "20%",
             render: (title: string, record: Notification) => (
                 <div className="notification-title">
-                    <Text strong={!record.isRead} className={record.isRead ? "read-text" : "unread-text"}>
+                    <Text strong={!record.isRead} className={record.isRead ? "read-text" : "unread-text"} ellipsis>
                         {title}
                     </Text>
                 </div>
             ),
+            ellipsis: true,
         },
         {
             title: "Nội dung",
             dataIndex: "message",
             key: "message",
+            width: "45%",
             render: (message: string, record: Notification) => (
                 <Text className={record.isRead ? "read-text" : "unread-text"} ellipsis>
                     {message}
                 </Text>
             ),
+            ellipsis: true,
+        },
+        {
+            title: "Người gửi",
+            dataIndex: "creatorName",
+            key: "creatorName",
+            width: "20%",
+            render: (creatorName: string, record: Notification) => (
+                <Text className={record.isRead ? "read-text" : "unread-text"} ellipsis>
+                    {creatorName ? creatorName : "Hệ thống"}
+                </Text>
+            ),
+            ellipsis: true,
         },
         {
             title: "Thời gian",
             dataIndex: "createdAt",
             key: "createdAt",
-            width: 180,
+            width: "15%",
             render: (createdAt: string, record: Notification) => (
                 <Text className={record.isRead ? "read-text" : "unread-text"}>
                     {new Date(createdAt).toLocaleString("vi-VN")}
@@ -145,6 +160,10 @@ const NotificationList: React.FC = () => {
             ),
         },
     ];
+
+    const columns = role === "User"
+        ? baseColumns.filter(col => col.key !== "creatorName")
+        : baseColumns;
 
     return (
         <Layout className="notification-layout">
@@ -215,24 +234,29 @@ const NotificationList: React.FC = () => {
                             {`Chưa đọc: ${unreadCount}`}
                         </span>
 
-                        <Table
-                            dataSource={notifications}
-                            columns={columns}
-                            rowKey="id"
-                            pagination={{
-                                current: page,
-                                pageSize,
-                                total,
-                                onChange: (pageNumber) => fetchNotifications(pageNumber, searchTerm, showUnreadOnly),
-                                showSizeChanger: false,
-                                showQuickJumper: true,
-                            }}
-                            rowClassName={(record) => (record.isRead ? "read-row" : "unread-row")}
-                            onRow={(record) => ({
-                                onClick: () => handleClick(record),
-                                style: { cursor: "pointer" },
-                            })}
-                        />
+                        <div className="table-container">
+                            <Table
+                                dataSource={notifications}
+                                columns={columns}
+                                rowKey="id"
+                                pagination={{
+                                    current: page,
+                                    pageSize,
+                                    total,
+                                    onChange: (pageNumber) => fetchNotifications(pageNumber, searchTerm, showUnreadOnly),
+                                    showSizeChanger: false,
+                                    showQuickJumper: true,
+                                }}
+                                rowClassName={(record) => (record.isRead ? "read-row" : "unread-row")}
+                                onRow={(record) => ({
+                                    onClick: () => handleClick(record),
+                                    style: { cursor: "pointer" },
+                                })}
+                                tableLayout="fixed"
+                                size="middle"
+                                className="notification-table"
+                            />
+                        </div>
                     </>
                 )}
             </Content>

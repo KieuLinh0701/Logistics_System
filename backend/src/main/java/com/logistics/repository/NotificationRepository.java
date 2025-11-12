@@ -16,9 +16,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
 
     @Query("""
                 SELECT new com.logistics.dto.notification.NotificationDTO(
-                    n.id, n.title, n.message, n.type, n.isRead, n.relatedId, n.relatedType, n.createdAt, n.updatedAt
+                    n.id, n.title, n.message, n.type, n.isRead, n.relatedId, n.relatedType, n.createdAt, n.updatedAt, CONCAT(c.lastName, ' ', c.firstName)
                 )
-                FROM Notification n
+                FROM Notification n 
+                LEFT JOIN n.creator c
                 WHERE n.user.id = :userId
                   AND (:isRead IS NULL OR n.isRead = :isRead)
                   AND (:search IS NULL OR LOWER(n.title) LIKE LOWER(CONCAT('%', :search, '%'))

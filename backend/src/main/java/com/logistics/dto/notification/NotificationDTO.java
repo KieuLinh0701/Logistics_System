@@ -18,4 +18,5 @@ public class NotificationDTO {
     private String relatedType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String creatorName;
 }

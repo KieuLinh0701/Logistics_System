@@ -65,6 +65,7 @@ public class UserService {
                                 "Mật khẩu của bạn đã được thay đổi. Nếu bạn không thực hiện hành động này, vui lòng liên hệ bộ phận hỗ trợ ngay.",
                                 "system",
                                 user.getId(),
+                                null,
                                 "user",
                                 null));
 
@@ -111,6 +112,7 @@ public class UserService {
                                 "Tài khoản của bạn vừa được yêu cầu thay đổi email. Nếu bạn không thực hiện hành động này, vui lòng liên hệ bộ phận hỗ trợ ngay.",
                                 "system",
                                 user.getId(),
+                                null,
                                 "user",
                                 null));
 
@@ -146,6 +148,7 @@ public class UserService {
                                 "Địa chỉ email của bạn đã được thay đổi. Nếu bạn không thực hiện hành động này, vui lòng liên hệ bộ phận hỗ trợ ngay.",
                                 "system",
                                 user.getId(),
+                                null,
                                 "user",
                                 null));
 

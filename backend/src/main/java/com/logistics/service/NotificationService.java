@@ -4,6 +4,7 @@ import com.logistics.dto.notification.NotificationDTO;
 import com.logistics.entity.Notification;
 import com.logistics.entity.User;
 import com.logistics.repository.NotificationRepository;
+import com.logistics.repository.UserRepository;
 import com.logistics.response.NotificationResponse;
 import com.logistics.response.Pagination;
 
@@ -25,13 +26,16 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     public void create(@NonNull String title, @NonNull String message, @NonNull String type,
-            @NonNull Integer userId, String relatedType, String relatedId) {
+            @NonNull Integer userId, Integer creatorId, String relatedType, String relatedId) {
         Notification notification = new Notification();
+
         User user = new User();
         user.setId(userId);
+
         notification.setUser(user);
         notification.setTitle(title);
         notification.setMessage(message);
@@ -40,6 +44,12 @@ public class NotificationService {
         notification.setRelatedType(relatedType);
         notification.setIsRead(false);
         notification.setCreatedAt(LocalDateTime.now());
+
+        User creator = null;
+        if (creatorId != null) {
+            creator = userRepository.findById(creatorId).orElse(null); 
+        }
+        notification.setCreator(creator);
 
         notificationRepository.save(notification);
 
@@ -52,7 +62,8 @@ public class NotificationService {
                 notification.getRelatedId(),
                 notification.getRelatedType(),
                 notification.getCreatedAt(),
-                notification.getUpdatedAt());
+                notification.getUpdatedAt(),
+                notification.getCreator() != null ? notification.getCreator().getFullName() : null);
 
         // gửi notification riêng cho user
         messagingTemplate.convertAndSendToUser(

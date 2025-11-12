@@ -9,6 +9,7 @@ export interface Notification {
   userId: number;
   createdAt: string;
   updatedAt: string;
+  creatorName?: string;
 }
 
 export interface NotificationResponse {

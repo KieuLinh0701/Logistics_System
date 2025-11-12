@@ -27,6 +27,10 @@ public class Notification {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    private User creator;
+
     // Tiêu đề thông báo
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
     private String title;

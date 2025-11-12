@@ -34,6 +34,9 @@ public class ServiceType {
     @Column(columnDefinition = "TEXT")
     private String deliveryTime;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     // Trạng thái hoạt động
     @Enumerated(EnumType.STRING)
     @Column(length = 10, nullable = false)

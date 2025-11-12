@@ -249,6 +249,7 @@ public class AuthService {
                                         "Mật khẩu của bạn đã được thay đổi. Nếu bạn không thực hiện hành động này, vui lòng liên hệ bộ phận hỗ trợ ngay.",
                                         "system",
                                         user.getId(),
+                                        null,
                                         "user",
                                         null);
                 });
