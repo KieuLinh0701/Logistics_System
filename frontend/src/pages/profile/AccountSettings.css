@@ -15,7 +15,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start; 
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   padding: 0;
 }
 
@@ -94,7 +94,7 @@
 
 /* Tab Content - Giảm padding để tránh scroll */
 .tab-content {
-  padding: 10px 0 10px 0;
+  padding: 10px 0 0 0;
 }
 
 .tab-description {
@@ -104,7 +104,6 @@
   text-align: center;
 }
 
-/* Profile Form Card - Giảm padding */
 .profile-form-card {
   width: 100%;
   border-radius: 16px;

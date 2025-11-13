@@ -14,6 +14,7 @@ import AccountSettings from "./pages/profile/AccountSettings";
 import DashboardRouter from "./pages/DashboardRouter";
 import NotificationList from "./pages/notification/NotificationList";
 import NotificationDetail from "./pages/notification/NotificationDetail";
+import ServiceTypes from "./pages/ServiceTypes";
 
 const App: React.FC = () => {
   return (
@@ -25,6 +26,8 @@ const App: React.FC = () => {
 
           {/* Public pages */}
           <Route path="/home" element={<Home />} />
+          <Route path="/info/services" element={<ServiceTypes />} />
+
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />
           <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword /></AuthRoute>} />

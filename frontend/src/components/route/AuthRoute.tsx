@@ -18,7 +18,7 @@ export const AuthRoute = ({
   // Public route: chỉ cho phép truy cập khi chưa login
   if (type === "public") {
     if (role) {
-      return <Navigate to={`/${role}`} replace />;
+      return <Navigate to={`/dashboard`} replace />;
     }
     return <>{children}</>;
   }

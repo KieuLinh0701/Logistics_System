@@ -50,9 +50,9 @@
 
 .shipping-services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 24px;
-  margin-bottom: 40px;
+  margin-bottom: 0px;
 }
 
 .shipping-service-card {
@@ -112,7 +112,7 @@
   justify-content: center;
   gap: 30px;
   margin-top: 40px;
-  padding-top: 30px;
+  padding-top: 40px;
   border-top: 1px solid #e8edff;
 }
 
@@ -154,7 +154,6 @@
   
   .shipping-service-card {
     padding: 28px 20px;
-    min-height: 160px;
   }
   
   .shipping-features {
@@ -171,7 +170,6 @@
   
   .shipping-service-card {
     padding: 24px 16px;
-    min-height: 140px;
   }
   
   .shipping-card-title {

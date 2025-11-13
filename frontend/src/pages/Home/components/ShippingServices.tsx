@@ -2,43 +2,21 @@ import React from "react";
 import { Card, Typography, Button } from "antd";
 import "./ShippingServices.css";
 import { CheckCircleOutlined, SafetyCertificateOutlined, StarOutlined } from "@ant-design/icons";
+import type { ServiceType } from "../../../types/serviceType";
 
 const { Title, Text } = Typography;
 
-export interface ShippingService {
-  id: string;
-  name: string;
-  description: string;
-}
-
 interface ShippingServicesProps {
-  services?: ShippingService[];
-  onViewAllDetails?: () => void;
+  services: ServiceType[];
+  onViewAllDetails: () => void;
 }
 
 const ShippingServices: React.FC<ShippingServicesProps> = ({ 
   services = [],
   onViewAllDetails 
 }) => {
-  const defaultServices: ShippingService[] = [
-    {
-      id: "standard",
-      name: "Giao Hàng Tiêu Chuẩn",
-      description: "Phù hợp cho hàng hóa thông thường, thời gian giao hàng linh hoạt",
-    },
-    {
-      id: "express", 
-      name: "Giao Hàng Nhanh",
-      description: "Ưu tiên xử lý, phù hợp cho hàng hóa cần giao gấp",
-    },
-    {
-      id: "flash",
-      name: "Giao Hàng Hỏa Tốc",
-      description: "Dịch vụ cao cấp nhất, cam kết thời gian giao hàng nhanh chóng",
-    }
-  ];
 
-  const serviceList = services.length > 0 ? services : defaultServices;
+  const serviceList = services;
 
   return (
     <div className="shipping-section">
@@ -74,7 +52,7 @@ const ShippingServices: React.FC<ShippingServicesProps> = ({
                 {service.name}
               </Title>
               <Text className="shipping-card-description">
-                {service.description}
+                Thời gian giao hàng từ {service.deliveryTime}
               </Text>
             </Card>
           ))}
