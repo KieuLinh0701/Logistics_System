@@ -16,7 +16,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Shipment.ShipmentStatus;
+import com.logistics.enums.ShipmentStatus;
 
 @Entity
 @Audited

@@ -7,8 +7,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Promotion.PromotionDiscountType;
-import com.logistics.enums.Promotion.PromotionStatus;
+import com.logistics.enums.PromotionDiscountType;
+import com.logistics.enums.PromotionStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

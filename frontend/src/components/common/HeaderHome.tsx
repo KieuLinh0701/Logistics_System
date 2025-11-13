@@ -77,7 +77,7 @@ const HeaderHome: React.FC = () => {
   ];
 
   const menuItems: MenuProps["items"] = [
-    { key: "/", label: <Link to="/">Trang chủ</Link> },
+    { key: "/home", label: <Link to="/home">Trang chủ</Link> },
     { key: "/info/services", label: <Link to="/info/services">Dịch vụ</Link> },
     {
       key: "tracking",

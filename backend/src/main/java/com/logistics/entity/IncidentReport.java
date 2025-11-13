@@ -8,9 +8,9 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.IncidentReport.IncidentPriority;
-import com.logistics.enums.IncidentReport.IncidentStatus;
-import com.logistics.enums.IncidentReport.IncidentType;
+import com.logistics.enums.IncidentPriority;
+import com.logistics.enums.IncidentStatus;
+import com.logistics.enums.IncidentType;
 
 import java.time.LocalDateTime;
 import java.util.List;

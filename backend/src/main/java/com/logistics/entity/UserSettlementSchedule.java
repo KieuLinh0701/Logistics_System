@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.Set;
 
-import com.logistics.enums.UserSettlementSchedule.WeekDay;
+import com.logistics.enums.WeekDay;
 
 @Entity
 @Table(name = "user_settlement_schedules")

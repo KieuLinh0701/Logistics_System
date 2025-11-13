@@ -17,7 +17,7 @@ import com.logistics.entity.Account;
 import com.logistics.entity.OTP;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
-import com.logistics.enums.OTP.OTPType;
+import com.logistics.enums.OTPType;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.OTPRepository;
 import com.logistics.repository.RoleRepository;

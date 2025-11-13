@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.OTP.OTPType;
+import com.logistics.enums.OTPType;
 
 @Entity
 @Table(name = "otps")

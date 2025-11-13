@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.logistics.dto.serviceType.ServiceTypeDto;
 import com.logistics.entity.ServiceType;
-import com.logistics.enums.ServiceType.ServiceTypeStatus;
+import com.logistics.enums.ServiceTypeStatus;
 import com.logistics.mapper.ServiceTypeMapper;
 import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.response.ApiResponse;

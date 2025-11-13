@@ -9,11 +9,11 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Order.OrderStatus;
-import com.logistics.enums.Order.OrderCreatorType;
-import com.logistics.enums.Order.OrderPayerType;
-import com.logistics.enums.Order.OrderPaymentStatus;
-import com.logistics.enums.Order.OrderPickupType;
+import com.logistics.enums.OrderStatus;
+import com.logistics.enums.OrderCreatorType;
+import com.logistics.enums.OrderPayerType;
+import com.logistics.enums.OrderPaymentStatus;
+import com.logistics.enums.OrderPickupType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

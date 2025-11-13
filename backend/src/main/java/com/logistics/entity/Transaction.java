@@ -11,10 +11,10 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Transaction.TransactionStatus;
-import com.logistics.enums.Transaction.TransactionMethod;
-import com.logistics.enums.Transaction.TransactionPurpose;
-import com.logistics.enums.Transaction.TransactionType;
+import com.logistics.enums.TransactionStatus;
+import com.logistics.enums.TransactionMethod;
+import com.logistics.enums.TransactionPurpose;
+import com.logistics.enums.TransactionType;
 
 @Entity
 @Audited

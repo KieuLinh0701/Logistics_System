@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.ShippingRequestAttachment.ShippingRequestAttachmentType;
+import com.logistics.enums.ShippingRequestAttachmentType;
 
 @Entity
 @Table(name = "shipping_request_attachments")

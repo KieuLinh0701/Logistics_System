@@ -9,8 +9,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Product.ProductStatus;
-import com.logistics.enums.Product.ProductType;
+import com.logistics.enums.ProductStatus;
+import com.logistics.enums.ProductType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
