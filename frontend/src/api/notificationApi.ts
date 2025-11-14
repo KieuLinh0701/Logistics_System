@@ -1,19 +1,20 @@
-import type { NotificationResponse } from "../types/notification";
+import type { NotificationResponse, NotificationSearchRequest } from "../types/notification";
+import type { ApiResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 
 const notificationApi = {
-  getNotifications: async (params?: { page?: number; limit?: number; search?: string; isRead?: boolean; }) => {
-    const res = await axiosClient.get<NotificationResponse>('/notifications', { params });
+  getNotifications: async (params?: NotificationSearchRequest) => {
+    const res = await axiosClient.get<ApiResponse<NotificationResponse>>('/notifications', { params });
     return res;
   },
 
   markAsRead: async (notificationId: number) => {
-    const res = await axiosClient.put<NotificationResponse>(`/notifications/${notificationId}/read`);
+    const res = await axiosClient.put<ApiResponse<NotificationResponse>>(`/notifications/${notificationId}/read`);
     return res;
   },
 
   markAllAsRead: async () => {
-    const res = await axiosClient.put<NotificationResponse>('/notifications/mark-all-read');
+    const res = await axiosClient.put<ApiResponse<NotificationResponse>>('/notifications/mark-all-read');
     return res;
   },
 };

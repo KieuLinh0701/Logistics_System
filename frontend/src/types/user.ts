@@ -20,9 +20,3 @@ export interface VerifyEmailUpdateOTPData {
   newEmail: string;
   otp: string;
 }
-
-export interface UserResponse<T> {
-  success: boolean;
-  message: string;
-  data: T | null;
-}

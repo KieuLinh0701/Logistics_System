@@ -16,6 +16,7 @@ import NotificationList from "./pages/notification/NotificationList";
 import NotificationDetail from "./pages/notification/NotificationDetail";
 import ServiceTypes from "./pages/info/ServiceTypes";
 import ShippingFee from "./pages/tracking/shippingFee/ShippingFee";
+import OfficeSearch from "./pages/tracking/officeSearch/OfficeSearch";
 
 const App: React.FC = () => {
   return (
@@ -33,6 +34,7 @@ const App: React.FC = () => {
 
           {/* Tra cứu */}
           <Route path="/tracking/shipping-fee" element={<ShippingFee />} />
+          <Route path="/tracking/office-search" element={<OfficeSearch />} />
 
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />

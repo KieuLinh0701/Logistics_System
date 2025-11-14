@@ -1,4 +1,4 @@
-package com.logistics.dto.notification;
+package com.logistics.dto;
 
 import java.time.LocalDateTime;
 
@@ -8,7 +8,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class NotificationDTO {
+public class NotificationDto {
     private Integer id;
     private String title;
     private String message;

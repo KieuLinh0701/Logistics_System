@@ -1,4 +1,4 @@
-package com.logistics.dto.serviceType;
+package com.logistics.dto;
 
 import java.time.LocalDateTime;
 
@@ -11,12 +11,11 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ServiceTypeDto {
+public class AddressDto {
     private Integer id;
-    private String name;
-    private String deliveryTime;
-    private String description;
-    private String status;
+    private String wardCode;
+    private String cityCode;
+    private String detail;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

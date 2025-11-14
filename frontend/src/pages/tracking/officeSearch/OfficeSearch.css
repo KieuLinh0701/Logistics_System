@@ -1,0 +1,602 @@
+/* Layout styles */
+.office-search-layout {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  min-height: 800px;
+}
+
+.office-search-left {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.office-search-right {
+  flex: 3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Vertical form layout */
+.office-search-form-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.office-search-form-vertical .ant-form-item {
+  margin-bottom: 0 !important;
+}
+
+/* Map styles */
+.office-map-card {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(28, 61, 144, 0.1) !important;
+  border-radius: 16px !important;
+  height: 870px;
+  display: flex;
+  flex-direction: column;
+}
+
+.office-map-title {
+  color: #1C3D90 !important;
+  margin-bottom: 0 !important;
+  text-align: center;
+  font-weight: 700 !important;
+  padding: 0px 20px 16px 20px;
+  font-size: 18px !important;
+  border-bottom: 1px solid #f0f4ff;
+}
+
+.office-map-container {
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+  flex: 1;
+  background: #f8faff;
+}
+
+.office-map-iframe {
+  width: 100%;
+  height: 750px;
+  border: none;
+}
+
+/* Office Service Card Styles */
+.office-service-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  border: 1px solid #e8edff;
+  border-radius: 12px;
+  padding: 0 !important;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.office-service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1C3D90, #4fc3f7, #2E5BBA);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.office-service-card:hover::before {
+  opacity: 1;
+}
+
+.office-service-card:hover {
+  border-color: #1C3D90;
+  box-shadow: 0 4px 16px rgba(28, 61, 144, 0.12);
+  transform: translateY(-2px);
+}
+
+.office-service-card-selected {
+  border-color: #1C3D90 !important;
+  box-shadow: 0 4px 20px rgba(28, 61, 144, 0.15) !important;
+  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%) !important;
+}
+
+.office-service-card-selected::before {
+  opacity: 1;
+}
+
+.office-service-content {
+  padding: 16px;
+}
+
+.office-service-header {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.office-service-name {
+  color: #1C3D90 !important;
+  margin: 0 !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.office-service-type {
+  font-size: 11px;
+  background: rgba(28, 61, 144, 0.1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  color: #1C3D90 !important;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.office-service-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.office-service-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.office-service-icon {
+  color: #666;
+  font-size: 12px;
+  margin-top: 2px;
+  min-width: 12px;
+}
+
+.office-service-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #555;
+}
+
+.office-service-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #f0f4ff;
+  gap: 8px;
+}
+
+.office-service-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.office-service-call-btn {
+  background: linear-gradient(135deg, #4CAF50, #45a049) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  height: auto !important;
+  font-size: 12px !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease !important;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.office-service-call-btn:hover {
+  background: linear-gradient(135deg, #45a049, #4CAF50) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3) !important;
+}
+
+/* Office cards scroll container */
+.office-cards-scroll-container {
+  height: 310px;
+  overflow-y: scroll; 
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+}
+
+.office-cards-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.office-cards-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Hide scrollbar but keep functionality */
+.office-cards-container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.office-cards-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Pagination styles */
+.office-pagination {
+  margin-top: 16px;
+  padding: 16px 0 0 0;
+  border-top: 1px solid #e8edff;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.office-pagination .ant-pagination {
+  display: flex;
+  align-items: center;
+}
+
+.office-pagination .ant-pagination-item {
+  border: 1px solid #e8edff;
+  border-radius: 6px;
+  margin: 0 2px;
+  transition: all 0.3s ease;
+  min-width: 32px;
+  height: 32px;
+}
+
+.office-pagination .ant-pagination-item a {
+  color: #666;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  font-size: 13px;
+  line-height: 30px;
+}
+
+.office-pagination .ant-pagination-item:hover {
+  border-color: #1C3D90;
+}
+
+.office-pagination .ant-pagination-item:hover a {
+  color: #1C3D90;
+}
+
+.office-pagination .ant-pagination-item-active {
+  border-color: #1C3D90;
+  background: linear-gradient(135deg, #1C3D90, #2E5BBA);
+}
+
+.office-pagination .ant-pagination-item-active a {
+  color: white;
+}
+
+.office-pagination .ant-pagination-prev,
+.office-pagination .ant-pagination-next {
+  border-radius: 6px;
+  border: 1px solid #e8edff;
+  min-width: 32px;
+  height: 32px;
+  transition: all 0.3s ease;
+}
+
+.office-pagination .ant-pagination-prev:hover,
+.office-pagination .ant-pagination-next:hover {
+  border-color: #1C3D90;
+}
+
+.office-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
+.office-pagination .ant-pagination-next:hover .ant-pagination-item-link {
+  color: #1C3D90;
+}
+
+.office-pagination .ant-pagination-jump-prev,
+.office-pagination .ant-pagination-jump-next {
+  color: #666;
+}
+
+.office-pagination .ant-pagination-total-text {
+  color: #666;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Original styles remain the same */
+.office-search-page {
+  width: 100%;
+  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+  padding: 0 0 60px 0;
+}
+
+.office-search-hero {
+  position: relative;
+  height: 50vh;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+}
+
+.office-search-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+}
+
+.office-search-hero-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.office-search-hero-title {
+  color: white !important;
+  font-size: 3rem !important;
+  margin-bottom: 1.5rem !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.office-search-hero-subtitle {
+  color: white;
+  font-size: 1.3rem;
+  margin-bottom: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1.6;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.office-search-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 60px;
+  padding: 0 20px;
+}
+
+.office-search-section {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 40px rgba(28, 61, 144, 0.08);
+  border: 1px solid #e8edff;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.office-search-title {
+  text-align: center;
+  margin-bottom: 0px !important;
+  font-weight: 700;
+  color: #1C3D90 !important;
+  font-size: 1.8rem !important;
+  flex-shrink: 0;
+}
+
+.office-search-card {
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  background: transparent !important;
+  flex-shrink: 0;
+}
+
+.office-search-form {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.office-search-form .ant-form-item {
+  margin-bottom: 0 !important;
+}
+
+.office-search-form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+  color: #333;
+  font-size: 13px;
+}
+
+.office-search-form .ant-select .ant-select-selector {
+  background-color: #f5f7fb !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  transition: all 0.3s ease !important;
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+}
+
+.office-search-form .ant-select:hover .ant-select-selector {
+  background-color: #e8ecf1 !important;
+  border-color: #1C3D90 !important;
+}
+
+.office-search-form .ant-select-focused .ant-select-selector {
+  background-color: #fff !important;
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 3px rgba(28, 61, 144, 0.1) !important;
+}
+
+.office-search-form .ant-input-affix-wrapper {
+  background-color: #f5f7fb !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  transition: all 0.3s ease !important;
+  height: 44px !important;
+  font-size: 14px !important;
+  padding: 0 12px !important;
+}
+
+.office-search-form .ant-input-affix-wrapper:hover {
+  background-color: #e8ecf1 !important;
+  border-color: #1C3D90 !important;
+}
+
+.office-search-form .ant-input-affix-wrapper-focused {
+  background-color: #fff !important;
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 3px rgba(28, 61, 144, 0.1) !important;
+}
+
+.office-search-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #1C3D90, #2E5BBA) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  font-size: 14px !important;
+  padding: 12px !important;
+  height: auto !important;
+  color: white !important;
+  margin-top: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.office-search-btn:hover {
+  background: linear-gradient(135deg, #2E5BBA, #3A6CD6) !important;
+  box-shadow: 0 4px 15px rgba(28, 61, 144, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.office-search-loading {
+  text-align: center;
+  padding: 40px;
+  flex-shrink: 0;
+}
+
+.office-search-loading-text {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.office-search-results {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.office-search-results-title {
+  color: #1C3D90 !important;
+  margin-bottom: 16px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .office-search-layout {
+    flex-direction: column;
+    gap: 20px;
+    height: auto;
+  }
+  
+  .office-search-right {
+    width: 100%;
+    height: 500px;
+  }
+  
+  .office-map-container {
+    min-height: 450px;
+  }
+  
+  .office-cards-container {
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .office-search-form-vertical {
+    gap: 12px;
+  }
+  
+  .office-service-footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  
+  .office-service-call-btn {
+    align-self: stretch;
+    justify-content: center;
+  }
+  
+  .office-search-section {
+    padding: 20px;
+    height: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .office-search-layout {
+    gap: 16px;
+  }
+  
+  .office-map-container {
+    min-height: 350px;
+  }
+  
+  .office-service-content {
+    padding: 12px;
+  }
+  
+  .office-service-name {
+    font-size: 14px !important;
+  }
+  
+  .office-service-text {
+    font-size: 12px;
+  }
+  
+  .office-pagination {
+    margin-top: 12px;
+    padding: 12px 0 0 0;
+  }
+  
+  .office-pagination .ant-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .office-pagination .ant-pagination-total-text {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  
+  .office-search-section {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .office-search-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 20px !important;
+  }
+}

@@ -1,9 +1,10 @@
-import type { AuthResponse, ForgotPasswordResetData, ForgotPasswordEmailData, LoginData, RegisterData, VerifyRegisterOtpData, VerifyResetOTPData, TokenResponse } from "../types/auth";
+import type {ForgotPasswordResetData, ForgotPasswordEmailData, LoginData, RegisterData, VerifyRegisterOtpData, VerifyResetOTPData, TokenResponse } from "../types/auth";
+import type { ApiResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 
 const authApi = {
-  async login(data: LoginData): Promise<AuthResponse<TokenResponse>> {
-    const res = await axiosClient.post<AuthResponse<TokenResponse>>("/auth/login", data);
+  async login(data: LoginData): Promise<ApiResponse<TokenResponse>> {
+    const res = await axiosClient.post<ApiResponse<TokenResponse>>("/auth/login", data);
 
     if (res.success && res.data) {
       const token = res.data.token;
@@ -15,12 +16,12 @@ const authApi = {
     return res;
   },
 
-  register(data: RegisterData): Promise<AuthResponse<null>> {
-    return axiosClient.post<AuthResponse<null>>("/auth/register", data);
+  register(data: RegisterData): Promise<ApiResponse<null>> {
+    return axiosClient.post<ApiResponse<null>>("/auth/register", data);
   },
 
-  async verifyAndRegisterUser(data: VerifyRegisterOtpData): Promise<AuthResponse<TokenResponse>> {
-    const res = await axiosClient.post<AuthResponse<TokenResponse>>("/auth/register/verify-otp", data);
+  async verifyAndRegisterUser(data: VerifyRegisterOtpData): Promise<ApiResponse<TokenResponse>> {
+    const res = await axiosClient.post<ApiResponse<TokenResponse>>("/auth/register/verify-otp", data);
 
     if (res.success && res.data) {
       const token = res.data.token;
@@ -37,16 +38,16 @@ const authApi = {
     sessionStorage.removeItem("user");
   },
 
-  forgotPasswordEmail(data: ForgotPasswordEmailData): Promise<AuthResponse<null>> {
-    return axiosClient.post<AuthResponse<null>>("/auth/password/forgot", data);
+  forgotPasswordEmail(data: ForgotPasswordEmailData): Promise<ApiResponse<null>> {
+    return axiosClient.post<ApiResponse<null>>("/auth/password/forgot", data);
   },
 
-  forgotPasswordReset(data: ForgotPasswordResetData): Promise<AuthResponse<null>> {
-    return axiosClient.post<AuthResponse<null>>("/auth/password/reset", data);
+  forgotPasswordReset(data: ForgotPasswordResetData): Promise<ApiResponse<null>> {
+    return axiosClient.post<ApiResponse<null>>("/auth/password/reset", data);
   },
 
-  async verifyResetOtp(data: VerifyResetOTPData): Promise<AuthResponse<string>> {
-    const res = await axiosClient.post<AuthResponse<string>>("/auth/password/verify-otp", data);
+  async verifyResetOtp(data: VerifyResetOTPData): Promise<ApiResponse<string>> {
+    const res = await axiosClient.post<ApiResponse<string>>("/auth/password/verify-otp", data);
     return res;
   },
 };

@@ -1,4 +1,4 @@
-package com.logistics.dto.user;
+package com.logistics.request.user;
 
 import org.springframework.web.multipart.MultipartFile;
 

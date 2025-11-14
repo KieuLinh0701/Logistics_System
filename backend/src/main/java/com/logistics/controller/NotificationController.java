@@ -1,8 +1,12 @@
 package com.logistics.controller;
 
+import com.logistics.request.notification.NotificationSearchRequest;
+import com.logistics.response.ApiResponse;
 import com.logistics.response.NotificationResponse;
 import com.logistics.service.NotificationService;
 import com.logistics.utils.SecurityUtils;
+
+import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,48 +20,44 @@ public class NotificationController {
     private NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<NotificationResponse> getNotifications(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) Boolean isRead) {
+    public ResponseEntity<ApiResponse<NotificationResponse>> getNotifications(@Valid NotificationSearchRequest request) {
         Integer userId;
         try {
             userId = SecurityUtils.getAuthenticatedUserId();
         } catch (RuntimeException e) {
-            NotificationResponse response = new NotificationResponse(false, null, e.getMessage());
+            ApiResponse<NotificationResponse> response = new ApiResponse<>(false, e.getMessage(), null);
             return ResponseEntity.status(401).body(response);
         }
 
-        NotificationResponse result = notificationService.getNotifications(userId, page, limit, search, isRead);
+        ApiResponse<NotificationResponse> result = notificationService.getNotifications(userId, request);
         return ResponseEntity.ok(result);
     }
 
     @PutMapping("/{notificationId}/read")
-    public ResponseEntity<NotificationResponse> markAsRead(@PathVariable Integer notificationId) {
+    public ResponseEntity<ApiResponse<NotificationResponse>> markAsRead(@PathVariable Integer notificationId) {
         Integer userId;
         try {
             userId = SecurityUtils.getAuthenticatedUserId();
         } catch (RuntimeException e) {
-            NotificationResponse response = new NotificationResponse(false, null, e.getMessage());
+            ApiResponse<NotificationResponse> response = new ApiResponse<>(false, e.getMessage(), null);
             return ResponseEntity.status(401).body(response);
         }
 
-        NotificationResponse result = notificationService.markAsRead(userId, notificationId);
+        ApiResponse<NotificationResponse> result = notificationService.markAsRead(userId, notificationId);
         return ResponseEntity.ok(result);
     }
 
     @PutMapping("/mark-all-read")
-    public ResponseEntity<NotificationResponse> markAllAsRead() {
+    public ResponseEntity<ApiResponse<NotificationResponse>> markAllAsRead() {
         Integer userId;
         try {
             userId = SecurityUtils.getAuthenticatedUserId();
         } catch (RuntimeException e) {
-            NotificationResponse response = new NotificationResponse(false, null, e.getMessage());
+            ApiResponse<NotificationResponse> response = new ApiResponse<>(false, e.getMessage(), null);
             return ResponseEntity.status(401).body(response);
         }
 
-        NotificationResponse result = notificationService.markAllAsRead(userId);
+        ApiResponse<NotificationResponse> result = notificationService.markAllAsRead(userId);
         return ResponseEntity.ok(result);
     }
 

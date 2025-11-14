@@ -1,4 +1,4 @@
-package com.logistics.dto.user;
+package com.logistics.request.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdatePasswordRequest {
-    private String oldPassword;
-    private String newPassword;
+public class UpdateEmailRequest {
+    private String newEmail;
+    private String password;
 }

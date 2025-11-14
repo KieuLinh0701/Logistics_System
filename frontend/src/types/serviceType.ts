@@ -7,9 +7,3 @@ export interface ServiceType {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface ServiceTypeResponse<T> {
-  success: boolean;
-  message: string;
-  data: T | null;
-}

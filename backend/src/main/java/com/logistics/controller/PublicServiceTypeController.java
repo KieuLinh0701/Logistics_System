@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.logistics.dto.serviceType.ServiceTypeDto;
+import com.logistics.dto.ServiceTypeDto;
 import com.logistics.enums.ServiceTypeStatus;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.ServiceTypeService;

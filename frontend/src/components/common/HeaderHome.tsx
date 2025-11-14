@@ -34,22 +34,10 @@ const HeaderHome: React.FC = () => {
   const navigate = useNavigate();
 
   const user = getCurrentUser();
-  const role = getUserRole();
 
   const handleLogout = () => {
     authApi.logout();
     window.location.href = "/";
-  };
-
-  const getDashboardPath = (role: string) => {
-    switch (role) {
-      case "admin": return "/admin/dashboard";
-      case "manager": return "/manager/dashboard";
-      case "user": return "/user/dashboard";
-      case "driver": return "/driver/dashboard";
-      case "shipper": return "/shipper/dashboard";
-      default: return "/home";
-    }
   };
 
   const avatarMenu: MenuProps["items"] = [
@@ -61,7 +49,7 @@ const HeaderHome: React.FC = () => {
           Trang quản lý
         </span>
       ),
-      onClick: () => navigate(getDashboardPath(role!)),
+      onClick: () => navigate("/dashboard"),
     },
     { type: "divider" },
     {

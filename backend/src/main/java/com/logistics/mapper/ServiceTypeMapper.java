@@ -1,6 +1,6 @@
 package com.logistics.mapper;
 
-import com.logistics.dto.serviceType.ServiceTypeDto;
+import com.logistics.dto.ServiceTypeDto;
 import com.logistics.entity.ServiceType;
 
 public class ServiceTypeMapper {

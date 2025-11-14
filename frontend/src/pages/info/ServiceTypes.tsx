@@ -12,7 +12,7 @@ import {
     SyncOutlined
 } from "@ant-design/icons";
 import "./ServiceTypes.css";
-import servicesHeroImage from "../../assets/images/serviceTypes/serviceTypes.jpg";
+import servicesHeroImage from "../../assets/images/serviceTypes.jpg";
 import HeaderHome from "../../components/common/HeaderHome";
 import FooterHome from "../../components/common/FooterHome";
 import type { ServiceType } from "../../types/serviceType";

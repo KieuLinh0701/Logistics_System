@@ -77,15 +77,17 @@ const NotificationList: React.FC = () => {
     const handleClick = async (notification: Notification) => {
         if (!notification.isRead) {
             await notificationApi.markAsRead(notification.id);
-            setNotifications((prev) =>
-                prev.map((n) =>
-                    n.id === notification.id ? { ...n, isRead: true } : n
-                )
+
+            // Cập nhật trạng thái thông báo cục bộ
+            const updatedNotifications = notifications.map(n =>
+                n.id === notification.id ? { ...n, isRead: true } : n
             );
+            setNotifications(updatedNotifications);
+
+            // Đồng bộ sang Header
+            window.dispatchEvent(new CustomEvent('updateNotifications', { detail: updatedNotifications }));
         }
-        navigate(`/notifications/${notification.id}`, {
-            state: { notification },
-        });
+        navigate(`/notifications/${notification.id}`, { state: { notification } });
     };
 
     // THÊM HÀM ĐÁNH DẤU TẤT CẢ ĐÃ ĐỌC
@@ -93,10 +95,16 @@ const NotificationList: React.FC = () => {
         try {
             setLoading(true);
             await notificationApi.markAllAsRead();
+
+            // Cập nhật tất cả cục bộ
+            const updatedNotifications = notifications.map(n => ({ ...n, isRead: true }));
+            setNotifications(updatedNotifications);
+
+            // Đồng bộ sang Header
+            window.dispatchEvent(new CustomEvent('updateNotifications', { detail: updatedNotifications }));
+
             message.success("Đã đánh dấu tất cả thông báo là đã đọc");
-            fetchNotifications(page, searchTerm, showUnreadOnly);
         } catch (error) {
-            console.error("Error marking all as read:", error);
             message.error("Đánh dấu tất cả đã đọc thất bại");
         } finally {
             setLoading(false);
@@ -180,6 +188,7 @@ const NotificationList: React.FC = () => {
                     <Search
                         placeholder="Tìm kiếm theo tiêu đề hoặc nội dung..."
                         allowClear
+                        value={searchTerm}
                         onSearch={handleSearch}
                         onChange={(e) => handleSearch(e.target.value)}
                         size="large"
@@ -203,7 +212,11 @@ const NotificationList: React.FC = () => {
                     </Button>
 
                     <Button
-                        onClick={() => fetchNotifications(page, searchTerm, showUnreadOnly)}
+                        onClick={() => {
+                            setSearchTerm("");
+                            setShowUnreadOnly(false);
+                            fetchNotifications(1, "", false);
+                        }}
                         size="large"
                         className="refresh-button"
                         icon={<ReloadOutlined />}

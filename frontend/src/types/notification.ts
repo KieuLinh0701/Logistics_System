@@ -1,3 +1,5 @@
+import type { Pagination } from "./response";
+
 export interface Notification {
   id: number;
   title: string;
@@ -12,17 +14,15 @@ export interface Notification {
   creatorName?: string;
 }
 
+export interface NotificationSearchRequest {
+  page?: number; 
+  limit?: number; 
+  search?: string; 
+  isRead?: boolean; 
+}
+
 export interface NotificationResponse {
-  success: boolean;
-  data?: {
-    notifications: Notification[];
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
-    unreadCount: number;
-  };
-  message?: string;
+  notifications: Notification[];
+  pagination: Pagination;
+  unreadCount: number;
 }

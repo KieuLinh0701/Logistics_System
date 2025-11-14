@@ -4,12 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.logistics.dto.auth.ForgotPasswordEmailRequest;
-import com.logistics.dto.auth.LoginRequest;
-import com.logistics.dto.auth.RegisterRequest;
-import com.logistics.dto.auth.ForgotPasswordResetRequest;
-import com.logistics.dto.auth.VerifyRegisterOtpRequest;
-import com.logistics.dto.auth.VerifyResetOtpRequest;
+import com.logistics.request.auth.ForgotPasswordEmailRequest;
+import com.logistics.request.auth.ForgotPasswordResetRequest;
+import com.logistics.request.auth.LoginRequest;
+import com.logistics.request.auth.RegisterRequest;
+import com.logistics.request.auth.VerifyRegisterOtpRequest;
+import com.logistics.request.auth.VerifyResetOtpRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.AuthService;
 
@@ -94,102 +94,4 @@ public class AuthController {
 
         return ResponseEntity.ok(authService.forgotPasswordReset(request));
     }
-
-    // // 🟢 Get profile
-    // @GetMapping("/profile")
-    // public ResponseEntity<?> getProfile(@RequestAttribute("userId") Long userId)
-    // {
-    // return ResponseEntity.ok(authService.getUserProfile(userId));
-    // }
-
-    // // 🟢 Update profile
-    // @PutMapping("/profile")
-    // public ResponseEntity<?> updateProfile(@RequestAttribute("userId") Long
-    // userId,
-    // @RequestBody UpdateProfileRequest request) {
-    // return ResponseEntity.ok(authService.updateUserProfile(userId, request));
-    // }
-
-    // // 🟢 Update avatar
-    // @PostMapping("/avatar")
-    // public ResponseEntity<?> updateAvatar(@RequestAttribute("userId") Long
-    // userId,
-    // @RequestParam("file") MultipartFile file) {
-    // if (file.isEmpty()) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Không có file
-    // upload"));
-    // }
-
-    // return ResponseEntity.ok(authService.updateUserAvatar(userId, file));
-    // }
-
-    // // 🟢 Get assignable roles
-    // @GetMapping("/roles")
-    // public ResponseEntity<?> getAssignableRoles(@RequestAttribute("userId") Long
-    // userId) {
-    // return ResponseEntity.ok(authService.getAssignableRoles(userId));
-    // }
-
-    // // 🟢 Update password
-    // @PutMapping("/update-password")
-    // public ResponseEntity<?> updatePassword(@RequestAttribute("userId") Long
-    // userId,
-    // @RequestBody UpdatePasswordRequest request) {
-    // if (request.getCurrentPassword() == null || request.getNewPassword() == null
-    // || request.getConfirmPassword() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng điền
-    // đầy đủ thông tin"));
-    // }
-
-    // if (request.getNewPassword().length() < 6) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Mật khẩu phải
-    // có ít nhất 6 ký tự"));
-    // }
-
-    // if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Mật khẩu mới
-    // và xác nhận không khớp"));
-    // }
-
-    // return ResponseEntity.ok(authService.updatePassword(userId, request));
-    // }
-
-    // // 🟢 Send OTP for updating email
-    // @PostMapping("/send-email-otp")
-    // public ResponseEntity<?> sendEmailOtpUpdateEmail(@RequestBody EmailRequest
-    // request) {
-    // if (request.getEmail() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng nhập
-    // email"));
-    // }
-
-    // return
-    // ResponseEntity.ok(authService.sendEmailOtpUpdateEmail(request.getEmail()));
-    // }
-
-    // // 🟢 Verify email OTP
-    // @PostMapping("/verify-email-otp")
-    // public ResponseEntity<?> verifyEmailOtp(@RequestBody VerifyEmailOtpRequest
-    // request) {
-    // if (request.getEmail() == null || request.getOtp() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng nhập
-    // email và mã OTP"));
-    // }
-
-    // return ResponseEntity.ok(authService.verifyEmailOtp(request.getEmail(),
-    // request.getOtp()));
-    // }
-
-    // // 🟢 Update email
-    // @PutMapping("/update-email")
-    // public ResponseEntity<?> updateEmail(@RequestAttribute("userId") Long userId,
-    // @RequestBody EmailRequest request) {
-    // if (request.getEmail() == null) {
-    // return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng nhập
-    // email mới"));
-    // }
-
-    // return ResponseEntity.ok(authService.updateEmail(userId,
-    // request.getEmail()));
-    // }
 }

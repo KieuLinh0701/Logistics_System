@@ -5,9 +5,3 @@ export interface Address {
   detail: string;
   createdAt: Date;
 }
-
-export interface AddressResponse<T> {
-  success: boolean;
-  message: string;
-  data: T | null;
-}

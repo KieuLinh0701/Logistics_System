@@ -1,4 +1,4 @@
-package com.logistics.dto.auth;
+package com.logistics.request.auth;
 
 import lombok.Getter;
 import lombok.Setter;

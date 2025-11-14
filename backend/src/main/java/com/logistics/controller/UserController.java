@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.logistics.dto.user.UpdateEmailRequest;
-import com.logistics.dto.user.UpdatePasswordRequest;
-import com.logistics.dto.user.UpdateProfileRequest;
-import com.logistics.dto.user.VerifyEmailUpdateOTPRequest;
+import com.logistics.request.user.UpdateEmailRequest;
+import com.logistics.request.user.UpdatePasswordRequest;
+import com.logistics.request.user.UpdateProfileRequest;
+import com.logistics.request.user.VerifyEmailUpdateOTPRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.UserService;
 import com.logistics.utils.SecurityUtils;

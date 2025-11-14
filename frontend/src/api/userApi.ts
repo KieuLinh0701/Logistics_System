@@ -1,19 +1,19 @@
 import type { TokenResponse } from "../types/auth";
+import type { ApiResponse } from "../types/response";
 import type { UpadteEmailData, UpadtePasswordData, VerifyEmailUpdateOTPData } from "../types/user";
-import type { UserResponse } from "../types/user";
 import axiosClient from "./axiosClient";
 
 const userApi = {
-  updatePassword(data: UpadtePasswordData): Promise<UserResponse<null>> {
-    return axiosClient.post<UserResponse<null>>("/user/password/update", data);
+  updatePassword(data: UpadtePasswordData): Promise<ApiResponse<null>> {
+    return axiosClient.post<ApiResponse<null>>("/user/password/update", data);
   },
 
-  sendEmailUpdateOTP(data: UpadteEmailData): Promise<UserResponse<null>> {
-    return axiosClient.post<UserResponse<null>>("/user/email/update", data);
+  sendEmailUpdateOTP(data: UpadteEmailData): Promise<ApiResponse<null>> {
+    return axiosClient.post<ApiResponse<null>>("/user/email/update", data);
   },
 
-  async verifyEmailUpdateOTP(data: VerifyEmailUpdateOTPData): Promise<UserResponse<TokenResponse>> {
-    const res = await axiosClient.post<UserResponse<TokenResponse>>("/user/email/verify-otp", data);
+  async verifyEmailUpdateOTP(data: VerifyEmailUpdateOTPData): Promise<ApiResponse<TokenResponse>> {
+    const res = await axiosClient.post<ApiResponse<TokenResponse>>("/user/email/verify-otp", data);
 
     if (res.success && res.data) {
       const token = res.data.token;
@@ -25,8 +25,8 @@ const userApi = {
     return res;
   },
 
-  async updateProfile(data: FormData): Promise<UserResponse<string>> {
-    return axiosClient.put<UserResponse<string>>("/user/profile/update", data);
+  async updateProfile(data: FormData): Promise<ApiResponse<string>> {
+    return axiosClient.put<ApiResponse<string>>("/user/profile/update", data);
   },
 };
 

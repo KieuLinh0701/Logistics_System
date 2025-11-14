@@ -1,12 +1,16 @@
 package com.logistics.service;
 
-import com.logistics.dto.notification.NotificationDTO;
+import com.logistics.dto.NotificationDto;
 import com.logistics.entity.Notification;
 import com.logistics.entity.User;
+import com.logistics.mapper.NotificationMapper;
 import com.logistics.repository.NotificationRepository;
 import com.logistics.repository.UserRepository;
+import com.logistics.request.notification.NotificationSearchRequest;
+import com.logistics.response.ApiResponse;
 import com.logistics.response.NotificationResponse;
 import com.logistics.response.Pagination;
+import com.logistics.specification.NotificationSpecification;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,25 +53,14 @@ public class NotificationService {
 
         User creator = null;
         if (creatorId != null) {
-            creator = userRepository.findById(creatorId).orElse(null); 
+            creator = userRepository.findById(creatorId).orElse(null);
         }
         notification.setCreator(creator);
 
         notificationRepository.save(notification);
 
-        NotificationDTO dto = new NotificationDTO(
-                notification.getId(),
-                notification.getTitle(),
-                notification.getMessage(),
-                notification.getType(),
-                notification.getIsRead(),
-                notification.getRelatedId(),
-                notification.getRelatedType(),
-                notification.getCreatedAt(),
-                notification.getUpdatedAt(),
-                notification.getCreator() != null ? notification.getCreator().getFullName() : null);
+        NotificationDto dto = NotificationMapper.toDto(notification);
 
-        // gửi notification riêng cho user
         messagingTemplate.convertAndSendToUser(
                 user.getId().toString(),
                 "/queue/notifications",
@@ -73,58 +68,72 @@ public class NotificationService {
     }
 
     @Transactional
-    public NotificationResponse getNotifications(Integer userId, int page, int limit, String search, Boolean isRead) {
+    public ApiResponse<NotificationResponse> getNotifications(Integer userId, NotificationSearchRequest request) {
         try {
-            Pageable pageable = PageRequest.of(page - 1, limit);
+            int page = request.getPage();
+            int limit = request.getLimit();
+            String search = request.getSearch();
+            Boolean isRead = request.getIsRead();
 
-            String searchValue = (search != null && !search.isBlank()) ? search : null;
+            System.out.println("Is Read" + isRead);
+            
+            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
 
-            Page<NotificationDTO> notificationPage = notificationRepository
-                    .findAllByUserIdAndFilters(userId, isRead, searchValue, pageable);
+            Specification<Notification> spec = NotificationSpecification.unrestrictedNotification()
+                    .and(NotificationSpecification.userId(userId))
+                    .and(NotificationSpecification.isRead(isRead))
+                    .and(NotificationSpecification.search(search))
+                    .and(NotificationSpecification.fetchCreator());
 
-            List<NotificationDTO> notifications = notificationPage.getContent();
-            int total = (int) notificationPage.getTotalElements();
+            Page<Notification> pageData = notificationRepository.findAll(spec, pageable);
+
+            List<NotificationDto> notifications = pageData.getContent()
+                    .stream()
+                    .map(NotificationMapper::toDto)
+                    .toList();
+
+            int total = (int) pageData.getTotalElements();
             int unreadCount = notificationRepository.countUnreadByUserId(userId);
 
-            Pagination pagination = new Pagination(total, page, limit, notificationPage.getTotalPages());
+            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-            NotificationResponse.NotificationData data = new NotificationResponse.NotificationData();
+            NotificationResponse data = new NotificationResponse();
             data.setNotifications(notifications);
             data.setPagination(pagination);
             data.setUnreadCount(unreadCount);
 
-            return new NotificationResponse(true, data, null);
+            return new ApiResponse<>(true, "Lấy danh sách thông báo thành công", data);
 
         } catch (Exception e) {
-            return new NotificationResponse(false, null, "Lỗi khi lấy danh sách thông báo: " + e.getMessage());
+            return new ApiResponse<>(false, "Lỗi khi lấy danh sách thông báo: " + e.getMessage(), null);
         }
     }
 
     @Transactional
-    public NotificationResponse markAsRead(Integer userId, Integer notificationId) {
+    public ApiResponse<NotificationResponse> markAsRead(Integer userId, Integer notificationId) {
         try {
             Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId);
             if (notification == null) {
-                return new NotificationResponse(false, null, "Không tìm thấy thông báo");
+                return new ApiResponse<>(false, "Không tìm thấy thông báo", null);
             }
 
             notification.setIsRead(true);
             notificationRepository.save(notification);
 
-            return new NotificationResponse(true, null, "Đã đánh dấu thông báo đã đọc");
+            return new ApiResponse<>(true, "Đã đánh dấu thông báo đã đọc", null);
 
         } catch (Exception e) {
-            return new NotificationResponse(false, null, "Lỗi khi đánh dấu thông báo đã đọc: " + e.getMessage());
+            return new ApiResponse<>(false, "Lỗi khi đánh dấu thông báo đã đọc: " + e.getMessage(), null);
         }
     }
 
     @Transactional
-    public NotificationResponse markAllAsRead(Integer userId) {
+    public ApiResponse<NotificationResponse> markAllAsRead(Integer userId) {
         try {
             notificationRepository.markAllAsReadByUserId(userId);
-            return new NotificationResponse(true, null, "Đã đánh dấu tất cả thông báo đã đọc");
+            return new ApiResponse<>(true, "Đã đánh dấu tất cả thông báo đã đọc", null);
         } catch (Exception e) {
-            return new NotificationResponse(false, null, "Lỗi khi đánh dấu tất cả thông báo đã đọc: " + e.getMessage());
+            return new ApiResponse<>(false, "Lỗi khi đánh dấu tất cả thông báo đã đọc: " + e.getMessage(), null);
         }
     }
 }

@@ -55,9 +55,3 @@ export interface TokenResponse {
   token: string;
   user: User;
 }
-
-export interface AuthResponse<T> {
-  success: boolean;
-  message: string;
-  data: T | null;
-}

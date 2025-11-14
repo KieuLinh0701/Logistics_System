@@ -38,6 +38,7 @@ const { Text, Title } = Typography;
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(getCurrentUser());
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,11 +58,24 @@ const Header: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleNotificationUpdate = (e: any) => {
+      setNotifications(e.detail);
+    };
+
+    window.addEventListener('updateNotifications', handleNotificationUpdate);
+
+    return () => {
+      window.removeEventListener('updateNotifications', handleNotificationUpdate);
+    };
+  }, []);
+
   const fetchNotifications = async () => {
     try {
       const res = await notificationApi.getNotifications({ page: 1, limit: 7 });
       if (res.success && res.data) {
         setNotifications(res.data.notifications);
+        setUnreadCount(res.data.unreadCount);
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
@@ -91,8 +105,6 @@ const Header: React.FC = () => {
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays} ngày trước`;
   };
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -211,7 +223,7 @@ const Header: React.FC = () => {
         <Link to="/home" className="header-logo-link">
           <div className="logo-container">
             <img src={logo} alt="UTE Logistics" className="header-logo-image" />
-            <Title level={4} className="header-logo-text">
+            <Title level={3} className="header-logo-text">
               UTE Logistics
             </Title>
           </div>
