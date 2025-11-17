@@ -17,6 +17,11 @@ import NotificationDetail from "./pages/notification/NotificationDetail";
 import ServiceTypes from "./pages/info/ServiceTypes";
 import ShippingFee from "./pages/tracking/shippingFee/ShippingFee";
 
+import AdminUsers from "./pages/admin/Users";
+import AdminOrders from "./pages/admin/Orders";
+import AdminVehicles from "./pages/admin/Vehicles";
+import AdminPostOffices from "./pages/admin/PostOffices";
+
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={viVN}>
@@ -44,6 +49,12 @@ const App: React.FC = () => {
             <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
             <Route path="/notifications" element={<PrivateRoute><NotificationList /></PrivateRoute>} />
             <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail /></PrivateRoute>} />
+            
+            {/* Admin routes */}
+            <Route path="/users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
+            <Route path="/postoffices" element={<PrivateRoute><AdminPostOffices /></PrivateRoute>} />
+            <Route path="/orders" element={<PrivateRoute><AdminOrders /></PrivateRoute>} />
+            <Route path="/vehicles" element={<PrivateRoute><AdminVehicles /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

@@ -43,12 +43,14 @@ const HeaderHome: React.FC = () => {
 
   const getDashboardPath = (role: string) => {
     switch (role) {
-      case "admin": return "/admin/dashboard";
-      case "manager": return "/manager/dashboard";
-      case "user": return "/user/dashboard";
-      case "driver": return "/driver/dashboard";
-      case "shipper": return "/shipper/dashboard";
-      default: return "/home";
+      case "admin":
+      case "manager":
+      case "user":
+      case "driver":
+      case "shipper":
+        return "/dashboard";
+      default:
+        return "/home";
     }
   };
 
