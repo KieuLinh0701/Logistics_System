@@ -33,4 +33,28 @@ public class SecurityUtils {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         return principal.getAccount().getId();
     }
+
+    public static String getAuthenticatedUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new RuntimeException("Người dùng chưa đăng nhập");
+        }
+
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        if (principal.getAccount().getRole() != null) {
+            return principal.getAccount().getRole().getName();
+        }
+        return null;
+    }
+
+    public static boolean hasRole(String roleName) {
+        try {
+            String userRole = getAuthenticatedUserRole();
+            return roleName.equalsIgnoreCase(userRole);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
