@@ -63,11 +63,11 @@ const App: React.FC = () => {
             <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail /></PrivateRoute>} />
             
             {/* Admin routes */}
-            <Route path="/users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
-            <Route path="/postoffices" element={<PrivateRoute><AdminPostOffices /></PrivateRoute>} />
-            <Route path="/service-types" element={<PrivateRoute><AdminServiceTypes /></PrivateRoute>} />
-            <Route path="/orders" element={<PrivateRoute><AdminOrders /></PrivateRoute>} />
-            <Route path="/vehicles" element={<PrivateRoute><AdminVehicles /></PrivateRoute>} />
+            <Route path="/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsers /></PrivateRoute>} />
+            <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
+            <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
+            <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
+            <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin']}><AdminVehicles /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

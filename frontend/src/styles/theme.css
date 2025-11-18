@@ -18,7 +18,7 @@
     --bg-color-button-hero-hover: linear-gradient(135deg, var(--primary-lighter), var(--primary));
     --bg-color-card-before: linear-gradient(90deg, var(--primary), var(--middle), var(--primary-light));
     --bg-color-badge-promo: linear-gradient(135deg, var(--primary), var(--middle));
-    --bg-color-badge-discount: linear-gradient(135deg, var(--green-dark), var(--green));
+    --bg-color-badge-discount: var(--green);
     --bg-color-contact-info-item: linear-gradient(180deg, var(--primary), var(--middle));
     --bg-color-icon-green: var(--green);
 
@@ -64,7 +64,6 @@
     --primary-lighter: #2E5BBA;        /* even lighter blue */
 
     /* Accent colors */
-    --green-dark: #237804;
     --green: #52c41a;
     --green-light: #f6ffed;
 }
