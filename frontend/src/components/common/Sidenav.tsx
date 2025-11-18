@@ -69,9 +69,9 @@ const Sidenav: React.FC<Props> = () => {
         icon: <ShopOutlined />,
       },
       {
-        key: "/servicetypes",
+        key: "/service-types",
         label: "Loại dịch vụ",
-        path: "/servicetypes",
+        path: "/service-types",
         icon: <SettingOutlined />,
       },
       {
