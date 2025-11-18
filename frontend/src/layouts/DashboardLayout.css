@@ -1,10 +1,9 @@
-/* Dashboard Layout */
-.base-layout {
+.dashboard-layout {
   min-height: 100vh;
+  background: #f0f2f5;
 }
 
-/* Header */
-.base-header {
+.fixed-header {
   position: fixed;
   top: 0;
   left: 0;
@@ -16,25 +15,26 @@
   padding: 0;
 }
 
-/* Content Layout */
-.base-content-layout {
+.main-content-layout {
   padding: 8px;
   margin-top: 64px;
 }
 
-/* Sider */
-.base-sider {
+.sider {
   position: fixed;
   top: 72px;
   left: 8px;
-  height: calc(100vh - 80px); 
+  height: calc(100vh - 80px);
   background: #fff;
   border-radius: 6px;
   overflow: auto;
 }
 
-/* Sider Collapse Button */
-.sider-collapse-btn {
+.sidenav-container {
+  padding-bottom: 40px;
+}
+
+.toggle-button {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -43,89 +43,28 @@
   background: #fff;
   border-top: 1px solid #f0f0f0;
   border-radius: 0;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.sider-collapse-btn:hover {
-  background: #f5f5f5 !important;
-}
-
-/* Main Content */
-.base-main-content {
+.content-wrapper {
   background: #fff;
   padding: 8px;
   border-radius: 6px;
   flex: 1;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.base-main-content.expanded {
-  margin-left: 248px; 
+.content-wrapper.collapsed {
+  margin-left: 68px;
 }
 
-.base-main-content.collapsed {
-  margin-left: 68px; 
+.content-wrapper.expanded {
+  margin-left: 248px;
 }
 
-/* Content Area */
-.base-content {
+.content-area {
   background: #fff;
   padding: 8px;
   border-radius: 6px;
   flex: 1;
   overflow-y: auto;
-}
-
-/* Responsive Design */
-@media (max-width: 992px) {
-  .base-sider {
-    position: fixed;
-    top: 72px;
-    left: 8px;
-    z-index: 999;
-  }
-  
-  .base-main-content.expanded,
-  .base-main-content.collapsed {
-    margin-left: 8px;
-  }
-}
-
-@media (max-width: 768px) {
-  .base-content-layout {
-    padding: 4px;
-    margin-top: 64px;
-  }
-  
-  .base-sider {
-    top: 68px;
-    left: 4px;
-    height: calc(100vh - 72px); 
-  }
-  
-  .base-main-content {
-    padding: 4px;
-  }
-  
-  .base-content {
-    padding: 4px;
-  }
-}
-
-@media (max-width: 480px) {
-  .base-header {
-    height: 56px;
-  }
-  
-  .base-content-layout {
-    margin-top: 56px;
-  }
-  
-  .base-sider {
-    top: 60px; 
-    height: calc(100vh - 64px); 
-  }
 }
