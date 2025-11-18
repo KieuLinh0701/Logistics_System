@@ -1,11 +1,12 @@
-package com.logistics.dto.admin;
+package com.logistics.request.admin;
 
-import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 
+import lombok.Data;
+
 @Data
-public class CreateOfficeRequest {
+public class UpdateOfficeRequest {
     private String code;
     private String postalCode;
     private String name;
@@ -23,6 +24,7 @@ public class CreateOfficeRequest {
     private Integer cityCode;
     private String detailAddress;
 }
+
 
 
 

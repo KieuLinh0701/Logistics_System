@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, Descriptions, Drawer, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message, Typography } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import adminApi from "../../api/adminApi";
-import type { Order } from "../../api/adminApi";
+import orderApi from "../../api/orderApi";
+import type { AdminOrder } from "../../types/order";
 
 
 const { Title } = Typography;
@@ -10,7 +9,7 @@ const { Title } = Typography;
 type QueryState = { page: number; limit: number; search: string; status?: string };
 
 const statusOptions = [
-  { label: "Draft", value: "DRAFT" },
+  { label: "Bản nháp", value: "DRAFT" },
   { label: "Chờ xử lý", value: "PENDING" },
   { label: "Đã xác nhận", value: "CONFIRMED" },
   { label: "Đã lấy hàng", value: "PICKED_UP" },
@@ -21,18 +20,18 @@ const statusOptions = [
 
 const AdminOrders: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<Order[]>([]);
+  const [rows, setRows] = useState<AdminOrder[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState<QueryState>({ page: 1, limit: 10, search: "" });
   const [open, setOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await adminApi.listOrders({
+      const res = await orderApi.listAdminOrders({ 
         page: query.page,
         limit: query.limit,
         search: query.search,
@@ -53,13 +52,13 @@ const AdminOrders: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const onViewDetails = (record: Order) => {
+  const onViewDetails = (record: AdminOrder) => {
     setSelectedOrder(record);
     setOpen(true);
   };
 
   const onUpdateStatus = useCallback(
-    (record: Order) => {
+    (record: AdminOrder) => {
       setSelectedOrder(record);
       form.setFieldsValue({ status: record.status });
       setStatusModalOpen(true);
@@ -70,7 +69,7 @@ const AdminOrders: React.FC = () => {
   const onDelete = useCallback(
     async (id: number) => {
       try {
-        await adminApi.deleteOrder(id);
+      await orderApi.deleteAdminOrder(id);
         message.success("Đã xóa");
         fetchData();
       } catch (e: any) {
@@ -84,7 +83,7 @@ const AdminOrders: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (selectedOrder) {
-        await adminApi.updateOrderStatus(selectedOrder.id, values.status);
+        await orderApi.updateAdminOrderStatus(selectedOrder.id, values.status);
         message.success("Cập nhật trạng thái thành công");
         setStatusModalOpen(false);
         fetchData();
@@ -139,7 +138,7 @@ const AdminOrders: React.FC = () => {
       },
       {
         title: "Thao tác",
-        render: (_: any, record: Order) => (
+        render: (_: any, record: AdminOrder) => (
           <Space>
             <Button size="small" onClick={() => onViewDetails(record)}>
               Xem

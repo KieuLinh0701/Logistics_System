@@ -1,4 +1,4 @@
-package com.logistics.dto.admin;
+package com.logistics.request.admin;
 
 import lombok.Data;
 
@@ -6,6 +6,7 @@ import lombok.Data;
 public class UpdateOrderStatusRequest {
     private String status;
 }
+
 
 
 

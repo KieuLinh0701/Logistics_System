@@ -1,4 +1,4 @@
-package com.logistics.dto.admin;
+package com.logistics.request.admin;
 
 import lombok.Data;
 
@@ -11,6 +11,7 @@ public class UpdateUserRequest {
     private Integer roleId;
     private Boolean isActive;
 }
+
 
 
 

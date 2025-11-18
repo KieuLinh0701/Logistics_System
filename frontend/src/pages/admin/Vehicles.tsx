@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Descriptions, Drawer, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message, Statistic, Row, Col, Typography } from "antd";
-import adminApi from "../../api/adminApi";
-import type { Vehicle } from "../../api/adminApi";
+import { Button, Card, Descriptions, Drawer, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message, Typography } from "antd";
+import vehicleApi from "../../api/vehicleApi";
+import type { AdminVehicle } from "../../types/vehicle";
 
 const { Title } = Typography;
 
@@ -22,19 +22,19 @@ const statusOptions = [
 
 const AdminVehicles: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<Vehicle[]>([]);
+  const [rows, setRows] = useState<AdminVehicle[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState<QueryState>({ page: 1, limit: 10, search: "" });
   const [open, setOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<AdminVehicle | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [editingVehicle, setEditingVehicle] = useState<AdminVehicle | null>(null);
   const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await adminApi.listVehicles({
+      const res = await vehicleApi.listAdminVehicles({
         page: query.page,
         limit: query.limit,
         search: query.search,
@@ -54,13 +54,13 @@ const AdminVehicles: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const onViewDetails = (record: Vehicle) => {
+  const onViewDetails = (record: AdminVehicle) => {
     setSelectedVehicle(record);
     setOpen(true);
   };
 
   const onEdit = useCallback(
-    (record: Vehicle) => {
+    (record: AdminVehicle) => {
       setEditingVehicle(record);
       form.setFieldsValue({
         type: record.type,
@@ -83,7 +83,7 @@ const AdminVehicles: React.FC = () => {
   const onDelete = useCallback(
     async (id: number) => {
       try {
-        await adminApi.deleteVehicle(id);
+      await vehicleApi.deleteAdminVehicle(id);
         message.success("Đã xóa");
         fetchData();
       } catch (e: any) {
@@ -97,10 +97,10 @@ const AdminVehicles: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (editingVehicle) {
-        await adminApi.updateVehicle(editingVehicle.id, values);
+        await vehicleApi.updateAdminVehicle(editingVehicle.id, values);
         message.success("Cập nhật phương tiện thành công");
       } else {
-        await adminApi.createVehicle({
+        await vehicleApi.createAdminVehicle({
           licensePlate: values.licensePlate,
           type: values.type,
           capacity: values.capacity,
@@ -164,7 +164,7 @@ const AdminVehicles: React.FC = () => {
       {
         title: "Bưu cục",
         dataIndex: ["office", "name"],
-        render: (_: any, record: Vehicle) => record?.office?.name || "Chưa phân công",
+        render: (_: any, record: AdminVehicle) => record?.office?.name || "Chưa phân công",
       },
       {
         title: "Trạng thái",
@@ -173,7 +173,7 @@ const AdminVehicles: React.FC = () => {
       },
       {
         title: "Thao tác",
-        render: (_: any, record: Vehicle) => (
+        render: (_: any, record: AdminVehicle) => (
           <Space>
             <Button size="small" onClick={() => onViewDetails(record)}>
               Xem
