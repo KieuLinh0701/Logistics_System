@@ -1,0 +1,81 @@
+:root {
+    /* Background colors */
+    --bg-color-header-home: #ffffff;
+    --bg-color-header-footer: #E0E0E0;
+    --bg-color: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+    --bg-color-hero: rgba(0, 0, 0, 0.6);
+    --bg-color-card: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+    --bg-color-primary: linear-gradient(90deg, var(--primary), var(--primary-light));
+    --bg-color-icon: linear-gradient(135deg, var(--primary), var(--primary-lighter));
+    --bg-color-icon-hover: linear-gradient(135deg, var(--primary-light), var(--primary));
+    --bg-color-input: #f5f7fb;
+    --bg-color-input-hover: #e8ecf1;
+    --bg-color-input-focus: white;
+    --bg-color-button: white;
+    --bg-color-button-submit: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    --bg-color-button-card: linear-gradient(135deg, var(--primary), var(--primary-lighter));
+    --bg-color-button-hero: linear-gradient(135deg, var(--primary), var(--primary-lighter));
+    --bg-color-button-hero-hover: linear-gradient(135deg, var(--primary-lighter), var(--primary));
+    --bg-color-card-before: linear-gradient(90deg, var(--primary), var(--middle), var(--primary-light));
+    --bg-color-badge-promo: linear-gradient(135deg, var(--primary), var(--middle));
+    --bg-color-badge-discount: linear-gradient(135deg, var(--green-dark), var(--green));
+    --bg-color-contact-info-item: linear-gradient(180deg, var(--primary), var(--middle));
+    --bg-color-icon-green: var(--green);
+
+    /* Border colors */
+    --border-color-card: #e8edff;
+    --border-color-icon: #ffffff;
+    --border-color-button: #ffffff;
+
+    --divide-color: #e8edff;
+
+    /* Text colors */
+    --text-footer-copyright: #8c8c8c;
+    --text-color-dark: #111827;
+    --text-color-light: #ffffff;
+    --text-color-title: #ffffff;
+    --text-color-subtitle: #666666;
+    --text-color-subtitle-on-primary: rgba(255, 255, 255, 0.9);
+    --text-color-green: var(--green);
+    --text-color-hero-subtitle: #ffffff;
+    --text-color-hero-title: #ffffff;
+
+    /* Text shadows */
+    --text-shadow-title: rgba(0, 0, 0, 0.5);
+    --text-shadow-subtitle: rgba(0, 0, 0, 0.5);
+
+    /* Box shadows */
+    --box-shadow-button-card: rgba(26, 35, 126, 0.25);
+    --box-shadow-card: rgba(26, 35, 126, 0.15);
+    --box-shadow-icon: rgba(28, 61, 144, 0.3);
+    --box-shadow-icon-hover: rgba(28, 61, 144, 0.4);
+    --box-shadow-button: rgba(255, 255, 255, 0.3);
+    --box-shadow-button-hover: rgba(255, 255, 255, 0.2);
+    --box-shadow-input: rgba(28, 61, 144, 0.1);
+
+    /* Light backgrounds */
+    --color-light: #F0F0F0;
+    --bg-hover-color-light: #F5F5F5;
+
+    /* Primary colors */
+    --primary: #1a237e;                /* dark blue */
+    --middle: #4fc3f7;                 /* cyan gradient middle */
+    --primary-light: #283593;          /* lighter blue */
+    --primary-lighter: #2E5BBA;        /* even lighter blue */
+
+    /* Accent colors */
+    --green-dark: #237804;
+    --green: #52c41a;
+    --green-light: #f6ffed;
+}
+
+/* Dark mode overrides */
+.dark {
+    --bg-color: #1a1a1a;
+    --text-color: #eeeeee;
+    --input-bg: #2a2a2a;
+    --input-border: #444444;
+    --input-hover-border: #888888;
+    --input-focus-border: #1c3d90;
+    --input-focus-shadow: rgba(28, 61, 144, 0.2);
+}

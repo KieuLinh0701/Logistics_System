@@ -1,0 +1,507 @@
+.company-info-page {
+  width: 100%;
+  background: var(--bg-color);
+}
+
+/* Hero Section */
+.company-info-hero {
+  position: relative;
+  height: 50vh;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.company-info-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-color-hero);
+  display: flex;
+  align-items: center;
+}
+
+.company-info-hero-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.company-info-hero-title {
+  color: var(--text-color-light) !important;
+  font-size: 3rem !important;
+  margin-bottom: 1.5rem !important;
+  text-shadow: 2px 2px 4px var(--text-shadow-title);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.company-info-hero-subtitle {
+  color: var(--text-color-light);
+  font-size: 1.3rem;
+  margin-bottom: 0;
+  text-shadow: 1px 1px 2px var(--text-shadow-subtitle);
+  line-height: 1.6;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Main Container */
+.company-info-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 30px;
+}
+
+/* Header Section */
+.company-info-header {
+  text-align: center;
+  padding-bottom: 24px;
+}
+
+.company-info-header .ant-typography {
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+  font-size: 2.5rem !important;
+}
+
+/* Office Info Card */
+.company-info-office-card {
+  margin-bottom: 32px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 40px var(--box-shadow-card) !important;
+  border: 1px solid var(--border-color-card) !important;
+  overflow: hidden;
+  position: relative;
+  padding: 0 !important; /* Remove padding để map chiếm toàn bộ */
+}
+
+.company-info-office-content {
+  display: flex;
+  min-height: 400px;
+}
+
+.company-info-office-left {
+  flex: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.company-info-office-right {
+  flex: 1;
+  position: relative;
+}
+
+.company-info-office-title {
+  text-align: center;
+  margin-bottom: 32px !important;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+  font-size: 1.8rem !important;
+}
+
+/* Contact Info trong layout mới */
+.company-info-contact-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.company-info-contact-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
+  background: var(--bg-color-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color-card);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.company-info-contact-item:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--box-shadow-card);
+}
+
+.company-info-contact-icon {
+  font-size: 24px;
+  color: var(--primary);
+  margin-right: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.company-info-contact-text {
+  flex: 1;
+}
+
+.company-info-contact-label {
+  font-weight: 600;
+  color: var(--primary);
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.company-info-contact-value {
+  color: var(--text-color-subtitle);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Map Container */
+.company-info-map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.company-info-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 16px;
+  display: block;
+}
+
+.company-info-map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* Feature Cards */
+.company-info-feature-card {
+  text-align: center;
+  height: 100%;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px var(--box-shadow-card) !important;
+  border: 1px solid var(--border-color-card) !important;
+  background: var(--bg-color-card);
+  padding: 32px 24px !important;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.company-info-feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--bg-color-card-before);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.company-info-feature-card:hover::before {
+  opacity: 1;
+}
+
+.company-info-feature-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--primary) !important;
+  box-shadow: 0 12px 40px var(--box-shadow-card) !important;
+}
+
+.company-info-feature-icon {
+  font-size: 56px;
+  color: var(--primary);
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.company-info-feature-card:hover .company-info-feature-icon {
+  transform: scale(1.1);
+  color: var(--primary-lighter);
+}
+
+.company-info-feature-title {
+  color: var(--primary) !important;
+  margin-bottom: 16px !important;
+  font-weight: 700;
+  font-size: 1.4rem !important;
+}
+
+.company-info-feature-description {
+  color: var(--text-color-subtitle);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* Mission & Vision Card */
+.company-info-mission-card {
+  margin-top: 32px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 40px var(--box-shadow-card) !important;
+  border: 1px solid var(--border-color-card) !important;
+  overflow: hidden;
+  position: relative;
+  padding: 0 30px;
+}
+
+.company-info-mission-title {
+  text-align: center;
+  margin-bottom: 24px !important;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+  font-size: 1.8rem !important;
+}
+
+.company-info-mission-section {
+  padding: 20px 0;
+}
+
+.company-info-mission-subtitle {
+  color: var(--primary) !important;
+  margin-bottom: 16px !important;
+  font-weight: 600;
+  font-size: 1.3rem !important;
+  border-left: 4px solid var(--primary);
+  padding-left: 12px;
+}
+
+.company-info-mission-text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-color-subtitle);
+  margin: 0;
+}
+
+/* Values Card */
+.company-info-values-card {
+  margin-top: 32px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 40px var(--box-shadow-card) !important;
+  border: 1px solid var(--border-color-card) !important;
+  overflow: hidden;
+  position: relative;
+  padding: 0 30px 30px 30px;
+}
+
+.company-info-values-title {
+  text-align: center;
+  margin-bottom: 24px !important;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+  font-size: 1.8rem !important;
+}
+
+.company-info-value-item {
+  background: var(--bg-color-card);
+  border: 1px solid var(--border-color-card);
+  border-radius: 16px;
+  padding: 0px 24px 30px 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.company-info-value-item:hover::before {
+  opacity: 1;
+}
+
+.company-info-value-item:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 30px var(--box-shadow-card);
+}
+
+.company-info-value-title {
+  margin-bottom: 12px !important;
+  font-weight: 600;
+  font-size: 1.1rem !important;
+  color: var(--primary) !important;
+}
+
+.company-info-value-description {
+  color: var(--text-color-subtitle);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Loading */
+.company-info-loading {
+  text-align: center;
+  padding: 120px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.company-info-loading-text {
+  color: var(--text-color-subtitle);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .company-info-hero {
+    height: 40vh;
+    min-height: 300px;
+  }
+
+  .company-info-hero-title {
+    font-size: 2.2rem !important;
+  }
+  
+  .company-info-hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .company-info-container {
+    padding: 40px 16px;
+  }
+  
+  .company-info-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+  }
+  
+  .company-info-header .ant-typography {
+    font-size: 2rem !important;
+  }
+  
+  .company-info-office-content {
+    flex-direction: column;
+    min-height: auto;
+  }
+  
+  .company-info-office-left {
+    padding: 24px;
+    order: 2;
+  }
+  
+  .company-info-office-right {
+    order: 1;
+    min-height: 300px;
+  }
+  
+  .company-info-contact-item {
+    padding: 16px;
+  }
+  
+  .company-info-contact-icon {
+    font-size: 20px;
+    margin-right: 12px;
+  }
+  
+  .company-info-contact-value {
+    font-size: 14px;
+  }
+  
+  .company-info-feature-card {
+    padding: 24px 20px !important;
+  }
+  
+  .company-info-feature-icon {
+    font-size: 48px;
+  }
+  
+  .company-info-feature-title {
+    font-size: 1.2rem !important;
+  }
+  
+  .company-info-mission-title,
+  .company-info-values-title {
+    font-size: 1.6rem !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .company-info-mission-subtitle {
+    font-size: 1.2rem !important;
+  }
+  
+  .company-info-value-item {
+    padding: 16px 12px;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-info-container {
+    padding: 30px 12px;
+  }
+  
+  .company-info-header .ant-typography {
+    font-size: 1.8rem !important;
+  }
+  
+  .company-info-office-left {
+    padding: 20px;
+  }
+  
+  .company-info-contact-item {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px 12px;
+  }
+  
+  .company-info-contact-icon {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+  
+  .company-info-office-right {
+    min-height: 250px;
+  }
+  
+  .company-info-feature-card {
+    padding: 20px 16px !important;
+  }
+  
+  .company-info-feature-icon {
+    font-size: 40px;
+  }
+  
+  .company-info-feature-title {
+    font-size: 1.1rem !important;
+  }
+  
+  .company-info-mission-title,
+  .company-info-values-title {
+    font-size: 1.4rem !important;
+  }
+  
+  .company-info-mission-subtitle {
+    font-size: 1.1rem !important;
+  }
+  
+  .company-info-mission-text {
+    font-size: 14px;
+  }
+  
+  .company-info-loading {
+    padding: 80px 20px;
+  }
+  
+  .company-info-loading-text {
+    font-size: 16px;
+  }
+}

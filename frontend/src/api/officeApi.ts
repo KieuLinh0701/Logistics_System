@@ -7,6 +7,11 @@ const officeApi = {
     const res = await axiosClient.get<ApiResponse<Office[]>>('/public/offices/search', { params });
     return res;
   },
+
+  getHeadOffice: async () => {
+    const res = await axiosClient.get<ApiResponse<Office>>('/public/offices/head-office');
+    return res;
+  },
 };
 
 export default officeApi;

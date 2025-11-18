@@ -9,6 +9,7 @@ import ShippingServices from './components/ShippingServices';
 import { useNavigate } from 'react-router-dom';
 import type { ServiceType } from '../../types/serviceType';
 import serviceTypeApi from '../../api/serviceTypeApi';
+import "./Home.css";
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const HomePage: React.FC = () => {
       <HeroSection />
 
       <ShippingServices
+        loading={loading}
         services={serviceTypes}
         onViewAllDetails={handleViewAllDetail}
       />

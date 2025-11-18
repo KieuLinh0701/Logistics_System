@@ -388,7 +388,7 @@
 .office-search-title {
   text-align: center;
   margin-bottom: 0px !important;
-  font-weight: 700;
+  font-weight: 700 !important;
   color: #1C3D90 !important;
   font-size: 1.8rem !important;
   flex-shrink: 0;

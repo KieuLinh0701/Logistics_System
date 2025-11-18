@@ -6,18 +6,17 @@ import {
   FileSearchOutlined,
   ProfileOutlined,
 } from "@ant-design/icons";
-import "./TrackingService.css";
 
 const { Title, Text } = Typography;
 
 const TrackingServices: React.FC = () => {
   return (
-    <div className="tracking-section">
-      <div className="tracking-container">
+    <div className="home-section">
+      <div className="home-container">
         {/* Section Header */}
-        <div className="tracking-section-header">
+        <div className="home-section-header">
           <div>
-            <Title level={2} className="tracking-section-title">
+            <Title level={2} className="home-section-title">
               Tra Cứu & Tính Toán
             </Title>
             <Text style={{ color: '#666', fontSize: '1.1rem' }}>
@@ -27,21 +26,21 @@ const TrackingServices: React.FC = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="tracking-services-grid">
+        <div className="home-grid">
           {/* Cước phí */}
           <Card
             hoverable
-            className="tracking-service-card"
+            className="home-card"
             onClick={() => (window.location.href = "/tracking/shipping-fee")}
           >
-            <div className="tracking-card-icon-wrapper">
-              <DollarOutlined className="tracking-service-icon" />
+            <div className="home-card-icon-wrapper">
+              <DollarOutlined className="home-icon" />
             </div>
-            <Title level={4} className="tracking-card-title">Tính Cước Phí</Title>
-            <Text className="tracking-card-description">
+            <Title level={4} className="home-card-title">Tính Cước Phí</Title>
+            <Text className="home-card-description">
               Tính toán chi phí vận chuyển dựa trên khối lượng, kích thước và khoảng cách
             </Text>
-            <Button type="primary" className="tracking-service-btn">
+            <Button type="primary" className="home-card-btn">
               Tính Phí Ngay
             </Button>
           </Card>
@@ -49,17 +48,17 @@ const TrackingServices: React.FC = () => {
           {/* Bưu cục */}
           <Card
             hoverable
-            className="tracking-service-card"
+            className="home-card"
             onClick={() => (window.location.href = "/tracking/office-search")}
           >
-            <div className="tracking-card-icon-wrapper">
-              <EnvironmentOutlined className="tracking-service-icon" />
+            <div className="home-card-icon-wrapper">
+              <EnvironmentOutlined className="home-icon" />
             </div>
-            <Title level={4} className="tracking-card-title">Tìm Bưu Cục</Title>
-            <Text className="tracking-card-description">
+            <Title level={4} className="home-card-title">Tìm Bưu Cục</Title>
+            <Text className="home-card-description">
               Khám phá mạng lưới bưu cục rộng khắp với đầy đủ thông tin chi tiết và vị trí
             </Text>
-            <Button type="primary" className="tracking-service-btn">
+            <Button type="primary" className="home-card-btn">
               Tìm Kiếm
             </Button>
           </Card>
@@ -67,17 +66,17 @@ const TrackingServices: React.FC = () => {
           {/* Vận đơn */}
           <Card
             hoverable
-            className="tracking-service-card"
+            className="home-card"
             onClick={() => (window.location.href = "/tracking/order-tracking")}
           >
-            <div className="tracking-card-icon-wrapper">
-              <FileSearchOutlined className="tracking-service-icon" />
+            <div className="home-card-icon-wrapper">
+              <FileSearchOutlined className="home-icon" />
             </div>
-            <Title level={4} className="tracking-card-title">Tra Cứu Vận Đơn</Title>
-            <Text className="tracking-card-description">
+            <Title level={4} className="home-card-title">Tra Cứu Vận Đơn</Title>
+            <Text className="home-card-description">
               Theo dõi trạng thái và lịch trình giao hàng theo thời gian thực với mã vận đơn
             </Text>
-            <Button type="primary" className="tracking-service-btn">
+            <Button type="primary" className="home-card-btn">
               Tra Cứu Ngay
             </Button>
           </Card>
@@ -85,17 +84,17 @@ const TrackingServices: React.FC = () => {
           {/* Bảng giá */}
           <Card
             hoverable
-            className="tracking-service-card"
+            className="home-card"
             onClick={() => (window.location.href = "/info/shipping-rates")}
           >
-            <div className="tracking-card-icon-wrapper">
-              <ProfileOutlined className="tracking-service-icon" />
+            <div className="home-card-icon-wrapper">
+              <ProfileOutlined className="home-icon" />
             </div>
-            <Title level={4} className="tracking-card-title">Bảng Giá Dịch Vụ</Title>
-            <Text className="tracking-card-description">
+            <Title level={4} className="home-card-title">Bảng Giá Dịch Vụ</Title>
+            <Text className="home-card-description">
               Xem chi tiết bảng giá cạnh tranh cho tất cả các dịch vụ vận chuyển
             </Text>
-            <Button type="primary" className="tracking-service-btn">
+            <Button type="primary" className="home-card-btn">
               Xem Bảng Giá
             </Button>
           </Card>

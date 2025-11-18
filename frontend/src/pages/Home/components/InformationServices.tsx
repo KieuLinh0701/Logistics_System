@@ -1,18 +1,18 @@
 import React from "react";
 import { Card, Typography, Button } from "antd";
 import { InfoCircleOutlined, PhoneOutlined, GiftOutlined } from "@ant-design/icons";
-import "./InformationServices.css";
+// import "./InformationServices.css";
 
 const { Title, Text } = Typography;
 
 const InformationServices: React.FC = () => {
   return (
-    <div className="info-section">
-      <div className="info-container">
+    <div className="home-section">
+      <div className="home-container">
         {/* Section Header */}
-        <div className="info-section-header">
+        <div className="home-section-header">
           <div>
-            <Title level={2} className="info-section-title">
+            <Title level={2} className="home-section-title">
               Ưu Đãi & Hỗ Trợ
             </Title>
             <Text style={{ color: '#666', fontSize: '1.1rem' }}>
@@ -22,22 +22,22 @@ const InformationServices: React.FC = () => {
         </div>
 
         {/* Information Grid */}
-        <div className="info-services-grid">
+        <div className="home-grid">
           {/* Khuyến mãi */}
           <Card
             hoverable
-            className="info-card"
+            className="home-card"
             onClick={() => (window.location.href = "/promotions")}
           >
-            <div className="info-card-icon-wrapper">
-              <GiftOutlined className="info-icon" />
+            <div className="home-card-icon-wrapper">
+              <GiftOutlined className="home-icon" />
             </div>
-            <Title level={4} className="info-card-title">Khuyến Mãi</Title>
-            <Text className="info-card-description">
+            <Title level={4} className="home-card-title">Khuyến Mãi</Title>
+            <Text className="home-card-description">
               Khám phá các chương trình ưu đãi, giảm giá đặc biệt và quà tặng hấp dẫn
             </Text>
-            <div className="info-promo-badge">MỚI</div>
-            <Button type="primary" className="info-card-btn">
+            <div className="home-promo-badge">MỚI</div>
+            <Button type="primary" className="home-card-btn">
               Xem Ngay
             </Button>
           </Card>
@@ -45,17 +45,17 @@ const InformationServices: React.FC = () => {
           {/* Về chúng tôi */}
           <Card
             hoverable
-            className="info-card"
+            className="home-card"
             onClick={() => (window.location.href = "/info/company")}
           >
-            <div className="info-card-icon-wrapper">
-              <InfoCircleOutlined className="info-icon" />
+            <div className="home-card-icon-wrapper">
+              <InfoCircleOutlined className="home-icon" />
             </div>
-            <Title level={4} className="info-card-title">Về Chúng Tôi</Title>
-            <Text className="info-card-description">
+            <Title level={4} className="home-card-title">Về Chúng Tôi</Title>
+            <Text className="home-card-description">
               Tìm hiểu về hành trình phát triển và những giá trị cốt lõi của UTE Logistics
             </Text>
-            <Button type="primary" className="info-card-btn">
+            <Button type="primary" className="home-card-btn">
               Khám Phá
             </Button>
           </Card>
@@ -63,17 +63,17 @@ const InformationServices: React.FC = () => {
           {/* Liên hệ */}
           <Card
             hoverable
-            className="info-card"
+            className="home-card"
             onClick={() => (window.location.href = "/info/contact")}
           >
-            <div className="info-card-icon-wrapper">
-              <PhoneOutlined className="info-icon" />
+            <div className="home-card-icon-wrapper">
+              <PhoneOutlined className="home-icon" />
             </div>
-            <Title level={4} className="info-card-title">Liên Hệ</Title>
-            <Text className="info-card-description">
+            <Title level={4} className="home-card-title">Liên Hệ</Title>
+            <Text className="home-card-description">
               Kết nối với đội ngũ hỗ trợ 24/7 để được tư vấn và giải đáp mọi thắc mắc
             </Text>
-            <Button type="primary" className="info-card-btn">
+            <Button type="primary" className="home-card-btn">
               Liên Hệ Ngay
             </Button>
           </Card>

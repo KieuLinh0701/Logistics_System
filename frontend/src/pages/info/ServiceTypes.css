@@ -1,7 +1,7 @@
 /* ServiceTypes.css */
 .service-types-page {
   width: 100%;
-  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+  background: var(--bg-color);
   padding: 0 0 80px 0;
 }
 
@@ -20,7 +20,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--bg-color-hero);
   display: flex;
   align-items: center;
 }
@@ -34,19 +34,19 @@
 }
 
 .service-types-hero-title {
-  color: white !important;
+  color: var(--text-color-hero-title) !important;
   font-size: 3rem !important;
   margin-bottom: 1.5rem !important;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 4px var(--text-shadow-title);
   font-weight: 700 !important;
   line-height: 1.2;
 }
 
 .service-types-hero-subtitle {
-  color: white;
+  color: var(--text-color-hero-subtitle);
   font-size: 1.3rem;
   margin-bottom: 0;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 1px 1px 2pxvar(--text-shadow-subtitle);
   line-height: 1.6;
   max-width: 700px;
   margin-left: auto;
@@ -68,14 +68,14 @@
 }
 
 .section-title {
-  color: #1C3D90 !important;
+  color: var(--primary) !important;
   font-size: 2.2rem !important;
   margin-bottom: 1.5rem !important;
   font-weight: 700;
 }
 
 .section-subtitle {
-  color: #666;
+  color: var(--text-color-subtitle);
   font-size: 1.2rem;
   max-width: 600px;
   margin: 0 auto;
@@ -98,8 +98,8 @@
 }
 
 .service-card {
-  background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
-  border: 1px solid #e8edff;
+  background: var(--bg-color-card);
+  border: 1px solid var(--border-color-card);
   border-radius: 16px;
   padding: 40px 24px;
   transition: all 0.3s ease;
@@ -119,7 +119,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #1a237e, #4fc3f7, #283593);
+  background: var(--bg-color-primary);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -130,12 +130,12 @@
 
 .service-card:hover {
   transform: translateY(-4px);
-  border-color: #1a237e;
+  border-color: var(--primary);
   box-shadow: 0 8px 30px rgba(26, 35, 126, 0.15);
 }
 
 .service-name {
-  color: #1a237e !important;
+  color: var(--primary) !important;
   font-size: 1.5rem !important;
   font-weight: 700 !important;
   line-height: 1.3;
@@ -143,7 +143,7 @@
 }
 
 .service-description {
-  color: #666;
+  color: var(--text-color-subtitle);
   font-size: 0.95rem;
   line-height: 1.6;
   flex-grow: 1;
@@ -154,20 +154,19 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px;
-  background: #f8f9fa;
   border-radius: 8px;
   margin-top: auto;
 }
 
 .delivery-label {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-color-subtitle);
   font-weight: 500;
 }
 
 .delivery-time {
   font-size: 1.3rem;
-  color: #52c41a;
+  color: var(--text-color-green);
   font-weight: 700;
 }
 
@@ -184,8 +183,8 @@
 }
 
 .free-service-card {
-  background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
-  border: 1px solid #e8edff;
+  background: var(--bg-color-card);
+  border: 1px solid var(--border-color-card);
   border-radius: 16px;
   padding: 32px 24px;
   transition: all 0.3s ease;
@@ -202,16 +201,16 @@
 .free-service-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #1C3D90, #2E5BBA);
+  background: var(--bg-color-icon);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px auto;
   font-size: 28px;
-  color: white;
-  box-shadow: 0 6px 20px rgba(28, 61, 144, 0.3);
-  border: 3px solid white;
+  color: var(--text-color-light);
+  box-shadow: 0 6px 20px var(--box-shadow-icon);
+  border: 3px solid var(--border-color-icon);
 }
 
 .free-service-card::before {
@@ -221,7 +220,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #1a237e, #4fc3f7, #283593);
+  background: var(--bg-color-primary);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -232,19 +231,19 @@
 
 .free-service-card:hover {
   transform: translateY(-4px);
-  border-color: #1a237e;
+  border-color: var(--primary);
   box-shadow: 0 8px 30px rgba(26, 35, 126, 0.15);
 }
 
 .free-service-card .ant-card-meta-title {
-  color: #1C3D90 !important;
+  color: var(--primary) !important;
   font-size: 1.3rem !important;
   font-weight: 600 !important;
   margin-bottom: 12px !important;
 }
 
 .free-service-card .ant-card-meta-description {
-  color: #666 !important;
+  color: var(--text-color-subtitle) !important;
   font-size: 1rem !important;
   line-height: 1.6 !important;
 }
@@ -285,13 +284,13 @@
 
 .price-check-card {
   border-radius: 12px !important;
-  background: linear-gradient(135deg, #1C3D90, #2E5BBA) !important;
+  background: var(--bg-color-icon);
   border: none !important;
   padding: 10px 30px 20px 30px !important;
 }
 
 .price-check-title {
-  color: white !important;
+  color: var(--text-color-light) !important;
   font-size: 1.8rem !important;
   margin-bottom: 1.5rem !important;
   font-weight: 600;
@@ -309,8 +308,8 @@
 }
 
 .price-check-btn {
-  background: white !important;
-  color: #1C3D90 !important;
+  background: var(--bg-color-header-home) !important;
+  color: var(--primary) !important;
   border: none !important;
   border-radius: 8px !important;
   height: 50px !important;
@@ -322,7 +321,7 @@
 
 .price-check-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 4px 12px var(--box-shadow-button) !important;
 }
 
 /* Process Section */
@@ -341,7 +340,7 @@
   left: 50px;
   right: 50px;
   height: 2px;
-  background: linear-gradient(90deg, #1C3D90, #2E5BBA);
+  background: var(--bg-color-icon);
   z-index: 1;
 }
 
@@ -366,15 +365,15 @@
 .process-step-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #1C3D90, #2E5BBA);
+  background: var(--bg-color-icon);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20px;
   font-size: 32px;
-  color: white;
-  box-shadow: 0 6px 20px rgba(28, 61, 144, 0.3);
+  color: var(--text-color-light);
+  box-shadow: 0 6px 20px var(--box-shadow-icon);
   border: 4px solid white;
   position: relative;
   z-index: 3;
@@ -383,7 +382,7 @@
 
 .process-step-item:hover .process-step-icon {
   transform: scale(1.1);
-  box-shadow: 0 8px 25px rgba(28, 61, 144, 0.4);
+  box-shadow: 0 8px 25px var(--box-shadow-icon-hover);
 }
 
 .process-step-content {
@@ -391,7 +390,7 @@
 }
 
 .process-step-title {
-  color: #1C3D90 !important;
+  color: var(--primary) !important;
   font-size: 1rem !important;
   margin-bottom: 12px !important;
   font-weight: 600;
@@ -403,7 +402,7 @@
 }
 
 .process-step-description {
-  color: #666 !important;
+  color: var(--text-color-subtitle) !important;
   font-size: 0.9rem !important;
   line-height: 1.4 !important;
   margin-bottom: 0 !important;
@@ -419,7 +418,7 @@
 .no-services {
   text-align: center;
   padding: 40px;
-  color: #666;
+  color: var(--text-color-subtitle);
 }
 
 /* Responsive Design */

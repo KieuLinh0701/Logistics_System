@@ -17,6 +17,11 @@ import NotificationDetail from "./pages/notification/NotificationDetail";
 import ServiceTypes from "./pages/info/ServiceTypes";
 import ShippingFee from "./pages/tracking/shippingFee/ShippingFee";
 import OfficeSearch from "./pages/tracking/officeSearch/OfficeSearch";
+import ShippingRates from "./pages/tracking/shippingRate/ShippingRates";
+import "./styles/theme.css";
+import CompanyInfo from "./pages/info/CompanyInfo";
+import ContactForm from "./pages/info/ContactForm";
+import PromotionList from "./pages/info/PromotionList";
 
 const App: React.FC = () => {
   return (
@@ -31,10 +36,14 @@ const App: React.FC = () => {
 
           {/* Dịch vụ */}
           <Route path="/info/services" element={<ServiceTypes />} />
+          <Route path="/info/company" element={<CompanyInfo />} />
+          <Route path="/info/contact" element={<ContactForm />} />
+          <Route path="/info/promotions" element={<PromotionList />} />
 
           {/* Tra cứu */}
           <Route path="/tracking/shipping-fee" element={<ShippingFee />} />
           <Route path="/tracking/office-search" element={<OfficeSearch />} />
+          <Route path="/tracking/shipping-rates" element={<ShippingRates />} />
 
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />

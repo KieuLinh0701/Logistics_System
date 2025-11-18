@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Input, Typography, Button, Space } from "antd";
-import "./HeroSection.css";
 import heroImage from "../../../assets/images/home/h1_hero.jpg";
 
 const { Title, Paragraph } = Typography;
@@ -15,7 +14,7 @@ const HeroSection: React.FC = () => {
 
   return (
     <div
-      className="hero-section"
+      className="home-hero-section"
       style={{
         backgroundImage: `url(${heroImage})`,
         backgroundSize: "cover",
@@ -23,18 +22,18 @@ const HeroSection: React.FC = () => {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="hero-overlay">
-        <div className="hero-content">
-          <Title level={1} className="hero-title">
+      <div className="home-hero-overlay">
+        <div className="home-hero-content">
+          <Title level={1} className="home-hero-title">
             UTE Logistics
           </Title>
 
-          <Paragraph className="hero-subtitle">
+          <Paragraph className="home-hero-subtitle">
             Dịch vụ vận chuyển hàng hóa chuyên nghiệp, nhanh chóng và an toàn
           </Paragraph>
 
-          <div className="hero-actions">
-            <div className="search-container">
+          <div className="home-hero-actions">
+            <div className="home-search-container">
               <Space.Compact style={{ width: "100%", maxWidth: 400 }}>
                 <Input
                   placeholder="Nhập mã vận đơn để tra cứu..."

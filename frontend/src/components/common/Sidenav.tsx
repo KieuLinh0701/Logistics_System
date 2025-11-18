@@ -258,9 +258,9 @@ const Sidenav: React.FC<Props> = () => {
             path: "/tracking/office-search",
           },
           {
-            key: "/info/shipping-rates",
+            key: "/tracking/shipping-rates",
             label: "Bảng giá",
-            path: "/info/shipping-rates",
+            path: "/tracking/shipping-rates",
           },
         ],
       },

@@ -1,6 +1,10 @@
 package com.logistics.mapper;
 
+import java.util.List;
+
 import com.logistics.dto.ServiceTypeDto;
+import com.logistics.dto.ServiceTypeWithRateDto;
+import com.logistics.dto.ShippingRateDto;
 import com.logistics.entity.ServiceType;
 
 public class ServiceTypeMapper {
@@ -11,13 +15,29 @@ public class ServiceTypeMapper {
         }
 
         return new ServiceTypeDto(
-            entity.getId(),
-            entity.getName(),
-            entity.getDeliveryTime(),
-            entity.getDescription(),
-            entity.getStatus() != null ? entity.getStatus().name() : null,
-            entity.getCreatedAt(),
-            entity.getUpdatedAt()
-        );
+                entity.getId(),
+                entity.getName(),
+                entity.getDeliveryTime(),
+                entity.getDescription(),
+                entity.getStatus() != null ? entity.getStatus().name() : null,
+                entity.getCreatedAt(),
+                entity.getUpdatedAt());
+    }
+
+    public static ServiceTypeWithRateDto toDtoWithRate(ServiceType entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        List<ShippingRateDto> rateDtos = entity.getRates()
+                .stream()
+                .map(ShippingRateMapper::toDto)
+                .toList();
+
+        return new ServiceTypeWithRateDto(
+                entity.getId(),
+                entity.getName(),
+                entity.getDeliveryTime(),
+                rateDtos);
     }
 }

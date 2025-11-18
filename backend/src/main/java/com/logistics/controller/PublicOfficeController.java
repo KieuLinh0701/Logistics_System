@@ -28,4 +28,10 @@ public class PublicOfficeController {
         ApiResponse<List<OfficeDto>> result = service.searchOffices(request);
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/head-office")
+    public ResponseEntity<ApiResponse<OfficeDto>> getHeadOffice() {
+        ApiResponse<OfficeDto> result = service.getHeadOffice();
+        return ResponseEntity.ok(result);
+    }
 }

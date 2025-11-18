@@ -3,12 +3,16 @@ package com.logistics.specification;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.logistics.entity.Office;
-import com.logistics.enums.OfficeStatus;
 
 public class OfficeSpecification {
-    public static Specification<Office> active() {
+    public static Specification<Office> status(String status) {
         return (root, query, cb) ->
-            cb.equal(root.get("status"), OfficeStatus.ACTIVE);
+            cb.equal(root.get("status"), status);
+    }
+
+    public static Specification<Office> type(String type) {
+        return (root, query, cb) ->
+            cb.equal(root.get("type"), type);
     }
 
     public static Specification<Office> city(Integer cityCode) {

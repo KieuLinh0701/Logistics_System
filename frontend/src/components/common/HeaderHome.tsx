@@ -87,8 +87,8 @@ const HeaderHome: React.FC = () => {
           icon: <InboxOutlined />,
         },
         {
-          key: "/info/shipping-rates",
-          label: <Link to="/info/shipping-rates">Bảng giá</Link>,
+          key: "/tracking/shipping-rates",
+          label: <Link to="/tracking/shipping-rates">Bảng giá</Link>,
           icon: <BarChartOutlined />,
         },
       ],
