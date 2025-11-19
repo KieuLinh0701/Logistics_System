@@ -10,3 +10,8 @@ export interface Pagination {
   limit: number;
   totalPages: number;
 }
+
+export interface ListResponse<T> {
+  data: T[];
+  pagination: Pagination;
+}

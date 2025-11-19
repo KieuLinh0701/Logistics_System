@@ -1,16 +1,19 @@
-package com.logistics.dto.admin;
+package com.logistics.request.admin;
 
-import lombok.Data;
 import java.math.BigDecimal;
 
+import lombok.Data;
+
 @Data
-public class UpdateVehicleRequest {
+public class CreateVehicleRequest {
+    private String licensePlate;
     private String type;
     private BigDecimal capacity;
     private String status;
     private String description;
     private Integer officeId;
 }
+
 
 
 

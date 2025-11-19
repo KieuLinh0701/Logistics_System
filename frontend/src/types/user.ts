@@ -20,3 +20,18 @@ export interface VerifyEmailUpdateOTPData {
   newEmail: string;
   otp: string;
 }
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  role?: string;
+  roleId?: number;
+  isActive: boolean;
+  isVerified: boolean;
+  images?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -16,8 +16,8 @@ import {
   message,
   Typography,
 } from "antd";
-import adminApi from "../../api/adminApi";
-import type { CreateOfficePayload, Office } from "../../api/adminApi";
+import officeApi from "../../api/officeApi";
+import type { AdminOffice, CreateOfficePayload } from "../../types/office";
 
 
 const { Title } = Typography;
@@ -37,19 +37,19 @@ const officeStatusOptions = [
 
 const AdminPostOffices: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<Office[]>([]);
+  const [rows, setRows] = useState<AdminOffice[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState<QueryState>({ page: 1, limit: 10, search: "" });
   const [open, setOpen] = useState(false);
-  const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
+  const [selectedOffice, setSelectedOffice] = useState<AdminOffice | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingOffice, setEditingOffice] = useState<Office | null>(null);
+  const [editingOffice, setEditingOffice] = useState<AdminOffice | null>(null);
   const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await adminApi.listOffices({
+      const res = await officeApi.listAdminOffices({
         page: query.page,
         limit: query.limit,
         search: query.search,
@@ -69,7 +69,7 @@ const AdminPostOffices: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const onViewDetails = (record: Office) => {
+  const onViewDetails = (record: AdminOffice) => {
     setSelectedOffice(record);
     setOpen(true);
   };
@@ -80,7 +80,7 @@ const AdminPostOffices: React.FC = () => {
     setModalOpen(true);
   };
 
-  const onEdit = (record: Office) => {
+  const onEdit = (record: AdminOffice) => {
     setEditingOffice(record);
     form.setFieldsValue({
       code: record.code,
@@ -96,16 +96,16 @@ const AdminPostOffices: React.FC = () => {
       status: record.status,
       capacity: record.capacity,
       notes: record.notes,
-      wardCode: record.address?.wardCode,
-      cityCode: record.address?.cityCode,
-      detailAddress: record.address?.detail,
+      wardCode: record.wardCode,
+      cityCode: record.cityCode,
+      detailAddress: record.detail,
     });
     setModalOpen(true);
   };
 
   const onDelete = async (id: number) => {
     try {
-      await adminApi.deleteOffice(id);
+      await officeApi.deleteAdminOffice(id);
       message.success("Đã xóa");
       fetchData();
     } catch (e: any) {
@@ -139,10 +139,10 @@ const AdminPostOffices: React.FC = () => {
       const values = await form.validateFields();
       const payload = normalizePayload(values);
       if (editingOffice) {
-        await adminApi.updateOffice(editingOffice.id, payload);
+        await officeApi.updateAdminOffice(editingOffice.id, payload);
         message.success("Cập nhật bưu cục thành công");
       } else {
-        await adminApi.createOffice(payload);
+        await officeApi.createAdminOffice(payload);
         message.success("Thêm bưu cục thành công");
       }
       setModalOpen(false);
@@ -154,10 +154,13 @@ const AdminPostOffices: React.FC = () => {
     }
   };
 
-  const formatAddress = (office: Office) => {
-    if (!office.address) return "Chưa có";
-    const { detail, wardCode, cityCode } = office.address;
-    return `${detail || ""}${wardCode ? ` - Phường ${wardCode}` : ""}${cityCode ? ` - TP ${cityCode}` : ""}`;
+  const formatAddress = (office: AdminOffice) => {
+    if (!office.detail && !office.wardCode && !office.cityCode) return "Chưa có";
+    const parts = [];
+    if (office.detail) parts.push(office.detail);
+    if (office.wardCode) parts.push(`Phường ${office.wardCode}`);
+    if (office.cityCode) parts.push(`TP ${office.cityCode}`);
+    return parts.join(" - ");
   };
 
   const columns = useMemo(
@@ -186,11 +189,11 @@ const AdminPostOffices: React.FC = () => {
       },
       {
         title: "Địa chỉ",
-        render: (_: any, record: Office) => formatAddress(record),
+        render: (_: any, record: AdminOffice) => formatAddress(record),
       },
       {
         title: "Thao tác",
-        render: (_: any, record: Office) => (
+        render: (_: any, record: AdminOffice) => (
           <Space>
             <Button size="small" onClick={() => onViewDetails(record)}>
               Xem

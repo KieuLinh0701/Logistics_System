@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import adminApi from "../../api/adminApi";
-import type { User } from "../../api/adminApi";
+import userApi from "../../api/userApi";
+import type { AdminUser } from "../../types/user";
 
 
 const { Title } = Typography;
@@ -11,18 +11,17 @@ type QueryState = { page: number; limit: number; search: string };
 
 const AdminUsers: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<User[]>([]);
+  const [rows, setRows] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState<QueryState>({ page: 1, limit: 10, search: "" });
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<User | null>(null);
+  const [editing, setEditing] = useState<AdminUser | null>(null);
   const [form] = Form.useForm();
-  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await adminApi.listUsers({ page: query.page, limit: query.limit, search: query.search });
+      const res = await userApi.listAdminUsers({ page: query.page, limit: query.limit, search: query.search });
       if (res.success && res.data) {
         setRows(res.data.data || []);
         setTotal(res.data.pagination?.total || 0);
@@ -44,7 +43,7 @@ const AdminUsers: React.FC = () => {
     setOpen(true);
   };
 
-  const onEdit = (record: User) => {
+  const onEdit = (record: AdminUser) => {
     setEditing(record);
     form.setFieldsValue({
       firstName: record.firstName,
@@ -58,7 +57,7 @@ const AdminUsers: React.FC = () => {
 
   const onDelete = async (id: number) => {
     try {
-      await adminApi.deleteUser(id);
+      await userApi.deleteAdminUser(id);
       message.success("Đã xóa");
       fetchData();
     } catch (e: any) {
@@ -70,7 +69,7 @@ const AdminUsers: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (editing) {
-        await adminApi.updateUser(editing.id, {
+        await userApi.updateAdminUser(editing.id!, {
           password: values.password,
           firstName: values.firstName,
           lastName: values.lastName,
@@ -80,7 +79,7 @@ const AdminUsers: React.FC = () => {
         });
         message.success("Cập nhật thành công");
       } else {
-        await adminApi.createUser({
+        await userApi.createAdminUser({
           email: values.email,
           password: values.password,
           firstName: values.firstName,
@@ -129,7 +128,7 @@ const AdminUsers: React.FC = () => {
       },
       {
         title: "Thao tác",
-        render: (_: any, record: User) => (
+        render: (_: any, record: AdminUser) => (
           <Space>
             <Button size="small" onClick={() => onEdit(record)}>
               Sửa

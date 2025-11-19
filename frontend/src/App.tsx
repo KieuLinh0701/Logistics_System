@@ -27,6 +27,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminOrders from "./pages/admin/Orders";
 import AdminVehicles from "./pages/admin/Vehicles";
 import AdminPostOffices from "./pages/admin/PostOffices";
+import AdminServiceTypes from "./pages/admin/ServiceTypes";
 
 const App: React.FC = () => {
   return (
@@ -64,6 +65,7 @@ const App: React.FC = () => {
             {/* Admin routes */}
             <Route path="/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsers /></PrivateRoute>} />
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
+            <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
             <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin']}><AdminVehicles /></PrivateRoute>} />
 
