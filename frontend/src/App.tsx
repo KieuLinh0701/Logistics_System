@@ -66,6 +66,8 @@ const App: React.FC = () => {
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
             <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin']}><AdminVehicles /></PrivateRoute>} />
+
+            {/* User routes */}
           </Route>
         </Routes>
       </Router>
