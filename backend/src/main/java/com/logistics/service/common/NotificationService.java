@@ -74,8 +74,6 @@ public class NotificationService {
             int limit = request.getLimit();
             String search = request.getSearch();
             Boolean isRead = request.getIsRead();
-
-            System.out.println("Is Read" + isRead);
             
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
 

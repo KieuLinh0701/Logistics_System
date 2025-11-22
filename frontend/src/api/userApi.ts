@@ -4,6 +4,7 @@ import type { AdminUser, UpadteEmailData, UpadtePasswordData, VerifyEmailUpdateO
 import axiosClient from "./axiosClient";
 
 const userApi = {
+  // All User
   updatePassword(data: UpadtePasswordData): Promise<ApiResponse<null>> {
     return axiosClient.post<ApiResponse<null>>("/user/password/update", data);
   },

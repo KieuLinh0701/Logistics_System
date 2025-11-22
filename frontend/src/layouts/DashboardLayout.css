@@ -27,22 +27,57 @@
   height: calc(100vh - 80px);
   background: #fff;
   border-radius: 6px;
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sider .ant-layout-sider-children {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
 }
 
 .sidenav-container {
-  padding-bottom: 40px;
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 0;
+  width: 100% !important;
 }
 
 .toggle-button {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
+  width: 100% !important;
   text-align: center;
   background: #fff;
   border-top: 1px solid #f0f0f0;
   border-radius: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding: 12px 0;
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  z-index: 100;
+  box-sizing: border-box !important;
+}
+
+.sider .ant-layout-sider-trigger {
+  width: 100% !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  background: #fff !important;
+  color: #000 !important;
+  border-top: 1px solid #f0f0f0 !important;
+  border-radius: 0 !important;
+  border-bottom-left-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+  height: auto !important;
+  line-height: normal !important;
+  padding: 12px 0 !important;
 }
 
 .content-wrapper {

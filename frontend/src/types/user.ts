@@ -1,11 +1,3 @@
-export interface UpdateProfileRequest {
-  id?: number;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  avatarFile?: File;
-}
-
 export interface UpadtePasswordData {
   oldPassword: string;
   newPassword: string;

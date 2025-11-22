@@ -27,28 +27,22 @@ import {
   BankOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
+import { useMemo } from "react";
 import { getUserRole } from "../../utils/authUtils";
 
-const { SubMenu } = Menu;
-
-type MenuItem = {
+type MenuItemType = {
   key: string;
   label: string;
   path?: string;
   icon?: React.ReactNode;
-  children?: MenuItem[];
+  children?: MenuItemType[];
 };
 
-type Props = {
-  color: string;
-};
-
-const Sidenav: React.FC<Props> = () => {
+const Sidenav: React.FC = () => {
   const { pathname } = useLocation();
-
   const role = getUserRole();
 
-  const menuConfig: Record<string, MenuItem[]> = {
+  const menuConfig: Record<string, MenuItemType[]> = {
     admin: [
       {
         key: "/dashboard",
@@ -372,9 +366,28 @@ const Sidenav: React.FC<Props> = () => {
     ],
   };
 
-  const menuItems = menuConfig[role!] || menuConfig.user;
+  const menuItems = useMemo(() => menuConfig[role!] || menuConfig.user, [role]);
+
+  const generateMenuItems = (items: MenuItemType[]): any[] => {
+    return items.map((item) => {
+      if (item.children) {
+        return {
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+          children: generateMenuItems(item.children),
+        };
+      }
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: <NavLink to={item.path || "#"}>{item.label}</NavLink>,
+      };
+    });
+  };
 
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+
   useEffect(() => {
     const keys: string[] = [];
     menuItems.forEach((item) => {
@@ -383,7 +396,7 @@ const Sidenav: React.FC<Props> = () => {
       }
     });
     setOpenKeys(keys);
-  }, [pathname]);
+  }, [pathname, menuItems]);
 
   return (
     <div className="sidenav">
@@ -394,23 +407,8 @@ const Sidenav: React.FC<Props> = () => {
         openKeys={openKeys}
         onOpenChange={(keys) => setOpenKeys(keys as string[])}
         className="sidenav-menu"
-      >
-        {menuItems.map((item) =>
-          item.children ? (
-            <SubMenu key={item.key} icon={item.icon} title={item.label}>
-              {item.children.map((child: MenuItem) => (
-                <Menu.Item key={child.key} icon={child.icon}>
-                  <NavLink to={child.path || "#"}>{child.label}</NavLink>
-                </Menu.Item>
-              ))}
-            </SubMenu>
-          ) : (
-            <Menu.Item key={item.key} icon={item.icon}>
-              <NavLink to={item.path || "#"}>{item.label}</NavLink>
-            </Menu.Item>
-          )
-        )}
-      </Menu>
+        items={generateMenuItems(menuItems)}
+      />
     </div>
   );
 };

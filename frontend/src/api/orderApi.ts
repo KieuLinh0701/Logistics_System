@@ -1,5 +1,5 @@
 import type { ApiResponse, ListResponse } from "../types/response";
-import type { AdminOrder } from "../types/order";
+import type { AdminOrder, Order, UserOrderSearchRequest } from "../types/order";
 import axiosClient from "./axiosClient";
 
 const orderApi = {
@@ -18,8 +18,12 @@ const orderApi = {
     const res = await axiosClient.delete<ApiResponse<null>>(`/admin/orders/${id}`);
     return res;
   },
+
+  // User
+  async listUserOrders(params: UserOrderSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/user/orders", { params });
+    return res;
+  },
 };
 
 export default orderApi;
-
-

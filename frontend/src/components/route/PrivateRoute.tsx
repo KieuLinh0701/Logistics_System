@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { getUserRole, getCurrentUser } from "../../utils/authUtils";
-import Forbidden from "../../pages/Forbidden";
+import Forbidden from "../../pages/common/Forbidden";
 
 type PrivateRouteProps = {
   children: React.ReactNode;

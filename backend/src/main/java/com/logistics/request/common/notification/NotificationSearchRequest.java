@@ -7,8 +7,8 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NotificationSearchRequest {
-    private Integer page = 1;
-    private Integer limit = 10;
+    private Integer page;
+    private Integer limit;
     private String search;
     private Boolean isRead;
 }

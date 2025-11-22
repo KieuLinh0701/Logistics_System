@@ -33,7 +33,7 @@ public class Product {
     private Integer id;
 
     @Column(length = 20, nullable = true, unique = true)
-    private String code; // Thêm này cho mã sản phẩm (PROD_SỐ SẢN PHẨM HIỆN TẠI NGƯỜI DÙNG + 1)
+    private String code; // Thêm này cho mã sản phẩm (PROD_ID SẢN PHẨM)
 
     // ------------------- Người bán / chủ sở hữu -------------------
     @ManyToOne

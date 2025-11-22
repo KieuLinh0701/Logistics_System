@@ -1,5 +1,3 @@
-import type { Pagination } from "./response";
-
 export interface Promotion {
   id: number;
   code: string;
@@ -15,11 +13,6 @@ export interface Promotion {
   status: string;
   lastLoginAt: Date;
   createdAt: Date;
-}
-
-export interface PromotionResponse {
-  promotions: Promotion[];
-  pagination: Pagination;
 }
 
 export interface PublicPromotionRequest {

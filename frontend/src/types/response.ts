@@ -12,6 +12,21 @@ export interface Pagination {
 }
 
 export interface ListResponse<T> {
-  data: T[];
+  list: T[];
   pagination: Pagination;
+}
+
+export interface BulkResult<T> {
+  name: string;
+  success: boolean;
+  message: string;
+  result: T;
+}
+
+export interface BulkResponse<T> {
+  success: boolean;
+  message: string;
+  totalImported: number;
+  totalFailed: number;
+  results: BulkResult<T>[];
 }

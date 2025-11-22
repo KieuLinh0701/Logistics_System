@@ -49,7 +49,7 @@ const ContactSection = () => (
 const FooterHome: React.FC = () => {
   return (
     <AntFooter className="footer" role="contentinfo">
-      <div className="container">
+      <div className="footer-container">
         <Row>
           <Col>
             <Title level={2} className="footer-title">UTE Logistics</Title>

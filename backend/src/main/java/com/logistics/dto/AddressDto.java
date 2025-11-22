@@ -13,9 +13,8 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AddressDto {
     private Integer id;
-    private String wardCode;
-    private String cityCode;
+    private int wardCode;
+    private int cityCode;
     private String detail;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

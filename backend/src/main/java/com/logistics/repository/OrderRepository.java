@@ -3,6 +3,7 @@ package com.logistics.repository;
 import com.logistics.entity.Order;
 import com.logistics.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface OrderRepository extends JpaRepository<Order, Integer> {
+public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpecificationExecutor<Order> {
     Optional<Order> findByTrackingNumber(String trackingNumber);
     List<Order> findByStatus(OrderStatus status);
     List<Order> findByUserId(Integer userId);

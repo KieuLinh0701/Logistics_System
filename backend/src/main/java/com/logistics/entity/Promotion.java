@@ -1,8 +1,8 @@
+// Khi tạo 1 promotion nếu không phải isGlobal có thể nhập và gán cho nhiều user hoặc 1 user nha
 package com.logistics.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -12,6 +12,7 @@ import com.logistics.enums.PromotionStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -32,6 +33,9 @@ public class Promotion {
     private String code;
 
     @Column(length = 255)
+    private String title;
+
+    @Column(length = 255)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -41,21 +45,63 @@ public class Promotion {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal discountValue;
 
-    @Column(nullable = true)
-    private Integer minOrderValue = 0;
+    @Column(nullable = false)
+    private Boolean isGlobal = true; // true cho dùng chung, false cho riêng các user
 
     @Column(nullable = true)
     private Integer maxDiscountAmount;
 
+    // Thời gian áp dụng promotion
     @Column(nullable = false)
     private LocalDateTime startDate;
 
     @Column(nullable = false)
     private LocalDateTime endDate;
 
+    // Các điều kiện áp dụng
+    @Column(precision = 10, scale = 2)
+    private BigDecimal minOrderValue;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal minWeight;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal maxWeight;
+
+    @Column
+    private Integer minOrdersCount; // Số đơn tối thiểu khách đã tạo
+
+    @ManyToMany
+    @JoinTable(
+        name = "promotion_service_types",
+        joinColumns = @JoinColumn(name = "promotion_id"),
+        inverseJoinColumns = @JoinColumn(name = "service_type_id")
+    )
+    private List<ServiceType> serviceTypes = new ArrayList<>();
+
+    @Column
+    private Boolean firstTimeUser = false;
+
+    @Column
+    private Integer validMonthsAfterJoin; // Số tháng kể từ khi khách đăng ký null = không giới hạn
+
+    @Column
+    private Integer validYearsAfterJoin; // Số năm kể từ khi khách đăng ký null = không giới hạn
+
     // Tổng số lần sử dụng của promotion (toàn hệ thống)
     @Column(nullable = true)
     private Integer usageLimit;
+
+    // Tổng số lần sử dụng tối đa của 1 user
+    @Column(nullable = true)
+    private Integer maxUsagePerUser;
+
+    // **Giới hạn số lượt sử dụng theo ngày**
+    @Column(nullable = true)
+    private Integer dailyUsageLimitGlobal; // áp dụng cho global
+
+    @Column(nullable = true)
+    private Integer dailyUsageLimitPerUser; // áp dụng cho từng user
 
     @Column(nullable = false)
     private Integer usedCount = 0;

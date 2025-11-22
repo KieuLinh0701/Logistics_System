@@ -3,31 +3,34 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { ConfigProvider } from "antd";
 import viVN from "antd/locale/vi_VN";
 
-import LoginForm from "./pages/Login";
-import RegisterForm from "./pages/Register";
-import Home from "./pages/Home/Home";
+import LoginForm from "./pages/common/Login";
+import RegisterForm from "./pages/common/Register";
+import Home from "./pages/common/Home/Home";
 import { AuthRoute } from "./components/route/AuthRoute";
 import { PrivateRoute } from "./components/route/PrivateRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
-import ForgotPassword from "./pages/ForgotPassword";
-import AccountSettings from "./pages/profile/AccountSettings";
-import DashboardRouter from "./pages/DashboardRouter";
-import NotificationList from "./pages/notification/NotificationList";
-import NotificationDetail from "./pages/notification/NotificationDetail";
-import ServiceTypes from "./pages/info/ServiceTypes";
-import ShippingFee from "./pages/tracking/shippingFee/ShippingFee";
-import OfficeSearch from "./pages/tracking/officeSearch/OfficeSearch";
-import ShippingRates from "./pages/tracking/shippingRate/ShippingRates";
+import ForgotPassword from "./pages/common/ForgotPassword";
+import AccountSettings from "./pages/common/profile/AccountSettings";
+import DashboardRouter from "./pages/router/DashboardRouter";
+import NotificationList from "./pages/common/notification/NotificationList";
+import NotificationDetail from "./pages/common/notification/NotificationDetail";
+import ServiceTypes from "./pages/common/info/ServiceTypes";
+import ShippingFee from "./pages/common/tracking/shippingFee/ShippingFee";
+import OfficeSearch from "./pages/common/tracking/officeSearch/OfficeSearch";
+import ShippingRates from "./pages/common/tracking/shippingRate/ShippingRates";
 import "./styles/theme.css";
-import CompanyInfo from "./pages/info/CompanyInfo";
-import ContactForm from "./pages/info/ContactForm";
-import PromotionList from "./pages/info/PromotionList";
+import CompanyInfo from "./pages/common/info/CompanyInfo";
+import ContactForm from "./pages/common/info/ContactForm";
+import PromotionList from "./pages/common/info/PromotionList";
 
 import AdminUsers from "./pages/admin/Users";
 import AdminOrders from "./pages/admin/Orders";
 import AdminVehicles from "./pages/admin/Vehicles";
 import AdminPostOffices from "./pages/admin/PostOffices";
 import AdminServiceTypes from "./pages/admin/ServiceTypes";
+import UserOrderList from "./pages/user/order/list/UserOrderList";
+import UserOrderCreate from "./pages/user/order/create/UserOrderCreate";
+import UserProducts from "./pages/user/product/UserProducts";
 
 const App: React.FC = () => {
   return (
@@ -61,7 +64,7 @@ const App: React.FC = () => {
             <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
             <Route path="/notifications" element={<PrivateRoute><NotificationList /></PrivateRoute>} />
             <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail /></PrivateRoute>} />
-            
+
             {/* Admin routes */}
             <Route path="/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsers /></PrivateRoute>} />
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
@@ -70,6 +73,9 @@ const App: React.FC = () => {
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin']}><AdminVehicles /></PrivateRoute>} />
 
             {/* User routes */}
+            <Route path="/orders/list" element={<PrivateRoute allowedRoles={['user']}><UserOrderList /></PrivateRoute>} />
+            <Route path="/orders/create" element={<PrivateRoute allowedRoles={['user']}><UserOrderCreate /></PrivateRoute>} />
+            <Route path="/products" element={<PrivateRoute allowedRoles={['user']}><UserProducts /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

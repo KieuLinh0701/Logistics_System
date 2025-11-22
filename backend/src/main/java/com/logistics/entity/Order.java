@@ -22,9 +22,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Table(name = "orders")
-@Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Audited
 @EntityListeners(AuditingEntityListener.class)
 public class Order {
@@ -117,7 +115,7 @@ public class Order {
     private OrderPaymentStatus paymentStatus = OrderPaymentStatus.UNPAID;
 
     // ------------------- Thông tin khác -------------------
-    @Lob
+    @Column(columnDefinition = "NVARCHAR(1000)")
     private String notes;
 
     private LocalDateTime deliveredAt;

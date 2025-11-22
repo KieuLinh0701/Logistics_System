@@ -18,7 +18,7 @@ public class PromotionDto {
     private String description;
     private String discountType;
     private BigDecimal discountValue;
-    private Integer minOrderValue;
+    private BigDecimal minOrderValue;
     private Integer maxDiscountAmount;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

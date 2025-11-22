@@ -16,12 +16,11 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <Layout className="dashboard-layout">
-      {/* Header cố định */}
+
       <AntHeader className="fixed-header">
         <Header />
       </AntHeader>
 
-      {/* Layout chính */}
       <Layout className="main-content-layout">
         <Sider
           width={240}
@@ -32,19 +31,39 @@ const DashboardLayout: React.FC = () => {
           breakpoint="lg" 
           onBreakpoint={(broken) => setCollapsed(broken)} 
           className="sider"
+          style={{
+            overflow: 'hidden',
+            position: 'fixed',
+            height: 'calc(100vh - 80px)'
+          }}
         >
           <div className="sidenav-container">
-            <Sidenav color="#fff" />
+            <Sidenav/>
           </div>
 
-          {/* Nút toggle cố định đáy */}
+        </Sider>
+
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '8px',
+            left: '8px',
+            width: collapsed ? '60px' : '240px',
+            transition: 'all 0.2s',
+            zIndex: 1000
+          }}
+        >
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
             className="toggle-button"
+            style={{
+              width: '100%',
+              borderRadius: collapsed ? '6px' : '0 0 6px 6px'
+            }}
           />
-        </Sider>
+        </div>
 
         {/* Nội dung */}
         <Layout className={`content-wrapper ${collapsed ? 'collapsed' : 'expanded'}`}>
