@@ -28,6 +28,8 @@ import AdminOrders from "./pages/admin/Orders";
 import AdminVehicles from "./pages/admin/Vehicles";
 import AdminPostOffices from "./pages/admin/PostOffices";
 import AdminServiceTypes from "./pages/admin/ServiceTypes";
+import AdminPromotions from "./pages/admin/Promotions";
+import AdminFeeConfigurations from "./pages/admin/FeeConfigurations";
 import UserOrderList from "./pages/user/order/list/UserOrderList";
 import UserOrderCreate from "./pages/user/order/create/UserOrderCreate";
 import UserProducts from "./pages/user/product/UserProducts";
@@ -71,6 +73,8 @@ const App: React.FC = () => {
             <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
             <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin']}><AdminVehicles /></PrivateRoute>} />
+            <Route path="/promotions" element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions /></PrivateRoute>} />
+            <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
 
             {/* User routes */}
             <Route path="/orders/list" element={<PrivateRoute allowedRoles={['user']}><UserOrderList /></PrivateRoute>} />

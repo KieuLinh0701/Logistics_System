@@ -87,6 +87,12 @@ const Sidenav: React.FC = () => {
         icon: <GiftOutlined />,
       },
       {
+        key: "/fee-configurations",
+        label: "Cấu hình phí",
+        path: "/fee-configurations",
+        icon: <DollarOutlined />,
+      },
+      {
         key: "/reports",
         label: "Báo cáo",
         path: "/reports",
