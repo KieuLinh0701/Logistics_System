@@ -91,28 +91,28 @@ public class OrderSpecification {
                 case "oldest":
                     query.orderBy(cb.asc(root.get("createdAt")));
                     break;
-                case "codhigh":
+                case "cod_high":
                     query.orderBy(cb.desc(root.get("cod")));
                     break;
-                case "codlow":
+                case "cod_low":
                     query.orderBy(cb.asc(root.get("cod")));
                     break;
-                case "ordervaluehigh":
+                case "order_value_high":
                     query.orderBy(cb.desc(root.get("orderValue")));
                     break;
-                case "ordervaluelow":
+                case "order_value_low":
                     query.orderBy(cb.asc(root.get("orderValue")));
                     break;
-                case "feehigh":
+                case "fee_high":
                     query.orderBy(cb.desc(root.get("totalFee")));
                     break;
-                case "feelow":
+                case "fee_low":
                     query.orderBy(cb.asc(root.get("totalFee")));
                     break;
-                case "weighthigh":
+                case "weight_high":
                     query.orderBy(cb.desc(root.get("weight")));
                     break;
-                case "weightlow":
+                case "weight_low":
                     query.orderBy(cb.asc(root.get("weight")));
                     break;
                 default:

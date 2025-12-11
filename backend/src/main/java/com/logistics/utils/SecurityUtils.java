@@ -1,6 +1,10 @@
 package com.logistics.utils;
 
 import com.logistics.security.UserPrincipal;
+
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,6 +13,20 @@ public class SecurityUtils {
 
     private SecurityUtils() {
     }
+
+    public static final Map<String, List<String>> PATH_ROLES = Map.of(
+            "/api/user/", List.of("User"),
+            "/api/manager/", List.of("Manager"),
+            "/api/admin/", List.of("Admin"),
+            "/api/shipper/", List.of("Shipper"),
+            "/api/driver/", List.of("Driver")
+    );
+
+    public static final List<String> PUBLIC_PATHS = List.of(
+            "/api/auth/",
+            "/api/public/",
+            "/ws/"
+    );
 
     public static Integer getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -43,8 +61,8 @@ public class SecurityUtils {
         }
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        if (principal.getAccount().getRole() != null) {
-            return principal.getAccount().getRole().getName();
+        if (principal.getCurrentRole() != null) {
+            return principal.getCurrentRole().getName();
         }
         return null;
     }

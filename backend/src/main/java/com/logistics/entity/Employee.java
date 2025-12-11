@@ -40,6 +40,11 @@ public class Employee {
     @JoinColumn(name = "office_id", referencedColumnName = "id", nullable = false)
     private Office office;
 
+    // Mỗi nhân viên liên kết với 1 role cụ thể của account
+    @ManyToOne
+    @JoinColumn(name = "account_role_id", referencedColumnName = "id", nullable = false)
+    private AccountRole accountRole;
+
     @Column(nullable = false)
     private LocalDateTime hireDate = LocalDateTime.now();
 

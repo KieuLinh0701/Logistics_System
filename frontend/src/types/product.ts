@@ -41,3 +41,10 @@ export interface UserProductSearchRequest {
     startDate?: string;
     endDate?: string;
 }
+
+export interface UserProductActiveAndInstockRequest {
+    page: number;
+    limit: number;
+    search?: string;
+    type?: string;
+}

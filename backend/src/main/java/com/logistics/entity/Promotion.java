@@ -72,15 +72,11 @@ public class Promotion {
     private Integer minOrdersCount; // Số đơn tối thiểu khách đã tạo
 
     @ManyToMany
-    @JoinTable(
-        name = "promotion_service_types",
-        joinColumns = @JoinColumn(name = "promotion_id"),
-        inverseJoinColumns = @JoinColumn(name = "service_type_id")
-    )
+    @JoinTable(name = "promotion_service_types", joinColumns = @JoinColumn(name = "promotion_id"), inverseJoinColumns = @JoinColumn(name = "service_type_id"))
     private List<ServiceType> serviceTypes = new ArrayList<>();
 
     @Column
-    private Boolean firstTimeUser = false;
+    private Boolean firstTimeUser = false;  // Khách hàng mới
 
     @Column
     private Integer validMonthsAfterJoin; // Số tháng kể từ khi khách đăng ký null = không giới hạn

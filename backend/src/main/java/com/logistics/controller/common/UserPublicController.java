@@ -16,6 +16,9 @@ import com.logistics.request.common.user.VerifyEmailUpdateOTPRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.common.UserPublicService;
 import com.logistics.utils.SecurityUtils;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
@@ -62,20 +65,22 @@ public class UserPublicController {
     }
 
     @PostMapping("/email/verify-otp")
-    public ResponseEntity<?> verifyEmailUpdateOTP(@RequestBody VerifyEmailUpdateOTPRequest request) {
+    public ResponseEntity<?> verifyEmailUpdateOTP(@RequestBody VerifyEmailUpdateOTPRequest verifyEmailUpdateOTPRequest,
+    HttpServletRequest request) {
         Integer accountId;
         try {
             accountId = SecurityUtils.getAuthenticatedAccountId();
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(new ApiResponse<>(false, e.getMessage(), null));
         }
+        String role = (String) request.getAttribute("currentRoleName");
 
-        if (request.getOtp() == null || request.getNewEmail() == null) {
+        if (verifyEmailUpdateOTPRequest.getOtp() == null || verifyEmailUpdateOTPRequest.getNewEmail() == null) {
             return ResponseEntity.badRequest()
                     .body(new ApiResponse<>(false, "Vui lòng nhập đầy đủ thông tin", null));
         }
 
-        return ResponseEntity.ok(userService.verifyEmailUpdateOTP(accountId, request));
+        return ResponseEntity.ok(userService.verifyEmailUpdateOTP(accountId, verifyEmailUpdateOTPRequest, role));
     }
 
     @PutMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -86,8 +91,6 @@ public class UserPublicController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(new ApiResponse<>(false, e.getMessage(), null));
         }
-
-        System.out.println("a");
 
         if (request.getFirstName() == null || request.getLastName() == null || request.getPhoneNumber() == null) {
             return ResponseEntity.badRequest()

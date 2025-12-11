@@ -1,6 +1,9 @@
 package com.logistics.service.common;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,14 +11,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.logistics.entity.Account;
+import com.logistics.entity.AccountRole;
 import com.logistics.entity.OTP;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import com.logistics.enums.OTPType;
 import com.logistics.repository.AccountRepository;
+import com.logistics.repository.AccountRoleRepository;
 import com.logistics.repository.OTPRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
+import com.logistics.request.common.auth.ChooseRoleRequest;
 import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
 import com.logistics.request.common.auth.ForgotPasswordResetRequest;
 import com.logistics.request.common.auth.LoginRequest;
@@ -43,6 +49,7 @@ public class AuthService {
 
         private final RoleRepository roleRepository;
         private final AccountRepository accountRepository;
+        private final AccountRoleRepository accountRoleRepository;
         private final UserRepository userRepository;
         private final OTPRepository otpRepository;
         private final EmailService emailService;
@@ -50,9 +57,22 @@ public class AuthService {
 
         public ApiResponse<String> register(RegisterRequest request) {
                 try {
-                        if (accountRepository.existsByEmail(request.getEmail()) ||
-                                        userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                                return new ApiResponse<>(false, "Email hoặc số điện thoại đã được sử dụng", null);
+                        Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
+
+                        if (existingAccountOpt.isPresent()) {
+                                Account existingAccount = existingAccountOpt.get();
+
+                                boolean hasUserRole = existingAccount.getAccountRoles()
+                                                .stream()
+                                                .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole().getName()));
+
+                                if (hasUserRole) {
+                                        return new ApiResponse<>(false, "Email đã được sử dụng", null);
+                                }
+                        } else {
+                                if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                                        return new ApiResponse<>(false, "Số điện thoại đã được sử dụng", null);
+                                }
                         }
 
                         String otp = OTPUtils.generateOTP();
@@ -68,6 +88,7 @@ public class AuthService {
                         emailService.sendOTPEmail(request.getEmail(), otp, "Xác thực đăng ký");
 
                         return new ApiResponse<>(true, "Mã OTP đã được gửi đến email của bạn", null);
+
                 } catch (Exception e) {
                         return new ApiResponse<>(false, "Lỗi khi đăng ký: " + e.getMessage(), null);
                 }
@@ -85,57 +106,95 @@ public class AuthService {
 
                         String hashed = PasswordUtils.hashPassword(request.getPassword());
 
-                        Role userRole = roleRepository.findByName("User")
-                                        .orElseThrow(() -> new RuntimeException("Không tìm thấy role User."));
+                        Role userRole = roleRepository
+                                        .findByNameAndIsSystemRole("User", true)
+                                        .orElseThrow(() -> new RuntimeException(
+                                                        "Không tìm thấy role User thuộc hệ thống."));
 
-                        Account newAccount = new Account();
-                        newAccount.setEmail(request.getEmail());
-                        newAccount.setPassword(hashed);
-                        newAccount.setRole(userRole);
-                        newAccount.setIsVerified(true);
-                        newAccount.setIsActive(true);
-                        newAccount.setCreatedAt(LocalDateTime.now());
+                        Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
+                        Account account;
+                        User user;
 
-                        accountRepository.save(newAccount);
+                        if (existingAccountOpt.isPresent()) {
+                                account = existingAccountOpt.get();
 
-                        User newUser = new User();
-                        newUser.setFirstName(request.getFirstName());
-                        newUser.setLastName(request.getLastName());
-                        newUser.setPhoneNumber(request.getPhoneNumber());
-                        newUser.setAccount(newAccount);
-                        newUser.setCreatedAt(LocalDateTime.now());
+                                boolean hasUserRole = account.getAccountRoles().stream()
+                                                .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole().getName()));
 
-                        userRepository.save(newUser);
+                                if (!hasUserRole) {
+                                        AccountRole accountRole = new AccountRole();
+                                        accountRole.setAccount(account);
+                                        accountRole.setRole(userRole);
+                                        account.setIsActive(true);
+                                        accountRoleRepository.save(accountRole);
+                                }
 
-                        newUser.setCode("USER" + newUser.getId());
-                        userRepository.save(newUser);
+                                if (account.getUser() != null) {
+                                        user = account.getUser();
+                                } else {
+                                        user = new User();
+                                        user.setFirstName(request.getFirstName());
+                                        user.setLastName(request.getLastName());
+                                        user.setPhoneNumber(request.getPhoneNumber());
+                                        user.setAccount(account);
+                                        user.setCreatedAt(LocalDateTime.now());
+                                        userRepository.save(user);
+
+                                        user.setCode("USER" + user.getId());
+                                        userRepository.save(user);
+                                }
+
+                        } else {
+                                account = new Account();
+                                account.setEmail(request.getEmail());
+                                account.setPassword(hashed);
+                                account.setIsVerified(true);
+                                account.setIsActive(true);
+                                account.setCreatedAt(LocalDateTime.now());
+                                accountRepository.save(account);
+
+                                user = new User();
+                                user.setFirstName(request.getFirstName());
+                                user.setLastName(request.getLastName());
+                                user.setPhoneNumber(request.getPhoneNumber());
+                                user.setAccount(account);
+                                user.setCreatedAt(LocalDateTime.now());
+                                userRepository.save(user);
+
+                                user.setCode("USER" + user.getId());
+                                userRepository.save(user);
+
+                                AccountRole accountRole = new AccountRole();
+                                accountRole.setAccount(account);
+                                accountRole.setRole(userRole);
+                                account.setIsActive(true);
+                                accountRoleRepository.save(accountRole);
+                        }
 
                         otpEntity.setIsUsed(true);
                         otpRepository.save(otpEntity);
 
-                        String token = jwtUtils.generateToken(newAccount, newUser);
+                        String token = jwtUtils.generateToken(account, user, userRole.getName());
 
                         AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
-                                        newUser.getId(),
-                                        newUser.getFirstName(),
-                                        newUser.getLastName(),
-                                        newUser.getPhoneNumber(),
-                                        newUser.getImages());
+                                        user.getId(),
+                                        user.getFirstName(),
+                                        user.getLastName(),
+                                        user.getPhoneNumber(),
+                                        user.getImages());
 
                         AuthResponse authResponse = new AuthResponse(token, userResponse);
 
                         return new ApiResponse<>(true, "Đăng ký thành công", authResponse);
+
                 } catch (Exception e) {
                         return new ApiResponse<>(false, "Lỗi khi xác thực và đăng ký: " + e.getMessage(), null);
                 }
         }
 
-        public ApiResponse<AuthResponse> login(LoginRequest request) {
+        public ApiResponse<?> login(LoginRequest request) {
                 try {
-                        String email = request.getEmail();
-                        String password = request.getPassword();
-
-                        Optional<Account> optionalAccount = accountRepository.findByEmail(email);
+                        Optional<Account> optionalAccount = accountRepository.findByEmail(request.getEmail());
                         if (optionalAccount.isEmpty()) {
                                 return new ApiResponse<>(false, "Email hoặc mật khẩu không đúng", null);
                         }
@@ -150,7 +209,7 @@ public class AuthService {
                                 return new ApiResponse<>(false, "Tài khoản chưa được xác thực", null);
                         }
 
-                        if (!passwordEncoder.matches(password, account.getPassword())) {
+                        if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
                                 return new ApiResponse<>(false, "Email hoặc mật khẩu không đúng", null);
                         }
 
@@ -161,21 +220,63 @@ public class AuthService {
                                         .orElseThrow(() -> new RuntimeException(
                                                         "User chưa được tạo cho tài khoản này"));
 
-                        String token = jwtUtils.generateToken(account, user);
+                        List<AccountRole> roles = accountRoleRepository.findByAccountId(account.getId())
+                                        .stream()
+                                        .filter(AccountRole::getIsActive)
+                                        .toList();
 
-                        AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
-                                        user.getId(),
-                                        user.getFirstName(),
-                                        user.getLastName(),
-                                        user.getPhoneNumber(),
-                                        user.getImages());
+                        if (roles.isEmpty()) {
+                                return new ApiResponse<>(false, "Tài khoản không có role nào hợp lệ", null);
+                        }
 
-                        AuthResponse authResponse = new AuthResponse(token, userResponse);
+                        if (roles.size() == 1) {
+                                Role role = roles.get(0).getRole();
+                                String token = jwtUtils.generateToken(account, user, role.getName());
 
-                        return new ApiResponse<>(true, "Đăng nhập thành công", authResponse);
+                                AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
+                                                user.getId(), user.getFirstName(), user.getLastName(),
+                                                user.getPhoneNumber(), user.getImages());
+
+                                AuthResponse authResponse = new AuthResponse(token, userResponse);
+                                return new ApiResponse<>(true, "Đăng nhập thành công", authResponse);
+                        }
+
+                        String tempToken = jwtUtils.generateTempToken(account);
+                        List<String> roleNames = roles.stream().map(ar -> ar.getRole().getName()).toList();
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("roles", roleNames);
+                        data.put("tempToken", tempToken);
+
+                        return new ApiResponse<>(true, "Chọn role để đăng nhập", data);
+
                 } catch (Exception e) {
                         return new ApiResponse<>(false, "Lỗi khi đăng nhập: " + e.getMessage(), null);
                 }
+        }
+
+        public AuthResponse chooseRole(ChooseRoleRequest request) {
+                String tempToken = request.getTempToken();
+                Integer accountId = jwtUtils.getAccountIdFromTempToken(tempToken);
+
+                Account account = accountRepository.findById(accountId)
+                                .orElseThrow(() -> new RuntimeException("Account không tồn tại"));
+
+                User user = userRepository.findByAccountId(account.getId())
+                                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+                AccountRole accountRole = accountRoleRepository
+                                .findByAccountIdAndRoleName(account.getId(), request.getRoleName())
+                                .orElseThrow(() -> new RuntimeException("Role không hợp lệ"));
+
+                Role selectedRole = accountRole.getRole();
+                String token = jwtUtils.generateToken(account, user, selectedRole.getName());
+
+                AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
+                                user.getId(), user.getFirstName(), user.getLastName(),
+                                user.getPhoneNumber(), user.getImages());
+
+                return new AuthResponse(token, userResponse);
         }
 
         public ApiResponse<String> forgotPasswordEmail(ForgotPasswordEmailRequest request) {

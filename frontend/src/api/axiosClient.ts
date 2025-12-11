@@ -57,6 +57,9 @@ const typedAxios = {
   put: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
     axiosClient.put<T>(url, data, config) as AxiosResponseData<T>,
 
+  patch: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
+    axiosClient.patch<T>(url, data, config) as AxiosResponseData<T>,
+
   delete: <T>(url: string, config?: any): AxiosResponseData<T> =>
     axiosClient.delete<T>(url, config) as AxiosResponseData<T>,
 };

@@ -13,7 +13,7 @@ import FooterHome from "../../../components/common/FooterHome";
 import type { Promotion } from "../../../types/promotion";
 import "./PromotionList.css";
 import promotionApi from "../../../api/promotionApi";
-import { getDiscountText, translatePromotionStatus } from "../../../utils/promotionUtils";
+import { getDiscountText } from "../../../utils/promotionUtils";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -124,60 +124,70 @@ const PromotionList: React.FC = () => {
                 </div>
               }
             >
-              <div className="promotion-list-items">
-                {promotions.map((promotion) => (
-                  <div
-                    key={promotion.id}
-                    className={`promotion-list-item ${selectedPromotion?.id === promotion.id ? 'promotion-list-item-active' : ''
-                      }`}
-                    onClick={() => handlePromotionSelect(promotion)}
-                  >
-                    <div className="promotion-item-header">
-                      <div className="promotion-item-code">
-                        <Text strong className="promotion-code-text">
+              {promotions.length === 0 ? (
+                <div className="promotion-list-empty">
+                  <Text type="secondary">Hiện tại không có khuyến mãi nào</Text>
+                </div>
+              ) : (
+                <>
+                  <div className="promotion-list-items">
+                    {promotions.map((promotion) => (
+                      <div
+                        key={promotion.id}
+                        className={`promotion-list-item ${selectedPromotion?.id === promotion.id ? 'promotion-list-item-active' : ''
+                          }`}
+                        onClick={() => handlePromotionSelect(promotion)}
+                      >
+                        <div className="promotion-item-header">
+                          <div className="promotion-item-code">
+                            <Text strong className="promotion-code-text">
+                              {promotion.title}
+                            </Text>
+                          </div>
+                          <div className="promotion-item-discount">
+                            <Text strong className="promotion-discount-text">
+                              {getDiscountText(promotion.discountType, promotion.discountValue)}
+                            </Text>
+                          </div>
+                        </div>
+
+                        <Paragraph className="promotion-item-title" ellipsis={{ rows: 2 }}>
                           {promotion.code}
-                        </Text>
-                        {translatePromotionStatus(promotion.status)}
-                      </div>
-                      <div className="promotion-item-discount">
-                        <Text strong className="promotion-discount-text">
-                          {getDiscountText(promotion.discountType, promotion.discountValue)}
-                        </Text>
-                      </div>
-                    </div>
+                        </Paragraph>
 
-                    <Paragraph className="promotion-item-description" ellipsis={{ rows: 2 }}>
-                      {promotion.description}
-                    </Paragraph>
-
-                    <div className="promotion-item-footer">
-                      <div className="promotion-item-date">
-                        <CalendarOutlined />
-                        <Text type="secondary">
-                          {formatDate(promotion.startDate)} - {formatDate(promotion.endDate)}
-                        </Text>
+                        <div className="promotion-item-footer">
+                          <div className="promotion-item-date">
+                            <CalendarOutlined />
+                            <Text type="secondary">
+                              {formatDate(promotion.startDate)} - {formatDate(promotion.endDate)}
+                            </Text>
+                          </div>
+                          <div className="promotion-item-usage">
+                            <Text type="secondary">
+                              Đã dùng: {promotion.usedCount} /
+                              {promotion.usageLimit !== null
+                                ? ` ${promotion.usageLimit}`
+                                : ' ∞'}
+                            </Text>
+                          </div>
+                        </div>
                       </div>
-                      <div className="promotion-item-usage">
-                        <Text type="secondary">
-                          Đã dùng: {promotion.usedCount}/{promotion.usageLimit}
-                        </Text>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Pagination */}
-              <div className="promotion-list-pagination">
-                <Pagination
-                  current={currentPage}
-                  pageSize={limit}
-                  total={total}
-                  onChange={handlePageChange}
-                  showSizeChanger={false}
-                  showQuickJumper
-                />
-              </div>
+                  {/* Pagination */}
+                  <div className="promotion-list-pagination">
+                    <Pagination
+                      current={currentPage}
+                      pageSize={limit}
+                      total={total}
+                      onChange={handlePageChange}
+                      showSizeChanger={false}
+                      showQuickJumper
+                    />
+                  </div>
+                </>
+              )}
             </Card>
           </Col>
 
@@ -196,12 +206,12 @@ const PromotionList: React.FC = () => {
                 <div className="promotion-detail-content">
                   {/* Promotion Header */}
                   <div className="promotion-detail-header">
-                    <div className="promotion-detail-code-section">
-                      <div>
-                        <Title level={3} className="promotion-detail-code">
-                          {selectedPromotion.code}
-                        </Title>
-                        {translatePromotionStatus(selectedPromotion.status)}
+                    <div className="promotion-detail-title-section">
+                      <Title level={3} className="promotion-detail-title">
+                        {selectedPromotion.title}
+                      </Title>
+                      <div className="promotion-detail-code">
+                        <Text type="secondary">Mã: {selectedPromotion.code}</Text>
                       </div>
                     </div>
                     <div className="promotion-detail-discount-badge">
@@ -276,18 +286,10 @@ const PromotionList: React.FC = () => {
                         <div className="promotion-detail-info-content">
                           <Text className="promotion-detail-info-label">Số lượt sử dụng</Text>
                           <Text strong className="promotion-detail-info-value">
-                            {selectedPromotion.usedCount}/{selectedPromotion.usageLimit}
-                          </Text>
-                        </div>
-                      </div>
-                    </Col>
-                    <Col xs={24} md={12}>
-                      <div className="promotion-detail-info-item">
-                        <FireOutlined className="promotion-detail-info-icon" />
-                        <div className="promotion-detail-info-content">
-                          <Text className="promotion-detail-info-label">Loại giảm giá</Text>
-                          <Text strong className="promotion-detail-info-value">
-                            {selectedPromotion.discountType === "PERCENTAGE" ? "Theo phần trăm" : "Theo số tiền"}
+                            {selectedPromotion.usedCount} /
+                            {selectedPromotion.usageLimit !== null
+                              ? ` ${selectedPromotion.usageLimit}`
+                              : ' ∞'}
                           </Text>
                         </div>
                       </div>
@@ -302,7 +304,7 @@ const PromotionList: React.FC = () => {
                     <div className="promotion-usage-steps">
                       <div className="promotion-usage-step">
                         <div className="promotion-step-number">1</div>
-                        <Text>Nhập mã khuyến mãi tại bước thanh toán</Text>
+                        <Text>Nhập mã <strong>{selectedPromotion.code}</strong> tại bước thanh toán</Text>
                       </div>
                       <div className="promotion-usage-step">
                         <div className="promotion-step-number">2</div>
@@ -320,7 +322,9 @@ const PromotionList: React.FC = () => {
               ) : (
                 <div className="promotion-detail-empty">
                   <TagOutlined className="promotion-detail-empty-icon" />
-                  <Text type="secondary">Chọn một khuyến mãi để xem chi tiết</Text>
+                  <Text type="secondary">
+                    {promotions.length === 0 ? "Hiện tại không có khuyến mãi nào" : "Chọn một khuyến mãi để xem chi tiết"}
+                  </Text>
                 </div>
               )}
             </Card>

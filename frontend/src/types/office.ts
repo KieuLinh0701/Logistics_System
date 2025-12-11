@@ -13,11 +13,9 @@ export interface Office {
   openingTime: string;
   closingTime: string;
   type: string;
-  //manager: Employee;
+  status: string;
   capacity: number;
   notes: string;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface OfficeSearchRequest {
@@ -26,6 +24,21 @@ export interface OfficeSearchRequest {
   search?: string; 
   city?: boolean;
   ward?: boolean;
+}
+
+export interface LocalOfficeRequest {
+  cityCode?: number; 
+  wardCode?: number;
+}
+
+export interface OfficeEditRequest {
+  email?: string;
+  phoneNumber?: string;
+  status?: string;
+  capacity?: number;
+  notes?: string | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
 }
 
 export interface AdminOffice {

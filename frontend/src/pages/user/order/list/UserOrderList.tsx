@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { Modal, message, Tag, Row, Col } from "antd";
+import { message, Tag, Row, Col } from "antd";
 import dayjs from "dayjs";
 import OrderActions from "./components/Actions";
 import * as XLSX from "xlsx";
@@ -14,6 +14,9 @@ import "../../../../styles/ListPage.css";
 import type { ServiceType } from "../../../../types/serviceType";
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import { ShoppingOutlined } from "@ant-design/icons";
+import ConfirmPublicModal from "../detail/components/ConfirmPublicModal";
+import ConfirmCancelModal from "../detail/components/ConfirmCancelModal";
+import ConfirmDeleteModal from "../detail/components/ConfirmDeleteModal";
 
 const UserOrderList = () => {
   const navigate = useNavigate();
@@ -38,16 +41,23 @@ const UserOrderList = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [publicModalOpen, setPublicModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
+
+  const [orderId, setOrderId] = useState<number | null>(null);
+
   const updateURL = () => {
     const params: any = {};
 
-    if (search) params.search = search.toLowerCase();
+    if (search) params.search = search;
     if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
     if (filterPayer !== "ALL") params.payer = filterPayer.toLowerCase();
     if (filterPaymentStatus !== "ALL") params.payment = filterPaymentStatus.toLowerCase();
     if (filterServiceType !== null) params.service = filterServiceType;
     if (filterCOD !== "ALL") params.cod = filterCOD.toLowerCase();
-    if (filterSort !== "NEWEST") params.sort = filterSort.toLowerCase();
+    params.sort = filterSort.toLowerCase();
     if (page) params.page = page;
 
     if (dateRange) {
@@ -55,8 +65,37 @@ const UserOrderList = () => {
       params.end = dateRange[1].format("YYYY-MM-DD");
     }
 
-    setSearchParams(params);
+    setSearchParams(params, { replace: true });
   };
+
+  useEffect(() => {
+    const s = searchParams.get("search");
+    const status = searchParams.get("status")?.toLocaleUpperCase();
+    const payer = searchParams.get("payer")?.toLocaleUpperCase();
+    const payment = searchParams.get("payment")?.toLocaleUpperCase();
+    const service = searchParams.get("service");
+    const cod = searchParams.get("cod")?.toLocaleUpperCase();
+    const sort = searchParams.get("sort")?.toLocaleUpperCase();
+    const startDate = searchParams.get("start");
+    const endDate = searchParams.get("end");
+
+    if (s) setSearch(s);
+    if (status) setFilterStatus(status);
+    if (payer) setFilterPayer(payer);
+    if (payment) setFilterPaymentStatus(payment);
+
+    if (service) setFilterServiceType(Number(service));
+
+    if (cod) setFilterCOD(cod);
+    if (sort) setFilterSort(sort);
+
+    if (startDate && endDate) {
+      setDateRange([
+        dayjs(startDate, "YYYY-MM-DD"),
+        dayjs(endDate, "YYYY-MM-DD")
+      ]);
+    }
+  }, [searchParams, serviceTypes]);
 
   // --- Fetch Orders ---
   const fetchOrders = async (currentPage = page) => {
@@ -72,7 +111,7 @@ const UserOrderList = () => {
         serviceTypeId: filterServiceType !== null ? filterServiceType : undefined,
         paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
         cod: filterCOD !== "ALL" ? filterCOD : undefined,
-        sort: filterSort !== "NEWEST" ? filterSort : undefined,
+        sort: filterSort,
       };
       if (dateRange) {
         param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
@@ -83,7 +122,7 @@ const UserOrderList = () => {
       if (result.success && result.data) {
         const orderList = result.data?.list || [];
         setOrders(orderList);
-        setTotal(result.data.pagination?.total || result.data.list.length);
+        setTotal(result.data.pagination?.total || 0);
         setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách đơn hàng");
@@ -96,70 +135,141 @@ const UserOrderList = () => {
   };
 
   // --- Cancel Order ---
-  const handleCancelOrder = (orderId: number) => {
-    Modal.confirm({
-      title: "Xác nhận hủy đơn hàng",
-      content: "Bạn có chắc chắn muốn hủy đơn hàng này không?",
-      okText: "Hủy",
-      cancelText: "Không",
-      centered: true,
-      icon: null,
-      okButtonProps: {
-        className: "modal-ok-button",
-      },
-      cancelButtonProps: {
-        className: "modal-cancel-button",
-      },
-      onOk: async () => {
-        try {
-          // const resultAction = await dispatch(cancelUserOrder(orderId)).unwrap();
-          // if (resultAction.success) {
-          //   message.success(resultAction.message || "Hủy đơn hàng thành công");
-          //   fetchOrders(page);
-          // } else {
-          //   message.error(resultAction.message || "Hủy đơn thất bại");
-          // }
-        } catch (error: any) {
-          message.error(error.message || "Lỗi server khi hủy đơn hàng");
-        }
-      },
-    });
+  const handleCancelOrder = (id: number) => {
+    setOrderId(id);
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    setLoading(true);
+    try {
+      if (!orderId) return;
+      const result = await orderApi.cancelUserOrder(orderId);
+      if (result.success && result.data) {
+        message.success("Hủy đơn hàng thành công");
+        fetchOrders(page);
+      } else {
+        message.error(result.message || "Hủy đơn thất bại");
+      }
+    } catch (error: any) {
+      message.error("Lỗi server khi hủy đơn hàng");
+      console.log("Lỗi server khi hủy đơn hàng: ", error.message);
+    } finally {
+      setCancelModalOpen(false);
+      setLoading(false);
+    }
+  };
+
+  const handlePublicOrder = (id: number) => {
+    setOrderId(id);
+    setPublicModalOpen(true);
+  };
+
+  const confirmPublicOrder = async () => {
+    setLoading(true);
+    try {
+      if (!orderId) return;
+      const result = await orderApi.publicUserOrder(orderId);
+
+      if (result.success && result.data) {
+        message.success(result.message || "Đã chuyển đơn hàng sang xử lý thành công");
+
+        fetchOrders(page);
+      } else {
+        message.error(result.message || "Chuyển trạng thái thất bại");
+      }
+    } catch (error: any) {
+      console.error("Update status to pending failed:", error);
+      message.error("Lỗi khi chuyển trạng thái đơn hàng");
+    } finally {
+      setPublicModalOpen(false);
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteOrder = (id: number) => {
+    setOrderId(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteOrder = async () => {
+    setLoading(true);
+    try {
+      if (!orderId) return;
+      const result = await orderApi.deleteUserOrder(orderId);
+
+      if (result.success && result.data) {
+        message.success(result.message || "Xóa đơn hàng thành công");
+        fetchOrders(page);
+      } else {
+        message.error(result.message || "Xóa đơn hàng thất bại");
+      }
+    } catch (error: any) {
+      console.error("Lỗi khi xóa đơn hàng:", error);
+      message.error("Lỗi khi chuyển trạng thái đơn hàng");
+    } finally {
+      setDeleteModalOpen(false);
+      setLoading(false);
+    }
+  };
+
+  const handlePrintOrder = (id: number) => {
+    if (!id) return;
+
+    navigate(`/orders/print?orderIds=${id}`);
+  };
+
+  const handlePrintSelectedOrders = () => {
+    if (!selectedOrderIds.length) {
+      message.warning("Vui lòng chọn đơn hàng để in phiếu vận đơn");
+      return;
+    }
+    
+    navigate(`/orders/print?orderIds=${selectedOrderIds.join(",")}`);
+  };
+
+  const handleEditOrder = (id: number, tracking: string) => {
+    if (tracking !== null) {
+      navigate(`/orders/tracking/${tracking}/edit`);
+    } else {
+      navigate(`/orders/id/${id}/edit`);
+    }
   };
 
   // --- Excel Import ---
   const handleExcelUpload = (file: File): boolean => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const rows: any[] = XLSX.utils.sheet_to_json(worksheet);
+    // const reader = new FileReader();
+    // reader.onload = (e) => {
+    //   try {
+    //     const data = new Uint8Array(e.target?.result as ArrayBuffer);
+    //     const workbook = XLSX.read(data, { type: "array" });
+    //     const sheetName = workbook.SheetNames[0];
+    //     const worksheet = workbook.Sheets[sheetName];
+    //     const rows: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-        const newOrders: Partial<Order>[] = rows.map(row => ({
-          senderName: row["Tên người gửi"]?.trim() || "",
-          senderPhone: row["SĐT người gửi"]?.trim() || "",
-          recipientName: row["Tên người nhận"]?.trim() || "",
-          recipientPhone: row["SĐT người nhận"]?.trim() || "",
-          weight: row["Trọng lượng (kg)"] ?? 0,
-          paymentMethod: row["Phương thức thanh toán"]?.trim() || "Cash",
-          status: row["Trạng thái"]?.trim() || "pending",
-          notes: row["Ghi chú"]?.trim() || "",
-        }));
+    //     const newOrders: Partial<Order>[] = rows.map(row => ({
+    //       senderName: row["Tên người gửi"]?.trim() || "",
+    //       senderPhone: row["SĐT người gửi"]?.trim() || "",
+    //       recipientName: row["Tên người nhận"]?.trim() || "",
+    //       recipientPhone: row["SĐT người nhận"]?.trim() || "",
+    //       weight: row["Trọng lượng (kg)"] ?? 0,
+    //       paymentMethod: row["Phương thức thanh toán"]?.trim() || "Cash",
+    //       status: row["Trạng thái"]?.trim() || "pending",
+    //       notes: row["Ghi chú"]?.trim() || "",
+    //     }));
 
-        const invalidRows = newOrders.filter(o => !o.senderName || !o.recipientName || !o.weight);
-        if (invalidRows.length > 0) {
-          message.error("Có dòng bị thiếu thông tin bắt buộc. Vui lòng kiểm tra lại file!");
-          return;
-        }
+    //     const invalidRows = newOrders.filter(o => !o.senderName || !o.recipientName || !o.weight);
+    //     if (invalidRows.length > 0) {
+    //       message.error("Có dòng bị thiếu thông tin bắt buộc. Vui lòng kiểm tra lại file!");
+    //       return;
+    //     }
 
-        message.success("Đọc file Excel thành công. Chưa gửi lên server trong demo này.");
-      } catch (error) {
-        message.error("Có lỗi khi đọc file Excel!");
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    //     message.success("Đọc file Excel thành công. Chưa gửi lên server trong demo này.");
+    //   } catch (error) {
+    //     message.error("Có lỗi khi đọc file Excel!");
+    //   }
+    // };
+    // reader.readAsArrayBuffer(file);
 
     return false;
   };
@@ -251,35 +361,6 @@ const UserOrderList = () => {
     console.log("search", search);
   }, [search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort]);
 
-  useEffect(() => {
-    const s = searchParams.get("search")?.toLocaleUpperCase();
-    const st = searchParams.get("status")?.toLocaleUpperCase();
-    const payer = searchParams.get("payer")?.toLocaleUpperCase();
-    const pst = searchParams.get("payment")?.toLocaleUpperCase();
-    const sid = searchParams.get("service");
-    const cod = searchParams.get("cod")?.toLocaleUpperCase();
-    const sort = searchParams.get("sort")?.toLocaleUpperCase();
-    const sd = searchParams.get("start");
-    const ed = searchParams.get("end");
-
-    if (s) setSearch(s);
-    if (st) setFilterStatus(st);
-    if (payer) setFilterPayer(payer);
-    if (pst) setFilterPaymentStatus(pst);
-
-    if (sid) setFilterServiceType(Number(sid));
-
-    if (cod) setFilterCOD(cod);
-    if (sort) setFilterSort(sort);
-
-    if (sd && ed) {
-      setDateRange([
-        dayjs(sd, "YYYY-MM-DD"),
-        dayjs(ed, "YYYY-MM-DD")
-      ]);
-    }
-  }, [searchParams, serviceTypes]);
-
   return (
     <div className="list-page-layout">
       <div className="list-page-content">
@@ -309,6 +390,7 @@ const UserOrderList = () => {
                 onAdd={handleAdd}
                 onUpload={handleExcelUpload}
                 onDownloadTemplate={handleDownloadTemplate}
+                onPrint={handlePrintSelectedOrders}
               />
             </div>
           </Col>
@@ -319,6 +401,10 @@ const UserOrderList = () => {
         <OrderTable
           orders={orders}
           onCancel={handleCancelOrder}
+          onPublic={handlePublicOrder}
+          onDelete={handleDeleteOrder}
+          onPrint={handlePrintOrder}
+          onEdit={handleEditOrder}
           page={page}
           total={total}
           loading={loading}
@@ -328,9 +414,32 @@ const UserOrderList = () => {
             if (size) setLimit(size);
             fetchOrders(page);
           }}
+          selectedOrderIds={selectedOrderIds}
+          setSelectedOrderIds={setSelectedOrderIds}
         />
 
       </div>
+
+      <ConfirmCancelModal
+        open={cancelModalOpen}
+        onOk={confirmCancelOrder}
+        onCancel={() => setCancelModalOpen(false)}
+        loading={loading}
+      />
+
+      <ConfirmPublicModal
+        open={publicModalOpen}
+        onOk={confirmPublicOrder}
+        onCancel={() => setPublicModalOpen(false)}
+        loading={loading}
+      />
+
+      <ConfirmDeleteModal
+        open={deleteModalOpen}
+        onOk={confirmDeleteOrder}
+        onCancel={() => setDeleteModalOpen(false)}
+        loading={loading}
+      />
     </div>
   );
 };

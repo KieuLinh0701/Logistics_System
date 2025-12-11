@@ -1,5 +1,5 @@
 import type { ApiResponse, ListResponse } from "../types/response";
-import type { AdminVehicle } from "../types/vehicle";
+import type { AdminVehicle, ManagerVehicleEditRequest, ManagerVehicleSearchRequest, Vehicle } from "../types/vehicle";
 import axiosClient from "./axiosClient";
 
 const vehicleApi = {
@@ -33,6 +33,17 @@ const vehicleApi = {
 
   async deleteAdminVehicle(id: number) {
     const res = await axiosClient.delete<ApiResponse<null>>(`/admin/vehicles/${id}`);
+    return res;
+  },
+
+  // Manager
+  async listManagerVehicles(params: ManagerVehicleSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<Vehicle>>>("/manager/vehicles", { params });
+    return res;
+  },
+
+  async updateManagerVehicle(id: number, data: ManagerVehicleEditRequest) {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/vehicles/${id}`, data);
     return res;
   },
 };

@@ -72,10 +72,10 @@ const OfficeSearchBody: React.FC = () => {
         setOffices(response.data);
         if (response.data.length > 0) {
           setSelectedOffice(response.data[0]);
-          setTotal(response.data.length);
         } else {
           setSelectedOffice(null);
         }
+        setTotal(response.data.length);
       } else {
         message.error(response.message || "Có lỗi xảy ra khi tìm kiếm bưu cục");
       }
@@ -200,11 +200,12 @@ const OfficeSearchBody: React.FC = () => {
               </div>
             )}
 
-            {offices.length > 0 && (
-              <div className="office-search-results">
-                <Title level={4} className="office-search-results-title">
-                  Kết quả tìm kiếm ({total} bưu cục)
-                </Title>
+
+            <div className="office-search-results">
+              <Title level={4} className="office-search-results-title">
+                Kết quả tìm kiếm ({total} bưu cục)
+              </Title>
+              {offices.length > 0 && (
                 <div className="office-cards-scroll-container">
                   <div className="office-cards-container">
                     {offices.map((office) => (
@@ -258,8 +259,8 @@ const OfficeSearchBody: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

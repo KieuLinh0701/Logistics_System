@@ -1,0 +1,327 @@
+/* Container chính */
+.manager-office {
+  padding: 24px;
+  background: #fafbfe;
+  min-height: calc(100vh - 64px);
+}
+
+/* Card hiển thị thông tin */
+.manager-office-info-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e6e9f2;
+  height: 100%;
+}
+
+.manager-office-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f2f8;
+}
+
+.manager-office-title {
+  margin: 0 !important;
+  color: #1C3D90;
+  font-size: 21px !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.manager-office-title .anticon {
+  color: #1C3D90;
+  font-size: 24px;
+}
+
+.manager-office-code-tag {
+  background: #1C3D90;
+  border: none;
+  color: white;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  height: auto;
+}
+
+.manager-office-code-tag .anticon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+/* Chi tiết thông tin */
+.manager-office-details {
+  width: 100%;
+  gap: 16px !important;
+}
+
+.manager-office-detail-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f7f9fc;
+}
+
+.manager-office-detail-item:last-child {
+  border-bottom: none;
+}
+
+.manager-office-detail-icon {
+  color: #1C3D90;
+  font-size: 16px;
+  margin-right: 12px;
+  width: 20px;
+  text-align: center;
+}
+
+.manager-office-detail-label {
+  font-weight: 500;
+  color: #555;
+  min-width: 120px;
+  margin-right: 12px;
+  font-size: 14px;
+}
+
+.manager-office-detail-value {
+  color: #333;
+  flex: 1;
+  font-size: 14px;
+}
+
+/* Card chỉnh sửa */
+.manager-office-edit-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0 24px;
+  border: 1px solid #e6e9f2;
+  height: 100%;
+}
+
+.manager-office-edit-title {
+  color: #1C3D90;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f2f8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.manager-office-edit-title .anticon {
+  font-size: 18px;
+}
+
+/* Form styles */
+.manager-office-edit-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.manager-office-edit-form .ant-form-item-label {
+  padding-bottom: 6px !important;
+}
+
+.manager-office-edit-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #555;
+  font-size: 14px;
+}
+
+/* Custom Input */
+.manager-office-input {
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.2s ease !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  font-size: 14px !important;
+  color: #333 !important;
+}
+
+.manager-office-input:hover {
+  border-color: #1C3D90 !important;
+}
+
+.manager-office-input:focus,
+.manager-office-input:focus-within {
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1) !important;
+}
+
+.manager-office-input::placeholder {
+  color: #999 !important;
+  font-size: 13px !important;
+}
+
+/* Custom Date Picker */
+.manager-office-date-picker {
+  width: 100% !important;
+}
+
+.manager-office-date-picker .ant-picker {
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.2s ease !important;
+  height: 36px !important;
+}
+
+.manager-office-date-picker .ant-picker:hover {
+  border-color: #1C3D90 !important;
+}
+
+.manager-office-date-picker .ant-picker-focused {
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1) !important;
+}
+
+/* Custom Select */
+.manager-office-select .ant-select-selector {
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.2s ease !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  font-size: 14px !important;
+  color: #333 !important;
+}
+
+.manager-office-select .ant-select-selector:hover {
+  border-color: #1C3D90 !important;
+}
+
+.manager-office-select.ant-select-focused .ant-select-selector {
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1) !important;
+}
+
+.manager-office-select .ant-select-selection-placeholder {
+  color: #999 !important;
+  font-size: 13px !important;
+}
+
+/* Custom InputNumber */
+.manager-office-input-number {
+  width: 100% !important;
+}
+
+.manager-office-input-number .ant-input-number-input {
+  height: 36px;
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.2s ease !important;
+  padding: 0 12px !important;
+  font-size: 14px !important;
+  color: #333 !important;
+}
+
+.manager-office-input-number:hover .ant-input-number-input {
+  border-color: #1C3D90 !important;
+}
+
+.manager-office-input-number.ant-input-number-focused .ant-input-number-input {
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1) !important;
+}
+
+/* Custom Textarea */
+.manager-office-textarea {
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.2s ease !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  color: #333 !important;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.manager-office-textarea:hover {
+  border-color: #1C3D90 !important;
+}
+
+.manager-office-textarea:focus {
+  border-color: #1C3D90 !important;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1) !important;
+}
+
+.manager-office-textarea::placeholder {
+  color: #999 !important;
+  font-size: 13px !important;
+}
+
+/* Nút cập nhật */
+.manager-office-update-button {
+  background: #1C3D90 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  height: 40px !important;
+  font-weight: 500 !important;
+  font-size: 15px !important;
+  padding: 0 24px !important;
+  transition: all 0.2s ease !important;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.manager-office-update-button:hover {
+  background: #2a4db3 !important;
+}
+
+/* Loading state */
+.manager-office-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 16px;
+  color: #1C3D90;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .manager-office {
+    padding: 16px;
+  }
+  
+  .manager-office-info-card,
+  .manager-office-edit-card {
+    padding: 20px;
+  }
+  
+  .manager-office-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .manager-office-title {
+    font-size: 20px !important;
+  }
+  
+  .manager-office-detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .manager-office-detail-label {
+    min-width: auto;
+    margin-right: 0;
+  }
+  
+  .manager-office-update-button {
+    height: 38px !important;
+    font-size: 14px !important;
+  }
+}

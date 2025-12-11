@@ -146,7 +146,8 @@ const Header: React.FC = () => {
     fetchNotifications();
 
     const handleRealtimeNotification = (payload: Notification) => {
-      setNotifications((prev) => [payload, ...prev].slice(0, 10));
+      setNotifications((prev) => [payload, ...prev].slice(0, 7));
+      setUnreadCount((prev) => prev + 1);
     };
 
     connectWebSocket(currentUser.id, handleRealtimeNotification);
@@ -161,7 +162,7 @@ const Header: React.FC = () => {
       key: "account/settings",
       label: "Cài đặt tài khoản",
       icon: <ProfileOutlined />,
-      onClick: () => navigate(`/account/settings`)
+      onClick: () => navigate(`/account/settings?tab=profile`)
     },
     {
       key: "logout",

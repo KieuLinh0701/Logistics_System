@@ -101,7 +101,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -190,7 +190,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -244,24 +244,24 @@ const Sidenav: React.FC = () => {
           {
             key: "/tracking/shipping-fee",
             label: "Tra cứu cước vận chuyển",
-            path: "/tracking/shipping-fee",
+            path: "shipping-fee",
           },
           {
             key: "/tracking/office-search",
             label: "Tra cứu bưu cục",
-            path: "/tracking/office-search",
+            path: "office-search",
           },
           {
             key: "/tracking/shipping-rates",
             label: "Bảng giá",
-            path: "/tracking/shipping-rates",
+            path: "shipping-rates",
           },
         ],
       },
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -322,7 +322,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -360,7 +360,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],

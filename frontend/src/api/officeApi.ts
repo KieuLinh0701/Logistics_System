@@ -1,15 +1,25 @@
-import type { Office, OfficeSearchRequest, AdminOffice, CreateOfficePayload, UpdateOfficePayload } from "../types/office";
+import type { Office, OfficeSearchRequest, AdminOffice, CreateOfficePayload, UpdateOfficePayload, LocalOfficeRequest, OfficeEditRequest } from "../types/office";
 import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 
 const officeApi = {
-  // ---------------- Public ---------------- //
+  // Public
   searchOffice: async (params?: OfficeSearchRequest) => {
     const res = await axiosClient.get<ApiResponse<Office[]>>('/public/offices/search', { params });
     return res;
   },
   getHeadOffice: async () => {
     const res = await axiosClient.get<ApiResponse<Office>>('/public/offices/head-office');
+    return res;
+  },
+
+  async listLocalOffices(params: LocalOfficeRequest) {
+    const res = await axiosClient.get<ApiResponse<Office[]>>("/public/offices/region", { params });
+    return res;
+  },
+
+  async hasLocalOffice( cityCode: number ) {
+    const res = await axiosClient.get<ApiResponse<boolean>>(`/public/offices/region/${cityCode}/check`);
     return res;
   },
 
@@ -36,6 +46,17 @@ const officeApi = {
 
   async deleteAdminOffice(id: number) {
     const res = await axiosClient.delete<ApiResponse<null>>(`/admin/offices/${id}`);
+    return res;
+  },
+
+  // Manager
+  getManagerOffice: async () => {
+    const res = await axiosClient.get<ApiResponse<Office>>('/manager/offices/me');
+    return res;
+  },
+
+  updateManagerOffice: async (data: OfficeEditRequest) => {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/offices/me`, data);
     return res;
   },
 };

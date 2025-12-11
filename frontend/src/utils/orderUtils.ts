@@ -1,10 +1,31 @@
+// Điều kiện để thao tác với order của user
+export const canEditUserOrder = (value: string) => {
+  return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);
+};
+
+export const canPublicUserOrder = (value: string) => {
+  return ["DRAFT"].includes(value);
+};
+
+export const canCancelUserOrder = (value: string) => {
+  return ["PENDING", "CONFIRMED", "READY_FOR_PICKUP"].includes(value) 
+};
+
+export const canPrintUserOrder = (value: string) => {
+  return !["DRAFT", "PENDING", "CANCELLED"].includes(value) 
+};
+
+export const canDeleteUserOrder = (value: string) => {
+  return ["DRAFT"].includes(value) 
+};
+
 export const ORDER_CREATOR_TYPES = ['USER', 'MANAGER', 'ADMIN'] as const;
 
 export const ORDER_PAYER_TYPES = ['CUSTOMER', 'SHOP'] as const;
 
 export const ORDER_PAYMENT_STATUS = ['PAID', 'UNPAID', 'REFUNDED'] as const;
 
-export const ORDER_PICKUP_TYPES = ['AT_OFFICE', 'PICKUP_BY_COURIER'] as const;
+export const ORDER_PICKUP_TYPES = ['PICKUP_BY_COURIER', 'AT_OFFICE'] as const;
 
 export const ORDER_STATUS = [
   'DRAFT',
@@ -66,8 +87,8 @@ export const translateOrderPaymentStatus = (value: string): string => {
 
 export const translateOrderPickupType = (value: string): string => {
   switch (value) {
-    case 'AT_OFFICE': return 'Nhận tại bưu cục';
-    case 'PICKUP_BY_COURIER': return 'Shipper đến lấy';
+    case 'PICKUP_BY_COURIER': return 'Lấy hàng tại nhà';
+    case 'AT_OFFICE': return 'Giao tại bưu cục';
     default: return value;
   }
 };

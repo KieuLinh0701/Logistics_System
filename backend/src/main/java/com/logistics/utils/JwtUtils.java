@@ -3,6 +3,7 @@ package com.logistics.utils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.logistics.entity.Account;
+import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -24,7 +25,7 @@ public class JwtUtils {
                 this.jwtExpirationMs = jwtExpirationMs;
         }
 
-        public String generateToken(Account account, User user) {
+        public String generateToken(Account account, User user, String roleName) {
                 Date now = new Date();
                 Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
@@ -34,7 +35,7 @@ public class JwtUtils {
                 Map<String, Object> accountMap = new HashMap<>();
                 accountMap.put("id", account.getId());
                 accountMap.put("email", account.getEmail());
-                accountMap.put("role", account.getRole() != null ? account.getRole().getName() : null);
+                accountMap.put("role", roleName);
 
                 return Jwts.builder()
                                 .setSubject(account.getEmail())
@@ -44,5 +45,26 @@ public class JwtUtils {
                                 .setExpiration(expiryDate)
                                 .signWith(key)
                                 .compact();
+        }
+
+        public String generateTempToken(Account account) {
+                Date now = new Date();
+                Date expiryDate = new Date(now.getTime() + 5 * 60 * 1000);
+
+                Map<String, Object> userMap = new HashMap<>();
+                userMap.put("accountId", account.getId());
+
+                return Jwts.builder()
+                                .setClaims(userMap)
+                                .setIssuedAt(now)
+                                .setExpiration(expiryDate)
+                                .signWith(key)
+                                .compact();
+        }
+
+        public Integer getAccountIdFromTempToken(String token) {
+                return (Integer) Jwts.parserBuilder().setSigningKey(key).build()
+                                .parseClaimsJws(token)
+                                .getBody().get("accountId");
         }
 }

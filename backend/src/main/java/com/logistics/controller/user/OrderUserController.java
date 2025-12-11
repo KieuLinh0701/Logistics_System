@@ -1,13 +1,20 @@
 package com.logistics.controller.user;
 
-import com.logistics.dto.OrderDto;
+import com.logistics.dto.OrderPrintDto;
+import com.logistics.dto.user.order.UserOrderDetailDto;
+import com.logistics.dto.user.order.UserOrderListDto;
+import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
+import com.logistics.response.OrderCreateSuccess;
 import com.logistics.service.user.OrderUserService;
-import com.logistics.utils.SecurityUtils;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,26 +27,78 @@ public class OrderUserController {
     @Autowired
     private OrderUserService service;
 
-    private boolean isNotPermitRole() {
-        return !SecurityUtils.hasRole("user");
-    }
-
     @GetMapping
-    public ResponseEntity<ApiResponse<ListResponse<OrderDto>>> list(@Valid UserOrderSearchRequest request) {
-        if (isNotPermitRole()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
-        }
-
-        Integer userId;
-        try {
-            userId = SecurityUtils.getAuthenticatedUserId();
-        } catch (RuntimeException e) {
-            ApiResponse<ListResponse<OrderDto>> response = new ApiResponse<>(false, e.getMessage(), null);
-            return ResponseEntity.status(401).body(response);
-        }
-
-        return ResponseEntity.ok(service.list(userId, request));
+    public ResponseEntity<ApiResponse<ListResponse<UserOrderListDto>>> list(
+            @Valid UserOrderSearchRequest userOrderSearchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
     }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<OrderCreateSuccess>> create(
+            @RequestBody UserOrderCreateRequest userOrderCreateRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.create(userId, userOrderCreateRequest));
+    }
+
+    @GetMapping("/{trackingNumber}")
+    public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderByTrackingNumber(@PathVariable String trackingNumber,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.getOrderByTrackingNumber(userId, trackingNumber));
+    }
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderById(@PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.getOrderById(userId, id));
+    }
+
+    @PatchMapping("/{id}/public")
+    public ResponseEntity<ApiResponse<String>> publicOrder(@PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.publicOrder(userId, id));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<Boolean>> cancelOrder(@PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.cancelOrder(userId, id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> delete(@PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.deleteOrder(userId, id));
+    }
+
+    @GetMapping("/print")
+    public ResponseEntity<ApiResponse<List<OrderPrintDto>>> getOrdersForPrint(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        List<Integer> orderIds = Arrays.stream(orderIdsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Integer::parseInt)
+                .toList();
+
+        return ResponseEntity.ok(service.getOrdersForPrint(userId, orderIds));
+    }
+
 }
-
-

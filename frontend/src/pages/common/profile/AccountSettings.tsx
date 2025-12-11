@@ -3,15 +3,27 @@ import { Tabs } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined, ProfileOutlined } from '@ant-design/icons';
 import EmailSettings from './components/EmailSettings';
 import ProfileSettings from './components/ProfileSettings';
-import './AccountSettings.css';
 import PasswordSettings from './components/PasswordSettings';
 import Title from 'antd/es/typography/Title';
+import './AccountSettings.css';
+import { getUserRole } from '../../../utils/authUtils';
+import AddressSettingsUser from './components/userAddress/AddressSettingsUser';
+import AddressSettings from './components/AddressSettings';
 
 const AccountSettings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('profile');
+  const role = getUserRole();
+  const getTabFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "profile";
+  };
+
+  const [activeTab, setActiveTab] = useState(getTabFromUrl());
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", key);
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
   };
 
   return (
@@ -34,35 +46,35 @@ const AccountSettings: React.FC = () => {
           items={[
             {
               key: 'profile',
-              label: (
-                <span className="tab-label">
-                  <UserOutlined />
-                  Thông Tin Cá Nhân
-                </span>
-              ),
+              label: <span className="tab-label"><UserOutlined /> Thông Tin Cá Nhân</span>,
               children: <ProfileSettings />,
             },
             {
               key: 'email',
-              label: (
-                <span className="tab-label">
-                  <MailOutlined />
-                  Cài Đặt Email
-                </span>
-              ),
+              label: <span className="tab-label"><MailOutlined /> Cài Đặt Email</span>,
               children: <EmailSettings />,
             },
             {
               key: 'password',
-              label: (
-                <span className="tab-label">
-                  <LockOutlined />
-                  Đổi Mật Khẩu
-                </span>
-              ),
+              label: <span className="tab-label"><LockOutlined /> Đổi Mật Khẩu</span>,
               children: <PasswordSettings />,
             },
-          ]}
+            role === "user"
+              ? {
+                key: "address",
+                label: <span className="tab-label">
+                  <LockOutlined /> Cài Đặt Địa chỉ
+                </span>,
+                children: <AddressSettingsUser />,
+              }
+              : {
+                key: "address",
+                label: <span className="tab-label">
+                  <LockOutlined /> Cài Đặt Địa Chỉ
+                </span>,
+                children: <AddressSettings />,
+              },
+          ].filter(Boolean)}
         />
       </div>
     </div>

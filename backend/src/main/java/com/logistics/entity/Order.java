@@ -3,6 +3,8 @@ package com.logistics.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
@@ -33,7 +35,7 @@ public class Order {
     private Integer id;
 
     // Mã vận đơn
-    @Column(length = 50, unique = true, nullable = false)
+    @Column(length = 50, unique = true, nullable = true)
     private String trackingNumber; // Mã vận đơn kiểu UTE_11 chữ số khác
 
     // Trạng thái
@@ -57,8 +59,18 @@ public class Order {
     @Column(nullable = false)
     private String senderPhone;
 
+    @Column(nullable = false)
+    private Integer senderCityCode;
+
+    @Column(nullable = false)
+    private Integer senderWardCode;
+
+    @Column(nullable = false)
+    private String senderDetail;
+
     @ManyToOne
-    @JoinColumn(name = "sender_address_id")
+    @JoinColumn(name = "sender_address_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Address senderAddress;
 
     // ------------------- Người nhận -------------------
@@ -69,7 +81,8 @@ public class Order {
     private String recipientPhone;
 
     @ManyToOne
-    @JoinColumn(name = "recipient_address_id")
+    @JoinColumn(name = "recipient_address_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Address recipientAddress;
 
     // ------------------- Hình thức lấy hàng -------------------

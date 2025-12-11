@@ -16,7 +16,4 @@ public class ServiceTypeDto {
     private String name;
     private String deliveryTime;
     private String description;
-    private String status;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

@@ -1,13 +1,14 @@
 import React from "react";
 import { Card, Col, Form, Input, Row } from "antd";
 import type { FormInstance } from "antd/lib";
+import AddressForm from "../../../../../components/common/AdressForm";
 
 interface Props {
-    form: FormInstance; 
+    form: FormInstance;
     recipient: {
         name: string;
-        phone: string;
-        detailAddress: string;
+        phoneNumber: string;
+        detail: string;
         wardCode: number;
         cityCode: number;
     };
@@ -15,67 +16,74 @@ interface Props {
     onChange?: (values: any) => void;
 }
 
-const RecipientInfo: React.FC<Props> = ({ 
-    form, 
-    recipient, 
+const RecipientInfo: React.FC<Props> = ({
+    form,
+    recipient,
     disabled,
-    onChange 
+    onChange
 }) => {
     return (
-        <div className="rowContainerEdit">
+        <div className="create-order-card-container">
             <Form
                 form={form}
                 layout="vertical"
                 initialValues={{
                     recipientName: recipient.name,
-                    recipientPhone: recipient.phone,
+                    recipientPhone: recipient.phoneNumber,
                     recipient: {
-                        province: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
-                        commune: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
-                        address: recipient.detailAddress,
+                        cityCode: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
+                        wardCode: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
+                        detail: recipient.detail,
                     }
                 }}
                 onValuesChange={(_, allValues) => {
-                    onChange?.(allValues); 
+                    onChange?.(allValues);
                 }}
             >
-                <Card className="customCard">
-                    <div className="cardTitle">Thông tin người nhận</div>
+                <Card className="create-order-custom-card">
+                    <div className="create-order-custom-card-title">Thông tin người nhận</div>
+                    <div className="create-order-content">
+                        <Row gutter={16} >
+                            <Col span={12}>
+                                <Form.Item
+                                    name="name"
+                                    label={<span className="modal-lable">Tên người nhận</span>}
+                                    rules={[{ required: true, message: "Vui lòng nhập tên" }]}
+                                >
+                                    <Input
+                                        className="modal-custom-input"
+                                        placeholder="Nhập tên người nhận"
+                                        disabled={disabled} />
+                                </Form.Item>
 
-                    <Row gutter={16} >
-                        <Col span={12}>
-                            <Form.Item
-                                name="recipientName"
-                                label="Tên người nhận"
-                                rules={[{ required: true, message: "Vui lòng nhập tên" }]}
-                            >
-                                <Input placeholder="Nhập tên người nhận" disabled={disabled}/>
-                            </Form.Item>
+                                <Form.Item
+                                    name="phoneNumber"
+                                    label={<span className="modal-lable">Số điện thoại</span>}
+                                    rules={[
+                                        { required: true, message: "Vui lòng nhập số điện thoại" },
+                                        {
+                                            pattern: /^\d{10}$/,
+                                            message: "Số điện thoại phải đủ 10 số",
+                                        },
+                                    ]}
+                                >
+                                    <Input
+                                        className="modal-custom-input"
+                                        placeholder="Ví dụ: 0901234567"
+                                        disabled={disabled} />
+                                </Form.Item>
+                            </Col>
 
-                            <Form.Item
-                                name="recipientPhone"
-                                label="Số điện thoại"
-                                rules={[
-                                    { required: true, message: "Vui lòng nhập số điện thoại" },
-                                    {
-                                        pattern: /^\d{10}$/,
-                                        message: "Số điện thoại phải đủ 10 số",
-                                    },
-                                ]}
-                            >
-                                <Input placeholder="Ví dụ: 0901234567" disabled={disabled}/>
-                            </Form.Item>
-                        </Col>
-
-                        <Col span={12}>
-                            {/* <AddressForm 
-                                form={form}
-                                prefix="recipient"
-                                disableCity={disabled} 
-                                disableDetailAddress={disabled} 
-                            /> */}
-                        </Col>
-                    </Row>
+                            <Col span={12}>
+                                <AddressForm
+                                    form={form}
+                                    prefix="recipient"
+                                    disableCity={disabled}
+                                    disableDetailAddress={disabled}
+                                />
+                            </Col>
+                        </Row>
+                    </div>
                 </Card>
             </Form>
         </div>

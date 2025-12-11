@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, InputNumber, Select, Upload, type UploadProps, type UploadFile } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Upload, type UploadProps, type UploadFile, Tooltip } from 'antd';
 import type { UserProductForm } from '../../../../types/product';
 import { PRODUCT_STATUS, PRODUCT_TYPES, translateProductStatus, translateProductType } from '../../../../utils/productUtils';
-import { UploadOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, UploadOutlined } from '@ant-design/icons';
 
 interface AddEditModalProps {
   open: boolean;
@@ -28,21 +28,21 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   useEffect(() => {
-  if (!open) {
-    setFileList([]);
-  } else if (product.image) {
-    setFileList([
-      {
-        uid: '-1',
-        name: 'image.png',
-        status: 'done',
-        url: product.image,
-      },
-    ]);
-  } else {
-    setFileList([]);
-  }
-}, [open, product.image]);
+    if (!open) {
+      setFileList([]);
+    } else if (product.image) {
+      setFileList([
+        {
+          uid: '-1',
+          name: 'image.png',
+          status: 'done',
+          url: product.image,
+        },
+      ]);
+    } else {
+      setFileList([]);
+    }
+  }, [open, product.image]);
 
   // Xử lý khi chọn file
   const handleFileChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
@@ -107,8 +107,11 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     <Modal
       title={
         <span className='modal-title'>
-          {mode === 'edit' ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
+          {mode === 'edit'
+            ? `Chỉnh sửa sản phẩm`
+            : 'Thêm sản phẩm mới'}
         </span>
+
       }
       open={open}
       onOk={onOk}
@@ -143,8 +146,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
             >
               {fileList.length >= 1 ? null : (
                 <div className="modal-upload-button-content">
-                  <UploadOutlined style={{ fontSize: '20px', color: '#1C3D90' }} />
-                  <div style={{ marginTop: 8, color: '#666' }}>Tải ảnh lên</div>
+                  <UploadOutlined />
+                  <div className='modal-upload-button-lable'>Tải ảnh lên</div>
                 </div>
               )}
             </Upload>
@@ -169,7 +172,18 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          label={<span className="modal-lable">Trọng lượng (Kg)</span>}
+          label={
+            <span className="modal-label">
+              Khối lượng quy đổi{" "}
+              <Tooltip
+                title={
+                  "Khối lượng quy đổi = (Dài × Rộng × Cao) / 5000. So sánh với khối lượng thực tế và lấy giá trị lớn hơn để tính phí vận chuyển."
+                }
+              >
+                <InfoCircleOutlined />
+              </Tooltip>
+            </span>
+          }
           name="weight"
           rules={[{ required: true, message: 'Nhập trọng lượng sản phẩm!' }]}>
           <InputNumber

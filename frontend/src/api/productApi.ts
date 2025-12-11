@@ -1,6 +1,6 @@
 import type { ApiResponse, BulkResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
-import type { Product, UserBulkProductForm, UserProductSearchRequest } from "../types/product";
+import type { Product, UserProductActiveAndInstockRequest, UserProductSearchRequest } from "../types/product";
 
 const productApi = {
   // User
@@ -26,6 +26,11 @@ const productApi = {
 
   async createBulkUserProduct(data: FormData) {
     const res = await axiosClient.post<BulkResponse<Product>>("/user/products/bulk", data);
+    return res;
+  },
+
+  async getActiveAndInstockUserProducts(params: UserProductActiveAndInstockRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<Product>>>("/user/products/active", { params });
     return res;
   },
 };

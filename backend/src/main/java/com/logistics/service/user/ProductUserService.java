@@ -24,6 +24,7 @@ import com.logistics.request.user.product.UserProductSearchRequest;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.dto.ProductDto;
+import com.logistics.entity.OrderProduct;
 import com.logistics.entity.Product;
 import com.logistics.entity.User;
 import com.logistics.enums.ProductStatus;
@@ -70,17 +71,27 @@ public class ProductUserService {
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-
             Specification<Product> spec = ProductSpecification.unrestrictedProduct()
                     .and(ProductSpecification.userId(userId))
                     .and(ProductSpecification.search(search))
                     .and(ProductSpecification.type(type))
                     .and(ProductSpecification.status(status))
                     .and(ProductSpecification.stock(stock))
-                    .and(ProductSpecification.sort(sort))
                     .and(ProductSpecification.createdAtBetween(startDate, endDate));
 
+            Sort sortOpt = switch (sort.toLowerCase()) {
+                case "newest" -> Sort.by("createdAt").descending();
+                case "oldest" -> Sort.by("createdAt").ascending();
+                case "best_selling" -> Sort.by("soldQuantity").descending();
+                case "least_selling" -> Sort.by("soldQuantity").ascending();
+                case "highest_price" -> Sort.by("price").descending();
+                case "lowest_price" -> Sort.by("price").ascending();
+                case "highest_stock" -> Sort.by("stock").descending();
+                case "lowest_stock" -> Sort.by("stock").ascending();
+                default -> Sort.unsorted();
+            };
+
+            Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
             Page<Product> pageData = repository.findAll(spec, pageable);
 
             List<ProductDto> list = pageData.getContent()
@@ -298,5 +309,55 @@ public class ProductUserService {
         response.setResults(results);
 
         return response;
+    }
+
+    public ApiResponse<ListResponse<ProductDto>> getActiveAndInstockUserProducts(int userId,
+            UserProductSearchRequest request) {
+        try {
+            int page = request.getPage();
+            int limit = request.getLimit();
+            String search = request.getSearch();
+            String type = request.getType();
+
+            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+            Specification<Product> spec = ProductSpecification.unrestrictedProduct()
+                    .and(ProductSpecification.userId(userId))
+                    .and(ProductSpecification.search(search))
+                    .and(ProductSpecification.type(type))
+                    .and(ProductSpecification.status(ProductStatus.ACTIVE.name()))
+                    .and(ProductSpecification.stock("instock"));
+
+            Page<Product> pageData = repository.findAll(spec, pageable);
+
+            List<ProductDto> list = pageData.getContent()
+                    .stream()
+                    .map(ProductMapper::toDto)
+                    .toList();
+
+            int total = (int) pageData.getTotalElements();
+
+            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+
+            ListResponse<ProductDto> data = new ListResponse<>();
+            data.setList(list);
+            data.setPagination(pagination);
+
+            return new ApiResponse<>(true, "Lấy danh sách sản phẩm đang bán được thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    public void restoreStockFromOrder(List<OrderProduct> orderProducts) {
+        if (orderProducts == null || orderProducts.isEmpty()) return;
+
+        for (OrderProduct op : orderProducts) {
+            Product product = op.getProduct();
+            product.setStock(product.getStock() + op.getQuantity());
+            product.setSoldQuantity(product.getSoldQuantity() - op.getQuantity());
+            repository.save(product);
+        }
     }
 }

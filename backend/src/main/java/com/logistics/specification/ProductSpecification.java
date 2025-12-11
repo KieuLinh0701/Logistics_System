@@ -58,45 +58,6 @@ public class ProductSpecification {
         };
     }
 
-    public static Specification<Product> sort(String value) {
-        return (root, query, cb) -> {
-            if (value == null || value.isEmpty() || query == null) {
-                return null;
-            }
-
-            switch (value.toLowerCase()) {
-                case "newest":
-                    query.orderBy(cb.desc(root.get("createdAt")));
-                    break;
-                case "oldest":
-                    query.orderBy(cb.asc(root.get("createdAt")));
-                    break;
-                case "bestselling":
-                    query.orderBy(cb.desc(root.get("soldQuantity")));
-                    break;
-                case "leastselling":
-                    query.orderBy(cb.asc(root.get("soldQuantity")));
-                    break;
-                case "highestprice":
-                    query.orderBy(cb.desc(root.get("price")));
-                    break;
-                case "lowestprice":
-                    query.orderBy(cb.asc(root.get("price")));
-                    break;
-                case "higheststock":
-                    query.orderBy(cb.desc(root.get("stock")));
-                    break;
-                case "loweststock":
-                    query.orderBy(cb.asc(root.get("stock")));
-                    break;
-                default:
-                    break;
-            }
-
-            return null;
-        };
-    }
-
     public static Specification<Product> createdAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
         return (root, query, cb) -> {
             if (startDate == null && endDate == null) {

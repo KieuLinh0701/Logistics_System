@@ -1,4 +1,8 @@
 import type { Address } from "./address";
+import type { Office } from "./office";
+import type { OrderHistory } from "./orderHistory";
+import type { OrderProduct, OrderProductPrint, OrderProductRequest } from "./orderProduct";
+import type { Promotion } from "./promotion";
 import type { ServiceType } from "./serviceType";
 
 export interface AdminOrder {
@@ -18,12 +22,14 @@ export interface Order {
   createdByType: string;
   senderName: string;
   senderPhone: string;
+  senderCityCode: number;
+  senderWardCode: number;
+  senderDetail: string;
   senderAddress: Address;
-  recipientName: string;
-  recipientPhone: string;
   recipientAddress: Address;
   pickupType: string;
   weight: number;
+  serviceTypeName: string;
   serviceType: ServiceType;
   discountAmount: number;
   cod: number;
@@ -32,10 +38,15 @@ export interface Order {
   payer: string;
   paymentStatus: string;
   notes: string;
+  promotionId: number | undefined;
+  shippingFee: number;
   paidAt: Date;
   deliveredAt: Date;
   refundedAt: Date;
   createdAt: Date;
+  fromOffice: Office;
+  orderProducts: OrderProduct[];
+  orderHistories: OrderHistory[];
 }
 
 export interface UserOrderSearchRequest {
@@ -51,4 +62,47 @@ export interface UserOrderSearchRequest {
   sort?: string;
   startDate?: string;
   endDate?: string;
+}
+
+export interface UserOrderRequest {
+  id?: number;
+  status: string;
+  senderAddressId: number;
+  recipientName: string;
+  recipientPhone: string;
+  recipientCityCode: number;
+  recipientWardCode: number;
+  recipientDetail: string;
+  pickupType: string;
+  weight: number;
+  serviceTypeId: number;
+  cod: number;
+  orderValue: number;
+  payer: string;
+  notes: string;
+  fromOfficeId: number;
+  orderProducts: OrderProductRequest[];
+  promotionId: number;
+}
+
+export interface CreateOrderSuccess {
+  trackingNumber: string;
+  orderId: number;
+}
+
+export interface OrderPrint {
+  trackingNumber: string;
+  barcodeTrackingNumber: string;
+  fromOfficeCode: string;
+  qrFromOfficeCode: string;
+  senderName: string;
+  senderPhone: string;
+  senderCityCode: number;
+  senderWardCode: number;
+  senderDetail: string;
+  recipientAddress: Address;
+  codAmount: number;
+  weight: number;
+  createdAt: Date;
+  orderProducts: OrderProductPrint[];
 }

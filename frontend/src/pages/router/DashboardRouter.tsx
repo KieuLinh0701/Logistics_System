@@ -2,6 +2,7 @@ import { getUserRole } from "../../utils/authUtils";
 import ManagerDashboard from "../manager/ManagerDashboard";
 import UserDashboard from "../user/UserDashboard";
 import AdminDashboard from "../admin/Dashboard";
+import Forbidden from "../common/Forbidden";
 
 const DashboardRouter = () => {
   const role = getUserRole();
@@ -14,7 +15,7 @@ const DashboardRouter = () => {
     case "user":
       return <UserDashboard />;
     default:
-      return <div>Access Denied</div>;
+      return <Forbidden />;
   }
 };
 

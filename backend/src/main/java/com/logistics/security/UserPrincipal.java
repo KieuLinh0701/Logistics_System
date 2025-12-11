@@ -2,6 +2,8 @@ package com.logistics.security;
 
 import com.logistics.entity.User;
 import com.logistics.entity.Account;
+import com.logistics.entity.Role;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -11,11 +13,13 @@ public class UserPrincipal implements UserDetails {
 
     private final Account account;
     private final User user;
+    private final Role currentRole;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public UserPrincipal(Account account, User user, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(Account account, User user, Role currentRole, Collection<? extends GrantedAuthority> authorities) {
         this.account = account;
         this.user = user;
+        this.currentRole = currentRole;
         this.authorities = authorities;
     }
 
@@ -27,6 +31,10 @@ public class UserPrincipal implements UserDetails {
         return user;
     }
 
+    public Role getCurrentRole() {
+        return currentRole;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
@@ -34,7 +42,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getPassword() {
-        return account.getPassword(); // hoặc null nếu không cần
+        return account.getPassword(); 
     }
 
     @Override

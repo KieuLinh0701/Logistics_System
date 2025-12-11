@@ -1,6 +1,6 @@
 package com.logistics.dto;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,5 +16,11 @@ public class AddressDto {
     private int wardCode;
     private int cityCode;
     private String detail;
-    private LocalDateTime createdAt;
+
+    @JsonProperty("isDefault")
+    private boolean isDefault;
+
+    private String name;
+
+    private String phoneNumber;
 }

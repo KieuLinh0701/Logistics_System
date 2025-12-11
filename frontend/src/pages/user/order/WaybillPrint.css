@@ -1,0 +1,730 @@
+/* Main Container */
+.waybill-print-container {
+  display: flex;
+  min-height: 100vh;
+  gap: 1.5rem;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  background: #fff;
+  padding: 1.25rem;
+}
+
+/* Control Panel - FIX SELECT BOX */
+.waybill-print-control-panel {
+  flex: 0 0 400px;
+  position: sticky;
+  top: 1.25rem;
+  height: fit-content;
+}
+
+.waybill-print-control-card {
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  padding: 1rem;
+}
+
+.waybill-print-control-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.waybill-print-control-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.waybill-print-control-icon {
+  font-size: 1.3rem !important;
+  color: #1C3D90;
+}
+
+.waybill-print-control-title {
+  font-size: 1.3rem !important;
+  color: #1C3D90;
+}
+
+.waybill-print-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.waybill-print-control-group label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+/* FIX SELECT BOX - Full width, consistent */
+.waybill-print-control-select {
+  width: 100% !important;
+}
+
+.waybill-print-control-select .ant-select-selector {
+  width: 100% !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.875rem !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.waybill-print-control-select .ant-select-selection-placeholder,
+.waybill-print-control-select .ant-select-selection-item {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.waybill-print-order-count {
+  border: 1px solid #1C3D90;
+  border-radius: 0.375rem;
+  text-align: center;
+  padding: 0.5rem;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
+  color: #1C3D90;
+}
+
+/* Print Button */
+.waybill-print-btn {
+  width: 100% !important;
+  margin-top: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem !important;
+  background: #1C3D90 !important;
+  border-color: #1C3D90 !important;
+  height: 40px !important;
+}
+
+.waybill-print-btn:hover {
+  background: #374151 !important;
+  border-color: #374151 !important;
+}
+
+/* Preview Area */
+.waybill-print-preview-area {
+  flex: 1;
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+.waybill-print-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.waybill-print-preview-title {
+  color: #1C3D90 !important;
+  font-size: 1.5rem;
+  font-weight: 500px;
+  margin: 0 !important;
+}
+
+.waybill-print-paper-size {
+  background: #1C3D90;
+  color: #fff;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.waybill-print-dimensions {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* CARD - ADJUST FOR DIFFERENT PAPER SIZES */
+.waybill-print-card {
+  background: #fff;
+  border: 1px solid #000;
+  margin-bottom: 1.5rem;
+  page-break-inside: avoid;
+  padding: 1.25rem;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* A4 - Default size */
+.waybill-print-card.waybill-print-A4 {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* A5 - Smaller font and padding */
+.waybill-print-card.waybill-print-A5 {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 1rem;
+}
+
+/* A6 - Even smaller font and padding */
+.waybill-print-card.waybill-print-A6 {
+  font-size: 9px;
+  line-height: 1.3;
+  padding: 0.75rem;
+}
+
+.waybill-print-card img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.waybill-print-divider {
+  border: none;
+  border-top: 1px solid #000;
+  margin: 1.25rem 0;
+  height: 0;
+}
+
+/* Adjust divider for smaller sizes */
+.waybill-print-card.waybill-print-A5 .waybill-print-divider,
+.waybill-print-card.waybill-print-A6 .waybill-print-divider {
+  margin: 1rem 0;
+}
+
+/* HEADER - TRACKING & OFFICE CODE */
+.waybill-print-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.waybill-print-tracking-info {
+  flex: 1;
+}
+
+.waybill-print-office-info {
+  flex: 1;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* Adjust font sizes for smaller paper */
+.waybill-print-card.waybill-print-A5 .waybill-print-tracking-label,
+.waybill-print-card.waybill-print-A5 .waybill-print-office-label,
+.waybill-print-card.waybill-print-A6 .waybill-print-tracking-label,
+.waybill-print-card.waybill-print-A6 .waybill-print-office-label {
+  font-size: 10px;
+  margin-bottom: 0.25rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-tracking-number,
+.waybill-print-card.waybill-print-A5 .waybill-print-office-value,
+.waybill-print-card.waybill-print-A6 .waybill-print-tracking-number,
+.waybill-print-card.waybill-print-A6 .waybill-print-office-value {
+  font-size: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.waybill-print-tracking-label,
+.waybill-print-office-label {
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  color: #000;
+  letter-spacing: 0.5px;
+}
+
+.waybill-print-tracking-number,
+.waybill-print-office-value {
+  font-weight: 700;
+  font-size: 15px;
+  color: #000;
+  margin-bottom: 0.75rem;
+  font-family: 'Courier New', 'Roboto Mono', monospace;
+}
+
+/* Barcode & QR Code - Adjust for different sizes */
+.waybill-print-barcode {
+  height: 40px;
+  max-width: 200px;
+  min-width: 150px;
+  object-fit: contain;
+}
+
+.waybill-print-office-qr {
+  width: auto;
+  height: auto;
+  max-width: 100px;
+  max-height: 100px;
+  min-width: 70px;
+  min-height: 70px;
+  object-fit: contain;
+  margin-left: auto;
+}
+
+/* Smaller sizes for A5/A6 */
+.waybill-print-card.waybill-print-A5 .waybill-print-barcode {
+  height: 35px;
+  max-width: 180px;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-barcode {
+  height: 30px;
+  max-width: 150px;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-office-qr {
+  max-width: 80px;
+  max-height: 80px;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-office-qr {
+  max-width: 60px;
+  max-height: 60px;
+}
+
+/* Contact Row */
+.waybill-print-contact-row {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.waybill-print-contact-column {
+  flex: 1;
+}
+
+/* Adjust contact row gap for smaller sizes */
+.waybill-print-card.waybill-print-A5 .waybill-print-contact-row,
+.waybill-print-card.waybill-print-A6 .waybill-print-contact-row {
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Section Titles - Adjust for different sizes */
+.waybill-print-section-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  color: #000;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #000;
+  padding-bottom: 0.25rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-section-title {
+  font-size: 11px;
+  margin-bottom: 0.5rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-section-title {
+  font-size: 9px;
+  margin-bottom: 0.375rem;
+  border-bottom-width: 1px;
+}
+
+/* Contact Info - Adjust for different sizes */
+.waybill-print-contact-name {
+  font-weight: 600;
+  color: #000;
+}
+
+.waybill-print-contact-address {
+  line-height: 1.4;
+  color: #000;
+}
+
+.waybill-print-contact-phone {
+  font-weight: 500;
+  color: #000;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-contact-name {
+  font-size: 11px;
+  margin-bottom: 0.25rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-contact-address,
+.waybill-print-card.waybill-print-A5 .waybill-print-contact-phone {
+  font-size: 10.5px;
+  margin-bottom: 0.25rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-contact-name {
+  font-size: 9px;
+  margin-bottom: 0.2rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-contact-address,
+.waybill-print-card.waybill-print-A6 .waybill-print-contact-phone {
+  font-size: 8.5px;
+  margin-bottom: 0.2rem;
+}
+
+/* Products - Adjust for different sizes */
+.waybill-print-products-list {
+  padding: 0.25rem 0;
+}
+
+.waybill-print-product-item {
+  margin-bottom: 0.375rem;
+  color: #000;
+  padding-left: 1rem;
+  position: relative;
+  line-height: 1.4;
+}
+
+.waybill-print-product-item::before {
+  content: "•";
+  position: absolute;
+  left: 0.25rem;
+  font-size: 14px;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-product-item {
+  font-size: 10.5px;
+  margin-bottom: 0.25rem;
+  padding-left: 0.875rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-product-item {
+  font-size: 8.5px;
+  margin-bottom: 0.2rem;
+  padding-left: 0.75rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-product-item::before {
+  font-size: 12px;
+  left: 0.125rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-product-item::before {
+  font-size: 10px;
+  left: 0.125rem;
+}
+
+.waybill-print-products-note {
+  font-style: italic;
+  color: #666;
+  margin-top: 0.75rem;
+  padding-left: 1rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-products-note {
+  font-size: 9px;
+  margin-top: 0.5rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-products-note {
+  font-size: 8px;
+  margin-top: 0.375rem;
+}
+
+/* COD & Weight - Adjust for different sizes */
+.waybill-print-cod-amount,
+.waybill-print-weight-info {
+  border: 2px solid #000;
+  border-radius: 0.25rem;
+  padding: 0.875rem;
+  font-weight: 500;
+}
+
+.waybill-print-amount-label,
+.waybill-print-weight-label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #000;
+}
+
+.waybill-print-amount-value,
+.waybill-print-weight-value {
+  font-weight: 700;
+  color: #000;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-cod-amount,
+.waybill-print-card.waybill-print-A5 .waybill-print-weight-info {
+  padding: 0.625rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-cod-amount,
+.waybill-print-card.waybill-print-A6 .waybill-print-weight-info {
+  padding: 0.5rem;
+  border-width: 1px;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-amount-label,
+.waybill-print-card.waybill-print-A5 .waybill-print-weight-label {
+  font-size: 10px;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-amount-label,
+.waybill-print-card.waybill-print-A6 .waybill-print-weight-label {
+  font-size: 8px;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-amount-value,
+.waybill-print-card.waybill-print-A5 .waybill-print-weight-value {
+  font-size: 12px;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-amount-value,
+.waybill-print-card.waybill-print-A6 .waybill-print-weight-value {
+  font-size: 10px;
+}
+
+/* Instructions - Adjust for different sizes */
+.waybill-print-instructions {
+  padding: 0.25rem 0;
+}
+
+.waybill-print-instruction-item {
+  margin-bottom: 0.25rem;
+  color: #000;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.waybill-print-instruction-item::before {
+  content: "-";
+  position: absolute;
+  left: 0;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-instruction-item {
+  font-size: 10.5px;
+  margin-bottom: 0.2rem;
+  padding-left: 0.875rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-instruction-item {
+  font-size: 8.5px;
+  margin-bottom: 0.15rem;
+  padding-left: 0.75rem;
+}
+
+/* Signature - Adjust for different sizes */
+.waybill-print-signature-section {
+  text-align: center;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #000;
+}
+
+.waybill-print-signature-title {
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  color: #000;
+  letter-spacing: 0.5px;
+}
+
+.waybill-print-signature-line {
+  border-bottom: 1px solid #000;
+  margin: 0 3rem;
+  height: 1px;
+}
+
+.waybill-print-signature-note {
+  color: #666;
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-signature-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-signature-title {
+  font-size: 11px;
+  margin-bottom: 1.5rem;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-signature-note {
+  font-size: 9px;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-signature-section {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-signature-title {
+  font-size: 9px;
+  margin-bottom: 1rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-signature-note {
+  font-size: 8px;
+}
+
+/* Footer - Adjust for different sizes */
+.waybill-print-footer {
+  text-align: center;
+  color: #666;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #999;
+}
+
+.waybill-print-card.waybill-print-A5 .waybill-print-footer {
+  font-size: 9px;
+  margin-top: 1.5rem;
+}
+
+.waybill-print-card.waybill-print-A6 .waybill-print-footer {
+  font-size: 8px;
+  margin-top: 1rem;
+}
+
+/* Loading & Empty States */
+.waybill-print-loading,
+.waybill-print-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1rem;
+  color: #666;
+}
+
+.waybill-print-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #111827;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .waybill-print-container {
+    flex-direction: column;
+  }
+
+  .waybill-print-control-panel {
+    width: 100%;
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .waybill-print-header-top {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .waybill-print-office-info {
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .waybill-print-office-qr {
+    margin-left: 0;
+  }
+
+  .waybill-print-contact-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+/* Cải thiện cho in ấn */
+@media print {
+  body * {
+    visibility: hidden !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .waybill-print-container,
+  .waybill-print-container * {
+    visibility: visible !important;
+    background: white !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    border-color: #000 !important;
+  }
+
+  .waybill-print-control-panel,
+  .waybill-print-preview-header {
+    display: none !important;
+  }
+
+  .waybill-print-preview-area {
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  .waybill-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .waybill-print-card {
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Adjust print sizes */
+  .waybill-print-card.waybill-print-A4 {
+    font-size: 11pt !important;
+    padding: 1.5rem !important;
+  }
+
+  .waybill-print-card.waybill-print-A5 {
+    font-size: 9pt !important;
+    padding: 1.25rem !important;
+  }
+
+  .waybill-print-card.waybill-print-A6 {
+    font-size: 8pt !important;
+    padding: 1rem !important;
+  }
+
+  .waybill-print-barcode {
+    height: 100px !important;
+    max-width: 180px !important;
+  }
+
+  .waybill-print-office-qr {
+    height: 100px !important;
+    max-width: 110px !important;
+  }
+
+  .waybill-print-card:last-child {
+    page-break-after: auto !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
