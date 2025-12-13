@@ -8,15 +8,34 @@ export const canPublicUserOrder = (value: string) => {
 };
 
 export const canCancelUserOrder = (value: string) => {
-  return ["PENDING", "CONFIRMED", "READY_FOR_PICKUP"].includes(value) 
+  return ["PENDING", "CONFIRMED", "READY_FOR_PICKUP"].includes(value)
 };
 
 export const canPrintUserOrder = (value: string) => {
-  return !["DRAFT", "PENDING", "CANCELLED"].includes(value) 
+  return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
 };
 
 export const canDeleteUserOrder = (value: string) => {
-  return ["DRAFT"].includes(value) 
+  return ["DRAFT"].includes(value)
+};
+
+// Điều kiện để thao tác với order của manager
+export const canPrintManagerOrder = (value: string) => {
+  return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
+};
+
+export const canCancelManagerOrder = (value: string) => {
+  return ["PENDING",
+    "CONFIRMED",
+    "READY_FOR_PICKUP",
+    'PICKING_UP',
+    'PICKED_UP',
+    'AT_ORIGIN_OFFICE'].includes(value)
+};
+
+// này chưa chỉnh nha
+export const canEditManagerOrder = (value: string) => {
+  return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);
 };
 
 export const ORDER_CREATOR_TYPES = ['USER', 'MANAGER', 'ADMIN'] as const;
@@ -70,8 +89,8 @@ export const translateOrderCreatorType = (value: string): string => {
 
 export const translateOrderPayerType = (value: string): string => {
   switch (value) {
-    case 'CUSTOMER': return 'Khách hàng';
-    case 'SHOP': return 'Cửa hàng';
+    case 'CUSTOMER': return 'Người nhận';
+    case 'SHOP': return 'Người gửi';
     default: return value;
   }
 };

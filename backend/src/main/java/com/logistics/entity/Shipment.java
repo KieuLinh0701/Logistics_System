@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.hibernate.envers.Audited;
@@ -17,6 +18,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.logistics.enums.ShipmentStatus;
+import com.logistics.enums.ShipmentType;
 
 @Entity
 @Audited
@@ -41,10 +43,10 @@ public class Shipment {
     @JoinColumn(name = "vehicle_id", referencedColumnName = "id", nullable = true)
     private Vehicle vehicle;
 
-    // Liên kết tới User
+    // Liên kết tới Employee
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
-    private User user;
+    @JoinColumn(name = "employee_id", referencedColumnName = "id", nullable = true)
+    private Employee employee;
 
     // Liên kết 1-n với ShipmentOrder
     @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -78,14 +80,26 @@ public class Shipment {
         }
     }
 
-    // Thêm trường mới
-    // Địa điểm bắt đầu
     @ManyToOne
-    @JoinColumn(name = "start_address_id", nullable = true)
-    private Address startAddress;
+    @JoinColumn(name = "from_office_id")
+    private Office fromOffice;
 
-    // Địa điểm kết thúc
     @ManyToOne
-    @JoinColumn(name = "end_address_id", nullable = true)
-    private Address endAddress;
+    @JoinColumn(name = "to_office_id")
+    private Office toOffice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ShipmentType type;
+
+    @ManyToOne
+    @JoinColumn(name = "created_by")
+    private Employee createdBy; // Người tạo chuyến
+
+    @PostPersist
+    private void generateCode() {
+        String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        this.code = "SM" + datePart + this.id;
+    }
+
 }

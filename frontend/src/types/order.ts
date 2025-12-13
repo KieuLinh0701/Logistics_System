@@ -2,7 +2,6 @@ import type { Address } from "./address";
 import type { Office } from "./office";
 import type { OrderHistory } from "./orderHistory";
 import type { OrderProduct, OrderProductPrint, OrderProductRequest } from "./orderProduct";
-import type { Promotion } from "./promotion";
 import type { ServiceType } from "./serviceType";
 
 export interface AdminOrder {
@@ -45,8 +44,11 @@ export interface Order {
   refundedAt: Date;
   createdAt: Date;
   fromOffice: Office;
+  toOffice: Office;
   orderProducts: OrderProduct[];
   orderHistories: OrderHistory[];
+  employeeCode: string;
+  userCode: string;
 }
 
 export interface UserOrderSearchRequest {
@@ -66,6 +68,7 @@ export interface UserOrderSearchRequest {
 
 export interface UserOrderRequest {
   id?: number;
+  code?: number;
   status: string;
   senderAddressId: number;
   recipientName: string;
@@ -83,6 +86,42 @@ export interface UserOrderRequest {
   fromOfficeId: number;
   orderProducts: OrderProductRequest[];
   promotionId: number;
+}
+
+export interface ManagerOrderSearchRequest {
+  page: number;
+  limit: number;
+  search?: string;
+  payer?: string;
+  status?: string;
+  pickupType?: string;
+  serviceTypeId?: number;
+  paymentStatus?: string;
+  cod?: string;
+  sort?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ManagerOrderRequest {
+  id?: number;
+  code?: string;
+  senderName: string;
+  senderDetail: string;
+  senderWardCode: number;
+  senderCityCode: number;
+  senderPhone: string;
+  recipientName: string;
+  recipientPhone: string;
+  recipientCityCode: number;
+  recipientWardCode: number;
+  recipientDetail: string;
+  weight: number;
+  serviceTypeId: number;
+  cod: number;
+  orderValue: number;
+  payer: string;
+  notes: string;
 }
 
 export interface CreateOrderSuccess {

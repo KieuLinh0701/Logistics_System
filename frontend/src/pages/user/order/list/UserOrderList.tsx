@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { message, Tag, Row, Col } from "antd";
 import dayjs from "dayjs";
 import OrderActions from "./components/Actions";
-import * as XLSX from "xlsx";
 import SearchFilters from "./components/SearchFilters";
 import OrderTable from "./components/Table";
 import Title from "antd/es/typography/Title";
@@ -236,65 +235,6 @@ const UserOrderList = () => {
     }
   };
 
-  // --- Excel Import ---
-  const handleExcelUpload = (file: File): boolean => {
-    // const reader = new FileReader();
-    // reader.onload = (e) => {
-    //   try {
-    //     const data = new Uint8Array(e.target?.result as ArrayBuffer);
-    //     const workbook = XLSX.read(data, { type: "array" });
-    //     const sheetName = workbook.SheetNames[0];
-    //     const worksheet = workbook.Sheets[sheetName];
-    //     const rows: any[] = XLSX.utils.sheet_to_json(worksheet);
-
-    //     const newOrders: Partial<Order>[] = rows.map(row => ({
-    //       senderName: row["Tên người gửi"]?.trim() || "",
-    //       senderPhone: row["SĐT người gửi"]?.trim() || "",
-    //       recipientName: row["Tên người nhận"]?.trim() || "",
-    //       recipientPhone: row["SĐT người nhận"]?.trim() || "",
-    //       weight: row["Trọng lượng (kg)"] ?? 0,
-    //       paymentMethod: row["Phương thức thanh toán"]?.trim() || "Cash",
-    //       status: row["Trạng thái"]?.trim() || "pending",
-    //       notes: row["Ghi chú"]?.trim() || "",
-    //     }));
-
-    //     const invalidRows = newOrders.filter(o => !o.senderName || !o.recipientName || !o.weight);
-    //     if (invalidRows.length > 0) {
-    //       message.error("Có dòng bị thiếu thông tin bắt buộc. Vui lòng kiểm tra lại file!");
-    //       return;
-    //     }
-
-    //     message.success("Đọc file Excel thành công. Chưa gửi lên server trong demo này.");
-    //   } catch (error) {
-    //     message.error("Có lỗi khi đọc file Excel!");
-    //   }
-    // };
-    // reader.readAsArrayBuffer(file);
-
-    return false;
-  };
-
-  const handleDownloadTemplate = () => {
-    const wb = XLSX.utils.book_new();
-    const data = [
-      {
-        "Tên người gửi": "Nguyen Van A",
-        "SĐT người gửi": "0123456789",
-        "Tên người nhận": "Tran Thi B",
-        "SĐT người nhận": "0987654321",
-        "Trọng lượng (kg)": 1.5,
-        "Phương thức thanh toán": "Cash",
-        "Trạng thái": "pending",
-        "Ghi chú": "",
-      },
-    ];
-    const ws = XLSX.utils.json_to_sheet(data);
-    const header = Object.keys(data[0]);
-    XLSX.utils.sheet_add_aoa(ws, [header], { origin: 0 });
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "order_template.xlsx");
-  };
-
   const handleAdd = () => {
     navigate(`/orders/create`);
   };
@@ -388,9 +328,9 @@ const UserOrderList = () => {
             <div className="list-page-actions">
               <OrderActions
                 onAdd={handleAdd}
-                onUpload={handleExcelUpload}
-                onDownloadTemplate={handleDownloadTemplate}
                 onPrint={handlePrintSelectedOrders}
+                disabled={selectedOrderIds.length !== 0}
+                recordNumber={selectedOrderIds.length}
               />
             </div>
           </Col>

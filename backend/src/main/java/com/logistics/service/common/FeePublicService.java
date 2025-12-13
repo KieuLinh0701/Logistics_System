@@ -26,7 +26,8 @@ public class FeePublicService {
     private final ShippingRateRepository shippingRateRepository;
     private final FeeConfigurationRepository feeConfigRepository;
 
-    public Integer calculateShippingFee(BigDecimal weight, Integer serviceTypeId, Integer senderCodeCity, Integer recipientCodeCity) {
+    public Integer calculateShippingFee(BigDecimal weight, Integer serviceTypeId, Integer senderCodeCity,
+            Integer recipientCodeCity) {
         Optional<Region> senderOpt = regionRepository.findByCodeCity(senderCodeCity);
         Optional<Region> recipientOpt = regionRepository.findByCodeCity(recipientCodeCity);
 
@@ -37,8 +38,10 @@ public class FeePublicService {
         Region senderRegion = senderOpt.get();
         Region recipientRegion = recipientOpt.get();
 
-        ShippingRateRegionType regionType = determineRegionType(senderRegion, recipientRegion, senderCodeCity, recipientCodeCity);
-        List<ShippingRate> rates = shippingRateRepository.findByServiceType_IdAndRegionTypeOrderByWeightFromAsc(serviceTypeId, regionType);
+        ShippingRateRegionType regionType = determineRegionType(senderRegion, recipientRegion, senderCodeCity,
+                recipientCodeCity);
+        List<ShippingRate> rates = shippingRateRepository
+                .findByServiceType_IdAndRegionTypeOrderByWeightFromAsc(serviceTypeId, regionType);
 
         if (rates.isEmpty()) {
             throw new IllegalArgumentException("Không tìm thấy bảng giá cho loại dịch vụ này");
@@ -126,6 +129,59 @@ public class FeePublicService {
         return totalFee.setScale(0, RoundingMode.HALF_UP).intValue();
     }
 
+    public Integer calculateTotalFeeManager(BigDecimal weight, Integer serviceTypeId,
+            Integer senderCodeCity, Integer recipientCodeCity,
+            Integer orderValueInt, Integer codAmountInt) {
+
+        BigDecimal codAmount = codAmountInt != null ? BigDecimal.valueOf(codAmountInt) : BigDecimal.ZERO;
+        BigDecimal orderValue = orderValueInt != null ? BigDecimal.valueOf(orderValueInt) : BigDecimal.ZERO;
+
+        Integer shippingFeeInt = calculateShippingFee(weight, serviceTypeId, senderCodeCity, recipientCodeCity);
+        BigDecimal shippingFee = BigDecimal.valueOf(shippingFeeInt);
+
+        List<FeeConfiguration> fees = feeConfigRepository.findActiveByServiceTypeIdIncludingNull(serviceTypeId);
+
+        BigDecimal codFee = BigDecimal.ZERO;
+        BigDecimal insuranceFee = BigDecimal.ZERO;
+        BigDecimal packaging = BigDecimal.ZERO;
+        BigDecimal vatFee = BigDecimal.ZERO;
+
+        for (FeeConfiguration f : fees) {
+            switch (f.getFeeType()) {
+                case COD:
+                    if (codAmount.compareTo(BigDecimal.ZERO) > 0) {
+                        codFee = calculateFee(f, codAmount);
+                    }
+                    break;
+                case INSURANCE:
+                    if (orderValue.compareTo(BigDecimal.ZERO) > 0) {
+                        insuranceFee = calculateFee(f, orderValue);
+                    }
+                    break;
+                case VAT:
+                    break;
+                case PACKAGING:
+                    packaging = f.getFeeValue() != null ? f.getFeeValue() : BigDecimal.ZERO;
+                    break;
+            }
+        }
+
+        BigDecimal subtotal = shippingFee.add(codFee).add(insuranceFee).add(packaging);
+        if (subtotal.compareTo(BigDecimal.ZERO) < 0)
+            subtotal = BigDecimal.ZERO;
+
+        Optional<FeeConfiguration> vatConfigOpt = fees.stream()
+                .filter(f -> f.getFeeType() == FeeType.VAT)
+                .findFirst();
+        if (vatConfigOpt.isPresent()) {
+            vatFee = calculateFee(vatConfigOpt.get(), subtotal);
+        }
+
+        BigDecimal totalFee = subtotal.add(vatFee);
+
+        return totalFee.setScale(0, RoundingMode.HALF_UP).intValue();
+    }
+
     private BigDecimal calculateFee(FeeConfiguration f, BigDecimal base) {
         BigDecimal result;
         if (f.getCalculationType() == CodFeeType.FIXED) {
@@ -140,7 +196,8 @@ public class FeePublicService {
         return result.setScale(0, RoundingMode.HALF_UP);
     }
 
-    private ShippingRateRegionType determineRegionType(Region sender, Region recipient, Integer senderCode, Integer recipientCode) {
+    private ShippingRateRegionType determineRegionType(Region sender, Region recipient, Integer senderCode,
+            Integer recipientCode) {
         if (senderCode.equals(recipientCode)) {
             return ShippingRateRegionType.INTRA_CITY;
         } else if (sender.getRegionName() == recipient.getRegionName()) {

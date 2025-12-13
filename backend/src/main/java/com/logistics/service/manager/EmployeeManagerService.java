@@ -1,9 +1,13 @@
 package com.logistics.service.manager;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -11,29 +15,34 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.logistics.dto.ProductDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
+import com.logistics.entity.Account;
+import com.logistics.entity.AccountRole;
 import com.logistics.entity.Address;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
-import com.logistics.entity.Product;
+import com.logistics.entity.Role;
 import com.logistics.entity.User;
+import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.EmployeeStatus;
 import com.logistics.mapper.EmployeeMapper;
-import com.logistics.mapper.ProductMapper;
-import com.logistics.mapper.ShippingRequestMapper;
+import com.logistics.repository.AccountRepository;
+import com.logistics.repository.AccountRoleRepository;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.RoleRepository;
+import com.logistics.repository.UserRepository;
+import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
-import com.logistics.request.user.product.UserProductSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.EmployeeSpecification;
-import com.logistics.specification.ProductSpecification;
+import com.logistics.utils.PasswordUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,8 +54,18 @@ public class EmployeeManagerService {
 
     private final AddressRepository addressRepository;
 
+    private final AccountRepository accountRepository;
+
+    private final UserRepository userRepository;
+
+    private final RoleRepository roleRepository;
+
+    private final AccountRoleRepository accountRoleRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
     public Office getOfficeByUserId(Integer userId) {
-        
+
         Employee employee = employeeRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Bạn không phải là nhân viên"));
 
@@ -90,18 +109,18 @@ public class EmployeeManagerService {
             String shift = request.getShift();
 
             LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
+                    ? Instant.parse(request.getStartDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
                     : null;
 
             LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
+                    ? Instant.parse(request.getEndDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
                     : null;
 
             Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
                     .and(EmployeeSpecification.officeId(office.getId()))
                     .and(EmployeeSpecification.search(search))
                     .and(EmployeeSpecification.status(status))
-                    .and(EmployeeSpecification.role(role, true)) 
+                    .and(EmployeeSpecification.role(role, true))
                     .and(EmployeeSpecification.shift(shift))
                     .and(EmployeeSpecification.hireDateBetween(startDate, endDate));
 
@@ -114,7 +133,7 @@ public class EmployeeManagerService {
             Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
             Page<Employee> pageData = employeeRepository.findAll(spec, pageable);
 
-             List<Integer> userIds = pageData.getContent()
+            List<Integer> userIds = pageData.getContent()
                     .stream()
                     .map(item -> item.getUser() != null ? item.getUser().getId() : null)
                     .filter(Objects::nonNull)
@@ -158,272 +177,501 @@ public class EmployeeManagerService {
         }
     }
 
-    // private void checkUserPermission(int userId, Product product) {
-    // if (product.getUser() == null || !product.getUser().getId().equals(userId)) {
-    // throw new RuntimeException("Không có quyền thực hiện thao tác này");
-    // }
-    // }
+    @Transactional
+    public ApiResponse<Boolean> createEmployee(int creatorUserId, ManagerEmployeeEditRequest req) {
+        try {
+            validateCreate(req);
 
-    // private void checkDuplicateName(int userId, String name) {
-    // boolean exists = repository.existsByUserIdAndName(userId, name.trim());
-    // if (exists) {
-    // throw new RuntimeException("Sản phẩm với tên này đã tồn tại");
-    // }
-    // }
+            // 1. Lấy office của người dùng hiện tại
+            Office office = getOfficeByUserId(creatorUserId);
 
-    // @SuppressWarnings("unchecked")
-    // private String uploadImage(MultipartFile file) {
-    // try {
-    // Map<String, Object> result = cloudinary.uploader().upload(
-    // file.getBytes(),
-    // ObjectUtils.asMap("folder", "products", "resource_type", "image"));
-    // return result.get("secure_url").toString();
-    // } catch (Exception e) {
-    // throw new RuntimeException("Upload ảnh thất bại: " + e.getMessage());
-    // }
-    // }
+            String email = req.getUserEmail().trim().toLowerCase();
+            String phone = req.getUserPhoneNumber().trim();
 
-    // private ProductDto createProduct(int userId, UserProductForm request) {
+            // 2. tìm account theo email
+            Optional<Account> optAccount = accountRepository.findByEmail(email);
 
-    // if (request.getName() == null || request.getName().isBlank()) {
-    // throw new RuntimeException("Tên sản phẩm không được để trống");
-    // }
-    // if (request.getPrice() == null || request.getPrice() < 0) {
-    // throw new RuntimeException("Giá sản phẩm không được để trống hoặc âm");
-    // }
-    // if (request.getWeight() == null ||
-    // request.getWeight().compareTo(BigDecimal.ZERO) <= 0) {
-    // throw new RuntimeException("Trọng lượng sản phẩm phải lớn hơn 0");
-    // }
-    // if (request.getType() == null || request.getType().isBlank()) {
-    // throw new RuntimeException("Loại sản phẩm không được để trống");
-    // }
+            // CASE A: Account CHƯA TỒN TẠI -> tạo toàn bộ
+            if (optAccount.isEmpty()) {
+                // phone phải unique toàn hệ thống
+                if (userRepository.existsByPhoneNumber(phone)) {
+                    return new ApiResponse<>(false, "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác", null);
+                }
 
-    // checkDuplicateName(userId, request.getName());
+                String DEFAULT_TEMP_PASSWORD = PasswordUtils.generateTempPassword();
 
-    // User user = userRepository.findById(userId)
-    // .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                // tạo account
+                Account account = new Account();
+                account.setEmail(email);
+                account.setPassword(passwordEncoder.encode(DEFAULT_TEMP_PASSWORD));
+                account.setIsActive(true);
+                account.setIsVerified(false);
+                account = accountRepository.save(account);
 
-    // Product product = new Product();
-    // product.setUser(user);
-    // product.setName(request.getName());
-    // product.setWeight(request.getWeight());
-    // product.setPrice(request.getPrice());
-    // product.setType(ProductType.valueOf(request.getType()));
-    // product.setStatus(
-    // request.getStatus() != null ? ProductStatus.valueOf(request.getStatus()) :
-    // ProductStatus.ACTIVE);
-    // product.setStock(request.getStock() != null ? request.getStock() : 0);
+                // tạo user
+                User user = new User();
+                user.setAccount(account);
+                user.setFirstName(req.getUserFirstName());
+                user.setLastName(req.getUserLastName());
+                user.setPhoneNumber(phone);
+                user = userRepository.save(user);
 
-    // if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-    // product.setImage(uploadImage(request.getImageFile()));
-    // }
+                account.setUser(user);
+                accountRepository.save(account);
 
-    // product = repository.save(product);
-    // product.setCode("PROD" + product.getId());
-    // repository.save(product);
+                Role role = roleRepository.findByName(req.getUserRole())
+                        .orElseThrow(
+                                () -> new RuntimeException("Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
 
-    // return ProductMapper.toDto(product);
-    // }
+                AccountRole accountRole = new AccountRole();
+                accountRole.setAccount(account);
+                accountRole.setRole(role);
+                accountRole.setIsActive(true);
+                accountRole = accountRoleRepository.save(accountRole);
 
-    // public ApiResponse<ProductDto> create(int userId, UserProductForm request) {
-    // try {
-    // ProductDto dto = createProduct(userId, request);
-    // return new ApiResponse<>(true, "Thêm sản phẩm thành công", dto);
-    // } catch (Exception e) {
-    // return new ApiResponse<>(false, e.getMessage(), null);
-    // }
-    // }
+                Employee emp = buildEmployee(user, accountRole, office, req);
+                employeeRepository.save(emp);
 
-    // public ApiResponse<ProductDto> update(int userId, UserProductForm request) {
-    // try {
-    // Product product = repository.findById(request.getId())
-    // .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+                return new ApiResponse<>(true, "Thêm nhân viên mới thành công", true);
+            }
 
-    // checkUserPermission(userId, product);
+            // CASE B: Account ĐÃ TỒN TẠI -> xử lý theo rules
+            Account account = optAccount.get();
 
-    // if (request.getName() != null &&
-    // !request.getName().equals(product.getName())) {
-    // checkDuplicateName(userId, request.getName());
-    // product.setName(request.getName());
-    // }
+            // nếu account inactive -> kích hoạt
+            if (Boolean.FALSE.equals(account.getIsActive())) {
+                account.setIsActive(true);
+                accountRepository.save(account);
+            }
 
-    // product.setWeight(request.getWeight() != null ? request.getWeight() :
-    // product.getWeight());
-    // product.setPrice(request.getPrice() != null ? request.getPrice() :
-    // product.getPrice());
-    // product.setType(request.getType() != null ?
-    // ProductType.valueOf(request.getType()) : product.getType());
-    // product.setStatus(
-    // request.getStatus() != null ? ProductStatus.valueOf(request.getStatus()) :
-    // product.getStatus());
-    // product.setStock(request.getStock() != null ? request.getStock() :
-    // product.getStock());
+            // load tất cả accountRole (active) của account
+            List<AccountRole> activeAccountRoles = accountRoleRepository
+                    .findByAccountIdAndIsActiveTrue(account.getId());
 
-    // if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-    // product.setImage(uploadImage(request.getImageFile()));
-    // }
+            boolean hasActiveUserRole = activeAccountRoles.stream()
+                    .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole().getName()));
+            long activeNonUserRolesCount = activeAccountRoles.stream()
+                    .filter(ar -> !"User".equalsIgnoreCase(ar.getRole().getName()))
+                    .count();
 
-    // repository.save(product);
+            // role muốn thêm
+            Role wantedRole = roleRepository.findByName(req.getUserRole())
+                    .orElseThrow(() -> new RuntimeException("Role không tồn tại: " + req.getUserRole()));
 
-    // return new ApiResponse<>(true, "Cập nhật sản phẩm thành công",
-    // ProductMapper.toDto(product));
-    // } catch (Exception e) {
-    // return new ApiResponse<>(false, e.getMessage(), null);
-    // }
-    // }
+            // tìm accountRole hiện có với role này (cả active/inactive)
+            Optional<AccountRole> optExistingAr = accountRoleRepository.findByAccountIdAndRoleId(account.getId(),
+                    wantedRole.getId());
 
-    // public ApiResponse<ProductDto> delete(int userId, @NonNull Integer productId)
-    // {
-    // try {
-    // Product product = repository.findById(productId)
-    // .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+            if (optExistingAr.isPresent()) {
+                AccountRole ar = optExistingAr.get();
 
-    // checkUserPermission(userId, product);
+                // ===== nếu accountRole hiện tại đang active =====
+                if (Boolean.TRUE.equals(ar.getIsActive())) {
+                    // Lấy tất cả employee liên quan tới accountRole này
+                    List<Employee> employees = employeeRepository.findAllByAccountRoleId(ar.getId());
 
-    // if (product.getSoldQuantity() > 0
-    // || (product.getOrderProducts() != null &&
-    // !product.getOrderProducts().isEmpty())) {
-    // return new ApiResponse<>(false, "Sản phẩm đã có đơn hàng, không thể xóa",
-    // null);
-    // }
+                    // 1. Nếu có employee (ACTIVE/INACTIVE) ở cùng office -> lỗi (C đúng)
+                    boolean existsActiveOrInactiveHere = employees.stream()
+                            .anyMatch(e -> e.getOffice().getId().equals(office.getId())
+                                    && e.getStatus() != EmployeeStatus.LEAVE);
+                    if (existsActiveOrInactiveHere) {
+                        return new ApiResponse<>(false, "Tài khoản này đã là nhân viên ở bưu cục hiện tại.", null);
+                    }
 
-    // repository.delete(product);
+                    // 2. Nếu có employee ACTIVE/INACTIVE ở office khác -> lỗi (một người chỉ làm 1
+                    // bưu cục)
+                    boolean existsActiveOrInactiveElsewhere = employees.stream()
+                            .anyMatch(e -> !e.getOffice().getId().equals(office.getId())
+                                    && e.getStatus() != EmployeeStatus.LEAVE);
+                    if (existsActiveOrInactiveElsewhere) {
+                        return new ApiResponse<>(false,
+                                "ài khoản này đang làm việc tại bưu cục khác. Một nhân viên chỉ có thể thuộc 1 bưu cục.",
+                                null);
+                    }
 
-    // return new ApiResponse<>(true, "Xóa sản phẩm thành công",
-    // ProductMapper.toDto(product));
-    // } catch (Exception e) {
-    // return new ApiResponse<>(false, e.getMessage(), null);
-    // }
-    // }
+                    // 3. Nếu tới đây => tất cả employee liên quan đều LEAVE (hoặc không có) -> tạo
+                    // employee mới
+                    Employee newEmp = buildEmployee(account.getUser(), ar, office, req);
+                    employeeRepository.save(newEmp);
+                    return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công!", true);
+                }
 
-    // @Transactional
-    // public BulkResponse<ProductDto> createBulk(Integer userId,
-    // UserBulkProductForm request) {
+                long totalActiveAfterRestore = activeAccountRoles.size() + 1; // kế hoạch restore ar -> +1
+                // rule: nếu có User active -> max 2 (User + 1 non-user). Nếu không có User
+                // active -> max 1
+                if (hasActiveUserRole) {
+                    if (totalActiveAfterRestore > 2) {
+                        return new ApiResponse<>(false,
+                                "Không thể thực hiện chức vụ này vì mỗi người chỉ được làm một công việc trong một thời gian, thuộc một bưu cục.",
+                                null);
+                    }
+                } else {
+                    if (totalActiveAfterRestore > 1) {
+                        return new ApiResponse<>(false,
+                                "Không thể kích hoạt chức vụ này vì tài khoản đã có chức vụ đang hoạt động.", null);
+                    }
+                }
 
-    // List<BulkResponse.BulkResult<ProductDto>> results = new ArrayList<>();
-    // Set<String> namesInFile = new HashSet<>();
+                // ok restore accountRole
+                ar.setIsActive(true);
+                accountRoleRepository.save(ar);
 
-    // for (UserProductForm form : request.getProducts()) {
+                // xử lý employee liên quan:
+                List<Employee> employees = employeeRepository.findAllByAccountRoleId(ar.getId());
 
-    // String trimmedName = form.getName() != null ? form.getName().trim() : "";
+                // nếu tồn tại employee cùng office -> khôi phục trạng thái
+                Optional<Employee> empHereOpt = employees.stream()
+                        .filter(e -> e.getOffice().getId().equals(office.getId()))
+                        .findFirst();
 
-    // BulkResponse.BulkResult<ProductDto> result = new BulkResponse.BulkResult<>();
-    // result.setName(trimmedName);
+                if (empHereOpt.isPresent()) {
+                    Employee e = empHereOpt.get();
+                    if (e.getStatus() == EmployeeStatus.LEAVE) {
+                        e.setStatus(EmployeeStatus.ACTIVE);
+                    }
+                    e.setHireDate(req.getHireDate() != null
+                            ? Instant.parse(req.getHireDate())
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime()
+                            : e.getHireDate());
+                    employeeRepository.save(e);
+                    return new ApiResponse<>(true, "Nhân viên đã được khôi phục và sẵn sàng làm việc.", true);
+                }
 
-    // List<String> missing = new ArrayList<>();
-    // if (trimmedName.isEmpty())
-    // missing.add("tên");
-    // if (form.getWeight() == null)
-    // missing.add("trọng lượng");
-    // if (form.getPrice() == null)
-    // missing.add("giá");
-    // if (form.getType() == null)
-    // missing.add("loại");
+                // nếu không có employee cùng office:
+                // nhưng cần check rule "1 account chỉ được làm 1 office" => nếu có employee
+                // ACTIVE/INACTIVE ở nơi khác => lỗi
+                boolean existsActiveOrInactiveElsewhere = employees.stream()
+                        .anyMatch(e -> e.getStatus() != EmployeeStatus.LEAVE);
+                if (existsActiveOrInactiveElsewhere) {
+                    return new ApiResponse<>(false,
+                            "ài khoản này đang làm việc tại bưu cục khác. Một nhân viên chỉ có thể thuộc 1 bưu cục.",
+                            null);
+                }
 
-    // if (!missing.isEmpty()) {
-    // result.setSuccess(false);
-    // result.setMessage("Thiếu thông tin: " + String.join(", ", missing));
-    // results.add(result);
-    // continue;
-    // }
+                // tạo employee mới
+                Employee newEmp = buildEmployee(account.getUser(), ar, office, req);
+                employeeRepository.save(newEmp);
+                return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công sau khi khôi phục chức vụ.", true);
+            }
 
-    // if (namesInFile.contains(trimmedName.toLowerCase())) {
-    // result.setSuccess(false);
-    // result.setMessage("Sản phẩm trùng trong file import");
-    // results.add(result);
-    // continue;
-    // }
+            /*
+             * =========================
+             * CASE C: Chưa có AccountRole cho role này -> tạo mới AccountRole
+             * =========================
+             */
+            // check policy active roles trước khi tạo new AccountRole active:
+            // nếu đã có User active -> cho phép 1 non-user active (tổng 2)
+            // nếu không có User active -> chỉ cho phép 1 active total
+            if (hasActiveUserRole) {
+                if (activeNonUserRolesCount >= 1) {
+                    return new ApiResponse<>(false,
+                            "Tài khoản đã có 1 chức vụ nhân viên đang active, không thể thêm chức vụ thứ 2", null);
+                }
+            } else {
+                if (activeNonUserRolesCount >= 1) {
+                    // account đã có 1 non-user active và không có user -> không thể thêm nữa
+                    return new ApiResponse<>(false,
+                            "Tài khoản này đã có một chức vụ đang hoạt động. Không thể thêm chức vụ thứ hai.", null);
+                }
+            }
 
-    // if (repository.existsByUserIdAndName(userId, trimmedName)) {
-    // result.setSuccess(false);
-    // result.setMessage("Tên sản phẩm đã tồn tại");
-    // results.add(result);
-    // continue;
-    // }
+            // tạo accountRole mới active
+            AccountRole newAr = new AccountRole();
+            newAr.setAccount(account);
+            newAr.setRole(wantedRole);
+            newAr.setIsActive(true);
+            accountRoleRepository.save(newAr);
 
-    // try {
-    // ProductDto created = createProduct(userId, form);
-    // result.setSuccess(true);
-    // result.setMessage("Thêm sản phẩm thành công");
-    // result.setResult(created);
+            // Kiểm tra employee active/inactive ở office khác
+            List<Employee> allEmployeesForAccount = employeeRepository.findAllByAccountId(account.getId());
+            boolean existsActiveOrInactiveElsewhere = allEmployeesForAccount.stream()
+                    .anyMatch(e -> !e.getOffice().getId().equals(office.getId())
+                            && e.getStatus() != EmployeeStatus.LEAVE);
 
-    // namesInFile.add(trimmedName.toLowerCase());
-    // } catch (Exception e) {
-    // result.setSuccess(false);
-    // result.setMessage("Lỗi server: " + e.getMessage());
-    // }
+            if (existsActiveOrInactiveElsewhere) {
+                // Chặn nếu ACTIVE/INACTIVE ở office khác
+                return new ApiResponse<>(false, "Tài khoản này hiện đang là nhân viên tại bưu cục khác", null);
+            }
 
-    // results.add(result);
-    // }
+            // Nếu không có employee active/inactive ở office khác -> tạo employee mới bình
+            // thường
+            Employee emp = buildEmployee(account.getUser(), newAr, office, req);
+            employeeRepository.save(emp);
 
-    // int totalImported = (int)
-    // results.stream().filter(BulkResponse.BulkResult::isSuccess).count();
-    // int totalFailed = results.size() - totalImported;
+            return new ApiResponse<>(true, "Chức vụ và nhân viên mới đã được tạo thành công!", true);
 
-    // BulkResponse<ProductDto> response = new BulkResponse<>();
-    // response.setSuccess(true);
-    // response.setMessage("Thêm hoàn tất: " + totalImported + " thành công, " +
-    // totalFailed + " lỗi");
-    // response.setTotalImported(totalImported);
-    // response.setTotalFailed(totalFailed);
-    // response.setResults(results);
+        } catch (Exception ex) {
+            return new ApiResponse<>(false, ex.getMessage(), null);
+        }
+    }
 
-    // return response;
-    // }
+    @Transactional
+    public ApiResponse<Boolean> updateEmployee(int editorUserId, int employeeId, ManagerEmployeeEditRequest req) {
+        try {
+            validateEdit(req);
 
-    // public ApiResponse<ListResponse<ProductDto>>
-    // getActiveAndInstockUserProducts(int userId,
-    // UserProductSearchRequest request) {
-    // try {
-    // int page = request.getPage();
-    // int limit = request.getLimit();
-    // String search = request.getSearch();
-    // String type = request.getType();
+            Office editorOffice = getOfficeByUserId(editorUserId);
 
-    // Pageable pageable = PageRequest.of(page - 1, limit,
-    // Sort.by(Sort.Direction.DESC, "createdAt"));
+            Employee emp = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên này"));
 
-    // Specification<Product> spec = ProductSpecification.unrestrictedProduct()
-    // .and(ProductSpecification.userId(userId))
-    // .and(ProductSpecification.search(search))
-    // .and(ProductSpecification.type(type))
-    // .and(ProductSpecification.status(ProductStatus.ACTIVE.name()))
-    // .and(ProductSpecification.stock("instock"));
+            if (!emp.getOffice().getId().equals(editorOffice.getId())) {
+                return new ApiResponse<>(false, "Bạn chỉ có thể chỉnh sửa nhân viên trong bưu cục của mình.", null);
+            }
 
-    // Page<Product> pageData = repository.findAll(spec, pageable);
+            Account account = emp.getAccountRole().getAccount();
+            EmployeeStatus currentStatus = emp.getStatus();
 
-    // List<ProductDto> list = pageData.getContent()
-    // .stream()
-    // .map(ProductMapper::toDto)
-    // .toList();
+            // ===== Kiểm tra employee ACTIVE/INACTIVE khác ở office khác =====
+            boolean hasOtherOfficeActive = employeeRepository.findAllByAccountId(account.getId())
+                    .stream()
+                    .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE || e.getStatus() == EmployeeStatus.INACTIVE)
+                    .anyMatch(e -> !e.getOffice().getId().equals(emp.getOffice().getId()));
 
-    // int total = (int) pageData.getTotalElements();
+            if (hasOtherOfficeActive) {
+                return new ApiResponse<>(false,
+                        "Nhân viên này đang làm việc tại bưu cục khác. Không thể thay đổi chức vụ hoặc trạng thái.",
+                        null);
+            }
 
-    // Pagination pagination = new Pagination(total, page, limit,
-    // pageData.getTotalPages());
+            // ===== Xử lý role nếu thay đổi =====
+            Role newRole = roleRepository.findByName(req.getUserRole())
+                    .orElseThrow(() -> new RuntimeException("Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
+            AccountRole currentAR = emp.getAccountRole();
 
-    // ListResponse<ProductDto> data = new ListResponse<>();
-    // data.setList(list);
-    // data.setPagination(pagination);
+            EmployeeStatus newStatus = req.getStatus() != null && !req.getStatus().isBlank()
+                    ? EmployeeStatus.valueOf(req.getStatus())
+                    : currentStatus;
 
-    // return new ApiResponse<>(true, "Lấy danh sách sản phẩm đang bán được thành
-    // công", data);
-    // } catch (Exception e) {
-    // return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-    // }
-    // }
+            if (!currentAR.getRole().getId().equals(newRole.getId()) && newStatus == EmployeeStatus.LEAVE) {
+                return new ApiResponse<>(false,
+                        "Không thể thay đổi chức vụ và cho nghỉ cùng lúc. Vui lòng thực hiện riêng từng thao tác.",
+                        null);
+            }
 
-    // @Transactional
-    // public void restoreStockFromOrder(List<OrderProduct> orderProducts) {
-    // if (orderProducts == null || orderProducts.isEmpty()) return;
+            if (!currentAR.getRole().getId().equals(newRole.getId())) {
+                Optional<AccountRole> optAR = accountRoleRepository.findByAccountIdAndRoleId(account.getId(),
+                        newRole.getId());
+                AccountRole newAR;
 
-    // for (OrderProduct op : orderProducts) {
-    // Product product = op.getProduct();
-    // product.setStock(product.getStock() + op.getQuantity());
-    // product.setSoldQuantity(product.getSoldQuantity() - op.getQuantity());
-    // repository.save(product);
-    // }
-    // }
+                if (optAR.isPresent()) {
+                    newAR = optAR.get();
+                    if (!newAR.getIsActive()) {
+                        newAR.setIsActive(true);
+                        accountRoleRepository.save(newAR);
+                    }
+                } else {
+                    // tạo accountRole mới và check policy active roles
+                    List<AccountRole> activeRoles = accountRoleRepository
+                            .findByAccountIdAndIsActiveTrue(account.getId());
+                    boolean hasUserActive = activeRoles.stream()
+                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()));
+                    long activeNonUserCount = activeRoles.stream()
+                            .filter(r -> !"User".equalsIgnoreCase(r.getRole().getName())).count();
+                    long totalActiveAfterAdd = activeRoles.size() + 1;
+
+                    if (hasUserActive && totalActiveAfterAdd > 2 || !hasUserActive && totalActiveAfterAdd > 1) {
+                        return new ApiResponse<>(false,
+                                "Không thể thêm chức vụ mới vì đã đạt giới hạn chức vụ đang hoạt động.", null);
+                    }
+
+                    newAR = new AccountRole();
+                    newAR.setAccount(account);
+                    newAR.setRole(newRole);
+                    newAR.setIsActive(true);
+                    accountRoleRepository.save(newAR);
+                }
+
+                // deactivate employee + accountRole cũ
+                currentAR.setIsActive(false);
+                accountRoleRepository.save(currentAR);
+
+                emp.setStatus(EmployeeStatus.LEAVE);
+                employeeRepository.save(emp);
+
+                // tạo employee mới với role mới
+                Employee newEmp = buildEmployee(account.getUser(), newAR, emp.getOffice(), req);
+                employeeRepository.save(newEmp);
+
+                return new ApiResponse<>(true,
+                        "Chức vụ đã được thay đổi. Nhân viên cũ đã kết thúc công việc, nhân viên mới đã được tạo.",
+                        true);
+            }
+            
+            // ===== Cập nhật hireDate, shift (chỉ khi nhân viên chưa nghỉ) =====
+            if (newStatus != EmployeeStatus.LEAVE) {
+                if (req.getHireDate() != null) {
+                    emp.setHireDate(Instant.parse(req.getHireDate()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+                }
+
+                if (req.getShift() != null && !req.getShift().isBlank()) {
+                    emp.setShift(EmployeeShift.valueOf(req.getShift()));
+                }
+            }
+
+            // ===== Cập nhật status =====
+            if (req.getStatus() != null && !req.getStatus().isBlank()) {
+
+                // ACTIVE ↔ INACTIVE
+                if ((currentStatus == EmployeeStatus.ACTIVE || currentStatus == EmployeeStatus.INACTIVE)
+                        && (newStatus == EmployeeStatus.ACTIVE || newStatus == EmployeeStatus.INACTIVE)) {
+                    emp.setStatus(newStatus);
+                }
+                // ACTIVE/INACTIVE → LEAVE
+                else if ((currentStatus == EmployeeStatus.ACTIVE || currentStatus == EmployeeStatus.INACTIVE)
+                        && newStatus == EmployeeStatus.LEAVE) {
+
+                    emp.setStatus(EmployeeStatus.LEAVE);
+
+                    // deactivate tất cả role
+                    List<AccountRole> roles = accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId());
+                    roles.forEach(r -> r.setIsActive(false));
+                    accountRoleRepository.saveAll(roles);
+
+                    boolean hasActiveNonUserRole = accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId())
+                            .stream()
+                            .anyMatch(r -> !"User".equalsIgnoreCase(r.getRole().getName()));
+                    boolean hasUserRole = accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId())
+                            .stream()
+                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()));
+
+                    // nếu không còn role active nào → tắt account
+                    if (!hasActiveNonUserRole && !hasUserRole) {
+                        account.setIsActive(false);
+                        accountRepository.save(account);
+                    }
+                }
+                // LEAVE → ACTIVE/INACTIVE
+                else if (currentStatus == EmployeeStatus.LEAVE
+                        && (newStatus == EmployeeStatus.ACTIVE || newStatus == EmployeeStatus.INACTIVE)) {
+
+                    AccountRole ar = emp.getAccountRole();
+
+                    // tìm employee LEAVE cùng office + accountRole
+                    List<Employee> leaveEmployees = employeeRepository.findAllByAccountRoleId(ar.getId())
+                            .stream()
+                            .filter(e -> e.getOffice().getId().equals(emp.getOffice().getId())
+                                    && e.getStatus() == EmployeeStatus.LEAVE)
+                            .toList();
+
+                    if (!leaveEmployees.isEmpty()) {
+                        // restore employee cũ
+                        Employee toRestore = leaveEmployees.get(0);
+                        toRestore.setStatus(newStatus);
+                        toRestore.setHireDate(req.getHireDate() != null
+                                ? Instant.parse(req.getHireDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                                : toRestore.getHireDate());
+                        toRestore.setShift(req.getShift() != null
+                                ? EmployeeShift.valueOf(req.getShift())
+                                : toRestore.getShift());
+                        employeeRepository.save(toRestore);
+                    } else {
+                        // nếu không có employee LEAVE nào → tạo mới
+                        if (!ar.getIsActive()) {
+                            List<AccountRole> activeRoles = accountRoleRepository
+                                    .findByAccountIdAndIsActiveTrue(account.getId());
+                            boolean hasUserActive = activeRoles.stream()
+                                    .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()));
+                            long activeNonUserCount = activeRoles.stream()
+                                    .filter(r -> !"User".equalsIgnoreCase(r.getRole().getName())).count();
+
+                            if (hasUserActive && activeNonUserCount >= 1 || !hasUserActive && activeNonUserCount >= 1) {
+                                return new ApiResponse<>(false,
+                                        "Không thể kích hoạt nhân viên mới vì số lượng chức vụ đang hoạt động đã đạt giới hạn",
+                                        null);
+                            }
+                            ar.setIsActive(true);
+                            accountRoleRepository.save(ar);
+                        }
+
+                        Employee newEmp = buildEmployee(account.getUser(), ar, emp.getOffice(), req);
+                        employeeRepository.save(newEmp);
+                    }
+
+                    account.setIsActive(true);
+                    accountRepository.save(account);
+                }
+            }
+
+            return new ApiResponse<>(true, "Thông tin nhân viên đã được cập nhật thành công!", true);
+
+        } catch (Exception ex) {
+            return new ApiResponse<>(false,
+                    "Đã xảy ra lỗi: " + ex.getMessage() + ". Vui lòng thử lại hoặc liên hệ quản trị viên.", null);
+        }
+    }
+
+    private Employee buildEmployee(User user, AccountRole accountRole, Office office, ManagerEmployeeEditRequest req) {
+        Employee emp = new Employee();
+        emp.setUser(user);
+        emp.setAccountRole(accountRole);
+        emp.setOffice(office);
+        emp.setHireDate(
+                req.getHireDate() != null
+                        ? Instant.parse(req.getHireDate())
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
+                        : LocalDateTime.now());
+        emp.setShift(req.getShift() != null ? EmployeeShift.valueOf(req.getShift()) : EmployeeShift.FULL_DAY);
+        emp.setStatus(req.getStatus() != null ? EmployeeStatus.valueOf(req.getStatus()) : EmployeeStatus.ACTIVE);
+        return emp;
+    }
+
+    private void validateCreate(ManagerEmployeeEditRequest request) {
+        List<String> missingFields = new ArrayList<>();
+        if (request.getUserFirstName() == null || String.valueOf(request.getUserFirstName()).isBlank())
+            missingFields.add("Tên");
+        if (request.getUserLastName() == null || String.valueOf(request.getUserLastName()).isBlank())
+            missingFields.add("Họ");
+        if (request.getUserPhoneNumber() == null || request.getUserPhoneNumber().isBlank())
+            missingFields.add("Số điện thoại");
+        if (request.getUserEmail() == null || request.getUserEmail().isBlank())
+            missingFields.add("Email");
+        if (request.getUserRole() == null || request.getUserRole().isBlank())
+            missingFields.add("Chức vụ");
+
+        if (!missingFields.isEmpty())
+            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
+
+        if (request.getShift() != null && !request.getShift().isBlank()) {
+            try {
+                EmployeeShift.valueOf(request.getShift());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Ca làm việc không hợp lệ: " + request.getShift());
+            }
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            try {
+                EmployeeStatus.valueOf(request.getStatus());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Trạng thái không hợp lệ: " + request.getStatus());
+            }
+        }
+    }
+
+    private void validateEdit(ManagerEmployeeEditRequest request) {
+        List<String> missingFields = new ArrayList<>();
+        if (request.getUserRole() == null || request.getUserRole().isBlank())
+            missingFields.add("Chức vụ");
+
+        if (!missingFields.isEmpty())
+            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
+
+        if (request.getShift() != null && !request.getShift().isBlank()) {
+            try {
+                EmployeeShift.valueOf(request.getShift());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Ca làm việc không hợp lệ: " + request.getShift());
+            }
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            try {
+                EmployeeStatus.valueOf(request.getStatus());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Trạng thái không hợp lệ: " + request.getStatus());
+            }
+        }
+    }
 
 }

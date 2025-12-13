@@ -250,7 +250,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                     >
                         {request.response && request.response.trim() !== ''
                             ? request.response
-                            : <i>Chưa có phản hồi</i>}
+                            : <i>Chưa phản hồi</i>}
                     </div>
                 </Descriptions.Item>
 

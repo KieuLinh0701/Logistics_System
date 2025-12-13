@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
+import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
@@ -15,6 +16,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/manager/employees")
@@ -34,22 +39,22 @@ public class EmployeeManagerController {
         return ResponseEntity.ok(result);
     }
 
-    // @GetMapping("/{id}")
-    // public ResponseEntity<ApiResponse<ManagerShippingRequestDetailDto>> getShippingRequestById(
-    //         @PathVariable Integer id,
-    //         HttpServletRequest request) {
-    //     Integer userId = (Integer) request.getAttribute("currentUserId");
+    @PostMapping
+    public ResponseEntity<ApiResponse<Boolean>> create(
+            @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
 
-    //     ApiResponse<ManagerShippingRequestDetailDto> result = service.getShippingRequestById(userId, id);
-    //     return ResponseEntity.ok(result);
-    // }
+        return ResponseEntity.ok(service.createEmployee(userId, managerEmployeeEditRequest));
+    }
 
-    // @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    // public ResponseEntity<ApiResponse<Boolean>> processing(@PathVariable Integer id,
-    //         @ModelAttribute ManagerShippingRequestForm managerShippingRequestForm,
-    //         HttpServletRequest request) {
-    //     Integer userId = (Integer) request.getAttribute("currentUserId");
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> update(@PathVariable Integer id,
+            @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
+            HttpServletRequest request) {
 
-    //     return ResponseEntity.ok(service.processing(userId, id, managerShippingRequestForm));
-    // }
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.updateEmployee(userId, id, managerEmployeeEditRequest));
+    }
 }

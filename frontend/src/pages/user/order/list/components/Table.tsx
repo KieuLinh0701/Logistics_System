@@ -96,7 +96,7 @@ const OrderTable: React.FC<Props> = ({
 
         return (
           <><span className="long-column">
-            {record.recipientAddress.name}<br />
+            <span className="custom-table-content-strong">{record.recipientAddress.name}</span><br />
             {record.recipientAddress.phoneNumber}<br />
             {address}
           </span>
@@ -235,6 +235,9 @@ const OrderTable: React.FC<Props> = ({
           type: 'checkbox',
           selectedRowKeys: selectedOrderIds,
           onChange: (keys) => setSelectedOrderIds(keys as number[]),
+          getCheckboxProps: (record) => ({
+            disabled: !canPrintUserOrder(record.status),
+          }),
         }}
         rowClassName={(record) =>
           selectedOrderIds.includes(record.id) ? "selectd-checkbox-table-row-selected" : ""

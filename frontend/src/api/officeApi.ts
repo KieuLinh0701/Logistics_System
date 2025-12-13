@@ -59,6 +59,11 @@ const officeApi = {
     const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/offices/me`, data);
     return res;
   },
+
+  getManagerOfficeCityCode: async () => {
+    const res = await axiosClient.get<ApiResponse<number>>('/manager/offices/me/city-code');
+    return res;
+  },
 };
 
 export default officeApi;

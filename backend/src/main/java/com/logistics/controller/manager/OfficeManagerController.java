@@ -31,4 +31,10 @@ public class OfficeManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(service.updateMyOffice(userId, managerOfficeEditRequest));
     }
+
+    @GetMapping("/me/city-code")
+    public ResponseEntity<ApiResponse<Integer>> getMyOfficeCityCode(HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.getMyOfficeCityCode(userId));
+    }
 }

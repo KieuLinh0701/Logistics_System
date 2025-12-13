@@ -11,6 +11,7 @@ interface AddEditModalProps {
   onOk: () => void;
   onCancel: () => void;
   loading: boolean;
+  form: any;
 }
 
 const AddEditModal: React.FC<AddEditModalProps> = ({
@@ -19,15 +20,19 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
   employee,
   onOk,
   onCancel,
-  loading
+  loading,
+  form
 }) => {
-  const [form] = Form.useForm();
 
   return (
     <>
       <Modal
         open={open}
-        onOk={onOk}
+        onOk={() => {
+          form.validateFields().then(() => {
+            onOk();
+          });
+        }}
         className="modal-hide-scrollbar"
         okButtonProps={{ className: "modal-ok-button", loading }}
         cancelButtonProps={{ className: "modal-cancel-button" }}
@@ -129,7 +134,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
             </Col>
 
             <Col span={12}>
-              <Form.Item label="Ca làm" name="shift" style={{ marginBottom: 12 }}>
+              <Form.Item label="Ca làm" name="shift">
                 <Select
                   className="modal-custom-select"
                   placeholder="Chọn ca làm..."
@@ -146,7 +151,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Ngày tuyển dụng" name="hireDate" style={{ marginBottom: 12 }}>
+              <Form.Item label="Ngày tuyển dụng" name="hireDate">
                 <DatePicker
                   className="modal-custom-date-picker"
                   style={{ width: "100%" }}
@@ -156,16 +161,18 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
             </Col>
 
             <Col span={12}>
-              <Form.Item label="Trạng thái" name="status" style={{ marginBottom: 12 }}>
+              <Form.Item label="Trạng thái" name="status">
                 <Select
                   className="modal-custom-select"
                   placeholder="Chọn trạng thái..."
                 >
-                  {EMPLOYEE_STATUSES?.map((item) => (
-                    <Select.Option key={item} value={item}>
-                      {translateEmployeeStatus(item)}
-                    </Select.Option>
-                  ))}
+                  {EMPLOYEE_STATUSES
+                    ?.filter(item => mode !== 'create' || item !== 'LEAVE') 
+                    .map((item) => (
+                      <Select.Option key={item} value={item}>
+                        {translateEmployeeStatus(item)}
+                      </Select.Option>
+                    ))}
                 </Select>
               </Form.Item>
             </Col>

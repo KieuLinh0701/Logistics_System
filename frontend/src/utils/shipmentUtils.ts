@@ -1,6 +1,45 @@
-export const SHIPMENT_STATUSES = ['ACTIVE', 'INACTIVE', 'LEAVE'] as const;
+export const SHIPMENT_STATUSES = ['PENDING', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED'] as const;
+export const translateShipmentStatus = (value: string): string => {
+  switch (value) {
+    case 'PENDING':
+      return 'Chờ khởi hành';
+    case 'IN_TRANSIT':
+      return 'Đang vận chuyển';
+    case 'COMPLETED':
+      return 'Đã hoàn thành';
+    case 'CANCELLED':
+      return 'Đã hủy';
+    default:
+      return value;
+  }
+};
+
+export const SHIPMENT_TYPES = ['DELIVERY', 'TRANSFER'] as const;
+export const translateShipmentType = (value: string): string => {
+  switch (value) {
+    case 'DELIVERY':
+      return 'Giao hàng';
+    case 'TRANSFER':
+      return 'Trung chuyển';
+    default:
+      return value;
+  }
+};
 
 export const SHIPMENT_FILTER_SORT = [
+  'NEWEST',
+  'OLDEST',
+] as const;
+export const translateShipmentFilterSort = (value: string): string => {
+  switch (value) {
+    case 'NEWEST': return 'Mới nhất';
+    case 'OLDEST': return 'Cũ nhất';
+    default:
+      return value;
+  }
+};
+
+export const EMPLOYY_PERFOMANCE_SHIPMENT_FILTER_SORT = [
   'TOTAL_ORDERS_HIGH',
   'TOTAL_ORDERS_LOW',
   'TOTAL_SHIPMENTS_HIGH',
@@ -12,17 +51,7 @@ export const SHIPMENT_FILTER_SORT = [
   'AVG_TIME_PER_ORDER_HIGH',
   'AVG_TIME_PER_ORDER_LOW',
 ] as const;
-
-export const translateShipmentStatus = (value: string): string => {
-  switch (value) {
-    case 'ACTIVE': return 'Đang làm việc';
-    case 'INACTIVE': return 'Ngưng hoạt động';
-    case 'LEAVE': return 'Đã nghỉ việc';
-    default: return value;
-  }
-};
-
-export const translateShipmentFilterSort = (value: string): string => {
+export const translateEmployeePerformanceShipmentFilterSort = (value: string): string => {
   switch (value) {
     case 'TOTAL_ORDERS_HIGH': return 'Số đơn nhiều nhất';
     case 'TOTAL_ORDERS_LOW': return 'Số đơn ít nhất';

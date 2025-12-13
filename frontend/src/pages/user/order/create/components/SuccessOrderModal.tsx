@@ -40,9 +40,9 @@ const SuccessOrderModal: React.FC<Props> = ({ open, trackingNumber, orderId, sta
 
     const handleViewDetail = () => {
         if (status === "DRAFT") {
-            navigate(`/order/id/${orderId}`, { replace: true });
+            navigate(`/orders/id/${orderId}`, { replace: true });
         } else {
-            navigate(`/order/${trackingNumber}`, { replace: true });
+            navigate(`/orders/tracking/${trackingNumber}`, { replace: true });
         }
         onClose();
     };

@@ -11,16 +11,16 @@ import OrderActions from "./components/Actions";
 import FeedbackCard from "./components/FeedbackCard";
 import OrderHistoryCard from "./components/OrderHistoryCard";
 import type { Order } from "../../../../types/order";
-import "./OrderDetail.css";
+import "./UserOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
 import ConfirmPublicModal from "./components/ConfirmPublicModal";
 import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder } from "../../../../utils/orderUtils";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
-import type { ShippingRequest } from "../../../../types/shippingRequest";
 import AddEditModal from "../request/components/AddEditModal";
+import FromOfficeInfo from "./components/FromOfficeInfo";
 
-const OrderDetail: React.FC = () => {
+const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
 
     const navigate = useNavigate();
@@ -189,6 +189,9 @@ const OrderDetail: React.FC = () => {
                     cityCode: order.recipientAddress.cityCode,
                 }}
             />
+            {order.pickupType === "AT_OFFICE" &&
+                <FromOfficeInfo office={order.fromOffice} />
+            }
             <OrderInfo order={order} />
             <OrderProducts products={order.orderProducts || []} />
             <OrderHistoryCard histories={order.orderHistories} />
@@ -242,4 +245,4 @@ const OrderDetail: React.FC = () => {
     );
 };
 
-export default OrderDetail;
+export default UserOrderDetail;

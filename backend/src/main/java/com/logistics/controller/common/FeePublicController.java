@@ -50,4 +50,26 @@ public class FeePublicController {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
     }
+
+    @GetMapping("/total-manager")
+    public ResponseEntity<ApiResponse<Integer>> calculateTotalFeeManager(
+            @RequestParam BigDecimal weight,
+            @RequestParam Integer serviceTypeId,
+            @RequestParam Integer senderCodeCity,
+            @RequestParam Integer recipientCodeCity,
+            @RequestParam Integer cod,
+            @RequestParam Integer orderValue) {
+
+        Integer totalFee = feeService.calculateTotalFeeManager(
+                weight,
+                serviceTypeId,
+                senderCodeCity,
+                recipientCodeCity,
+                orderValue,
+                cod
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
+    }
 }

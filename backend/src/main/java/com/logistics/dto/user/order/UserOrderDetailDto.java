@@ -2,6 +2,7 @@ package com.logistics.dto.user.order;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import com.logistics.dto.AddressDto;
@@ -10,6 +11,7 @@ import com.logistics.dto.OrderHistoryDto;
 import com.logistics.dto.OrderProductDto;
 import com.logistics.dto.ServiceTypeDto;
 
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

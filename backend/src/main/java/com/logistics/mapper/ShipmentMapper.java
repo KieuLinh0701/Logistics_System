@@ -1,0 +1,67 @@
+package com.logistics.mapper;
+
+import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
+import com.logistics.entity.Employee;
+import com.logistics.entity.Office;
+import com.logistics.entity.Shipment;
+import com.logistics.entity.Vehicle;
+
+public class ShipmentMapper {
+
+    public static ManagerShipmentListDto toManagerShipmentListDto(Shipment entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return new ManagerShipmentListDto(
+                entity.getId(),
+                entity.getCode(),
+                mapVehicle(entity.getVehicle()),
+                mapEmployee(entity.getEmployee()),
+                mapEmployee(entity.getCreatedBy()),
+                mapOffice(entity.getFromOffice()),
+                mapOffice(entity.getToOffice()),
+                entity.getStatus() != null ? entity.getStatus().toString() : null,
+                entity.getType() != null ? entity.getType().toString() : null,
+                entity.getStartTime(),
+                entity.getEndTime()
+        );
+    }
+
+    private static ManagerShipmentListDto.VehicleShipment mapVehicle(Vehicle e) {
+        if (e == null) return null;
+
+        return new ManagerShipmentListDto.VehicleShipment(
+                e.getLicensePlate(),
+                e.getCapacity()
+        );
+    }
+
+
+    private static ManagerShipmentListDto.EmployeeShipment mapEmployee(Employee e) {
+        if (e == null) return null;
+
+        return new ManagerShipmentListDto.EmployeeShipment(
+                e.getUser() != null ? e.getUser().getFullName() : null,
+                e.getCode(),
+                e.getUser() != null ? e.getUser().getPhoneNumber() : null,
+                e.getUser() != null && e.getUser().getAccount() != null
+                        ? e.getUser().getAccount().getEmail()
+                        : null
+        );
+    }
+
+    private static ManagerShipmentListDto.OfficeShipment mapOffice(Office o) {
+        if (o == null) return null;
+
+        return new ManagerShipmentListDto.OfficeShipment(
+                o.getName(),
+                o.getPostalCode(),
+                o.getCityCode() != null ? o.getCityCode() : null,
+                o.getWardCode() != null ? o.getWardCode() : null,
+                o.getDetail(),
+                o.getLatitude(),
+                o.getLongitude()
+        );
+    }
+}

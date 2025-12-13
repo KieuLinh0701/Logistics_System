@@ -22,8 +22,6 @@ import type { ManagerEmployee, ManagerEmployeeSearchRequest } from "../../../../
 import AddEditModal from "./components/AddEditModal";
 import type { BulkResponse } from "../../../../types/response";
 import BulkResult from "./components/BulkResult";
-import { OFFICE_MANAGER_ADDABLE_ROLES } from "../../../../utils/roleUtils";
-import { EMPLOYEE_SHIFTS, EMPLOYEE_STATUSES } from "../../../../utils/employeeUtils";
 import employeeApi from "../../../../api/employeeApi";
 
 const ManagerEmployeeList = () => {
@@ -87,159 +85,105 @@ const ManagerEmployeeList = () => {
 
   // Sửa nhân viên
   const handleEditEmployee = async () => {
+    const values = form.getFieldsValue();
+
+    // Chuẩn bị payload gửi API
+    const payload = {
+      userRole: values.role,
+      shift: values.shift,
+      status: values.status,
+      hireDate: values.hireDate?.toISOString(),
+    };
+
     try {
-      // const data = await dispatch(updateEmployee({ employee: newEmployee })).unwrap();
-      // if (data.success) {
-      //   message.success(data.message || "Cập nhật thành công");
-      //   setIsModalOpen(false);
-      //   setNewEmployee({});
-      //   fetchEmployees(currentPage);
-      //   form.resetFields();
-      // } else {
-      //   message.error(data.message || "Cập nhật thất bại");
-      // }
-    } catch (err: any) {
-      message.error(err.message || "Có lỗi xảy ra");
+      setLoading(true);
+      const result = await employeeApi.updateManagerEmployee(newEmployee.id!, payload);
+
+      if (result.success && result.data) {
+        message.success(result.message || "Thêm nhân viên thành công!");
+        setIsModalOpen(false);
+        form.resetFields();
+        fetchEmployees(currentPage);
+      } else {
+        message.error(result.message || "Có lỗi khi thêm nhân viên!");
+      }
+
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi thêm nhân viên!");
+    } finally {
+      setLoading(false);
     }
   };
 
   // Thêm nhân viên
   const handleAddEmployee = async () => {
-    // if (
-    // !newEmployee.user?.firstName ||
-    // !newEmployee.user?.lastName ||
-    // !newEmployee.user?.email ||
-    // !newEmployee.user?.phoneNumber ||
-    // !newEmployee.user?.role
-    //   false
-    // ) {
-    //   message.error("Vui lòng nhập đầy đủ thông tin!");
-    //   return;
-    // }
+    const values = form.getFieldsValue();
 
-    // try {
-    // 1. Gọi check API trước
-    // const resultAction = await dispatch(
-    //   checkBeforeAddEmployee({
-    //     email: newEmployee.user?.email,
-    //     phoneNumber: newEmployee.user?.phoneNumber,
-    //     officeId: office?.id,
-    //   })
-    // );
+    // Chuẩn bị payload gửi API
+    const payload = {
+      userFirstName: values.firstName,
+      userLastName: values.lastName,
+      userEmail: values.email,
+      userPhoneNumber: values.phoneNumber,
+      userRole: values.role,
+      shift: values.shift,
+      status: values.status,
+      hireDate: values.hireDate?.toISOString(),
+    };
 
-    // const result = resultAction.payload as EmployeeCheckResult;
+    try {
+      setLoading(true);
+      const result = await employeeApi.createManagerEmployee(payload);
 
-    // if (!result.success) {
-    //   message.error(result.message);
-    //   return;
-    // }
+      if (result.success && result.data) {
+        message.success(result.message || "Thêm nhân viên thành công!");
+        setIsModalOpen(false);
+        form.resetFields();
+        fetchEmployees(currentPage);
+      } else {
+        message.error(result.message || "Có lỗi khi thêm nhân viên!");
+      }
 
-    // // Nếu cần xác nhận (user đã tồn tại hoặc đã từng là employee)
-    // if (result.exists) {
-    //   Modal.confirm({
-    //     title: "Xác nhận thêm nhân viên",
-    //     content: (
-    //       <div style={{ maxWidth: 600 }}>
-    //         <p>{result.message}</p>
-    //         {result.user && (
-    //           <div>
-    //             <p>Dưới đây là thông tin hiện tại của nhân viên:</p>
-    //             <ul>
-    //               <li><b>Tên:</b> {result.user.lastName} {result.user.firstName}</li>
-    //               <li><b>Email:</b> {result.user.email}</li>
-    //               <li><b>Số điện thoại:</b> {result.user.phoneNumber}</li>
-    //               <li><b>Chức vụ:</b> {result.user.role}</li>
-    //             </ul>
-    //           </div>
-    //         )}
-    //         <p>
-    //           Hệ thống sẽ giữ nguyên tất cả thông tin cá nhân hiện tại và chỉ cập nhật số điện thoại mới.
-    //           Bạn có chắc chắn muốn tiếp tục?
-    //         </p>
-    //       </div>
-    //     ),
-    //     okText: "Tiếp tục",
-    //     cancelText: "Hủy",
-    //     okButtonProps: {
-    //           style: {
-    //               backgroundColor: "#1C3D90",
-    //               color: "#fff",
-    //           },
-    //       },
-    //       cancelButtonProps: {
-    //           style: {
-    //               backgroundColor: "#ffffff",
-    //               borderColor: "#1C3D90",
-    //               color: "#1C3D90",
-    //           },
-    //       },
-    //     centered: true,
-    //     width: 600,
-    //     icon: null,
-    //     onOk: async () => {
-    //       // await dispatch(addEmployee({ employee: newEmployee }));
-    //       message.success("Thêm nhân viên thành công và cập nhật số điện thoại!");
-    //       setIsModalOpen(false);
-    //       setNewEmployee({});
-    //       form.resetFields();
-    //     },
-    //   });
-    // } else {
-    //   try {
-    // const result = await dispatch(addEmployee({ employee: newEmployee })).unwrap();
-
-    // // bây giờ result có kiểu EmployeeResponse
-    // if (result.success) {
-    //   message.success(result.message || "Thêm nhân viên thành công!");
-    //   setIsModalOpen(false);
-    //   setNewEmployee({});
-    //   form.resetFields();
-    // } else {
-    //   message.error(result.message || "Thêm nhân viên thất bại!");
-    // }
-    //     } catch (error: any) {
-    //       // unwrap sẽ ném ra nếu rejected
-    //       message.error(error?.message || "Thêm nhân viên thất bại!");
-    //     }
-    //   }
-    // } catch (error) {
-    //   message.error("Có lỗi khi thêm nhân viên!");
-    // }
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi thêm nhân viên!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Nhập Excel
   const handleExcelUpload = async (file: File) => {
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      const data = new Uint8Array(e.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const rows: any[] = XLSX.utils.sheet_to_json(worksheet);
+    // reader.onload = async (e) => {
+    //   const data = new Uint8Array(e.target?.result as ArrayBuffer);
+    //   const workbook = XLSX.read(data, { type: "array" });
+    //   const sheetName = workbook.SheetNames[0];
+    //   const worksheet = workbook.Sheets[sheetName];
+    //   const rows: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-      // const newEmployees: Partial<Employee>[] = rows.map((row) => ({
-      const newEmployees: Partial<any>[] = rows.map((row) => ({
-        shift: row["Ca làm"] || "Full Day",
-        status: row["Trạng thái"] || "Active",
-        hireDate: row["Ngày tuyển dụng"]
-          ? dayjs(row["Ngày tuyển dụng"]).toDate()
-          : new Date(),
-        user: {
-          id: 0,
-          firstName: row["Tên"] || "",
-          lastName: row["Họ"] || "",
-          email: row["Email"] || "",
-          phoneNumber: row["Số điện thoại"] || "",
-          role: row["Chức vụ"] || "Shipper",
-        },
-      }));
+    //   // const newEmployees: Partial<Employee>[] = rows.map((row) => ({
+    //   const newEmployees: Partial<any>[] = rows.map((row) => ({
+    //     shift: row["Ca làm"] || "Full Day",
+    //     status: row["Trạng thái"] || "Active",
+    //     hireDate: row["Ngày tuyển dụng"]
+    //       ? dayjs(row["Ngày tuyển dụng"]).toDate()
+    //       : new Date(),
+    //     user: {
+    //       id: 0,
+    //       firstName: row["Tên"] || "",
+    //       lastName: row["Họ"] || "",
+    //       email: row["Email"] || "",
+    //       phoneNumber: row["Số điện thoại"] || "",
+    //       role: row["Chức vụ"] || "Shipper",
+    //     },
+    //   }));
 
-      if (newEmployees.length === 0) {
-        message.error("Không tìm thấy dữ liệu nhân viên trong file Excel!");
-        return;
-      }
+    //   if (newEmployees.length === 0) {
+    //     message.error("Không tìm thấy dữ liệu nhân viên trong file Excel!");
+    //     return;
+    //   }
 
-      try {
+    //   try {
         // const resultAction = await dispatch(importEmployees({ employees: newEmployees })).unwrap();
 
         // // Lấy object result nested từ backend
@@ -256,54 +200,55 @@ const ManagerEmployeeList = () => {
         // } else {
         //   message.error(importResultData?.message || "Import thất bại");
         // }
-      } catch (err: any) {
-        message.error(err.message || "Có lỗi xảy ra khi import nhân viên");
-      }
-    };
+    //   } catch (err: any) {
+    //     message.error(err.message || "Có lỗi xảy ra khi import nhân viên");
+    //   }
+    // };
     reader.readAsArrayBuffer(file);
     return false;
   };
 
   const handleDownloadTemplate = () => {
-    const wb = XLSX.utils.book_new();
+    message.warning("Tính năng này đang được phát triển")
+    // const wb = XLSX.utils.book_new();
 
-    const data = [
-      {
-        "Họ": "Nguyễn",
-        "Tên": "Văn A",
-        "Email": "example@gmail.com",
-        "Số điện thoại": "0123456789",
-        "Chức vụ": OFFICE_MANAGER_ADDABLE_ROLES!.join("/"),
-        "Ca làm": EMPLOYEE_SHIFTS!.join("/"),
-        "Trạng thái": EMPLOYEE_STATUSES!.join("/"),
-        "Ngày tuyển dụng": "YYYY-MM-DD",
-      },
-    ];
+    // const data = [
+    //   {
+    //     "Họ": "Nguyễn",
+    //     "Tên": "Văn A",
+    //     "Email": "example@gmail.com",
+    //     "Số điện thoại": "0123456789",
+    //     "Chức vụ": OFFICE_MANAGER_ADDABLE_ROLES!.join("/"),
+    //     "Ca làm": EMPLOYEE_SHIFTS!.join("/"),
+    //     "Trạng thái": EMPLOYEE_STATUSES!.join("/"),
+    //     "Ngày tuyển dụng": "YYYY-MM-DD",
+    //   },
+    // ];
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const header = [
-      "Họ",
-      "Tên",
-      "Email",
-      "Số điện thoại",
-      "Chức vụ",
-      "Ca làm",
-      "Trạng thái",
-      "Ngày tuyển dụng",
-    ];
-    XLSX.utils.sheet_add_aoa(ws, [header], { origin: 0 });
-    ws["!cols"] = [
-      { wch: 10 },
-      { wch: 15 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 35 },
-      { wch: 20 },
-      { wch: 15 },
-    ];
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "employee_template.xlsx");
+    // const ws = XLSX.utils.json_to_sheet(data);
+    // const header = [
+    //   "Họ",
+    //   "Tên",
+    //   "Email",
+    //   "Số điện thoại",
+    //   "Chức vụ",
+    //   "Ca làm",
+    //   "Trạng thái",
+    //   "Ngày tuyển dụng",
+    // ];
+    // XLSX.utils.sheet_add_aoa(ws, [header], { origin: 0 });
+    // ws["!cols"] = [
+    //   { wch: 10 },
+    //   { wch: 15 },
+    //   { wch: 25 },
+    //   { wch: 15 },
+    //   { wch: 15 },
+    //   { wch: 35 },
+    //   { wch: 20 },
+    //   { wch: 15 },
+    // ];
+    // XLSX.utils.book_append_sheet(wb, ws, "Template");
+    // XLSX.writeFile(wb, "employee_template.xlsx");
   };
 
   useEffect(() => {
@@ -406,7 +351,16 @@ const ManagerEmployeeList = () => {
             setModalMode('edit');
             setNewEmployee(employee);
             setIsModalOpen(true);
-            form.setFieldsValue(employee);
+            form.setFieldsValue({
+              lastName: employee.userLastName,
+              firstName: employee.userFirstName,
+              email: employee.userEmail,
+              phoneNumber: employee.userPhoneNumber,
+              role: employee.userRole,
+              shift: employee.shift,
+              status: employee.status,
+              hireDate: dayjs(employee.hireDate)
+            });
           }}
           onPageChange={(page, size) => {
             setCurrentPage(page);
@@ -422,6 +376,7 @@ const ManagerEmployeeList = () => {
           onOk={handleSubmit}
           onCancel={() => setIsModalOpen(false)}
           loading={loading}
+          form={form}
         />
 
         {bulkResult &&

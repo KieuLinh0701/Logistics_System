@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Button, Select, Card, Space, Row, Col, message } from "antd";
 import { PrinterOutlined, SettingOutlined } from "@ant-design/icons";
 import type { OrderPrint } from "../../../types/order";
 import orderApi from "../../../api/orderApi";
 import locationApi from "../../../api/locationApi";
-import "./WaybillPrint.css";
+import "./UserWaybillPrint.css";
 
 const { Option } = Select;
 
@@ -71,12 +71,13 @@ const CodWeightSection: React.FC<{ cod: number; weight: number }> = ({ cod, weig
   );
 };
 
-const WaybillPrint: React.FC = () => {
+const UserWaybillPrint: React.FC = () => {
   const [orders, setOrders] = useState<OrderPrint[]>([]);
   const [pageSize, setPageSize] = useState<"A4" | "A5" | "A6">("A4");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const hasShownMessage = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -90,15 +91,23 @@ const WaybillPrint: React.FC = () => {
       try {
         const result = await orderApi.printUserOrders(orderIds);
         if (result.success && result.data) {
-          if (result.data.length === 0) {
+          if (result.data.length === 0 && !hasShownMessage.current) {
             message.warning("Không có đơn hàng nào đủ điều kiện in");
-          } else {
+            hasShownMessage.current = true;
+          } else if (!hasShownMessage.current) {
             setOrders(result.data);
             message.success(`Lấy thành công ${result.data.length} đơn hàng đủ điều kiện in phiếu vận đơn`);
+            hasShownMessage.current = true;
           }
-        } else message.error(result.message || "Lấy thông tin in ấn thất bại");
+        } else if (!hasShownMessage.current) {
+          message.error(result.message || "Lấy thông tin in ấn thất bại");
+          hasShownMessage.current = true;
+        }
       } catch {
-        message.error("Lỗi khi lấy thông tin in ấn");
+        if (!hasShownMessage.current) {
+          message.error("Lỗi khi lấy thông tin in ấn");
+          hasShownMessage.current = true;
+        }
       } finally {
         setLoading(false);
       }
@@ -258,4 +267,4 @@ const WaybillPrint: React.FC = () => {
   );
 };
 
-export default WaybillPrint;
+export default UserWaybillPrint;

@@ -27,14 +27,11 @@ import AdminUsers from "./pages/admin/Users";
 import AdminOrders from "./pages/admin/Orders";
 import AdminPostOffices from "./pages/admin/PostOffices";
 import AdminServiceTypes from "./pages/admin/ServiceTypes";
-import UserOrderCreate from "./pages/user/order/create/UserOrderCreate";
 import UserProducts from "./pages/user/product/UserProducts";
 import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
 import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
 import ShippingRatesBody from "./pages/common/tracking/shippingRate/ShippingRatesBody";
 import OfficeSearchBody from "./pages/common/tracking/officeSearch/OfficeSearchBody";
-import OrderDetail from "./pages/user/order/detail/OrderDetail";
-import WaybillPrint from "./pages/user/order/WaybillPrint";
 import UserOrderEdit from "./pages/user/order/edit/UserOrderEdit";
 import UserShippingRequests from "./pages/user/order/request/UserShippingRequests";
 import OrderListRouter from "./pages/router/OrderListRouter";
@@ -45,6 +42,11 @@ import ManagerShippingRequests from "./pages/manager/order/request/ManagerShippi
 import ManagerEmployeeList from "./pages/manager/employee/list/ManagerEmployeeList";
 import ManagerEmployeePerformance from "./pages/manager/employee/perfomance/ManagerEmployeePerformance";
 import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
+import OrderCreateRouter from "./pages/router/OrderCreateRouter";
+import OrderDetailRouter from "./pages/router/OrderDetailRouter";
+import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
+import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
+import ManagerShipment from "./pages/manager/shipment/ManagerShipment";
 
 const App: React.FC = () => {
   return (
@@ -90,15 +92,16 @@ const App: React.FC = () => {
 
             {/* User & Manager routes */}
             <Route path="/orders/list" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderListRouter /></PrivateRoute>} />
+            <Route path="/orders/create" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderCreateRouter /></PrivateRoute>} />
+            <Route path="/orders/print" element={<PrivateRoute allowedRoles={['user', 'manager']}><WaybillPrintRouter /></PrivateRoute>} />
+            
+            <Route path="/orders/tracking/:trackingNumber/edit" element={<PrivateRoute allowedRoles={['user']}><UserOrderEdit /></PrivateRoute>} />
+            <Route path="/orders/tracking/:trackingNumber" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderDetailRouter /></PrivateRoute>} />
 
             {/* User routes */}
-            <Route path="/orders/create" element={<PrivateRoute allowedRoles={['user']}><UserOrderCreate /></PrivateRoute>} />
             <Route path="/orders/requests" element={<PrivateRoute allowedRoles={['user']}><UserShippingRequests /></PrivateRoute>} />
             <Route path="/orders/id/:orderId/edit" element={<PrivateRoute allowedRoles={['user']}><UserOrderEdit /></PrivateRoute>} />
-            <Route path="/orders/tracking/:trackingNumber/edit" element={<PrivateRoute allowedRoles={['user']}><UserOrderEdit /></PrivateRoute>} />
-            <Route path="/orders/print" element={<PrivateRoute allowedRoles={['user']}><WaybillPrint /></PrivateRoute>} />
-            <Route path="/orders/id/:orderId" element={<PrivateRoute allowedRoles={['user']}><OrderDetail /></PrivateRoute>} />
-            <Route path="/orders/tracking/:trackingNumber" element={<PrivateRoute allowedRoles={['user']}><OrderDetail /></PrivateRoute>} />
+            <Route path="/orders/id/:orderId" element={<PrivateRoute allowedRoles={['user']}><UserOrderDetail /></PrivateRoute>} />
             <Route path="/products" element={<PrivateRoute allowedRoles={['user']}><UserProducts /></PrivateRoute>} />
             <Route path="/bank-accounts" element={<PrivateRoute allowedRoles={['user']}><UserBankAccounts /></PrivateRoute>} />
             <Route path="/shipping-fee" element={<PrivateRoute allowedRoles={['user']}><ShippingFeeBody /></PrivateRoute>} />
@@ -113,6 +116,7 @@ const App: React.FC = () => {
             <Route path="/employees/performance" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerformance /></PrivateRoute>} />
             <Route path="employees/performance/:employeeCode/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerfomanceShipment /></PrivateRoute>} />
             {/* <Route path="employees/performance/:employeeCode/shipments/:shipmentCode/orders" element={<ShipmentOrders />} /> */}
+            <Route path="/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipment /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

@@ -1,5 +1,5 @@
 import type { ApiResponse, ListResponse } from "../types/response";
-import type { AdminOrder, CreateOrderSuccess, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest } from "../types/order";
+import type { AdminOrder, CreateOrderSuccess, ManagerOrderRequest, ManagerOrderSearchRequest, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest } from "../types/order";
 import axiosClient from "./axiosClient";
 
 const orderApi = {
@@ -58,6 +58,33 @@ const orderApi = {
   async printUserOrders(orderIds: number[]) {
     const query = orderIds.join(",");
     const res = await axiosClient.get<ApiResponse<OrderPrint[]>>(`/user/orders/print?orderIds=${query}`);
+    return res;
+  },
+
+  // Manager
+  async listManagerOrders(params: ManagerOrderSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders", { params });
+    return res;
+  },
+
+  async createManagerOrder(params: ManagerOrderRequest) {
+    const res = await axiosClient.post<ApiResponse<string>>("/manager/orders", params);
+    return res;
+  },
+
+  async getManagerOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<Order>>(`/manager/orders/${trackingNumber}`);
+    return res;
+  },
+
+  async printManagerOrders(orderIds: number[]) {
+    const query = orderIds.join(",");
+    const res = await axiosClient.get<ApiResponse<OrderPrint[]>>(`/manager/orders/print?orderIds=${query}`);
+    return res;
+  },
+
+  async cancelManagerOrder(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/cancel`);
     return res;
   },
 };

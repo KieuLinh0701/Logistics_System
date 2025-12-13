@@ -8,10 +8,10 @@ import Title from 'antd/es/typography/Title';
 import './AccountSettings.css';
 import { getUserRole } from '../../../utils/authUtils';
 import AddressSettingsUser from './components/userAddress/AddressSettingsUser';
-import AddressSettings from './components/AddressSettings';
 
 const AccountSettings: React.FC = () => {
   const role = getUserRole();
+
   const getTabFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") || "profile";
@@ -25,6 +25,48 @@ const AccountSettings: React.FC = () => {
     params.set("tab", key);
     window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
   };
+
+  const tabs = [
+    {
+      key: 'profile',
+      label: (
+        <span className="tab-label">
+          <UserOutlined /> Thông Tin Cá Nhân
+        </span>
+      ),
+      children: <ProfileSettings />,
+    },
+    {
+      key: 'email',
+      label: (
+        <span className="tab-label">
+          <MailOutlined /> Cài Đặt Email
+        </span>
+      ),
+      children: <EmailSettings />,
+    },
+    {
+      key: 'password',
+      label: (
+        <span className="tab-label">
+          <LockOutlined /> Đổi Mật Khẩu
+        </span>
+      ),
+      children: <PasswordSettings />,
+    },
+  ];
+
+  if (role === "user") {
+    tabs.push({
+      key: 'address',
+      label: (
+        <span className="tab-label">
+          <LockOutlined /> Cài Đặt Địa Chỉ
+        </span>
+      ),
+      children: <AddressSettingsUser />,
+    });
+  }
 
   return (
     <div className="profile-settings-container">
@@ -43,38 +85,7 @@ const AccountSettings: React.FC = () => {
           activeKey={activeTab}
           onChange={handleTabChange}
           className="profile-tabs"
-          items={[
-            {
-              key: 'profile',
-              label: <span className="tab-label"><UserOutlined /> Thông Tin Cá Nhân</span>,
-              children: <ProfileSettings />,
-            },
-            {
-              key: 'email',
-              label: <span className="tab-label"><MailOutlined /> Cài Đặt Email</span>,
-              children: <EmailSettings />,
-            },
-            {
-              key: 'password',
-              label: <span className="tab-label"><LockOutlined /> Đổi Mật Khẩu</span>,
-              children: <PasswordSettings />,
-            },
-            role === "user"
-              ? {
-                key: "address",
-                label: <span className="tab-label">
-                  <LockOutlined /> Cài Đặt Địa chỉ
-                </span>,
-                children: <AddressSettingsUser />,
-              }
-              : {
-                key: "address",
-                label: <span className="tab-label">
-                  <LockOutlined /> Cài Đặt Địa Chỉ
-                </span>,
-                children: <AddressSettings />,
-              },
-          ].filter(Boolean)}
+          items={tabs}
         />
       </div>
     </div>

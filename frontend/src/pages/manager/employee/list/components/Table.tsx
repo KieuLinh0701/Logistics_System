@@ -28,21 +28,6 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onPageChange,
 }) => {
 
-  const [locationMap, setLocationMap] = useState<Record<number, { city: string, ward: string }>>({});
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const map: Record<number, { city: string; ward: string }> = {};
-      for (const employee of data) {
-        const cityName = (await locationApi.getCityNameByCode(employee.userCityCode)) || "Unknown";
-        const wardName = (await locationApi.getWardNameByCode(employee.userCityCode, employee.userWardCode)) || "Unknown";
-        map[employee.id!] = { city: cityName, ward: wardName };
-      }
-      setLocationMap(map);
-    };
-    fetchLocations();
-  }, [data]);
-
   const columns: ColumnsType<ManagerEmployee> = [
     {
       title: "Mã NV",
@@ -57,27 +42,11 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
       align: "left",
       render: (_, record) => (
         <>
-          <span className="custom-table-content-strong">Họ tên: </span>{record.userFullName}<br />
+          <span className="custom-table-content-strong">Họ tên: </span>{record.userLastName} {record.userFirstName}<br />
           <span className="custom-table-content-strong">Email: </span>{record.userEmail}<br />
           <span className="custom-table-content-strong">SĐT: </span>{record.userPhoneNumber}
         </>
       ),
-    },
-    {
-      title: "Địa chỉ",
-      key: "address",
-      align: "left",
-      render: (_, record) => {
-        const location = locationMap[record.id];
-        const hasAddress = record.userDetail && location?.city && location?.ward;
-        return hasAddress ?
-          <span className='custom-table-content-limit'>
-            {record.userDetail}, {location.ward}, {location.city}
-          </span>
-          : <span className='text-muted'>
-            N/A
-          </span>;
-      },
     },
     {
       title: "Thông tin công việc",
@@ -107,6 +76,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
             className="action-button-link"
             type="link"
             icon={<EditOutlined />}
+            disabled={record.status === "LEAVE"}
             onClick={() => onEdit(record)}
           >
             Sửa

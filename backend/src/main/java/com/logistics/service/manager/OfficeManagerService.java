@@ -106,4 +106,13 @@ public class OfficeManagerService {
 
         return null;
     }
+
+    public ApiResponse<Integer> getMyOfficeCityCode(int userId) {
+        try {
+            Office office = employeeManagerService.getOfficeByUserId(userId);
+            return new ApiResponse<>(true, "Lấy thông tin bưu cục thành công", office.getCityCode());
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
 }

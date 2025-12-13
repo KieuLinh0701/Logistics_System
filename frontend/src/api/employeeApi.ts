@@ -10,13 +10,13 @@ const employeeApi = {
     return res;
   },
 
-  async createManagerEmployee(data: FormData) {
+  async createManagerEmployee(data: Partial<ManagerEmployee>) {
     const res = await axiosClient.post<ApiResponse<Boolean>>("/manager/employees", data);
     return res;
   },
 
-  async updateUserProduct(data: FormData) {
-    const res = await axiosClient.put<ApiResponse<Product>>("/user/products", data);
+  async updateManagerEmployee(id: number, data: Partial<ManagerEmployee>) {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/employees/${id}`, data);
     return res;
   },
 

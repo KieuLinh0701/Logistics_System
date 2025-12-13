@@ -19,6 +19,14 @@ const shippingFeeApi = {
     );
     return res;
   },
+
+  calculateTotalFeeMananager: async (params: CalculateTotalFeeUserRequest) => {
+    const res = await axiosClient.get<ApiResponse<number>>(
+      "/public/fees/total-manager",
+      { params }
+    );
+    return res;
+  },
 };
 
 export default shippingFeeApi;

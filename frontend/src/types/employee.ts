@@ -1,11 +1,9 @@
 export interface ManagerEmployee {
   id: number;
   code: string;
-  userFullName: string;
+  userFirstName: string;
+  userLastName: string;
   userPhoneNumber: string;
-  userCityCode: number;
-  userWardCode: number;
-  userDetail: string;
   userRole: string;
   userEmail: string;
   hireDate: Date;
@@ -23,21 +21,6 @@ export interface ManagerEmployeeSearchRequest {
   shift?: string;
   startDate?: string;
   endDate?: string;
-}
-
-export interface ManagerEmployeePerformanceData {
-  id: number;
-  employeeCode: string;
-  employeeName: string;
-  employeeRole: string;
-  employeePhone: string;
-  employeeShift: string;
-  employeeStatus: string;
-  totalShipments: number;
-  totalOrders: number;
-  completedOrders: number;
-  completionRate: number;
-  avgTimePerOrder: number;
 }
 
 export interface ManagerEmployeePerformanceData {

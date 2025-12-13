@@ -14,7 +14,8 @@ import lombok.Setter;
 public class ManagerEmployeeListDto {
     private Integer id;
     private String code;
-    private String userFullName;
+    private String userLastName;
+    private String userFirstName;
     private String userPhoneNumber;
     private Integer userCityCode;
     private Integer userWardCode;

@@ -50,7 +50,11 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = true)
-    private User user;
+    private User user; // Người sở hữu đơn hàng
+
+    @ManyToOne
+    @JoinColumn(name = "employee_id", nullable = true)
+    private Employee employee; // Nhân viên tạo đơn hàng nếu như tạo tại bưu cục
 
     // ------------------- Người gửi -------------------
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false)

@@ -14,7 +14,8 @@ public class EmployeeMapper {
         return new ManagerEmployeeListDto(
                 entity.getId(),
                 entity.getCode(),
-                entity.getUser() != null ? entity.getUser().getFullName() : null,
+                entity.getUser() != null ? entity.getUser().getLastName() : null,
+                entity.getUser() != null ? entity.getUser().getFirstName() : null,
                 entity.getUser() != null ? entity.getUser().getPhoneNumber(): null,
                 address != null ? address.getCityCode() : null,
                 address != null ? address.getWardCode() : null,

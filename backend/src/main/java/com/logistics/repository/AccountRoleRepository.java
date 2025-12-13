@@ -12,11 +12,15 @@ import com.logistics.entity.AccountRole;
 
 @Repository
 public interface AccountRoleRepository extends JpaRepository<AccountRole, Integer> {
-    List<AccountRole> findByAccountId(Integer accountId);
+        List<AccountRole> findByAccountId(Integer accountId);
 
-    @Query("SELECT ar FROM AccountRole ar " +
-            "WHERE ar.account.id = :accountId " +
-            "AND ar.role.name = :roleName")
-    Optional<AccountRole> findByAccountIdAndRoleName(@Param("accountId") Integer accountId,
-            @Param("roleName") String roleName);
+        @Query("SELECT ar FROM AccountRole ar " +
+                        "WHERE ar.account.id = :accountId " +
+                        "AND ar.role.name = :roleName")
+        Optional<AccountRole> findByAccountIdAndRoleName(@Param("accountId") Integer accountId,
+                        @Param("roleName") String roleName);
+
+        List<AccountRole> findByAccountIdAndIsActiveTrue(Integer accountId);
+
+        Optional<AccountRole> findByAccountIdAndRoleId(Integer accountId, Integer roleId);
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { translateOrderStatus } from "../../../../../utils/orderUtils";
+import { translateOrderCreatorType, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
 import Title from "antd/es/typography/Title";
 import type { Order } from "../../../../../types/order";
 
@@ -9,7 +9,7 @@ interface OrderInfoProps {
 
 const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
   const renderField = (label: string, value: any) => {
-    const displayValue = value === null || value === undefined || value === "" 
+    const displayValue = value === null || value === undefined || value === ""
       ? <span className="order-detail-card-na-tag">N/A</span>
       : value;
 
@@ -33,9 +33,12 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
 
         <div className="order-detail-card-inner">
           <div className="order-detail-card-column">
-            {renderField("Ngày tạo:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
-            {renderField("Ngày giao hàng:", order.deliveredAt ? new Date(order.deliveredAt).toLocaleString() : null)}
             {renderField("Trạng thái:", translateOrderStatus(order.status))}
+            {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
+            {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
+            {order.deliveredAt && renderField("Thời gian giao hàng:", new Date(order.deliveredAt).toLocaleString())}
+            {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
+            {order.refundedAt && renderField("Thời gian hoàn hàng:", new Date(order.refundedAt).toLocaleString())}
           </div>
 
           <div className="order-detail-card-column">
@@ -44,6 +47,7 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
             {renderField("Giá trị:", `${order.orderValue.toLocaleString()} VNĐ`)}
             {renderField("COD:", `${(order.cod || 0).toLocaleString()} VNĐ`)}
           </div>
+
         </div>
       </div>
 

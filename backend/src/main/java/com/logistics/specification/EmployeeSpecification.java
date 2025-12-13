@@ -1,6 +1,7 @@
 package com.logistics.specification;
 
-import com.cloudinary.provisioning.Account;
+import com.logistics.entity.Account;
+import com.logistics.entity.AccountRole;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
@@ -43,18 +44,23 @@ public class EmployeeSpecification {
 
     public static Specification<Employee> role(String value, boolean excludeManager) {
         return (root, query, cb) -> {
-            Join<Employee, User> userJoin = root.join("user", JoinType.LEFT);
-            Join<User, Account> accountJoin = userJoin.join("account", JoinType.LEFT);
-            Join<Account, Role> roleJoin = accountJoin.join("role", JoinType.LEFT);
+            query.distinct(true);
+
+            Join<Employee, AccountRole> accountRoleJoin = root.join("accountRole", JoinType.LEFT);
+            Join<AccountRole, Role> roleJoin = accountRoleJoin.join("role", JoinType.LEFT);
 
             Predicate predicate = cb.conjunction();
 
             if (value != null && !value.isEmpty()) {
-                predicate = cb.and(predicate, cb.equal(cb.lower(roleJoin.get("name")), value.toLowerCase()));
+                predicate = cb.and(
+                        predicate,
+                        cb.equal(cb.lower(roleJoin.get("name")), value.toLowerCase()));
             }
 
             if (excludeManager) {
-                predicate = cb.and(predicate, cb.notEqual(cb.lower(roleJoin.get("name")), "manager"));
+                predicate = cb.and(
+                        predicate,
+                        cb.notEqual(cb.lower(roleJoin.get("name")), "manager"));
             }
 
             return predicate;

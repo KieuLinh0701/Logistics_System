@@ -130,6 +130,12 @@ const Sidenav: React.FC = () => {
         ],
       },
       {
+        key: "/shipments",
+        label: "Quản lý chuyến hàng",
+        path: "/shipments",
+        icon: <TruckOutlined />,
+      },
+      {
         key: "/supports",
         label: "Hỗ trợ & Khiếu nại",
         path: "/supports",
@@ -149,6 +155,16 @@ const Sidenav: React.FC = () => {
             key: "/employees/performance",
             label: "Hiệu suất nhân viên",
             path: "/employees/performance",
+          },
+          {
+            key: "/employees/assign-area",
+            label: "Phân công nhân viên",
+            path: "/employees/assign-area",
+          },
+          {
+            key: "/employees/assign-history",
+            label: "Lịch sử phân công",
+            path: "/employees/assign-history",
           },
         ],
       },
