@@ -23,3 +23,17 @@ export function getCurrentUser(): User | null {
     return null;
   }
 }
+
+export function getUserId(): number | null {
+  const decoded = getDecodedToken();
+  if (decoded?.account?.id) return Number(decoded.account.id);
+
+  const userStr = sessionStorage.getItem("user");
+  if (!userStr) return null;
+
+  try {
+    return Number(JSON.parse(userStr).id);
+  } catch {
+    return null;
+  }
+}

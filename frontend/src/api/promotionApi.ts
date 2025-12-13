@@ -11,7 +11,7 @@ const promotionApi = {
 
   // ---------------- Admin ---------------- //
   async listAdminPromotions(params: { page?: number; limit?: number; search?: string; status?: string; isGlobal?: boolean }) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<Promotion>>>("/admin/promotions", { params });
+    const res = await axiosClient.get<ApiResponse<{ data: Promotion[]; pagination: any }>>("/admin/promotions", { params });
     return res;
   },
 

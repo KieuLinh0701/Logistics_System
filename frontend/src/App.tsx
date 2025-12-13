@@ -34,6 +34,16 @@ import UserOrderList from "./pages/user/order/list/UserOrderList";
 import UserOrderCreate from "./pages/user/order/create/UserOrderCreate";
 import UserProducts from "./pages/user/product/UserProducts";
 
+// Shipper
+import ShipperDashboard from "./pages/shipper/Dashboard";
+import ShipperOrders from "./pages/shipper/Orders";
+import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
+import ShipperOrderDetail from "./pages/shipper/OrderDetail";
+import ShipperDeliveryRoute from "./pages/shipper/DeliveryRoute";
+import ShipperDeliveryHistory from "./pages/shipper/DeliveryHistory";
+import ShipperCODManagement from "./pages/shipper/CODManagement";
+import ShipperIncidentReport from "./pages/shipper/IncidentReport";
+
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={viVN}>
@@ -67,6 +77,20 @@ const App: React.FC = () => {
             <Route path="/notifications" element={<PrivateRoute><NotificationList /></PrivateRoute>} />
             <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail /></PrivateRoute>} />
 
+            {/* User routes */}
+            <Route path="/orders/list" element={<PrivateRoute allowedRoles={['user']}><UserOrderList /></PrivateRoute>} />
+            <Route path="/orders/create" element={<PrivateRoute allowedRoles={['user']}><UserOrderCreate /></PrivateRoute>} />
+            <Route path="/products" element={<PrivateRoute allowedRoles={['user']}><UserProducts /></PrivateRoute>} />
+
+            {/* Shipper routes */}
+            <Route path="/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
+            <Route path="/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
+            <Route path="/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
+            <Route path="/route" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryRoute /></PrivateRoute>} />
+            <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
+            <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
+            <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
+
             {/* Admin routes */}
             <Route path="/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsers /></PrivateRoute>} />
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
@@ -76,10 +100,6 @@ const App: React.FC = () => {
             <Route path="/promotions" element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions /></PrivateRoute>} />
             <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
 
-            {/* User routes */}
-            <Route path="/orders/list" element={<PrivateRoute allowedRoles={['user']}><UserOrderList /></PrivateRoute>} />
-            <Route path="/orders/create" element={<PrivateRoute allowedRoles={['user']}><UserOrderCreate /></PrivateRoute>} />
-            <Route path="/products" element={<PrivateRoute allowedRoles={['user']}><UserProducts /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

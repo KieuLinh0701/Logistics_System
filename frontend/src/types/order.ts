@@ -36,6 +36,7 @@ export interface Order {
   deliveredAt: Date;
   refundedAt: Date;
   createdAt: Date;
+  shippingFee: number;
 }
 
 export interface UserOrderSearchRequest {

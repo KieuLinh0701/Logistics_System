@@ -78,14 +78,13 @@ public class Shipment {
         }
     }
 
-    // Thêm trường mới
-    // Địa điểm bắt đầu
+    // Bưu cục bắt đầu
     @ManyToOne
-    @JoinColumn(name = "start_address_id", nullable = true)
-    private Address startAddress;
+    @JoinColumn(name = "from_office_id", nullable = false)
+    private Office fromOffice;
 
-    // Địa điểm kết thúc
+    // Bưu cục đích
     @ManyToOne
-    @JoinColumn(name = "end_address_id", nullable = true)
-    private Address endAddress;
+    @JoinColumn(name = "to_office_id", nullable = false)
+    private Office toOffice;
 }
