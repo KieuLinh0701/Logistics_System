@@ -10,4 +10,3 @@ import java.util.List;
 public interface TransactionImageRepository extends JpaRepository<TransactionImage, Integer> {
     List<TransactionImage> findByTransactionId(Integer transactionId);
 }
-

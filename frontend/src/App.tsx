@@ -44,6 +44,13 @@ import ShipperDeliveryHistory from "./pages/shipper/DeliveryHistory";
 import ShipperCODManagement from "./pages/shipper/CODManagement";
 import ShipperIncidentReport from "./pages/shipper/IncidentReport";
 
+// Driver
+import DriverDashboard from "./pages/driver/Dashboard";
+import DriverOrders from "./pages/driver/Orders";
+import DriverShipments from "./pages/driver/Shipments";
+import DriverRoute from "./pages/driver/Route";
+import DriverHistory from "./pages/driver/History";
+
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={viVN}>
@@ -90,6 +97,12 @@ const App: React.FC = () => {
             <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
             <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
             <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
+
+            {/* Driver routes */}
+            <Route path="/driver/orders" element={<PrivateRoute allowedRoles={['driver']}><DriverOrders /></PrivateRoute>} />
+            <Route path="/driver/shipments" element={<PrivateRoute allowedRoles={['driver']}><DriverShipments /></PrivateRoute>} />
+            <Route path="/driver/route" element={<PrivateRoute allowedRoles={['driver']}><DriverRoute /></PrivateRoute>} />
+            <Route path="/driver/history" element={<PrivateRoute allowedRoles={['driver']}><DriverHistory /></PrivateRoute>} />
 
             {/* Admin routes */}
             <Route path="/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsers /></PrivateRoute>} />
