@@ -20,6 +20,11 @@ export interface LoginData {
   password: string;
 }
 
+export interface ChooseRoleData {
+  roleName: string;
+  tempToken: string;
+}
+
 export interface RegisterData {
   email: string;
   password: string;
@@ -54,4 +59,6 @@ export interface ForgotPasswordResetData {
 export interface TokenResponse {
   token: string;
   user: User;
+  roles: string[];  
+  tempToken: string;
 }

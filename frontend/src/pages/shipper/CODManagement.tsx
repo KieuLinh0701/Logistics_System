@@ -36,33 +36,23 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-interface CODTransaction {
+interface PaymentSubmissionItem {
   id: number;
-  trackingNumber: string;
-  recipientName: string;
-  recipientPhone: string;
-  codAmount: number;
-  status: string;
-  collectedAt?: string;
-  notes?: string;
-}
-
-interface CODSubmission {
-  id: number;
-  orderId: number;
-  trackingNumber: string;
+  code?: string;
+  orderId?: number;
+  trackingNumber?: string;
   systemAmount: number;
   actualAmount: number;
-  discrepancy: number;
+  discrepancy?: number;
   status: string;
   notes?: string;
-  paidAt: string;
+  paidAt?: string;
   checkedAt?: string;
 }
 
 const ShipperCODManagement: React.FC = () => {
   const navigate = useNavigate();
-  const [transactions, setTransactions] = useState<CODTransaction[]>([]);
+  const [transactions, setTransactions] = useState<PaymentSubmissionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<{ status?: string; dateFrom?: string; dateTo?: string }>({});
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
@@ -76,7 +66,7 @@ const ShipperCODManagement: React.FC = () => {
   const [submitModal, setSubmitModal] = useState(false);
   const [submitForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState("transactions");
-  const [submissions, setSubmissions] = useState<CODSubmission[]>([]);
+  const [submissions, setSubmissions] = useState<PaymentSubmissionItem[]>([]);
   const [submissionSummary, setSubmissionSummary] = useState({
     totalSubmitted: 0,
     totalDiscrepancy: 0,
@@ -179,41 +169,14 @@ const ShipperCODManagement: React.FC = () => {
   const calculateTotalAmount = () => {
     return selectedTransactions.reduce((total, transactionId) => {
       const transaction = transactions.find((t) => t.id === transactionId);
-      return total + (transaction?.codAmount || 0);
+      return total + (transaction?.actualAmount || 0);
     }, 0);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
-        return "default";
-      case "success":
-      case "collected":
-        return "processing";
-      case "submitted":
-        return "success";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
-        return "Chờ thu";
-      case "success":
-      case "collected":
-        return "Đã thu";
-      case "submitted":
-        return "Đã nộp";
-      default:
-        return status;
-    }
   };
 
   const getSubmissionStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case "PENDING":
+      case "IN_BATCH":
         return "orange";
       case "MATCHED":
         return "success";
@@ -230,6 +193,8 @@ const ShipperCODManagement: React.FC = () => {
     switch (status.toUpperCase()) {
       case "PENDING":
         return "Chờ xác nhận";
+      case "IN_BATCH":
+        return "Đang nộp";
       case "MATCHED":
         return "Khớp";
       case "ADJUSTED":
@@ -246,27 +211,15 @@ const ShipperCODManagement: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string) => <Text strong>{text}</Text>,
+      render: (text: string) => <Text strong>{text || "-"}</Text>,
     },
     {
-      title: "Người nhận",
-      key: "recipient",
-      render: (record: CODTransaction) => (
-        <Space direction="vertical" size={0}>
-          <Text>{record.recipientName}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.recipientPhone}
-          </Text>
-        </Space>
-      ),
-    },
-    {
-      title: "Số tiền COD",
-      dataIndex: "codAmount",
-      key: "codAmount",
+      title: "Số tiền",
+      dataIndex: "actualAmount",
+      key: "actualAmount",
       render: (amount: number) => (
         <Text strong style={{ color: "#f50" }}>
-          {amount.toLocaleString()}đ
+          {(amount || 0).toLocaleString()}đ
         </Text>
       ),
     },
@@ -274,18 +227,18 @@ const ShipperCODManagement: React.FC = () => {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status: string) => <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>,
+      render: (status: string) => <Tag color={getSubmissionStatusColor(status)}>{getSubmissionStatusText(status)}</Tag>,
     },
     {
       title: "Ngày thu",
-      dataIndex: "collectedAt",
-      key: "collectedAt",
+      dataIndex: "paidAt",
+      key: "paidAt",
       render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—"),
     },
     {
       title: "Thao tác",
       key: "action",
-      render: (record: CODTransaction) => (
+      render: (record: PaymentSubmissionItem) => (
         <Checkbox
           checked={selectedTransactions.includes(record.id)}
           onChange={(e) => {
@@ -307,7 +260,7 @@ const ShipperCODManagement: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string) => <Text strong>{text}</Text>,
+      render: (text: string) => <Text strong>{text || "-"}</Text>,
     },
     {
       title: "Số tiền hệ thống",

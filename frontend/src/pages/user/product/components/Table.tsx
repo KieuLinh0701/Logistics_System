@@ -1,5 +1,5 @@
-import React from 'react';
-import { Table, Button, Dropdown } from 'antd';
+import React, { useState } from 'react';
+import { Table, Button, Dropdown, Modal } from 'antd';
 import { DeleteOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -28,17 +28,40 @@ const ProductTable: React.FC<ProductTableProps> = ({
   onDelete,
   onPageChange,
 }) => {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const handleImageClick = (src: string) => {
+    setPreviewImage(src);
+  };
+
+  const handleModalClose = () => {
+    setPreviewImage(null);
+  };
+
   const columns: ColumnsType<Product> = [
-    { title: 'Mã SP', dataIndex: 'code', key: 'code', align: 'left' },
+    {
+      title: 'Mã SP',
+      dataIndex: 'code',
+      key: 'code',
+      align: 'center',
+      render: (code, _) => {
+        return (
+          <span className="custom-table-content-strong">
+            {code}
+          </span>
+        );
+      }
+    },
     {
       title: 'Ảnh',
       key: 'image',
-      align: 'left',
+      align: 'center',
       render: (_, record: Product) => (
         <img
           className='table-image'
           src={record.image || defaultImage}
           alt={record.name}
+          onClick={() => handleImageClick(record.image || defaultImage)}
         />
       ),
     },
@@ -47,14 +70,14 @@ const ProductTable: React.FC<ProductTableProps> = ({
       title: 'Loại',
       dataIndex: 'type',
       key: 'type',
-      align: 'left',
+      align: 'center',
       render: (type) => translateProductType(type)
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      align: 'left',
+      align: 'center',
       render: (status) => translateProductStatus(status)
     },
     {
@@ -62,11 +85,10 @@ const ProductTable: React.FC<ProductTableProps> = ({
       key: 'info',
       align: 'left',
       render: (_, record: Product) => (
-        <div>
-          {`Trọng lượng: ${record.weight}kg`}
-          <br />
-          {`Giá: ${record.price.toLocaleString()} VNĐ`}
-        </div>
+        <>
+          <span className="custom-table-content-strong">Khối lượng quy đổi: </span>{record.weight} Kg<br />
+          <span className="custom-table-content-strong">Giá SP: </span>{record.price.toLocaleString()} VNĐ
+        </>
       )
     },
     {
@@ -74,49 +96,40 @@ const ProductTable: React.FC<ProductTableProps> = ({
       key: 'stats',
       align: 'left',
       render: (_, record: Product) => (
-        <div>
-          {`Tồn kho: ${record.stock}`}
-          <br />
-          {`Tổng bán: ${record.soldQuantity}`}
-        </div>
+        <>
+          <span className="custom-table-content-strong">Tồn kho: </span>{record.stock} <br />
+          <span className="custom-table-content-strong">Tổng bán: </span>{record.soldQuantity}
+        </>
       )
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      align: 'left',
-      render: (date) => dayjs(date).format('DD-MM-YYYY')
+      align: 'center',
+      render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       key: 'action',
-      align: 'left',
+      align: 'center',
       render: (_, record: Product) => {
-        if (record.soldQuantity !== 0) {
-          return (
-            <Button
-              className="action-button-link"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-            >
-              Sửa
-            </Button>
-          );
-        }
-        const items = [
-          {
-            key: "edit",
-            icon: <EditOutlined />,
-            label: "Sửa",
-            onClick: () => onEdit(record),
-          },
-          {
+        const items = [];
+
+        items.push({
+          key: "edit",
+          icon: <EditOutlined />,
+          label: "Sửa",
+          onClick: () => onEdit(record),
+        });
+
+        if (record.soldQuantity === 0) {
+          items.push({
             key: "delete",
             icon: <DeleteOutlined />,
             label: "Xóa",
             onClick: () => onDelete(record.id),
-          },
-        ];
+          });
+        }
 
         return (
           <Dropdown
@@ -128,7 +141,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
             </Button>
           </Dropdown>
         );
-      },
+      }
     },
   ];
 
@@ -153,6 +166,13 @@ const ProductTable: React.FC<ProductTableProps> = ({
           onChange: (page, pageSize) => onPageChange(page, pageSize)
         }}
       />
+      <Modal
+        open={!!previewImage}
+        footer={null}
+        onCancel={handleModalClose}
+      >
+        <img src={previewImage || undefined} alt="Preview" className="preview-image" />
+      </Modal>
     </div>
   );
 };

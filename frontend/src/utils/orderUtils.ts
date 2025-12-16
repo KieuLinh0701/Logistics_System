@@ -1,10 +1,60 @@
+// Điều kiện để thao tác với order của user
+export const canEditUserOrder = (value: string) => {
+  return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);
+};
+
+export const canPublicUserOrder = (value: string) => {
+  return ["DRAFT"].includes(value);
+};
+
+export const canCancelUserOrder = (value: string) => {
+  return ["PENDING", "CONFIRMED", "READY_FOR_PICKUP"].includes(value)
+};
+
+export const canPrintUserOrder = (value: string) => {
+  return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
+};
+
+export const canDeleteUserOrder = (value: string) => {
+  return ["DRAFT"].includes(value)
+};
+
+export const canReadyUserOrder = (value: string) => {
+  return ["CONFIRMED"].includes(value)
+};
+
+// Điều kiện để thao tác với order của manager
+export const canPrintManagerOrder = (value: string) => {
+  return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
+};
+
+export const canCancelManagerOrder = (value: string) => {
+  return ["PENDING",
+    "CONFIRMED",
+    "READY_FOR_PICKUP",
+    'PICKING_UP',
+    'PICKED_UP',
+    'AT_ORIGIN_OFFICE'].includes(value)
+};
+
+export const canAtOriginOfficeManagerOrder = (value: string) => {
+  return ["CONFIRMED"].includes(value)
+};
+
+// này chưa chỉnh nha
+export const canEditManagerOrder = (value: string) => {
+  return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);
+};
+
+export const ORDER_COD_STATUS = ['NONE', 'EXPECTED', 'PENDING', 'SUBMITTED', 'RECEIVED', 'TRANSFERRED'] as const;
+
 export const ORDER_CREATOR_TYPES = ['USER', 'MANAGER', 'ADMIN'] as const;
 
 export const ORDER_PAYER_TYPES = ['CUSTOMER', 'SHOP'] as const;
 
 export const ORDER_PAYMENT_STATUS = ['PAID', 'UNPAID', 'REFUNDED'] as const;
 
-export const ORDER_PICKUP_TYPES = ['AT_OFFICE', 'PICKUP_BY_COURIER'] as const;
+export const ORDER_PICKUP_TYPES = ['PICKUP_BY_COURIER', 'AT_OFFICE'] as const;
 
 export const ORDER_STATUS = [
   'DRAFT',
@@ -49,8 +99,8 @@ export const translateOrderCreatorType = (value: string): string => {
 
 export const translateOrderPayerType = (value: string): string => {
   switch (value) {
-    case 'CUSTOMER': return 'Khách hàng';
-    case 'SHOP': return 'Cửa hàng';
+    case 'CUSTOMER': return 'Người nhận';
+    case 'SHOP': return 'Người gửi';
     default: return value;
   }
 };
@@ -66,8 +116,8 @@ export const translateOrderPaymentStatus = (value: string): string => {
 
 export const translateOrderPickupType = (value: string): string => {
   switch (value) {
-    case 'AT_OFFICE': return 'Nhận tại bưu cục';
-    case 'PICKUP_BY_COURIER': return 'Shipper đến lấy';
+    case 'PICKUP_BY_COURIER': return 'Lấy hàng tại nhà';
+    case 'AT_OFFICE': return 'Giao tại bưu cục';
     default: return value;
   }
 };
@@ -119,5 +169,30 @@ export const translateOrderFilterSort = (value: string): string => {
     case 'WEIGHT_LOW': return 'Khối lượng thấp nhất';
 
     default: return value;
+  }
+};
+
+export const translateOrderCodStatus = (value: string): string => {
+  switch (value) {
+    case 'NONE':
+      return 'Không COD';
+
+    case 'EXPECTED':
+      return 'Chưa thu COD';
+
+    case 'PENDING':
+      return 'Shipper giữ COD';
+
+    case 'SUBMITTED':
+      return 'Đã nộp chờ đối soát';
+
+    case 'RECEIVED':
+      return 'Bưu cục đã nhận';
+
+    case 'TRANSFERRED':
+      return 'Đã chuyển shop';
+
+    default:
+      return value;
   }
 };

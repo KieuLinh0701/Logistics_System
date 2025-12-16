@@ -7,12 +7,12 @@ export const PRODUCT_FILTER_STOCK = ['ALL', 'INSTOCK', 'OUTOFSTOCK', 'LOWSTOCK']
 export const PRODUCT_FILTER_SORT = [
   'NEWEST',
   'OLDEST',
-  'BESTSELLING',
-  'LEASTSELLING',
-  'HIGHESTPRICE',
-  'LOWESTPRICE',
-  'HIGHESTSTOCK',
-  'LOWESTSTOCK',
+  'BEST_SELLING',
+  'LEAST_SELLING',
+  'HIGHEST_PRICE',
+  'LOWEST_PRICE',
+  'HIGHEST_STOCK',
+  'LOWEST_STOCK',
 ] as const;
 
 export const translateProductType = (value: string): string => {
@@ -47,14 +47,14 @@ export const translateProductFilterSort = (value: string): string => {
     case 'NEWEST': return 'Mới nhất';
     case 'OLDEST': return 'Cũ nhất';
 
-    case 'BESTSELLING': return 'Bán chạy nhất';
-    case 'LEASTSELLING': return 'Bán ít nhất';
+    case 'BEST_SELLING': return 'Bán chạy nhất';
+    case 'LEAST_SELLING': return 'Bán ít nhất';
 
-    case 'HIGHESTPRICE': return 'Giá cao nhất';
-    case 'LOWESTPRICE': return 'Giá thấp nhất';
+    case 'HIGHEST_PRICE': return 'Giá cao nhất';
+    case 'LOWEST_PRICE': return 'Giá thấp nhất';
 
-    case 'HIGHESTSTOCK': return 'Tồn kho nhiều nhất';
-    case 'LOWESTSTOCK': return 'Tồn kho ít nhất';
+    case 'HIGHEST_STOCK': return 'Tồn kho nhiều nhất';
+    case 'LOWEST_STOCK': return 'Tồn kho ít nhất';
 
     default: return value;
   }

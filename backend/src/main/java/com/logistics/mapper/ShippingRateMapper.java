@@ -17,9 +17,7 @@ public class ShippingRateMapper {
             entity.getWeightTo(),
             entity.getPrice(),
             entity.getUnit(),
-            entity.getExtraPrice(),
-            entity.getCreatedAt(),
-            entity.getUpdatedAt()
+            entity.getExtraPrice()
         );
     }
 }

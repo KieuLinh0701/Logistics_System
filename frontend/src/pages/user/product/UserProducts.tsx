@@ -14,8 +14,11 @@ import "../../../styles/ListPage.css";
 import { PRODUCT_STATUS, PRODUCT_TYPES, translateProductStatus, translateProductType } from '../../../utils/productUtils';
 import type { BulkResponse } from '../../../types/response';
 import BulkResult from './components/BulkResult';
+import { useSearchParams } from 'react-router-dom';
 
 const UserProducts: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [products, setProducts] = useState<Product[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -27,7 +30,7 @@ const UserProducts: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
-  const [sort, setSort] = useState('NEWEST');
+  const [filterSort, setFilterSort] = useState('NEWEST');
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +43,48 @@ const UserProducts: React.FC = () => {
   const [hover, setHover] = useState(false);
   const [filterStock, setFilterStock] = useState<string>('ALL');
   const [form] = Form.useForm();
+
+  // Thiết lập URL
+  const updateURL = () => {
+    const params: any = {};
+
+    if (search) params.search = search;
+    if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
+    if (filterType !== "ALL") params.type = filterType.toLowerCase();
+    if (filterStock !== "ALL") params.stock = filterStock.toLowerCase();
+    params.sort = filterSort.toLowerCase();
+    if (page) params.page = page;
+
+    if (dateRange) {
+      params.start = dateRange[0].format("YYYY-MM-DD");
+      params.end = dateRange[1].format("YYYY-MM-DD");
+    }
+
+    setSearchParams(params, { replace: true });
+  };
+
+  useEffect(() => {
+      const s = searchParams.get("search");
+      const st = searchParams.get("status")?.toLocaleUpperCase();
+      const type = searchParams.get("type")?.toLocaleUpperCase();
+      const stock = searchParams.get("stock")?.toLocaleUpperCase();
+      const sort = searchParams.get("sort")?.toLocaleUpperCase();
+      const startDate = searchParams.get("start");
+      const endDate = searchParams.get("end");
+  
+      if (s) setSearch(s);
+      if (st) setFilterStatus(st);
+      if (type) setFilterType(type);
+      if (stock) setFilterStock(stock);
+      if (sort) setFilterSort(sort);
+
+      if (startDate && endDate) {
+        setDateRange([
+          dayjs(startDate, "YYYY-MM-DD"),
+          dayjs(endDate, "YYYY-MM-DD")
+        ]);
+      }
+    }, [searchParams]);
 
   // Thêm sản phẩm
   const handleAddProduct = async () => {
@@ -265,7 +310,7 @@ const UserProducts: React.FC = () => {
         search: search,
         type: filterType !== 'ALL' ? filterType : undefined,
         status: filterStatus !== 'ALL' ? filterStatus : undefined,
-        sort: sort !== 'NEWEST' ? sort : undefined,
+        sort: filterSort,
         stock: filterStock != 'ALL' ? filterStock : undefined,
       };
 
@@ -278,7 +323,7 @@ const UserProducts: React.FC = () => {
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setProducts(list);
-        setTotal(result.data.pagination?.total || result.data.list.length);
+        setTotal(result.data.pagination?.total || 0);
         setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách sản phẩm");
@@ -327,7 +372,7 @@ const UserProducts: React.FC = () => {
     setSearch('');
     setFilterType('ALL');
     setFilterStatus('ALL');
-    setSort('NEWEST');
+    setFilterSort('NEWEST');
     setDateRange(null);
     setPage(1);
     setFilterStock('ALL');
@@ -340,9 +385,10 @@ const UserProducts: React.FC = () => {
 
 
   useEffect(() => {
+    updateURL();
     setPage(1);
     fetchProducts(1);
-  }, [search, filterType, filterStatus, sort, dateRange, filterStock]);
+  }, [search, filterType, filterStatus, filterSort, dateRange, filterStock]);
 
   return (
     <div className="list-page-layout">
@@ -352,12 +398,12 @@ const UserProducts: React.FC = () => {
           filterType={filterType}
           filterStatus={filterStatus}
           filterStock={filterStock}
-          sort={sort}
+          sort={filterSort}
           dateRange={dateRange}
           hover={hover}
           onSearchChange={setSearch}
           onFilterChange={handleFilterChange}
-          onSortChange={setSort}
+          onSortChange={setFilterSort}
           onDateRangeChange={setDateRange}
           onClearFilters={handleClearFilters}
           onHoverChange={setHover}

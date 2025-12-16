@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.logistics.enums.OrderHistoryActionType;
 
+@Builder
 @Entity
 @Table(name = "order_histories")
 @Data

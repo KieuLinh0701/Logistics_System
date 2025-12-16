@@ -5,139 +5,97 @@ import type { Promotion } from "../../../../../types/promotion";
 
 const { Text } = Typography;
 
-interface Props {
-  shippingFee: number;
+interface PromotionCardProps {
   discountAmount: number;
-  cod: number;
-  orderValue: number;
   totalFee: number;
-  selectedPromo: Promotion | null;
-  setSelectedPromo: (value: Promotion | null) => void;
+  serviceFee: number;
+  selectedPromotion: Promotion | null;
+  setSelectedPromotion: (value: Promotion | null) => void;
   setShowPromoModal: (value: boolean) => void;
   disabled: boolean;
 }
 
-const PromotionCard: React.FC<Props> = ({
-  shippingFee,
+const PromotionCard: React.FC<PromotionCardProps> = ({
   discountAmount,
-  cod,
-  orderValue,
   totalFee,
-  selectedPromo,
-  setSelectedPromo,
+  serviceFee,
+  selectedPromotion,
+  setSelectedPromotion,
   setShowPromoModal,
   disabled,
 }) => {
+  const renderInfoIcon = () => (
+    <span className="create-order-promotion-card info-icon">
+      <InfoCircleOutlined />
+    </span>
+  );
+
   return (
-    <div>
-      {/* Phí vận chuyển cơ bản */}
-      <div style={{ marginBottom: 16 }}>
+    <div className="create-order-promotion-card">
+      <div className="create-order-promotion-card section">
         <Text strong>
-          Phí vận chuyển cơ bản
-          <Tooltip title="Tính theo khối lượng, khoảng cách và loại dịch vụ; chưa bao gồm phí COD, phí bảo hiểm và các khoản giảm giá">
-            <span style={{ marginLeft: 4, cursor: 'pointer' }}><InfoCircleOutlined /></span>
+          Phí dịch vụ
+          <Tooltip title="Tổng các khoản phí dịch vụ sau VAT, cộng thêm phí COD và phí bảo hiểm">
+            {renderInfoIcon()}
           </Tooltip>
         </Text>
-        <div>{shippingFee.toLocaleString()} VNĐ</div>
+        <div>{serviceFee.toLocaleString()} VNĐ</div>
       </div>
 
-      {/* Giảm giá */}
+      {/* Discount Section */}
       {discountAmount > 0 && (
-        <div style={{ marginBottom: 16 }}>
+        <div className="create-order-promotion-card section">
           <Text strong>
             Giảm giá
             <Tooltip title="Số tiền giảm trừ trực tiếp vào phí dịch vụ">
-              <span style={{ marginLeft: 4, cursor: 'pointer' }}><InfoCircleOutlined /></span>
+              {renderInfoIcon()}
             </Tooltip>
           </Text>
           <div>-{discountAmount.toLocaleString()} VNĐ</div>
         </div>
       )}
 
-      <Divider style={{ margin: "8px 0" }} />
+      <Divider className="create-order-promotion-card divider" />
 
-      {/* Phí dịch vụ sau VAT */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Total Fee Section */}
+      <div className="create-order-promotion-card section">
         <Text strong>
-          Phí dịch vụ sau VAT 
-          <Tooltip title="Phí vận chuyển sau khi trừ giảm giá, cộng thêm 10% VAT">
-            <span style={{ marginLeft: 4, cursor: 'pointer' }}><InfoCircleOutlined /></span>
-          </Tooltip>
-        </Text>
-        <div>{Math.ceil(Math.max(((shippingFee || 0) - (discountAmount || 0)), 0) * 1.1).toLocaleString()} VNĐ</div>
-      </div>
-
-      {/* Phí bảo hiểm */}
-      <div style={{ marginBottom: 16 }}>
-        <Text strong>
-          Phí bảo hiểm
-          <Tooltip title="Tính dựa trên giá trị hàng hóa, tỉ lệ 0.5%">
-            <span style={{ marginLeft: 4, cursor: 'pointer' }}><InfoCircleOutlined /></span>
-          </Tooltip>
-        </Text>
-        <div>+{(orderValue ? orderValue * 0.005 : 0).toLocaleString()} VNĐ</div>
-      </div>
-
-      {/* Phí thu COD */}
-      <div style={{ marginBottom: 16 }}>
-        <Text strong>
-          Phí thu COD
-          <Tooltip title="Tính 2% trên số tiền thu hộ">
-            <span style={{ marginLeft: 4, cursor: 'pointer' }}><InfoCircleOutlined /></span>
-          </Tooltip>
-        </Text>
-        <div>+{(cod ? cod * 0.02 : 0).toLocaleString()} VNĐ</div>
-      </div>
-
-      {/* Tổng phí */}
-      <Divider style={{ margin: "8px 0" }} />
-      <div style={{ marginBottom: 16 }}>
-        <Text strong style={{ fontSize: 16 }}>
           Tổng phí
-          <Tooltip title="Tổng các khoản phí dịch vụ sau VAT, cộng thêm phí COD và phí bảo hiểm">
-            <span style={{ marginLeft: 4, cursor: 'pointer' }}><InfoCircleOutlined /></span>
+          <Tooltip title="Phí dịch vụ thực tế cần thanh toán">
+            {renderInfoIcon()}
           </Tooltip>
         </Text>
-        <div style={{ fontSize: 18, color: "#FF4D4F" }}>
-          {totalFee.toLocaleString()} VNĐ
-        </div>
+        <div>
+          <span className="create-order-promotion-card total-fee">{totalFee.toLocaleString()} VNĐ</span></div>
       </div>
 
+      {/* Promotion Button */}
       <Button
         type="dashed"
         block
-        style={{ marginBottom: 16, borderColor: "#1C3D90", color: "#1C3D90" }}
-        icon={selectedPromo ? <TagOutlined /> : <GiftOutlined />}
+        className="create-order-promotion-card promo-button"
+        icon={selectedPromotion ? <TagOutlined /> : <GiftOutlined />}
         onClick={() => setShowPromoModal(true)}
         disabled={disabled}
       >
-        {selectedPromo ? "Đổi mã khuyến mãi" : "Chọn mã khuyến mãi"}
+        {selectedPromotion ? "Đổi mã khuyến mãi" : "Chọn mã khuyến mãi"}
       </Button>
 
-      {selectedPromo && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: "8px 12px",
-            background: "#f6ffed",
-            border: "1px solid #b7eb8f",
-            borderRadius: 6,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+      {/* Selected Promotion Display */}
+      {selectedPromotion && (
+        <div className="create-order-promotion-card selected-promotion">
           <div>
-            <Text strong style={{ color: "#389e0d" }}>
+            <Text className="create-order-promotion-card promotion-code">
               1 mã giảm giá đã áp dụng:
             </Text>
-            <div>{selectedPromo.code}</div>
+            <div>{selectedPromotion.code}</div>
           </div>
           <Button
             type="text"
             danger
             icon={<DeleteOutlined />}
-            onClick={() => setSelectedPromo(null)}
+            onClick={() => setSelectedPromotion(null)}
+            aria-label="Xóa mã khuyến mãi"
           />
         </div>
       )}

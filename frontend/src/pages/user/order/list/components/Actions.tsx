@@ -1,34 +1,31 @@
 import React from "react";
-import { Space, Button, Upload } from "antd";
-import { PlusOutlined, UploadOutlined, DownloadOutlined } from "@ant-design/icons";
+import { Space, Button } from "antd";
+import { PlusOutlined, PrinterOutlined, TruckOutlined } from "@ant-design/icons";
 
 interface Props {
   onAdd: () => void;
-  onUpload: (file: File) => boolean;
-  onDownloadTemplate: () => void;
+  onPrint: () => void;
+  disabled: boolean;
+  recordNumber: number;
 }
 
-const Actions: React.FC<Props> = ({ onAdd, onUpload, onDownloadTemplate }) => {
+const Actions: React.FC<Props> = ({ onAdd, onPrint, disabled, recordNumber }) => {
   return (
-    <Space align="center"> 
-      <Button 
+    <Space align="center">
+      <Button
         className="primary-button"
-        icon={<PlusOutlined />} 
+        icon={<PlusOutlined />}
         onClick={onAdd}
+        disabled={disabled}
       >
         Tạo đơn hàng
       </Button>
-      <Upload beforeUpload={onUpload} showUploadList={false}>
-        <Button className="success-button" icon={<UploadOutlined />}>
-          Nhập từ Excel
-        </Button>
-      </Upload>
-      <Button 
-        className="warning-button" 
-        icon={<DownloadOutlined />} 
-        onClick={onDownloadTemplate}
-      >
-        File mẫu
+      <Button
+        className="success-button"
+        icon={<PrinterOutlined />}
+        onClick={onPrint}
+        disabled={!disabled}>
+        In phiếu {recordNumber !== 0 ? `(${recordNumber})` : ""}
       </Button>
     </Space>
   );

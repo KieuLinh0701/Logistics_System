@@ -9,7 +9,7 @@ import com.logistics.config.JwtConfig;
 
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableConfigurationProperties(JwtConfig.class)
+@EnableConfigurationProperties(JwtConfig.class) 
 public class LogisticsApplication {
 
 	public static void main(String[] args) {

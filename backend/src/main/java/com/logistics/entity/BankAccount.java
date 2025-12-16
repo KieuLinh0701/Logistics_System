@@ -40,7 +40,7 @@ public class BankAccount {
     @Column(nullable = false)
     private Boolean isDefault = false; // Có phải tài khoản mặc định không
 
-    @Lob
+    @Column(length = 500, nullable = false, columnDefinition = "NVARCHAR(500)")
     private String notes; // Ghi chú thêm
 
     @CreatedDate

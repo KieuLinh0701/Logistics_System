@@ -4,6 +4,7 @@ import UserDashboard from "../user/UserDashboard";
 import AdminDashboard from "../admin/Dashboard";
 import ShipperDashboard from "../shipper/Dashboard";
 import DriverDashboard from "../driver/Dashboard";
+import Forbidden from "../common/Forbidden";
 
 const DashboardRouter = () => {
   const role = getUserRole();
@@ -20,7 +21,7 @@ const DashboardRouter = () => {
     case "driver":
       return <DriverDashboard />;
     default:
-      return <div>Access Denied</div>;
+      return <Forbidden />;
   }
 };
 

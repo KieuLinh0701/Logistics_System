@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Form, Input, Button, message, Card, Avatar } from 'antd';
-import { UserOutlined, CameraOutlined, EditOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Form, Input, Button, message, Card, Avatar, Modal } from 'antd';
+import { UserOutlined, CameraOutlined, EditOutlined, PhoneOutlined, EyeOutlined } from '@ant-design/icons';
 import { getCurrentUser } from '../../../../utils/authUtils';
 import userApi from '../../../../api/userApi';
 import type { User } from '../../../../types/auth';
@@ -12,6 +12,7 @@ const ProfileSettings: React.FC = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -90,26 +91,48 @@ const ProfileSettings: React.FC = () => {
     }
   };
 
+  const openPreviewModal = () => {
+  setIsModalOpen(true);
+};
+
   const renderAvatar = () => (
-    <div className="avatar-with-edit" onClick={triggerFileSelect} style={{ cursor: 'pointer' }}>
-      <Avatar size={120} src={previewUrl || undefined} icon={<UserOutlined />} className="profile-avatar" />
-      <div className="avatar-edit-overlay">
-        <CameraOutlined className="edit-icon" />
-      </div>
+  <div className="avatar-with-edit">
+    <Avatar src={previewUrl || undefined} icon={<UserOutlined />} className="profile-avatar" />
+
+    <div 
+      className="avatar-edit-overlay" 
+      onClick={triggerFileSelect}
+    >
+      <CameraOutlined className="edit-icon" />
     </div>
-  );
+
+    <div 
+      className="avatar-view-overlay" 
+      onClick={openPreviewModal}
+    >
+      <EyeOutlined className="view-icon" />
+    </div>
+
+    <Modal
+      open={isModalOpen}
+      footer={null}
+      onCancel={() => setIsModalOpen(false)}
+    >
+      <img src={previewUrl} alt="Avatar Preview" className="preview-image" />
+    </Modal>
+  </div>
+);
 
   return (
     <div className="tab-content">
       <Card className="profile-form-card">
-        {/* Avatar Section */}
         <div className="avatar-section">
           <div className="avatar-container">
             {renderAvatar()}
             <input
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
+              className='hidden-file-input'
               ref={fileInputRef}
               onChange={handleFileChange}
             />
@@ -124,7 +147,6 @@ const ProfileSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* Form Section */}
         <Form form={form} layout="vertical" onFinish={onFinish} className="profile-form">
           <div className="form-section">
             <div className="name-row">
@@ -168,7 +190,7 @@ const ProfileSettings: React.FC = () => {
               label="Số điện thoại"
               rules={[
                 { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ!' },
+                { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ!' },
               ]}
             >
               <Input

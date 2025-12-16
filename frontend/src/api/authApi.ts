@@ -1,10 +1,23 @@
-import type {ForgotPasswordResetData, ForgotPasswordEmailData, LoginData, RegisterData, VerifyRegisterOtpData, VerifyResetOTPData, TokenResponse } from "../types/auth";
+import type { ForgotPasswordResetData, ForgotPasswordEmailData, LoginData, RegisterData, VerifyRegisterOtpData, VerifyResetOTPData, TokenResponse, ChooseRoleData } from "../types/auth";
 import type { ApiResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 
 const authApi = {
   async login(data: LoginData): Promise<ApiResponse<TokenResponse>> {
     const res = await axiosClient.post<ApiResponse<TokenResponse>>("/auth/login", data);
+
+    if (res.success && res.data && res.data.token && res.data.user) {
+      const token = res.data.token;
+      const user = res.data.user;
+      sessionStorage.setItem("token", token);
+      sessionStorage.setItem("user", JSON.stringify(user));
+    }
+
+    return res;
+  },
+
+  async chooseRole(data: ChooseRoleData): Promise<ApiResponse<TokenResponse>> {
+    const res = await axiosClient.post<ApiResponse<TokenResponse>>("/auth/choose-role", data);
 
     if (res.success && res.data) {
       const token = res.data.token;

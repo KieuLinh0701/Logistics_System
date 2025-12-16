@@ -7,4 +7,5 @@ export interface City {
 export interface Ward {
   code: number;
   name: string;
+  province_code?: number;
 }

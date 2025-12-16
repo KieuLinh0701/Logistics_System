@@ -1,62 +1,7 @@
-import type { ApiResponse } from "../types/response";
+import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
-
-export interface Shipment {
-  id: number;
-  code: string;
-  status: string;
-  startTime?: string;
-  endTime?: string;
-  createdAt?: string;
-  vehicle?: {
-    id: number;
-    licensePlate: string;
-    type: string;
-  };
-  fromOffice?: {
-    id: number;
-    name: string;
-  };
-  toOffice?: {
-    id: number;
-    name: string;
-  };
-  orders?: Array<{
-    id: number;
-    trackingNumber: string;
-    toOffice?: {
-      id: number;
-      name: string;
-    };
-  }>;
-  orderCount?: number;
-}
-
-export interface RouteInfo {
-  id: number;
-  code?: string;
-  name: string;
-  status: string;
-  totalStops: number;
-  totalOrders: number;
-  startTime?: string;
-  fromOffice?: {
-    id: number;
-    name: string;
-  };
-}
-
-export interface DeliveryStop {
-  id: number;
-  officeName: string;
-  officeAddress?: string;
-  orderCount: number;
-  orders: Array<{
-    id: number;
-    trackingNumber: string;
-  }>;
-  status: string;
-}
+import type { ManagerOrderShipment, ManagerOrderShipmentSearchRequest, ManagerShipment, ManagerShipmentSearchRequest } from "../types/shipment";
+import type { DriverShipment, DriverRouteInfo, DriverDeliveryStop } from "../types/shipment";
 
 const shipmentApi = {
   // DRIVER
@@ -72,7 +17,7 @@ const shipmentApi = {
     const res = await axiosClient.get<ApiResponse<any>>("/driver/shipments", { params });
     const data = res.data || {};
     return {
-      shipments: (data.shipments || []) as Shipment[],
+      shipments: (data.shipments || []) as DriverShipment[],
       pagination: data.pagination || { page: 1, limit: 10, total: 0 },
     };
   },
@@ -81,8 +26,8 @@ const shipmentApi = {
     const res = await axiosClient.get<ApiResponse<any>>("/driver/shipments/route");
     const data = res.data || {};
     return {
-      routeInfo: (data.routeInfo || null) as RouteInfo | null,
-      deliveryStops: (data.deliveryStops || []) as DeliveryStop[],
+      routeInfo: (data.routeInfo || null) as DriverRouteInfo | null,
+      deliveryStops: (data.deliveryStops || []) as DriverDeliveryStop[],
     };
   },
 
@@ -90,7 +35,7 @@ const shipmentApi = {
     const res = await axiosClient.get<ApiResponse<any>>("/driver/shipments/history", { params });
     const data = res.data || {};
     return {
-      shipments: (data.shipments || []) as Shipment[],
+      shipments: (data.shipments || []) as DriverShipment[],
       pagination: data.pagination || { page: 1, limit: 10, total: 0 },
     };
   },
@@ -117,10 +62,22 @@ const shipmentApi = {
       }>,
     };
   },
+
+    // Manager
+  async listManagerShipments(params: ManagerShipmentSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerShipment>>>("/manager/shipments", { params });
+    return res;
+  },
+
+  async getManagerOrdersByShipmentId(id: number, params: ManagerOrderShipmentSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerOrderShipment>>>(`/manager/shipments/${id}`, { params });
+    return res;
+  },
+
+  async cancelManagerShipment(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/shipments/${id}/cancel`);
+    return res;
+  },
 };
 
 export default shipmentApi;
-
-
-
-

@@ -13,7 +13,6 @@ export const connectWebSocket = (userId: number, onMessage: (msg: any) => void) 
 
   stompClient.onConnect = () => {
     console.log('Connected to WebSocket');
-
     stompClient.subscribe(`/user/queue/notifications`, (message) => {
       onMessage(JSON.parse(message.body));
     });

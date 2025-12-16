@@ -1,5 +1,3 @@
-/* ShippingRates.css */
-
 .shipping-rates-page {
   width: 100%;
   background: var(--bg-color);
@@ -214,7 +212,6 @@
 }
 
 .shipping-rates-guide-card {
-  margin-top: 32px;
   border-radius: 20px !important;
   box-shadow: 0 8px 40px var(--box-shadow-card) !important;
   border: 1px solid var(----border-color-card) !important;
@@ -222,6 +219,9 @@
   position: relative;
   background: var(--bg-color-card);
   padding: 0 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 32px;
 }
 
 /* Card Titles */
@@ -280,6 +280,8 @@
   position: relative;
   overflow: hidden;
   margin-top: 32px;
+  max-width: 1110px;
+  margin: 0 auto;
 }
 
 .shipping-rates-cta-content {

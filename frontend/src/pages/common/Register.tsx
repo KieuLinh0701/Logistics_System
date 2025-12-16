@@ -127,7 +127,7 @@ const Register: React.FC = () => {
                 label="Số điện thoại"
                 rules={[
                   { required: true, message: "Vui lòng nhập số điện thoại!" },
-                  { pattern: /^[0-9]{10,11}$/, message: "Số điện thoại không hợp lệ!" },
+                  { pattern: /^[0-9]{10}$/, message: "Số điện thoại không hợp lệ!" },
                 ]}
               >
                 <Input

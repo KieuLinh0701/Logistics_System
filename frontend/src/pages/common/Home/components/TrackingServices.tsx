@@ -85,7 +85,7 @@ const TrackingServices: React.FC = () => {
           <Card
             hoverable
             className="home-card"
-            onClick={() => (window.location.href = "/info/shipping-rates")}
+            onClick={() => (window.location.href = "/tracking/shipping-rates")}
           >
             <div className="home-card-icon-wrapper">
               <ProfileOutlined className="home-icon" />

@@ -54,20 +54,22 @@ public class ShipmentDriverService {
 
     private Employee getCurrentEmployee() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
-        return employeeRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin nhân viên (driver)"));
+        List<Employee> employees = employeeRepository.findByUserId(userId);
+        if (employees == null || employees.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy thông tin nhân viên (driver)");
+        }
+        return employees.get(0);
     }
 
     @Transactional
     public ApiResponse<String> startShipment(Integer shipmentId) {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             Shipment shipment = shipmentRepository.findById(shipmentId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
 
-            if (!shipment.getUser().getId().equals(driverUser.getId())) {
+            if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
                 return new ApiResponse<>(false, "Bạn không có quyền thực hiện chuyến hàng này", null);
             }
 
@@ -114,12 +116,11 @@ public class ShipmentDriverService {
     public ApiResponse<String> finishShipment(FinishShipmentRequest request) {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             Shipment shipment = shipmentRepository.findById(request.getShipmentId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
 
-            if (!shipment.getUser().getId().equals(driverUser.getId())) {
+            if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
                 return new ApiResponse<>(false, "Bạn không có quyền thực hiện chuyến hàng này", null);
             }
 
@@ -180,12 +181,11 @@ public class ShipmentDriverService {
     public ApiResponse<Map<String, Object>> getShipments(int page, int limit) {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
             Specification<Shipment> spec = (root, query, cb) -> {
-                return cb.equal(root.get("user").get("id"), driverUser.getId());
+                return cb.equal(root.get("employee").get("id"), employee.getId());
             };
 
             Page<Shipment> shipmentPage = shipmentRepository.findAll(spec, pageable);
@@ -265,12 +265,11 @@ public class ShipmentDriverService {
     public ApiResponse<Map<String, Object>> getRoute() {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             // Tìm shipment đang hoạt động (PENDING hoặc IN_TRANSIT)
             Specification<Shipment> spec = (root, query, cb) -> {
                 List<Predicate> predicates = new ArrayList<>();
-                predicates.add(cb.equal(root.get("user").get("id"), driverUser.getId()));
+                predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
                 predicates.add(root.get("status").in(ShipmentStatus.PENDING, ShipmentStatus.IN_TRANSIT));
                 return cb.and(predicates.toArray(new Predicate[0]));
             };
@@ -365,13 +364,12 @@ public class ShipmentDriverService {
     public ApiResponse<Map<String, Object>> getHistory(int page, int limit) {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
             Specification<Shipment> spec = (root, query, cb) -> {
                 List<Predicate> predicates = new ArrayList<>();
-                predicates.add(cb.equal(root.get("user").get("id"), driverUser.getId()));
+                predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
                 predicates.add(root.get("status").in(ShipmentStatus.COMPLETED, ShipmentStatus.CANCELLED));
                 return cb.and(predicates.toArray(new Predicate[0]));
             };
@@ -454,12 +452,11 @@ public class ShipmentDriverService {
     public ApiResponse<String> updateVehicleTracking(UpdateVehicleTrackingRequest request) {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             Shipment shipment = shipmentRepository.findById(request.getShipmentId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
 
-            if (!shipment.getUser().getId().equals(driverUser.getId())) {
+            if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
                 return new ApiResponse<>(false, "Bạn không có quyền cập nhật vị trí cho chuyến hàng này", null);
             }
 
@@ -493,12 +490,11 @@ public class ShipmentDriverService {
     public ApiResponse<Map<String, Object>> getVehicleTracking(Integer shipmentId) {
         try {
             Employee employee = getCurrentEmployee();
-            User driverUser = employee.getUser();
 
             Shipment shipment = shipmentRepository.findById(shipmentId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
 
-            if (!shipment.getUser().getId().equals(driverUser.getId())) {
+            if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
                 return new ApiResponse<>(false, "Bạn không có quyền xem vị trí chuyến hàng này", null);
             }
 

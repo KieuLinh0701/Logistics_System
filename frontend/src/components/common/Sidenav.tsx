@@ -25,6 +25,7 @@ import {
   TruckOutlined,
   EnvironmentOutlined,
   BankOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
 import { useMemo } from "react";
@@ -107,7 +108,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -136,6 +137,12 @@ const Sidenav: React.FC = () => {
         ],
       },
       {
+        key: "/shipments",
+        label: "Quản lý chuyến hàng",
+        path: "/shipments",
+        icon: <TruckOutlined />,
+      },
+      {
         key: "/supports",
         label: "Hỗ trợ & Khiếu nại",
         path: "/supports",
@@ -156,6 +163,16 @@ const Sidenav: React.FC = () => {
             label: "Hiệu suất nhân viên",
             path: "/employees/performance",
           },
+          {
+            key: "/employees/assign-area",
+            label: "Phân công Shipper",
+            path: "/employees/assign-area",
+          },
+          {
+            key: "/employees/assign-history",
+            label: "Lịch sử phân công",
+            path: "/employees/assign-history",
+          },
         ],
       },
       {
@@ -165,27 +182,10 @@ const Sidenav: React.FC = () => {
         icon: <HomeOutlined />,
       },
       {
-        key: "/warehouse",
-        label: "Đơn nhập/xuất kho",
-        path: "/warehouse",
-        icon: <DatabaseOutlined />,
-      },
-      {
-        key: "/finance",
-        label: "Quản lý dòng tiền",
-        icon: <DollarOutlined />,
-        children: [
-          {
-            key: "/finance/transactions",
-            label: "Theo dõi thu - chi",
-            path: "/finance/transactions",
-          },
-          {
-            key: "/finance/settlements",
-            label: "Đối soát",
-            path: "/finance/settlements",
-          },
-        ],
+        key: "/settlements",
+        label: "Đối soát",
+        icon: <CheckCircleOutlined />, 
+        path: "/settlements",
       },
       {
         key: "/vehicles",
@@ -196,7 +196,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -250,24 +250,24 @@ const Sidenav: React.FC = () => {
           {
             key: "/tracking/shipping-fee",
             label: "Tra cứu cước vận chuyển",
-            path: "/tracking/shipping-fee",
+            path: "shipping-fee",
           },
           {
             key: "/tracking/office-search",
             label: "Tra cứu bưu cục",
-            path: "/tracking/office-search",
+            path: "office-search",
           },
           {
             key: "/tracking/shipping-rates",
             label: "Bảng giá",
-            path: "/tracking/shipping-rates",
+            path: "shipping-rates",
           },
         ],
       },
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -322,7 +322,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],
@@ -360,7 +360,7 @@ const Sidenav: React.FC = () => {
       {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
-        path: "/account/settings",
+        path: "/account/settings?tab=profile",
         icon: <ProfileOutlined />,
       },
     ],

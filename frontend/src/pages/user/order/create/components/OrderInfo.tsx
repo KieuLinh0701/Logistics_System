@@ -18,18 +18,14 @@ import type { FormInstance } from "antd/lib";
 import type { OrderProduct } from "../../../../../types/orderProduct";
 import type { ServiceType } from "../../../../../types/serviceType";
 
-const { Option } = Select;
-
 interface Props {
   form: FormInstance;
-  weight: number;
-  orderValue: number;
-  cod: number
+  weight: number | undefined;
+  orderValue: number | undefined;
   orderProducts: OrderProduct[];
   orderColumns: any[];
   serviceTypes?: ServiceType[];
-  serviceLoading: boolean;
-  selectedServiceType: ServiceType | null;
+  loading: boolean;
   setSelectedServiceType: (val: any) => void;
   onOpenProductModal: () => void;
   onChangeOrderInfo?: (changedValues: any) => void;
@@ -40,12 +36,10 @@ const OrderInfo: React.FC<Props> = ({
   form,
   weight,
   orderValue,
-  cod,
   orderProducts,
   orderColumns,
   serviceTypes,
-  serviceLoading,
-  selectedServiceType,
+  loading,
   setSelectedServiceType,
   onOpenProductModal,
   onChangeOrderInfo,
@@ -55,25 +49,15 @@ const OrderInfo: React.FC<Props> = ({
   const isOrderValueDisabled = !(orderProducts.length === 0);
   const isWeightDisabled = !(orderProducts.length === 0);
 
-  // CHỈ set giá trị khi có sản phẩm hoặc giá trị > 0
   useEffect(() => {
     if (orderProducts.length > 0) {
-      // const totalValue = orderProducts.reduce(
-      //   (sum, p) => sum + p.product.price * p.quantity,
-      //   0
-      // );
-      // const totalWeight = orderProducts.reduce(
-      //   (sum, p) => sum + (p.product.weight || 0) * p.quantity,
-      //   0
-      // );
-
       form.setFieldsValue({
-        // orderValue: totalValue,
-        // weight: totalWeight,
+        orderValue: orderValue,
+        weight: weight,
       });
       onChangeOrderInfo?.({
-        // orderValue: totalValue,
-        // weight: totalWeight,
+        orderValue: orderValue,
+        weight: weight,
       });
     } else {
       form.setFieldsValue({
@@ -87,12 +71,10 @@ const OrderInfo: React.FC<Props> = ({
     }
   }, [orderProducts, form]);
 
-  // Thêm hàm xử lý change trực tiếp
   const handleWeightChange = (value: number | null) => {
     if (value !== null) {
       onChangeOrderInfo?.({ weight: value });
     } else {
-      // Khi xóa giá trị, set về undefined để hiển thị placeholder
       form.setFieldValue('weight', undefined);
       onChangeOrderInfo?.({ weight: 0 });
     }
@@ -117,12 +99,11 @@ const OrderInfo: React.FC<Props> = ({
   };
 
   return (
-    <div className="rowContainerEdit">
+    <div className="create-order-card-container">
       <Form
         form={form}
         layout="vertical"
         onValuesChange={(changedValues) => {
-          console.log("🔄 onValuesChange được gọi với:", changedValues);
           onChangeOrderInfo?.(changedValues);
         }}
         initialValues={{
@@ -132,169 +113,187 @@ const OrderInfo: React.FC<Props> = ({
           serviceType: undefined
         }}
       >
-        <Card className="customCard">
-          <div className="cardTitle">Thông tin đơn hàng</div>
+        <Card className="create-order-custom-card">
+          <div className="create-order-custom-card-title">Thông tin đơn hàng</div>
           <Button
             icon={<PlusOutlined />}
-            type="primary"
             disabled={disabled}
-            style={{
-              position: "absolute",
-              top: 24,
-              right: 24,
-              zIndex: 5,
-              color: "#ffffff",
-              background: "#1C3D90",
-            }}
+            className="create-order-btn"
             onClick={onOpenProductModal}
           >
             Chọn sản phẩm
           </Button>
 
-          {orderProducts.length > 0 && (
-            <Table<OrderProduct>
-              dataSource={orderProducts}
-              rowKey={(record) =>  "a"
-                // String(record.product.id)
-              }
-              pagination={false}
-              columns={orderColumns}
-              style={{ marginBottom: 12, marginTop: 24 }}
-            />
-          )}
+          <div className="create-order-content">
 
-          <Row gutter={16} style={{ marginTop: 24 }}>
-            <Col span={12}>
-              <Form.Item
-                name="weight"
-                label="Khối lượng (kg)"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập khối lượng",
-                  },
-                  {
-                    validator: (_, value) => {
-                      // Chỉ kiểm tra khi có giá trị
-                      if (value !== undefined && value !== null && value !== '') {
-                        if (isNaN(value) || value <= 0) {
-                          return Promise.reject(new Error("Khối lượng phải là số lớn hơn 0"));
+            {orderProducts.length > 0 && (
+              <Table<OrderProduct>
+                dataSource={orderProducts}
+                rowKey={(record) =>
+                  String(record.productId)
+                }
+                scroll={{ x: "max-content" }}
+                className="list-page-table"
+                pagination={false}
+                columns={orderColumns}
+              />
+            )}
+
+            <Row gutter={16}
+              className="create-order-order-info">
+              <Col span={12}>
+                <Form.Item
+                  label={
+                    <span className="modal-label">
+                      Khối lượng quy đổi (kg){" "}
+                      <Tooltip
+                        title={
+                          "Khối lượng quy đổi = (Dài × Rộng × Cao) / 5000. So sánh với khối lượng thực tế và lấy giá trị lớn hơn để tính phí vận chuyển."
                         }
-                      }
-                      return Promise.resolve();
-                    },
-                  },
-                ]}
-                validateTrigger={['onChange', 'onBlur']}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Ví dụ: 1.5"
-                  disabled={isWeightDisabled || disabled}
-                  onChange={handleWeightChange}
-                  min={0.01}
-                  step={0.01}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={12}>
-              <Form.Item
-                name="serviceType"
-                label="Loại dịch vụ giao hàng"
-                rules={[{ required: true, message: "Chọn loại dịch vụ" }]}
-              >
-                <Select
-                  placeholder="Chọn dịch vụ..."
-                  disabled={disabled}
-                  options={
-                    serviceTypes?.map((s) => ({
-                      label: s.name,
-                      value: s.id,
-                    })) || []
+                      >
+                        <InfoCircleOutlined />
+                      </Tooltip>
+                    </span>
                   }
-                  onChange={(value) => {
-                    const selected = serviceTypes?.find((s) => s.id === value);
-                    setSelectedServiceType(selected || null);
-                    form.setFieldValue("serviceType", value);
-                  }}
-                  loading={serviceLoading}
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+                  name="weight"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập khối lượng",
+                    },
+                    {
+                      validator: (_, value) => {
+                        // Chỉ kiểm tra khi có giá trị
+                        if (value !== undefined && value !== null && value !== '') {
+                          if (isNaN(value) || value <= 0) {
+                            return Promise.reject(new Error("Khối lượng phải là số lớn hơn 0"));
+                          }
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                  validateTrigger={['onChange', 'onBlur']}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 1.5"
+                    disabled={isWeightDisabled || disabled}
+                    onChange={handleWeightChange}
+                    min={0.01}
+                    step={0.01}
+                  />
+                </Form.Item>
+              </Col>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="codAmount"
-                label={
-                  <span>
-                    Tổng tiền thu hộ (COD){" "}
-                    <Tooltip title="Số tiền khách hàng thanh toán khi nhận hàng (chưa bao gồm phí vận chuyển)">
+              <Col span={12}>
+                <Form.Item
+                  name="serviceType"
+                  label={<span className="modal-lable">Loại dịch vụ giao hàng</span>}
+                  rules={[{ required: true, message: "Chọn loại dịch vụ" }]}
+                >
+                  <Select
+                    className="modal-custom-select"
+                    placeholder="Chọn dịch vụ..."
+                    disabled={disabled}
+                    showSearch
+                    optionLabelProp="label"
+                    filterOption={(input, option) =>
+                      (option?.label as string)
+                        ?.toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                    loading={loading}
+                    allowClear
+                    onChange={(value) => {
+                      const selected = serviceTypes?.find((s) => s.id === value);
+                      setSelectedServiceType(selected || null);
+                      form.setFieldValue("serviceType", value);
+                    }}
+                  >
+                    {serviceTypes?.map((s) => (
+                      <Select.Option key={s.id} value={s.id} label={s.name}>
+                        <div className="create-order-pickup-type office-contain">
+                          <span className="create-order-pickup-type office-name">
+                            {s.name}
+                          </span>
+                          <span className="create-order-pickup-type office-address">
+                            ( {s.deliveryTime} )
+                          </span>
+                        </div>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="modal-lable">
+                    Giá trị thu hộ{" "}
+                    <Tooltip title="Là tiền bên gửi nhờ thu hộ của bên nhận và chuyển về tài khoản ngân hàng của bên gửi">
                       <InfoCircleOutlined />
                     </Tooltip>
-                  </span>
-                }
-                rules={[
-                  { required: true, message: "Vui lòng nhập tổng tiền thu hộ" },
-                  {
-                    type: "number",
-                    min: 0,
-                    message: "Nhập số tiền thu hộ hợp lệ"
-                  },
-                ]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Ví dụ: 200,000"
-                  disabled={disabled}
-                  min={0}
-                  step={1000}
-                  onChange={handleCodChange}
-                  formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={value => value?.replace(/\$\s?|(,*)/g, '') as any}
-                />
-              </Form.Item>
-            </Col>
+                  </span>}
+                  name="codAmount"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập tổng tiền thu hộ" },
+                    {
+                      type: "number",
+                      min: 0,
+                      message: "Nhập số tiền thu hộ hợp lệ"
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 200,000"
+                    disabled={disabled}
+                    min={0}
+                    step={1000}
+                    onChange={handleCodChange}
+                    formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                    parser={value => value?.replace(/\$\s?|(,*)/g, '') as any}
+                  />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                name="orderValue"
-                label={
-                  <span>
+              <Col span={12}>
+                <Form.Item
+                  name="orderValue"
+                  label={<span className="modal-lable">
                     Tổng giá trị hàng hóa{" "}
-                    <Tooltip title="Tổng giá trị sản phẩm trong đơn hàng (chưa bao gồm phí vận chuyển)">
+                    <Tooltip title="Giá trị đơn hàng dùng để giúp bạn được đền bù 100% nếu hàng gặp sự cố">
                       <InfoCircleOutlined />
-                    </Tooltip>
-                  </span>
-                }
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng nhập tổng giá trị hàng hóa",
-                  },
-                  {
-                    type: "number",
-                    min: 1, 
-                    message: "Tổng giá trị hàng hóa phải lớn hơn 0",
-                  },
-                ]}
-              >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="Ví dụ: 150,000"
-                  min={1} 
-                  step={1000}
-                  disabled={isOrderValueDisabled || disabled}
-                  onChange={handleOrderValueChange}
-                  formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
-                  parser={value => value?.replace(/\$\s?|(,*)/g, '') as any}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+                    </Tooltip></span>}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Vui lòng nhập tổng giá trị hàng hóa",
+                    },
+                    {
+                      type: "number",
+                      min: 0,
+                      message: "Nhập tổng giá trị hàng hóa hợp lệ",
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 150,000"
+                    min={0}
+                    step={1000}
+                    disabled={isOrderValueDisabled || disabled}
+                    onChange={handleOrderValueChange}
+                    formatter={value => value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''}
+                    parser={value => value?.replace(/\$\s?|(,*)/g, '') as any}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
         </Card>
       </Form>
     </div >

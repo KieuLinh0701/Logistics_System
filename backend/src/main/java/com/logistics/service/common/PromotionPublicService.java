@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import com.logistics.dto.PromotionDto;
+import com.logistics.dto.common.PublicPromotionDto;
 import com.logistics.entity.Promotion;
 import com.logistics.mapper.PromotionMapper;
 import com.logistics.repository.PromotionRepository;
@@ -26,7 +26,7 @@ public class PromotionPublicService {
 
     private final PromotionRepository repository;
 
-    public ApiResponse<ListResponse<PromotionDto>> getActivePromotions(PromotionPublicRequest request) {
+    public ApiResponse<ListResponse<PublicPromotionDto>> getActivePromotions(PromotionPublicRequest request) {
         try {
             int page = request.getPage() != null && request.getPage() > 0 ? request.getPage() - 1 : 0;
             int limit = request.getLimit() != null && request.getLimit() > 0 ? request.getLimit() : 5;
@@ -35,8 +35,8 @@ public class PromotionPublicService {
 
             Page<Promotion> promotionsPage = repository.findAll(PromotionSpecification.activeAndUsable(), pageable);
 
-            List<PromotionDto> promotionDtos = promotionsPage.getContent().stream()
-                    .map(PromotionMapper::toDto)
+            List<PublicPromotionDto> promotionDtos = promotionsPage.getContent().stream()
+                    .map(PromotionMapper::toPublicPromotionDto)
                     .toList();
 
             Pagination pagination = new Pagination(
@@ -45,7 +45,7 @@ public class PromotionPublicService {
                     limit,
                     promotionsPage.getTotalPages());
 
-            ListResponse<PromotionDto> response = new ListResponse<PromotionDto>(promotionDtos, pagination);
+            ListResponse<PublicPromotionDto> response = new ListResponse<PublicPromotionDto>(promotionDtos, pagination);
 
             return new ApiResponse<>(true, "Lấy danh sách khuyến mãi còn hiệu lực thành công", response);
 

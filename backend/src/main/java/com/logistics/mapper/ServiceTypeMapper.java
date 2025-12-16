@@ -18,10 +18,7 @@ public class ServiceTypeMapper {
                 entity.getId(),
                 entity.getName(),
                 entity.getDeliveryTime(),
-                entity.getDescription(),
-                entity.getStatus() != null ? entity.getStatus().name() : null,
-                entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getDescription());
     }
 
     public static ServiceTypeWithRateDto toDtoWithRate(ServiceType entity) {

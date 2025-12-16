@@ -1,5 +1,5 @@
 import type { ApiResponse, ListResponse } from "../types/response";
-import type { AdminOrder, Order, UserOrderSearchRequest } from "../types/order";
+import type { AdminOrder, CreateOrderSuccess, ManagerOrderRequest, ManagerOrderSearchRequest, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest } from "../types/order";
 import axiosClient from "./axiosClient";
 
 export interface ShipperStats {
@@ -36,8 +36,6 @@ const orderApi = {
   },
 
   // Shipper 
-
-  // Dashboard shipper
   async getShipperDashboard() {
     const res = await axiosClient.get<ApiResponse<any>>("/shipper/dashboard");
     return res.data as {
@@ -47,7 +45,6 @@ const orderApi = {
     };
   },
 
-  // Danh sách đơn của shipper
   async getShipperOrders(params: { page?: number; limit?: number; status?: string; search?: string }) {
     const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders", { params });
     const data = res.data || {};
@@ -57,7 +54,6 @@ const orderApi = {
     };
   },
 
-  // Đơn chưa gán cho shipper
   async getShipperUnassignedOrders(params: { page?: number; limit?: number }) {
     const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders-unassigned", { params });
     const data = res.data || {};
@@ -99,7 +95,7 @@ const orderApi = {
     const res = await axiosClient.get<ApiResponse<any>>("/shipper/cod", { params });
     const data = res.data || {};
     return {
-      transactions: (data.transactions || []) as any[],
+      transactions: (data.transactions || []) as any[], // PaymentSubmission list
       pagination: data.pagination || { page: 1, limit: 10, total: 0 },
       summary: data.summary || { totalCollected: 0, totalSubmitted: 0, totalPending: 0, transactionCount: 0 },
     };
@@ -190,6 +186,79 @@ const orderApi = {
     return res.data;
   },
 
+  // User
+  async createUserOrder(params: UserOrderRequest) {
+    const res = await axiosClient.post<ApiResponse<CreateOrderSuccess>>("/user/orders", params);
+    return res;
+  },
+
+  async getUserOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<Order>>(`/user/orders/${trackingNumber}`);
+    return res;
+  },
+
+  async getUserOrderById(id: number) {
+    const res = await axiosClient.get<ApiResponse<Order>>(`/user/orders/id/${id}`);
+    return res;
+  },
+
+  async publicUserOrder(id: number) {
+    const res = await axiosClient.patch<ApiResponse<string>>(`/user/orders/${id}/public`);
+    return res;
+  },
+
+  async cancelUserOrder(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/user/orders/${id}/cancel`);
+    return res;
+  },
+
+  async deleteUserOrder(id: number) {
+    const res = await axiosClient.delete<ApiResponse<Boolean>>(`/user/orders/${id}`);
+    return res;
+  },
+
+  async printUserOrders(orderIds: number[]) {
+    const query = orderIds.join(",");
+    const res = await axiosClient.get<ApiResponse<OrderPrint[]>>(`/user/orders/print?orderIds=${query}`);
+    return res;
+  },
+
+  async setUserOrderReadyForPickup(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/user/orders/${id}/ready`);
+    return res;
+  },
+
+  // Manager
+  async listManagerOrders(params: ManagerOrderSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders", { params });
+    return res;
+  },
+
+  async createManagerOrder(params: ManagerOrderRequest) {
+    const res = await axiosClient.post<ApiResponse<string>>("/manager/orders", params);
+    return res;
+  },
+
+  async getManagerOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<Order>>(`/manager/orders/${trackingNumber}`);
+    return res;
+  },
+
+  async printManagerOrders(orderIds: number[]) {
+    const query = orderIds.join(",");
+    const res = await axiosClient.get<ApiResponse<OrderPrint[]>>(`/manager/orders/print?orderIds=${query}`);
+    return res;
+  },
+
+  async cancelManagerOrder(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/cancel`);
+    return res;
+  },
+
+  async setManagerOrderAtOriginOffice(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/at-origin-office`);
+    return res;
+  },
 };
 
 export default orderApi;

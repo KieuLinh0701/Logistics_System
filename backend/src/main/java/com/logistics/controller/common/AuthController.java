@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.logistics.entity.AccountRole;
+import com.logistics.request.common.auth.ChooseRoleRequest;
 import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
 import com.logistics.request.common.auth.ForgotPasswordResetRequest;
 import com.logistics.request.common.auth.LoginRequest;
@@ -11,6 +13,7 @@ import com.logistics.request.common.auth.RegisterRequest;
 import com.logistics.request.common.auth.VerifyRegisterOtpRequest;
 import com.logistics.request.common.auth.VerifyResetOtpRequest;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.AuthResponse;
 import com.logistics.service.common.AuthService;
 
 @RestController
@@ -65,6 +68,16 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/choose-role")
+    public ResponseEntity<?> chooseRole(@RequestBody ChooseRoleRequest request) {
+        try {
+            AuthResponse authResponse = authService.chooseRole(request);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Đăng nhập với role thành công", authResponse));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse<>(false, "Lỗi khi chọn role: " + e.getMessage(), null));
+        }
     }
 
     @PostMapping("/password/forgot")

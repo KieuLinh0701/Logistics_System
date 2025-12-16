@@ -133,7 +133,7 @@ public class UserPublicService {
         }
 
         public ApiResponse<AuthResponse> verifyEmailUpdateOTP(@NonNull Integer accountId,
-                        VerifyEmailUpdateOTPRequest request) {
+                        VerifyEmailUpdateOTPRequest request, String roleName) {
                 try {
                         Account account = accountRepository.findById(accountId)
                                         .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
@@ -168,7 +168,7 @@ public class UserPublicService {
 
                         User user = userRepository.findByAccountId(accountId).get();
 
-                        String token = jwtUtils.generateToken(account, user);
+                        String token = jwtUtils.generateToken(account, user, roleName);
 
                         AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
                                         user.getId(),

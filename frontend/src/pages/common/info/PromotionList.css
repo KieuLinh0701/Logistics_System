@@ -403,6 +403,102 @@
   font-weight: 500;
 }
 
+/* Thêm vào PromotionList.css */
+
+.promotion-list-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: var(--text-color-secondary);
+}
+
+.promotion-item-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.promotion-code-text {
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.promotion-item-title {
+  color: var(--text-color-subtitle) !important;
+  margin-bottom: 12px !important;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.promotion-detail-title-section {
+  flex: 1;
+}
+
+.promotion-detail-title {
+  color: var(--primary) !important;
+  margin-bottom: 4px !important;
+}
+
+.promotion-detail-code {
+  margin-bottom: 8px;
+}
+
+/* Style cho status badge */
+.promotion-list-item .ant-tag {
+  margin-left: 8px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border: none;
+}
+
+.promotion-detail-title-section .ant-tag {
+  margin-top: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border: none;
+}
+
+/* Đảm bảo các phần tử hiển thị đúng */
+.promotion-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.promotion-item-discount {
+  text-align: right;
+}
+
+.promotion-discount-text {
+  color: var(--green);
+  font-size: 14px;
+  background: var(--green-light);
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.promotion-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.promotion-item-date,
+.promotion-item-usage {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-color-secondary);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .promotion-list-hero {

@@ -54,8 +54,11 @@ public class OrderDriverService {
 
     private Employee getCurrentEmployee() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
-        return employeeRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin nhân viên (driver)"));
+        List<Employee> employees = employeeRepository.findByUserId(userId);
+        if (employees == null || employees.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy thông tin nhân viên (driver)");
+        }
+        return employees.get(0);
     }
 
     public ApiResponse<Map<String, Object>> getContext() {
@@ -193,7 +196,7 @@ public class OrderDriverService {
             // Tạo shipment với đầy đủ thông tin
             Shipment shipment = new Shipment();
             shipment.setVehicle(vehicle);
-            shipment.setUser(driverUser);
+            shipment.setEmployee(employee);
             shipment.setFromOffice(fromOffice);
             shipment.setToOffice(toOffice);
             shipment.setStatus(ShipmentStatus.PENDING);

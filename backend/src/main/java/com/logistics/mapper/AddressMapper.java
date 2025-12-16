@@ -15,6 +15,8 @@ public class AddressMapper {
                 entity.getWardCode(),
                 entity.getCityCode(),
                 entity.getDetail(),
-                entity.getCreatedAt());
+                Boolean.TRUE.equals(entity.getIsDefault()),
+                entity.getName(),
+                entity.getPhoneNumber());
     }
 }

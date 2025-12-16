@@ -6,26 +6,22 @@ import com.logistics.entity.IncidentReport;
 import com.logistics.entity.Order;
 import com.logistics.entity.PaymentSubmission;
 import com.logistics.entity.OrderHistory;
-import com.logistics.entity.Transaction;
 import com.logistics.entity.User;
 import com.logistics.enums.IncidentPriority;
 import com.logistics.enums.IncidentStatus;
 import com.logistics.enums.IncidentType;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.OrderPayerType;
 import com.logistics.enums.OrderStatus;
+import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
-import com.logistics.enums.TransactionMethod;
-import com.logistics.enums.TransactionPurpose;
-import com.logistics.enums.TransactionStatus;
-import com.logistics.enums.TransactionType;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.IncidentReportRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
-import com.logistics.repository.TransactionRepository;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
 import com.logistics.response.ApiResponse;
@@ -60,9 +56,6 @@ public class OrderShipperService {
     private OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
     private PaymentSubmissionRepository paymentSubmissionRepository;
 
     @Autowired
@@ -81,8 +74,11 @@ public class OrderShipperService {
 
     private Employee getCurrentEmployee() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
-        return employeeRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin nhân viên (shipper)"));
+        List<Employee> employees = employeeRepository.findByUserId(userId);
+        if (employees == null || employees.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy thông tin nhân viên (shipper)");
+        }
+        return employees.get(0);
     }
 
     public ApiResponse<Map<String, Object>> getDashboard() {
@@ -330,16 +326,47 @@ public class OrderShipperService {
         
         // Luồng cơ bản: PICKED_UP -> DELIVERING -> DELIVERED / FAILED_DELIVERY / RETURNED
         order.setStatus(newStatus);
+
+        // Tiền mặt thu được trong chuyến giao/hoàn
+        int cashCollected = 0;
+
         if (newStatus == OrderStatus.DELIVERED) {
             order.setDeliveredAt(LocalDateTime.now());
-            // Nếu người nhận trả phí (CUSTOMER) và chưa thu ship fee, tạo transaction SHIPPING_SERVICE
+
+            // COD: sau khi giao thành công → chuyển sang PENDING (shipper đang giữ tiền)
+            if (order.getCod() != null && order.getCod() > 0) {
+                order.setCodStatus(OrderCodStatus.PENDING);
+                cashCollected += order.getCod();
+            }
+
+            // Thu phí ship nếu payer là CUSTOMER (khách trả phí khi giao)
             if (order.getPayer() == OrderPayerType.CUSTOMER) {
-                createShippingFeeCollection(order, shipperUser);
+                cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
+            }
+
+            // Nếu có thu tiền mặt → tạo PaymentSubmission và đánh dấu đã thu
+            if (cashCollected > 0) {
+                createPaymentSubmission(order, shipperUser, cashCollected,
+                        "Đối soát sau khi giao thành công");
+                order.setPaymentStatus(OrderPaymentStatus.PAID);
+                order.setPaidAt(LocalDateTime.now());
             }
         }
-        // Khi hoàn trả: tạo transaction thu phí giao hàng và tạo đối soát
+
+        // Khi hoàn trả: chỉ thu phí dịch vụ (không thu COD)
         if (newStatus == OrderStatus.RETURNED) {
-            createReturnReconciliation(order, shipperUser);
+            // Nếu trước đó payer là CUSTOMER nhưng chưa thu được, thu phí từ người gửi (SHOP)
+            if (order.getPayer() == OrderPayerType.CUSTOMER) {
+                order.setPayer(OrderPayerType.SHOP);
+            }
+
+            cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
+
+            if (cashCollected > 0) {
+                createPaymentSubmission(order, shipperUser, cashCollected,
+                        "Đối soát phí hoàn hàng");
+                order.setPaymentStatus(OrderPaymentStatus.UNPAID);
+            }
         }
 
         if (request.getNotes() != null) {
@@ -587,97 +614,26 @@ public class OrderShipperService {
         return map;
     }
 
-    // Khi đơn hoàn trả, tạo transaction thu phí (shippingFee) và tạo payment submission
-    private void createReturnReconciliation(Order order, User shipperUser) {
-        if (order == null || order.getId() == null) {
+    // Tạo bản ghi đối soát tiền mặt (COD + phí dịch vụ) sau khi giao/hoàn
+    private void createPaymentSubmission(Order order, User shipperUser, int amount, String note) {
+        if (amount <= 0) {
             return;
         }
 
-        int shippingFee = order.getShippingFee() != null ? order.getShippingFee() : 0;
-        if (shippingFee <= 0) {
-            return; // Không có phí để thu
-        }
-
-        // Tránh tạo trùng transaction cho đơn này bởi shipper này với purpose SHIPPING_SERVICE
-        boolean alreadyExists = transactionRepository.findByOrderId(order.getId())
-                .stream()
-                .anyMatch(t -> t.getPurpose() == TransactionPurpose.SHIPPING_SERVICE
-                        && t.getStatus() == TransactionStatus.SUCCESS
-                        && t.getCollectedBy() != null
-                        && Objects.equals(t.getCollectedBy().getId(), shipperUser.getId()));
-
-        if (alreadyExists) {
-            return;
-        }
-
-        // Tạo transaction thu phí hoàn
-        Transaction transaction = new Transaction();
-        transaction.setOrder(order);
-        transaction.setCollectedBy(shipperUser);
-        transaction.setTitle("Phí hoàn đơn hàng " + order.getTrackingNumber());
-        transaction.setAmount(shippingFee);
-        transaction.setType(TransactionType.INCOME);
-        transaction.setMethod(TransactionMethod.CASH);
-        transaction.setPurpose(TransactionPurpose.SHIPPING_SERVICE);
-        transaction.setStatus(TransactionStatus.SUCCESS);
-        transaction.setPaidAt(LocalDateTime.now());
-
-        transaction = transactionRepository.save(transaction);
-
-        String code = "TRANS_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + transaction.getId();
-        transaction.setCode(code);
-        transaction = transactionRepository.save(transaction);
-
-        // Tạo payment submission đơn giản
         PaymentSubmission submission = new PaymentSubmission();
         submission.setOrder(order);
-        submission.setTransaction(transaction);
-        submission.setSystemAmount(BigDecimal.valueOf(shippingFee));
-        submission.setActualAmount(BigDecimal.valueOf(shippingFee));
+        submission.setSystemAmount(BigDecimal.valueOf(amount));
+        submission.setActualAmount(BigDecimal.valueOf(amount));
         submission.setStatus(PaymentSubmissionStatus.PENDING);
-        submission.setCheckedBy(null);
+        submission.setShipper(shipperUser);
+        submission.setNotes(note);
         submission.setPaidAt(LocalDateTime.now());
 
         submission = paymentSubmissionRepository.save(submission);
+
         String submissionCode = "SUB_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
         submission.setCode(submissionCode);
         paymentSubmissionRepository.save(submission);
-    }
-
-    // Thu phí vận chuyển khi giao thành công cho payer = CUSTOMER.
-    private void createShippingFeeCollection(Order order, User shipperUser) {
-        int shippingFee = order.getShippingFee() != null ? order.getShippingFee() : 0;
-        if (shippingFee <= 0) {
-            return;
-        }
-
-        // Tránh tạo trùng transaction SHIPPING_SERVICE bởi shipper này
-        boolean alreadyExists = transactionRepository.findByOrderId(order.getId())
-                .stream()
-                .anyMatch(t -> t.getPurpose() == TransactionPurpose.SHIPPING_SERVICE
-                        && t.getStatus() == TransactionStatus.SUCCESS
-                        && t.getCollectedBy() != null
-                        && Objects.equals(t.getCollectedBy().getId(), shipperUser.getId()));
-
-        if (alreadyExists) {
-            return;
-        }
-
-        Transaction transaction = new Transaction();
-        transaction.setOrder(order);
-        transaction.setCollectedBy(shipperUser);
-        transaction.setTitle("Thu phí vận chuyển đơn " + order.getTrackingNumber());
-        transaction.setAmount(shippingFee);
-        transaction.setType(TransactionType.INCOME);
-        transaction.setMethod(TransactionMethod.CASH);
-        transaction.setPurpose(TransactionPurpose.SHIPPING_SERVICE);
-        transaction.setStatus(TransactionStatus.SUCCESS);
-        transaction.setPaidAt(LocalDateTime.now());
-
-        transaction = transactionRepository.save(transaction);
-        String code = "TRANS_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + transaction.getId();
-        transaction.setCode(code);
-        transactionRepository.save(transaction);
     }
 
     private String buildAddress(Address address) {

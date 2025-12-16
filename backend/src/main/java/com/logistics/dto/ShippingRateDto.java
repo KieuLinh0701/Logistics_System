@@ -20,6 +20,4 @@ public class ShippingRateDto {
     private BigDecimal price;
     private BigDecimal unit;
     private BigDecimal extraPrice;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

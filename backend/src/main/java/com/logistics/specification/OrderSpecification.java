@@ -1,6 +1,14 @@
 package com.logistics.specification;
 
+import com.logistics.entity.Account;
+import com.logistics.entity.Address;
+import com.logistics.entity.Employee;
 import com.logistics.entity.Order;
+import com.logistics.entity.User;
+import com.logistics.enums.OrderStatus;
+
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +22,12 @@ public class OrderSpecification {
 
     public static Specification<Order> userId(Integer userId) {
         return (root, query, cb) -> cb.equal(root.get("user").get("id"), userId);
+    }
+
+    public static Specification<Order> officeId(Integer officeId) {
+        return (root, query, cb) -> cb.or(
+                cb.equal(root.get("fromOffice").get("id"), officeId),
+                cb.equal(root.get("toOffice").get("id"), officeId));
     }
 
     public static Specification<Order> payer(String value) {
@@ -91,28 +105,28 @@ public class OrderSpecification {
                 case "oldest":
                     query.orderBy(cb.asc(root.get("createdAt")));
                     break;
-                case "codhigh":
+                case "cod_high":
                     query.orderBy(cb.desc(root.get("cod")));
                     break;
-                case "codlow":
+                case "cod_low":
                     query.orderBy(cb.asc(root.get("cod")));
                     break;
-                case "ordervaluehigh":
+                case "order_value_high":
                     query.orderBy(cb.desc(root.get("orderValue")));
                     break;
-                case "ordervaluelow":
+                case "order_value_low":
                     query.orderBy(cb.asc(root.get("orderValue")));
                     break;
-                case "feehigh":
+                case "fee_high":
                     query.orderBy(cb.desc(root.get("totalFee")));
                     break;
-                case "feelow":
+                case "fee_low":
                     query.orderBy(cb.asc(root.get("totalFee")));
                     break;
-                case "weighthigh":
+                case "weight_high":
                     query.orderBy(cb.desc(root.get("weight")));
                     break;
-                case "weightlow":
+                case "weight_low":
                     query.orderBy(cb.asc(root.get("weight")));
                     break;
                 default:
@@ -141,12 +155,53 @@ public class OrderSpecification {
         return (root, query, cb) -> {
             if (keyword == null || keyword.isBlank())
                 return null;
+
             String likePattern = "%" + keyword.toLowerCase() + "%";
+            Join<Order, Address> recipientAddr = root.join("recipientAddress", JoinType.LEFT);
+
             return cb.or(
                     cb.like(cb.lower(root.get("notes")), likePattern),
                     cb.like(cb.lower(root.get("trackingNumber")), likePattern),
-                    cb.like(cb.lower(root.get("recipientName")), likePattern),
-                    cb.like(cb.lower(root.get("recipientPhone")), likePattern));
+                    cb.like(cb.lower(recipientAddr.get("name")), likePattern),
+                    cb.like(cb.lower(recipientAddr.get("phoneNumber")), likePattern));
         };
     }
+
+    public static Specification<Order> searchManager(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank())
+                return null;
+
+            String like = "%" + keyword.toLowerCase() + "%";
+
+            Join<Order, Address> recipientAddr = root.join("recipientAddress", JoinType.LEFT);
+            Join<Order, User> user = root.join("user", JoinType.LEFT);
+            Join<User, Account> account = user.join("account", JoinType.LEFT);
+            Join<Order, Employee> employee = root.join("employee", JoinType.LEFT);
+
+            return cb.or (
+                    cb.like(cb.lower(root.get("trackingNumber")), like),
+                    cb.like(cb.lower(root.get("notes")), like),
+
+                    cb.like(cb.lower(root.get("senderName")), like),
+                    cb.like(cb.lower(root.get("senderPhone")), like),
+
+                    cb.like(cb.lower(recipientAddr.get("name")), like),
+                    cb.like(cb.lower(recipientAddr.get("phoneNumber")), like),
+
+                    cb.like(cb.lower(user.get("code")), like),
+                    cb.like(cb.lower(user.get("phoneNumber")), like),
+
+                    cb.like(cb.lower(account.get("email")), like),
+
+                    cb.like(cb.lower(employee.get("code")), like) 
+            );
+        };
+    }
+
+    public static Specification<Order> excludeDraft() {
+    return (root, query, cb) ->
+            cb.notEqual(root.get("status"), OrderStatus.DRAFT);
+}
+
 }

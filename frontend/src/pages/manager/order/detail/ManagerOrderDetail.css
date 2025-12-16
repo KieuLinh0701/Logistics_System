@@ -1,0 +1,495 @@
+.order-detail.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+.order-detail-icon {
+  color: #1C3D90;
+  padding-left: 32px;
+}
+
+.order-detail-title {
+  color: #1C3D90;
+  padding-left: 12px;
+}
+
+.order-detail-title-tracking-number {
+  color: #52c41a;
+  padding-right: 32px;
+}
+
+.order-detail-card {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  padding: 10px 36px 28px 36px !important;
+  background: #fff !important;
+  border-radius: 10px !important;
+  border: 1px dashed #1c3d90 !important;
+  margin: 24px 32px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  position: relative !important;
+  gap: 40px !important;
+}
+
+.order-detail-card::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 1px solid #e8e8e8 !important;
+  border-radius: 14px !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+.order-detail-card-column {
+  flex: 1 !important;
+  min-width: 300px !important;
+}
+
+.order-detail-card-title {
+  color: #1c3d90 !important;
+  margin-bottom: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding-bottom: 10px !important;
+  border-bottom: 2px solid #e8edff !important;
+}
+
+.order-detail-card-field {
+  display: flex !important;
+  margin-bottom: 8px !important;
+  min-height: 24px !important;
+  padding: 2px 0 !important;
+}
+
+.order-detail-card-label {
+  font-weight: 500 !important;
+  color: #666 !important;
+  min-width: 50px !important;
+  font-size: 14px !important;
+  margin-right: 12px !important;
+}
+
+.order-detail-card-value {
+  color: #333 !important;
+  font-size: 14px !important;
+  flex: 1 !important;
+  word-break: break-word !important;
+}
+
+.order-detail-card-na-tag {
+  color: #999 !important;
+  font-style: italic !important;
+  font-size: 14px !important;
+}
+
+.order-detail-card-loading {
+  color: #999 !important;
+  font-style: italic !important;
+  font-size: 14px !important;
+}
+
+.order-detail-card-address {
+  line-height: 1.5 !important;
+  margin-top: 2px !important;
+}
+
+.order-detail-card-title-main {
+  width: 100% !important;
+}
+
+.order-detail-card-inner {
+  display: flex !important;
+  gap: 80px !important;
+  flex-wrap: wrap !important;
+  width: 100% !important;
+}
+
+.order-detail-card-column-title {
+  color: #1c3d90 !important;
+  margin-bottom: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  padding-bottom: 10px !important;
+  border-bottom: 2px solid #e8edff !important;
+}
+
+.order-detail-card-notes .order-detail-card-value {
+  line-height: 1.6 !important;
+}
+
+/* Order History */
+.order-detail-history-collapse {
+  background: transparent;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.order-detail-history-panel-header {
+  margin: 0 !important;
+  color: #1C3D90 !important;
+}
+
+.order-detail-history-panel {
+  border-radius: 8px !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  padding: 3px 6px !important;
+}
+
+.order-detail-history-no-history {
+  color: #888;
+}
+
+.order-detail-history-timeline-container {
+  position: relative;
+  padding-left: 24px;
+}
+
+.order-detail-history-timeline-line {
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #faad14;
+}
+
+.order-detail-history-timeline-item {
+  display: flex;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.order-detail-history-timeline-dot {
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #faad14;
+  border: 2px solid #fff;
+}
+
+.order-detail-history-timeline-content {
+  flex: 1;
+  padding-left: 24px;
+}
+
+.order-detail-history-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.order-detail-history-timeline-time {
+  color: #888;
+  font-size: 12px;
+}
+
+/* Product Info */
+.order-detail-product-info.container {
+  padding: 0 32px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 32px;
+}
+
+.order-detail-product-info.title {
+  color: #1C3D90;
+  margin-bottom: 16px;
+  margin-left: 12px;
+}
+
+.order-detail-product-info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.order-detail-product-info-table-header {
+  background: #f5f5f5;
+}
+
+.order-detail-product-info-table-th {
+  padding: 8px 12px !important;
+  text-align: left !important;
+}
+
+.order-detail-product-info-table-tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Actions */
+.order-detail-actions-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 32px;
+  padding-right: 32px;
+  padding-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* Nhóm nút bên trái */
+.order-detail-left-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Nhóm nút bên phải */
+.order-detail-right-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Nút in phiếu */
+.order-detail-print-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background-color: #52c41a;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+  min-height: 44px;
+}
+
+.order-detail-print-btn:hover:not(.disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  transform: translateY(-1px);
+}
+
+.order-detail-print-btn:active {
+  transform: translateY(0);
+}
+
+.order-detail-print-btn.disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border: 1px solid #ccc;
+}
+
+/* Nút yêu cầu hỗ trợ */
+.order-detail-support-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 2px solid #52c41a;
+  background-color: white;
+  color: #52c41a;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.order-detail-support-btn:hover:not(.disabled) {
+  background-color: #f6ffed;
+  transform: translateY(-1px);
+  border: 2px solid #52c41a;
+}
+
+.order-detail-support-btn.disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border: 1px solid #ccc;
+}
+
+.order-detail-support-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+}
+
+/* Nút chỉnh sửa */
+.order-detail-edit-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background-color: #e8e8e8;
+  color: #333;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.order-detail-edit-btn:hover:not(.disabled) {
+  background-color: #d9d9d9;
+  transform: translateY(-1px);
+}
+
+.order-detail-edit-btn.disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border: 1px solid #ccc;
+}
+
+/* Nút hủy/xóa */
+.order-detail-cancel-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 2px solid #1C3D90;
+  background-color: white;
+  color: #1C3D90;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.order-detail-cancel-btn:hover:not(.disabled) {
+  background-color: #f0f5ff;
+  transform: translateY(-1px);
+  border: 2px solid #1C3D90;
+}
+
+.order-detail-cancel-btn.disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border: 1px solid #ccc;
+}
+
+/* Nút chuyển xử lý */
+.order-detail-public-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background-color: #1C3D90;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.order-detail-public-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.order-detail-public-btn:active {
+  transform: translateY(0);
+}
+
+/* Confirm Modal */
+.order-detail-confirm-modal-content {
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: left;
+  color: #333;
+  display: block;
+  padding: 16px 16px !important; 
+  margin: 0 !important; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .order-detail-card {
+    flex-direction: column !important;
+    gap: 32px !important;
+    padding: 24px !important;
+    margin: 16px !important;
+  }
+
+  .order-detail-card-column {
+    min-width: 100% !important;
+  }
+
+  .order-detail-card-field {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .order-detail-card-label {
+    min-width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .order-detail-card-inner {
+    flex-direction: column !important;
+    gap: 32px !important;
+  }
+
+  .order-detail-actions-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .order-detail-left-buttons,
+  .order-detail-right-buttons {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .order-detail-print-btn,
+  .order-detail-support-btn,
+  .order-detail-edit-btn,
+  .order-detail-cancel-btn,
+  .order-detail-public-btn {
+    flex: 1;
+    min-width: 140px;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-detail-left-buttons,
+  .order-detail-right-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .order-detail-print-btn,
+  .order-detail-support-btn,
+  .order-detail-edit-btn,
+  .order-detail-cancel-btn,
+  .order-detail-public-btn {
+    width: 100%;
+  }
+}

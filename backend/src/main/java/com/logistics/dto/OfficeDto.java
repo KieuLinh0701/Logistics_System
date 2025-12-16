@@ -29,7 +29,6 @@ public class OfficeDto {
     private LocalTime closingTime;
     private String type;
     private String status;
-    // manager
     private Integer capacity;
     private String notes;
     private LocalDateTime createdAt;

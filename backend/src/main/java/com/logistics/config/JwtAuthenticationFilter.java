@@ -89,10 +89,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         account.setId(((Number) accountMap.get("id")).intValue());
                     }
 
+                    Role currentRole = null;
                     if (roleName != null) {
-                        Role role = new Role();
-                        role.setName(roleName);
-                        account.setRole(role);
+                        currentRole = new Role();
+                        currentRole.setName(roleName);
                     }
 
                     User user = new User();
@@ -100,7 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         user.setId(((Number) userMap.get("id")).intValue());
                     }
 
-                    UserPrincipal principal = new UserPrincipal(account, user, authorities);
+                    UserPrincipal principal = new UserPrincipal(account, user, currentRole, authorities);
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(principal,
                             null, authorities);

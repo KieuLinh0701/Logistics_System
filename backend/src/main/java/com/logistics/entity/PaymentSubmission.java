@@ -4,6 +4,7 @@ package com.logistics.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -20,6 +21,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.*;
 
@@ -30,6 +32,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Audited
 @EntityListeners(AuditingEntityListener.class)
 public class PaymentSubmission {
 
@@ -40,26 +43,26 @@ public class PaymentSubmission {
     @Column(length = 50, nullable = true, unique = true)
     private String code; // Thêm này cho mã đối soát (COD_NGÀY THÁNG NĂM TẠO_ID)
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false)
-    private Transaction transaction;
+    @Column(nullable = false)
+    private BigDecimal systemAmount;
 
     @Column(nullable = false)
-    private BigDecimal systemAmount; 
-
-    @Column(nullable = false)
-    private BigDecimal actualAmount; 
+    private BigDecimal actualAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
-    private PaymentSubmissionStatus status; 
+    private PaymentSubmissionStatus status;
 
     @ManyToOne
-    @JoinColumn(name = "checked_by") 
+    @JoinColumn(name = "shipper_id", nullable = false)
+    private User shipper;
+
+    @ManyToOne
+    @JoinColumn(name = "checked_by")
     private User checkedBy;
 
     private LocalDateTime checkedAt;
@@ -73,4 +76,8 @@ public class PaymentSubmission {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "batch_id")
+    private PaymentSubmissionBatch batch;
 }

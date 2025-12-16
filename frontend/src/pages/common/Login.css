@@ -170,3 +170,180 @@
 .register-link:hover::after {
   width: 100%;
 }
+
+/* Simple Role Modal Styles */
+.role-select-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.role-select-modal .ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px;
+  margin-bottom: 0;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+}
+
+/* Header */
+.role-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1C3D90;
+}
+
+.role-modal-icon {
+  color: #1C3D90;
+  margin-right: 10px;
+  font-size: 22px;
+}
+
+.role-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Content */
+.role-modal-content {
+  padding: 20px;
+}
+
+.role-modal-description {
+  display: block;
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Role Options */
+.role-options-container {
+  margin: 0 0 20px 0;
+  width: 100%;
+}
+
+.role-radio-group {
+  width: 100% !important;
+}
+
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.role-option {
+  padding: 14px 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fafafa;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.role-option:hover {
+  border-color: #1C3D90;
+  background: #f5f7fb;
+}
+
+.role-option-selected {
+  border-color: #1C3D90 !important;
+  background: rgba(28, 61, 144, 0.05) !important;
+  box-shadow: 0 0 0 1px #1C3D90;
+}
+
+.role-option .ant-radio-wrapper {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.role-radio-button {
+  width: 100%;
+}
+
+.role-option .ant-radio {
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.role-option .ant-radio + span {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-text {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.role-option-selected .ant-radio + span {
+  color: #1C3D90;
+  font-weight: 600;
+}
+
+/* Footer */
+.role-modal-footer {
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  width: 100%;
+}
+
+.role-confirm-button {
+  height: 44px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #1C3D90;
+  border: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.role-confirm-button:hover:not(:disabled) {
+  background: #8B0000;
+  transform: translateY(-1px);
+}
+
+.role-confirm-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.role-confirm-button:disabled {
+  background: #f5f5f5;
+  color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .role-select-modal {
+    width: 90% !important;
+    margin: 10px;
+  }
+  
+  .role-option {
+    padding: 12px 14px;
+  }
+  
+  .role-option .ant-radio + span {
+    font-size: 14px;
+  }
+}

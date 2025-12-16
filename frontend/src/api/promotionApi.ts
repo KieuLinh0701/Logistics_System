@@ -1,15 +1,21 @@
-import type { Promotion, PublicPromotionRequest, CreatePromotionPayload, UpdatePromotionPayload } from "../types/promotion";
+import type { Promotion, CreatePromotionPayload, UpdatePromotionPayload, PromotionUserRequest, PromotionPublicRequest} from "../types/promotion";
 import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 
 const promotionApi = {
-  // ---------------- Public ---------------- //
-  getActivePromotions: async (params?: PublicPromotionRequest) => {
+  // Public
+  getActivePromotions: async (params?: PromotionPublicRequest) => {
     const res = await axiosClient.get<ApiResponse<ListResponse<Promotion>>>('/public/promotions/active', { params });
     return res;
   },
 
-  // ---------------- Admin ---------------- //
+  // User
+  getActiveUserPromotions: async (params?: PromotionUserRequest) => {
+    const res = await axiosClient.get<ApiResponse<ListResponse<Promotion>>>('/user/promotions/active', { params });
+    return res;
+  },
+
+  // Admin
   async listAdminPromotions(params: { page?: number; limit?: number; search?: string; status?: string; isGlobal?: boolean }) {
     const res = await axiosClient.get<ApiResponse<{ data: Promotion[]; pagination: any }>>("/admin/promotions", { params });
     return res;

@@ -4,13 +4,14 @@ import com.logistics.entity.Vehicle;
 import com.logistics.enums.VehicleStatus;
 import com.logistics.enums.VehicleType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
+public interface VehicleRepository extends JpaRepository<Vehicle, Integer>, JpaSpecificationExecutor<Vehicle> {
     Optional<Vehicle> findByLicensePlate(String licensePlate);
     List<Vehicle> findByOfficeId(Integer officeId);
     List<Vehicle> findByStatus(VehicleStatus status);

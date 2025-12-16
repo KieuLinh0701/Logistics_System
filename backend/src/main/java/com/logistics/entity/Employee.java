@@ -31,17 +31,22 @@ public class Employee {
     private String code; // Thêm này cho mã nhân viên (EP_ID bưu cục_ID nhân viên)
 
     // Mỗi nhân viên liên kết với 1 user
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
-    private User user;
+    private User user; 
 
     // Mỗi nhân viên thuộc 1 office
     @ManyToOne
     @JoinColumn(name = "office_id", referencedColumnName = "id", nullable = false)
     private Office office;
 
+    // Mỗi nhân viên liên kết với 1 role cụ thể của account
+    @ManyToOne
+    @JoinColumn(name = "account_role_id", referencedColumnName = "id", nullable = false)
+    private AccountRole accountRole;
+ 
     @Column(nullable = false)
-    private LocalDateTime hireDate = LocalDateTime.now();
+    private LocalDateTime hireDate = LocalDateTime.now(); 
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -57,4 +62,9 @@ public class Employee {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @PostPersist
+    private void generateCode() {
+        this.code = "EP" + office.getId() + id;
+    }
 }

@@ -27,3 +27,18 @@ export interface AdminUser {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface User {
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  role?: string;
+  roleId?: number;
+  isActive: boolean;
+  isVerified: boolean;
+  images?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
