@@ -24,6 +24,8 @@ public class ManagerShipmentListDto {
     private String type;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
 
     @Getter
@@ -31,6 +33,7 @@ public class ManagerShipmentListDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class VehicleShipment {
+        private Integer id;
         private String licensePlate;
         private BigDecimal capacity;
     }
@@ -40,6 +43,7 @@ public class ManagerShipmentListDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class OfficeShipment {
+        private Integer id;
         private String name;
         private String postalCode;
         private Integer cityCode;
@@ -54,7 +58,9 @@ public class ManagerShipmentListDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class EmployeeShipment {
-        private String name;
+        private Integer id;
+        private String lastName; 
+        private String firstName;
         private String code;
         private String phoneNumber;
         private String email;

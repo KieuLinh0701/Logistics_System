@@ -10,6 +10,8 @@ import com.logistics.service.manager.VehicleManagerService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,10 +34,17 @@ public class VehicleManagerController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Boolean>> update(@PathVariable Integer id,
-        @Valid @RequestBody ManagerVehicleEditRequest managerVehicleEditRequest,
+            @Valid @RequestBody ManagerVehicleEditRequest managerVehicleEditRequest,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(service.update(userId, id, managerVehicleEditRequest));
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<ApiResponse<List<VehicleDto>>> getAvailableVehicles(
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.getAvailableVehicles(userId));
     }
 }

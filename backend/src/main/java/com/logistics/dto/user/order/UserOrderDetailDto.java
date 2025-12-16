@@ -51,4 +51,5 @@ public class UserOrderDetailDto {
     private List<OrderProductDto> orderProducts;
     private List<OrderHistoryDto> orderHistories;
     private Integer promotionId;
+    private String codStatus;
 }

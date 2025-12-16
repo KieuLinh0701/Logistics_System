@@ -233,7 +233,7 @@ const OrderInfo: React.FC<Props> = ({
                 <Form.Item
                   label={<span className="modal-lable">
                     Giá trị thu hộ{" "}
-                    <Tooltip title="Số tiền khách hàng thanh toán khi nhận hàng (chưa bao gồm phí vận chuyển)">
+                    <Tooltip title="Là tiền bên gửi nhờ thu hộ của bên nhận và chuyển về tài khoản ngân hàng của bên gửi">
                       <InfoCircleOutlined />
                     </Tooltip>
                   </span>}
@@ -265,7 +265,7 @@ const OrderInfo: React.FC<Props> = ({
                   name="orderValue"
                   label={<span className="modal-lable">
                     Tổng giá trị hàng hóa{" "}
-                    <Tooltip title="Giá trị đơn hàng dùng để tính phí bảo hiểm và hỗ trợ bồi thường khi xảy ra sự cố">
+                    <Tooltip title="Giá trị đơn hàng dùng để giúp bạn được đền bù 100% nếu hàng gặp sự cố">
                       <InfoCircleOutlined />
                     </Tooltip></span>}
                   rules={[

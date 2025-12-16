@@ -31,6 +31,7 @@ public class OrderMapper {
         ManagerShipmentDetailDto.Office toOffice = null;
         if (entity.getToOffice() != null) {
             toOffice = new ManagerShipmentDetailDto.Office(
+                    entity.getToOffice().getId(),
                     entity.getToOffice().getName(),
                     entity.getToOffice().getPostalCode(),
                     entity.getToOffice().getCityCode(),
@@ -118,7 +119,10 @@ public class OrderMapper {
                 entity.getPaymentStatus().name(),
                 entity.getCreatedByType().name(),
                 entity.getEmployee() != null ? entity.getEmployee().getCode() : null,
-                entity.getUser() != null ? entity.getUser().getCode() : null);
+                entity.getUser() != null ? entity.getUser().getCode() : null,
+                entity.getCreatedAt(),
+                entity.getDeliveredAt(),
+                entity.getPaidAt());
     }
 
     public static UserOrderDetailDto toUserOrderDetailDto(Order entity,
@@ -157,7 +161,8 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
-                entity.getPromotion() != null ? entity.getPromotion().getId() : null);
+                entity.getPromotion() != null ? entity.getPromotion().getId() : null,
+                entity.getCodStatus().name());
     }
 
     public static UserOrderListDto toUserOrderListDto(Order entity) {
@@ -177,7 +182,11 @@ public class OrderMapper {
                 entity.getOrderValue(),
                 entity.getTotalFee(),
                 entity.getPayer().name(),
-                entity.getPaymentStatus().name());
+                entity.getPaymentStatus().name(),
+                entity.getCreatedAt(),
+                entity.getDeliveredAt(),
+                entity.getPaidAt(),
+                entity.getCodStatus().name());
     }
 
 }

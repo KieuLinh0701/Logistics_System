@@ -1,22 +1,26 @@
 import React from "react";
-import { CloseCircleOutlined, EditOutlined, PlayCircleOutlined, PrinterOutlined, CustomerServiceOutlined } from "@ant-design/icons";
+import { CloseCircleOutlined, EditOutlined, PrinterOutlined, CheckCircleOutlined } from "@ant-design/icons";
 
 interface Props {
   canEdit: boolean;
   canCancel: boolean;
   canPrint: boolean;
+  canSetAtOriginOffice: boolean;
   onEdit: () => void;
   onCancel: () => void;
   onPrint: () => void;
+  onSetAtOriginOffice: () => void;
 }
 
 const Actions: React.FC<Props> = ({
   canEdit,
   canCancel,
   canPrint,
+  canSetAtOriginOffice,
   onEdit,
   onCancel,
   onPrint,
+  onSetAtOriginOffice
 }) => (
   <div className="order-detail-actions-container">
     {/* Nhóm nút bên trái */}
@@ -47,6 +51,12 @@ const Actions: React.FC<Props> = ({
       >
         <CloseCircleOutlined /> Hủy
       </button>
+
+      {canSetAtOriginOffice && (
+        <button className="order-detail-public-btn" onClick={onSetAtOriginOffice}>
+          <CheckCircleOutlined /> Đã đến bưu cục
+        </button>
+      )}
     </div>
   </div>
 );

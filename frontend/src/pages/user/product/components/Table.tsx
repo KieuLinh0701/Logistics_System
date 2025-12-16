@@ -43,7 +43,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
       title: 'Mã SP',
       dataIndex: 'code',
       key: 'code',
-      align: 'left',
+      align: 'center',
       render: (code, _) => {
         return (
           <span className="custom-table-content-strong">
@@ -55,7 +55,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
     {
       title: 'Ảnh',
       key: 'image',
-      align: 'left',
+      align: 'center',
       render: (_, record: Product) => (
         <img
           className='table-image'
@@ -70,14 +70,14 @@ const ProductTable: React.FC<ProductTableProps> = ({
       title: 'Loại',
       dataIndex: 'type',
       key: 'type',
-      align: 'left',
+      align: 'center',
       render: (type) => translateProductType(type)
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      align: 'left',
+      align: 'center',
       render: (status) => translateProductStatus(status)
     },
     {
@@ -106,12 +106,12 @@ const ProductTable: React.FC<ProductTableProps> = ({
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      align: 'left',
-      render: (date) => dayjs(date).format('DD-MM-YYYY')
+      align: 'center',
+      render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       key: 'action',
-      align: 'left',
+      align: 'center',
       render: (_, record: Product) => {
         const items = [];
 

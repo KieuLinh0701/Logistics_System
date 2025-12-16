@@ -79,19 +79,31 @@ public class OfficePublicService {
             Integer city = request.getCity();
             Integer ward = request.getWard();
 
-            Specification<Office> spec = Specification.<Office>unrestricted()
-                    .and(OfficeSpecification.status(OfficeStatus.ACTIVE.name()))
-                    .and(OfficeSpecification.city(city))
-                    .and(OfficeSpecification.ward(ward));
+            List<Office> offices;
 
-            List<Office> offices = officeRepository.findAll(spec, Sort.by("name").ascending());
+            if (city != null && ward != null) {
+                Specification<Office> spec = Specification.<Office>unrestricted()
+                        .and(OfficeSpecification.status(OfficeStatus.ACTIVE.name()))
+                        .and(OfficeSpecification.city(city))
+                        .and(OfficeSpecification.ward(ward));
 
-            if (offices.isEmpty() && city != null) {
+                offices = officeRepository.findAll(spec, Sort.by("name").ascending());
+
+                if (offices.isEmpty()) {
+                    Specification<Office> specCityOnly = Specification.<Office>unrestricted()
+                            .and(OfficeSpecification.status(OfficeStatus.ACTIVE.name()))
+                            .and(OfficeSpecification.city(city));
+                    offices = officeRepository.findAll(specCityOnly, Sort.by("name").ascending());
+                }
+            }
+            else if (city != null) {
                 Specification<Office> specCityOnly = Specification.<Office>unrestricted()
                         .and(OfficeSpecification.status(OfficeStatus.ACTIVE.name()))
                         .and(OfficeSpecification.city(city));
-
                 offices = officeRepository.findAll(specCityOnly, Sort.by("name").ascending());
+            }
+            else {
+                offices = List.of();
             }
 
             List<PublicOfficeInformationDto> officeDtos = offices.stream()

@@ -37,7 +37,6 @@ import UserShippingRequests from "./pages/user/order/request/UserShippingRequest
 import OrderListRouter from "./pages/router/OrderListRouter";
 import VehiclesRouter from "./pages/router/VehiclesRouter";
 import ManagerOffice from "./pages/manager/office/ManagerOffice";
-import ManagerWarehouse from "./pages/manager/warehouse/ManagerWarehouse";
 import ManagerShippingRequests from "./pages/manager/order/request/ManagerShippingRequest";
 import ManagerEmployeeList from "./pages/manager/employee/list/ManagerEmployeeList";
 import ManagerEmployeePerformance from "./pages/manager/employee/perfomance/ManagerEmployeePerformance";
@@ -46,7 +45,12 @@ import OrderCreateRouter from "./pages/router/OrderCreateRouter";
 import OrderDetailRouter from "./pages/router/OrderDetailRouter";
 import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
 import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
-import ManagerShipment from "./pages/manager/shipment/ManagerShipment";
+import ManagerShipperAssign from "./pages/manager/employee/assign/ManagerShipperAssigns";
+import ManagerShipments from "./pages/manager/shipment/ManagerShipments";
+import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-assign/ManagerShipperAssignmentHistories";
+import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncidentReports";
+import ManagerPaymentSubmissionBatchs from "./pages/manager/paymentSubmissionBatch/ManagerPaymentSubmissionBatchs";
+import ManagerPaymentSubmissions from "./pages/manager/paymentSubmission/ManagerPaymentSubmissions";
 
 const App: React.FC = () => {
   return (
@@ -110,13 +114,17 @@ const App: React.FC = () => {
 
             {/* Manager */}
             <Route path="/office" element={<PrivateRoute allowedRoles={['manager']}><ManagerOffice /></PrivateRoute>} />
-            <Route path="/warehouse" element={<PrivateRoute allowedRoles={['manager']}><ManagerWarehouse /></PrivateRoute>} />
             <Route path="/supports" element={<PrivateRoute allowedRoles={['manager']}><ManagerShippingRequests /></PrivateRoute>} />
             <Route path="/employees/list" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeeList /></PrivateRoute>} />
             <Route path="/employees/performance" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerformance /></PrivateRoute>} />
             <Route path="employees/performance/:employeeCode/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerfomanceShipment /></PrivateRoute>} />
             {/* <Route path="employees/performance/:employeeCode/shipments/:shipmentCode/orders" element={<ShipmentOrders />} /> */}
-            <Route path="/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipment /></PrivateRoute>} />
+            <Route path="/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipments /></PrivateRoute>} />
+            <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />
+            <Route path="/employees/assign-history" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssignmentHistory /></PrivateRoute>} />
+            <Route path="/orders/incidents" element={<PrivateRoute allowedRoles={['manager']}><ManagerIncidentReports /></PrivateRoute>} />
+            <Route path="/settlements" element={<PrivateRoute allowedRoles={['manager']}><ManagerPaymentSubmissionBatchs /></PrivateRoute>} />
+            <Route path="/settlements/:id" element={<PrivateRoute allowedRoles={['manager']}><ManagerPaymentSubmissions /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

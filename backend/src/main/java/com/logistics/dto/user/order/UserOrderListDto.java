@@ -1,6 +1,7 @@
 package com.logistics.dto.user.order;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import com.logistics.dto.AddressDto;
 
@@ -26,4 +27,8 @@ public class UserOrderListDto {
     private Integer totalFee;
     private String payer;
     private String paymentStatus;;
+    private LocalDateTime createdAt;
+    private LocalDateTime deliveriedAt;
+    private LocalDateTime paidAt;
+    private String codStatus;
 }

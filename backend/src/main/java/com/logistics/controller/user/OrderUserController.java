@@ -101,4 +101,12 @@ public class OrderUserController {
         return ResponseEntity.ok(service.getOrdersForPrint(userId, orderIds));
     }
 
+    @PatchMapping("/{id}/ready")
+    public ResponseEntity<ApiResponse<Boolean>> setOrderReadyForPickup(@PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.setOrderReadyForPickup(userId, id));
+    }
+
 }

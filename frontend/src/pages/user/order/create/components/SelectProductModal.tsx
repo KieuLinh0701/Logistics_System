@@ -63,6 +63,12 @@ const SelectProductModal: React.FC<Props> = ({
 
   const columns: ColumnsType<any> = [
     {
+      title: "Mã",
+      dataIndex: "code",
+      key: "code",
+      align: "center"
+    },
+    {
       title: "Tên sản phẩm",
       dataIndex: "name",
       key: "name",
@@ -72,28 +78,28 @@ const SelectProductModal: React.FC<Props> = ({
       title: "Trọng lượng (Kg)",
       dataIndex: "weight",
       key: "weight",
-      align: "left",
+      align: "center",
       render: (w: number) => Number(w).toFixed(2)
     },
     {
       title: "Giá (VNĐ)",
       dataIndex: "price",
       key: "price",
-      align: "left",
+      align: "center",
       render: (p: number) => p?.toLocaleString("vi-VN") || '0'
     },
     {
       title: "Loại",
       dataIndex: "type",
       key: "type",
-      align: "left",
+      align: "center",
       render: (p: string) => translateProductType(p)
     },
     {
       title: "Tồn kho",
       dataIndex: "stock",
       key: "stock",
-      align: "left",
+      align: "center",
       render: (s: number) => s || 0
     },
   ]

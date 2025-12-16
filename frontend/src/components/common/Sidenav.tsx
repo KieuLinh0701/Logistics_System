@@ -25,6 +25,7 @@ import {
   TruckOutlined,
   EnvironmentOutlined,
   BankOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
 import { useMemo } from "react";
@@ -158,7 +159,7 @@ const Sidenav: React.FC = () => {
           },
           {
             key: "/employees/assign-area",
-            label: "Phân công nhân viên",
+            label: "Phân công Shipper",
             path: "/employees/assign-area",
           },
           {
@@ -175,27 +176,10 @@ const Sidenav: React.FC = () => {
         icon: <HomeOutlined />,
       },
       {
-        key: "/warehouse",
-        label: "Đơn nhập/xuất kho",
-        path: "/warehouse",
-        icon: <DatabaseOutlined />,
-      },
-      {
-        key: "/finance",
-        label: "Quản lý dòng tiền",
-        icon: <DollarOutlined />,
-        children: [
-          {
-            key: "/finance/transactions",
-            label: "Theo dõi thu - chi",
-            path: "/finance/transactions",
-          },
-          {
-            key: "/finance/settlements",
-            label: "Đối soát",
-            path: "/finance/settlements",
-          },
-        ],
+        key: "/settlements",
+        label: "Đối soát",
+        icon: <CheckCircleOutlined />, 
+        path: "/settlements",
       },
       {
         key: "/vehicles",

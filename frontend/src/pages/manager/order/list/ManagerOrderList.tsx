@@ -14,6 +14,7 @@ import type { ServiceType } from "../../../../types/serviceType";
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import { ShoppingOutlined } from "@ant-design/icons";
 import ConfirmCancelModal from "../detail/components/ConfirmCancelModal";
+import ConfirmModal from "../../../common/ConfirmModal";
 
 const ManagerOrderList = () => {
   const navigate = useNavigate();
@@ -39,9 +40,11 @@ const ManagerOrderList = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
 
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   const updateURL = () => {
     const params: any = {};
@@ -61,6 +64,7 @@ const ManagerOrderList = () => {
     }
 
     setSearchParams(params, { replace: true });
+    setInitialized(true);
   };
 
   useEffect(() => {
@@ -90,7 +94,7 @@ const ManagerOrderList = () => {
         dayjs(endDate, "YYYY-MM-DD")
       ]);
     }
-  }, [searchParams, serviceTypes]);
+  }, []);
 
   // --- Fetch Orders ---
   const fetchOrders = async (currentPage = page) => {
@@ -166,7 +170,7 @@ const ManagerOrderList = () => {
       message.warning("Vui lòng chọn đơn hàng để in phiếu vận đơn");
       return;
     }
-    
+
     navigate(`/orders/print?orderIds=${selectedOrderIds.join(",")}`);
   };
 
@@ -184,6 +188,35 @@ const ManagerOrderList = () => {
 
   const handleAdd = () => {
     navigate(`/orders/create`);
+  };
+
+  const handleAtOriginOfficeOrder = (id: number) => {
+    setOrderId(id);
+    setModalConfirmOpen(true);
+  };
+
+  const confirmAtOriginOfficeOrder = async () => {
+    if (!orderId) return;
+
+    setModalConfirmOpen(false);
+
+    try {
+      setLoading(true);
+
+      const result = await orderApi.setManagerOrderAtOriginOffice(orderId);
+
+      if (result.success) {
+        message.success(result.message || "Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
+        fetchOrders(page);
+      } else {
+        message.error(result.message || "Có lỗi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+      }
+    } catch (err: any) {
+      message.error(err.message || "Có lỗi khi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+    } finally {
+      setLoading(false);
+      setOrderId(null);
+    }
   };
 
   const handleClearFilters = () => {
@@ -241,11 +274,11 @@ const ManagerOrderList = () => {
   }, []);
 
   useEffect(() => {
+    if (!initialized) return;
+    
     updateURL();
     setPage(1);
     fetchOrders(1);
-
-    console.log("search", search);
   }, [search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort]);
 
   return (
@@ -291,6 +324,7 @@ const ManagerOrderList = () => {
           onCancel={handleCancelOrder}
           onPrint={handlePrintOrder}
           onEdit={handleEditOrder}
+          onAtOriginOffice={handleAtOriginOfficeOrder}
           page={page}
           total={total}
           loading={loading}
@@ -305,6 +339,15 @@ const ManagerOrderList = () => {
         />
 
       </div>
+
+      <ConfirmModal
+        title='Xác nhận nhận hàng'
+        message='Vui lòng xác nhận rằng bạn đã nhận đơn hàng tại bưu cục để chuyển giao cho đơn vị vận chuyển.'
+        open={modalConfirmOpen}
+        onOk={confirmAtOriginOfficeOrder}
+        onCancel={() => setModalConfirmOpen(false)}
+        loading={loading}
+      />
 
       <ConfirmCancelModal
         open={cancelModalOpen}

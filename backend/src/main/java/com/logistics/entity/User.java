@@ -60,9 +60,11 @@ public class User {
     private List<Employee> employees = new ArrayList<>();
 
     // Quan hệ với Product
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval =
-    true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> products;
+
+    @OneToMany(mappedBy = "shipper", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ShipperAssignment> shipperAssignments = new ArrayList<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -75,4 +77,4 @@ public class User {
     private void generateCode() {
         this.code = "USER" + id;
     }
-} 
+}

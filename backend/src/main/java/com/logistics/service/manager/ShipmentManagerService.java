@@ -4,6 +4,7 @@ import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
 import com.logistics.entity.Office;
 import com.logistics.entity.Shipment;
+import com.logistics.enums.ShipmentStatus;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.ShipmentMapper;
 import com.logistics.repository.ShipmentRepository;
@@ -13,6 +14,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.ShipmentSpecification;
+import com.logistics.utils.ShipmentUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,7 +53,7 @@ public class ShipmentManagerService {
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Specification<Shipment> spec = ShipmentSpecification.unrestricted()
                     .and(ShipmentSpecification.fromOffice(userOffice.getId()))
@@ -97,11 +99,11 @@ public class ShipmentManagerService {
             int limit = request.getLimit();
             String search = request.getSearch();
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Shipment shipment = repository.findById(shipmentId)
                     .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
-                    .orElseThrow(() -> new RuntimeException("Shipment not found or no permission"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng hoặc bạn không có quyền đối với chuyến hàng này"));
 
             List<ManagerShipmentDetailDto> orders = shipment.getShipmentOrders()
                     .stream()
@@ -126,5 +128,25 @@ public class ShipmentManagerService {
         } catch (Exception e) {
             return new ApiResponse<>(false, "Đã xảy ra lỗi: " + e.getMessage(), null);
         }
+    }
+
+    public ApiResponse<Boolean> cancelShipment(Integer userId, Integer shipmentId) {
+        Shipment shipment = repository.findById(shipmentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (!ShipmentUtils.canManagerCancelShipment(shipment.getStatus())) {
+            throw new RuntimeException("Chuyến hàng đã thực hiện, không thể hủy");
+        }
+
+        if (shipment.getFromOffice() == null || !userOffice.getId().equals(shipment.getFromOffice().getId())) {
+            return new ApiResponse<>(false, "Bạn không có quyền hủy chuyến hàng này", false);
+        }
+
+        shipment.setStatus(ShipmentStatus.CANCELLED);
+        repository.save(shipment);
+
+        return new ApiResponse<>(true, "Hủy chuyến hàng thành công", true);
     }
 }

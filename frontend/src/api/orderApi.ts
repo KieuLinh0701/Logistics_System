@@ -61,6 +61,11 @@ const orderApi = {
     return res;
   },
 
+  async setUserOrderReadyForPickup(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/user/orders/${id}/ready`);
+    return res;
+  },
+
   // Manager
   async listManagerOrders(params: ManagerOrderSearchRequest) {
     const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders", { params });
@@ -85,6 +90,11 @@ const orderApi = {
 
   async cancelManagerOrder(id: number) {
     const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/cancel`);
+    return res;
+  },
+
+  async setManagerOrderAtOriginOffice(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/at-origin-office`);
     return res;
   },
 };

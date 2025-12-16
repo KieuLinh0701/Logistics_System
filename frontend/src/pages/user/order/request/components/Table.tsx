@@ -37,7 +37,7 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Mã yêu cầu',
       dataIndex: 'code',
       key: 'code',
-      align: 'left',
+      align: 'center',
       render: (_, record) => {
         return (
           <Tooltip title="Click để xem chi tiết yêu cầu">
@@ -55,7 +55,7 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Loại yêu cầu',
       dataIndex: 'requestType',
       key: 'requestType',
-      align: 'left',
+      align: 'center',
       render: (type) => translateShippingRequestType(type)
     },
     {
@@ -151,7 +151,7 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      align: 'left',
+      align: 'center',
       render: (status) => translateShippingRequestStatus(status)
     },
     {

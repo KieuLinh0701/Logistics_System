@@ -49,7 +49,7 @@ public class VehicleManagerService {
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
-            Office office = employeeManagerService.getOfficeByUserId(userId);
+            Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Specification<Vehicle> spec = VehicleSpecification.unrestrictedVehicle()
                     .and(VehicleSpecification.officeId(office.getId()))
@@ -94,7 +94,7 @@ public class VehicleManagerService {
             Vehicle vehicle = vehicleRepository.findById(vehicleId)
                     .orElseThrow(() -> new RuntimeException("Xe không tồn tại"));
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             if (!userOffice.getId().equals(vehicle.getOffice().getId())) {
                 throw new RuntimeException("Người dùng không có quyền chỉnh sửa xe tại bưu cục này");
@@ -135,6 +135,26 @@ public class VehicleManagerService {
             return new ApiResponse<>(true, "Cập nhật xe thành công", null);
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<List<VehicleDto>> getAvailableVehicles(int userId) {
+        try {
+            Office office = employeeManagerService.getManagedOfficeByUserId(userId);
+
+            Specification<Vehicle> spec = VehicleSpecification.unrestrictedVehicle()
+                    .and(VehicleSpecification.officeId(office.getId()))
+                    .and(VehicleSpecification.status("AVAILABLE"));
+
+            List<Vehicle> vehicles = vehicleRepository.findAll(spec);
+
+            List<VehicleDto> list = vehicles.stream()
+                    .map(VehicleMapper::toDto)
+                    .toList();
+
+            return new ApiResponse<>(true, "Lấy danh sách phương tiện thành công", list);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
     }
 }

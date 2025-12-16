@@ -46,6 +46,7 @@ public class SecurityConfig {
                     config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                     config.setAllowedHeaders(java.util.List.of("*"));
                     config.setAllowCredentials(true);
+                    config.setExposedHeaders(java.util.List.of("Content-Disposition"));
                     return config;
                 }))
                 .csrf(csrf -> csrf.disable())

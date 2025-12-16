@@ -1,3 +1,13 @@
+// Status có thể hủy Shipment của Manager
+export const canCancelManagerShipment = (value: string) => {
+  return ["PENDING"].includes(value)
+};
+
+// Status có thể edit Shipment của Manager
+export const canEditManagerShipment = (value: string) => {
+  return ["PENDING"].includes(value)
+};
+
 export const SHIPMENT_STATUSES = ['PENDING', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED'] as const;
 export const translateShipmentStatus = (value: string): string => {
   switch (value) {

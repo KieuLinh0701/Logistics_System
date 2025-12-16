@@ -5,10 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,19 +17,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
+import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.entity.Account;
 import com.logistics.entity.AccountRole;
-import com.logistics.entity.Address;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
 import com.logistics.entity.Role;
+import com.logistics.entity.ShipperAssignment;
 import com.logistics.entity.User;
 import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.EmployeeStatus;
 import com.logistics.mapper.EmployeeMapper;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
-import com.logistics.repository.AddressRepository;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
@@ -42,6 +39,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.EmployeeSpecification;
+import com.logistics.specification.UserSpecification;
 import com.logistics.utils.PasswordUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -51,8 +49,6 @@ import lombok.RequiredArgsConstructor;
 public class EmployeeManagerService {
 
     private final EmployeeRepository employeeRepository;
-
-    private final AddressRepository addressRepository;
 
     private final AccountRepository accountRepository;
 
@@ -64,41 +60,21 @@ public class EmployeeManagerService {
 
     private final PasswordEncoder passwordEncoder;
 
-    public Office getOfficeByUserId(Integer userId) {
+    public Office getManagedOfficeByUserId(Integer userId) {
+        List<Employee> employees = employeeRepository.findByUserId(userId);
 
-        Employee employee = employeeRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Bạn không phải là nhân viên"));
+        Employee managed = employees.stream()
+                .filter(emp -> emp.getStatus() != EmployeeStatus.LEAVE)
+                .filter(emp -> emp.getOffice() != null && emp.getOffice().getManager().getId().equals(emp.getId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Bạn không phải quản lý bưu cục hoặc đã nghỉ"));
 
-        if (employee.getStatus() == EmployeeStatus.LEAVE) {
-            throw new RuntimeException("Bạn đã nghỉ, không thể thực hiện thao tác");
-        }
-
-        Office office = employee.getOffice();
-
-        if (office == null) {
-            throw new RuntimeException("Bạn không thuộc bưu cục nào");
-        }
-        if (!office.getManager().getId().equals(employee.getId())) {
-            throw new RuntimeException("Bạn không phải quản lý bưu cục, không thể thực hiện thao tác");
-        }
-
-        return office;
-    }
-
-    public User geEmployeeById(Integer userId) {
-        Employee employee = employeeRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Bạn không phải là nhân viên"));
-
-        if (employee.getStatus() == EmployeeStatus.LEAVE) {
-            throw new RuntimeException("Bạn đã nghỉ, không thể thực hiện thao tác");
-        }
-
-        return employee.getUser();
+        return managed.getOffice();
     }
 
     public ApiResponse<ListResponse<ManagerEmployeeListDto>> list(int userId, ManagerEmployeeSearchRequest request) {
         try {
-            Office office = getOfficeByUserId(userId);
+            Office office = getManagedOfficeByUserId(userId);
 
             int page = request.getPage();
             int limit = request.getLimit();
@@ -133,34 +109,9 @@ public class EmployeeManagerService {
             Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
             Page<Employee> pageData = employeeRepository.findAll(spec, pageable);
 
-            List<Integer> userIds = pageData.getContent()
-                    .stream()
-                    .map(item -> item.getUser() != null ? item.getUser().getId() : null)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-
-            Map<Integer, Address> addressMap = addressRepository
-                    .findByUserIdInAndIsDefaultTrue(userIds)
-                    .stream()
-                    .collect(Collectors.toMap(
-                            a -> a.getUser().getId(),
-                            a -> a));
-
             List<ManagerEmployeeListDto> list = pageData.getContent()
                     .stream()
-                    .map(item -> {
-                        Integer uid = item.getUser() != null
-                                ? item.getUser().getId()
-                                : null;
-
-                        Address address = (uid != null)
-                                ? addressMap.getOrDefault(uid, null)
-                                : null;
-
-                        return EmployeeMapper
-                                .toManagerEmployeeListDto(item, address);
-                    })
+                    .map(EmployeeMapper::toManagerEmployeeListDto)
                     .toList();
 
             int total = (int) pageData.getTotalElements();
@@ -183,7 +134,7 @@ public class EmployeeManagerService {
             validateCreate(req);
 
             // 1. Lấy office của người dùng hiện tại
-            Office office = getOfficeByUserId(creatorUserId);
+            Office office = getManagedOfficeByUserId(creatorUserId);
 
             String email = req.getUserEmail().trim().toLowerCase();
             String phone = req.getUserPhoneNumber().trim();
@@ -411,7 +362,7 @@ public class EmployeeManagerService {
         try {
             validateEdit(req);
 
-            Office editorOffice = getOfficeByUserId(editorUserId);
+            Office editorOffice = getManagedOfficeByUserId(editorUserId);
 
             Employee emp = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên này"));
@@ -498,7 +449,7 @@ public class EmployeeManagerService {
                         "Chức vụ đã được thay đổi. Nhân viên cũ đã kết thúc công việc, nhân viên mới đã được tạo.",
                         true);
             }
-            
+
             // ===== Cập nhật hireDate, shift (chỉ khi nhân viên chưa nghỉ) =====
             if (newStatus != EmployeeStatus.LEAVE) {
                 if (req.getHireDate() != null) {
@@ -671,6 +622,99 @@ public class EmployeeManagerService {
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Trạng thái không hợp lệ: " + request.getStatus());
             }
+        }
+    }
+
+    public ApiResponse<ListResponse<ManagerEmployeeListWithShipperAssignmentDto>> getActiveShippersWithActiveAssignments(
+            int userId,
+            ManagerEmployeeSearchRequest request) {
+        try {
+            Office office = getManagedOfficeByUserId(userId);
+
+            int page = request.getPage();
+            int limit = request.getLimit();
+            String search = request.getSearch();
+            LocalDateTime now = LocalDateTime.now();
+
+            // Specification để lấy user đang active + role SHIPPER + thuộc office + search
+            Specification<User> spec = Specification
+                    .where(UserSpecification.activeShippersInOffice(office.getId(), search));
+
+            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("lastName").ascending());
+            Page<User> pageData = userRepository.findAll(spec, pageable);
+
+            // Map sang DTO
+            List<ManagerEmployeeListWithShipperAssignmentDto> list = pageData.getContent().stream()
+                    .map(user -> {
+                        // Lấy employee code
+                        Employee employee = user.getEmployees().stream()
+                                .filter(emp -> emp.getAccountRole() != null &&
+                                        emp.getAccountRole().getRole() != null &&
+                                        "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()))
+                                .findFirst()
+                                .orElse(null);
+
+                        // Lấy assignment còn hiệu lực
+                        List<ShipperAssignment> activeAssignments = user.getShipperAssignments().stream()
+                                .filter(sa -> sa.getEndAt() == null || !sa.getEndAt().isBefore(now))
+                                .toList();
+
+                        String employeeCode = employee != null ? employee.getCode() : null;
+                        Integer employeeId = employee != null ? employee.getId() : null;
+
+                        return EmployeeMapper.toManagerEmployeeListDto(user, employeeCode, employeeId,
+                                activeAssignments);
+                    })
+                    .toList();
+
+            int total = (int) pageData.getTotalElements();
+            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+
+            ListResponse<ManagerEmployeeListWithShipperAssignmentDto> data = new ListResponse<>();
+            data.setList(list);
+            data.setPagination(pagination);
+
+            return new ApiResponse<>(true, "Lấy danh sách Shipper đang làm việc thành công", data);
+
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<ListResponse<ManagerEmployeeListDto>> getActiveShippers(int userId,
+            ManagerEmployeeSearchRequest request) {
+        try {
+            Office office = getManagedOfficeByUserId(userId);
+
+            int page = request.getPage();
+            int limit = request.getLimit();
+            String search = request.getSearch();
+
+            Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
+                    .and(EmployeeSpecification.officeId(office.getId()))
+                    .and(EmployeeSpecification.search(search))
+                    .and(EmployeeSpecification.excludeStatus(EmployeeStatus.LEAVE.name()))
+                    .and(EmployeeSpecification.role("Shipper", true));
+
+            Pageable pageable = PageRequest.of(page - 1, limit);
+            Page<Employee> pageData = employeeRepository.findAll(spec, pageable);
+
+            List<ManagerEmployeeListDto> list = pageData.getContent()
+                    .stream()
+                    .map(EmployeeMapper::toManagerEmployeeListDto)
+                    .toList();
+
+            int total = (int) pageData.getTotalElements();
+
+            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+
+            ListResponse<ManagerEmployeeListDto> data = new ListResponse<>();
+            data.setList(list);
+            data.setPagination(pagination);
+
+            return new ApiResponse<>(true, "Lấy danh sách nhân viên thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
     }
 

@@ -76,7 +76,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             <Select
               value={filterStatus}
               onChange={(val) => onFilterChange('status', val)}
-              className="filter-select-fit"
+              className="filter-select"
             >
               <Option value="ALL">Tất cả trạng thái</Option>
               {SHIPMENT_STATUSES.map((s) => (

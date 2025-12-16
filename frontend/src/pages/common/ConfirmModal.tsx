@@ -14,7 +14,7 @@ const ConfirmModal: React.FC<Props> = ({ open, title, message, onOk, onCancel, l
         <Modal
             open={open}
             title={<span className="modal-title">{title}</span>}
-            okText="Hủy"
+            okText="Có"
             cancelText="Không"
             centered
             closeIcon

@@ -19,6 +19,10 @@ export const canDeleteUserOrder = (value: string) => {
   return ["DRAFT"].includes(value)
 };
 
+export const canReadyUserOrder = (value: string) => {
+  return ["CONFIRMED"].includes(value)
+};
+
 // Điều kiện để thao tác với order của manager
 export const canPrintManagerOrder = (value: string) => {
   return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
@@ -33,10 +37,16 @@ export const canCancelManagerOrder = (value: string) => {
     'AT_ORIGIN_OFFICE'].includes(value)
 };
 
+export const canAtOriginOfficeManagerOrder = (value: string) => {
+  return ["CONFIRMED"].includes(value)
+};
+
 // này chưa chỉnh nha
 export const canEditManagerOrder = (value: string) => {
   return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);
 };
+
+export const ORDER_COD_STATUS = ['NONE', 'EXPECTED', 'PENDING', 'SUBMITTED', 'RECEIVED', 'TRANSFERRED'] as const;
 
 export const ORDER_CREATOR_TYPES = ['USER', 'MANAGER', 'ADMIN'] as const;
 
@@ -159,5 +169,30 @@ export const translateOrderFilterSort = (value: string): string => {
     case 'WEIGHT_LOW': return 'Khối lượng thấp nhất';
 
     default: return value;
+  }
+};
+
+export const translateOrderCodStatus = (value: string): string => {
+  switch (value) {
+    case 'NONE':
+      return 'Không COD';
+
+    case 'EXPECTED':
+      return 'Chưa thu COD';
+
+    case 'PENDING':
+      return 'Shipper giữ COD';
+
+    case 'SUBMITTED':
+      return 'Đã nộp chờ đối soát';
+
+    case 'RECEIVED':
+      return 'Bưu cục đã nhận';
+
+    case 'TRANSFERRED':
+      return 'Đã chuyển shop';
+
+    default:
+      return value;
   }
 };

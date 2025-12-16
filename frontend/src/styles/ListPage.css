@@ -256,6 +256,56 @@
   width: 100% !important;
 }
 
+/* Expanded Row Styles - Siêu tinh tế */
+.list-page-table .ant-table-expanded-row {
+  background-color: #fcfcfc !important;
+}
+
+.list-page-table .ant-table-expanded-row > td {
+  background-color: #fcfcfc !important;
+  border-top: 1px dashed #e8e8e8 !important;
+  border-bottom: 1px dashed #e8e8e8 !important;
+}
+
+/* Style cho table bên trong expanded row */
+.list-page-table .ant-table-expanded-row .ant-table {
+  background-color: #ffffff;
+  border-radius: 4px;
+  border: 2px solid #f0f0f0;
+}
+
+/* Style cho header của table bên trong - Xám rất nhẹ */
+.list-page-table .ant-table-expanded-row .ant-table-thead > tr > th {
+  background-color: #f9f9f9 !important;
+  color: #555 !important;
+  font-weight: 500;
+  padding: 9px 12px !important;
+  border-bottom: 1px solid #eee !important;
+  font-size: 13px;
+}
+
+/* Style cho body rows bên trong */
+.list-page-table .ant-table-expanded-row .ant-table-tbody > tr {
+  background-color: #ffffff !important;
+}
+
+.list-page-table .ant-table-expanded-row .ant-table-tbody > tr:hover > td {
+  background-color: #f8f9ff !important;
+}
+
+/* Style cho các cell bên trong */
+.list-page-table .ant-table-expanded-row .ant-table-tbody > tr > td {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid #f8f8f8 !important;
+  vertical-align: middle !important;
+  font-size: 13px;
+}
+
+/* Giảm margin cho expanded row để gọn hơn */
+.list-page-table .ant-table-expanded-row .ant-table-wrapper {
+  margin: 6px 0 !important;
+}
+
 /* === END SCROLLBAR HIDING === */
 
 .list-page-table .ant-table {
@@ -348,6 +398,11 @@
 .custom-table-content-strong {
   font-weight: 450 !important;
   color: #52c41a !important;
+}
+
+.custom-table-content-error {
+  font-weight: 450 !important;
+  color: red !important;
 }
 
 .custom-table-content-limit {
@@ -533,6 +588,8 @@
   margin-top: 8px;
   color: #999 !important;
   cursor: default !important;
+  bottom: 0;
+  position: static;
 }
 
 /* Long column */
@@ -1341,6 +1398,14 @@
 .selectd-checkbox-table-row-selected .ant-checkbox-checked .ant-checkbox-inner::after {
   border-color: #fff !important;
 }
+
+/* Đường phân chia khu vực */
+.separator {
+  border: none;
+  border-top: 1px solid #e8edff; 
+  margin: 8px 0;
+}
+
 
 /* Responsive */
 @media (max-width: 768px) {

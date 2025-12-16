@@ -21,6 +21,7 @@ import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearc
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
+import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShippingRequestSpecification;
 import com.logistics.utils.ShippingRequestUtils;
 
@@ -57,6 +58,8 @@ public class ShippingRequestManagerService {
 
     private final EmployeeManagerService employeeManagerService;
 
+    private final NotificationService notificationService;
+
     public ApiResponse<ListResponse<ManagerShippingRequestListDto>> list(int userId,
             ManagerShippingRequestSearchRequest request) {
         try {
@@ -74,7 +77,7 @@ public class ShippingRequestManagerService {
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Specification<ShippingRequest> spec = ShippingRequestSpecification.unrestrictedShippingRequest()
                     .and(ShippingRequestSpecification.officeId(userOffice.getId()))
@@ -142,7 +145,7 @@ public class ShippingRequestManagerService {
             return false;
         }
 
-        Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         if (userOffice == null) {
             return false;
@@ -196,14 +199,22 @@ public class ShippingRequestManagerService {
 
     public ApiResponse<Boolean> processing(int userId, int id, ManagerShippingRequestForm request) {
 
-        ShippingRequest shippingRequest = repository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
+        ShippingRequest shippingRequest = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại"));
 
         if (!checkPermission(userId, shippingRequest)) {
             return new ApiResponse<>(false, "Không có quyền phản hồi yêu cầu này", null);
         }
 
-        User user = employeeManagerService.geEmployeeById(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (userOffice == null
+                || userOffice.getManager() == null
+                || !userOffice.getManager().getId().equals(userId)) {
+            return new ApiResponse<>(false, "Không có quyền phản hồi yêu cầu này", null);
+        }
+
+        User user = userOffice.getManager().getUser();
 
         validateForm(request);
 
@@ -298,7 +309,7 @@ public class ShippingRequestManagerService {
     }
 
     private void validateForm(ManagerShippingRequestForm request) {
-        List<String> missing = new ArrayList<>(); 
+        List<String> missing = new ArrayList<>();
 
         if (isBlank(request.getStatus()))
             missing.add("Trạng thái");

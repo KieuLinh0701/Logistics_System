@@ -12,6 +12,7 @@ const axiosClient: AxiosInstance = axios.create({
   withCredentials: false, 
 });
 
+
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = sessionStorage.getItem("token");
@@ -48,8 +49,8 @@ axiosClient.interceptors.response.use(
 type AxiosResponseData<T> = Promise<T>;
 
 const typedAxios = {
-  get: <T>(url: string, config?: any): AxiosResponseData<T> =>
-    axiosClient.get<T>(url, config) as AxiosResponseData<T>,
+  get: <T = any>(url: string, config?: any): AxiosResponseData<T> =>
+    axiosClient.get<T>(url, config).then(res => res as unknown as T),
 
   post: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
     axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,

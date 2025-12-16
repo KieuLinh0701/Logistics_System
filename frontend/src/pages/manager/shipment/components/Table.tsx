@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Table, Button, Space, Tooltip, Dropdown } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { translateShipmentStatus, translateShipmentType } from '../../../../utils/shipmentUtils';
+import { canCancelManagerShipment, canEditManagerShipment, translateShipmentStatus, translateShipmentType } from '../../../../utils/shipmentUtils';
 import type { ManagerShipment } from '../../../../types/shipment';
-import { CloseCircleOutlined, DeleteOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
 import locationApi from '../../../../api/locationApi';
 
 interface TableProps {
@@ -14,7 +14,6 @@ interface TableProps {
   total: number;
   loading?: boolean;
   onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
   onCancel: (item: ManagerShipment) => void;
   onDetail: (id: number) => void;
   onPageChange: (page: number, pageSize?: number) => void;
@@ -27,7 +26,6 @@ const RequestTable: React.FC<TableProps> = ({
   total,
   loading = false,
   onEdit,
-  onDelete,
   onDetail,
   onCancel,
   onPageChange,
@@ -88,7 +86,7 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Mã chuyến',
       dataIndex: 'code',
       key: 'code',
-      align: 'left',
+      align: 'center',
       render: (_, record) => {
         return (
           <Tooltip title="Click để xem danh sách đơn hàng của chuyến hàng">
@@ -106,14 +104,14 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Loại chuyến',
       dataIndex: 'type',
       key: 'type',
-      align: 'left',
+      align: 'center',
       render: (type) => translateShipmentType(type)
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      align: 'left',
+      align: 'center',
       render: (status) => translateShipmentStatus(status)
     },
     {
@@ -160,10 +158,10 @@ const RequestTable: React.FC<TableProps> = ({
             <span>
               {from.name}
             </span><br />
-            <span>{from.postalCode}</span><br/>
+            <span>{from.postalCode}</span><br />
 
             {from.latitude && from.longitude ? (
-              <Tooltip title="Nhấn để mở Google Maps">
+              <Tooltip title="Nhấn để xem vị trí trên Google Maps">
                 <span
                   className="navigate-link custom-table-content-limit"
                   onClick={() =>
@@ -204,10 +202,10 @@ const RequestTable: React.FC<TableProps> = ({
             <span>
               {to.name}
             </span><br />
-            <span>{to.postalCode}</span><br/>
+            <span>{to.postalCode}</span><br />
 
             {to.latitude && to.longitude ? (
-              <Tooltip title="Nhấn để mở Google Maps">
+              <Tooltip title="Nhấn để xem vị trí trên Google Maps">
                 <span
                   className="navigate-link custom-table-content-limit"
                   onClick={() =>
@@ -245,7 +243,7 @@ const RequestTable: React.FC<TableProps> = ({
         return (
           <div>
             <span className="custom-table-content-strong">
-              {employee.name} - {employee.code}
+              {employee.lastName} {employee.firstName} - {employee.code}
             </span><br />
             <span>
               {employee.phoneNumber}
@@ -272,7 +270,7 @@ const RequestTable: React.FC<TableProps> = ({
         return (
           <div>
             <span className="custom-table-content-strong">
-              {createdBy.name} - {createdBy.code}
+              {createdBy.lastName} {createdBy.firstName} - {createdBy.code}
             </span><br />
             <span>
               {createdBy.phoneNumber}
@@ -289,6 +287,14 @@ const RequestTable: React.FC<TableProps> = ({
       key: 'time',
       align: 'left',
       render: (_, record) => {
+        const createdAt = record.createdAt
+          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
+          : null;
+
+        const updatedAt = record.updatedAt
+          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
+          : null;
+
         const startTime = record.startTime
           ? dayjs(record.startTime).format('HH:mm:ss DD/MM/YYYY')
           : null;
@@ -297,7 +303,7 @@ const RequestTable: React.FC<TableProps> = ({
           ? dayjs(record.endTime).format('HH:mm:ss DD/MM/YYYY')
           : null;
 
-        if (!startTime && !endTime) {
+        if (!createdAt && !startTime && !endTime) {
           return <span className="text-muted">N/A</span>;
         }
 
@@ -306,14 +312,36 @@ const RequestTable: React.FC<TableProps> = ({
             {startTime && (
               <div>
                 <span className="custom-table-content-strong">
-                  Bắt đầu:
-                </span><br />
+                  Bắt đầu:{" "}
+                </span>
                 {startTime}
               </div>
             )}
             {endTime && (
-              <div className="text-extra-time">
-                Kết thúc: {endTime}
+              <div>
+                <span className="custom-table-content-strong">
+                  Kết thúc:{" "}
+                </span>
+                {endTime}
+              </div>
+            )}
+            {startTime && (
+              <hr className="separator" />
+            )}
+            {createdAt && (
+              <div>
+                <span className="custom-table-content-strong">
+                  Tạo mới:{" "}
+                </span>
+                {createdAt}
+              </div>
+            )}
+            {updatedAt && (
+              <div>
+                <span className="custom-table-content-strong">
+                  Cập nhật:{" "}
+                </span>
+                {updatedAt}
               </div>
             )}
           </div>
@@ -324,11 +352,8 @@ const RequestTable: React.FC<TableProps> = ({
       key: "action",
       align: "left",
       render: (_, record: ManagerShipment) => {
-        // const canCancel = canCancelUserShippingRequest(record.status);
-        // const canEdit = canEditUserShippingRequest(record.status);
-        const canCancel = true;
-        const canEdit = true;
-        const canDelete = true;
+        const canCancel = canCancelManagerShipment(record.status);
+        const canEdit = canEditManagerShipment(record.status);
 
         const items = [
           ...(canEdit
@@ -348,18 +373,7 @@ const RequestTable: React.FC<TableProps> = ({
                 key: "cancel",
                 icon: <CloseCircleOutlined />,
                 label: "Hủy",
-                danger: true,
                 onClick: () => onCancel(record),
-              },
-            ]
-            : []),
-          ...(canDelete
-            ? [
-              {
-                key: "delete",
-                icon: <DeleteOutlined />,
-                label: "Xóa",
-                onClick: () => onDelete(record.id),
               },
             ]
             : []),
@@ -372,7 +386,7 @@ const RequestTable: React.FC<TableProps> = ({
               type="link"
               onClick={() => onDetail(record.id)}
             >
-              Xem
+              DS đơn hàng
             </Button>
 
             <Dropdown menu={{ items }} trigger={["click"]} disabled={items.length === 0}>

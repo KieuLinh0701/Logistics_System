@@ -66,7 +66,7 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Mã yêu cầu',
       dataIndex: 'code',
       key: 'code',
-      align: 'left',
+      align: 'center',
       render: (_, record) => {
         return (
           <Tooltip title="Click để xem chi tiết yêu cầu">
@@ -84,14 +84,14 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Loại yêu cầu',
       dataIndex: 'requestType',
       key: 'requestType',
-      align: 'left',
+      align: 'center',
       render: (type) => translateShippingRequestType(type)
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      align: 'left',
+      align: 'center',
       render: (status) => translateShippingRequestStatus(status)
     },
     {
@@ -133,11 +133,7 @@ const RequestTable: React.FC<TableProps> = ({
         const hasTracking = !!record.orderTrackingNumber;
         const hasContent = !!record.requestContent;
 
-        const createdAt = record.createdAt
-          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
-          : null;
-
-        if (!hasTracking && !hasContent && !createdAt) {
+        if (!hasTracking && !hasContent) {
           return <span className="text-muted">N/A</span>;
         }
 
@@ -168,12 +164,6 @@ const RequestTable: React.FC<TableProps> = ({
                 </Tooltip>
               </>
             )}
-
-            {createdAt && (
-              <div className="text-extra-time">
-                <div>Gửi lúc: {createdAt}</div>
-              </div>
-            )}
           </div>
         );
       },
@@ -202,16 +192,42 @@ const RequestTable: React.FC<TableProps> = ({
                 </div>
               </Tooltip>
             )}
-
-            {respondedAt && (
-              <div className="text-extra-time">
-                Phản hồi lúc: {respondedAt}
-              </div>
-            )}
           </div>
         );
       },
+    },
+    {
+      title: 'Thời gian',
+      key: 'time',
+      align: 'left',
+      render: (_, record) => {
+        const createdAt = record.createdAt
+          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
+          : null;
 
+        const responseAt = record.responseAt
+          ? dayjs(record.responseAt).format('HH:mm:ss DD/MM/YYYY')
+          : null;
+
+        return (
+          <div>
+            {createdAt && (
+              <div>
+                <span className="custom-table-content-strong">
+                  Gửi:{" "}
+                </span>
+                {createdAt}
+              </div>
+            )}
+              <div>
+                <span className="custom-table-content-strong">
+                  Phản hồi:{" "}
+                </span>
+                {responseAt ? responseAt : <span className="text-muted">N/A</span>}
+              </div>
+          </div>
+        );
+      }
     },
     {
       key: "action",

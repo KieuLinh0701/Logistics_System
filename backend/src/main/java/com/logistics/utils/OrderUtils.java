@@ -6,6 +6,14 @@ import com.logistics.enums.OrderStatus;
 
 public class OrderUtils {
 
+    // Những trạng thái mà user được phép chuyển sang "Sẵn sàng để lấy"
+    private static final Set<OrderStatus> USER_ALLOWED_TO_READY_STATUSES = Set.of(
+            OrderStatus.CONFIRMED);
+
+    public static boolean canUserSetReady(OrderStatus status) {
+        return USER_ALLOWED_TO_READY_STATUSES.contains(status);
+    }
+
     // Những trạng thái user được phép hủy
     private static final Set<OrderStatus> USER_CANCELLABLE_STATUSES = Set.of(
             OrderStatus.PENDING,
@@ -69,5 +77,13 @@ public class OrderUtils {
 
     public static boolean canManagerCreateShipment(OrderStatus status) {
         return VALID_ORDER_STATUSES_FOR_SHIPMENT_CREATION_MANAGER.contains(status);
+    }
+
+    // Những trạng thái Order mà manager được xác nhận là được người dùng bàn giao đến bưu cục
+    private static final Set<OrderStatus> VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE = Set.of(
+            OrderStatus.CONFIRMED);
+
+    public static boolean canManagerSetAtOriginOffice(OrderStatus status) {
+        return VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE.contains(status);
     }
 }

@@ -8,11 +8,13 @@ interface Props {
   canPrint: boolean;
   canDelete: boolean;
   canRequest: boolean;
+  canReady: boolean;
   onPublic: () => void;
   onEdit: () => void;
   onCancel: () => void;
   onPrint: () => void;
   onDelete: () => void;
+  onReady: () => void;
   onCreateRequest: () => void;
 }
 
@@ -23,12 +25,14 @@ const Actions: React.FC<Props> = ({
   canPrint,
   canDelete,
   canRequest,
+  canReady,
   onPublic,
   onEdit,
   onCancel,
   onPrint,
   onDelete,
   onCreateRequest,
+  onReady,
 }) => (
   <div className="order-detail-actions-container">
     {/* Nhóm nút bên trái */}
@@ -76,6 +80,12 @@ const Actions: React.FC<Props> = ({
           onClick={onDelete}
         >
           <CloseCircleOutlined /> Xóa
+        </button>
+      )}
+
+      {canReady && (
+        <button className="order-detail-public-btn" onClick={onReady}>
+          <PlayCircleOutlined /> Sẵn sàng để lấy
         </button>
       )}
 

@@ -24,44 +24,48 @@ public class ShipmentMapper {
                 entity.getStatus() != null ? entity.getStatus().toString() : null,
                 entity.getType() != null ? entity.getType().toString() : null,
                 entity.getStartTime(),
-                entity.getEndTime()
-        );
+                entity.getEndTime(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt());
     }
 
     private static ManagerShipmentListDto.VehicleShipment mapVehicle(Vehicle e) {
-        if (e == null) return null;
+        if (e == null)
+            return null;
 
         return new ManagerShipmentListDto.VehicleShipment(
+                e.getId(),
                 e.getLicensePlate(),
-                e.getCapacity()
-        );
+                e.getCapacity());
     }
 
-
     private static ManagerShipmentListDto.EmployeeShipment mapEmployee(Employee e) {
-        if (e == null) return null;
+        if (e == null)
+            return null;
 
         return new ManagerShipmentListDto.EmployeeShipment(
-                e.getUser() != null ? e.getUser().getFullName() : null,
+                e.getId(),
+                e.getUser() != null ? e.getUser().getLastName() : null,
+                e.getUser() != null ? e.getUser().getFirstName() : null,
                 e.getCode(),
                 e.getUser() != null ? e.getUser().getPhoneNumber() : null,
                 e.getUser() != null && e.getUser().getAccount() != null
                         ? e.getUser().getAccount().getEmail()
-                        : null
-        );
+                        : null);
     }
 
     private static ManagerShipmentListDto.OfficeShipment mapOffice(Office o) {
-        if (o == null) return null;
+        if (o == null)
+            return null;
 
         return new ManagerShipmentListDto.OfficeShipment(
+                o.getId(),
                 o.getName(),
                 o.getPostalCode(),
                 o.getCityCode() != null ? o.getCityCode() : null,
                 o.getWardCode() != null ? o.getWardCode() : null,
                 o.getDetail(),
                 o.getLatitude(),
-                o.getLongitude()
-        );
+                o.getLongitude());
     }
 }

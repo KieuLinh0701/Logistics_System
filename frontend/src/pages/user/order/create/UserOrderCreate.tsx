@@ -290,7 +290,7 @@ const UserOrderCreate: React.FC = () => {
                 if (result.success) {
                     if (result.data === false) {
                         setIsHasOfficeSender(false);
-                        message.error("Rất tiếc, chúng tôi chưa phục vụ khu vực người gửi. Vui lòng chọn một thành phố khác");
+                        message.warning("Rất tiếc, chúng tôi chưa phục vụ khu vực người gửi. Vui lòng chọn một thành phố khác");
                     } else {
                         setIsHasOfficeSender(true);
                     }
@@ -642,7 +642,7 @@ const UserOrderCreate: React.FC = () => {
                 if (result.success) {
                     if (result.data === false) {
                         setIsHasOfficerRecipient(false);
-                        message.error("Rất tiếc, chúng tôi chưa phục vụ khu vực người nhận. Vui lòng chọn một thành phố khác");
+                        message.warning("Rất tiếc, chúng tôi chưa phục vụ khu vực người nhận. Vui lòng chọn một thành phố khác");
                     } else {
                         setIsHasOfficerRecipient(true);
                     }
@@ -681,17 +681,17 @@ const UserOrderCreate: React.FC = () => {
 
             // Kiểm tra khu vực phục vụ
             if (!isHasOfficeSender && !isHasOfficeRecipient) {
-                message.error("Rất tiếc, cả địa chỉ người gửi và người nhận đều nằm ngoài khu vực phục vụ. Vui lòng chọn khu vực khác.");
+                message.warning("Rất tiếc, cả địa chỉ người gửi và người nhận đều nằm ngoài khu vực phục vụ. Vui lòng chọn khu vực khác.");
                 return;
             }
 
             if (!isHasOfficeSender) {
-                message.error("Rất tiếc, địa chỉ người gửi hiện nằm ngoài khu vực phục vụ của chúng tôi. Vui lòng chọn khu vực khác.");
+                message.warning("Rất tiếc, địa chỉ người gửi hiện nằm ngoài khu vực phục vụ của chúng tôi. Vui lòng chọn khu vực khác.");
                 return;
             }
 
             if (!isHasOfficeRecipient) {
-                message.error("Rất tiếc, địa chỉ người nhận hiện nằm ngoài khu vực phục vụ của chúng tôi. Vui lòng chọn khu vực khác.");
+                message.warning("Rất tiếc, địa chỉ người nhận hiện nằm ngoài khu vực phục vụ của chúng tôi. Vui lòng chọn khu vực khác.");
                 return;
             }
 
@@ -845,7 +845,7 @@ const UserOrderCreate: React.FC = () => {
             title: "Mã SP",
             dataIndex: "productCode",
             key: "productCode",
-            align: "left",
+            align: "center",
         },
         {
             title: "Tên SP",
@@ -857,21 +857,23 @@ const UserOrderCreate: React.FC = () => {
             title: "Khối lượng quy đổi (Kg)",
             dataIndex: "productWeight",
             key: "productWeight",
-            align: "left",
-            render: (weight: number) => weight ? `${weight.toLocaleString()}kg` : '0kg',
+            align: "center",
+            render: (weight: number) => weight !== undefined && weight !== null
+                ? Number(weight).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '0.00',
         },
         {
             title: "Giá (VNĐ)",
             dataIndex: "productPrice",
             key: "productPrice",
-            align: "left",
+            align: "center",
             render: (price: number) => `${price?.toLocaleString() || '0'}₫`,
         },
         {
             title: "Số lượng",
             dataIndex: "quantity",
             key: "quantity",
-            align: "left",
+            align: "center",
             render: (value: number, record: OrderProduct, index: number) => {
                 const currentValue = quantityValues[index] || value;
 
@@ -942,11 +944,11 @@ const UserOrderCreate: React.FC = () => {
             title: "Tồn kho",
             dataIndex: "productStock",
             key: "productStock",
-            align: "left",
+            align: "center",
         },
         {
             key: "action",
-            align: "left",
+            align: "center",
             render: (_: any, record: OrderProduct) => (
                 <Tooltip title="Xoá sản phẩm">
                     <Button

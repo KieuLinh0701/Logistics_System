@@ -33,6 +33,15 @@ public class EmployeeSpecification {
         };
     }
 
+    public static Specification<Employee> excludeStatus(String statusToExclude) {
+        return (root, query, cb) -> {
+            if (statusToExclude == null || statusToExclude.isEmpty()) {
+                return null; 
+            }
+            return cb.notEqual(root.get("status"), statusToExclude);
+        };
+    }
+
     public static Specification<Employee> shift(String value) {
         return (root, query, cb) -> {
             if (value == null || value.isEmpty()) {

@@ -12,7 +12,6 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.entity.Account;
 import com.logistics.entity.OTP;
-import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import com.logistics.enums.OTPType;
 import com.logistics.repository.AccountRepository;

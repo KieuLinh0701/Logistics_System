@@ -27,7 +27,7 @@ public class OfficeManagerService {
 
     public ApiResponse<OfficeDto> getMyOffice(int userId) {
         try {
-            Office office = employeeManagerService.getOfficeByUserId(userId);
+            Office office = employeeManagerService.getManagedOfficeByUserId(userId);
             OfficeDto dto = OfficeMapper.toDto(office);
             return new ApiResponse<>(true, "Lấy thông tin bưu cục thành công", dto);
         } catch (Exception e) {
@@ -43,7 +43,7 @@ public class OfficeManagerService {
                 return new ApiResponse<>(false, validationError, false);
             }
 
-            Office office = employeeManagerService.getOfficeByUserId(userId);
+            Office office = employeeManagerService.getManagedOfficeByUserId(userId);
             if (office == null) {
                 return new ApiResponse<>(false, "Không tìm thấy bưu cục của manager", false);
             }
@@ -109,7 +109,7 @@ public class OfficeManagerService {
 
     public ApiResponse<Integer> getMyOfficeCityCode(int userId) {
         try {
-            Office office = employeeManagerService.getOfficeByUserId(userId);
+            Office office = employeeManagerService.getManagedOfficeByUserId(userId);
             return new ApiResponse<>(true, "Lấy thông tin bưu cục thành công", office.getCityCode());
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);

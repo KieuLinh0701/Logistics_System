@@ -13,8 +13,9 @@ import type { Order } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canCancelUserOrder, canEditUserOrder, canPrintUserOrder } from "../../../../utils/orderUtils";
+import { canAtOriginOfficeManagerOrder, canCancelUserOrder, canEditUserOrder, canPrintUserOrder } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
+import ConfirmModal from "../../../common/ConfirmModal";
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber } = useParams();
@@ -25,6 +26,7 @@ const UserOrderDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
     const fetchOrder = async () => {
         setLoading(true);
@@ -59,7 +61,7 @@ const UserOrderDetail: React.FC = () => {
 
         if (order?.trackingNumber) {
             navigate(`/orders/tracking/${order.trackingNumber}/edit`);
-        } 
+        }
     };
 
     const handleCancelOrder = () => {
@@ -91,6 +93,32 @@ const UserOrderDetail: React.FC = () => {
         navigate(`/orders/print?orderIds=${order.id}`);
     };
 
+    const handleAtOriginOfficeOrder = () => {
+        setModalConfirmOpen(true);
+    };
+
+    const confirmAtOriginOfficeOrder = async () => {
+        setModalConfirmOpen(false);
+
+        try {
+            setLoading(true);
+            if (!order) return;
+
+            const result = await orderApi.setManagerOrderAtOriginOffice(order.id);
+
+            if (result.success) {
+                message.success(result.message || "Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
+                fetchOrder();
+            } else {
+                message.error(result.message || "Có lỗi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading || !order) {
         return <div>Đang tải chi tiết đơn hàng...</div>;
     }
@@ -98,6 +126,7 @@ const UserOrderDetail: React.FC = () => {
     const canEdit = canEditUserOrder(order.status);
     const canCancel = canCancelUserOrder(order.status);
     const canPrint = canPrintUserOrder(order.status);
+    const canSetAtOriginOffice = canAtOriginOfficeManagerOrder(order.status);
 
     return (
         <div className="order-detail container">
@@ -121,9 +150,9 @@ const UserOrderDetail: React.FC = () => {
                 }}
             />
             <OrderInfo order={order} />
-            <OfficeInfo 
-            fromOffice={order.fromOffice}
-            toOffice={order.toOffice} />
+            <OfficeInfo
+                fromOffice={order.fromOffice}
+                toOffice={order.toOffice} />
             <OrderProducts products={order.orderProducts || []} />
             <OrderHistoryCard histories={order.orderHistories} />
             {/* <FeedbackCard orderId={order.id} orderStatus={order.status} /> */}
@@ -132,15 +161,26 @@ const UserOrderDetail: React.FC = () => {
                 canEdit={canEdit}
                 canCancel={canCancel}
                 canPrint={canPrint}
+                canSetAtOriginOffice={canSetAtOriginOffice}
                 onEdit={handleEditOrder}
                 onCancel={handleCancelOrder}
                 onPrint={handlePrintOrder}
+                onSetAtOriginOffice={handleAtOriginOfficeOrder}
             />
 
             <ConfirmCancelModal
                 open={cancelModalOpen}
                 onOk={confirmCancelOrder}
                 onCancel={() => setCancelModalOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận nhận hàng'
+                message='Vui lòng xác nhận rằng bạn đã nhận đơn hàng tại bưu cục để chuyển giao cho đơn vị vận chuyển.'
+                open={modalConfirmOpen}
+                onOk={confirmAtOriginOfficeOrder}
+                onCancel={() => setModalConfirmOpen(false)}
                 loading={loading}
             />
 

@@ -42,6 +42,7 @@ public class ManagerShipmentDetailDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Office {
+        private Integer id;
         private String name;
         private String postalCode;
         private Integer cityCode;

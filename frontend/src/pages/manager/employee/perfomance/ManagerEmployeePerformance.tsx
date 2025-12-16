@@ -4,12 +4,10 @@ import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import EmployeeTable from "./components/Table";
 import Actions from "./components/Actions";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
 import type { ManagerEmployeePerformanceData } from "../../../../types/employee";
 import Title from "antd/es/typography/Title";
-import { BarChartOutlined, TeamOutlined } from "@ant-design/icons";
+import { BarChartOutlined } from "@ant-design/icons";
 
 const ManagerEmployeePerformance = () => {
   const navigate = useNavigate();
@@ -61,46 +59,8 @@ const ManagerEmployeePerformance = () => {
         params.endDate = dateRange[1].endOf("day").toISOString();
       }
 
-      // const resultAction = await dispatch(exportEmployeePerformance(params));
-      // const payload = resultAction.payload as any;
-      // const data = Array.isArray(payload) ? payload : payload?.exportData ?? [];
 
-      // if (data.length === 0) {
-      //   return message.info("Không có dữ liệu để xuất Excel");
-      // }
-
-      // const exportData = data.map((t: any) => ({
-      //   "Mã nhân viên": t.employeeId,
-      //   "Tên nhân viên": t.name,
-      //   "Chức vụ": t.role,
-      //   "Tổng số chuyến giao": t.totalShipments,
-      //   "Tổng số đơn giao": t.totalOrders,
-      //   "Số đơn giao thành công": t.completedOrders,
-      //   "Tỉ lệ đơn thành công (%)": t.completionRate?.toFixed(2),
-      //   "Thời gian trung bình/đơn (phút)": t.avgTimePerOrder?.toFixed(2),
-      // }));
-
-      // const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-      // Chỉnh độ rộng cột
-      // worksheet['!cols'] = [
-      //   { wch: 15 }, // "Mã nhân viên"
-      //   { wch: 20 }, // "Tên nhân viên"
-      //   { wch: 15 }, // "Chức vụ"
-      //   { wch: 20 }, // "Tổng số chuyến giao"
-      //   { wch: 20 }, // "Tổng số đơn giao"
-      //   { wch: 25 }, // "Số đơn giao thành công"
-      //   { wch: 25 }, // "Tỉ lệ đơn thành công (%)"
-      //   { wch: 30 }, // "Thời gian trung bình/đơn (phút)"
-      // ];
-
-      // const workbook = XLSX.utils.book_new();
-      // XLSX.utils.book_append_sheet(workbook, worksheet, "Hiệu suất nhân viên");
-
-      // const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-      // const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-      // saveAs(blob, `HieuSuatNhanVien${dayjs().format("YYYYMMDD_HHmm")}.xlsx`);
+      // Api suất nhân viên
     } catch (error) {
       console.error(error);
       message.error("Xuất Excel thất bại!");

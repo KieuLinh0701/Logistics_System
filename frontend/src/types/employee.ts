@@ -1,11 +1,13 @@
+import type { ManagerShipperAssignment } from "./shipperAssignment";
+
 export interface ManagerEmployee {
   id: number;
   code: string;
-  userFirstName: string;
-  userLastName: string;
-  userPhoneNumber: string;
-  userRole: string;
-  userEmail: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  role: string;
+  email: string;
   hireDate: Date;
   shift: string;
   status: string;
@@ -21,6 +23,11 @@ export interface ManagerEmployeeSearchRequest {
   shift?: string;
   startDate?: string;
   endDate?: string;
+}
+
+export interface ManagerEmployeeWithShipperAssignments {
+  employee: ManagerEmployee;
+  assignments: ManagerShipperAssignment[];
 }
 
 export interface ManagerEmployeePerformanceData {

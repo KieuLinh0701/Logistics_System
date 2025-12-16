@@ -1,6 +1,7 @@
 package com.logistics.dto.manager.order;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import com.logistics.dto.AddressDto;
 
@@ -34,4 +35,7 @@ public class ManagerOrderListDto {
     private String createdByType;
     private String employeeCode;
     private String userCode;
+    private LocalDateTime createdAt;
+    private LocalDateTime deliveriedAt;
+    private LocalDateTime paidAt;
 }

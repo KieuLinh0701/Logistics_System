@@ -39,16 +39,17 @@ export interface Order {
   notes: string;
   promotionId: number | undefined;
   shippingFee: number;
-  paidAt: Date;
-  deliveredAt: Date;
-  refundedAt: Date;
-  createdAt: Date;
+  paidAt: string;
+  deliveredAt: string;
+  refundedAt: string;
+  createdAt: string;
   fromOffice: Office;
   toOffice: Office;
   orderProducts: OrderProduct[];
   orderHistories: OrderHistory[];
   employeeCode: string;
   userCode: string;
+  codStatus: string;
 }
 
 export interface UserOrderSearchRequest {

@@ -1,0 +1,9 @@
+.manager-shipper-assigns-divide {
+    height: 16px !important;
+}
+
+.manager-shipper-assigns-contain-select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Table,
-  Button,
-  Modal,
   message,
   Row,
   Col,
@@ -12,19 +9,19 @@ import {
 import {
   TeamOutlined,
 } from "@ant-design/icons";
-import * as XLSX from "xlsx";
 import dayjs from "dayjs";
 import Title from "antd/es/typography/Title";
-import SearchFilters from "./components/SearchFilters";
-import Actions from "./components/Actions";
-import EmployeeTable from "./components/Table";
 import type { ManagerEmployee, ManagerEmployeeSearchRequest } from "../../../../types/employee";
-import AddEditModal from "./components/AddEditModal";
 import type { BulkResponse } from "../../../../types/response";
-import BulkResult from "./components/BulkResult";
 import employeeApi from "../../../../api/employeeApi";
+import { useSearchParams } from "react-router-dom";
+import EmployeeTable from "./components/Table";
+import Actions from "./components/Actions";
+import SearchFilters from "./components/SearchFilters";
+import AddEditModal from "./components/AddEditModal";
 
 const ManagerEmployeeList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<ManagerEmployee[] | []>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,6 +45,47 @@ const ManagerEmployeeList = () => {
 
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerEmployee>>();
+
+  const updateURL = () => {
+    const params: any = {};
+
+    if (searchText) params.search = searchText;
+    if (filterShift !== "ALL") params.shift = filterShift.toLowerCase();
+    if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
+    if (filterRole !== "ALL") params.role = filterRole;
+    params.sort = filterSort.toLowerCase();
+    if (currentPage) params.page = currentPage;
+
+    if (dateRange) {
+      params.start = dateRange[0].format("YYYY-MM-DD");
+      params.end = dateRange[1].format("YYYY-MM-DD");
+    }
+
+    setSearchParams(params, { replace: true });
+  };
+
+  useEffect(() => {
+    const s = searchParams.get("search");
+    const shift = searchParams.get("shift")?.toLocaleUpperCase();
+    const status = searchParams.get("status")?.toLocaleUpperCase();
+    const r = searchParams.get("role");
+    const sort = searchParams.get("sort")?.toLocaleUpperCase();
+    const startDate = searchParams.get("start");
+    const endDate = searchParams.get("end");
+
+    if (s) setSearchText(s);
+    if (shift) setFilterShift(shift);
+    if (status) setFilterStatus(status);
+    if (r) setFilterRole(r);
+    if (sort) setFilterSort(sort);
+
+    if (startDate && endDate) {
+      setDateRange([
+        dayjs(startDate, "YYYY-MM-DD"),
+        dayjs(endDate, "YYYY-MM-DD")
+      ]);
+    }
+  }, [searchParams]);
 
   const fetchEmployees = async (page = currentPage) => {
     try {
@@ -87,7 +125,6 @@ const ManagerEmployeeList = () => {
   const handleEditEmployee = async () => {
     const values = form.getFieldsValue();
 
-    // Chuẩn bị payload gửi API
     const payload = {
       userRole: values.role,
       shift: values.shift,
@@ -151,106 +188,6 @@ const ManagerEmployeeList = () => {
     }
   };
 
-  // Nhập Excel
-  const handleExcelUpload = async (file: File) => {
-    const reader = new FileReader();
-    // reader.onload = async (e) => {
-    //   const data = new Uint8Array(e.target?.result as ArrayBuffer);
-    //   const workbook = XLSX.read(data, { type: "array" });
-    //   const sheetName = workbook.SheetNames[0];
-    //   const worksheet = workbook.Sheets[sheetName];
-    //   const rows: any[] = XLSX.utils.sheet_to_json(worksheet);
-
-    //   // const newEmployees: Partial<Employee>[] = rows.map((row) => ({
-    //   const newEmployees: Partial<any>[] = rows.map((row) => ({
-    //     shift: row["Ca làm"] || "Full Day",
-    //     status: row["Trạng thái"] || "Active",
-    //     hireDate: row["Ngày tuyển dụng"]
-    //       ? dayjs(row["Ngày tuyển dụng"]).toDate()
-    //       : new Date(),
-    //     user: {
-    //       id: 0,
-    //       firstName: row["Tên"] || "",
-    //       lastName: row["Họ"] || "",
-    //       email: row["Email"] || "",
-    //       phoneNumber: row["Số điện thoại"] || "",
-    //       role: row["Chức vụ"] || "Shipper",
-    //     },
-    //   }));
-
-    //   if (newEmployees.length === 0) {
-    //     message.error("Không tìm thấy dữ liệu nhân viên trong file Excel!");
-    //     return;
-    //   }
-
-    //   try {
-        // const resultAction = await dispatch(importEmployees({ employees: newEmployees })).unwrap();
-
-        // // Lấy object result nested từ backend
-        // const importResultData = resultAction.result;
-
-        // if (importResultData?.success) {
-        //   message.success(
-        //     importResultData.message ||
-        //     `Import hoàn tất: ${importResultData.totalImported} thành công, ${importResultData.totalFailed} thất bại`
-        //   );
-
-        //   setImportResults(importResultData.results ?? []);
-        //   setImportModalOpen(true);
-        // } else {
-        //   message.error(importResultData?.message || "Import thất bại");
-        // }
-    //   } catch (err: any) {
-    //     message.error(err.message || "Có lỗi xảy ra khi import nhân viên");
-    //   }
-    // };
-    reader.readAsArrayBuffer(file);
-    return false;
-  };
-
-  const handleDownloadTemplate = () => {
-    message.warning("Tính năng này đang được phát triển")
-    // const wb = XLSX.utils.book_new();
-
-    // const data = [
-    //   {
-    //     "Họ": "Nguyễn",
-    //     "Tên": "Văn A",
-    //     "Email": "example@gmail.com",
-    //     "Số điện thoại": "0123456789",
-    //     "Chức vụ": OFFICE_MANAGER_ADDABLE_ROLES!.join("/"),
-    //     "Ca làm": EMPLOYEE_SHIFTS!.join("/"),
-    //     "Trạng thái": EMPLOYEE_STATUSES!.join("/"),
-    //     "Ngày tuyển dụng": "YYYY-MM-DD",
-    //   },
-    // ];
-
-    // const ws = XLSX.utils.json_to_sheet(data);
-    // const header = [
-    //   "Họ",
-    //   "Tên",
-    //   "Email",
-    //   "Số điện thoại",
-    //   "Chức vụ",
-    //   "Ca làm",
-    //   "Trạng thái",
-    //   "Ngày tuyển dụng",
-    // ];
-    // XLSX.utils.sheet_add_aoa(ws, [header], { origin: 0 });
-    // ws["!cols"] = [
-    //   { wch: 10 },
-    //   { wch: 15 },
-    //   { wch: 25 },
-    //   { wch: 15 },
-    //   { wch: 15 },
-    //   { wch: 35 },
-    //   { wch: 20 },
-    //   { wch: 15 },
-    // ];
-    // XLSX.utils.book_append_sheet(wb, ws, "Template");
-    // XLSX.writeFile(wb, "employee_template.xlsx");
-  };
-
   useEffect(() => {
     setCurrentPage(1);
     fetchEmployees(currentPage);
@@ -259,6 +196,7 @@ const ManagerEmployeeList = () => {
   useEffect(() => {
     setCurrentPage(1);
     fetchEmployees(1);
+    updateURL();
   }, [searchText, filterShift, filterStatus, filterRole, filterSort, dateRange]);
 
   const handleSubmit = () => {
@@ -332,8 +270,6 @@ const ManagerEmployeeList = () => {
                   setNewEmployee({});
                   form.resetFields();
                 }}
-                onImportExcel={handleExcelUpload}
-                onDownloadTemplate={handleDownloadTemplate}
               />
             </div>
           </Col>
@@ -352,11 +288,11 @@ const ManagerEmployeeList = () => {
             setNewEmployee(employee);
             setIsModalOpen(true);
             form.setFieldsValue({
-              lastName: employee.userLastName,
-              firstName: employee.userFirstName,
-              email: employee.userEmail,
-              phoneNumber: employee.userPhoneNumber,
-              role: employee.userRole,
+              lastName: employee.lastName,
+              firstName: employee.firstName,
+              email: employee.email,
+              phoneNumber: employee.phoneNumber,
+              role: employee.role,
               shift: employee.shift,
               status: employee.status,
               hireDate: dayjs(employee.hireDate)
@@ -378,14 +314,6 @@ const ManagerEmployeeList = () => {
           loading={loading}
           form={form}
         />
-
-        {bulkResult &&
-          <BulkResult
-            open={bulkModalOpen}
-            results={bulkResult}
-            onClose={() => setBulkModalOpen(false)}
-          />
-        }
       </div>
     </div>
   );

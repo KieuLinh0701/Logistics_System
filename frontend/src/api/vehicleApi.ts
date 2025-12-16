@@ -46,6 +46,11 @@ const vehicleApi = {
     const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/vehicles/${id}`, data);
     return res;
   },
+
+  async getAvailableVehicles() {
+    const res = await axiosClient.get<ApiResponse<Vehicle[]>>("/manager/vehicles/available");
+    return res;
+  },
 };
 
 export default vehicleApi;

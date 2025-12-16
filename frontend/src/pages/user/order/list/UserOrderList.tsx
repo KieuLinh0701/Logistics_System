@@ -16,6 +16,7 @@ import { ShoppingOutlined } from "@ant-design/icons";
 import ConfirmPublicModal from "../detail/components/ConfirmPublicModal";
 import ConfirmCancelModal from "../detail/components/ConfirmCancelModal";
 import ConfirmDeleteModal from "../detail/components/ConfirmDeleteModal";
+import ConfirmModal from "../../../common/ConfirmModal";
 
 const UserOrderList = () => {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const UserOrderList = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [publicModalOpen, setPublicModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
 
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -239,6 +241,35 @@ const UserOrderList = () => {
     navigate(`/orders/create`);
   };
 
+  const handleReadyOrder = (id: number) => {
+    setOrderId(id);
+    setModalConfirmOpen(true);
+  };
+
+  const confirmReadyOrder = async () => {
+    if (!orderId) return;
+
+    setModalConfirmOpen(false);
+
+    try {
+      setLoading(true);
+
+      const result = await orderApi.setUserOrderReadyForPickup(orderId);
+
+      if (result.success) {
+        message.success(result.message || "Chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy' thành công.");
+        fetchOrders(page);
+      } else {
+        message.error(result.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy'!");
+      }
+    } catch (err: any) {
+      message.error(err.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy'!");
+    } finally {
+      setLoading(false);
+      setOrderId(null);
+    }
+  };
+
   const handleClearFilters = () => {
     setSearch("");
     setFilterStatus("ALL");
@@ -345,6 +376,7 @@ const UserOrderList = () => {
           onDelete={handleDeleteOrder}
           onPrint={handlePrintOrder}
           onEdit={handleEditOrder}
+          onReady={handleReadyOrder}
           page={page}
           total={total}
           loading={loading}
@@ -378,6 +410,15 @@ const UserOrderList = () => {
         open={deleteModalOpen}
         onOk={confirmDeleteOrder}
         onCancel={() => setDeleteModalOpen(false)}
+        loading={loading}
+      />
+
+      <ConfirmModal
+        title='Xác nhận đơn hàng đã sẵn sàng'
+        message='Bạn có chắc chắn đơn hàng này đã sẵn sàng để bàn giao cho đơn vị vận chuyển không?'
+        open={modalConfirmOpen}
+        onOk={confirmReadyOrder}
+        onCancel={() => setModalConfirmOpen(false)}
         loading={loading}
       />
     </div>

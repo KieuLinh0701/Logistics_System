@@ -28,7 +28,7 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({
       title: 'Mặc định',
       dataIndex: 'isDefault',
       key: 'isDefault',
-      align: 'left',
+      align: 'center',
       render: (val: boolean, record: BankAccount) => (
         <Switch
           className={"custom-switch"}
@@ -41,11 +41,17 @@ const BankAccountTable: React.FC<BankAccountTableProps> = ({
       ),
     },
     {
-      title: 'Ghi chú',
-      dataIndex: 'notes',
-      key: 'notes',
-      align: 'left',
-      render: (text: string | null) => text || <Tag color='default'>N/A</Tag>,
+      title: "Ghi chú",
+      dataIndex: "notes",
+      key: "notes",
+      align: "left",
+      render: (value) => {
+        if (value) {
+          return <span className="custom-table-content-limit">{value}</span>;
+        } else {
+          return <span className="text-muted">N/A</span>;
+        }
+      },
     },
     {
       key: 'action',

@@ -26,6 +26,7 @@ import com.logistics.entity.Product;
 import com.logistics.entity.Promotion;
 import com.logistics.entity.ServiceType;
 import com.logistics.entity.User;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.OrderPayerType;
@@ -266,6 +267,10 @@ public class OrderUserService {
             order.setPaymentStatus(OrderPaymentStatus.UNPAID);
             order.setNotes(request.getNotes());
             order.setFromOffice(fromOffice);
+            order.setCodStatus(
+                    (request.getCod() != null && request.getCod() > 0)
+                            ? OrderCodStatus.EXPECTED
+                            : OrderCodStatus.NONE);
 
             Order newOrder = repository.save(order);
 
@@ -374,6 +379,33 @@ public class OrderUserService {
                 null);
 
         return new ApiResponse<>(true, "Hủy đơn hàng thành công", true);
+    }
+
+    public ApiResponse<Boolean> setOrderReadyForPickup(Integer userId, Integer orderId) {
+
+        Order order = repository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (!OrderUtils.canUserSetReady(order.getStatus())) {
+            throw new RuntimeException("Trạng thái đơn hàng hiện tại không hợp lệ để chuyển");
+        }
+
+        if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
+            throw new RuntimeException("Hình thức lấy hàng của bạn không hợp lệ để chuyển");
+        }
+
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        repository.save(order);
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                null,
+                null,
+                OrderHistoryActionType.READY_FOR_PICKUP,
+                null);
+
+        return new ApiResponse<>(true, "Đơn hàng đã được chuyển sang trạng thái Sẵn sàng lấy", true);
     }
 
     @Transactional

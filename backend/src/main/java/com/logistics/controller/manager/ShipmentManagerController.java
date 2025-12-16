@@ -1,25 +1,15 @@
 package com.logistics.controller.manager;
 
-import com.logistics.dto.OrderPrintDto;
-import com.logistics.dto.manager.order.ManagerOrderDetailDto;
-import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
-import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.manager.shipment.ManagerOrdersShipmentSearchRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentSearchRequest;
-import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
-import com.logistics.service.manager.OrderManagerService;
 import com.logistics.service.manager.ShipmentManagerService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import java.util.Arrays;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -50,5 +40,13 @@ public class ShipmentManagerController {
 
         ApiResponse<ListResponse<ManagerShipmentDetailDto>> result = service.getOrdersByShipmentId(userId, id, searchRequest);
         return ResponseEntity.ok(result);
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<Boolean>> cancelShipment(@PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.cancelShipment(userId, id));
     }
 }

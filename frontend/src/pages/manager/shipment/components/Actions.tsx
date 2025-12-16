@@ -16,7 +16,7 @@ const Actions: React.FC<ActionsProps> = ({
         icon={<PlusOutlined />}
         onClick={onAddRequest}
       >
-        Tạo yêu cầu
+        Tạo chuyến hàng
       </Button>
     </Space>
   );

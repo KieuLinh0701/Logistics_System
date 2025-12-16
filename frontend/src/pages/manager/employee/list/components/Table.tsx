@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Button, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
-import locationApi from '../../../../../api/locationApi';
 import { translateRoleName } from '../../../../../utils/roleUtils';
 import { EditOutlined } from '@ant-design/icons';
 import type { ManagerEmployee } from '../../../../../types/employee';
@@ -34,31 +33,49 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
       dataIndex: "code",
       key: "code",
       align: "center",
-      render: (code,_) => <span className="custom-table-content-strong">{code}</span>,
+      render: (code, _) => <span className="custom-table-content-strong">{code}</span>,
     },
     {
-      title: "Thông tin cá nhân",
+      title: "Họ tên",
+      key: "name",
+      align: "left",
+      render: (_, record) => (
+        <>
+          <span>{record.lastName} {record.firstName}</span><br />
+        </>
+      ),
+    },
+    {
+      title: "Thông tin liên hệ",
       key: "personalInfo",
       align: "left",
       render: (_, record) => (
         <>
-          <span className="custom-table-content-strong">Họ tên: </span>{record.userLastName} {record.userFirstName}<br />
-          <span className="custom-table-content-strong">Email: </span>{record.userEmail}<br />
-          <span className="custom-table-content-strong">SĐT: </span>{record.userPhoneNumber}
+          <span>{record.phoneNumber}</span><br />
+          <span>{record.email}</span>
         </>
       ),
     },
     {
-      title: "Thông tin công việc",
-      key: "jobInfo",
-      align: "left",
-      render: (_, record) => (
-        <>
-          <span className="custom-table-content-strong">Chức vụ: </span>{translateRoleName(record.userRole) || "-"}<br />
-          <span className="custom-table-content-strong">Ca làm: </span>{translateEmployeeShift(record.shift)}<br />
-          <span className="custom-table-content-strong">Trạng thái: </span>{translateEmployeeStatus(record.status)}
-        </>
-      ),
+      title: "Chức vụ",
+      key: "role",
+      dataIndex: "role",
+      align: "center",
+      render: (role) => translateRoleName(role),
+    },
+    {
+      title: "Ca làm việc",
+      key: "shift",
+      dataIndex: "shift",
+      align: "center",
+      render: (shift) => translateEmployeeShift(shift),
+    },
+    {
+      title: "Trạng thái",
+      key: "status",
+      dataIndex: "status",
+      align: "center",
+      render: (status) => translateEmployeeStatus(status),
     },
     {
       title: "Ngày vào làm",

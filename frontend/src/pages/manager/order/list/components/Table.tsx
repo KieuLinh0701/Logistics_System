@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Space, Tooltip, Dropdown } from "antd";
-import { EditOutlined, CloseCircleOutlined, DownOutlined, PrinterOutlined } from "@ant-design/icons";
+import { EditOutlined, CloseCircleOutlined, DownOutlined, PrinterOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 import type { Order } from "../../../../../types/order";
 import locationApi from "../../../../../api/locationApi";
-import { canCancelManagerOrder, canEditManagerOrder, canPrintManagerOrder, translateOrderCreatorType, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
+import dayjs from 'dayjs';
+import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canEditManagerOrder, canPrintManagerOrder, translateOrderCreatorType, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
 
 interface Props {
   orders: Order[];
   onCancel: (id: number) => void;
   onPrint: (id: number) => void;
+  onAtOriginOffice: (id: number) => void;
   onEdit: (id: number, trackingNumber: string) => void;
   page: number;
   limit: number;
@@ -26,6 +28,7 @@ const OrderTable: React.FC<Props> = ({
   onCancel,
   onPrint,
   onEdit,
+  onAtOriginOffice,
   page,
   limit,
   total,
@@ -113,7 +116,7 @@ const OrderTable: React.FC<Props> = ({
           <span className="long-column">
             <span className="custom-table-content-strong">{record.senderName}</span><br />
             {record.senderPhone}<br />
-            {senderAddress}
+            <span className="custom-table-content-limit">{senderAddress}</span>
           </span>
         );
       }
@@ -130,26 +133,28 @@ const OrderTable: React.FC<Props> = ({
           <span className="long-column">
             <span className="custom-table-content-strong">{record.recipientAddress.name}</span><br />
             {record.recipientAddress.phoneNumber}<br />
-            {recipientAddress}
+            <span className="custom-table-content-limit">{recipientAddress}</span>
           </span>
         );
       }
     },
     {
-      title: "Tổng tiền (VNĐ)",
+      title: "Tổng quan tiền",
       key: "totalMoney",
+      align: "left",
       render: (_, record) => (
-        <><span className="custom-table-content-strong">Đơn:</span> {record.orderValue.toLocaleString('vi-VN')}<br />
-          <span className="custom-table-content-strong">COD:</span> {record.cod.toLocaleString('vi-VN')}<br />
-          <span className="custom-table-content-strong">Phí DV:</span> {record.totalFee.toLocaleString('vi-VN')}</>
+        <>
+          <span className="custom-table-content-strong">Giá trị đơn:</span> {record.orderValue.toLocaleString('vi-VN')}<br />
+          <span className="custom-table-content-strong">COD (chưa phí):</span> {record.cod.toLocaleString('vi-VN')}<br />
+          <span className="custom-table-content-strong">Phí dịch vụ:</span> {record.totalFee.toLocaleString('vi-VN')}
+        </>
       )
     },
     {
-      title: "Trạng thái", key: "status", render: (_, record) =>
-        <><span className="custom-table-content-strong">Đơn:</span><br />
-          {translateOrderStatus(record.status)}<br />
-          <span className="custom-table-content-strong">Thanh toán:</span><br />
-          {translateOrderPaymentStatus(record.paymentStatus)}</>
+      title: "Trạng thái",
+      key: "status",
+      align: "center",
+      render: (_, record) => translateOrderStatus(record.status)
     },
     {
       title: "Thông tin giao hàng",
@@ -162,19 +167,25 @@ const OrderTable: React.FC<Props> = ({
           {record.serviceTypeName}</>
       )
     },
-    { title: "Khối lượng (Kg)", dataIndex: "weight", key: "weight", align: "left" },
     {
-      title: "Người thanh toán",
-      dataIndex: "payer",
-      key: "payer",
-      align: "left",
-      render: (payer) => (translateOrderPayerType(payer))
+      title: "Thanh toán", key: "status", render: (_, record) =>
+        <><span className="custom-table-content-strong">Người thanh toán:</span><br />
+          {translateOrderPayerType(record.payer)}<br />
+          <span className="custom-table-content-strong">Trạng thái:</span><br />
+          {translateOrderPaymentStatus(record.paymentStatus)}</>
+    },
+    {
+      title: "Khối lượng (Kg)",
+      dataIndex: "weight",
+      key: "weight",
+      align: "center",
+      render: (weight: number) => (weight || 0).toFixed(2)
     },
     {
       title: "Người tạo đơn hàng",
       dataIndex: "createdByType",
       key: "createdByType",
-      align: "left",
+      align: "center",
       render: (_, record) => (
         <div className="order-creator-cell">
           <div>{translateOrderCreatorType(record.createdByType)}</div>
@@ -187,12 +198,39 @@ const OrderTable: React.FC<Props> = ({
       ),
     },
     {
+      title: "Thời gian",
+      key: "shippingInfo",
+      align: "left",
+      render: (_, record) => {
+        const times = [
+          { label: "Tạo đơn", value: record.createdAt },
+          { label: record.status === "RETURNED" ? "Hoàn hàng" : "Giao hàng", value: record.deliveriedAt },
+          { label: "Thanh toán", value: record.paidAt }
+        ];
+
+        return (
+          <>
+            {times.map((t, idx) => {
+              const formatted = t.value ? dayjs(t.value).format('HH:mm:ss DD/MM/YYYY') : null;
+              return (
+                <div key={idx}>
+                  <span className="custom-table-content-strong">{t.label}:{" "}</span>
+                  {formatted || <span className="text-muted">N/A</span>}
+                </div>
+              );
+            })}
+          </>
+        );
+      }
+    },
+    {
       key: "action",
       align: "center",
       render: (_, record) => {
         const canCancel = canCancelManagerOrder(record.status);
         const canEdit = canEditManagerOrder(record.status); // này chưa sửa bên utils
         const canPrint = canPrintManagerOrder(record.status);
+        const canAtOriginOffice = canAtOriginOfficeManagerOrder(record.status) && record.pickupType === 'AT_OFFICE';
 
         const items = [
           ...(canPrint ? [{
@@ -200,6 +238,13 @@ const OrderTable: React.FC<Props> = ({
             icon: <PrinterOutlined />,
             label: "In phiếu",
             onClick: () => onPrint(record.id),
+          }] : []),
+
+          ...(canAtOriginOffice ? [{
+            key: "atOrginOffice",
+            icon: <CheckCircleOutlined />,
+            label: "Đã đến bưu cục",
+            onClick: () => onAtOriginOffice(record.id),
           }] : []),
 
           ...(canEdit ? [{

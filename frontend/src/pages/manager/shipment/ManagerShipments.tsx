@@ -7,13 +7,14 @@ import RequestTable from './components/Table';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Title from 'antd/es/typography/Title';
 import { TruckOutlined } from '@ant-design/icons';
-import "./ManagerShipment.css"
+import "./ManagerShipments.css"
 import ConfirmModal from '../../common/ConfirmModal';
 import type { ManagerOrderShipment, ManagerOrderShipmentSearchRequest, ManagerShipment, ManagerShipmentSearchRequest } from '../../../types/shipment';
 import shipmentApi from '../../../api/shipmentApi';
 import OrdersModal from './components/OrdersModal';
+import AddEditShipmentModal from './components/AddEditShipmentModal';
 
-const ManagerShipment: React.FC = () => {
+const ManagerShipments: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -129,30 +130,30 @@ const ManagerShipment: React.FC = () => {
     handleCancelShipment(selectedShipment.id);
   }
 
-  const handleCancelShipment = async (requestId: number) => {
-    // setLoading(true);
-    // try {
-    //   const result = await shippingRequestApi.cancelUserShipment(requestId);
+  const handleCancelShipment = async (id: number) => {
+    setLoading(true);
+    try {
+      const result = await shipmentApi.cancelManagerShipment(id);
 
-    //   if (result.success && result.data) {
-    //     message.success(result.message || "Hủy yêu cầu thành công");
-    //     fetchShipments(page);
-    //     if (detailModalVisible && selectedShipment) {
-    //       setSelectedShipment({
-    //         ...selectedShipment,
-    //         status: 'CANCELLED'
-    //       });
-    //     }
-    //   } else {
-    //     message.error(result.message || "Hủy yêu cầu thất bại");
-    //   }
-    // } catch (error: any) {
-    //   console.error("Lỗi khi hủy yêu cầu:", error);
-    //   message.error("Lỗi khi hủy yêu cầu:");
-    // } finally {
-    //   setModalConfirmOpen(false);
-    //   setLoading(false);
-    // }
+      if (result.success && result.data) {
+        message.success(result.message || "Hủy chuyến hàng thành công");
+        fetchShipments(page);
+        if (detailModalVisible && selectedShipment) {
+          setSelectedShipment({
+            ...selectedShipment,
+            status: 'CANCELLED'
+          });
+        }
+      } else {
+        message.error(result.message || "Hủy chuyến hàng thất bại");
+      }
+    } catch (error: any) {
+      console.error("Lỗi khi hủy chuyến hàng:", error);
+      message.error("Lỗi khi hủy chuyến hàng:");
+    } finally {
+      setModalConfirmOpen(false);
+      setLoading(false);
+    }
   };
 
   // Handler mở edit từ detail modal
@@ -218,9 +219,6 @@ const ManagerShipment: React.FC = () => {
     //   setLoading(false);
     // }
   };
-
-  const handleDeleteShipment = async (requestId: number) => {
-  }
 
   const fetchOrdersShipment = async (currentPage = pageOrder) => {
     if (selectedShipmentId === null) return;
@@ -361,7 +359,6 @@ const ManagerShipment: React.FC = () => {
           pageSize={limit}
           total={total}
           onEdit={handleEditShipment}
-          onDelete={handleDeleteShipment}
           onCancel={showConfirmCancel}
           onDetail={handleViewDetailShipment}
           onPageChange={(page, size) => {
@@ -372,13 +369,13 @@ const ManagerShipment: React.FC = () => {
         />
       </div>
 
-      {/* <AddEditModal
+      <AddEditShipmentModal
         open={isModalOpen}
         mode={modalMode}
         shipment={shipment}
         onSuccess={handleEditSuccessShipment}
         onCancel={() => setIsModalOpen(false)}
-      /> */}
+      />
 
 
       <OrdersModal
@@ -386,7 +383,7 @@ const ManagerShipment: React.FC = () => {
         orders={orders}
         page={pageOrder}
         limit={limit}
-        searchText={searchTextOrder} 
+        searchText={searchTextOrder}
         total={totalOrder}
         loading={loading}
         onClose={() => {
@@ -399,8 +396,8 @@ const ManagerShipment: React.FC = () => {
       />
 
       <ConfirmModal
-        title='Xác nhận hủy yêu cầu'
-        message='Bạn có chắc chắn muốn hủy yêu cầu này không?'
+        title='Xác nhận hủy chuyến hàng'
+        message='Bạn có chắc chắn muốn hủy chuyến hàng này không?'
         open={modalConfirmOpen}
         onOk={confirmCancelShipment}
         onCancel={() => setModalConfirmOpen(false)}
@@ -410,4 +407,4 @@ const ManagerShipment: React.FC = () => {
   );
 };
 
-export default ManagerShipment;
+export default ManagerShipments;

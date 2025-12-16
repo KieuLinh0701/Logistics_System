@@ -14,30 +14,10 @@ const shipmentApi = {
     return res;
   },
 
-  // async createManagerShipment(data: Partial<ManagerEmployee>) {
-  //   const res = await axiosClient.post<ApiResponse<Boolean>>("/manager/shipments", data);
-  //   return res;
-  // },
-
-  // async updateManagerEmployee(id: number, data: Partial<ManagerEmployee>) {
-  //   const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/employees/${id}`, data);
-  //   return res;
-  // },
-
-  // async deleteUserProduct(productId: number) {
-  //   const res = await axiosClient.delete<ApiResponse<string>>(`/user/products/${productId}`);
-  //   return res;
-  // },
-
-  // async createBulkUserProduct(data: FormData) {
-  //   const res = await axiosClient.post<BulkResponse<Product>>("/user/products/bulk", data);
-  //   return res;
-  // },
-
-  // async getActiveAndInstockUserProducts(params: UserProductActiveAndInstockRequest) {
-  //   const res = await axiosClient.get<ApiResponse<ListResponse<Product>>>("/user/products/active", { params });
-  //   return res;
-  // },
+  async cancelManagerShipment(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/shipments/${id}/cancel`);
+    return res;
+  },
 };
 
 export default shipmentApi;

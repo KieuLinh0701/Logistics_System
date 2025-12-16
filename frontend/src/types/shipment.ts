@@ -1,3 +1,7 @@
+import type { ManagerEmployee } from "./employee";
+import type { Office } from "./office";
+import type { Vehicle } from "./vehicle";
+
 export interface ManagerEmployeePerformanceShipment {
   id: number;
   code: string;
@@ -16,50 +20,25 @@ export interface ManagerShipment {
   id: number;
   code: string;
 
-  vehicle: {
-    licensePlate: string;
-    capacity: number; 
-  };
+  vehicle: Vehicle;
 
-  employee: {
-    name: string;
-    code: string;
-    phoneNumber: string;
-    email: string;
-  };
+  employee: ManagerEmployee;
 
-  createdBy: {
-    name: string;
-    code: string;
-    phoneNumber: string;
-    email: string;
-  };
+  createdBy: ManagerEmployee;
 
-  fromOffice: {
-    name: string;
-    postalCode: string;
-    cityCode: number;
-    wardCode: number;
-    detail: string;
-    latitude: number;
-    longitude: number;
-  };
+  fromOffice: Office;
 
-  toOffice: {
-    name: string;
-    postalCode: string;
-    cityCode: number;
-    wardCode: number;
-    detail: string;
-    latitude: number;
-    longitude: number;
-  };
+  toOffice: Office;
 
   status: string;
   type: string;
 
   startTime: string; 
   endTime: string; 
+  createdAt: string;
+  updatedAt: string;
+
+  orders: ManagerOrderShipment[];
 }
 
 export interface ManagerShipmentSearchRequest {
@@ -83,6 +62,7 @@ export interface ManagerOrderShipment {
   paymentStatus: string;
   payer: string;
   recipient: {
+    id: number;
     name: string;
     phone: string;
     cityCode: number;
@@ -90,6 +70,7 @@ export interface ManagerOrderShipment {
     detail: string;
   }
   toOffice: {
+    id: number;
     name: string;
     postalCode: string;
     cityCode: number;

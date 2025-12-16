@@ -8,8 +8,10 @@ import type { ManagerVehicleEditRequest, ManagerVehicleSearchRequest, Vehicle } 
 import Title from 'antd/es/typography/Title';
 import { CarOutlined } from '@ant-design/icons';
 import vehicleApi from '../../../api/vehicleApi';
+import { useSearchParams } from 'react-router-dom';
 
 const ManagerVehicles: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[] | []>([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,11 +25,48 @@ const ManagerVehicles: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
-  const [filterOffice, setFilterOffice] = useState<string>('ALL');
   const [filterSort, setFilterSort] = useState('NEWEST');
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [hover, setHover] = useState(false);
   const [form] = Form.useForm();
+
+  const updateURL = () => {
+    const params: any = {};
+
+    if (searchText) params.search = searchText;
+    if (filterType !== "ALL") params.type = filterType.toLowerCase();
+    if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
+    params.sort = filterSort.toLowerCase();
+    if (page) params.page = page;
+
+    if (dateRange) {
+      params.start = dateRange[0].format("YYYY-MM-DD");
+      params.end = dateRange[1].format("YYYY-MM-DD");
+    }
+
+    setSearchParams(params, { replace: true });
+  };
+
+  useEffect(() => {
+    const s = searchParams.get("search");
+    const t = searchParams.get("type")?.toLocaleUpperCase();
+    const status = searchParams.get("status")?.toLocaleUpperCase();
+    const sort = searchParams.get("sort")?.toLocaleUpperCase();
+    const startDate = searchParams.get("start");
+    const endDate = searchParams.get("end");
+
+    if (s) setSearchText(s);
+    if (t) setFilterType(t);
+    if (status) setFilterStatus(status);
+    if (sort) setFilterSort(sort);
+
+    if (startDate && endDate) {
+      setDateRange([
+        dayjs(startDate, "YYYY-MM-DD"),
+        dayjs(endDate, "YYYY-MM-DD")
+      ]);
+    }
+  }, [searchParams]);
 
   const handleEditVehicle = async () => {
     try {
@@ -68,8 +107,8 @@ const ManagerVehicles: React.FC = () => {
         sort: filterSort,
       };
       if (dateRange) {
-        param.startDate = dateRange[0].startOf("day").toISOString();
-        param.endDate = dateRange[1].endOf("day").toISOString();
+        param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+        param.endDate = dateRange[0].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
       }
 
       const result = await vehicleApi.listManagerVehicles(param);
@@ -108,7 +147,6 @@ const ManagerVehicles: React.FC = () => {
     setSearchText('');
     setFilterType('ALL');
     setFilterStatus('ALL');
-    setFilterOffice('ALL');
     setFilterSort('NEWEST');
     setDateRange(null);
     setPage(1);
@@ -121,8 +159,9 @@ const ManagerVehicles: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
+    updateURL();
     fetchVehicles(1);
-  }, [searchText, filterType, filterStatus, filterOffice, filterSort, dateRange]);
+  }, [searchText, filterType, filterStatus, filterSort, dateRange]);
 
   return (
     <div className="list-page-layout">

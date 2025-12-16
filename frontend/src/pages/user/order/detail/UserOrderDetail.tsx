@@ -15,10 +15,11 @@ import "./UserOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
 import ConfirmPublicModal from "./components/ConfirmPublicModal";
-import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder } from "../../../../utils/orderUtils";
+import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder, canReadyUserOrder } from "../../../../utils/orderUtils";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import AddEditModal from "../request/components/AddEditModal";
 import FromOfficeInfo from "./components/FromOfficeInfo";
+import ConfirmModal from "../../../common/ConfirmModal";
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -32,6 +33,7 @@ const UserOrderDetail: React.FC = () => {
     const [publicModalOpen, setPublicModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [requestModalOpen, setRequestModalOpen] = useState(false);
+    const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
     const fetchOrder = async () => {
         setLoading(true);
@@ -157,6 +159,32 @@ const UserOrderDetail: React.FC = () => {
         setRequestModalOpen(true);
     };
 
+    const handleReadyOrder = () => {
+        setModalConfirmOpen(true);
+    };
+
+    const confirmReadyOrder = async () => {
+        setModalConfirmOpen(false);
+
+        try {
+            if (!order) return;
+            setLoading(true);
+
+            const result = await orderApi.setUserOrderReadyForPickup(order.id);
+
+            if (result.success) {
+                message.success(result.message || "Chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy' thành công.");
+                fetchOrder();
+            } else {
+                message.error(result.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy'!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy'!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     if (loading || !order) {
         return <div>Đang tải chi tiết đơn hàng...</div>;
@@ -167,6 +195,7 @@ const UserOrderDetail: React.FC = () => {
     const canCancel = canCancelUserOrder(order.status);
     const canPrint = canPrintUserOrder(order.status);
     const canDelete = canDeleteUserOrder(order.status);
+    const canReady = canReadyUserOrder(order.status);
 
     return (
         <div className="order-detail container">
@@ -204,11 +233,13 @@ const UserOrderDetail: React.FC = () => {
                 canPrint={canPrint}
                 canDelete={canDelete}
                 canRequest={true}
+                canReady={canReady}
                 onPublic={handlePublicOrder}
                 onEdit={handleEditOrder}
                 onCancel={handleCancelOrder}
                 onPrint={handlePrintOrder}
                 onDelete={handleDeleteOrder}
+                onReady={handleReadyOrder}
                 onCreateRequest={handleCreateShippingRequest}
             />
 
@@ -239,6 +270,15 @@ const UserOrderDetail: React.FC = () => {
                 request={{ orderTrackingNumber: order.trackingNumber }}
                 onSuccess={() => fetchOrder()}
                 onCancel={() => setRequestModalOpen(false)}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng đã sẵn sàng'
+                message='Bạn có chắc chắn đơn hàng này đã sẵn sàng để bàn giao cho đơn vị vận chuyển không?'
+                open={modalConfirmOpen}
+                onOk={confirmReadyOrder}
+                onCancel={() => setModalConfirmOpen(false)}
+                loading={loading}
             />
 
         </div>

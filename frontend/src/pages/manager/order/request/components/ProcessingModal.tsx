@@ -43,7 +43,6 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
 
     form.resetFields();
 
-    // file người gửi (chỉ xem)
     const requestFiles: MyUploadFile[] =
       request.requestAttachments?.map(att => {
         const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileName);
@@ -57,6 +56,8 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
         };
       }) ?? [];
     setFileList(requestFiles);
+
+    console.log("file", fileList);
 
     // file phản hồi (có thể xóa/upload)
     const responseFiles: MyUploadFile[] =
@@ -158,7 +159,7 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
         if (file.originFileObj) payload.append("attachments", file.originFileObj as RcFile);
       });
 
-      // id file cũ còn giữ
+      // id file cũ (chưa xóa)
       const oldFileIds = responseFileList.filter(f => !f.originFileObj).map(f => f.uid);
       payload.append("oldAttachments", JSON.stringify(oldFileIds));
 
@@ -177,7 +178,7 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
       if (result.success) {
         message.success("Phản hồi yêu cầu thành công!");
         form.resetFields();
-        setResponseFileList([]); // reset file phản hồi
+        setResponseFileList([]);
         onSuccess();
         onCancel();
       } else {
@@ -208,7 +209,6 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
       title={<span className='modal-title'>Xử lý yêu cầu #{request.code}</span>}
       zIndex={1100}
       getContainer={false}
-      forceRender
       width={650}
     >
       <Form form={form} layout="vertical">

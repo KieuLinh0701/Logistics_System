@@ -1,7 +1,6 @@
-import type { ApiResponse, BulkResponse, ListResponse } from "../types/response";
+import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
-import type { Product, UserProductActiveAndInstockRequest } from "../types/product";
-import type { ManagerEmployee, ManagerEmployeeSearchRequest } from "../types/employee";
+import type { ManagerEmployee, ManagerEmployeeSearchRequest, ManagerEmployeeWithShipperAssignments } from "../types/employee";
 
 const employeeApi = {
   // Manager
@@ -20,18 +19,13 @@ const employeeApi = {
     return res;
   },
 
-  async deleteUserProduct(productId: number) {
-    const res = await axiosClient.delete<ApiResponse<string>>(`/user/products/${productId}`);
+  async getManagerActiveShippersWithActiveAssignments(params: ManagerEmployeeSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerEmployeeWithShipperAssignments>>>("/manager/employees/shippers/active/with-assignments", { params });
     return res;
   },
 
-  async createBulkUserProduct(data: FormData) {
-    const res = await axiosClient.post<BulkResponse<Product>>("/user/products/bulk", data);
-    return res;
-  },
-
-  async getActiveAndInstockUserProducts(params: UserProductActiveAndInstockRequest) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<Product>>>("/user/products/active", { params });
+  async getManagerActiveShippers(params: ManagerEmployeeSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerEmployee>>>("/manager/employees/shippers/active", { params });
     return res;
   },
 };

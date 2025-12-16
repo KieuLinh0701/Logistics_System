@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
+import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -16,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -56,5 +58,28 @@ public class EmployeeManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.updateEmployee(userId, id, managerEmployeeEditRequest));
+    }
+
+    @GetMapping("/shippers/active/with-assignments")
+    public ResponseEntity<ApiResponse<ListResponse<ManagerEmployeeListWithShipperAssignmentDto>>> getActiveShippersWithActiveAssignments(
+            @ModelAttribute ManagerEmployeeSearchRequest managerShippingRequestSearchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        ApiResponse<ListResponse<ManagerEmployeeListWithShipperAssignmentDto>> result = service
+                .getActiveShippersWithActiveAssignments(userId,
+                        managerShippingRequestSearchRequest);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/shippers/active")
+    public ResponseEntity<ApiResponse<ListResponse<ManagerEmployeeListDto>>> getActiveShippers(
+            @ModelAttribute ManagerEmployeeSearchRequest managerShippingRequestSearchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        ApiResponse<ListResponse<ManagerEmployeeListDto>> result = service.getActiveShippers(userId,
+                managerShippingRequestSearchRequest);
+        return ResponseEntity.ok(result);
     }
 }

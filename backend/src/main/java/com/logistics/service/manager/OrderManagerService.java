@@ -24,6 +24,7 @@ import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
 import com.logistics.entity.ServiceType;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.OrderPayerType;
@@ -110,11 +111,11 @@ public class OrderManagerService {
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Specification<Order> spec = OrderSpecification.unrestrictedOrder()
                     .and(OrderSpecification.officeId(userOffice.getId()))
-                    .and(OrderSpecification.excludeDraft()) 
+                    .and(OrderSpecification.excludeDraft())
                     .and(OrderSpecification.searchManager(search))
                     .and(OrderSpecification.payer(payer))
                     .and(OrderSpecification.status(status))
@@ -165,7 +166,7 @@ public class OrderManagerService {
             Order order = repository.findByTrackingNumber(trackingNumber)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             if (order.getFromOffice() == null && order.getToOffice() == null) {
                 return new ApiResponse<>(false, "Bạn không có quyền xem đơn hàng này", null);
@@ -188,7 +189,7 @@ public class OrderManagerService {
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
-    } 
+    }
 
     @Transactional
     public ApiResponse<List<OrderPrintDto>> getOrdersForPrint(Integer userId,
@@ -200,7 +201,7 @@ public class OrderManagerService {
                 return new ApiResponse<>(false, "Không tìm thấy đơn hàng nào để in", null);
             }
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             List<Order> printableOrders = orders.stream()
                     .filter(order -> OrderUtils.canManagerPrint(order.getStatus()))
@@ -232,10 +233,10 @@ public class OrderManagerService {
     }
 
     public ApiResponse<Boolean> cancelOrder(Integer userId, Integer orderId) {
-        Order order = repository.findByIdAndUserId(orderId, userId)
+        Order order = repository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         if (!OrderUtils.canManagerCancel(order.getStatus())) {
             throw new RuntimeException("Đơn hàng đã vận chuyển, không thể hủy");
@@ -283,7 +284,7 @@ public class OrderManagerService {
         try {
             validateCreate(request);
 
-            Office userOffice = employeeManagerService.getOfficeByUserId(userId);
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Integer totalFee = 0;
             if (userOffice.getCityCode() != null) {
@@ -336,6 +337,7 @@ public class OrderManagerService {
             order.setNotes(request.getNotes());
             order.setFromOffice(userOffice);
             order.setEmployee(currentEmployee);
+            order.setCodStatus(OrderCodStatus.NONE);
             if (OrderPayerType.valueOf(request.getPayer()).equals(OrderPayerType.SHOP)) {
                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                 order.setPaidAt(LocalDateTime.now());
@@ -453,5 +455,50 @@ public class OrderManagerService {
         } while (repository.existsByTrackingNumber(tracking));
 
         return tracking;
+    }
+
+    public ApiResponse<Boolean> setOrderAtOriginOffice(Integer userId, Integer orderId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (order.getFromOffice() == null || !userOffice.getId().equals(order.getFromOffice().getId())) {
+            return new ApiResponse<>(false, "Bạn không có quyền hủy đơn hàng này", false);
+        }
+
+        if (!OrderUtils.canManagerSetAtOriginOffice(order.getStatus())) {
+            throw new RuntimeException("Trạng thái đơn hàng không hợp lệ để chuyển");
+        }
+
+        if (!order.getPickupType().equals(OrderPickupType.AT_OFFICE)) {
+            throw new RuntimeException("Hình thức lấy hàng không hợp lệ để chuyển");
+        }
+
+        order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
+        repository.save(order);
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                userOffice,
+                null,
+                OrderHistoryActionType.IMPORTED,
+                null);
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Đơn hàng của bạn đã được bàn giao cho đơn vị vận chuyển",
+                    String.format(
+                            "Đơn hàng có mã vận đơn #%s của bạn đã được mang đến và bàn giao cho đơn vị vận chuyển thành công tại bưu cục xuất phát. Nếu bạn không thực hiện hành động này, vui lòng liên hệ để được hỗ trợ.",
+                            order.getTrackingNumber()),
+                    "order",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+
+        return new ApiResponse<>(true, "Bàn giao đơn hàng cho đơn vị vận chuyển thành công", true);
     }
 }

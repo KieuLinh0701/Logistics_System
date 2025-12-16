@@ -12,6 +12,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.logistics.enums.OrderStatus;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderPayerType;
 import com.logistics.enums.OrderPaymentStatus;
@@ -154,4 +155,11 @@ public class Order {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderCodStatus codStatus;
+
+    @OneToOne(mappedBy = "order")
+    private PaymentSubmission paymentSubmission;
 }
