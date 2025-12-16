@@ -87,6 +87,10 @@ export interface UserOrderRequest {
   fromOfficeId: number;
   orderProducts: OrderProductRequest[];
   promotionId: number;
+
+  discountAmount: number;
+  totalFee: number;
+  shippingFee: number;
 }
 
 export interface ManagerOrderSearchRequest {

@@ -51,6 +51,7 @@ import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-as
 import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncidentReports";
 import ManagerPaymentSubmissionBatchs from "./pages/manager/paymentSubmissionBatch/ManagerPaymentSubmissionBatchs";
 import ManagerPaymentSubmissions from "./pages/manager/paymentSubmission/ManagerPaymentSubmissions";
+import OrderTracking from "./pages/common/tracking/OrderTracking";
 
 const App: React.FC = () => {
   return (
@@ -73,6 +74,8 @@ const App: React.FC = () => {
           <Route path="/tracking/shipping-fee" element={<ShippingFee />} />
           <Route path="/tracking/office-search" element={<OfficeSearch />} />
           <Route path="/tracking/shipping-rates" element={<ShippingRates />} />
+          <Route path="/tracking/order-tracking" element={<OrderTracking />} />
+          <Route path="/tracking/order-tracking/:trackingNumber" element={<OrderTracking />} />
 
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />

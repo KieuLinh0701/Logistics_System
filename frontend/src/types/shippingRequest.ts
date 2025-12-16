@@ -46,3 +46,10 @@ export interface ManagerShippingRequestSearchRequest {
   endDate?: string;
 }
 
+export interface PublicShippingRequestCreate {
+  contactName: string;
+  contactEmail: string;
+  contactPhoneNumber: string;
+  requestType: string;
+  requestContent: string;
+}

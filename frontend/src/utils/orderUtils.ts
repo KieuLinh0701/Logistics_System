@@ -1,3 +1,7 @@
+export const canEditUserSenderInfo = (value: string) => {
+  return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);
+};
+
 // Điều kiện để thao tác với order của user
 export const canEditUserOrder = (value: string) => {
   return ["DRAFT", "PENDING", "CONFIRMED"].includes(value);

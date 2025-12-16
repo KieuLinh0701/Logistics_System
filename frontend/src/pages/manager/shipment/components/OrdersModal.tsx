@@ -164,14 +164,15 @@ const OrdersModal: React.FC<Props> = ({
         const address = addressMap[`recipient-${record.id}`];
         return (
           <div>
-            <span className="custom-table-content-strong">{recipient?.name}</span> - {recipient?.phone}<br />
+            <span className="custom-table-content-strong">{recipient?.name}</span><br/>
+            {recipient?.phone}<br />
             <span className="custom-table-content-limit">{address || "Chưa có địa chỉ"}</span>
           </div>
         );
       },
     },
     {
-      title: "Bưu cục nhận",
+      title: "Bưu cục đích",
       dataIndex: "toOffice",
       key: "toOffice",
       align: "left",

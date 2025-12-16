@@ -59,6 +59,13 @@ const RequestTable: React.FC<TableProps> = ({
       render: (type) => translateShippingRequestType(type)
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      align: 'center',
+      render: (status) => translateShippingRequestStatus(status)
+    },
+    {
       title: 'Nội dung yêu cầu',
       dataIndex: 'contentRequest',
       key: 'contentRequest',
@@ -66,10 +73,6 @@ const RequestTable: React.FC<TableProps> = ({
       render: (_, record) => {
         const hasTracking = !!record.orderTrackingNumber;
         const hasContent = !!record.requestContent;
-
-        const createdAt = record.createdAt
-          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
-          : null;
 
         if (!hasTracking && !hasContent) {
           return <span className="text-muted">N/A</span>;
@@ -101,12 +104,6 @@ const RequestTable: React.FC<TableProps> = ({
                 </Tooltip>
               </>
             )}
-
-            {createdAt && (
-              <div className="text-extra-time">
-                <div>Gửi lúc: {createdAt}</div>
-              </div>
-            )}
           </div>
         );
       },
@@ -118,10 +115,6 @@ const RequestTable: React.FC<TableProps> = ({
       align: 'left',
       render: (_, record) => {
         const response = record.response;
-        const respondedAt = record.responseAt
-          ? dayjs(record.responseAt).format('HH:mm:ss DD/MM/YYYY')
-          : null;
-
         if (response) {
           return (
             <>
@@ -130,12 +123,6 @@ const RequestTable: React.FC<TableProps> = ({
                   {response}
                 </div>
               </Tooltip>
-
-              {respondedAt && (
-                <div className="text-extra-time">
-                  Phản hồi lúc: {respondedAt}
-                </div>
-              )}
             </>
           );
         }
@@ -148,11 +135,37 @@ const RequestTable: React.FC<TableProps> = ({
       }
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      align: 'center',
-      render: (status) => translateShippingRequestStatus(status)
+      title: 'Thời gian',
+      key: 'time',
+      align: 'left',
+      render: (_, record) => {
+        const createdAt = record.createdAt
+          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
+          : null;
+
+        const responseAt = record.responseAt
+          ? dayjs(record.responseAt).format('HH:mm:ss DD/MM/YYYY')
+          : null;
+
+        return (
+          <div>
+            {createdAt && (
+              <div>
+                <span className="custom-table-content-strong">
+                  Gửi:{" "}
+                </span>
+                {createdAt}
+              </div>
+            )}
+            <div>
+              <span className="custom-table-content-strong">
+                Phản hồi:{" "}
+              </span>
+              {responseAt ? responseAt : <span className="text-muted">N/A</span>}
+            </div>
+          </div>
+        );
+      }
     },
     {
       key: "action",

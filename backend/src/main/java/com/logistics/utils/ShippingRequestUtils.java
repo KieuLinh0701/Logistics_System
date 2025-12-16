@@ -164,7 +164,16 @@ public class ShippingRequestUtils {
             return "Yêu cầu không thể hủy vì đã bị từ chối";
         } else {
             return "Yêu cầu không thể hủy ở trạng thái hiện tại";
-        }
+        } 
+    }
+
+    // Những yêu cầu mà guest có thể tạo
+    private static final Set<ShippingRequestType> REQUEST_TYPE_ALLOWED_GUEST_CREATE = Set.of(
+            ShippingRequestType.COMPLAINT,
+            ShippingRequestType.INQUIRY);
+
+    public static boolean canGuestCreateShippingRequest(ShippingRequestType value) {
+        return REQUEST_TYPE_ALLOWED_GUEST_CREATE.contains(value);
     }
 
 }

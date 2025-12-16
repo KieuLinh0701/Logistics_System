@@ -10,18 +10,13 @@ import type { Office } from "../../../types/office";
 import officeApi from "../../../api/officeApi";
 import locationApi from "../../../api/locationApi";
 import Paragraph from "antd/es/typography/Paragraph";
+import { SHIPPING_REQUEST_TYPES_PUBLIC, translateShippingRequestType } from "../../../utils/shippingRequestUtils";
+import type { PublicShippingRequestCreate } from "../../../types/shippingRequest";
+import shippingRequestApi from "../../../api/shippingRequestApi";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
-
-interface ContactFormData {
-  name: string;
-  email: string;
-  phone: string;
-  subject: string;
-  message: string;
-}
 
 const ContactForm: React.FC = () => {
   const [form] = Form.useForm();
@@ -64,18 +59,18 @@ const ContactForm: React.FC = () => {
     fetchCompanyInfo();
   }, []);
 
-  const handleSubmit = async (values: ContactFormData) => {
+  const handleSubmit = async (values: PublicShippingRequestCreate) => {
     setLoading(true);
     try {
-      const response = await axios.post('/api/public/contact', values);
-      if ((response.data as any).success) {
-        message.success((response.data as any).message);
+      const response = await shippingRequestApi.createPublicShippingRequest(values);
+      if (response.success) {
+        message.success(response.message || "Gửi liên hệ thành công");
         form.resetFields();
       } else {
-        message.error("Có lỗi xảy ra khi gửi liên hệ");
+        message.error(response.message || "Có lỗi xảy ra khi gửi liên hệ");
       }
-    } catch (error) {
-      message.error("Có lỗi xảy ra khi gửi liên hệ");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi xảy ra khi gửi liên hệ");
     } finally {
       setLoading(false);
     }
@@ -121,7 +116,7 @@ const ContactForm: React.FC = () => {
                   <Row gutter={16}>
                     <Col xs={24} md={12}>
                       <Form.Item
-                        name="name"
+                        name="contactName"
                         label="Họ và tên"
                         rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
                       >
@@ -131,7 +126,7 @@ const ContactForm: React.FC = () => {
 
                     <Col xs={24} md={12}>
                       <Form.Item
-                        name="email"
+                        name="contactEmail"
                         label="Email"
                         rules={[
                           { required: true, message: "Vui lòng nhập email!" },
@@ -146,7 +141,7 @@ const ContactForm: React.FC = () => {
                   <Row gutter={16}>
                     <Col xs={24} md={12}>
                       <Form.Item
-                        name="phone"
+                        name="contactPhoneNumber"
                         label="Số điện thoại"
                         rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
                       >
@@ -156,24 +151,23 @@ const ContactForm: React.FC = () => {
 
                     <Col xs={24} md={12}>
                       <Form.Item
-                        name="subject"
+                        name="requestType"
                         label="Chủ đề"
                         rules={[{ required: true, message: "Vui lòng chọn chủ đề!" }]}
                       >
                         <Select size="large" placeholder="Chọn chủ đề">
-                          <Option value="general">Thông tin chung</Option>
-                          <Option value="shipping">Vận chuyển</Option>
-                          <Option value="billing">Thanh toán</Option>
-                          <Option value="complaint">Khiếu nại</Option>
-                          <Option value="support">Hỗ trợ kỹ thuật</Option>
-                          <Option value="other">Khác</Option>
+                          {SHIPPING_REQUEST_TYPES_PUBLIC.map((item) => (
+                            <Option key={item} value={item}>
+                              {translateShippingRequestType(item)}
+                            </Option>
+                          ))}
                         </Select>
                       </Form.Item>
                     </Col>
                   </Row>
 
                   <Form.Item
-                    name="message"
+                    name="requestContent"
                     label="Nội dung"
                     rules={[{ required: true, message: "Vui lòng nhập nội dung!" }]}
                   >

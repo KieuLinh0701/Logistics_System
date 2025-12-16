@@ -118,11 +118,24 @@ public class BankAccountUserService {
         }
     }
 
+    public ApiResponse<Boolean> hasBankAccount(int userId) {
+        try {
+            boolean exist = repository.existsByUserId(userId);
+            return new ApiResponse<>(true, "Kiểm tra tài khoản thành công", exist);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
     private void validateForm(BankAccountRequest request) {
         List<String> missingFields = new ArrayList<>();
-        if (request.getBankName() == null || request.getBankName().isBlank()) missingFields.add("Tên ngân hàng");
-        if (request.getAccountNumber() == null || request.getAccountNumber().isBlank()) missingFields.add("Số tài khoản");
-        if (request.getAccountName() == null || request.getAccountName().isBlank()) missingFields.add("Tên chủ tài khoản");
-        if (!missingFields.isEmpty()) throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
+        if (request.getBankName() == null || request.getBankName().isBlank())
+            missingFields.add("Tên ngân hàng");
+        if (request.getAccountNumber() == null || request.getAccountNumber().isBlank())
+            missingFields.add("Số tài khoản");
+        if (request.getAccountName() == null || request.getAccountName().isBlank())
+            missingFields.add("Tên chủ tài khoản");
+        if (!missingFields.isEmpty())
+            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
     }
 }

@@ -21,4 +21,6 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Intege
     @Modifying
     @Query("UPDATE BankAccount b SET b.isDefault = false WHERE b.user.id = :userId AND b.id <> :id")
     void clearDefaultExcept(@Param("userId") Integer userId, @Param("id") Integer id);
+
+    boolean existsByUserId(Integer userId);
 }

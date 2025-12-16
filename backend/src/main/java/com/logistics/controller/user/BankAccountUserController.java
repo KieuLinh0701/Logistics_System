@@ -31,7 +31,7 @@ public class BankAccountUserController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<BankAccountDto>>> list(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
+
         return ResponseEntity.ok(service.list(userId));
     }
 
@@ -39,7 +39,7 @@ public class BankAccountUserController {
     public ResponseEntity<ApiResponse<BankAccountDto>> create(@RequestBody BankAccountRequest bankAccountRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
+
         return ResponseEntity.ok(service.create(userId, bankAccountRequest));
     }
 
@@ -49,7 +49,7 @@ public class BankAccountUserController {
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
+
         return ResponseEntity.ok(service.update(userId, id, bankAccountRequest));
     }
 
@@ -57,7 +57,7 @@ public class BankAccountUserController {
     public ResponseEntity<ApiResponse<Boolean>> delete(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
+
         return ResponseEntity.ok(service.delete(userId, id));
     }
 
@@ -65,7 +65,15 @@ public class BankAccountUserController {
     public ResponseEntity<ApiResponse<Boolean>> setDefault(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
+
         return ResponseEntity.ok(service.setDefault(userId, id));
     }
+
+    @GetMapping("/exists")
+    public ResponseEntity<ApiResponse<Boolean>> hasBankAccount(HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        
+        return ResponseEntity.ok(service.hasBankAccount(userId));
+    }
+
 }

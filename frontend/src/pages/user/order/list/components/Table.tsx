@@ -67,11 +67,9 @@ const OrderTable: React.FC<Props> = ({
       render: (trackingNumber, _) => {
         if (!trackingNumber) {
           return (
-            <Tooltip title="Chưa có mã đơn hàng">
               <span className="text-muted">
                 Chưa có mã
               </span>
-            </Tooltip>
           );
         }
 

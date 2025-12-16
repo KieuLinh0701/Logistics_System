@@ -9,7 +9,7 @@ const HeroSection: React.FC = () => {
 
   const handleSearch = () => {
     if (!trackingCode.trim()) return;
-    window.location.href = `/tracking/${trackingCode}`;
+    window.location.href = `/tracking/order-tracking/${trackingCode}`;
   };
 
   return (
@@ -34,7 +34,7 @@ const HeroSection: React.FC = () => {
 
           <div className="home-hero-actions">
             <div className="home-search-container">
-              <Space.Compact style={{ width: "100%", maxWidth: 400 }}>
+              <Space.Compact>
                 <Input
                   placeholder="Nhập mã vận đơn để tra cứu..."
                   size="large"

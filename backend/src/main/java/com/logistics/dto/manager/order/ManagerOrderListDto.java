@@ -38,4 +38,5 @@ public class ManagerOrderListDto {
     private LocalDateTime createdAt;
     private LocalDateTime deliveriedAt;
     private LocalDateTime paidAt;
+    private String codStatus;
 }

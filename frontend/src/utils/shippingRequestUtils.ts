@@ -63,6 +63,9 @@ export const SHIPPING_REQUEST_FILTER_SORT = [
   'OLDEST'
 ] as const;
 
+// Public 
+export const SHIPPING_REQUEST_TYPES_PUBLIC = ['COMPLAINT', 'INQUIRY'] as const;
+
 export const translateShippingRequestType = (value: string): string => {
   switch (value) {
     case 'COMPLAINT': return 'Khiếu nại';

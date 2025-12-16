@@ -1,5 +1,5 @@
 import React from "react";
-import { translateOrderCreatorType, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
+import { translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
 import Title from "antd/es/typography/Title";
 import type { Order } from "../../../../../types/order";
 
@@ -23,6 +23,8 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
     );
   };
 
+   const timeLabel = order.status === "RETURNED" ? "Thời gian hoàn hàng:" : "Thời gian giao hàng:";
+
   return (
     <>
       {/* Card thông tin đơn hàng */}
@@ -36,9 +38,8 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
             {renderField("Trạng thái:", translateOrderStatus(order.status))}
             {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
             {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
-            {order.deliveredAt && renderField("Thời gian giao hàng:", new Date(order.deliveredAt).toLocaleString())}
+            {order.deliveredAt && renderField(timeLabel, new Date(order.deliveredAt).toLocaleString())}
             {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
-            {order.refundedAt && renderField("Thời gian hoàn hàng:", new Date(order.refundedAt).toLocaleString())}
           </div>
 
           <div className="order-detail-card-column">

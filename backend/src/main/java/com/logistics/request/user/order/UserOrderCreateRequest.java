@@ -28,6 +28,8 @@ public class UserOrderCreateRequest {
     private Integer fromOfficeId;
     private Integer promotionId;
     private List<OrderProduct> orderProducts;
+    private Integer shippingFee;
+    private Integer discountAmount;
 
     @Getter
     @Setter

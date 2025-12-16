@@ -1,5 +1,6 @@
 package com.logistics.service.user;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,7 @@ import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ProductStatus;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.OrderPrintMapper;
+import com.logistics.repository.BankAccountRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
@@ -89,6 +91,9 @@ public class OrderUserService {
 
     @Autowired
     private OrderHistoryUserService orderHistoryUserService;
+
+    @Autowired
+    private BankAccountRepository bankAccountRepository;
 
     public ApiResponse<ListResponse<UserOrderListDto>> list(int userId, UserOrderSearchRequest request) {
         try {
@@ -162,17 +167,17 @@ public class OrderUserService {
             validateCreate(request);
 
             if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), userId)) {
-                return new ApiResponse<>(true, "Địa chỉ người nhận không thuộc người dùng", null);
+                return new ApiResponse<>(false, "Địa chỉ người nhận không thuộc người dùng", null);
             }
 
             if (request.getFromOfficeId() != null) {
                 if (!officePublicService.isSameCity(request.getSenderAddressId(), request.getFromOfficeId())) {
-                    return new ApiResponse<>(true, "Địa chỉ gửi và bưu cục phải thuộc cùng thành phố", null);
+                    return new ApiResponse<>(false, "Địa chỉ gửi và bưu cục phải thuộc cùng thành phố", null);
                 }
             }
 
             if (!serviceTypeUserService.serviceTypeExists(request.getServiceTypeId())) {
-                return new ApiResponse<>(true, "Dịch vụ vận chuyển không tồn tại", null);
+                return new ApiResponse<>(false, "Dịch vụ vận chuyển không tồn tại", null);
             }
 
             if (request.getOrderProducts() != null && !request.getOrderProducts().isEmpty()) {
@@ -182,14 +187,29 @@ public class OrderUserService {
             Address senderAddress = addressUserService.findById(request.getSenderAddressId())
                     .orElseThrow(() -> new RuntimeException("Địa chỉ người gửi không tồn tại"));
 
-            Integer serviceFee = feeService.calculateTotalFee(request.getWeight(), request.getServiceTypeId(),
-                    senderAddress.getCityCode(), request.getRecipientCityCode(),
-                    request.getOrderValue(), request.getCod());
+            BigDecimal weight = calculateWeight(request.getOrderProducts(), request.getWeight());
 
-            System.out.println("serviceFee" + serviceFee);
+            if (weight.compareTo(request.getWeight()) != 0 && request.getWeight() != null) {
+                return new ApiResponse<>(
+                        false,
+                        "Thông tin của sản phẩm đã thay đổi. Vui lòng kiểm tra lại các sản phẩm đã chọn trước khi tạo đơn.",
+                        null);
+            }
+
+            Integer orderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
+            if (!orderValue.equals(request.getOrderValue()) && request.getOrderValue() != null) {
+                return new ApiResponse<>(
+                        false,
+                        "Thông tin của sản phẩm đã thay đổi. Vui lòng kiểm tra lại các sản phẩm đã chọn trước khi tạo đơn.",
+                        null);
+            }
+
+            Integer serviceFee = feeService.calculateTotalFee(weight, request.getServiceTypeId(),
+                    senderAddress.getCityCode(), request.getRecipientCityCode(),
+                    orderValue, request.getCod());
 
             Promotion promotion = null;
-            int discountAmount = 0;
+            Integer discountAmount = 0;
 
             if (request.getPromotionId() != null && request.getPromotionId() > 0) {
                 promotion = promotionUserService.findById(request.getPromotionId())
@@ -200,14 +220,19 @@ public class OrderUserService {
                         request.getPromotionId(),
                         request.getServiceTypeId(),
                         serviceFee,
-                        request.getWeight())) {
+                        weight)) {
                     return new ApiResponse<>(false, "Bạn không đủ điều kiện để dùng mã giảm giá", null);
                 }
 
                 discountAmount = promotionUserService.calculateDiscount(promotion, serviceFee);
             }
 
-            System.out.println("discountAmount" + discountAmount);
+            if (request.getDiscountAmount() != null && !discountAmount.equals(request.getDiscountAmount())) {
+                return new ApiResponse<>(
+                        false,
+                        "Rất tiếc! Khuyến mãi bạn chọn có thể đã thay đổi, hết hạn hoặc hết lượt sử dụng. Vui lòng kiểm tra lại trước khi đặt hàng.",
+                        null);
+            }
 
             User user = userUserService.findById(userId);
 
@@ -220,15 +245,28 @@ public class OrderUserService {
                         .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
             }
 
+            boolean existBankAcc = existBankAccount(userId);
+            if (!existBankAcc) {
+                return new ApiResponse<>(false,
+                        "Bạn cần thêm tài khoản ngân hàng trong hồ sơ cá nhân để nhận tiền COD hoặc thanh toán khi tạo đơn hàng. Vui lòng cập nhật trước khi tiếp tục.",
+                        null);
+            }
+
             Integer shippingFee = feeService.calculateShippingFee(
-                    request.getWeight(), request.getServiceTypeId(),
+                    weight, request.getServiceTypeId(),
                     senderAddress.getCityCode(), request.getRecipientCityCode());
-            System.out.println("ShippingFee" + shippingFee);
+
+            System.out.println("reSys" + request.getShippingFee());
+            System.out.println("Sys" + shippingFee);
+
+            if (request.getShippingFee() != null && !shippingFee.equals(request.getShippingFee())) {
+                return new ApiResponse<>(
+                        false,
+                        "Phí vận chuyển của đơn vị vận chuyển vừa được cập nhật. Vui lòng kiểm tra lại trước khi tạo đơn.",
+                        null);
+            }
 
             Integer totalFee = serviceFee - discountAmount;
-            System.out.println("Total Fee" + totalFee);
-
-            Integer orderValue = calculateOrderValue(request.getOrderProducts());
 
             Address address = Address.builder()
                     .wardCode(request.getRecipientWardCode())
@@ -478,6 +516,10 @@ public class OrderUserService {
         }
     }
 
+    private boolean existBankAccount(Integer userId) {
+        return bankAccountRepository.existsByUserId(userId);
+    }
+
     private void validateCreate(UserOrderCreateRequest request) {
 
         List<String> missing = new ArrayList<>();
@@ -636,9 +678,24 @@ public class OrderUserService {
         return tracking;
     }
 
-    public int calculateOrderValue(List<UserOrderCreateRequest.OrderProduct> items) {
+    public BigDecimal calculateWeight(List<UserOrderCreateRequest.OrderProduct> items, BigDecimal weight) {
         if (items == null || items.isEmpty()) {
-            return 0;
+            return weight != null ? weight : BigDecimal.ZERO;
+        }
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (var item : items) {
+            Product product = productRepository.findById(item.getProductId()).orElseThrow();
+            BigDecimal itemWeight = product.getWeight().multiply(BigDecimal.valueOf(item.getQuantity()));
+            total = total.add(itemWeight);
+        }
+
+        return total;
+    }
+
+    public int calculateOrderValue(List<UserOrderCreateRequest.OrderProduct> items, Integer orderValue) {
+        if (items == null || items.isEmpty()) {
+            return orderValue != null ? orderValue : 0;
         }
 
         int total = 0;

@@ -1,6 +1,7 @@
 import type { ApiResponse, ListResponse } from "../types/response";
 import type { AdminOrder, CreateOrderSuccess, ManagerOrderRequest, ManagerOrderSearchRequest, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest } from "../types/order";
 import axiosClient from "./axiosClient";
+import type { OrderHistory } from "../types/orderHistory";
 
 const orderApi = {
   // Admin
@@ -95,6 +96,12 @@ const orderApi = {
 
   async setManagerOrderAtOriginOffice(id: number) {
     const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/at-origin-office`);
+    return res;
+  },
+
+  // Pubic
+  async getPublicOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
     return res;
   },
 };
