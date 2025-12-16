@@ -21,12 +21,14 @@ import ShippingRates from "./pages/common/tracking/shippingRate/ShippingRates";
 import "./styles/theme.css";
 import CompanyInfo from "./pages/common/info/CompanyInfo";
 import ContactForm from "./pages/common/info/ContactForm";
-import PromotionList from "./pages/common/info/PromotionList";
+
 
 import AdminUsers from "./pages/admin/Users";
 import AdminOrders from "./pages/admin/Orders";
 import AdminPostOffices from "./pages/admin/PostOffices";
 import AdminServiceTypes from "./pages/admin/ServiceTypes";
+import AdminFeeConfigurations from "./pages/admin/FeeConfigurations";
+
 import UserProducts from "./pages/user/product/UserProducts";
 import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
 import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
@@ -68,6 +70,8 @@ import DriverOrders from "./pages/driver/Orders";
 import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
+import PromotionList from "./pages/common/info/PromotionList";
+import AdminPromotions from "./pages/admin/Promotions";
 
 const App: React.FC = () => {
   return (
@@ -79,7 +83,6 @@ const App: React.FC = () => {
 
           {/* Public pages */}
           <Route path="/home" element={<Home />} />
-
           {/* Dịch vụ */}
           <Route path="/info/services" element={<ServiceTypes />} />
           <Route path="/info/company" element={<CompanyInfo />} />
@@ -107,7 +110,9 @@ const App: React.FC = () => {
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
             <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
             <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
-
+            <Route path="/promotions" element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions /></PrivateRoute>} />
+            <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
+            
             {/* Admin & Manager routes */}
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin', 'manager']}><VehiclesRouter /></PrivateRoute>} />
 
@@ -145,8 +150,8 @@ const App: React.FC = () => {
 
             {/* Shipper routes */}
             <Route path="/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
-            <Route path="/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
-            <Route path="/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
+            <Route path="/shipper/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
+            <Route path="/shipper/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
             <Route path="/route" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryRoute /></PrivateRoute>} />
             <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
             <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
