@@ -402,7 +402,12 @@
 
 .custom-table-content-error {
   font-weight: 450 !important;
-  color: red !important;
+  color:#B22222 !important;
+}
+
+.custom-table-content-pending {
+  font-weight: 450 !important;
+  color: #096dd9 !important;
 }
 
 .custom-table-content-limit {

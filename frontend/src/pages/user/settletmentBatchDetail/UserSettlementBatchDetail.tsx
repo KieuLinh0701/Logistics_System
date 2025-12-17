@@ -286,7 +286,7 @@ const UserSettlementBatchDetail = () => {
                 <>
                   <div className="list-page-header" />
 
-                  <Tag className="list-page-tag">{transactions.length} giao dịch</Tag>
+                  {transactions.length > 0 && (<Tag className="list-page-tag">{transactions.length} giao dịch</Tag>)}
 
                   <SettlementTransactionTable
                     datas={transactions}

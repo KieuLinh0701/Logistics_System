@@ -27,16 +27,18 @@ import org.springframework.stereotype.Service;
 import com.logistics.dto.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchListDto;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
+import com.logistics.entity.Order;
 import com.logistics.entity.PaymentSubmission;
 import com.logistics.entity.PaymentSubmissionBatch;
 import com.logistics.entity.User;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.mapper.PaymentSubmissionBatchMapper;
 import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
-import com.logistics.repository.UserRepository;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchCreateForm;
 import com.logistics.request.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchEditForm;
@@ -63,6 +65,8 @@ public class PaymentSubmissionBatchManagerService {
     private final PaymentSubmissionRepository submissionRepository;
 
     private final NotificationService notificationService;
+
+    private final OrderRepository orderRepository;
 
     public ApiResponse<ListResponse<ManagerPaymentSubmissionBatchListDto>> list(
             Integer userId, SearchRequest request) {
@@ -264,6 +268,12 @@ public class PaymentSubmissionBatchManagerService {
             for (PaymentSubmission ps : submissions) {
                 ps.setBatch(batch);
                 ps.setStatus(PaymentSubmissionStatus.IN_BATCH);
+
+                Order order = ps.getOrder();
+                if (order != null && order.getCod() > 0) {
+                    order.setCodStatus(OrderCodStatus.SUBMITTED);
+                    orderRepository.save(order);
+                }
             }
             submissionRepository.saveAll(submissions);
 
@@ -363,6 +373,12 @@ public class PaymentSubmissionBatchManagerService {
                         sub.setStatus(PaymentSubmissionStatus.MATCHED);
                         sub.setCheckedBy(user);
                         sub.setCheckedAt(now);
+                    }
+
+                    Order order = sub.getOrder();
+                    if (order != null && order.getCod() > 0) {
+                        order.setCodStatus(OrderCodStatus.RECEIVED);
+                        orderRepository.save(order);
                     }
                     break;
                 case CANCELLED:

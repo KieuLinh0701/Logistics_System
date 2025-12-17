@@ -53,10 +53,14 @@ const SettlementTransactionTable: React.FC<Props> = ({
       key: "status",
       align: "center",
       render: (_, record) => (
-        <span className={record.status === 'SUCCESS' ? 'custom-table-content-strong' : 'custom-table-content-error'}>
+        <span className={
+          record.status === 'SUCCESS' ? 'custom-table-content-strong' :
+            record.status === 'FAILED' ? 'custom-table-content-error' :
+              'custom-table-content-pending'
+        }>
           {translateSettlementTransactionStatus(record.status)}
         </span>
-      ),
+      )
     },
     {
       title: 'Ngân hàng nhận',

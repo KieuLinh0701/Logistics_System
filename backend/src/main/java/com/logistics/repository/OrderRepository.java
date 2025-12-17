@@ -1,6 +1,7 @@
 package com.logistics.repository;
 
 import com.logistics.entity.Order;
+import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
 
 import org.springframework.data.domain.Page;
@@ -40,5 +41,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
     List<Order> findByUserIdAndIdIn(Integer userId, List<Integer> orderIds);
 
     List<Order> findByIdIn(List<Integer> orderIds);
+
+    List<Order> findByUserAndSettlementBatchIsNullAndStatusIn(User user, List<OrderStatus> statuses);
+
 
 }

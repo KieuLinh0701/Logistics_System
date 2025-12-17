@@ -2,6 +2,7 @@ package com.logistics.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import jakarta.persistence.*;
@@ -55,4 +56,12 @@ public class SettlementBatch {
 
     @OneToMany(mappedBy = "settlementBatch")
     private List<Order> orders;
+
+    @PostPersist
+    private void generateCode() {
+        if (this.code == null) {
+            String date = LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            this.code = "SB" + date + this.id;
+        }
+    }
 }

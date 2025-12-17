@@ -11,10 +11,12 @@ export const translateSettlementTransactionType = (value: string): string => {
 
 
 export const SETTLEMENT_TRANSACTION_STATUSES = [
+  'PENDING',
   'SUCCESS',
   'FAILED'] as const;
 export const translateSettlementTransactionStatus = (value: string): string => {
   switch (value) {
+    case 'PENDING': return 'Đang xử lý';
     case 'SUCCESS': return 'Thành công';
     case 'FAILED': return 'Thất bại';
     default: return value;

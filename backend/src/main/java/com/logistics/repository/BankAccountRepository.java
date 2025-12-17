@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.logistics.entity.BankAccount;
+import com.logistics.entity.User;
 
 public interface BankAccountRepository extends JpaRepository<BankAccount, Integer> {
 
@@ -23,4 +24,7 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Intege
     void clearDefaultExcept(@Param("userId") Integer userId, @Param("id") Integer id);
 
     boolean existsByUserId(Integer userId);
+
+    @Query("SELECT b FROM BankAccount b WHERE b.user = :user AND b.isDefault = true")
+    BankAccount findDefaultByUser(@Param("user") User user);
 }

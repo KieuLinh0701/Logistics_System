@@ -64,7 +64,7 @@ const CodWeightSection: React.FC<{ cod: number; weight: number }> = ({ cod, weig
       <Col span={12}>
         <div className="waybill-print-weight-info">
           <div className="waybill-print-weight-label">Khối lượng tối đa:</div>
-          <div className="waybill-print-weight-value">{weight} g</div>
+          <div className="waybill-print-weight-value">{weight} Kg</div>
         </div>
       </Col>
     </Row>

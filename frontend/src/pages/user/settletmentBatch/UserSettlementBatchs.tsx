@@ -13,6 +13,10 @@ import type { SettlementBatch } from "../../../types/settlementBatch";
 import settlementBatchApi from "../../../api/settlementBatchApi";
 import UserScheduleModal from "./components/UserScheduleModal";
 import userSettlementScheduleApi from "../../../api/userSettlementScheduleApi";
+import type { PaymentCheck, PaymentRequest } from "../../../types/payment";
+import paymentApi from "../../../api/paymentApi";
+import PaymentModal from "./components/PaymentModal";
+import { getPaymentStatus } from "../../../utils/paymentUtils";
 
 
 const UserSettlementBatchs = () => {
@@ -153,50 +157,87 @@ const UserSettlementBatchs = () => {
     setProcessModalVisible(true);
   };
 
-  const handleSubmitProcess = async (values: string[]) => {
+  const handleSubmitPayment = async (amount: number) => {
     if (!selectedSettlementBatch) return;
 
     try {
-      // const param: ManagerPaymentSubmissionBatchEditRequest = {
-      //   status,
-      //   notes
-      // }
-      // const result = await paymentSubmissionBatchApi.updateManagerPaymentSubmissionBatch(selectedSettlementBatch.id, param);
+      const param: PaymentRequest = {
+        settlementId: selectedSettlementBatch.id,
+        amount
+      };
 
-      // if (result.success) {
-      //   message.success(result.message || "Cập nhật trạng thái thành công phiên đối soát");
-      //   fetch(currentPage);
-      //   setSelectedSettlementBatch(null);
-      // } else {
-      //   message.error(result.message || "Cập nhật trạng thái thất bại phiên đối soát");
-      // }
+      const result = await paymentApi.createVNPayURL(param);
+
+      if (result.success && result.data) {
+        window.location.href = result.data;
+        message.info("Đang chuyển tới VNPay để thanh toán...");
+        fetch(currentPage);
+        setSelectedSettlementBatch(null);
+      } else {
+        const errMsg = result.message || "Không tạo được link thanh toán";
+        message.error(errMsg);
+      }
     } catch (error: any) {
-      message.error(error.message || "Lỗi khi cập nhật trạng thái phiên đối soát");
+      message.error(error.message || "Lỗi khi tạo link thanh toán VNPay");
     }
   };
+
+  useEffect(() => {
+    const checkPayment = async () => {
+      const queryParams = new URLSearchParams(window.location.search);
+
+      // Map các param VNPay sang PaymentCheck
+      const paymentCheck: PaymentCheck = {
+        transactionCode: queryParams.get("vnp_TxnRef") || "",
+        responseCode: queryParams.get("vnp_ResponseCode") || "",
+        referenceCode: queryParams.get("vnp_TransactionNo") || "",
+        secureHash: queryParams.get("vnp_SecureHash") || "",
+        amount: queryParams.get("vnp_Amount") || undefined,
+        bankCode: queryParams.get("vnp_BankCode") || undefined,
+        bankTranNo: queryParams.get("vnp_BankTranNo") || undefined,
+        cardType: queryParams.get("vnp_CardType") || undefined,
+        orderInfo: queryParams.get("vnp_OrderInfo") || undefined,
+        payDate: queryParams.get("vnp_PayDate") || undefined,
+        tmnCode: queryParams.get("vnp_TmnCode") || undefined,
+        transactionStatus: queryParams.get("vnp_TransactionStatus") || undefined,
+        secureHashType: queryParams.get("vnp_SecureHashType") || undefined,
+      };
+
+      // Kiểm tra param bắt buộc
+      const requiredFields = ["transactionCode", "responseCode", "referenceCode", "secureHash"];
+      const hasAllFields = requiredFields.every((field) => (paymentCheck as any)[field]);
+      if (!hasAllFields) return;
+
+      try {
+        // Gọi backend để kiểm tra và cập nhật giao dịch
+        const result = await paymentApi.checkPaymentVPN(paymentCheck);
+
+        if (result.success) {
+          if (result.data) {
+            message.success(result.message || "Thanh toán phiên đối soát thành công");
+          } else {
+            message.error(result.message || "Thanh toán phiên đối soát thất bại");
+          }
+          fetch(currentPage);
+        } else {
+          message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
+        }
+      } catch (error) {
+        message.error("Có lỗi xảy ra khi thanh toán phiên đối soát");
+        console.error(error);
+      }
+    };
+
+    checkPayment();
+  }, []);
+
 
   const handleDetail = (id: number) => {
     navigate(`/settlements/${id}`);
   };
 
   const handleOpenModalSetSchedule = async () => {
-    try {
-      setLoadingSchedule(true);
-      setModalSettlementScheduleVisible(true);
-
-      const result = await userSettlementScheduleApi.getUserSchedule();
-      if (result.success && result.data) {
-        setUserWeekdays(result.data.weekdays || []);
-      } else {
-        message.error(result.message || "Không lấy được lịch đối soát");
-        setUserWeekdays([]);
-      }
-    } catch (error: any) {
-      message.error(error.message || "Lỗi khi lấy lịch đối soát");
-      setUserWeekdays([]);
-    } finally {
-      setLoadingSchedule(false);
-    }
+    setModalSettlementScheduleVisible(true);
   };
 
   const handleSaveSettlementSchedule = async (selectedDays: string[]) => {
@@ -206,6 +247,7 @@ const UserSettlementBatchs = () => {
 
       if (result.success) {
         message.success(result.message || "Cập nhật trạng thái thành công phiên đối soát");
+        setUserWeekdays(selectedDays);
         setSelectedSettlementBatch(null);
         setModalSettlementScheduleVisible(false);
       } else {
@@ -219,6 +261,26 @@ const UserSettlementBatchs = () => {
   };
 
   useEffect(() => {
+    const fetchUserSchedule = async () => {
+      try {
+        setLoadingSchedule(true);
+
+        const result = await userSettlementScheduleApi.getUserSchedule();
+        if (result.success && result.data) {
+          setUserWeekdays(result.data.weekdays || []);
+        } else {
+          message.error(result.message || "Không lấy được lịch đối soát");
+          setUserWeekdays([]);
+        }
+      } catch (error: any) {
+        message.error(error.message || "Lỗi khi lấy lịch đối soát");
+        setUserWeekdays([]);
+      } finally {
+        setLoadingSchedule(false);
+      }
+    };
+
+    fetchUserSchedule();
     fetch();
   }, []);
 
@@ -267,6 +329,7 @@ const UserSettlementBatchs = () => {
           <Col>
             <div className="list-page-actions">
               <Actions
+                weekdays={userWeekdays}
                 onSetSchedule={handleOpenModalSetSchedule}
                 onExport={handleExport}
               />
@@ -297,6 +360,20 @@ const UserSettlementBatchs = () => {
           loading={loadingSchedule}
           onCancel={() => setModalSettlementScheduleVisible(false)}
           onSave={handleSaveSettlementSchedule}
+        />
+
+        <PaymentModal
+          visible={processModalVisible}
+          settlementCode={selectedSettlementBatch?.code}
+          remainAmount={Math.abs(selectedSettlementBatch?.balanceAmount || 0)}
+          onCancel={() => {
+            setProcessModalVisible(false);
+            setSelectedSettlementBatch(null);
+          }}
+          onSubmit={(amount) => {
+            handleSubmitPayment(amount);
+            setProcessModalVisible(false);
+          }}
         />
       </div>
     </div>

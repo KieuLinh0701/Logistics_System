@@ -4,6 +4,7 @@ import { Table, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { Order } from "../../../../types/order";
 import { translateOrderPayerType, translateOrderStatus } from "../../../../utils/orderUtils";
+import { InfoCircleOutlined } from "@ant-design/icons";
 
 interface Props {
   datas: Order[];
@@ -87,6 +88,44 @@ const DataTable: React.FC<Props> = ({
       dataIndex: "totalFee",
       align: "center",
       render: (totalFee) => totalFee?.toLocaleString('vi-VN')
+    },
+    {
+      title: (
+        <span>
+          Cần trả / nhận&nbsp;
+          <Tooltip title="Màu đỏ: bạn còn nợ, màu xanh: bạn sẽ nhận">
+            <InfoCircleOutlined />
+          </Tooltip>
+        </span>
+      ),
+      key: "codAmount",
+      align: "center",
+      render: (_, record) => {
+        let codAmount = record.cod ?? 0;
+        const paymentStatus = record.paymentStatus;
+        const orderStatus = record.status;
+        const payer = record.payer;
+        const totalFee = record.totalFee ?? 0;
+        let displayAmount = codAmount;
+
+        if (orderStatus === "RETURNED" && paymentStatus === "UNPAID") {
+          displayAmount = -totalFee;
+        } else if (orderStatus === "RETURNED" && paymentStatus === "PAID" && payer === "CUSTOMER") {
+          displayAmount = 0;
+        } else if (orderStatus === "DELIVERED" && paymentStatus === "PAID" && payer === "CUSTOMER") {
+          displayAmount = codAmount;
+        } else if (orderStatus === "DELIVERED" && paymentStatus === "UNPAID" && payer === "SHOP") {
+          displayAmount = codAmount - totalFee;
+        } else { 
+          displayAmount = 0;
+        }
+
+        return (
+          <span className={displayAmount >= 0 ? 'custom-table-content-strong' : 'custom-table-content-error'}>
+            {displayAmount.toLocaleString('vi-VN')}
+          </span>
+        );
+      }
     },
   ];
 
