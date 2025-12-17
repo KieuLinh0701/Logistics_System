@@ -76,6 +76,12 @@ const Sidenav: React.FC = () => {
         icon: <ShoppingCartOutlined />,
       },
       {
+        key: "/shipping-requests",
+        label: "Yêu cầu hỗ trợ",
+        path: "/shipping-requests",
+        icon: <ExclamationCircleOutlined />,
+      },
+      {
         key: "/vehicles",
         label: "Phương tiện",
         path: "/vehicles",

@@ -162,7 +162,7 @@ const ShipperOrders: React.FC = () => {
       key: "action",
       render: (record: ShipperOrder) => (
         <Space>
-          <Button icon={<EyeOutlined />} onClick={() => navigate(`/orders/${record.id}`)}>
+          <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`)}>
             Chi tiết
           </Button>
         </Space>

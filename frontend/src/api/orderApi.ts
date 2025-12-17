@@ -150,7 +150,7 @@ const orderApi = {
 
   async getShipperIncidents() {
     const res = await axiosClient.get<ApiResponse<any>>("/shipper/incidents");
-    return res.data?.data ?? [];
+    return res.data ?? [];
   },
 
 

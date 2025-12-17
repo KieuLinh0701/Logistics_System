@@ -35,20 +35,30 @@ const shippingRequestApi = {
   },
 
   // Manager
-  async listManagerShippingRequests(params: ManagerShippingRequestSearchRequest) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>("/manager/shipping-requests", { params });
+async listManagerShippingRequests(
+    params: ManagerShippingRequestSearchRequest
+  ) {
+    const res =
+      await axiosClient.get<ListResponse<ShippingRequest>>(
+        "/manager/shipping-requests",
+        { params }
+      );
     return res;
   },
 
   async getManagerShippingRequestById(id: number) {
-    const res = await axiosClient.get<ApiResponse<ShippingRequest>>(`/manager/shipping-requests/${id}`);
-    return res;
+    return axiosClient.get<ShippingRequest>(
+      `/manager/shipping-requests/${id}`
+    );
   },
 
   async processingManagerShippingRequest(id: number, data: FormData) {
-    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/shipping-requests/${id}`, data);
-    return res;
+    return axiosClient.put<boolean>(
+      `/manager/shipping-requests/${id}`,
+      data
+    );
   },
 };
+
 
 export default shippingRequestApi;

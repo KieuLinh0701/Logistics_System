@@ -72,6 +72,7 @@ import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
 import PromotionList from "./pages/common/info/PromotionList";
 import AdminPromotions from "./pages/admin/Promotions";
+import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
 
 const App: React.FC = () => {
   return (
@@ -110,6 +111,7 @@ const App: React.FC = () => {
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
             <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
             <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
+            <Route path="/shipping-requests" element={<PrivateRoute allowedRoles={['admin']}><ShippingRequestsAdmin /></PrivateRoute>} />
             <Route path="/promotions" element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions /></PrivateRoute>} />
             <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
             
@@ -149,7 +151,7 @@ const App: React.FC = () => {
             <Route path="/settlements/:id" element={<PrivateRoute allowedRoles={['manager']}><ManagerPaymentSubmissions /></PrivateRoute>} />
 
             {/* Shipper routes */}
-            <Route path="/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
+            <Route path="/shipper/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
             <Route path="/shipper/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
             <Route path="/shipper/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
             <Route path="/route" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryRoute /></PrivateRoute>} />

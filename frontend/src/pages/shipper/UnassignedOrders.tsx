@@ -144,7 +144,7 @@ const ShipperUnassignedOrders: React.FC = () => {
       key: "action",
       render: (_, record) => (
         <Space>
-          <Button icon={<EyeOutlined />} onClick={() => navigate(`/orders/${record.id}`)}>
+          <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`)}>
             Chi tiết
           </Button>
           <Button type="primary" onClick={() => handleClaim(record.id!)}>Nhận đơn</Button>
