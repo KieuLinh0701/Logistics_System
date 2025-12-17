@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/manager/payment-submission-batchs")
-public class PaymentSubmissionManagerBatchController {
+public class PaymentSubmissionBatchManagerController {
 
         @Autowired
         private PaymentSubmissionBatchManagerService service;

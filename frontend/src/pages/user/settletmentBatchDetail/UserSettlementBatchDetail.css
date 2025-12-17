@@ -1,0 +1,9 @@
+.manager-batchs-divide {
+    height: 16px !important;
+}
+
+.manager-batchs-contain-select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

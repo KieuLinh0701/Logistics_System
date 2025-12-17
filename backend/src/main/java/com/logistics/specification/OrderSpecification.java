@@ -24,6 +24,22 @@ public class OrderSpecification {
         return (root, query, cb) -> cb.equal(root.get("user").get("id"), userId);
     }
 
+    public static Specification<Order> settlementBatchId(Integer userId) {
+        return (root, query, cb) -> cb.equal(root.get("settlementBatch").get("id"), userId);
+    }
+
+    public static Specification<Order> settlementSearch(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank())
+                return null;
+
+            String likePattern = "%" + keyword.toLowerCase() + "%";
+
+            return cb.or(
+                    cb.like(cb.lower(root.get("trackingNumber")), likePattern));
+        };
+    }
+
     public static Specification<Order> officeId(Integer officeId) {
         return (root, query, cb) -> cb.or(
                 cb.equal(root.get("fromOffice").get("id"), officeId),

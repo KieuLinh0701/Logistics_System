@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,12 +16,15 @@ import com.logistics.entity.AccountRole;
 import com.logistics.entity.OTP;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
+import com.logistics.entity.UserSettlementSchedule;
 import com.logistics.enums.OTPType;
+import com.logistics.enums.WeekDay;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
 import com.logistics.repository.OTPRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
+import com.logistics.repository.UserSettlementScheduleRepository;
 import com.logistics.request.common.auth.ChooseRoleRequest;
 import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
 import com.logistics.request.common.auth.ForgotPasswordResetRequest;
@@ -54,6 +58,7 @@ public class AuthService {
         private final OTPRepository otpRepository;
         private final EmailService emailService;
         private final NotificationService notificationService;
+        private final UserSettlementScheduleRepository scheduleRepository;
 
         public ApiResponse<String> register(RegisterRequest request) {
                 try {
@@ -173,6 +178,12 @@ public class AuthService {
 
                         otpEntity.setIsUsed(true);
                         otpRepository.save(otpEntity);
+
+                        UserSettlementSchedule schedule = new UserSettlementSchedule();
+                        schedule.setUser(user);
+                        schedule.setWeekdays(Set.of(WeekDay.MONDAY, WeekDay.TUESDAY, WeekDay.WEDNESDAY,
+                                        WeekDay.THURSDAY, WeekDay.FRIDAY));
+                        scheduleRepository.save(schedule);
 
                         String token = jwtUtils.generateToken(account, user, userRole.getName());
 

@@ -230,8 +230,8 @@ const OrderTable: React.FC<Props> = ({
           debt = 0;
         }
 
-        return <span style={{ color: debt < 0 ? 'red' : 'black' }}>
-          {debt.toLocaleString('vi-VN')}
+        return <span className={debt < 0 ? "custom-table-content-error" : ""}>
+          {Math.abs(debt).toLocaleString('vi-VN')}
         </span>;
       }
     },

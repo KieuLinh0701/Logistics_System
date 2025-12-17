@@ -6,7 +6,6 @@ import {
   GlobalOutlined,
   ShoppingOutlined,
   CarOutlined,
-  DatabaseOutlined,
   HomeOutlined,
   TeamOutlined,
   DollarOutlined,
@@ -225,10 +224,10 @@ const Sidenav: React.FC = () => {
         icon: <DropboxOutlined />,
       },
       {
-        key: "/transactions",
-        label: "Quản lý giao dịch",
+        key: "/settlements",
+        label: "COD & Đối soát",
         icon: <DollarOutlined />,
-        path: "/transactions",
+        path: "/settlements",
       },
       {
         key: "/bank-accounts",

@@ -162,4 +162,9 @@ public class Order {
 
     @OneToOne(mappedBy = "order")
     private PaymentSubmission paymentSubmission;
+
+    @ManyToOne
+    @JoinColumn(name = "settlement_batch_id")
+    private SettlementBatch settlementBatch;
+
 }
