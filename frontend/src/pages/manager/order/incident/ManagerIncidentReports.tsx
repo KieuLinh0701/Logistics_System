@@ -7,11 +7,19 @@ import IncidentDetailModal from "./components/IncidentDetailModal";
 import IncidentTable from "./components/Table";
 import type { Incident } from "../../../../types/incidentReport";
 import { HistoryOutlined } from "@ant-design/icons";
+import type { SearchRequest } from "../../../../types/request";
+import incidentReportApi from "../../../../api/incidentReportApi";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import "./ManagerIncidentReport.css"
+import ProcessingModal from "./components/ProcessingModal";
 
 const ManagerIncidentReports = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [loading, setLoading] = useState(false);
   const [incidents, setIncidents] = useState<Incident[] | []>([]);
-  
+
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -22,61 +30,120 @@ const ManagerIncidentReports = () => {
   const [filterSort, setFilterSort] = useState("NEWEST");
   const [filterPriority, setFilterPriority] = useState("ALL");
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
-  
+
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [mode, setMode] = useState<'view' | 'edit'>();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchIncidents = (page = currentPage, search?: string) => {
-    const payload: any = {
+  const updateURL = () => {
+    const params: any = {};
+
+    if (searchText) params.search = searchText;
+    if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
+    if (filterPriority !== "ALL") params.priority = filterPriority.toLowerCase();
+    if (filterType !== "ALL") params.type = filterType.toLowerCase();
+    params.sort = filterSort.toLowerCase();
+    if (currentPage) params.page = currentPage;
+
+    if (dateRange) {
+      params.start = dateRange[0].format("YYYY-MM-DD");
+      params.end = dateRange[1].format("YYYY-MM-DD");
+    }
+
+    setSearchParams(params, { replace: true });
+  };
+
+  useEffect(() => {
+    const s = searchParams.get("search");
+    const st = searchParams.get("status")?.toLocaleUpperCase();
+    const type = searchParams.get("type")?.toLocaleUpperCase();
+    const pr = searchParams.get("priority")?.toLocaleUpperCase();
+    const sort = searchParams.get("sort")?.toLocaleUpperCase();
+    const startDate = searchParams.get("start");
+    const endDate = searchParams.get("end");
+
+    if (s) setSearchText(s);
+    if (st) setFilterStatus(st);
+    if (type) setFilterType(type);
+    if (pr) setFilterPriority(pr);
+    if (sort) setFilterSort(sort);
+
+    if (startDate && endDate) {
+      setDateRange([
+        dayjs(startDate, "YYYY-MM-DD"),
+        dayjs(endDate, "YYYY-MM-DD")
+      ]);
+    }
+  }, [searchParams]);
+
+  const fetchIncidents = async (page = currentPage) => {
+    const param: SearchRequest = {
       page,
       limit: pageSize,
-      searchText: search ?? searchText,
+      search: searchText,
       priority: filterPriority != "ALL" ? filterPriority : undefined,
       type: filterType !== "ALL" ? filterType : undefined,
       status: filterStatus !== "ALL" ? filterStatus : undefined,
-      sort: filterSort !== "NEWEST" ? filterSort : undefined,
+      sort: filterSort,
     };
     if (dateRange) {
-      payload.startDate = dateRange[0].startOf("day").toISOString();
-      payload.endDate = dateRange[1].endOf("day").toISOString();
+      param.startDate = dateRange[0].startOf("day").toISOString();
+      param.endDate = dateRange[1].endOf("day").toISOString();
     }
-    // dispatch(listOfficeIncidents(payload));
+    try {
+      const result = await incidentReportApi.listManagerIncidentReports(param);
+      if (result.success && result.data) {
+        const list = result.data?.list || [];
+        setIncidents(list);
+        setTotal(result.data.pagination?.total || 0);
+        setCurrentPage(page);
+      } else {
+        message.error(result.message || "Lỗi khi lấy danh sách yêu cầu");
+      }
+    } catch (error) {
+      console.error("Error fetching shipping request:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditIncident = async (resolution: string, status: string) => {
-    // try {
-    //   if (!selectedIncident?.id) return;
+  const handleViewIncident = async (id: number) => {
+    try {
+      setLoading(true);
 
-    //   const resultAction = await dispatch(
-    //     handleIncident({
-    //       incidentId: selectedIncident.id,
-    //       status,
-    //       resolution,
-    //     })
-    //   ).unwrap();
-
-    //   if (resultAction.success) {
-    //     message.success(resultAction.message || "Xử lý báo cáo thành công");
-    //     fetchIncidents(currentPage);
-    //   } else {
-    //     message.error(resultAction.message || "Xử lý báo cáo thất bại");
-    //   }
-    // } catch (error: any) {
-    //   message.error(error.message || "Lỗi server khi xử lý báo cáo");
-    // }
+      const result = await incidentReportApi.getManagerIncidentReportById(id);
+      if (result.success && result.data) {
+        setSelectedIncident(result.data);
+        setIsModalVisible(true);
+        // form.setFieldsValue(result.data);
+      } else {
+        message.error(result.message || "Lỗi khi lấy báo cáo");
+      }
+    } catch (error) {
+      setSelectedIncident(null);
+      console.error("Lỗi khi lấy báo cáo:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleViewIncident = (incident: Incident) => {
-    setMode("view");
-    setSelectedIncident(incident);
-    setIsModalVisible(true);
-  };
+  const handleEditIncidentFromTable = async (id: number) => {
+    try {
+      setLoading(true);
 
-  const handleEditIncidentClick = (incident: Incident) => {
-    setMode("edit");
-    setSelectedIncident(incident);
-    setIsModalVisible(true);
+      const result = await incidentReportApi.getManagerIncidentReportById(id);
+      if (result.success && result.data) {
+        setSelectedIncident(result.data);
+        setIsModalOpen(true);
+      } else {
+        message.error(result.message || "Lỗi khi lấy báo cáo");
+      }
+    } catch (error) {
+      setSelectedIncident(null);
+      console.error("Lỗi khi lấy báo cáo:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -85,11 +152,40 @@ const ManagerIncidentReports = () => {
     setIsModalVisible(false);
   };
 
+  const handleViewOrderDetail = (trackingNumber: string) => {
+    navigate(`/orders/tracking/${trackingNumber}`);
+  };
+
+  const handleEditFromDetail = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleEditSuccess = async () => {
+    await fetchIncidents(currentPage);
+
+    if (isModalOpen && selectedIncident) {
+      try {
+        const result = await incidentReportApi.getManagerIncidentReportById(selectedIncident.id);
+        if (result.success && result.data) {
+          setSelectedIncident(result.data);
+        } else {
+          message.error(result.message || "Cập nhật chi tiết thất bại");
+        }
+      } catch (error) {
+        console.error("Lỗi khi load chi tiết:", error);
+        message.error("Cập nhật chi tiết thất bại");
+      }
+    }
+
+    setIsModalOpen(false);
+  };
+
   useEffect(() => {
     fetchIncidents();
   }, []);
 
   useEffect(() => {
+    updateURL();
     setCurrentPage(1);
     fetchIncidents(1);
   }, [searchText, filterType, dateRange, filterSort, filterStatus]);
@@ -143,15 +239,23 @@ const ManagerIncidentReports = () => {
             if (size) setPageSize(size);
             fetchIncidents(page);
           }}
-          onEdit={handleEditIncidentClick}
+          onEdit={handleEditIncidentFromTable}
         />
 
         <IncidentDetailModal
           incident={selectedIncident}
           visible={isModalVisible}
           onClose={handleModalClose}
-          onUpdate={handleEditIncident}
-          initialMode={mode}
+          loading={loading}
+          onEdit={handleEditFromDetail}
+          onViewOrderDetail={handleViewOrderDetail}
+        />
+
+        <ProcessingModal
+          open={!!selectedIncident && isModalOpen}
+          data={selectedIncident!}
+          onSuccess={handleEditSuccess}
+          onCancel={() => setIsModalOpen(false)}
         />
       </div>
     </div>

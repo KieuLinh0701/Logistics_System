@@ -4,8 +4,13 @@ import type { PaymentCheck, PaymentRequest } from "../types/payment";
 
 const paymentApi = {
   // User
-  async createVNPayURL(param: PaymentRequest) {
-    const res = await axiosClient.post<ApiResponse<string>>("/user/payment/vnpay/get-url", param);
+  async createVNPayURLFromList(param: PaymentRequest) {
+    const res = await axiosClient.post<ApiResponse<string>>("/user/payment/vnpay/get-url-list", param);
+    return res;
+  },
+
+  async createVNPayURLFromDetail(param: PaymentRequest) {
+    const res = await axiosClient.post<ApiResponse<string>>("/user/payment/vnpay/get-url-detail", param);
     return res;
   },
 

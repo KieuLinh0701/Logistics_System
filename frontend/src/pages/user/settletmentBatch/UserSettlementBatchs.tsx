@@ -16,7 +16,6 @@ import userSettlementScheduleApi from "../../../api/userSettlementScheduleApi";
 import type { PaymentCheck, PaymentRequest } from "../../../types/payment";
 import paymentApi from "../../../api/paymentApi";
 import PaymentModal from "./components/PaymentModal";
-import { getPaymentStatus } from "../../../utils/paymentUtils";
 
 
 const UserSettlementBatchs = () => {
@@ -43,8 +42,6 @@ const UserSettlementBatchs = () => {
 
   const [processModalVisible, setProcessModalVisible] = useState(false);
   const [selectedSettlementBatch, setSelectedSettlementBatch] = useState<SettlementBatch | null>(null);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const updateURL = () => {
     const params: any = {};
@@ -166,13 +163,11 @@ const UserSettlementBatchs = () => {
         amount
       };
 
-      const result = await paymentApi.createVNPayURL(param);
+      const result = await paymentApi.createVNPayURLFromList(param);
 
       if (result.success && result.data) {
         window.location.href = result.data;
         message.info("Đang chuyển tới VNPay để thanh toán...");
-        fetch(currentPage);
-        setSelectedSettlementBatch(null);
       } else {
         const errMsg = result.message || "Không tạo được link thanh toán";
         message.error(errMsg);
@@ -215,6 +210,8 @@ const UserSettlementBatchs = () => {
         if (result.success) {
           if (result.data) {
             message.success(result.message || "Thanh toán phiên đối soát thành công");
+            setProcessModalVisible(false);
+            fetch(currentPage);
           } else {
             message.error(result.message || "Thanh toán phiên đối soát thất bại");
           }
@@ -365,7 +362,7 @@ const UserSettlementBatchs = () => {
         <PaymentModal
           visible={processModalVisible}
           settlementCode={selectedSettlementBatch?.code}
-          remainAmount={Math.abs(selectedSettlementBatch?.balanceAmount || 0)}
+          remainAmount={selectedSettlementBatch?.remainAmount || 0}
           onCancel={() => {
             setProcessModalVisible(false);
             setSelectedSettlementBatch(null);

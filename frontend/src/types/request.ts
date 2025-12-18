@@ -9,4 +9,5 @@ export interface SearchRequest {
   payer?: string;
   startDate?: string;
   endDate?: string;
+  priority?: string;
 }

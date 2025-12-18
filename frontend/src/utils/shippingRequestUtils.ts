@@ -1,4 +1,8 @@
 // Điều kiện để thao tác với Shipping Request của user
+export const canCreateUserShippingRequestFromOrderDetail = (value: string) => {
+  return !['DRAFT'].includes(value);
+};
+
 export const canEditUserShippingRequest = (value: string) => {
   return ['PENDING'].includes(value);
 };

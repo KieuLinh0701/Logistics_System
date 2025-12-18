@@ -11,7 +11,7 @@ const { Text } = Typography;
 interface DetailModalProps {
     open: boolean;
     request: ShippingRequest | null;
-    loaing: boolean;
+    loading: boolean;
     onClose: () => void;
     onEdit: (request: ShippingRequest) => void;
     onCancel: (request: ShippingRequest) => void;
@@ -21,7 +21,7 @@ interface DetailModalProps {
 const DetailModal: React.FC<DetailModalProps> = ({
     open,
     request,
-    loaing,
+    loading,
     onClose,
     onEdit,
     onCancel,
@@ -136,7 +136,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                     </span>
                 </span>
             }
-            loading={loaing}
+            loading={loading}
             open={open}
             onCancel={onClose}
             className="modal-hide-scrollbar"
@@ -157,7 +157,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                     )}
                 </Space>
             ].filter(Boolean) as React.ReactNode[]}
-            width={700}
+            width={900}
             centered
             zIndex={1000}
             getContainer={false}

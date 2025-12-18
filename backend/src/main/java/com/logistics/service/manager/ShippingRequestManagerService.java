@@ -247,7 +247,47 @@ public class ShippingRequestManagerService {
 
         saveAttachments(shippingRequest, request.getAttachments(), oldAttachmentIds);
 
+        if (shippingRequest.getUser() != null && shippingRequest.getUser().getId() != null) {
+            sendShippingRequestNotification(shippingRequest);
+        }
+
         return new ApiResponse<>(true, "Phản hồi yêu cầu thành công", true);
+    }
+
+    private void sendShippingRequestNotification(ShippingRequest shippingRequest) {
+        Integer userId = shippingRequest.getUser().getId();
+
+        String title;
+        String message;
+
+        switch (shippingRequest.getStatus()) {
+            case PROCESSING -> {
+                title = "Yêu cầu đang xử lý";
+                message = "Yêu cầu mã " + shippingRequest.getCode() + " đang được bưu cục xử lý.";
+            }
+            case RESOLVED -> {
+                title = "Yêu cầu đã xử lý xong";
+                message = "Yêu cầu mã " + shippingRequest.getCode() + " đã được bưu cục xử lý thành công.";
+            }
+            case REJECTED -> {
+                title = "Yêu cầu bị từ chối";
+                message = "Yêu cầu mã " + shippingRequest.getCode() + " đã bị bưu cục từ chối.";
+            }
+            default -> {
+                title = "Cập nhật yêu cầu";
+                message = "Yêu cầu mã " + shippingRequest.getCode() + " đã được cập nhật trạng thái: "
+                        + shippingRequest.getStatus();
+            }
+        }
+
+        notificationService.create(
+                title,
+                message,
+                "shipping_request",
+                userId,
+                null,
+                "orders/requests",
+                shippingRequest.getCode());
     }
 
     private void saveAttachments(ShippingRequest request,

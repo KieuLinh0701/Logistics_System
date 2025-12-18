@@ -40,6 +40,7 @@ import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.EmployeeSpecification;
 import com.logistics.specification.UserSpecification;
+import com.logistics.utils.EmailService;
 import com.logistics.utils.PasswordUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,8 @@ public class EmployeeManagerService {
     private final AccountRoleRepository accountRoleRepository;
 
     private final PasswordEncoder passwordEncoder;
+
+    private final EmailService emailService;
 
     public Office getManagedOfficeByUserId(Integer userId) {
         List<Employee> employees = employeeRepository.findByUserId(userId);
@@ -138,7 +141,7 @@ public class EmployeeManagerService {
 
             String email = req.getUserEmail().trim().toLowerCase();
             String phone = req.getUserPhoneNumber().trim();
-
+ 
             // 2. tìm account theo email
             Optional<Account> optAccount = accountRepository.findByEmail(email);
 
@@ -156,8 +159,14 @@ public class EmployeeManagerService {
                 account.setEmail(email);
                 account.setPassword(passwordEncoder.encode(DEFAULT_TEMP_PASSWORD));
                 account.setIsActive(true);
-                account.setIsVerified(false);
+                account.setIsVerified(true);
                 account = accountRepository.save(account);
+
+                emailService.sendNewEmployeeAccountEmail(
+                        email,
+                        DEFAULT_TEMP_PASSWORD,
+                        req.getUserFirstName(),
+                        req.getUserLastName());
 
                 // tạo user
                 User user = new User();

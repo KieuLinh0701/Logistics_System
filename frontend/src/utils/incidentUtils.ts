@@ -49,3 +49,24 @@ export const translateIncidentFilterSort = (value: string): string => {
     default: return value;
   }
 };
+
+// Manager: các trạng thái được phép chuyển tiếp tùy theo status hiện tại
+export const getAllowedManagerIncidentReportStatuses = (currentStatus?: string): string[] => {
+  if (!currentStatus) return [];
+
+  switch (currentStatus) {
+    case 'PENDING':
+      return ['PROCESSING', 'RESOLVED', 'REJECTED'];
+
+    case 'PROCESSING':
+      return ['RESOLVED', 'REJECTED'];
+
+    case 'RESOLVED':
+    case 'REJECTED':
+    case 'CANCELLED':
+      return [];
+
+    default:
+      return [];
+  }
+};

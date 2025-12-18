@@ -27,13 +27,22 @@ public class PaymentUserController {
         @Autowired
         private PaymentUserService service;
 
-        @PostMapping("/vnpay/get-url")
-        public ResponseEntity<ApiResponse<String>> createVNPayURL(
+        @PostMapping("/vnpay/get-url-list")
+        public ResponseEntity<ApiResponse<String>> createVNPayURLFromList(
                         @Valid @RequestBody UserPaymentRequest paymentRequest,
                         HttpServletRequest request) {
 
                 Integer userId = (Integer) request.getAttribute("currentUserId");
-                return ResponseEntity.ok(service.createVNPayURL(userId, paymentRequest, request));
+                return ResponseEntity.ok(service.createVNPayURL(userId, paymentRequest, request, false));
+        }
+
+        @PostMapping("/vnpay/get-url-detail")
+        public ResponseEntity<ApiResponse<String>> createVNPayURLFromDetail(
+                        @Valid @RequestBody UserPaymentRequest paymentRequest,
+                        HttpServletRequest request) {
+
+                Integer userId = (Integer) request.getAttribute("currentUserId");
+                return ResponseEntity.ok(service.createVNPayURL(userId, paymentRequest, request, true));
         }
 
         @PostMapping("/vnpay/check")

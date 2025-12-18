@@ -198,4 +198,22 @@ public class SettlementBatchUserService {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
     }
+
+    public ApiResponse<UserSettlementBatchListDto> getBySettlementBatchId(Integer userId, Integer batchId) {
+        try {
+            SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, userId)
+                    .orElse(null);
+
+            if (batch == null) {
+                return new ApiResponse<>(false, "Không tìm thấy phiên đối soát của bạn", null);
+            }
+            BigDecimal remainAmount = calculateRemainAmount(batch);
+            UserSettlementBatchListDto dto = SettlementBatchMapper.toListDtos(batch, remainAmount);
+
+            return new ApiResponse<>(true, "Lấy thông tin phiên đối soát thành công", dto);
+
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
 }

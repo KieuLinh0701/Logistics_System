@@ -23,6 +23,11 @@ const settlementBatchApi = {
     return res;
   },
 
+  async getbyUserSettlementBatchId(id: number) {
+    const res = await axiosClient.get<ApiResponse<SettlementBatch>>(`/user/settlement-batchs/${id}`);
+    return res;
+  },
+
   async exportUserSettlementBatchs(params: SearchRequest) {
     try {
       const res = await axiosExport.get("/user/settlement-batchs/export", {

@@ -39,6 +39,18 @@ public class SettlementBatchUserController {
                 return ResponseEntity.ok(result);
         }
 
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<UserSettlementBatchListDto>> getBySettlementBatchId(
+                        @PathVariable Integer id,
+                        HttpServletRequest request) {
+                Integer userId = (Integer) request.getAttribute("currentUserId");
+
+                ApiResponse<UserSettlementBatchListDto> result = service.getBySettlementBatchId(
+                                userId,
+                                id);
+                return ResponseEntity.ok(result);
+        } 
+
         @GetMapping("/{id}/orders")
         public ResponseEntity<ApiResponse<ListResponse<UserSettlementOrderDto>>> getOrdersBySettlementBatchId(
                         @PathVariable Integer id,

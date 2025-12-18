@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
+import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.SettlementStatus;
 import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.enums.SettlementTransactionType;
@@ -32,12 +33,14 @@ public class PaymentUserService {
 
     private final SettlementTransactionRepository transactionRepository;
 
+    private final OrderRepository orderRepository;
+
     private final VNPayService vnPayService;
 
     private final VNPayUtils vnPayUtils;
 
     public ApiResponse<String> createVNPayURL(Integer userId, UserPaymentRequest paymentRequest,
-            HttpServletRequest request) {
+            HttpServletRequest request, boolean isDetail) {
         try {
             System.out.println("id" + paymentRequest.getSettlementId());
             System.out.println("amount" + paymentRequest.getAmount());
@@ -81,7 +84,7 @@ public class PaymentUserService {
             String paymentUrl = vnPayService.createPaymentUrl(
                     transaction.getCode(),
                     settlement.getCode(),
-                    settlement.getId(),
+                    isDetail ? settlement.getId() : null,
                     paymentRequest.getAmount(),
                     vnp_IpAddr);
 
@@ -95,23 +98,7 @@ public class PaymentUserService {
     @Transactional
     public ApiResponse<Boolean> handleVNPayReturn(Integer userId, UserPaymentCheck paymentCheck) {
         try {
-            System.out.println("===== DEBUG UserPaymentCheck =====");
-            System.out.println("transactionCode: " + paymentCheck.getTransactionCode());
-            System.out.println("responseCode: " + paymentCheck.getResponseCode());
-            System.out.println("referenceCode: " + paymentCheck.getReferenceCode());
-            System.out.println("secureHash: " + paymentCheck.getSecureHash());
-            System.out.println("amount: " + paymentCheck.getAmount());
-            System.out.println("bankCode: " + paymentCheck.getBankCode());
-            System.out.println("bankTranNo: " + paymentCheck.getBankTranNo());
-            System.out.println("cardType: " + paymentCheck.getCardType());
-            System.out.println("orderInfo: " + paymentCheck.getOrderInfo());
-            System.out.println("payDate: " + paymentCheck.getPayDate());
-            System.out.println("tmnCode: " + paymentCheck.getTmnCode());
-            System.out.println("transactionStatus: " + paymentCheck.getTransactionStatus());
-            System.out.println("secureHashType: " + paymentCheck.getSecureHashType());
-            System.out.println("==================================");
-
-            // 1. Lấy transaction trước
+            // 1. Lấy transaction
             String transactionCode = paymentCheck.getTransactionCode();
             SettlementTransaction transaction = transactionRepository
                     .findByCode(transactionCode)
@@ -146,14 +133,25 @@ public class PaymentUserService {
                         ? SettlementStatus.COMPLETED
                         : SettlementStatus.PARTIAL);
             } else {
-                // Nếu chữ ký không hợp lệ hoặc giao dịch thất bại, check tổng thành công
                 settlement.setStatus(totalPaid.compareTo(BigDecimal.ZERO) > 0
                         ? SettlementStatus.PARTIAL
                         : SettlementStatus.FAILED);
             }
             batchRepository.save(settlement);
 
-            // 5. Trả về kết quả
+            // 5. Nếu batch đã COMPLETED, cập nhật tất cả orders chưa PAID
+            if (settlement.getStatus() == SettlementStatus.COMPLETED && settlement.getOrders() != null) {
+                LocalDateTime now = LocalDateTime.now();
+                settlement.getOrders().forEach(order -> {
+                    if (order.getPaymentStatus() != OrderPaymentStatus.PAID) {
+                        order.setPaymentStatus(OrderPaymentStatus.PAID);
+                        order.setPaidAt(now);
+                    }
+                });
+                orderRepository.saveAll(settlement.getOrders());
+            }
+
+            // 6. Trả về kết quả
             if (!isValidSignature) {
                 return new ApiResponse<>(false, "Chữ ký không hợp lệ", false);
             }

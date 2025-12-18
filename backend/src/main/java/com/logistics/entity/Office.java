@@ -3,6 +3,7 @@ package com.logistics.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.hibernate.envers.Audited;

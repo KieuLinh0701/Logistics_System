@@ -19,4 +19,5 @@ public class UserSettlementOrderDto {
     private String status;
     private LocalDateTime deliveriedAt;
     private String payer;
+    private String paymentStatus;
 }

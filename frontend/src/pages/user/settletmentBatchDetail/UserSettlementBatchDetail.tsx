@@ -13,6 +13,11 @@ import type { Order } from "../../../types/order";
 import DataTable from "./components/Table";
 import SettlementTransactionTable from "./components/SettlementTransactionTable";
 import type { SettlementTransaction } from "../../../types/settlementTransaction";
+import type { SettlementBatch } from "../../../types/settlementBatch";
+import paymentApi from "../../../api/paymentApi";
+import type { PaymentCheck, PaymentRequest } from "../../../types/payment";
+import { canPayUserSettlementBatch } from "../../../utils/settlementBatchUtils";
+import PaymentModal from "./components/PaymentModal";
 
 
 const UserSettlementBatchDetail = () => {
@@ -25,6 +30,7 @@ const UserSettlementBatchDetail = () => {
 
   const [loading, setLoading] = useState(false);
   const [datas, setDatas] = useState<Order[] | []>([]);
+  const [settlement, setSettlement] = useState<SettlementBatch | null>(null);
 
   const [transactions, setTransaction] = useState<SettlementTransaction[] | []>([]);
 
@@ -38,6 +44,10 @@ const UserSettlementBatchDetail = () => {
   const [filterPayer, setFilterPayer] = useState("ALL");
   const [filterCod, setFilterCod] = useState("ALL");
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+
+  const [canPay, setCanPay] = useState(false);
+
+  const [processModalVisible, setProcessModalVisible] = useState(false);
 
   const updateURL = () => {
     const params: any = {};
@@ -121,6 +131,27 @@ const UserSettlementBatchDetail = () => {
     }
   };
 
+  const fetchSettlement = async () => {
+    if (!settlementId) return;
+    try {
+      setLoading(true);
+
+      const result = await settlementBatchApi.getbyUserSettlementBatchId(settlementId);
+      if (result.success && result.data) {
+        setSettlement(result.data);
+      } else {
+        setSettlement(null);
+        message.error(result.message || "Lỗi khi lấy chi tiết phiên đối soát của bạn");
+      }
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy chi tiết phiên đối soát của bạn");
+      console.error("Error fetchdataing settlement:", error);
+      setSettlement(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExport = async () => {
     try {
       setLoading(true);
@@ -152,20 +183,98 @@ const UserSettlementBatchDetail = () => {
     }
   };
 
-  const handlePayment = () => {
+  const handleSubmitPayment = async (amount: number) => {
+    if (!settlement) return;
 
+    try {
+      const param: PaymentRequest = {
+        settlementId: settlement.id,
+        amount
+      };
+
+      const result = await paymentApi.createVNPayURLFromDetail(param);
+
+      if (result.success && result.data) {
+        window.location.href = result.data;
+        message.info("Đang chuyển tới VNPay để thanh toán...");
+      } else {
+        const errMsg = result.message || "Không tạo được link thanh toán";
+        message.error(errMsg);
+      }
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi tạo link thanh toán VNPay");
+    }
   };
+
+  useEffect(() => {
+    if (settlement) {
+      setCanPay(canPayUserSettlementBatch(settlement));
+    }
+  }, [settlement]);
+
+  useEffect(() => {
+    const checkPayment = async () => {
+      const queryParams = new URLSearchParams(window.location.search);
+
+      // Map các param VNPay sang PaymentCheck
+      const paymentCheck: PaymentCheck = {
+        transactionCode: queryParams.get("vnp_TxnRef") || "",
+        responseCode: queryParams.get("vnp_ResponseCode") || "",
+        referenceCode: queryParams.get("vnp_TransactionNo") || "",
+        secureHash: queryParams.get("vnp_SecureHash") || "",
+        amount: queryParams.get("vnp_Amount") || undefined,
+        bankCode: queryParams.get("vnp_BankCode") || undefined,
+        bankTranNo: queryParams.get("vnp_BankTranNo") || undefined,
+        cardType: queryParams.get("vnp_CardType") || undefined,
+        orderInfo: queryParams.get("vnp_OrderInfo") || undefined,
+        payDate: queryParams.get("vnp_PayDate") || undefined,
+        tmnCode: queryParams.get("vnp_TmnCode") || undefined,
+        transactionStatus: queryParams.get("vnp_TransactionStatus") || undefined,
+        secureHashType: queryParams.get("vnp_SecureHashType") || undefined,
+      };
+
+      // Kiểm tra param bắt buộc
+      const requiredFields = ["transactionCode", "responseCode", "referenceCode", "secureHash"];
+      const hasAllFields = requiredFields.every((field) => (paymentCheck as any)[field]);
+      if (!hasAllFields) return;
+
+      try {
+        // Gọi backend để kiểm tra và cập nhật giao dịch
+        const result = await paymentApi.checkPaymentVPN(paymentCheck);
+
+        if (result.success) {
+          if (result.data) {
+            message.success(result.message || "Thanh toán phiên đối soát thành công");
+            setProcessModalVisible(false);
+            fetchTransaction();
+            setCurrentPage(1);
+            fetchdata(1);
+            fetchSettlement();
+          } else {
+            message.error(result.message || "Thanh toán phiên đối soát thất bại");
+          }
+          fetchSettlement();
+        } else {
+          message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
+        }
+      } catch (error) {
+        message.error("Có lỗi xảy ra khi thanh toán phiên đối soát");
+        console.error(error);
+      }
+    };
+
+    checkPayment();
+  }, []);
 
   const handleDetail = (trackingNumber: string) => {
     navigate(`/orders/tracking/${trackingNumber}`);
   };
 
   const handleOpenModalPay = () => {
-    // setIsModalOpen(true);
-  }
+    setProcessModalVisible(true);
+  };
 
-  useEffect(() => {
-    const fetchTransaction = async () => {
+  const fetchTransaction = async () => {
       try {
         setLoading(true);
         const result = await settlementBatchApi.listUserSettlementTransactionsBySettlementBatchId(settlementId);
@@ -183,8 +292,10 @@ const UserSettlementBatchDetail = () => {
       }
     };
 
+  useEffect(() => {
     fetchTransaction();
     fetchdata();
+    fetchSettlement();
   }, []);
 
   useEffect(() => {
@@ -200,13 +311,14 @@ const UserSettlementBatchDetail = () => {
           <Col>
             <Title level={3} className="list-page-title-main">
               <CheckCircleOutlined className="title-icon" />
-              Chi tiết phiên đối soát
+              Chi tiết phiên đối soát #{settlement?.code}
             </Title>
           </Col>
 
           <Col>
             <div className="list-page-actions">
               <Actions
+                canPay={canPay}
                 onPay={handleOpenModalPay}
                 onExport={handleExport}
               />
@@ -217,7 +329,11 @@ const UserSettlementBatchDetail = () => {
         <Tabs
           className="custom-tabs"
           activeKey={currentTab}
-          onChange={(key) => setSearchParams({ ...Object.fromEntries(searchParams), tab: key })}
+          onChange={(key) => {
+            const params = { ...Object.fromEntries(searchParams), tab: key };
+            setSearchParams(params, { replace: true });
+            setCurrentTab(key);
+          }}
           items={[
             {
               key: 'orders',
@@ -296,6 +412,21 @@ const UserSettlementBatchDetail = () => {
             }
           ]}
         />
+
+        <PaymentModal
+          visible={processModalVisible}
+          settlementCode={settlement?.code}
+          remainAmount={settlement?.remainAmount || 0}
+          onCancel={() => {
+            setProcessModalVisible(false);
+            fetchSettlement();
+          }}
+          onSubmit={(amount) => {
+            handleSubmitPayment(amount);
+            setProcessModalVisible(false);
+          }}
+        />
+
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import AddEditModal from "../request/components/AddEditModal";
 import FromOfficeInfo from "./components/FromOfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
+import { canCreateUserShippingRequestFromOrderDetail } from "../../../../utils/shippingRequestUtils";
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -196,6 +197,7 @@ const UserOrderDetail: React.FC = () => {
     const canPrint = canPrintUserOrder(order.status);
     const canDelete = canDeleteUserOrder(order.status);
     const canReady = canReadyUserOrder(order.status);
+    const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status);
 
     return (
         <div className="order-detail container">
@@ -232,7 +234,7 @@ const UserOrderDetail: React.FC = () => {
                 canCancel={canCancel}
                 canPrint={canPrint}
                 canDelete={canDelete}
-                canRequest={true}
+                canRequest={canRequets}
                 canReady={canReady}
                 onPublic={handlePublicOrder}
                 onEdit={handleEditOrder}

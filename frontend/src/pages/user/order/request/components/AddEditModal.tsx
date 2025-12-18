@@ -167,7 +167,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
 
       const oldFileIds = fileList
         .filter(file => file.url && !file.originFileObj)
-        .map(file => file.uid); 
+        .map(file => file.uid);
       payload.append("oldAttachments", JSON.stringify(oldFileIds));
 
       console.log("payload keys", Array.from(payload.keys()));
@@ -296,6 +296,10 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
               }),
               { max: 1000, message: "Nội dung tối đa 1000 ký tự!" },
             ]}
+            getValueFromEvent={(e) => {
+              const value = e.target.value;
+              return value === "" ? null : value;
+            }}
           >
             <Input.TextArea
               className="modal-custom-input-textarea"

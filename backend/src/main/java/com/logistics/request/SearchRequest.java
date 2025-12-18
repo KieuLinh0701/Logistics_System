@@ -17,6 +17,7 @@ public class SearchRequest {
     private String shift;
     private String cod; 
     private String payer;
+    private String priority;
     private String startDate;
     private String endDate;
 }

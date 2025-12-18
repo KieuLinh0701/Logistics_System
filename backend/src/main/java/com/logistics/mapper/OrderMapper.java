@@ -40,6 +40,7 @@ public class OrderMapper {
         dto.setStatus(entity.getStatus().name());
         dto.setDeliveriedAt(entity.getDeliveredAt());
         dto.setPayer(entity.getPayer().name());
+        dto.setPaymentStatus(entity.getPaymentStatus().name());
 
         return dto;
     }

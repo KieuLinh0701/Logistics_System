@@ -19,9 +19,9 @@ public class VNPayService {
     private final VNPayConfig config;
     private final VNPayUtils vnPayUtil;
 
-    public String createPaymentUrl(String transactionCode, 
-    String settlementCode, Integer settlementId,
-    BigDecimal amount, String ip) {
+    public String createPaymentUrl(String transactionCode,
+            String settlementCode, Integer settlementId,
+            BigDecimal amount, String ip) {
         try {
             String vnp_Version = "2.1.0";
             String vnp_Command = "pay";
@@ -29,7 +29,7 @@ public class VNPayService {
 
             long vnpAmount = amount.multiply(BigDecimal.valueOf(100)).longValue();
             String vnp_TxnRef = transactionCode;
-            String vnp_IpAddr = ip; 
+            String vnp_IpAddr = ip;
 
             Map<String, String> vnp_Params = new HashMap<>();
             vnp_Params.put("vnp_Version", vnp_Version);
@@ -41,9 +41,15 @@ public class VNPayService {
             vnp_Params.put("vnp_OrderInfo", "Thanh toan phien doi soat: " + settlementCode);
             vnp_Params.put("vnp_OrderType", vnp_OrderType);
             vnp_Params.put("vnp_Locale", "vn");
-            vnp_Params.put("vnp_ReturnUrl", config.getVnp_ReturnUrl());
+
+            if (settlementId != null) {
+                vnp_Params.put("vnp_ReturnUrl", config.getVnp_ReturnUrl() + "/" + settlementId);
+            } else {
+                vnp_Params.put("vnp_ReturnUrl", config.getVnp_ReturnUrl());
+            }
+
             vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
- 
+
             Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
 
@@ -52,7 +58,7 @@ public class VNPayService {
             vnp_Params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
 
             List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
-            Collections.sort(fieldNames); 
+            Collections.sort(fieldNames);
 
             StringBuilder hashData = new StringBuilder();
             StringBuilder query = new StringBuilder();
@@ -78,8 +84,7 @@ public class VNPayService {
 
             String secureHash = vnPayUtil.hmacSHA512(
                     config.getSecretKey(),
-                    hashData.toString()
-            );
+                    hashData.toString());
 
             return config.getVnp_PayUrl()
                     + "?"

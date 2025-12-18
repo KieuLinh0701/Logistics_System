@@ -323,7 +323,7 @@ const ManagerShippingRequests: React.FC = () => {
       <DetailModal
         open={detailModalVisible}
         request={selectedRequest}
-        loaing={loading}
+        loading={loading}
         onClose={handleCloseDetail}
         onEdit={handleEditFromDetail}
         onCancel={showConfirmCancel}

@@ -5,7 +5,7 @@ export const canPayUserSettlementBatch = (
 ): boolean => {
   return (
     ['PENDING', 'PARTIAL', 'FAILED'].includes(batch.status) &&
-    batch.balanceAmount < 0
+    batch.remainAmount > 0 && batch.balanceAmount < 0
   );
 };
 

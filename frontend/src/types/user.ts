@@ -33,6 +33,7 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  fullName?: string;
   phoneNumber?: string;
   role?: string;
   roleId?: number;

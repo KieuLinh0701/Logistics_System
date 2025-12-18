@@ -91,7 +91,7 @@ const SettlementTransactionTable: React.FC<Props> = ({
       key: "paidAt",
       align: "center",
       render: (value) =>
-        value ? dayjs(value).format("DD/MM/YYYY") : <span className="text-muted">N/A</span>,
+        value ? dayjs(value).format("DD/MM/YYYY hh:mm:ss") : <span className="text-muted">N/A</span>,
     },
   ];
 
