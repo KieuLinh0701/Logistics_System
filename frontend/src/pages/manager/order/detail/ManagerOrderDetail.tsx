@@ -13,7 +13,7 @@ import type { Order } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canAtOriginOfficeManagerOrder, canCancelUserOrder, canEditUserOrder, canPrintUserOrder } from "../../../../utils/orderUtils";
+import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderStatus } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 
@@ -45,8 +45,8 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message);
             }
 
-        } catch (e) {
-            message.error("Lỗi tải đơn hàng");
+        } catch (error: any) {
+              message.error(error.message || "Lỗi tải đơn hàng");
         } finally {
             setLoading(false);
         }
@@ -72,7 +72,7 @@ const UserOrderDetail: React.FC = () => {
         setLoading(true);
         try {
             if (!order?.id) return;
-            const result = await orderApi.cancelUserOrder(order.id);
+            const result = await orderApi.cancelManagerOrder(order.id);
             if (result.success && result.data) {
                 message.success("Hủy đơn hàng thành công");
                 fetchOrder();
@@ -80,8 +80,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Hủy đơn thất bại");
             }
         } catch (error: any) {
-            message.error("Lỗi server khi hủy đơn hàng");
-            console.log("Lỗi server khi hủy đơn hàng: ", error.message)
+              message.error(error.message || "Lỗi khi hủy đơn hàng");
         } finally {
             setLoading(false);
             setCancelModalOpen(false);
@@ -123,9 +122,9 @@ const UserOrderDetail: React.FC = () => {
         return <div>Đang tải chi tiết đơn hàng...</div>;
     }
 
-    const canEdit = canEditUserOrder(order.status);
-    const canCancel = canCancelUserOrder(order.status);
-    const canPrint = canPrintUserOrder(order.status);
+    const canEdit = canEditManagerOrder(order.status);
+    const canCancel = canCancelManagerOrder(order.status as OrderStatus, order.createdByType as OrderCreatorType);
+    const canPrint = canPrintManagerOrder(order.status);
     const canSetAtOriginOffice = canAtOriginOfficeManagerOrder(order.status);
 
     return (

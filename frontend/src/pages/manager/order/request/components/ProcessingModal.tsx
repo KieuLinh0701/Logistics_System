@@ -184,8 +184,8 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
       } else {
         message.error(result.message || "Có lỗi khi phản hồi yêu cầu");
       }
-    } catch (error) {
-      message.error("Có lỗi khi phản hồi yêu cầu");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi phản hồi yêu cầu");
     } finally {
       setLoading(false);
     }

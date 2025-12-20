@@ -14,7 +14,6 @@ interface DetailModalProps {
     loading: boolean;
     onClose: () => void;
     onEdit: (request: ShippingRequest) => void;
-    onCancel: (request: ShippingRequest) => void;
     onViewOrderDetail?: (trackingNumber: string) => void;
 }
 
@@ -24,7 +23,6 @@ const DetailModal: React.FC<DetailModalProps> = ({
     loading,
     onClose,
     onEdit,
-    onCancel,
     onViewOrderDetail
 }) => {
     const [address, setAddress] = useState<string>('');
@@ -61,10 +59,6 @@ const DetailModal: React.FC<DetailModalProps> = ({
 
     const handleEdit = () => {
         onEdit(request);
-    };
-
-    const handelCancel = () => {
-        onCancel(request);
     };
 
     const getFileIcon = (fileName: string): string | undefined => {

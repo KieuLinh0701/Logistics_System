@@ -19,6 +19,7 @@ import com.logistics.entity.User;
 import com.logistics.entity.UserPromotion;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.PromotionDiscountType;
+import com.logistics.enums.PromotionStatus;
 import com.logistics.mapper.PromotionMapper;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PromotionRepository;
@@ -92,6 +93,9 @@ public class PromotionUserService {
             long nonCanceledOrders,
             PromotionUserRequest req) {
         LocalDateTime now = LocalDateTime.now();
+
+        if (p.getStatus() != PromotionStatus.ACTIVE)
+            return false;
 
         // 1. Thời gian hiệu lực
         if (now.isBefore(p.getStartDate()) || now.isAfter(p.getEndDate()))

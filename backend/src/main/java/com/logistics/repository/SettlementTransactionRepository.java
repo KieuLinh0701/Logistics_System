@@ -1,5 +1,6 @@
 package com.logistics.repository;
 
+import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.enums.SettlementTransactionStatus;
 
@@ -29,4 +30,15 @@ public interface SettlementTransactionRepository
         List<SettlementTransaction> findBySettlementBatchId(Integer settlementBatchId, Sort sort);
 
         Optional<SettlementTransaction> findByCode(String code);
+
+        // Tổng tiền đã trả thành công
+        @Query("""
+                            SELECT COALESCE(SUM(t.amount), 0)
+                            FROM SettlementTransaction t
+                            WHERE t.settlementBatch.id = :batchId
+                              AND t.status = com.logistics.enums.SettlementTransactionStatus.SUCCESS
+                              AND t.type = com.logistics.enums.SettlementTransactionType.SHOP_TO_SYSTEM
+                        """)
+        BigDecimal sumPaidDebtByBatch(Integer batchId);
+
 }

@@ -148,9 +148,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(result.message || "Không thể tải thông tin khuyến mãi")
             }
-        } catch (error) {
-            console.log("Lỗi tải thông tin khuyến mãi", error);
-            message.error("Không thể tải thông tin khuyến mãi");
+        } catch (error: any) {
+            message.error(error.message || "Không thể tải thông tin khuyến mãi");
         } finally {
             setLoadingPromotion(false);
         }
@@ -167,7 +166,7 @@ const UserOrderCreate: React.FC = () => {
         }
 
         fetchPromotions();
-    }, [serviceFee, weight, selectedServiceType, promotionSearch]);
+    }, [page, limit, serviceFee, weight, selectedServiceType, promotionSearch]);
 
 
     const handlePromotionSearch = async (value: string) => {
@@ -177,7 +176,6 @@ const UserOrderCreate: React.FC = () => {
     const handlePageChangePromotion = (newPage: number, newLimit?: number) => {
         setPage(newPage);
         setLimit(newLimit || limit);
-        fetchPromotions();
     };
 
     const handleOpenPromoModal = () => {
@@ -236,8 +234,8 @@ const UserOrderCreate: React.FC = () => {
             if (response.success && response.data) {
                 setExistBankAccount(response.data);
             }
-        } catch (error) {
-            console.error("Error fetching Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Error fetching Addresses:", error);
             setExistBankAccount(false);
         } finally {
             setLoadingBank(false);
@@ -257,8 +255,8 @@ const UserOrderCreate: React.FC = () => {
                 if (response.success && response.data) {
                     setServiceTypes(response.data);
                 }
-            } catch (error) {
-                console.error("Error fetching Service types:", error);
+            } catch (error: any) {
+                message.error(error.message || "Error fetching Service types:", error);
             } finally {
                 setLoadingService(false);
             }
@@ -275,8 +273,8 @@ const UserOrderCreate: React.FC = () => {
             if (response.success && response.data) {
                 setAddresses(response.data);
             }
-        } catch (error) {
-            console.error("Error fetching Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Error fetching Addresses:", error);
         } finally {
             setLoadingAddress(false);
         }
@@ -322,9 +320,8 @@ const UserOrderCreate: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                message.error(error.message || "Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -414,9 +411,8 @@ const UserOrderCreate: React.FC = () => {
             }
 
             handleCancel();
-        } catch (error) {
-            console.error("Error saving address:", error);
-            message.error('Vui lòng kiểm tra lại thông tin!');
+        } catch (error: any) {
+            message.error(error.message || "Error saving address:");
         } finally {
             setLoadingAddress(false);
         }
@@ -432,9 +428,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(response.message || "Xóa địa chỉ thành công");
             }
-        } catch (error) {
-            message.error("Có lỗi khi xóa địa chỉ");
-            console.error("Error Delete Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Có lỗi khi xóa địa chỉ");
         } finally {
             setLoadingAddress(false);
         }
@@ -450,9 +445,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(response.message || "Có lỗi khi đặt địa chỉ làm mặc định");
             }
-        } catch (error) {
-            message.error("Có lỗi khi đặt địa chỉ làm mặc định");
-            console.error("Error Set Default Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Có lỗi khi đặt địa chỉ làm mặc định");
         } finally {
             setLoadingAddress(false);
         }
@@ -492,9 +486,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(result.message || "Không thể tải danh sách sản phẩm")
             }
-        } catch (error) {
-            console.log("Lỗi tải danh sách sản phẩm", error);
-            message.error("Không thể tải danh sách sản phẩm");
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tải danh sách sản phẩm");
         } finally {
             setLoadingProduct(false);
         }
@@ -510,13 +503,13 @@ const UserOrderCreate: React.FC = () => {
     }, [showProductModal]);
 
     useEffect(() => {
+        if (!showProductModal) return;
         fetchProducts();
-    }, [productFilterType, productSearch]);
+    }, [page, limit, productFilterType, productSearch, showProductModal]);
 
     const handlePageChangeProduct = (newPage: number, newLimit?: number) => {
         setPage(newPage);
         setLimit(newLimit || limit);
-        fetchProducts();
     };
 
     const handleProductSearch = async (value: string) => {
@@ -636,9 +629,8 @@ const UserOrderCreate: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể tải danh sách bưu cục")
                 }
-            } catch (error) {
-                console.log("Lỗi tải danh sách bưu cục", error);
-                message.error("Không thể tải danh sách bưu cục");
+            } catch (error: any) {
+                message.error(error.message || "Không thể tải danh sách bưu cục");
                 setLocalOffices([]);
             } finally {
                 setLoadingOffice(false);
@@ -675,9 +667,8 @@ const UserOrderCreate: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                  message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -769,7 +760,6 @@ const UserOrderCreate: React.FC = () => {
                 message.error(result.message || "Tạo đơn hàng thất bại")
             }
         } catch (error: any) {
-            console.log("Lỗi tạo đơn hàng", error);
             message.error(error.message || "Tạo đơn hàng thất bại");
         } finally {
             setLoadingOrder(false);

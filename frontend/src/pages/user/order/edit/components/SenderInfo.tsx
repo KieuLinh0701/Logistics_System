@@ -4,6 +4,8 @@ import { EditOutlined } from "@ant-design/icons";
 import AddressPickerModal from "./AddressPickerModal";
 import type { Address } from "../../../../../types/address";
 import locationApi from "../../../../../api/locationApi";
+import { type OrderStatus } from "../../../../../utils/orderUtils";
+import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 
 interface Props {
     sender: {
@@ -13,6 +15,7 @@ interface Props {
         wardCode: number;
         cityCode: number;
     };
+    status: OrderStatus;
     initialSelected: Address | null;
     addresses: Address[];
     onSelectAddress: (addr: Address) => void;
@@ -33,6 +36,7 @@ const SenderInfo: React.FC<Props> = ({
     onDelete,
     onSetDefault,
     onOpenAddressModal,
+    status,
 }) => {
 
     const [showModal, setShowModal] = useState(false);
@@ -77,6 +81,7 @@ const SenderInfo: React.FC<Props> = ({
                 <Button
                     className="create-order-btn"
                     icon={<EditOutlined />}
+                    disabled={!canEditUserOrderField('senderAddress', status)}
                     onClick={() => {
                         setShowModal(true);
                         if (onOpenAddressModal) onOpenAddressModal();

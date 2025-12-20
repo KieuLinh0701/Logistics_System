@@ -101,7 +101,6 @@ const ManagerPaymentSubmissions = () => {
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách đối soát của bưu cục");
-      console.error("Error fetching payment submission:", error);
     } finally {
       setLoading(false);
     }

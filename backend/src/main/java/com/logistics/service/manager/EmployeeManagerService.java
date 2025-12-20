@@ -38,6 +38,7 @@ import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
+import com.logistics.service.common.NotificationService;
 import com.logistics.specification.EmployeeSpecification;
 import com.logistics.specification.UserSpecification;
 import com.logistics.utils.EmailService;
@@ -62,6 +63,8 @@ public class EmployeeManagerService {
     private final PasswordEncoder passwordEncoder;
 
     private final EmailService emailService;
+
+    private final NotificationService notificationService;
 
     public Office getManagedOfficeByUserId(Integer userId) {
         List<Employee> employees = employeeRepository.findByUserId(userId);
@@ -141,7 +144,7 @@ public class EmployeeManagerService {
 
             String email = req.getUserEmail().trim().toLowerCase();
             String phone = req.getUserPhoneNumber().trim();
- 
+
             // 2. tìm account theo email
             Optional<Account> optAccount = accountRepository.findByEmail(email);
 
@@ -191,6 +194,16 @@ public class EmployeeManagerService {
 
                 Employee emp = buildEmployee(user, accountRole, office, req);
                 employeeRepository.save(emp);
+
+                notificationService.create(
+                        "Chào mừng bạn đến bưu cục " + office.getName(),
+                        "Bạn đã được thêm vào bưu cục với chức vụ " + req.getUserRole() +
+                                ". Hãy sử dụng email của bạn để đăng nhập.",
+                        "employee",
+                        user.getId(),
+                        null,
+                        "employees",
+                        emp.getId().toString());
 
                 return new ApiResponse<>(true, "Thêm nhân viên mới thành công", true);
             }
@@ -312,6 +325,17 @@ public class EmployeeManagerService {
                 // tạo employee mới
                 Employee newEmp = buildEmployee(account.getUser(), ar, office, req);
                 employeeRepository.save(newEmp);
+
+                notificationService.create(
+                        "Nhân viên đã được kích hoạt lại",
+                        "Bạn đã được kích hoạt trở lại với chức vụ " + ar.getRole().getName() +
+                                ". Hãy đăng nhập để tiếp tục công việc.",
+                        "employee",
+                        account.getUser().getId(),
+                        null,
+                        "employees",
+                        newEmp.getId().toString());
+
                 return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công sau khi khôi phục chức vụ.", true);
             }
 
@@ -501,6 +525,17 @@ public class EmployeeManagerService {
                         account.setIsActive(false);
                         accountRepository.save(account);
                     }
+
+                    notificationService.create(
+                            "Bạn đã nghỉ việc",
+                            "Trạng thái nhân viên của bạn tại bưu cục " + emp.getOffice().getName() +
+                                    " vừa được cập nhật là Đã nghỉ việc. Bạn sẽ không thể truy cập giao diện của chức vụ hiện tại.",
+                            "employee",
+                            account.getUser().getId(),
+                            null,
+                            "employees",
+                            emp.getId().toString());
+
                 }
                 // LEAVE → ACTIVE/INACTIVE
                 else if (currentStatus == EmployeeStatus.LEAVE
@@ -549,10 +584,19 @@ public class EmployeeManagerService {
                         employeeRepository.save(newEmp);
                     }
 
-                    account.setIsActive(true);
+                    account.setIsActive(true); 
                     accountRepository.save(account);
                 }
             }
+
+            notificationService.create(
+                    "Thông tin nhân viên đã được cập nhật",
+                    "Thông tin nhận viên của bạn vừa được quản lý bưu cục thay đổi. Nếu có bất kỳ thắc mắc nào vui lòng liên hệ với chúng tôi",
+                    "employee",
+                    emp.getUser().getId(),
+                    null,
+                    "employees",
+                    emp.getId().toString());
 
             return new ApiResponse<>(true, "Thông tin nhân viên đã được cập nhật thành công!", true);
 

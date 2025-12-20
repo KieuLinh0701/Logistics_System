@@ -67,9 +67,9 @@ const OrderTable: React.FC<Props> = ({
       render: (trackingNumber, _) => {
         if (!trackingNumber) {
           return (
-              <span className="text-muted">
-                Chưa có mã
-              </span>
+            <span className="text-muted">
+              Chưa có mã
+            </span>
           );
         }
 
@@ -178,16 +178,6 @@ const OrderTable: React.FC<Props> = ({
       key: "codFromRecipient",
       align: "center",
       render: (_, record) => {
-        const isReturn = record.status === 'RETURNED';
-        const isPaid = record.paymentStatus === 'PAID';
-
-        if (isReturn && !isPaid && record.payer === 'CUSTOMER') {
-          return "0";
-        }
-
-        if (isReturn && isPaid && record.payer === 'CUSTOMER') {
-          return (record.totalFee || 0).toLocaleString('vi-VN');
-        }
 
         if (record.payer === 'CUSTOMER') {
           const codCollected = (record.cod || 0) + (record.totalFee || 0);
@@ -202,10 +192,8 @@ const OrderTable: React.FC<Props> = ({
       key: "senderPaid",
       align: "center",
       render: (_, record) => {
-        const isReturn = record.status === 'RETURNED';
-        const isPaid = record.paymentStatus === 'PAID';
 
-        if (record.payer === 'SHOP' || (isReturn && !isPaid && record.payer === 'CUSTOMER')) {
+        if (record.payer === 'SHOP') {
           return (record.totalFee || 0).toLocaleString('vi-VN');
         }
 
@@ -217,22 +205,19 @@ const OrderTable: React.FC<Props> = ({
       key: "debt",
       align: "center",
       render: (_, record) => {
-        let debt = 0;
-        const isReturn = record.status === 'RETURNED';
-        const isPaid = record.paymentStatus === 'PAID';
+        if (record.payer !== 'SHOP') return 0;
 
-        if (record.payer === 'SHOP' || (isReturn && !isPaid && record.payer === 'CUSTOMER')) {
-          const remaining = (record.cod || 0) - (record.totalFee || 0)
-          debt = remaining < 0 ? remaining : 0;
-        }
+        const cod = record.cod || 0;
+        const fee = record.totalFee || 0;
+        const diff = cod - fee;
 
-        if (isPaid) {
-          debt = 0;
-        }
+        const debt = diff > 0 ? 0 : Math.abs(diff);
 
-        return <span className={debt < 0 ? "custom-table-content-error" : ""}>
-          {Math.abs(debt).toLocaleString('vi-VN')}
-        </span>;
+        return (
+          <span className={debt > 0 ? "custom-table-content-error" : ""}>
+            {debt.toLocaleString('vi-VN')}
+          </span>
+        );
       }
     },
     {
@@ -240,26 +225,26 @@ const OrderTable: React.FC<Props> = ({
       key: "codCollected",
       align: "center",
       render: (_, record) => {
-        let codCollected = 0;
-        const isReturn = record.status === 'RETURNED';
-        const isPaid = record.paymentStatus === 'PAID';
-
-        if (record.payer === 'SHOP' || (isReturn && !isPaid && record.payer === 'CUSTOMER')) {
-          codCollected = Math.max(0, (record.cod || 0) - (record.totalFee || 0));
-        } else {
-          codCollected = (record.cod || 0);
+        if (record.payer !== 'SHOP') {
+          return (record.cod || 0).toLocaleString('vi-VN');
         }
 
-        return <span className={codCollected > 0 ? "custom-table-content-strong" : ""}>
-          {codCollected.toLocaleString('vi-VN')}
-        </span>;
+        const cod = record.cod || 0;
+        const fee = record.totalFee || 0;
+        const codCollected = Math.max(0, cod - fee);
+
+        return (
+          <span className={codCollected > 0 ? "custom-table-content-strong" : ""}>
+            {codCollected.toLocaleString('vi-VN')}
+          </span>
+        );
       }
     },
     {
       title: "Trạng thái COD",
       key: "codStatus",
       align: "center",
-      render: (_, record) => translateOrderCodStatus(record.codStatus) 
+      render: (_, record) => translateOrderCodStatus(record.codStatus)
     },
     {
       key: "action",

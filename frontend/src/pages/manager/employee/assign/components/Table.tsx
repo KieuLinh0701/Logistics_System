@@ -4,7 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
 import type { ManagerEmployee, ManagerEmployeeWithShipperAssignments } from '../../../../../types/employee';
 import type { ManagerShipperAssignment } from '../../../../../types/shipperAssignment';
-import { DownOutlined, PlusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import locationApi from '../../../../../api/locationApi';
 import dayjs from 'dayjs';
 

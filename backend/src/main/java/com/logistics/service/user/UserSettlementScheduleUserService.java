@@ -1,5 +1,8 @@
 package com.logistics.service.user;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -74,5 +77,27 @@ public class UserSettlementScheduleUserService {
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi khi cập nhật lịch: " + e.getMessage(), false);
         }
+    }
+
+    public String getNextSettlementDate(Integer userId) {
+        UserSettlementSchedule schedule = scheduleRepository.findByUserId(userId);
+        if (schedule == null || schedule.getWeekdays().isEmpty()) {
+            return null;
+        }
+
+        Set<WeekDay> weekdays = schedule.getWeekdays();
+        LocalDate today = LocalDate.now();
+        LocalDate nextSettlement = today;
+
+        for (int i = 0; i < 7; i++) {
+            DayOfWeek dow = nextSettlement.getDayOfWeek();
+            if (weekdays.contains(WeekDay.valueOf(dow.name()))) {
+                break; 
+            }
+            nextSettlement = nextSettlement.plusDays(1);
+        }
+
+        return nextSettlement.atStartOfDay()
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 }

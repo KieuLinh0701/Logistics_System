@@ -73,9 +73,19 @@ public class OrderManagerController {
             @RequestBody ManagerOrderCreateRequest managerOrderCreateRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
- 
+
         return ResponseEntity.ok(service.create(userId, managerOrderCreateRequest));
-    } 
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Boolean>> update(
+            @PathVariable Integer id,
+            @RequestBody ManagerOrderCreateRequest orderRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.update(userId, id, orderRequest));
+    }
 
     @PatchMapping("/{id}/at-origin-office")
     public ResponseEntity<ApiResponse<Boolean>> setOrderAtOriginOffice(@PathVariable Integer id,

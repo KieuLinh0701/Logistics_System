@@ -113,7 +113,6 @@ const ManagerShipments: React.FC = () => {
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách chuyến hàng");
-      console.error("Error fetching shipments:", error);
     } finally {
       setLoading(false);
     }
@@ -148,8 +147,7 @@ const ManagerShipments: React.FC = () => {
         message.error(result.message || "Hủy chuyến hàng thất bại");
       }
     } catch (error: any) {
-      console.error("Lỗi khi hủy chuyến hàng:", error);
-      message.error("Lỗi khi hủy chuyến hàng:");
+      message.error(error.message || "Lỗi khi hủy chuyến hàng:");
     } finally {
       setModalConfirmOpen(false);
       setLoading(false);
@@ -239,9 +237,9 @@ const ManagerShipments: React.FC = () => {
         setSelectedShipment(null);
         message.error(result.message || "Lỗi khi lấy danh sách đơn hàng của chuyến hàng");
       }
-    } catch (error) {
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy danh sách đơn hàng của chuyến hàng");
       setSelectedShipment(null);
-      console.error("Lỗi khi lấy danh sách đơn hàng của chuyến hàng:", error);
     } finally {
       setLoading(false);
     }

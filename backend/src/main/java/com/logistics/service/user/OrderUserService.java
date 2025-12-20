@@ -3,7 +3,11 @@ package com.logistics.service.user;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -50,6 +54,7 @@ import com.logistics.service.common.FeePublicService;
 import com.logistics.service.common.OfficePublicService;
 import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.OrderUtils;
+import com.logistics.utils.UserOrderEditRuleUtils;
 
 import jakarta.transaction.Transactional;
 
@@ -158,7 +163,7 @@ public class OrderUserService {
 
             return new ApiResponse<>(true, "Lấy danh sách đơn hàng thành công", data);
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
@@ -314,11 +319,15 @@ public class OrderUserService {
 
             saveOrderProducts(newOrder, request.getOrderProducts());
 
-            promotionUserService.increaseUsage(request.getPromotionId(), userId);
+            boolean isDraft = OrderStatus.DRAFT.name().equals(request.getStatus());
 
-            if (newOrder.getStatus() == OrderStatus.PENDING) {
+            if (!isDraft) {
                 orderHistoryUserService.save(newOrder, null, null,
                         null, OrderHistoryActionType.PENDING, null);
+
+                if (promotion != null) {
+                    promotionUserService.increaseUsage(request.getPromotionId(), userId);
+                }
             }
 
             OrderCreateSuccess result = new OrderCreateSuccess();
@@ -327,7 +336,7 @@ public class OrderUserService {
 
             return new ApiResponse<>(true, "Tạo đơn hàng thành công", result);
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
@@ -345,7 +354,7 @@ public class OrderUserService {
 
             return new ApiResponse<>(true, "Lấy chi tiết đơn hàng theo mã đơn hàng thành công", data);
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
@@ -363,123 +372,169 @@ public class OrderUserService {
 
             return new ApiResponse<>(true, "Lấy chi tiết đơn hàng theo id đơn hàng thành công", data);
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
     public ApiResponse<String> publicOrder(Integer userId, Integer orderId) {
-        Order order = repository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+        try {
+            Order order = repository.findByIdAndUserId(orderId, userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!OrderUtils.canMoveToPending(order.getStatus())) {
-            throw new RuntimeException("Chỉ đơn ở trạng thái 'Nháp' mới được chuyển xử lý");
-        }
+            if (!OrderUtils.canMoveToPending(order.getStatus())) {
+                throw new RuntimeException("Chỉ đơn ở trạng thái 'Nháp' mới được chuyển xử lý");
+            }
 
-        order.setStatus(OrderStatus.PENDING);
+            List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+            for (OrderProduct op : orderProducts) {
+                Product product = op.getProduct();
+                if (product.getStatus() != ProductStatus.ACTIVE) {
+                    throw new RuntimeException("Sản phẩm '" + product.getName() + "' đã ngưng bán, không thể tạo đơn");
+                }
+                if (product.getStock() < op.getQuantity()) {
+                    throw new RuntimeException(
+                            "Sản phẩm '" + product.getName() + "' vượt quá tồn kho hiện tại (" + product.getStock()
+                                    + ")");
+                }
+            }
 
-        String trackingNumber = generateUniqueTrackingNumber(order.getStatus());
-        order.setTrackingNumber(trackingNumber);
-        repository.save(order);
+            Promotion promotion = order.getPromotion();
+            if (promotion != null) {
+                boolean canUse = promotionUserService.canUsePromotion(
+                        userId,
+                        promotion.getId(),
+                        order.getServiceType().getId(),
+                        order.getShippingFee(),
+                        order.getWeight());
+                if (!canUse) {
+                    throw new RuntimeException("Khuyến mãi không còn hiệu lực hoặc bạn không đủ điều kiện sử dụng");
+                }
+            }
 
-        if (order.getStatus() == OrderStatus.PENDING) {
+            for (OrderProduct op : orderProducts) {
+                Product product = op.getProduct();
+                int quantity = op.getQuantity();
+                product.setStock(product.getStock() - quantity);
+                product.setSoldQuantity(product.getSoldQuantity() + quantity);
+                productRepository.save(product);
+            }
+
+            if (promotion != null) {
+                promotionUserService.increaseUsage(promotion.getId(), userId);
+            }
+
+            order.setStatus(OrderStatus.PENDING);
+
+            String trackingNumber = generateUniqueTrackingNumber(order.getStatus());
+            order.setTrackingNumber(trackingNumber);
+            repository.save(order);
+
             orderHistoryUserService.save(order, null, null,
                     null, OrderHistoryActionType.PENDING, null);
-        }
 
-        return new ApiResponse<>(true, "Chuyển đơn thành công", trackingNumber);
+            return new ApiResponse<>(true, "Chuyển đơn thành công", trackingNumber);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
     }
 
     public ApiResponse<Boolean> cancelOrder(Integer userId, Integer orderId) {
+        try {
 
-        Order order = repository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+            Order order = repository.findByIdAndUserId(orderId, userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!OrderUtils.canUserCancel(order.getStatus())) {
-            throw new RuntimeException("Đơn hàng đã chuyển sang xử lý, không thể hủy");
+            if (!OrderUtils.canUserCancel(order.getStatus())) {
+                throw new RuntimeException("Đơn hàng đã chuyển sang xử lý, không thể hủy");
+            }
+
+            order.setStatus(OrderStatus.CANCELLED);
+            repository.save(order);
+
+            List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+            productUserService.restoreStockFromOrder(orderProducts);
+
+            if (order.getPromotion() != null) {
+                promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+            }
+
+            orderHistoryUserService.save(
+                    order,
+                    null,
+                    null,
+                    null,
+                    OrderHistoryActionType.CANCELLED,
+                    null);
+
+            return new ApiResponse<>(true, "Hủy đơn hàng thành công", true);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
-
-        order.setStatus(OrderStatus.CANCELLED);
-        repository.save(order);
-
-        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-        productUserService.restoreStockFromOrder(orderProducts);
-
-        if (order.getPromotion() != null) {
-            promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
-        }
-
-        orderHistoryUserService.save(
-                order,
-                null,
-                null,
-                null,
-                OrderHistoryActionType.CANCELLED,
-                null);
-
-        return new ApiResponse<>(true, "Hủy đơn hàng thành công", true);
     }
 
     public ApiResponse<Boolean> setOrderReadyForPickup(Integer userId, Integer orderId) {
+        try {
 
-        Order order = repository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+            Order order = repository.findByIdAndUserId(orderId, userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!OrderUtils.canUserSetReady(order.getStatus())) {
-            throw new RuntimeException("Trạng thái đơn hàng hiện tại không hợp lệ để chuyển");
+            if (!OrderUtils.canUserSetReady(order.getStatus())) {
+                throw new RuntimeException("Trạng thái đơn hàng hiện tại không hợp lệ để chuyển");
+            }
+
+            if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
+                throw new RuntimeException("Hình thức lấy hàng của bạn không hợp lệ để chuyển");
+            }
+
+            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+            repository.save(order);
+
+            orderHistoryUserService.save(
+                    order,
+                    null,
+                    null,
+                    null,
+                    OrderHistoryActionType.READY_FOR_PICKUP,
+                    null);
+
+            return new ApiResponse<>(true, "Đơn hàng đã được chuyển sang trạng thái Sẵn sàng lấy", true);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
-
-        if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
-            throw new RuntimeException("Hình thức lấy hàng của bạn không hợp lệ để chuyển");
-        }
-
-        order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        repository.save(order);
-
-        orderHistoryUserService.save(
-                order,
-                null,
-                null,
-                null,
-                OrderHistoryActionType.READY_FOR_PICKUP,
-                null);
-
-        return new ApiResponse<>(true, "Đơn hàng đã được chuyển sang trạng thái Sẵn sàng lấy", true);
     }
 
     @Transactional
     public ApiResponse<Boolean> deleteOrder(Integer userId, Integer orderId) {
-        // Lấy order
-        Order order = repository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+        try {
+            // Lấy order
+            Order order = repository.findByIdAndUserId(orderId, userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (!OrderUtils.canUserDelete(order.getStatus())) {
-            throw new RuntimeException("Đơn hàng đã chuyển sang xử lý, không thể xóa");
+            if (!OrderUtils.canUserDelete(order.getStatus())) {
+                throw new RuntimeException("Đơn hàng đã chuyển sang xử lý, không thể xóa");
+            }
+
+            List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+            if (!orderProducts.isEmpty()) {
+                orderProductRepository.deleteAll(orderProducts);
+            }
+
+            List<OrderHistory> histories = orderHistoryRepository.findByOrderId(order.getId());
+            if (!histories.isEmpty()) {
+                orderHistoryRepository.deleteAll(histories);
+            }
+
+            Address recipientAddress = order.getRecipientAddress();
+            if (recipientAddress != null) {
+                addressUserService.delete(recipientAddress);
+            }
+
+            repository.delete(order);
+
+            return new ApiResponse<>(true, "Xóa đơn hàng thành công", true);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
         }
-
-        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-        productUserService.restoreStockFromOrder(orderProducts);
-
-        if (order.getPromotion() != null) {
-            promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
-        }
-
-        List<OrderHistory> histories = orderHistoryRepository.findByOrderId(order.getId());
-        if (!histories.isEmpty()) {
-            orderHistoryRepository.deleteAll(histories);
-        }
-
-        if (!orderProducts.isEmpty()) {
-            orderProductRepository.deleteAll(orderProducts);
-        }
-
-        Address recipientAddress = order.getRecipientAddress();
-        if (recipientAddress != null) {
-            addressUserService.delete(recipientAddress);
-        }
-
-        repository.delete(order);
-
-        return new ApiResponse<>(true, "Xóa đơn hàng thành công", true);
     }
 
     @Transactional
@@ -505,14 +560,365 @@ public class OrderUserService {
             List<OrderPrintDto> printDtos = printableOrders.stream()
                     .map(order -> {
                         List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-                        return OrderPrintMapper.toDto(order, orderProducts); // truyền đúng kiểu
+                        return OrderPrintMapper.toDto(order, orderProducts);
                     })
                     .toList();
 
             return new ApiResponse<>(true, "Lấy phiếu vận đơn thành công", printDtos);
 
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy phiếu vận đơn: " + e.getMessage(), null);
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    public ApiResponse<Boolean> updateOrder(Integer userId, Integer orderId, UserOrderCreateRequest request) {
+        try {
+            // 1. Validate cơ bản
+            validateCreate(request);
+
+            // 2. Lấy order
+            Order order = repository.findByIdAndUserId(orderId, userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+            if (!UserOrderEditRuleUtils.canEditUserOrder(order.getStatus())) {
+                throw new RuntimeException("Đơn hàng đã hoàn thành không thể chỉnh sửa");
+            }
+
+            OrderStatus currentStatus = order.getStatus();
+            OrderStatus newStatus = OrderStatus.valueOf(request.getStatus());
+            boolean movingDraftToPending = currentStatus == OrderStatus.DRAFT && newStatus == OrderStatus.PENDING;
+
+            // 3. Chuyển trạng thái nếu từ DRAFT sang PENDING
+            if (movingDraftToPending) {
+                validateBeforePublish(userId, request);
+                order.setStatus(OrderStatus.PENDING);
+                order.setTrackingNumber(generateUniqueTrackingNumber(order.getStatus()));
+                orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.PENDING, null);
+
+                List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+                for (OrderProduct op : orderProducts) {
+                    Product product = op.getProduct();
+                    int qty = op.getQuantity();
+                    product.setStock(product.getStock() - qty);
+                    product.setSoldQuantity(product.getSoldQuantity() + qty);
+                    productRepository.save(product);
+                }
+            } else if (currentStatus != newStatus) {
+                throw new RuntimeException("Không thể chuyển trạng thái từ " + currentStatus + " sang " + newStatus);
+            }
+
+            // 4. Cập nhật các field theo rule
+            Address recipient = order.getRecipientAddress();
+            updateFieldIfEditable("recipientName", order.getRecipientName(), request.getRecipientName(), order,
+                    currentStatus, order::setRecipientName);
+            updateFieldIfEditable("recipientName", recipient.getName(), request.getRecipientName(), order,
+                    currentStatus, recipient::setName); 
+            updateFieldIfEditable("recipientPhoneNumber", order.getRecipientPhone(), request.getRecipientPhone(), order,
+                    currentStatus, order::setRecipientPhone);
+            updateFieldIfEditable("recipientPhoneNumber", recipient.getPhoneNumber(), request.getRecipientPhone(), order,
+                    currentStatus, recipient::setPhoneNumber);
+            updateFieldIfEditable("recipientCityCode", recipient.getCityCode(), request.getRecipientCityCode(), order,
+                    currentStatus, recipient::setCityCode);
+            updateFieldIfEditable("recipientWardCode", recipient.getWardCode(), request.getRecipientWardCode(), order,
+                    currentStatus, recipient::setWardCode);
+            updateFieldIfEditable("recipientDetailAddress", recipient.getDetail(), request.getRecipientDetail(), order,
+                    currentStatus, recipient::setDetail);
+            updateFieldIfEditable("pickupType", order.getPickupType().name(), request.getPickupType(), order,
+                    currentStatus,
+                    val -> order.setPickupType(OrderPickupType.valueOf(val)));
+            updateFieldIfEditable("fromOffice", order.getFromOffice() != null ? order.getFromOffice().getId() : null,
+                    request.getFromOfficeId(), order, currentStatus,
+                    val -> order.setFromOffice(val != null ? officePublicService.findById(val).orElseThrow() : null));
+            updateFieldIfEditable("payer", order.getPayer().name(), request.getPayer(), order, currentStatus,
+                    val -> order.setPayer(OrderPayerType.valueOf(val)));
+            updateFieldIfEditable("notes", order.getNotes(), request.getNotes(), order, currentStatus, order::setNotes);
+
+            // 5. Cập nhật products nếu có và được phép
+            if (request.getOrderProducts() != null) {
+                if (UserOrderEditRuleUtils.canEditUserOrderField("products", currentStatus)) {
+                    updateOrderProductsWithValidation(userId, order, request.getOrderProducts(), movingDraftToPending);
+                }
+            }
+
+            // 6. Cập nhật weight và orderValue chỉ khi được phép
+            BigDecimal calcWeight = calculateWeight(request.getOrderProducts(), request.getWeight());
+            int calcOrderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
+
+            System.out.println("weightRe" + calcWeight);
+            System.out.println("weightsYS" + order.getWeight());
+
+            updateFieldIfEditable("weight", order.getWeight(), calcWeight, order, currentStatus, order::setWeight);
+            updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, order, currentStatus,
+                    order::setOrderValue);
+
+            // 7. Áp dụng promotion nếu được phép
+            if (UserOrderEditRuleUtils.canEditUserOrderField("promotion", currentStatus)) {
+                Integer oldPromotionId = order.getPromotion() != null ? order.getPromotion().getId() : null;
+                Integer newPromotionId = request.getPromotionId();
+
+                boolean adjustPromotion = movingDraftToPending || order.getStatus() != OrderStatus.DRAFT;
+
+                if (oldPromotionId != null && !Objects.equals(oldPromotionId, newPromotionId) && adjustPromotion) {
+                    promotionUserService.decreaseUsage(oldPromotionId, userId);
+                }
+
+                if (newPromotionId != null) {
+                    Promotion promotion = promotionUserService.findById(newPromotionId)
+                            .orElseThrow(() -> new RuntimeException("Khuyến mãi không tồn tại"));
+
+                    if (!promotionUserService.canUsePromotion(userId, promotion.getId(), order.getServiceType().getId(),
+                            order.getShippingFee(), order.getWeight())) {
+                        throw new RuntimeException("Bạn không đủ điều kiện để dùng mã giảm giá");
+                    }
+
+                    order.setPromotion(promotion);
+                    order.setDiscountAmount(promotionUserService.calculateDiscount(promotion, order.getShippingFee()));
+
+                    if (adjustPromotion) {
+                        promotionUserService.increaseUsage(promotion.getId(), userId);
+                    }
+                } else {
+                    order.setPromotion(null);
+                    order.setDiscountAmount(0);
+                }
+            }
+
+            // 8. Cập nhật shippingFee dựa trên weight và serviceType
+            int calcShippingFee = feeService.calculateShippingFee(calcWeight, order.getServiceType().getId(),
+                    order.getSenderCityCode(), order.getRecipientAddress().getCityCode());
+            updateFieldIfEditable("shippingFee", order.getShippingFee(), calcShippingFee, order, currentStatus,
+                    order::setShippingFee);
+
+            // 9. Cập nhật totalFee = shippingFee - discountAmount
+            int calcServiceFee = feeService.calculateTotalFee(
+                    calcWeight,
+                    order.getServiceType().getId(),
+                    order.getSenderCityCode(),
+                    order.getRecipientAddress().getCityCode(),
+                    calcOrderValue,
+                    order.getCod());
+
+            int discountAmount = order.getPromotion() != null
+                    ? promotionUserService.calculateDiscount(order.getPromotion(), calcServiceFee)
+                    : 0;
+
+            int calcTotalFee = calcServiceFee - discountAmount;
+            order.setDiscountAmount(discountAmount);
+            order.setTotalFee(calcTotalFee);
+
+            repository.save(order);
+            return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    private void updateOrderProductsWithValidation(Integer userId, Order order,
+            List<UserOrderCreateRequest.OrderProduct> items, boolean movingDraftToPending) {
+
+        List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
+        boolean adjustStock = movingDraftToPending || order.getStatus() != OrderStatus.DRAFT;
+
+        // --- XỬ LÝ TRƯỜNG HỢP LIST RỖNG ---
+        if (items.isEmpty()) {
+            for (OrderProduct oldOp : existingProducts) {
+                Product product = oldOp.getProduct();
+                if (adjustStock) {
+                    product.setStock(product.getStock() + oldOp.getQuantity());
+                    product.setSoldQuantity(product.getSoldQuantity() - oldOp.getQuantity());
+                    productRepository.save(product);
+                }
+                orderProductRepository.delete(oldOp);
+            }
+            return; // Xóa xong thì thoát hàm
+        }
+
+        // --- Phần update bình thường ---
+        Map<Integer, OrderProduct> existingMap = new HashMap<>();
+        for (OrderProduct op : existingProducts)
+            existingMap.put(op.getProduct().getId(), op);
+
+        for (var item : items) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
+
+            if (!product.getUser().getId().equals(userId))
+                throw new RuntimeException("Sản phẩm " + product.getName() + " không thuộc về bạn");
+
+            if (product.getStatus() != ProductStatus.ACTIVE)
+                throw new RuntimeException("Sản phẩm " + product.getName() + " đã ngưng bán.");
+
+            OrderProduct existing = existingMap.get(product.getId());
+            int oldQty = existing != null ? existing.getQuantity() : 0;
+            int stockAvailable = product.getStock() + (adjustStock && existing != null ? oldQty : 0);
+
+            if (item.getQuantity() > stockAvailable)
+                throw new RuntimeException(
+                        "Sản phẩm " + product.getName() + " vượt quá tồn kho (" + stockAvailable + ")");
+
+            if (adjustStock) {
+                int delta = item.getQuantity() - oldQty;
+                product.setStock(product.getStock() - delta);
+                product.setSoldQuantity(product.getSoldQuantity() + delta);
+                productRepository.save(product);
+            }
+
+            OrderProduct op = existing != null ? existing : new OrderProduct();
+            op.setOrder(order);
+            op.setProduct(product);
+            op.setQuantity(item.getQuantity());
+            op.setPrice(product.getPrice());
+            orderProductRepository.save(op);
+        }
+
+        for (OrderProduct oldOp : existingProducts) {
+            if (items.stream().noneMatch(i -> i.getProductId().equals(oldOp.getProduct().getId()))) {
+                Product product = oldOp.getProduct();
+                if (adjustStock) {
+                    product.setStock(product.getStock() + oldOp.getQuantity());
+                    product.setSoldQuantity(product.getSoldQuantity() - oldOp.getQuantity());
+                    productRepository.save(product);
+                }
+                orderProductRepository.delete(oldOp);
+            }
+        }
+    }
+
+    private <T> void updateFieldIfEditable(String fieldName, T oldValue, T newValue,
+            Order order, OrderStatus currentStatus, java.util.function.Consumer<T> setter) {
+
+        boolean changed;
+
+        if (oldValue instanceof List<?> oldList && newValue instanceof List<?> newList) {
+            changed = !listsEqual(oldList, newList);
+        } else if (oldValue instanceof Set<?> oldSet && newValue instanceof Set<?> newSet) {
+            changed = !setsEqual(oldSet, newSet);
+        } else if (oldValue instanceof Map<?, ?> oldMap && newValue instanceof Map<?, ?> newMap) {
+            changed = !mapsEqual(oldMap, newMap);
+        } else if (oldValue instanceof BigDecimal oldBd && newValue instanceof BigDecimal newBd) {
+            // So sánh BigDecimal bằng compareTo để bỏ qua scale
+            changed = oldBd.compareTo(newBd) != 0;
+        } else {
+            changed = !Objects.equals(oldValue, newValue);
+        }
+
+        if (changed) {
+            var rule = UserOrderEditRuleUtils.USER_ORDER_FIELD_EDIT_RULES.get(fieldName);
+            if (rule != null) {
+                // Nếu nonEditableStatuses chứa currentStatus → không được sửa
+                if (rule.getNonEditableStatuses() != null && rule.getNonEditableStatuses().contains(currentStatus)) {
+                    throw new RuntimeException(
+                            "Trường '" + fieldName + "' không thể thay đổi khi đơn ở trạng thái " + currentStatus);
+                }
+                // Nếu editableStatuses != null → chỉ cho phép những trạng thái đó
+                if (rule.getEditableStatuses() != null && !rule.getEditableStatuses().contains(currentStatus)) {
+                    throw new RuntimeException(
+                            "Trường '" + fieldName + "' không thể thay đổi khi đơn ở trạng thái " + currentStatus);
+                }
+                // Nếu editableStatuses = null → mặc định tất cả trạng thái OK trừ
+                // nonEditableStatuses
+            }
+
+            setter.accept(newValue);
+        }
+    }
+
+    // Hàm so sánh List
+    private boolean listsEqual(List<?> a, List<?> b) {
+        if (a == null)
+            a = List.of();
+        if (b == null)
+            b = List.of();
+        return a.equals(b);
+    }
+
+    private boolean setsEqual(Set<?> oldSet, Set<?> newSet) {
+        if (oldSet == null && newSet == null)
+            return true;
+        if (oldSet == null || newSet == null)
+            return false;
+        return oldSet.equals(newSet);
+    }
+
+    private boolean mapsEqual(Map<?, ?> oldMap, Map<?, ?> newMap) {
+        if (oldMap == null && newMap == null)
+            return true;
+        if (oldMap == null || newMap == null)
+            return false;
+        return oldMap.equals(newMap);
+    }
+
+    // --- Hàm validate trước khi publish DRAFT sang PENDING ---
+    private void validateBeforePublish(Integer userId, UserOrderCreateRequest request) {
+        // Kiểm tra các field bắt buộc
+        validateCreate(request);
+
+        // Kiểm tra sản phẩm
+        if (request.getOrderProducts() != null && !request.getOrderProducts().isEmpty()) {
+            validateProductWithDB(userId, request.getOrderProducts());
+        }
+
+        // Kiểm tra promotion nếu có
+        if (request.getPromotionId() != null) {
+            Promotion promotion = promotionUserService.findById(request.getPromotionId())
+                    .orElseThrow(() -> new RuntimeException("Khuyến mãi không tồn tại"));
+
+            if (!promotionUserService.canUsePromotion(userId, promotion.getId(),
+                    request.getServiceTypeId(), request.getShippingFee(),
+                    calculateWeight(request.getOrderProducts(), null))) {
+                throw new RuntimeException("Bạn không đủ điều kiện để dùng mã giảm giá");
+            }
+        }
+    }
+
+    @Transactional
+    private void updateOrderProducts(Order order, List<UserOrderCreateRequest.OrderProduct> items) {
+        // Lấy danh sách product cũ
+        List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
+
+        // Tạo map để dễ lookup
+        Map<Integer, Integer> existingQuantityMap = new HashMap<>();
+        for (OrderProduct op : existingProducts) {
+            existingQuantityMap.put(op.getProduct().getId(), op.getQuantity());
+        }
+
+        for (var item : items) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
+
+            // Kiểm tra trạng thái sản phẩm
+            if (product.getStatus() != ProductStatus.ACTIVE) {
+                throw new RuntimeException("Sản phẩm '" + product.getName()
+                        + "' hiện tại đã ngưng bán và không thể cập nhật số lượng. Vui lòng loại bỏ sản phẩm này khỏi đơn hàng.");
+            }
+
+            int oldQuantity = existingQuantityMap.getOrDefault(product.getId(), 0);
+            int stockAvailable = product.getStock() + oldQuantity;
+
+            if (item.getQuantity() > stockAvailable) {
+                throw new RuntimeException("Sản phẩm '" + product.getName() + "' vượt quá tồn kho hiện tại ("
+                        + stockAvailable + "). Vui lòng điều chỉnh số lượng.");
+            }
+
+            // Cập nhật stock và soldQuantity
+            int delta = item.getQuantity() - oldQuantity;
+            product.setStock(product.getStock() - delta);
+            product.setSoldQuantity(product.getSoldQuantity() + delta);
+            productRepository.save(product);
+
+            // Lưu orderProduct
+            OrderProduct orderProduct = existingProducts.stream()
+                    .filter(op -> op.getProduct().getId().equals(product.getId()))
+                    .findFirst()
+                    .orElse(new OrderProduct());
+
+            orderProduct.setOrder(order);
+            orderProduct.setProduct(product);
+            orderProduct.setQuantity(item.getQuantity());
+            orderProduct.setPrice(product.getPrice());
+            orderProductRepository.save(orderProduct);
         }
     }
 
@@ -637,16 +1043,16 @@ public class OrderUserService {
             }
 
             if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new RuntimeException("Sản phẩm bị vô hiệu hóa: " + product.getName());
+                throw new RuntimeException("Sản phẩm " + product.getName() + " đã bị vô hiệu hóa");
             }
 
             if (product.getStock() <= 0) {
-                throw new RuntimeException("Sản phẩm '" + product.getName() + "' đã hết hàng");
+                throw new RuntimeException("Sản phẩm " + product.getName() + " đã hết hàng");
             }
 
             if (item.getQuantity() > product.getStock()) {
-                throw new RuntimeException("Số lượng '" + product.getName() +
-                        "' vượt quá tồn kho (" + product.getStock() + ")");
+                throw new RuntimeException("Số lượng " + product.getName() +
+                        " vượt quá tồn kho (" + product.getStock() + ")");
             }
         }
     }
@@ -712,16 +1118,20 @@ public class OrderUserService {
         if (items == null || items.isEmpty())
             return;
 
+        boolean isDraft = order.getStatus() == OrderStatus.DRAFT;
+
         for (var item : items) {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
 
-            int newStock = product.getStock() - item.getQuantity();
-            if (newStock < 0)
-                throw new RuntimeException("Sản phẩm '" + product.getName() + "' vượt quá tồn kho");
-            product.setStock(newStock);
-            product.setSoldQuantity(product.getSoldQuantity() + item.getQuantity());
-            productRepository.save(product);
+            if (!isDraft) {
+                int newStock = product.getStock() - item.getQuantity();
+                if (newStock < 0)
+                    throw new RuntimeException("Sản phẩm '" + product.getName() + "' vượt quá tồn kho");
+                product.setStock(newStock);
+                product.setSoldQuantity(product.getSoldQuantity() + item.getQuantity());
+                productRepository.save(product);
+            }
 
             OrderProduct orderProduct = new OrderProduct();
             orderProduct.setOrder(order);

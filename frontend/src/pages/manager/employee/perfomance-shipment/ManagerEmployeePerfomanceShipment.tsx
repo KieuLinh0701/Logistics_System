@@ -3,8 +3,6 @@ import { Col, message, Row, Tag } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import ShipmentTable from "./components/Table";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import { useNavigate, useParams } from "react-router-dom";
 import Actions from "./components/Actions";
 import Title from "antd/es/typography/Title";

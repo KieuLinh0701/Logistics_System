@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Select, InputNumber, message, Button } from 'antd';
+import { Modal, Form, InputNumber, message, Button } from 'antd';
 import type { ManagerEmployee, ManagerEmployeeSearchRequest } from '../../../../types/employee';
 import employeeApi from '../../../../api/employeeApi';
 import paymentSubmissionBatchApi from '../../../../api/paymentSubmissionBatchApi';
 import { DeleteOutlined, UserOutlined } from '@ant-design/icons';
-import SelectEmployeeModal from './SelectEmployeeModal'; // import modal chọn nhân viên
+import SelectEmployeeModal from './SelectEmployeeModal'; 
 
 interface AddBatchModalProps {
   open: boolean;
@@ -53,7 +53,7 @@ const AddBatchModal: React.FC<AddBatchModalProps> = ({
         message.error(result.message || "Lấy danh sách nhân viên thất bại");
       }
     } catch (error: any) {
-      message.error('Có lỗi xảy ra: ' + error.message);
+          message.error(error.message || "Lỗi khi lấy danh sách nhân viên");
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ const AddBatchModal: React.FC<AddBatchModalProps> = ({
         message.error(result.message || "Tạo phiên đối soát thất bại");
       }
     } catch (error: any) {
-      message.error('Có lỗi xảy ra: ' + error.message);
+          message.error(error.message || "Lỗi khi tạo phiên đối soát");
     } finally {
       setLoading(false);
     }

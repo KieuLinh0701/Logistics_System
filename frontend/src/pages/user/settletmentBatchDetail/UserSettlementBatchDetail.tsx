@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Col, Form, Row, Tabs, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
@@ -24,7 +24,7 @@ const UserSettlementBatchDetail = () => {
   const { id } = useParams<{ id: string }>();
   const settlementId = Number(id);
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentTab, setCurrentTab] = useState("orders");
 
@@ -52,6 +52,12 @@ const UserSettlementBatchDetail = () => {
   const updateURL = () => {
     const params: any = {};
     params.tab = currentTab;
+
+    if (currentTab === "payments") {
+      setSearchParams(params, { replace: true });
+      return;
+    }
+
     if (searchText) params.search = searchText;
     if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
     if (filterCod !== "ALL") params.cod = filterCod.toLowerCase();
@@ -68,7 +74,13 @@ const UserSettlementBatchDetail = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const tabFromUrl = searchParams.get("tab");
+
+    if (tabFromUrl === "payments") {
+      return;
+    }
+
     const s = searchParams.get("search");
     const p = searchParams.get("payer")?.toLocaleUpperCase();
     const st = searchParams.get("status")?.toLocaleUpperCase();
@@ -77,6 +89,7 @@ const UserSettlementBatchDetail = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setCurrentPage(pageParam);
     if (s) setSearchText(s);
     if (p) setFilterPayer(p);
     if (st) setFilterStatus(st);
@@ -95,6 +108,8 @@ const UserSettlementBatchDetail = () => {
   const fetchdata = async (page = currentPage) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
+
       const payload: SearchRequest = {
         page,
         limit: pageSize,
@@ -115,17 +130,18 @@ const UserSettlementBatchDetail = () => {
       }
 
       const result = await settlementBatchApi.listUserOrdersBySettlementBatchId(settlementId, payload);
+
+      if (requestId !== latestRequestRef.current) return;
+
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setDatas(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách đơn hàng thuộc phiên đối soát của bạn");
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách đơn hàng thuộc phiên đối soát của bạn");
-      console.error("Error fetchdataing orders:", error);
     } finally {
       setLoading(false);
     }
@@ -145,7 +161,6 @@ const UserSettlementBatchDetail = () => {
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy chi tiết phiên đối soát của bạn");
-      console.error("Error fetchdataing settlement:", error);
       setSettlement(null);
     } finally {
       setLoading(false);
@@ -177,7 +192,6 @@ const UserSettlementBatchDetail = () => {
 
     } catch (error: any) {
       message.error(error.message || "Xuất báo cáo thất bại")
-      console.error("Export lỗi:", error.message);
     } finally {
       setLoading(false);
     }
@@ -257,9 +271,8 @@ const UserSettlementBatchDetail = () => {
         } else {
           message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
         }
-      } catch (error) {
-        message.error("Có lỗi xảy ra khi thanh toán phiên đối soát");
-        console.error(error);
+      } catch (error: any) {
+        message.error(error.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
       }
     };
 
@@ -275,34 +288,33 @@ const UserSettlementBatchDetail = () => {
   };
 
   const fetchTransaction = async () => {
-      try {
-        setLoading(true);
-        const result = await settlementBatchApi.listUserSettlementTransactionsBySettlementBatchId(settlementId);
-        if (result.success && result.data) {
-          const list = result.data || [];
-          setTransaction(list);
-        } else {
-          message.error(result.message || "Lỗi khi lấy danh sách lịch sử thanh toán thuộc phiên đối soát của bạn");
-        }
-      } catch (error: any) {
-        message.error(error.message || "Lỗi khi lấy danh sách lịch sử thanh toán thuộc phiên đối soát của bạn");
-        console.error("Error fetchdataing transactions:", error);
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      const result = await settlementBatchApi.listUserSettlementTransactionsBySettlementBatchId(settlementId);
+      if (result.success && result.data) {
+        const list = result.data || [];
+        setTransaction(list);
+      } else {
+        message.error(result.message || "Lỗi khi lấy danh sách lịch sử thanh toán thuộc phiên đối soát của bạn");
       }
-    };
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy danh sách lịch sử thanh toán thuộc phiên đối soát của bạn");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchTransaction();
-    fetchdata();
     fetchSettlement();
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-    fetchdata(1);
+    if (currentTab !== "orders") return;
+
+    fetchdata(currentPage);
     updateURL();
-  }, [searchText, dateRange, filterSort, filterStatus, filterPayer, filterCod]);
+  }, [pageSize, currentPage, searchText, dateRange, filterSort, filterStatus, filterPayer, filterCod]);
 
   return (
     <div className="list-page-layout">
@@ -330,9 +342,21 @@ const UserSettlementBatchDetail = () => {
           className="custom-tabs"
           activeKey={currentTab}
           onChange={(key) => {
-            const params = { ...Object.fromEntries(searchParams), tab: key };
-            setSearchParams(params, { replace: true });
             setCurrentTab(key);
+
+            if (key === "payments") {
+              setCurrentPage(1);
+              setSearchText("");
+              setFilterStatus("ALL");
+              setFilterSort("NEWEST");
+              setFilterPayer("ALL");
+              setFilterCod("ALL");
+              setDateRange(null);
+
+              setSearchParams({ tab: "payments" }, { replace: true });
+            } else {
+              setSearchParams({ tab: "orders", page: "1" }, { replace: true });
+            }
           }}
           items={[
             {
@@ -360,6 +384,7 @@ const UserSettlementBatchDetail = () => {
                       if (key === "status") setFilterStatus(val as string);
                       if (key === "payer") setFilterPayer(val as string);
                       if (key === "cod") setFilterCod(val as string);
+                      setCurrentPage(1);
                     }}
                     onReset={() => {
                       setSearchText("");
@@ -386,7 +411,6 @@ const UserSettlementBatchDetail = () => {
                     onPageChange={(page, size) => {
                       setCurrentPage(page);
                       if (size) setPageSize(size);
-                      fetchdata(page);
                     }}
                   />
                 </>

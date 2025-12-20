@@ -25,7 +25,7 @@ const ConfirmCancelModal: React.FC<Props> = ({ open, onOk, onCancel, loading }) 
             onCancel={onCancel}
         >
             <span className="order-detail-confirm-modal-content">
-                Bạn có chắc chắn muốn chuyển đơn hàng này sang trạng thái xử lý không?
+                Bạn có chắc chắn muốn hủy đơn hàng này không?
             </span>
         </Modal>
     );

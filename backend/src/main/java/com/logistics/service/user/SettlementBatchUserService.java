@@ -2,6 +2,7 @@ package com.logistics.service.user;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -14,9 +15,14 @@ import org.springframework.stereotype.Service;
 import com.logistics.dto.user.UserSettlementBatchListDto;
 import com.logistics.dto.user.UserSettlementOrderDto;
 import com.logistics.dto.user.UserSettlementTransactionDto;
+import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
 import com.logistics.entity.Order;
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
+import com.logistics.enums.OrderPayerType;
+import com.logistics.enums.OrderPaymentStatus;
+import com.logistics.enums.OrderStatus;
+import com.logistics.enums.SettlementStatus;
 import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.SettlementBatchMapper;
@@ -42,6 +48,8 @@ public class SettlementBatchUserService {
     private final SettlementTransactionRepository transactionRepository;
 
     private final OrderRepository orderRepository;
+
+    private final UserSettlementScheduleUserService scheduleUserService;
 
     public ApiResponse<ListResponse<UserSettlementBatchListDto>> list(
             Integer userId, SearchRequest request) {
@@ -216,4 +224,50 @@ public class SettlementBatchUserService {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
     }
+
+    public UserRevenueStatsDTO getUserRevenueStats(Integer userId) {
+
+        BigDecimal received = batchRepository.sumReceivedByUser(userId);
+
+        BigDecimal nextSettlement = orderRepository.sumPendingCODNow(
+                userId, List.of(OrderStatus.DELIVERED, OrderStatus.RETURNED));
+
+        BigDecimal pendingDebt = calculatePendingDebt(userId);
+
+        String nextSettlementDate = scheduleUserService.getNextSettlementDate(userId);
+
+        return new UserRevenueStatsDTO(
+                received,
+                nextSettlement,
+                pendingDebt,
+                nextSettlementDate);
+    }
+
+    public BigDecimal calculatePendingDebt(Integer userId) {
+        List<SettlementBatch> batches = batchRepository.findDebtBatchesByUser(userId);
+
+        BigDecimal totalDebt = BigDecimal.ZERO;
+
+        for (SettlementBatch b : batches) {
+            BigDecimal originalDebt = b.getBalanceAmount().abs();
+
+            if (b.getStatus() == SettlementStatus.PENDING
+                    || b.getStatus() == SettlementStatus.FAILED) {
+
+                totalDebt = totalDebt.add(originalDebt);
+            }
+
+            else if (b.getStatus() == SettlementStatus.PARTIAL) {
+                BigDecimal paid = transactionRepository
+                        .sumPaidDebtByBatch(b.getId());
+
+                BigDecimal remaining = originalDebt.subtract(paid).max(BigDecimal.ZERO);
+
+                totalDebt = totalDebt.add(remaining);
+            }
+        }
+
+        return totalDebt;
+    }
+
 }

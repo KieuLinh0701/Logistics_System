@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Col, Form, message, Row, Tag } from 'antd';
 import dayjs from 'dayjs';
 import SearchFilters from './components/SearchFilters';
@@ -16,6 +16,7 @@ import ConfirmModal from '../../../common/ConfirmModal';
 
 const UserShippingRequests: React.FC = () => {
   const navigate = useNavigate();
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [requests, setRequests] = useState<ShippingRequest[] | []>([]);
@@ -61,6 +62,7 @@ const UserShippingRequests: React.FC = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const st = searchParams.get("status")?.toLocaleUpperCase();
     const type = searchParams.get("type")?.toLocaleUpperCase();
@@ -68,6 +70,7 @@ const UserShippingRequests: React.FC = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setPage(pageParam);
     if (s) setSearchText(s);
     if (st) setFilterStatus(st);
     if (type) setFilterRequestType(type);
@@ -82,6 +85,7 @@ const UserShippingRequests: React.FC = () => {
   }, [searchParams]);
 
   const fetchRequests = async (currentPage = page) => {
+    const requestId = ++latestRequestRef.current;
     try {
       setLoading(true);
       const param: UserShippingRequestSearchRequest = {
@@ -98,16 +102,18 @@ const UserShippingRequests: React.FC = () => {
       }
 
       const result = await shippingRequestApi.listUserShippingRequests(param);
+
+      if (requestId !== latestRequestRef.current) return;
+
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setRequests(list);
         setTotal(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách yêu cầu");
       }
-    } catch (error) {
-      console.error("Error fetching shipping request:", error);
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy danh sách yêu cầu");
     } finally {
       setLoading(false);
     }
@@ -142,8 +148,7 @@ const UserShippingRequests: React.FC = () => {
         message.error(result.message || "Hủy yêu cầu thất bại");
       }
     } catch (error: any) {
-      console.error("Lỗi khi hủy yêu cầu:", error);
-      message.error("Lỗi khi hủy yêu cầu:");
+      message.error(error.message || "Lỗi khi hủy yêu cầu:");
     } finally {
       setModalConfirmOpen(false);
       setLoading(false);
@@ -205,9 +210,8 @@ const UserShippingRequests: React.FC = () => {
       } else {
         message.error(result.message || "Lỗi khi lấy yêu cầu để chỉnh sửa");
       }
-    } catch (error) {
-      setSelectedRequest(null);
-      console.error("Lỗi khi lấy yêu cầu để chỉnh sửa:", error);
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy yêu cầu để chỉnh sửa:");
     } finally {
       setLoading(false);
     }
@@ -225,9 +229,8 @@ const UserShippingRequests: React.FC = () => {
         setSelectedRequest(null);
         message.error(result.message || "Lỗi khi lấy chi tiết yêu cầu");
       }
-    } catch (error) {
-      setSelectedRequest(null);
-      console.error("Lỗi khi lấy chi tiết yêu cầu:", error);
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy chi tiết yêu cầu");
     } finally {
       setLoading(false);
     }
@@ -248,9 +251,8 @@ const UserShippingRequests: React.FC = () => {
         } else {
           message.error(result.message || "Cập nhật chi tiết thất bại");
         }
-      } catch (error) {
-        console.error("Lỗi khi load chi tiết:", error);
-        message.error("Cập nhật chi tiết thất bại");
+      } catch (error: any) {
+        message.error(error.message || "Cập nhật chi tiết thất bại");
       }
     }
 
@@ -264,9 +266,12 @@ const UserShippingRequests: React.FC = () => {
 
   useEffect(() => {
     updateURL();
+    fetchRequests(page);
+  }, [page, searchText, filterSort, filterStatus, dateRange, filterRrequestType]);
+
+  useEffect(() => {
     setPage(1);
-    fetchRequests(1);
-  }, [searchText, filterSort, filterStatus, dateRange, filterRrequestType]);
+  }, [searchText]);
 
   return (
     <div className="list-page-layout">

@@ -14,6 +14,8 @@ import { PlusOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import type { FormInstance } from "antd/lib";
 import type { OrderProduct } from "../../../../../types/orderProduct";
 import type { ServiceType } from "../../../../../types/serviceType";
+import { type OrderStatus } from "../../../../../utils/orderUtils";
+import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 
 interface Props {
   form: FormInstance;
@@ -29,6 +31,7 @@ interface Props {
   onChangeOrderInfo?: (changedValues: any) => void;
   disabled: boolean;
   selectedServiceType: ServiceType | null;
+  status: OrderStatus;
 }
 
 const OrderInfo: React.FC<Props> = ({
@@ -45,6 +48,7 @@ const OrderInfo: React.FC<Props> = ({
   onChangeOrderInfo,
   disabled,
   selectedServiceType,
+  status
 }) => {
   const isOrderValueDisabled = !(orderProducts.length === 0);
   const isWeightDisabled = !(orderProducts.length === 0);
@@ -112,7 +116,7 @@ const OrderInfo: React.FC<Props> = ({
 
           <Button
             icon={<PlusOutlined />}
-            disabled={disabled}
+            disabled={disabled || !canEditUserOrderField('products', status)}
             className="create-order-btn"
             onClick={onOpenProductModal}
           >
@@ -160,10 +164,11 @@ const OrderInfo: React.FC<Props> = ({
                   <InputNumber
                     className="modal-custom-input-number"
                     placeholder="Ví dụ: 1.5"
-                    disabled={isWeightDisabled || disabled}
+                    disabled={isWeightDisabled || disabled || !canEditUserOrderField('weight', status)}
                     onChange={handleWeightChange}
                     min={0.01}
                     step={0.01}
+                    precision={2}
                   />
                 </Form.Item>
               </Col>
@@ -177,7 +182,7 @@ const OrderInfo: React.FC<Props> = ({
                   <Select
                     className="modal-custom-select"
                     placeholder="Chọn dịch vụ..."
-                    disabled={disabled}
+                    disabled={disabled || !canEditUserOrderField('serviceType', status)}
                     showSearch
                     optionLabelProp="label"
                     filterOption={(input, option) =>
@@ -233,7 +238,7 @@ const OrderInfo: React.FC<Props> = ({
                   <InputNumber
                     className="modal-custom-input-number"
                     placeholder="Ví dụ: 200,000"
-                    disabled={disabled}
+                    disabled={disabled || !canEditUserOrderField('cod', status)}
                     min={0}
                     step={1000}
                     onChange={handleCodChange}
@@ -267,7 +272,7 @@ const OrderInfo: React.FC<Props> = ({
                     placeholder="Ví dụ: 150,000"
                     min={0}
                     step={1000}
-                    disabled={isOrderValueDisabled || disabled}
+                    disabled={isOrderValueDisabled || disabled || !canEditUserOrderField('orderValue', status)}
                     onChange={handleOrderValueChange}
                     formatter={(value) =>
                       value

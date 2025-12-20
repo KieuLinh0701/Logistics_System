@@ -40,7 +40,6 @@ import ManagerOffice from "./pages/manager/office/ManagerOffice";
 import ManagerShippingRequests from "./pages/manager/order/request/ManagerShippingRequest";
 import ManagerEmployeeList from "./pages/manager/employee/list/ManagerEmployeeList";
 import ManagerEmployeePerformance from "./pages/manager/employee/perfomance/ManagerEmployeePerformance";
-import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 import OrderCreateRouter from "./pages/router/OrderCreateRouter";
 import OrderDetailRouter from "./pages/router/OrderDetailRouter";
 import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
@@ -49,11 +48,10 @@ import ManagerShipperAssign from "./pages/manager/employee/assign/ManagerShipper
 import ManagerShipments from "./pages/manager/shipment/ManagerShipments";
 import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-assign/ManagerShipperAssignmentHistories";
 import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncidentReports";
-import ManagerPaymentSubmissionBatchs from "./pages/manager/paymentSubmissionBatch/ManagerPaymentSubmissionBatchs";
-import ManagerPaymentSubmissions from "./pages/manager/paymentSubmission/ManagerPaymentSubmissions";
 import OrderTracking from "./pages/common/tracking/OrderTracking";
 import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
+import OrderEditRouter from "./pages/router/OrderEditRouter";
 
 const App: React.FC = () => {
   return (
@@ -105,8 +103,7 @@ const App: React.FC = () => {
             <Route path="/orders/print" element={<PrivateRoute allowedRoles={['user', 'manager']}><WaybillPrintRouter /></PrivateRoute>} />
             <Route path="/settlements" element={<PrivateRoute allowedRoles={['user', 'manager']}><SettlementRouter /></PrivateRoute>} />
             <Route path="/settlements/:id" element={<PrivateRoute allowedRoles={['manager', 'user']}><SettlementDetailRouter /></PrivateRoute>} />
-            
-            <Route path="/orders/tracking/:trackingNumber/edit" element={<PrivateRoute allowedRoles={['user']}><UserOrderEdit /></PrivateRoute>} />
+            <Route path="/orders/tracking/:trackingNumber/edit" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderEditRouter /></PrivateRoute>} />
             <Route path="/orders/tracking/:trackingNumber" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderDetailRouter /></PrivateRoute>} />
 
             {/* User routes */}

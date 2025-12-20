@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Row, Col, Input, Button, Select, DatePicker } from "antd";
+import { Row, Col, Input, Button, Select, DatePicker, Tooltip } from "antd";
 import { CloseCircleOutlined, CloseOutlined, FilterOutlined, SearchOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { ServiceType } from "../../../../../types/serviceType";
@@ -39,14 +39,16 @@ const SearchFilters: React.FC<Props> = ({
       <Row className="search-filters-row" gutter={16}>
         <Col span={24}>
           <div className="list-page-actions">
+            <Tooltip title="Tìm theo mã đơn, tên khách hàng, số điện thoại khách hàng và ghi chú">
             <Input
               className="search-input"
-              placeholder="Tìm theo mã đơn, tên khách hàng, số điện thoại khách hàng và ghi chú"
+              placeholder="Tìm kiếm..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               allowClear
               prefix={<SearchOutlined />}
             />
+            </Tooltip>
             <Select
               value={filters.sort}
               onChange={(val) => setFilters("sort", val)}

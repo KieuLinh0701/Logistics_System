@@ -4,7 +4,6 @@ import { Table, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { Order } from "../../../../types/order";
 import { translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus } from "../../../../utils/orderUtils";
-import { InfoCircleOutlined } from "@ant-design/icons";
 
 interface Props {
   datas: Order[];

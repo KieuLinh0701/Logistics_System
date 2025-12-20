@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input, Select, DatePicker, Button, Row, Col } from 'antd';
+import { Input, Select, DatePicker, Button, Row, Col, Tooltip } from 'antd';
 import { CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import { SHIPPING_REQUEST_FILTER_SORT, SHIPPING_REQUEST_STATUS, SHIPPING_REQUEST_TYPES, translateShippingRequestFilterSort, translateShippingRequestStatus, translateShippingRequestType } from '../../../../../utils/shippingRequestUtils';
@@ -51,14 +51,16 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
       <Row gutter={16} className="search-filters-row">
         <Col span={24}>
           <div className="list-page-actions">
-            <Input
-              className="search-input"
-              placeholder="Tìm theo mã yêu cầu/ĐH, nội dung phản hồi/yêu cầu "
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => onSearchChange(e.target.value)}
-              allowClear
-            />
+            <Tooltip title="Tìm theo mã yêu cầu, mã đơn hàng, nội dung phản hồi, nội dung yêu cầu">
+              <Input
+                className="search-input"
+                placeholder="Tìm kiếm..."
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={(e) => onSearchChange(e.target.value)}
+                allowClear
+              />
+            </Tooltip>
 
             <Select
               value={filterRrequestType}
@@ -93,7 +95,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             </Select>
 
             <RangePicker
-               className="date-picker"
+              className="date-picker"
               value={dateRange}
               onChange={handleDateRangeChange}
             />

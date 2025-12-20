@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Card, Form, Select, Radio } from "antd";
 import type { FormInstance } from "antd/lib";
 import type { Office } from "../../../../../types/office";
-import { ORDER_PICKUP_TYPES, translateOrderPickupType } from "../../../../../utils/orderUtils";
+import { ORDER_PICKUP_TYPES, translateOrderPickupType, type OrderStatus } from "../../../../../utils/orderUtils";
+import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 import locationApi from "../../../../../api/locationApi";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   disabled: boolean;
   loading: boolean;
   initialPickupType?: string;
+  status: OrderStatus;
 }
 
 const PickupType: React.FC<Props> = ({
@@ -25,6 +27,7 @@ const PickupType: React.FC<Props> = ({
   disabled,
   loading,
   initialPickupType,
+  status
 }) => {
   const [addressMap, setAddressMap] = useState<Record<number, string>>({});
 
@@ -101,7 +104,9 @@ const PickupType: React.FC<Props> = ({
             name="pickupType"
             rules={[{ required: true, message: "Vui lòng chọn hình thức lấy hàng" }]}
           >
-            <Radio.Group disabled={disabled} className="custom-radio-group">
+            <Radio.Group
+              disabled={disabled || !canEditUserOrderField('pickupType', status)}
+              className="custom-radio-group">
               {ORDER_PICKUP_TYPES.map((type) => (
                 <Radio key={type} value={type} className="custom-radio">
                   <span className="custom-radio-label">{translateOrderPickupType(type)}</span>
@@ -120,7 +125,7 @@ const PickupType: React.FC<Props> = ({
               <Select
                 className="modal-custom-select"
                 placeholder="Chọn bưu cục"
-                disabled={disabled}
+                disabled={disabled || !canEditUserOrderField('fromOffice', status)}
                 showSearch
                 optionLabelProp="label"
                 filterOption={(input, option) =>

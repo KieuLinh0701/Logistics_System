@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Col, Form, message, Row, Tag } from 'antd';
 import dayjs from 'dayjs';
 import SearchFilters from './components/SearchFilters';
@@ -15,6 +15,7 @@ import ConfirmModal from '../../../common/ConfirmModal';
 
 const ManagerShippingRequests: React.FC = () => {
   const navigate = useNavigate();
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [requests, setRequests] = useState<ShippingRequest[] | []>([]);
@@ -60,6 +61,7 @@ const ManagerShippingRequests: React.FC = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const st = searchParams.get("status")?.toLocaleUpperCase();
     const type = searchParams.get("type")?.toLocaleUpperCase();
@@ -67,6 +69,7 @@ const ManagerShippingRequests: React.FC = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setPage(pageParam);
     if (s) setSearchText(s);
     if (st) setFilterStatus(st);
     if (type) setFilterRequestType(type);
@@ -83,6 +86,7 @@ const ManagerShippingRequests: React.FC = () => {
   const fetchRequests = async (currentPage = page) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
       const param: ManagerShippingRequestSearchRequest = {
         page: currentPage,
         limit: limit,
@@ -97,24 +101,19 @@ const ManagerShippingRequests: React.FC = () => {
       }
 
       const result = await shippingRequestApi.listManagerShippingRequests(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setRequests(list);
         setTotal(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách yêu cầu");
       }
-    } catch (error) {
-      console.error("Error fetching shipping request:", error);
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy danh sách yêu cầu");
     } finally {
       setLoading(false);
     }
-  };
-
-  const showConfirmCancel = (request: ShippingRequest) => {
-    setSelectedRequest(request); 
-    setModalConfirmOpen(true);   
   };
 
   const confirmCancelShippingRequest = () => {
@@ -141,8 +140,7 @@ const ManagerShippingRequests: React.FC = () => {
         message.error(result.message || "Hủy yêu cầu thất bại");
       }
     } catch (error: any) {
-      console.error("Lỗi khi hủy yêu cầu:", error);
-      message.error("Lỗi khi hủy yêu cầu:");
+      message.error(error.message || "Lỗi khi hủy yêu cầu:");
     } finally {
       setModalConfirmOpen(false);
       setLoading(false);
@@ -204,9 +202,9 @@ const ManagerShippingRequests: React.FC = () => {
       } else {
         message.error(result.message || "Lỗi khi lấy yêu cầu để chỉnh sửa");
       }
-    } catch (error) {
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy yêu cầu để chỉnh sửa");
       setSelectedRequest(null);
-      console.error("Lỗi khi lấy yêu cầu để chỉnh sửa:", error);
     } finally {
       setLoading(false);
     }
@@ -225,9 +223,8 @@ const ManagerShippingRequests: React.FC = () => {
         message.error(result.message || "Lỗi khi lấy chi tiết yêu cầu");
       }
     } catch (error: any) {
-      setSelectedRequest(null);
       message.error(error.message || "Lỗi khi lấy chi tiết yêu cầu");
-      console.error("Lỗi khi lấy chi tiết yêu cầu:", error);
+      setSelectedRequest(null);
     } finally {
       setLoading(false);
     }
@@ -248,9 +245,8 @@ const ManagerShippingRequests: React.FC = () => {
         } else {
           message.error(result.message || "Cập nhật chi tiết thất bại");
         }
-      } catch (error) {
-        console.error("Lỗi khi load chi tiết:", error);
-        message.error("Cập nhật chi tiết thất bại");
+      } catch (error: any) {
+        message.error(error.message || "Cập nhật chi tiết thất bại");
       }
     }
 
@@ -264,9 +260,8 @@ const ManagerShippingRequests: React.FC = () => {
 
   useEffect(() => {
     updateURL();
-    setPage(1);
-    fetchRequests(1);
-  }, [searchText, filterSort, filterStatus, dateRange, filterRrequestType]);
+    fetchRequests(page);
+  }, [page, limit, searchText, filterSort, filterStatus, dateRange, filterRrequestType]);
 
   return (
     <div className="list-page-layout">
@@ -307,7 +302,6 @@ const ManagerShippingRequests: React.FC = () => {
           onPageChange={(page, size) => {
             setPage(page);
             if (size) setLimit(size);
-            fetchRequests(page);
           }}
         />
       </div>
@@ -326,7 +320,6 @@ const ManagerShippingRequests: React.FC = () => {
         loading={loading}
         onClose={handleCloseDetail}
         onEdit={handleEditFromDetail}
-        onCancel={showConfirmCancel}
         onViewOrderDetail={handleViewOrderDetail}
       />
 

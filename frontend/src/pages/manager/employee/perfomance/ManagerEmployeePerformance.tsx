@@ -61,9 +61,8 @@ const ManagerEmployeePerformance = () => {
 
 
       // Api suất nhân viên
-    } catch (error) {
-      console.error(error);
-      message.error("Xuất Excel thất bại!");
+    } catch (error: any) {
+      message.error(error.message || "Xuất Excel thất bại!");
     }
   };
 

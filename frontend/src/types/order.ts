@@ -2,6 +2,7 @@ import type { Address } from "./address";
 import type { Office } from "./office";
 import type { OrderHistory } from "./orderHistory";
 import type { OrderProduct, OrderProductPrint, OrderProductRequest } from "./orderProduct";
+import type { Promotion } from "./promotion";
 import type { ServiceType } from "./serviceType";
 
 export interface AdminOrder {
@@ -37,7 +38,7 @@ export interface Order {
   payer: string;
   paymentStatus: string;
   notes: string;
-  promotionId: number | undefined;
+  promotion: Promotion | undefined;
   shippingFee: number;
   paidAt: string;
   deliveredAt: string;
@@ -127,6 +128,8 @@ export interface ManagerOrderRequest {
   orderValue: number;
   payer: string;
   notes: string;
+  pickupType?: string;
+  fromOfficeId?: number;
 }
 
 export interface CreateOrderSuccess {

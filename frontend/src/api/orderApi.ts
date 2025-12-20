@@ -31,6 +31,11 @@ const orderApi = {
     return res;
   },
 
+  async updateUserOrder(id: number, params: UserOrderRequest) {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/user/orders/${id}`, params);
+    return res;
+  },
+
   async getUserOrderByTrackingNumber(trackingNumber: string) {
     const res = await axiosClient.get<ApiResponse<Order>>(`/user/orders/${trackingNumber}`);
     return res;
@@ -75,6 +80,11 @@ const orderApi = {
 
   async createManagerOrder(params: ManagerOrderRequest) {
     const res = await axiosClient.post<ApiResponse<string>>("/manager/orders", params);
+    return res;
+  },
+
+  async updateManagerOrder(id: number, params: ManagerOrderRequest) {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/orders/${id}`, params);
     return res;
   },
 

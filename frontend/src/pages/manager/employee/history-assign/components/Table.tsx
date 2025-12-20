@@ -52,7 +52,7 @@ const AssignmentHistoryTable: React.FC<AssignmentHistoryTableProps> = ({
       ),
     },
     {
-      title: "Thông tin cá nân",
+      title: "Thông tin cá nhân",
       dataIndex: "employee",
       key: "namePhoneEmail",
       align: "left",
@@ -111,7 +111,7 @@ const AssignmentHistoryTable: React.FC<AssignmentHistoryTableProps> = ({
       align: "center",
       render: (_, record) => (
         <span className="text-muted">
-          {dayjs(record.createdAt).format("DD/MM/YYYY HH:mm")}
+          {dayjs(record.createdAt).format("DD/MM/YYYY HH:mm:ss")}
         </span>
       ),
     },

@@ -100,8 +100,8 @@ const ManagerIncidentReports = () => {
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách yêu cầu");
       }
-    } catch (error) {
-      console.error("Error fetching shipping request:", error);
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy danh sách yêu cầu");
     } finally {
       setLoading(false);
     }
@@ -119,9 +119,9 @@ const ManagerIncidentReports = () => {
       } else {
         message.error(result.message || "Lỗi khi lấy báo cáo");
       }
-    } catch (error) {
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy báo cáo");
       setSelectedIncident(null);
-      console.error("Lỗi khi lấy báo cáo:", error);
     } finally {
       setLoading(false);
     }
@@ -138,9 +138,9 @@ const ManagerIncidentReports = () => {
       } else {
         message.error(result.message || "Lỗi khi lấy báo cáo");
       }
-    } catch (error) {
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy báo cáo");
       setSelectedIncident(null);
-      console.error("Lỗi khi lấy báo cáo:", error);
     } finally {
       setLoading(false);
     }
@@ -171,9 +171,8 @@ const ManagerIncidentReports = () => {
         } else {
           message.error(result.message || "Cập nhật chi tiết thất bại");
         }
-      } catch (error) {
-        console.error("Lỗi khi load chi tiết:", error);
-        message.error("Cập nhật chi tiết thất bại");
+      } catch (error: any) {
+        message.error(error.message || "Cập nhật chi tiết thất bại");
       }
     }
 

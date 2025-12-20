@@ -3,7 +3,6 @@ import type { Office } from "../../../../../types/office";
 import locationApi from "../../../../../api/locationApi";
 import Title from "antd/es/typography/Title";
 import { Tooltip } from "antd";
-import { EnvironmentOutlined } from "@ant-design/icons";
 
 interface FromOfficeInfoProps {
     office: Office;

@@ -199,9 +199,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
       }
       else message.error(result.message || "Có lỗi khi cập nhật");
 
-    } catch (error) {
-      console.log("Lỗi tạo yêu cầu: ", error);
-      message.error("Có lỗi khi cập nhật");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi cập nhật");
     } finally {
       setLoading(false);
     }
@@ -221,9 +220,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
       }
       else message.error(result.message || "Có lỗi khi sửa yêu cầu");
       form.resetFields();
-    } catch (error) {
-      console.log("Lỗi sửa yêu cầu: ", error);
-      message.error("Có lỗi khi sửa yêu cầu");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi sửa yêu cầu");
     } finally {
       setLoading(false);
     }

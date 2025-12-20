@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Col, Form, Row, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
@@ -20,7 +20,7 @@ import PaymentModal from "./components/PaymentModal";
 
 const UserSettlementBatchs = () => {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
@@ -61,6 +61,7 @@ const UserSettlementBatchs = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const st = searchParams.get("status")?.toLocaleUpperCase();
     const t = searchParams.get("type")?.toLocaleUpperCase();
@@ -68,6 +69,7 @@ const UserSettlementBatchs = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setCurrentPage(pageParam);
     if (s) setSearchText(s);
     if (t) setFilterType(t);
     if (st) setFilterStatus(st);
@@ -83,6 +85,8 @@ const UserSettlementBatchs = () => {
 
   const fetch = async (page = currentPage) => {
     try {
+      const requestId = ++latestRequestRef.current;
+
       setLoading(true);
       const payload: SearchRequest = {
         page,
@@ -103,17 +107,19 @@ const UserSettlementBatchs = () => {
       }
 
       const result = await settlementBatchApi.listUserSettlementBatchs(payload);
+
+      if (requestId !== latestRequestRef.current) return;
+
+
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setSettlementBatchs(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách phiên đối soát của bưu cục");
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách phiên đối soát của bạn");
-      console.error("Error fetching settlement batchs:", error);
     } finally {
       setLoading(false);
     }
@@ -143,7 +149,6 @@ const UserSettlementBatchs = () => {
 
     } catch (error: any) {
       message.error(error.message || "Xuất báo cáo thất bại")
-      console.error("Export lỗi:", error.message);
     } finally {
       setLoading(false);
     }
@@ -219,9 +224,8 @@ const UserSettlementBatchs = () => {
         } else {
           message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
         }
-      } catch (error) {
-        message.error("Có lỗi xảy ra khi thanh toán phiên đối soát");
-        console.error(error);
+      } catch (error: any) {
+        message.error(error.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
       }
     };
 
@@ -278,14 +282,12 @@ const UserSettlementBatchs = () => {
     };
 
     fetchUserSchedule();
-    fetch();
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-    fetch(1);
+    fetch(currentPage);
     updateURL();
-  }, [searchText, dateRange, filterSort, filterStatus, filterType]);
+  }, [pageSize, currentPage, searchText, dateRange, filterSort, filterStatus, filterType]);
 
   return (
     <div className="list-page-layout">
@@ -347,7 +349,6 @@ const UserSettlementBatchs = () => {
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);
-            fetch(page);
           }}
         />
 

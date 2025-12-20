@@ -8,7 +8,7 @@ import type { Office } from '../../../../types/office';
 import vehicleApi from '../../../../api/vehicleApi';
 import { translateVehicleType } from '../../../../utils/vehicleUtils';
 import OfficeSelectModal from './OfficeSelectModal';
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 
 interface AddEditShipmentModalProps {
   open: boolean;
@@ -71,9 +71,8 @@ const AddEditShipmentModal: React.FC<AddEditShipmentModalProps> = ({
       setVehicles(vehicleRes.data || []);
       // setEmployees(employeeRes.data || []);
       // setOffices(officeRes.data || []);
-    } catch (err) {
-      console.error(err);
-      message.error('Lấy dữ liệu chọn thất bại!');
+    } catch (error: any) {
+          message.error(error.message || 'Lấy dữ liệu chọn thất bại!');
     }
   };
 
@@ -100,9 +99,8 @@ const AddEditShipmentModal: React.FC<AddEditShipmentModalProps> = ({
 
       onSuccess();
       onCancel();
-    } catch (err) {
-      console.error(err);
-      message.error('Có lỗi xảy ra!');
+    } catch (error: any) {
+          message.error(error.message || 'Có lỗi xảy ra!');
     }
   };
 

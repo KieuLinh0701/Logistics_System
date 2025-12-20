@@ -14,7 +14,6 @@ import com.logistics.enums.ProductType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Entity

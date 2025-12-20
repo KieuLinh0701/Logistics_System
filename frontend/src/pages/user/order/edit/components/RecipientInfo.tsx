@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { Card, Col, Form, Input, Row } from "antd";
 import type { FormInstance } from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
+import { type OrderStatus } from "../../../../../utils/orderUtils";
+import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 
 interface Props {
     form: FormInstance;
@@ -13,6 +15,7 @@ interface Props {
         cityCode: number;
     };
     disabled: boolean;
+    status: OrderStatus;
     onChange?: (values: any) => void;
 }
 
@@ -20,7 +23,8 @@ const RecipientInfo: React.FC<Props> = ({
     form,
     recipient,
     disabled,
-    onChange
+    onChange,
+    status,
 }) => {
 
     useEffect(() => {
@@ -59,7 +63,7 @@ const RecipientInfo: React.FC<Props> = ({
                                     <Input
                                         className="modal-custom-input"
                                         placeholder="Nhập tên người nhận"
-                                        disabled={disabled} />
+                                        disabled={disabled || !canEditUserOrderField('recipientName', status)} />
                                 </Form.Item>
 
                                 <Form.Item
@@ -68,15 +72,15 @@ const RecipientInfo: React.FC<Props> = ({
                                     rules={[
                                         { required: true, message: "Vui lòng nhập số điện thoại" },
                                         {
-                                            pattern: /^\d{10}$/,
-                                            message: "Số điện thoại phải đủ 10 số",
+                                            pattern: /^\d{10,11}$/,
+                                            message: "Số điện thoại phải gồm 10 hoặc 11 chữ số",
                                         },
                                     ]}
                                 >
                                     <Input
                                         className="modal-custom-input"
                                         placeholder="Ví dụ: 0901234567"
-                                        disabled={disabled} />
+                                        disabled={disabled || !canEditUserOrderField('recipientPhoneNumber', status)} />
                                 </Form.Item>
                             </Col>
 
@@ -84,8 +88,9 @@ const RecipientInfo: React.FC<Props> = ({
                                 <AddressForm
                                     form={form}
                                     prefix="recipient"
-                                    disableCity={disabled}
-                                    disableDetailAddress={disabled}
+                                    disableCity={disabled || !canEditUserOrderField('recipientCityCode', status)}
+                                    disableWard={disabled || !canEditUserOrderField('recipientWardCode', status)}
+                                    disableDetailAddress={disabled || !canEditUserOrderField('recipientDetailAddress', status)}
                                 />
                             </Col>
                         </Row>

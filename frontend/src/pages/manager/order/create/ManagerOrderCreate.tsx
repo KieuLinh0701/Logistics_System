@@ -18,7 +18,6 @@ import SuccessOrderModal from "./components/SuccessOrderModal";
 import orderApi from "../../../../api/orderApi";
 
 const ManagerOrderCreate: React.FC = () => {
-    const [form] = Form.useForm();
     const [loadingOrder, setLoadingOrder] = useState(false);
     const [officeCityCode, setOfficeCityCode] = useState<number | undefined>(undefined);
 
@@ -70,8 +69,8 @@ const ManagerOrderCreate: React.FC = () => {
                 if (response.success && response.data) {
                     setServiceTypes(response.data);
                 }
-            } catch (error) {
-                console.error("Error fetching Service types:", error);
+            } catch (error: any) {
+                message.error(error.message || "Lỗi khi lấy danh sách dịch vụ");
             } finally {
                 setLoadingService(false);
             }
@@ -97,9 +96,8 @@ const ManagerOrderCreate: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -122,7 +120,6 @@ const ManagerOrderCreate: React.FC = () => {
                 }
             } catch (error: any) {
                 message.error(error.message || "Lỗi khi lấy địa chỉ của bưu cục");
-                console.error("Lỗi:", error);
             } finally {
                 setLoadingOffice(false);
             }
@@ -182,9 +179,8 @@ const ManagerOrderCreate: React.FC = () => {
             } else {
                 message.error(result.message || "Tạo đơn hàng thất bại")
             }
-        } catch (error) {
-            console.log("Lỗi tạo đơn hàng", error);
-            message.error("Tạo đơn hàng thất bại");
+        } catch (error: any) {
+            message.error(error.message || "Tạo đơn hàng thất bại");
         } finally {
             setLoadingOrder(false);
         }
@@ -221,9 +217,8 @@ const ManagerOrderCreate: React.FC = () => {
                 if (result1?.data) setShippingFee(result1.data);
                 if (result2?.data) setTotalFee(result2.data);
 
-            } catch (error) {
-                console.error(error);
-                message.error("Tính cước thất bại");
+            } catch (error: any) {
+                message.error(error.message || "Tính cước thất bại");
                 setShippingFee(0);
                 setTotalFee(0);
             }

@@ -13,6 +13,7 @@ import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
+import com.logistics.entity.Promotion;
 
 public class OrderMapper {
 
@@ -194,8 +195,20 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
-                entity.getPromotion() != null ? entity.getPromotion().getId() : null,
+                OrderMapper.toUserOrderDetailDtoPromotion(entity.getPromotion()),
                 entity.getCodStatus().name());
+    }
+
+    public static UserOrderDetailDto.Promotion toUserOrderDetailDtoPromotion(Promotion entity) {
+        if (entity == null)
+            return null;
+
+        UserOrderDetailDto.Promotion dto = new UserOrderDetailDto.Promotion();
+
+        dto.setId(entity.getId());
+        dto.setCode(entity.getCode());
+
+        return dto;
     }
 
     public static UserOrderListDto toUserOrderListDto(Order entity) {

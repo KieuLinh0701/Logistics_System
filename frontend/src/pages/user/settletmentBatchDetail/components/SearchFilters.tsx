@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Row, Col, Input, Button, Select, DatePicker, Tooltip } from "antd";
 import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SETTLEMENT_BATCH_FILTER_SORT, SETTLEMENT_BATCH_ORDER_FILTER_SORT, SETTLEMENT_BATCH_ORDER_STATUS, SETTLEMENT_BATCH_STATUSES, SETTLEMENT_BATCH_TYPES, translateSettlementBatchStatus, translateSettlementBatchType, translateSettlementFilterSort } from "../../../../utils/settlementBatchUtils";
-import { ORDER_FILTER_COD, ORDER_PAYER_TYPES, ORDER_STATUS, translateOrderFilterCod, translateOrderFilterSort, translateOrderPayerType, translateOrderStatus } from "../../../../utils/orderUtils";
+import { SETTLEMENT_BATCH_ORDER_FILTER_SORT, SETTLEMENT_BATCH_ORDER_STATUS } from "../../../../utils/settlementBatchUtils";
+import { ORDER_FILTER_COD, ORDER_PAYER_TYPES, translateOrderFilterCod, translateOrderFilterSort, translateOrderPayerType, translateOrderStatus } from "../../../../utils/orderUtils";
 
 type FilterKeys = "sort" | "status" | "payer" | "cod"
 
