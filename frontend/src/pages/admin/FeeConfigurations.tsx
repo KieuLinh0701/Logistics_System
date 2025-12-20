@@ -59,7 +59,7 @@ const AdminFeeConfigurations: React.FC = () => {
         active: query.active,
       });
       if (res.success && res.data) {
-        setRows(res.data.data || []);
+        setRows(res.data.list || []);
         setTotal(res.data.pagination?.total || 0);
       }
     } catch (e: any) {

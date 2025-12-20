@@ -1,6 +1,7 @@
 import type { Address } from "./address";
 import type { Office } from "./office";
 import type { OrderHistory } from "./orderHistory";
+import type { PaymentSubmission } from "./paymentSubmission";
 import type { OrderProduct, OrderProductPrint, OrderProductRequest } from "./orderProduct";
 import type { ServiceType } from "./serviceType";
 
@@ -20,6 +21,8 @@ export interface Order {
   status: string;
   createdByType: string;
   senderName: string;
+  recipientName?: string;
+  recipientPhone?: string;
   senderPhone: string;
   senderCityCode: number;
   senderWardCode: number;
@@ -50,6 +53,7 @@ export interface Order {
   employeeCode: string;
   userCode: string;
   codStatus: string;
+  paymentSubmissions?: PaymentSubmission[];
 }
 
 export interface UserOrderSearchRequest {

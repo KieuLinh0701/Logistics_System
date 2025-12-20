@@ -20,13 +20,14 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
-import type { RouteInfo, DeliveryStop } from "../../api/shipmentApi";
+import type { DriverRouteInfo, DriverDeliveryStop } from "../../types/shipment";
 
 const { Title, Text } = Typography;
 
 const DriverRoute: React.FC = () => {
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  const [deliveryStops, setDeliveryStops] = useState<DeliveryStop[]>([]);
+  type StopOrderItem = NonNullable<DriverDeliveryStop['orders']>[number];
+  const [routeInfo, setRouteInfo] = useState<DriverRouteInfo | null>(null);
+  const [deliveryStops, setDeliveryStops] = useState<DriverDeliveryStop[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const DriverRoute: React.FC = () => {
     }
   };
 
-  const handleNavigateToStop = (stop: DeliveryStop) => {
+  const handleNavigateToStop = (stop: DriverDeliveryStop) => {
     if (stop.officeAddress) {
       const address = encodeURIComponent(stop.officeAddress);
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${address}`;
@@ -122,9 +123,9 @@ const DriverRoute: React.FC = () => {
       </Card>
 
       <Card title="Danh sách điểm dừng">
-        <List
+          <List
           dataSource={deliveryStops}
-          renderItem={(stop, index) => (
+          renderItem={(stop: DriverDeliveryStop, index: number) => (
             <List.Item
               actions={[
                 <Button
@@ -164,11 +165,11 @@ const DriverRoute: React.FC = () => {
                   <Space direction="vertical" size="small">
                     {stop.officeAddress && <Text type="secondary">{stop.officeAddress}</Text>}
                     <Text>Số đơn: {stop.orderCount}</Text>
-                    {stop.orders && stop.orders.length > 0 && (
+                        {stop.orders && stop.orders.length > 0 && (
                       <div>
                         <Text type="secondary">Mã đơn: </Text>
-                        {stop.orders.map((o, i) => (
-                          <Tag key={i}>{o.trackingNumber}</Tag>
+                        {stop.orders.map((o: StopOrderItem, i: number) => (
+                          <Tag key={o.id ?? i}>{o.trackingNumber}</Tag>
                         ))}
                       </div>
                     )}

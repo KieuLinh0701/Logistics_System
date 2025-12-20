@@ -69,7 +69,7 @@ public class IncidentReport {
 
     @ElementCollection
     @CollectionTable(name = "incident_report_images", joinColumns = @JoinColumn(name = "incident_report_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private List<String> images;
 
     @Enumerated(EnumType.STRING)
@@ -87,4 +87,8 @@ public class IncidentReport {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "office_id", foreignKey = @ForeignKey(name = "fk_incident_office"))
+    private Office office;
 }

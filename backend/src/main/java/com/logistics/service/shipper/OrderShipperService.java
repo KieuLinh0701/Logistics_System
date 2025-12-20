@@ -10,13 +10,13 @@ import com.logistics.entity.User;
 import com.logistics.enums.IncidentPriority;
 import com.logistics.enums.IncidentStatus;
 import com.logistics.enums.IncidentType;
-import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.OrderPayerType;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.IncidentReportRepository;
 import com.logistics.repository.OrderHistoryRepository;
@@ -121,10 +121,13 @@ public class OrderShipperService {
                         || o.getStatus() == OrderStatus.RETURNED)
                 .count();
 
-        int codCollected = todayOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
-                .mapToInt(Order::getCod)
-                .sum();
+        // COD shipper đã thu (PENDING / IN_BATCH)
+        int codCollected = paymentSubmissionRepository
+            .findByShipperIdAndStatusIn(employee.getUser().getId(),
+                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+            .stream()
+            .mapToInt(ps -> ps.getActualAmount().intValue())
+            .sum();
 
         List<Map<String, Object>> todayOrderSummaries = todayOrders.stream().map(this::mapOrderSummary).toList();
 
@@ -333,39 +336,106 @@ public class OrderShipperService {
         if (newStatus == OrderStatus.DELIVERED) {
             order.setDeliveredAt(LocalDateTime.now());
 
-            // COD: sau khi giao thành công → chuyển sang PENDING (shipper đang giữ tiền)
-            if (order.getCod() != null && order.getCod() > 0) {
-                order.setCodStatus(OrderCodStatus.PENDING);
-                cashCollected += order.getCod();
-            }
-
-            // Thu phí ship nếu payer là CUSTOMER (khách trả phí khi giao)
+            // Chỉ tạo payment submission cho phí ship khi payer là CUSTOMER.
             if (order.getPayer() == OrderPayerType.CUSTOMER) {
                 cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
             }
 
-            // Nếu có thu tiền mặt → tạo PaymentSubmission và đánh dấu đã thu
             if (cashCollected > 0) {
                 createPaymentSubmission(order, shipperUser, cashCollected,
                         "Đối soát sau khi giao thành công");
                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                 order.setPaidAt(LocalDateTime.now());
             }
+
+            // Nếu đơn có COD và chưa có bản ghi thu tiền COD, tạo bản ghi PENDING cho COD
+            try {
+                if (order.getCod() != null && order.getCod() > 0) {
+                    List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+                    boolean hasPositive = existing.stream()
+                            .anyMatch(ps -> ps.getActualAmount() != null && ps.getActualAmount().compareTo(BigDecimal.ZERO) > 0);
+                    if (!hasPositive) {
+                        createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
+                        try {
+                            order.setCodStatus(OrderCodStatus.PENDING);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        // Nếu giao thất bại và có báo cáo Khách từ chối, đảm bảo trạng thái COD được đặt NONE
+        if (newStatus == OrderStatus.FAILED_DELIVERY) {
+            try {
+                boolean recipientRefused = incidentReportRepository.findAll().stream()
+                        .anyMatch(ir -> ir.getOrder() != null
+                                && Objects.equals(ir.getOrder().getId(), order.getId())
+                                && ir.getIncidentType() != null
+                                && ir.getIncidentType() == IncidentType.RECIPIENT_REFUSED);
+                if (recipientRefused) {
+                    order.setCodStatus(OrderCodStatus.NONE);
+                }
+            } catch (Exception ignored) {
+            }
         }
 
         // Khi hoàn trả: chỉ thu phí dịch vụ (không thu COD)
         if (newStatus == OrderStatus.RETURNED) {
-            // Nếu trước đó payer là CUSTOMER nhưng chưa thu được, thu phí từ người gửi (SHOP)
-            if (order.getPayer() == OrderPayerType.CUSTOMER) {
+            // Quyết định ai chịu phí hoàn dựa trên incident nếu có
+            try {
+                boolean recipientNotAvailable = incidentReportRepository.findAll().stream()
+                        .anyMatch(ir -> ir.getOrder() != null
+                                && Objects.equals(ir.getOrder().getId(), order.getId())
+                                && ir.getIncidentType() != null
+                                && ir.getIncidentType() == IncidentType.RECIPIENT_NOT_AVAILABLE);
+
+                boolean recipientRefused = incidentReportRepository.findAll().stream()
+                        .anyMatch(ir -> ir.getOrder() != null
+                                && Objects.equals(ir.getOrder().getId(), order.getId())
+                                && ir.getIncidentType() != null
+                                && ir.getIncidentType() == IncidentType.RECIPIENT_REFUSED);
+
+                if (recipientNotAvailable) {
+                    order.setPayer(OrderPayerType.SHOP);
+                }
+
+                // Nếu người nhận từ chối (khách từ chối lấy hàng) thì đảm bảo COD không còn được kỳ vọng
+                if (recipientRefused) {
+                    order.setCodStatus(OrderCodStatus.NONE);
+                }
+            } catch (Exception ignored) {
+            }
+
+            // Kiểm tra đã có thu COD trước đó hay chưa
+            int collectedTotal = 0;
+            try {
+                List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+                collectedTotal = existing.stream().mapToInt(ps -> ps.getActualAmount() != null ? ps.getActualAmount().intValue() : 0).sum();
+            } catch (Exception ignored) {
+            }
+
+            // Nếu chưa thu COD mà payer trước đó là CUSTOMER, chuyển sang thu từ SHOP (người gửi)
+            if (collectedTotal == 0 && order.getPayer() == OrderPayerType.CUSTOMER) {
                 order.setPayer(OrderPayerType.SHOP);
             }
 
+            // Nếu có phí giao/hoàn thì thu theo payer hiện tại
             cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
 
             if (cashCollected > 0) {
                 createPaymentSubmission(order, shipperUser, cashCollected,
                         "Đối soát phí hoàn hàng");
                 order.setPaymentStatus(OrderPaymentStatus.UNPAID);
+            }
+
+            // Nếu trước đó đã có PaymentSubmission thu COD, tạo bản ghi return để không làm mất dấu tiền
+            if (collectedTotal > 0) {
+                try {
+                    createReturnPaymentSubmission(order, shipperUser, BigDecimal.valueOf(collectedTotal), "COD_RETURN: Hoàn tiền do trả hàng");
+                } catch (Exception ignored) {
+                }
             }
         }
 
@@ -480,10 +550,14 @@ public class OrderShipperService {
         stats.put("failed", orderPage.getContent().stream()
                 .filter(o -> o.getStatus() == OrderStatus.FAILED_DELIVERY || o.getStatus() == OrderStatus.RETURNED)
                 .count());
-        stats.put("codCollected", orderPage.getContent().stream()
-                .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
-                .mapToInt(Order::getCod)
-                .sum());
+        // COD đã thu: tổng các submission PENDING / IN_BATCH của shipper
+        int codCollectedHistory = paymentSubmissionRepository
+            .findByShipperIdAndStatusIn(employee.getUser().getId(),
+                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+            .stream()
+            .mapToInt(ps -> ps.getActualAmount().intValue())
+            .sum();
+        stats.put("codCollected", codCollectedHistory);
 
         Map<String, Object> result = new HashMap<>();
         result.put("orders", orders);
@@ -514,6 +588,10 @@ public class OrderShipperService {
         incident.setTitle(request.getTitle());
         incident.setDescription(request.getDescription());
 
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            incident.setImages(request.getImages());
+        }
+
         if (request.getPriority() != null) {
             incident.setPriority(IncidentPriority.valueOf(request.getPriority().toUpperCase()));
         } else {
@@ -521,6 +599,23 @@ public class OrderShipperService {
         }
 
         incident.setStatus(IncidentStatus.PENDING);
+
+        // Gán office dựa trên bản ghi employee hiện tại của shipper (role SHIPPER)
+        try {
+            List<Employee> employees = employeeRepository.findByUserId(shipperUser.getId());
+            Employee matched = employees.stream()
+                    .filter(e -> e.getAccountRole() != null && e.getAccountRole().getRole() != null
+                            && e.getAccountRole().getRole().getName() != null
+                            && e.getAccountRole().getRole().getName().equalsIgnoreCase("SHIPPER")
+                            && (e.getStatus() != null && (e.getStatus().name().equals("ACTIVE") || e.getStatus().name().equals("INACTIVE"))))
+                    .max((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                    .orElse(null);
+            if (matched != null) {
+                incident.setOffice(matched.getOffice());
+            }
+        } catch (Exception ex) {
+            System.err.println("Cảnh báo: không thể tra cứu văn phòng (office) của nhân viên shipper: " + ex.getMessage());
+        }
 
         IncidentReport saved = incidentReportRepository.save(incident);
         Map<String, Object> data = new HashMap<>();
@@ -586,6 +681,25 @@ public class OrderShipperService {
         map.put("recipientAddress", buildAddress(order.getRecipientAddress()));
         map.put("weight", order.getWeight());
         map.put("cod", order.getCod());
+        map.put("codStatus", order.getCodStatus() != null ? order.getCodStatus().name() : null);
+        // Bao gồm các bản ghi PaymentSubmission liên quan đến đơn hàng này
+        try {
+            List<PaymentSubmission> submissions = paymentSubmissionRepository.findByOrderId(order.getId());
+            List<Map<String, Object>> subs = submissions.stream().map(ps -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", ps.getId());
+                m.put("code", ps.getCode());
+                m.put("systemAmount", ps.getSystemAmount() != null ? ps.getSystemAmount().intValue() : 0);
+                m.put("actualAmount", ps.getActualAmount() != null ? ps.getActualAmount().intValue() : 0);
+                m.put("status", ps.getStatus() != null ? ps.getStatus().name() : null);
+                m.put("notes", ps.getNotes());
+                m.put("paidAt", ps.getPaidAt());
+                return m;
+            }).toList();
+            map.put("paymentSubmissions", subs);
+        } catch (Exception ignored) {
+            map.put("paymentSubmissions", Collections.emptyList());
+        }
         map.put("codAmount", order.getCod());
         map.put("shippingFee", order.getShippingFee());
         map.put("totalAmount", order.getTotalFee());
@@ -611,6 +725,7 @@ public class OrderShipperService {
         map.put("status", incident.getStatus() != null ? incident.getStatus().name() : null);
         map.put("createdAt", incident.getCreatedAt());
         map.put("handledAt", incident.getHandledAt());
+        map.put("officeId", incident.getOffice() != null ? incident.getOffice().getId() : null);
         return map;
     }
 
@@ -634,6 +749,35 @@ public class OrderShipperService {
         String submissionCode = "SUB_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
         submission.setCode(submissionCode);
         paymentSubmissionRepository.save(submission);
+    }
+
+    // Tạo bản ghi ghi nhận hoàn tiền COD khi trả hàng (giữ dấu vết giao dịch)
+    private void createReturnPaymentSubmission(Order order, User shipperUser, BigDecimal amount, String note) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        PaymentSubmission submission = new PaymentSubmission();
+        submission.setOrder(order);
+        // Lưu dưới dạng số âm để biểu thị trả lại
+        submission.setSystemAmount(amount.negate());
+        submission.setActualAmount(amount.negate());
+        submission.setStatus(PaymentSubmissionStatus.ADJUSTED);
+        submission.setShipper(shipperUser);
+        submission.setNotes(note);
+        submission.setPaidAt(LocalDateTime.now());
+
+        submission = paymentSubmissionRepository.save(submission);
+        String submissionCode = "RET_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
+        submission.setCode(submissionCode);
+        paymentSubmissionRepository.save(submission);
+
+        // Sau khi hoàn COD, cập nhật trạng thái COD và trạng thái thanh toán của đơn
+        try {
+            order.setCodStatus(OrderCodStatus.NONE);
+            order.setPaymentStatus(OrderPaymentStatus.REFUNDED);
+        } catch (Exception ignored) {
+        }
     }
 
     private String buildAddress(Address address) {

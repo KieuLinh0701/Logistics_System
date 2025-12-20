@@ -83,7 +83,7 @@ const ShipperCODManagement: React.FC = () => {
     dateTo: "",
   });
   const [detailModal, setDetailModal] = useState(false);
-  const [selectedSubmission, setSelectedSubmission] = useState<CODSubmission | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<PaymentSubmissionItem | null>(null);
 
   useEffect(() => {
     if (activeTab === "transactions") {
@@ -300,7 +300,7 @@ const ShipperCODManagement: React.FC = () => {
     {
       title: "Thao tác",
       key: "action",
-      render: (record: CODSubmission) => (
+      render: (record: PaymentSubmissionItem) => (
         <Button icon={<EyeOutlined />} onClick={() => {
           setSelectedSubmission(record);
           setDetailModal(true);
@@ -519,10 +519,17 @@ const ShipperCODManagement: React.FC = () => {
             <Descriptions.Item label="Số tiền hệ thống">{selectedSubmission.systemAmount.toLocaleString()}đ</Descriptions.Item>
             <Descriptions.Item label="Số tiền thực nộp">{selectedSubmission.actualAmount.toLocaleString()}đ</Descriptions.Item>
             <Descriptions.Item label="Chênh lệch">
-              <Text style={{ color: selectedSubmission.discrepancy !== 0 ? "#f50" : "#52c41a" }}>
-                {selectedSubmission.discrepancy > 0 ? "+" : ""}
-                {selectedSubmission.discrepancy.toLocaleString()}đ
-              </Text>
+              {
+                (() => {
+                  const disc = selectedSubmission.discrepancy ?? 0;
+                  return (
+                    <Text style={{ color: disc !== 0 ? "#f50" : "#52c41a" }}>
+                      {disc > 0 ? "+" : ""}
+                      {disc.toLocaleString()}đ
+                    </Text>
+                  );
+                })()
+              }
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <Tag color={getSubmissionStatusColor(selectedSubmission.status)}>{getSubmissionStatusText(selectedSubmission.status)}</Tag>

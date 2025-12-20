@@ -5,6 +5,7 @@ import {
   Col,
   Typography,
   Descriptions,
+  Table,
   Tag,
   Button,
   Space,
@@ -31,6 +32,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import orderApi from "../../api/orderApi";
 import type { ShipperOrder } from "../../api/orderApi";
+import { translateOrderCodStatus, translatePaymentSubmissionStatus } from "../../utils/orderUtils";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -53,29 +55,21 @@ const ShipperOrderDetail: React.FC = () => {
 const fetchOrderDetail = async () => {
   try {
     setLoading(true);
-    console.log(`[DEBUG] Fetching order detail for id=${id}`);
-
     const res = await orderApi.getShipperOrderDetail(Number(id));
-    console.log("[DEBUG] Response from API:", res);
 
     if (!res) {
-      console.warn("[WARN] API trả về dữ liệu null/undefined");
       setOrder(null);
       message.error("Không tìm thấy đơn hàng (API trả về dữ liệu rỗng)");
       return;
     }
 
-    // Nếu API có cấu trúc dữ liệu khác, ví dụ data ở trong res.data
-    // Bạn cũng nên log để kiểm tra
     if ("data" in res) {
-      console.log("[DEBUG] Response có trường data:", (res as any).data);
       setOrder((res as any).data || null);
     } else {
       setOrder(res as any);
     }
 
   } catch (error) {
-    console.error("Error fetching order detail:", error);
     message.error("Lỗi khi tải thông tin đơn hàng");
     setOrder(null);
   } finally {
@@ -91,15 +85,7 @@ const fetchOrderDetail = async () => {
 
   const handleFinishDelivery = () => {
     if (!order) return;
-
-    // Nếu có COD, hiển thị form thu COD
-    if (order.cod && order.cod > 0) {
-      codForm.setFieldsValue({ actualAmount: order.cod });
-      setCodModal(true);
-    } else {
-      // Không có COD, cập nhật trạng thái trực tiếp
-      updateDeliveryStatus("DELIVERED", "");
-    }
+    updateDeliveryStatus("DELIVERED", "");
   };
 
   const handleSubmitDelivery = async (values: any) => {
@@ -124,24 +110,18 @@ const fetchOrderDetail = async () => {
   const handleSubmitCOD = async (values: any) => {
     try {
       setLoading(true);
-      // Cập nhật trạng thái đơn hàng thành DELIVERED
-      await orderApi.updateShipperDeliveryStatus(Number(id), {
-        status: "DELIVERED",
-        notes: values.notes,
-      });
-
-      // Thu COD - tạo transaction INCOME
+      // Thu COD - tạo transaction INCOME. Không thay đổi trạng thái giao.
       await orderApi.collectShipperCOD({
         orderId: Number(id),
         actualAmount: values.actualAmount,
         notes: values.codNotes,
       });
 
-      message.success("Đã giao hàng thành công và thu COD");
+      message.success("Đã thu COD thành công");
       setCodModal(false);
       fetchOrderDetail();
     } catch (error: any) {
-      message.error(error?.response?.data?.message || "Lỗi khi xử lý giao hàng và thu COD");
+      message.error(error?.response?.data?.message || "Lỗi khi thu COD");
     } finally {
       setLoading(false);
     }
@@ -278,6 +258,18 @@ const fetchOrderDetail = async () => {
                     >
                       Giao thành công
                     </Button>
+                    {order.cod && order.cod > 0 && (
+                      <Button
+                        type="default"
+                        icon={<DollarOutlined />}
+                        onClick={() => {
+                          codForm.setFieldsValue({ actualAmount: order.cod });
+                          setCodModal(true);
+                        }}
+                      >
+                        Thu COD
+                      </Button>
+                    )}
                     <Button
                       danger
                       icon={<CloseCircleOutlined />}
@@ -351,12 +343,45 @@ const fetchOrderDetail = async () => {
               <Descriptions.Item label="COD">
                 <Space>
                   <DollarOutlined style={{ color: "#f50" }} />
-                  <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                    {order.cod ? `${order.cod.toLocaleString()}đ` : "Không COD"}
-                  </Text>
+                  <div>
+                    <Text strong style={{ color: "#f50", fontSize: 16 }}>
+                      {order.cod ? `${order.cod.toLocaleString()}đ` : "Không COD"}
+                    </Text>
+                    {order.codStatus && (
+                      <div style={{ marginTop: 6 }}>
+                        <Tag color={
+                          order.codStatus === "PENDING" ? "orange" :
+                          order.codStatus === "SUBMITTED" ? "blue" :
+                          order.codStatus === "RECEIVED" || order.codStatus === "TRANSFERRED" ? "green" :
+                          "default"
+                        }>{translateOrderCodStatus(order.codStatus)}</Tag>
+                      </div>
+                    )}
+                  </div>
                 </Space>
               </Descriptions.Item>
             </Descriptions>
+          </Card>
+
+          {/* Payment submissions (COD transactions) */}
+          <Card title="Giao dịch COD" style={{ marginTop: 12 }}>
+            {order.paymentSubmissions && order.paymentSubmissions.length > 0 ? (
+              <Table
+                dataSource={order.paymentSubmissions}
+                rowKey="id"
+                pagination={false}
+                columns={[
+                  { title: "Mã giao dịch", dataIndex: "code", key: "code" },
+                  { title: "Số hệ thống", dataIndex: "systemAmount", key: "systemAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
+                  { title: "Số thực thu", dataIndex: "actualAmount", key: "actualAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
+                  { title: "Trạng thái", dataIndex: "status", key: "status", render: (s:string) => <Tag>{translatePaymentSubmissionStatus(s)}</Tag> },
+                  { title: "Ngày", dataIndex: "paidAt", key: "paidAt", render: (d:string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—' },
+                  { title: "Ghi chú", dataIndex: "notes", key: "notes" },
+                ]}
+              />
+            ) : (
+              <Text type="secondary">Chưa có giao dịch COD liên quan.</Text>
+            )}
           </Card>
 
           {/* Notes */}
@@ -390,14 +415,14 @@ const fetchOrderDetail = async () => {
         </Form>
       </Modal>
 
-      {/* Modal: Thu COD khi giao thành công */}
+      {/* Modal: Thu COD */}
       <Modal
-        title="Giao hàng thành công - Thu COD"
+        title="Thu COD"
         open={codModal}
         onOk={() => codForm.submit()}
         onCancel={() => setCodModal(false)}
         width={600}
-        okText="Xác nhận giao hàng và thu COD"
+        okText="Xác nhận thu COD"
       >
         <Form form={codForm} layout="vertical" onFinish={handleSubmitCOD}>
           <Alert
@@ -413,6 +438,15 @@ const fetchOrderDetail = async () => {
             rules={[
               { required: true, message: "Vui lòng nhập số tiền thực thu" },
               { type: "number", min: 0, message: "Số tiền phải lớn hơn 0" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const max = order?.cod || 0;
+                  if (value == null) return Promise.resolve();
+                  if (value < 0) return Promise.reject(new Error('Số tiền phải lớn hơn 0'));
+                  if (max > 0 && value > max) return Promise.reject(new Error(`Số tiền không được vượt quá COD ${max.toLocaleString()}đ`));
+                  return Promise.resolve();
+                }
+              }),
             ]}
           >
             <InputNumber<number>

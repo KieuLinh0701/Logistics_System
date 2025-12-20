@@ -144,7 +144,7 @@ const orderApi = {
   },
 
   // Report
-  async createShipperIncident(payload: { orderId: number; incidentType?: string; title: string; description?: string; priority?: string }) {
+  async createShipperIncident(payload: { orderId: number; incidentType?: string; title: string; description?: string; priority?: string; images?: string[] }) {
     await axiosClient.post<ApiResponse<any>>("/shipper/incident", payload);
   },
 

@@ -179,10 +179,19 @@ const ShipperDashboard: React.FC = () => {
       title: "COD",
       dataIndex: "cod",
       key: "cod",
-      render: (amount: number) => (
-        <Text strong style={{ color: amount > 0 ? "#52c41a" : "#8c8c8c" }}>
-          {amount > 0 ? `${amount.toLocaleString()}đ` : "Không"}
-        </Text>
+      render: (amount: number, record: ShipperOrder & any) => (
+        <div>
+          <Text strong style={{ color: amount > 0 ? "#52c41a" : "#8c8c8c" }}>
+            {amount > 0 ? `${amount.toLocaleString()}đ` : "Không"}
+          </Text>
+          {record.codStatus && (
+            <div style={{ marginTop: 4 }}>
+              <Tag color={record.codStatus === "PENDING" ? "orange" : record.codStatus === "SUBMITTED" ? "blue" : record.codStatus === "RECEIVED" || record.codStatus === "TRANSFERRED" ? "green" : "default"}>
+                {record.codStatus}
+              </Tag>
+            </div>
+          )}
+        </div>
       ),
     },
     {

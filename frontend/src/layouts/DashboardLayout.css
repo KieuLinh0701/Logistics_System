@@ -103,3 +103,31 @@
   flex: 1;
   overflow-y: auto;
 }
+
+.ant-card {
+  border-radius: 12px;
+  box-shadow: none;
+}
+.ant-card .ant-card-body {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.content-area .ant-typography {
+  color: #1C3D90;
+}
+
+.admin-export-btn, .admin-action-btn {
+  background-color: #107C10 !important;
+  border-color: #107C10 !important;
+  color: #ffffff !important;
+}
+.admin-pdf-btn {
+  background-color: #ff6b6b !important;
+  border-color: #ff6b6b !important;
+  color: #ffffff !important;
+}
+.admin-btn-small {
+  padding: 4px 10px !important;
+}

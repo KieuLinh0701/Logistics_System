@@ -10,10 +10,9 @@ import {
   Modal,
   Table,
   Tag,
+  Upload,
 } from "antd";
-import {
-  PlusOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import dayjs from "dayjs";
@@ -42,6 +41,9 @@ const ShipperIncidentReport: React.FC = () => {
   const [submitModal, setSubmitModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
+  // Upload file list for preview
+  const [uploadList, setUploadList] = useState<any[]>([]);
+
   useEffect(() => {
     fetchReports();
   }, []);
@@ -68,18 +70,41 @@ const ShipperIncidentReport: React.FC = () => {
         title: values.title,
         description: values.description,
         priority: values.priority,
+        images: selectedImages,
       });
 
       message.success("Đã gửi báo cáo sự cố thành công");
       setSubmitModal(false);
       form.resetFields();
       setSelectedImages([]);
+      setUploadList([]);
       fetchReports();
     } catch (error) {
       message.error("Lỗi khi gửi báo cáo sự cố");
     } finally {
       setLoading(false);
     }
+  };
+
+  const beforeUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      // Add base64 string to selectedImages and show preview
+      setSelectedImages((s) => [...s, result]);
+      setUploadList((u) => [...u, { uid: String(Date.now()), name: file.name, status: 'done', url: result }]);
+    };
+    reader.readAsDataURL(file);
+    // prevent default upload
+    return false;
+  };
+
+  const handleRemoveImage = (file: any) => {
+    setUploadList((u) => u.filter((it) => it.uid !== file.uid));
+    setSelectedImages((s) => {
+      // remove by index matching name/url
+      return s.filter((img) => img !== file.url);
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -231,6 +256,7 @@ const ShipperIncidentReport: React.FC = () => {
           setSubmitModal(false);
           form.resetFields();
           setSelectedImages([]);
+          setUploadList([]);
         }}
         width={600}
       >
@@ -253,6 +279,22 @@ const ShipperIncidentReport: React.FC = () => {
           </Form.Item>
           <Form.Item name="description" label="Mô tả chi tiết">
             <TextArea rows={4} placeholder="Mô tả chi tiết về sự cố" />
+          </Form.Item>
+          <Form.Item label="Ảnh (nếu có)">
+            <Upload
+              listType="picture-card"
+              beforeUpload={beforeUpload}
+              onRemove={handleRemoveImage}
+              fileList={uploadList}
+              accept="image/*"
+            >
+              {uploadList.length >= 5 ? null : (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Thêm ảnh</div>
+                </div>
+              )}
+            </Upload>
           </Form.Item>
           <Form.Item name="priority" label="Mức độ ưu tiên" initialValue="MEDIUM">
             <Select>

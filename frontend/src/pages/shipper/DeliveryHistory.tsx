@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import type { ShipperOrder, ShipperStats } from "../../api/orderApi";
 import dayjs from "dayjs";
+import { translateOrderCodStatus } from "../../utils/orderUtils";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -178,14 +179,22 @@ const ShipperDeliveryHistory: React.FC = () => {
       dataIndex: "cod",
       key: "cod",
       width: 120,
-      render: (amount: number) =>
-        amount > 0 ? (
-          <Text strong style={{ color: "#f50" }}>
-            {amount.toLocaleString()}đ
-          </Text>
-        ) : (
-          <Text type="secondary">—</Text>
-        ),
+      render: (amount: number, record: ShipperOrder & any) => (
+        <div>
+          {amount > 0 ? (
+            <Text strong style={{ color: "#f50" }}>{amount.toLocaleString()}đ</Text>
+          ) : (
+            <Text type="secondary">—</Text>
+          )}
+          {record.codStatus && (
+            <div style={{ marginTop: 6 }}>
+              <Tag color={record.codStatus === "PENDING" ? "orange" : record.codStatus === "SUBMITTED" ? "blue" : record.codStatus === "RECEIVED" || record.codStatus === "TRANSFERRED" ? "green" : "default"}>
+                {translateOrderCodStatus(record.codStatus)}
+              </Tag>
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "Trạng thái",
@@ -340,6 +349,26 @@ const ShipperDeliveryHistory: React.FC = () => {
                   <Text>{selectedRecord.notes}</Text>
                 </div>
               )}
+              {/* Payment submissions */}
+              <div>
+                <Text strong>Giao dịch COD:</Text>
+                {selectedRecord.paymentSubmissions && selectedRecord.paymentSubmissions.length > 0 ? (
+                  <Table
+                    dataSource={selectedRecord.paymentSubmissions}
+                    rowKey="id"
+                    pagination={false}
+                    columns={[
+                      { title: "Mã", dataIndex: "code", key: "code" },
+                      { title: "Số hệ thống", dataIndex: "systemAmount", key: "systemAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
+                      { title: "Số thực thu", dataIndex: "actualAmount", key: "actualAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
+                      { title: "Trạng thái", dataIndex: "status", key: "status", render: (s:string) => <Tag>{s}</Tag> },
+                      { title: "Ngày", dataIndex: "paidAt", key: "paidAt", render: (d:string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—' },
+                    ]}
+                  />
+                ) : (
+                  <div><Text type="secondary">Chưa có giao dịch COD.</Text></div>
+                )}
+              </div>
             </Space>
           </div>
         )}

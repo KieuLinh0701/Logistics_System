@@ -124,7 +124,12 @@ const DriverDashboard: React.FC = () => {
 
       <Row gutter={16}>
         <Col span={10}>
-          <Card title="Văn phòng làm việc" icon={<EnvironmentOutlined />}>
+          <Card title={(
+            <Space>
+              <EnvironmentOutlined />
+              <span>Văn phòng làm việc</span>
+            </Space>
+          )}>
             {office ? (
               <Space direction="vertical">
                 <Text strong>{office.name}</Text>

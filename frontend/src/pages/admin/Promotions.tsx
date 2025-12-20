@@ -140,7 +140,7 @@ const AdminPromotions: React.FC = () => {
       minWeight: record.minWeight,
       maxWeight: record.maxWeight,
       minOrdersCount: record.minOrdersCount,
-      serviceTypeIds: record.serviceTypeIds,
+      serviceTypeIds: record.serviceTypes ? record.serviceTypes.map(st => st.id) : undefined,
       firstTimeUser: record.firstTimeUser,
       validMonthsAfterJoin: record.validMonthsAfterJoin,
       validYearsAfterJoin: record.validYearsAfterJoin,
@@ -149,7 +149,7 @@ const AdminPromotions: React.FC = () => {
       dailyUsageLimitGlobal: record.dailyUsageLimitGlobal,
       dailyUsageLimitPerUser: record.dailyUsageLimitPerUser,
       status: record.status,
-      userIds: record.userIds,
+      userIds: (record as any).userIds,
     });
     setOpen(true);
   };

@@ -20,7 +20,6 @@ interface ShippingRequest {
   user?: { firstName: string; lastName: string };
   createdAt: string;
   content: string;
-  // Fields expected by manager RequestTable
   contactName?: string;
   contactPhoneNumber?: string;
   contactEmail?: string;
@@ -62,7 +61,6 @@ const ShippingRequestsAdmin: React.FC = () => {
       } else {
         list = res?.data || res?.list || [];
       }
-
       const normalized = (list || []).map((r: any) => ({
         id: r.id,
         code: r.code,
@@ -70,8 +68,6 @@ const ShippingRequestsAdmin: React.FC = () => {
         status: typeof r.status === "string" ? r.status : r.status?.name || "",
         office: r.office ? { id: r.office.id, name: r.office.name || r.office.code || "" } : undefined,
         user: r.user ? { firstName: r.user.firstName, lastName: r.user.lastName } : undefined,
-
-        // Manager fields (fallbacks to various possible backend keys)
         contactName: r.contactName || r.senderName || (r.user ? `${r.user.firstName || ''} ${r.user.lastName || ''}`.trim() : undefined) || undefined,
         contactPhoneNumber: r.contactPhoneNumber || r.contactPhone || r.user?.phoneNumber || undefined,
         contactEmail: r.contactEmail || r.user?.email || undefined,
@@ -88,7 +84,6 @@ const ShippingRequestsAdmin: React.FC = () => {
         requestAttachments: r.requestAttachments || r.attachments || [],
         responseAttachments: r.responseAttachments || r.response_attachments || [],
 
-        // keep original raw for debugging
         __raw: r,
       }));
 
@@ -197,7 +192,7 @@ const ShippingRequestsAdmin: React.FC = () => {
 
   return (
     <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <Title level={2}>Quản lý yêu cầu hỗ trợ / khiếu nại</Title>
+      <Title level={2} style={{ color: "#1C3D90", marginBottom: 16 }}>Quản lý yêu cầu hỗ trợ / khiếu nại</Title>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={requests} />
       <Modal
         title="Phân công cho bưu cục"

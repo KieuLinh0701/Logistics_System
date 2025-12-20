@@ -196,3 +196,20 @@ export const translateOrderCodStatus = (value: string): string => {
       return value;
   }
 };
+
+  export const translatePaymentSubmissionStatus = (value: string): string => {
+    switch (value) {
+      case 'PENDING':
+        return 'Đang chờ';
+      case 'IN_BATCH':
+        return 'Đã vào phiên nộp';
+      case 'MATCHED':
+        return 'Đã khớp';
+      case 'MISMATCHED':
+        return 'Lệch tiền';
+      case 'ADJUSTED':
+        return 'Đã điều chỉnh';
+      default:
+        return value;
+    }
+  };

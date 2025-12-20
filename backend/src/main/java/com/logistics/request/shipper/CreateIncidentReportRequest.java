@@ -1,6 +1,7 @@
 package com.logistics.request.shipper;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class CreateIncidentReportRequest {
@@ -11,4 +12,5 @@ public class CreateIncidentReportRequest {
     private String description;
     private Integer addressId;
     private String priority;
+    private List<String> images;
 }
