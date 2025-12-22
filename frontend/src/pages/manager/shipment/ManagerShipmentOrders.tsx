@@ -441,7 +441,14 @@ const ManagerShipmentOrders: React.FC = () => {
                     </Col>
                 </Row>
 
-                <Tag className="list-page-tag">Kết quả trả về: {total} đơn hàng</Tag>
+                <Row className="list-page-header" justify="space-between" align="middle">
+                    <Col>
+                        <Tag className="list-page-tag">Kết quả trả về: {total} đơn hàng</Tag>
+                    </Col>
+                    <Col>
+                    <span className="text-muted">Các thay đổi hiện tại chỉ là tạm thời. Nhấn Lưu để xác nhận và hoàn tất</span>
+                    </Col>
+                </Row>
 
                 <div className="table-container">
                     <Table

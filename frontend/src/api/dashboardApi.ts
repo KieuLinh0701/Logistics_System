@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
 import type { ApiResponse } from "../types/response";
-import type { UserDashboardChartResponse, UserDashboardOverviewResponse } from "../types/dashboard";
+import type { ManagerDashboardOverviewResponse, UserDashboardChartResponse, UserDashboardOverviewResponse } from "../types/dashboard";
 import type { SearchRequest } from "../types/request";
 
 const dashboardApi = {
@@ -15,6 +15,11 @@ const dashboardApi = {
     return res;
   },
 
+  // Manager
+  async getManagerOverview() {
+    const res = await axiosClient.get<ApiResponse<ManagerDashboardOverviewResponse>>("/manager/dashboard/overview");
+    return res;
+  },
 };
 
 export default dashboardApi;

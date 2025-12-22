@@ -37,8 +37,8 @@ const BulkResult: React.FC<BulkResultProps> = ({
       width: 120,
       render: (success: boolean) =>
         success ?
-          <Tag color="green" className="bulk-tag">Thành công</Tag> :
-          <Tag color="red" className="bulk-tag">Thất bại</Tag>,
+          <Tag color="green">Thành công</Tag> :
+          <Tag color="red">Thất bại</Tag>,
     },
     {
       title: 'Thông báo',

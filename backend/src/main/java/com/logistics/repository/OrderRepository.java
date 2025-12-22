@@ -1,9 +1,9 @@
 package com.logistics.repository;
 
+import com.logistics.dto.manager.dashboard.ManagerOrderStatsDTO;
 import com.logistics.dto.user.dashboard.UserCreatedOrderCountDTO;
 import com.logistics.dto.user.dashboard.UserDeliveredOrderCountDTO;
 import com.logistics.dto.user.dashboard.UserOrderStatsDTO;
-import com.logistics.dto.user.dashboard.UserOrderTimelineDTO;
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
@@ -18,7 +18,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -135,8 +134,28 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     // Kiểm tta order có thuộc shipment nào ở các trạng thái
     @Query("SELECT CASE WHEN COUNT(so) > 0 THEN true ELSE false END " +
-           "FROM ShipmentOrder so " +
-           "WHERE so.order.id = :orderId AND so.shipment.status IN :statuses")
+            "FROM ShipmentOrder so " +
+            "WHERE so.order.id = :orderId AND so.shipment.status IN :statuses")
     boolean existsByIdAndShipmentStatusIn(@Param("orderId") Integer orderId,
-                                          @Param("statuses") List<ShipmentStatus> statuses);
+            @Param("statuses") List<ShipmentStatus> statuses);
+
+    @Query("""
+                SELECT new com.logistics.dto.manager.dashboard.ManagerOrderStatsDTO(
+                    COUNT(o), 
+                    SUM(CASE WHEN o.status = 'PENDING' THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'CONFIRMED' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'READY_FOR_PICKUP' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status IN ('PICKING_UP','PICKED_UP') AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN o.status IN ('AT_ORIGIN_OFFICE','AT_DEST_OFFICE') AND (o.fromOffice.id = :officeId OR o.toOffice.id = :officeId) THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'CONFIRMED' AND o.pickupType = 'AT_OFFICE' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'DELIVERING' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'DELIVERED' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'RETURNED' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'RETURNING' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
+                    SUM(CASE WHEN o.status = 'FAILED_DELIVERY' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END) 
+                )
+                FROM Order o
+                WHERE o.fromOffice.id = :officeId OR o.toOffice.id = :officeId
+            """)
+    ManagerOrderStatsDTO getOrderStatsByOfficeId(@Param("officeId") Integer officeId);
 }

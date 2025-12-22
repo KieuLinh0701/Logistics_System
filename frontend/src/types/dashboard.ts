@@ -56,3 +56,76 @@ export interface UserDashboardChartResponse {
   topReturned: UserTopProductItem[];
   orderTimelines: UserOrderTimeLineItem[];
 }
+
+// Manager
+export interface ManagerOrderStats {
+  total: number;
+  pending: number;           // PENDING
+  confirmed: number;         // CONFIRMED
+  readyForPickup: number;    // READY_FOR_PICKUP
+  pickingOrPicked: number;   // PICKING_UP / PICKED_UP
+  inWarehouse: number;       // AT_ORIGIN_OFFICE / AT_DEST_OFFICE
+  customerAtOffice: number;  // CONFIRMED + pickupType = AT_OFFICE
+  delivering: number;        // DELIVERING
+  delivered: number;         // DELIVERED
+  returned: number;          // RETURNED
+  returning: number;         // RETURNING
+  failedDelivery: number;    // FAILED_DELIVERY
+}
+export interface ManagerEmployeeStats {
+  total: number;
+  active: number;
+  inactive: number;
+  leave: number;
+}
+export interface ManagerIncidentStats {
+  total: number;
+  pendingLow: number;
+  pendingMedium: number;
+  pendingHight: number;
+  pending: number;
+  processing: number;
+  resolved: number;
+  rejected: number;
+}
+export interface ManagerShipmentStats {
+  total: number;
+  pending: number;
+  inTransit: number;
+  completed: number;
+  cancelled: number;
+}
+export interface ManagerShippingRequestStats {
+  total: number;
+  pending: number;
+  processing: number;
+  resolved: number;
+  rejected: number;
+  cancelled: number;
+}
+export interface ManagerPaymentSubmissionBatchStats {
+  total: number;
+  pending: number;
+  checking: number;
+  completed: number;
+  partial: number;
+  cancelled: number;
+}
+export interface ManagerVehicleStats {
+  total: number;
+  available: number;
+  inUse: number;
+  maintenance: number;
+  archived: number;
+}
+export interface ManagerDashboardOverviewResponse {
+  employees: ManagerEmployeeStats;
+  incidents: ManagerIncidentStats;
+  orders: ManagerOrderStats;
+  payments: ManagerPaymentSubmissionBatchStats;
+  shipments: ManagerShipmentStats;
+  shippingRequests: ManagerShippingRequestStats;
+  vehicles: ManagerVehicleStats;
+  vehicleCounts?: Record<string, number>; 
+  employeeShiftCounts?: Record<string, number>; 
+}
