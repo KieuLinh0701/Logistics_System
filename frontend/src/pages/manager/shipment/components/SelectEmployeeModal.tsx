@@ -1,67 +1,76 @@
-import React, { useEffect } from "react";
-import { Modal, Input, Table, Tag, Row, Col } from "antd";
+import React, { useEffect, useState } from "react";
+import { Modal, Input, Table, Tag, Row, Col, message, Form } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import type { ManagerEmployee } from "../../../../../types/employee";
+import type { ManagerEmployee } from "../../../../types/employee";
 import type { ColumnsType } from "antd/es/table";
-import { translateEmployeeShift } from "../../../../../utils/employeeUtils";
+import { translateEmployeeShift } from "../../../../utils/employeeUtils";
+import employeeApi from "../../../../api/employeeApi";
 
 interface Props {
   open: boolean;
-  employees: ManagerEmployee[];
-  page: number;
-  limit: number;
-  total: number;
-  selectedEmployee: ManagerEmployee | null;
-  loading?: boolean;
-  onClose: () => void;
-  onSearch: (value: string) => void;
-  onSelectEmployee: (employee: ManagerEmployee) => void;
-  onPageChange: (page: number, limit?: number) => void;
+  role: string | null;
+  value?: ManagerEmployee | null;
+  onSelect: (employee: ManagerEmployee) => void;
+  onCancel: () => void;
 }
 
 const SelectEmployeeModal: React.FC<Props> = ({
   open,
-  employees,
-  page,
-  limit,
-  total,
-  selectedEmployee,
-  loading,
-  onClose,
-  onSearch,
-  onSelectEmployee,
-  onPageChange,
+  role,
+  value,
+  onSelect,
+  onCancel
 }) => {
 
-  const [tempSelected, setTempSelected] = React.useState<ManagerEmployee | null>(selectedEmployee);
+  const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [tempSelected, setTempSelected] = useState<ManagerEmployee | null>(value || null);
 
-  const handleConfirm = () => {
-    if (tempSelected) {
-      onSelectEmployee(tempSelected);
-      onClose();
-    }
-  };
+  useEffect(() => {
+    console.log("role", role);
+    if (!open || !role) return;
+
+    const fetchEmployees = async () => {
+      try {
+        setLoading(true);
+        const res = await employeeApi.getManagerActiveEmployeesByShipmentType({
+          type: role,
+          search: searchText || undefined,
+          page,
+          limit
+        });
+
+        if (res.success && res.data) {
+          setEmployees(res.data.list || []);
+          setTotal(res.data.pagination?.total || 0);
+        } else {
+          message.error(res.message || "Lấy danh sách nhân viên thất bại");
+        }
+      } catch (err: any) {
+        message.error(err.message || "Lỗi khi lấy danh sách nhân viên");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, [open, role, searchText, page, limit]);
 
   useEffect(() => {
     if (open) {
-      setTempSelected(selectedEmployee);
+      setTempSelected(value || null);
+      setPage(1);
+      setSearchText("");
     }
-  }, [open, selectedEmployee]);
+  }, [open, value]);
 
-  const mergedEmployees = React.useMemo(() => {
-    if (!selectedEmployee) return employees;
-    if (page !== 1) return employees;
-
-    const map = new Map<number, ManagerEmployee>();
-
-    map.set(selectedEmployee.id, selectedEmployee);
-
-    employees.forEach(emp => {
-      map.set(emp.id, emp);
-    });
-
-    return Array.from(map.values());
-  }, [employees, selectedEmployee, page]);
+  const handleConfirm = () => {
+    if (tempSelected) onSelect(tempSelected);
+  };
 
   const columns: ColumnsType<ManagerEmployee> = [
     {
@@ -95,7 +104,7 @@ const SelectEmployeeModal: React.FC<Props> = ({
     <Modal
       title={<span className="modal-title">Chọn nhân viên</span>}
       open={open}
-      onCancel={onClose}
+      onCancel={onCancel}
       onOk={handleConfirm}
       okText="Chọn"
       okButtonProps={{
@@ -116,21 +125,24 @@ const SelectEmployeeModal: React.FC<Props> = ({
               className="search-input"
               placeholder="Tìm theo tên hoặc số điện thoại..."
               allowClear
-              onChange={(e) => onSearch(e.target.value)}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPage(1);
+              }}
               prefix={<SearchOutlined />}
             />
           </Col>
         </Row>
       </div>
 
-      <div className="manager-shipper-assigns-divide"/>
+      <div className="manager-shipper-assigns-divide" />
 
       <Tag className="list-page-tag">Kết quả trả về: {total} nhân viên</Tag>
 
       <div className="table-container">
         <Table
           rowKey="id"
-          dataSource={mergedEmployees}
+          dataSource={employees}
           loading={loading}
           scroll={{ x: "max-content" }}
           className="list-page-table"
@@ -138,7 +150,10 @@ const SelectEmployeeModal: React.FC<Props> = ({
             current: page,
             pageSize: limit,
             total: total,
-            onChange: (newPage, newLimit) => onPageChange(newPage, newLimit),
+            onChange: (p, l) => {
+              setPage(p);
+              if (l) setLimit(l);
+            },
           }}
           rowSelection={{
             type: "radio",

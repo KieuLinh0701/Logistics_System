@@ -34,7 +34,7 @@ const Actions: React.FC<Props> = ({ onAdd, onPrint, disabled, recordNumber, onAd
         onClick={onAddShipment}
         disabled={!disabled}
       >
-        Tạo chuyến giao hàng {recordNumber !== 0 ? `(${recordNumber})` : ""}
+        Thêm vào chuyến {recordNumber !== 0 ? `(${recordNumber})` : ""}
       </Button>
     </Space>
   );

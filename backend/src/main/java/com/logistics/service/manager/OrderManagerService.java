@@ -1,14 +1,10 @@
 package com.logistics.service.manager;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +13,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
-import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
@@ -28,8 +23,6 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
-import com.logistics.entity.Product;
-import com.logistics.entity.Promotion;
 import com.logistics.entity.ServiceType;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
@@ -72,7 +65,7 @@ public class OrderManagerService {
     private final OrderHistoryRepository orderHistoryRepository;
 
     private final PromotionUserService promotionUserService;
-    
+
     private final OfficeRepository officeRepository;
 
     private final AddressUserService addressUserService;
@@ -91,7 +84,6 @@ public class OrderManagerService {
 
     public ApiResponse<ListResponse<ManagerOrderListDto>> list(int userId, UserOrderSearchRequest request) {
         try {
-
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -160,6 +152,49 @@ public class OrderManagerService {
         }
     }
 
+    public ApiResponse<List<Integer>> getAllOrderIds(int userId, UserOrderSearchRequest request) {
+        try {
+            String search = request.getSearch();
+            String payer = request.getPayer();
+            String status = request.getStatus();
+            String pickupType = request.getPickupType();
+            Integer serviceTypeId = request.getServiceTypeId();
+            String paymentStatus = request.getPaymentStatus();
+            String cod = request.getCod();
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                    ? LocalDateTime.parse(request.getStartDate())
+                    : null;
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                    ? LocalDateTime.parse(request.getEndDate())
+                    : null;
+
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+            Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                    .and(OrderSpecification.officeId(userOffice.getId()))
+                    .and(OrderSpecification.excludeDraft())
+                    .and(OrderSpecification.searchManager(search))
+                    .and(OrderSpecification.payer(payer))
+                    .and(OrderSpecification.status(status))
+                    .and(OrderSpecification.pickupType(pickupType))
+                    .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                    .and(OrderSpecification.paymentStatus(paymentStatus))
+                    .and(OrderSpecification.cod(cod))
+                    .and(OrderSpecification.createdAtBetween(startDate, endDate));
+
+            List<Order> orders = repository.findAll(spec);
+
+            List<Integer> orderIds = orders.stream()
+                    .filter(order -> order.getTrackingNumber() != null)
+                    .map(Order::getId)
+                    .toList();
+
+            return new ApiResponse<>(true, "Lấy danh sách ID đơn hàng thành công", orderIds);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
     public ApiResponse<ManagerOrderDetailDto> getOrderByTrackingNumber(int userId, String trackingNumber) {
         try {
             Order order = repository.findByTrackingNumber(trackingNumber)
@@ -167,13 +202,11 @@ public class OrderManagerService {
 
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            if (order.getFromOffice() == null && order.getToOffice() == null) {
-                return new ApiResponse<>(false, "Bạn không có quyền xem đơn hàng này", null);
-            }
+            boolean hasAccess = (order.getFromOffice() != null
+                    && userOffice.getId().equals(order.getFromOffice().getId()))
+                    || (order.getToOffice() != null && userOffice.getId().equals(order.getToOffice().getId()));
 
-            if ((order.getFromOffice() != null && userOffice.getId().equals(order.getFromOffice().getId()))
-                    || (order.getToOffice() != null && userOffice.getId().equals(order.getToOffice().getId()))) {
-            } else {
+            if (!hasAccess) {
                 return new ApiResponse<>(false, "Bạn không có quyền xem đơn hàng này", null);
             }
 
@@ -372,9 +405,9 @@ public class OrderManagerService {
                 throw new RuntimeException("Đơn hàng đã hoàn thành, không thể chỉnh sửa");
             }
 
-            if (order.getFromOffice() == null
-                    || !userOffice.getId().equals(order.getFromOffice().getId())) {
-                return new ApiResponse<>(false, "Bạn không có quyền sửa đơn hàng này", false);
+            if (!((order.getFromOffice() != null && userOffice.getId().equals(order.getFromOffice().getId()))
+                    || (order.getToOffice() != null && userOffice.getId().equals(order.getToOffice().getId())))) {
+                throw new RuntimeException("Bạn không có quyền sửa đơn hàng này");
             }
 
             OrderStatus currentStatus = order.getStatus();

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   message,
   Row,
@@ -25,6 +25,7 @@ import { useSearchParams } from "react-router-dom";
 import "./ManagerShipperAssigns.css"
 
 const ManagerShipperAssigns = () => {
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<ManagerEmployeeWithShipperAssignments[] | []>([]);
@@ -41,6 +42,7 @@ const ManagerShipperAssigns = () => {
 
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalShipper, setTotalShipper] = useState(0);
   const [loadingShipper, setLoadingShipper] = useState(false);
   const [searchTextShipper, setSearchTextShipper] = useState("");
@@ -51,11 +53,16 @@ const ManagerShipperAssigns = () => {
   const updateURL = () => {
     const params: any = {};
     if (searchText) params.search = searchText;
+    if (currentPage) params.page = currentPage;
+
     setSearchParams(params, { replace: true });
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
+
+    setCurrentPage(pageParam);
     if (s) setSearchText(s);
   }, [searchParams]);
 
@@ -73,7 +80,6 @@ const ManagerShipperAssigns = () => {
         const list = result.data?.list || [];
         setEmployees(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách nhân viên");
       }
@@ -87,18 +93,19 @@ const ManagerShipperAssigns = () => {
   const fetchShippers = async (current = page) => {
     try {
       setLoadingShipper(true);
+      const requestId = ++latestRequestRef.current;
       const param: ManagerEmployeeSearchRequest = {
         page: current,
-        limit: pageSize,
+        limit: limit,
         search: searchTextShipper || undefined,
       };
 
       const result = await employeeApi.getManagerActiveShippers(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setShippers(list);
         setTotalShipper(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách nhân viên");
       }
@@ -129,16 +136,13 @@ const ManagerShipperAssigns = () => {
       }
     };
 
-    setCurrentPage(1);
     fetchOfficeCityCode();
-    fetchEmployees(currentPage);
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-    fetchEmployees(1);
+    fetchEmployees(currentPage);
     updateURL();
-  }, [searchText]);
+  }, [currentPage, pageSize, searchText]);
 
   const handleSubmit = async (values: any) => {
     if (!selectedEmployee) return;
@@ -191,9 +195,8 @@ const ManagerShipperAssigns = () => {
   }
 
   useEffect(() => {
-    setPage(1);
-    fetchShippers(1);
-  }, [searchTextShipper]);
+    fetchShippers(page);
+  }, [page, limit, searchTextShipper]);
 
   const handleRemoveSelectedEmployee = async () => {
     setSelectedEmployee(null);
@@ -206,6 +209,7 @@ const ManagerShipperAssigns = () => {
 
   const handleSearchEmployee = async (keyword: string) => {
     setSearchTextShipper(keyword);
+    setPage(1);
   };
 
   const handleOpenDeleteConfirm = (id: number) => {
@@ -242,7 +246,10 @@ const ManagerShipperAssigns = () => {
       <div className="list-page-content">
         <SearchFilters
           searchText={searchText}
-          onSearchChange={setSearchText}
+          onSearchChange={(value) => {
+            setSearchText(value)
+            setCurrentPage(1);
+          }}
         />
 
         <Row className="list-page-header" justify="space-between" align="middle">
@@ -290,7 +297,6 @@ const ManagerShipperAssigns = () => {
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);
-            fetchEmployees(page);
           }}
         />
 
@@ -317,7 +323,7 @@ const ManagerShipperAssigns = () => {
         open={employeeModalOpen}
         employees={shippers}
         page={page}
-        limit={pageSize}
+        limit={limit}
         total={totalShipper}
         selectedEmployee={selectedEmployee}
         loading={loadingShipper}

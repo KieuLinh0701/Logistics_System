@@ -7,6 +7,7 @@ import com.logistics.dto.user.dashboard.UserOrderTimelineDTO;
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
+import com.logistics.enums.ShipmentStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -132,4 +133,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             LocalDateTime startDate,
             LocalDateTime endDate);
 
+    // Kiểm tta order có thuộc shipment nào ở các trạng thái
+    @Query("SELECT CASE WHEN COUNT(so) > 0 THEN true ELSE false END " +
+           "FROM ShipmentOrder so " +
+           "WHERE so.order.id = :orderId AND so.shipment.status IN :statuses")
+    boolean existsByIdAndShipmentStatusIn(@Param("orderId") Integer orderId,
+                                          @Param("statuses") List<ShipmentStatus> statuses);
 }

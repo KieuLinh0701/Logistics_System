@@ -13,9 +13,9 @@ interface TableProps {
   pageSize: number;
   total: number;
   loading?: boolean;
-  onEdit: (id: number) => void;
+  onEdit: (shipment: ManagerShipment) => void;
   onCancel: (item: ManagerShipment) => void;
-  onDetail: (id: number) => void;
+  onDetail: (value: ManagerShipment) => void;
   onPageChange: (page: number, pageSize?: number) => void;
 }
 
@@ -92,7 +92,7 @@ const RequestTable: React.FC<TableProps> = ({
           <Tooltip title="Click để xem danh sách đơn hàng của chuyến hàng">
             <span
               className="navigate-link"
-              onClick={() => onDetail(record.id)}
+              onClick={() => onDetail(record)}
             >
               {record.code}
             </span>
@@ -118,7 +118,7 @@ const RequestTable: React.FC<TableProps> = ({
       title: 'Phương tiện',
       dataIndex: 'vehicle',
       key: 'vehicle',
-      align: 'left',
+      align: 'center',
       render: (_, record) => {
         const vehicle = record.vehicle;
 
@@ -128,58 +128,9 @@ const RequestTable: React.FC<TableProps> = ({
 
         return (
           <div>
-            <span className="custom-table-content-strong">
-              Biển số:{" "}
-            </span>
             {vehicle.licensePlate}<br />
-            <span className="custom-table-content-strong">
-              Tải trọng:{" "}
-            </span>
-            {vehicle.capacity}<br />
-          </div>
-        );
-      }
-    },
-    {
-      title: 'Bưu cục đi',
-      key: 'fromOffice',
-      align: 'left',
-      render: (_, record) => {
-        const from = record.fromOffice;
-
-        if (!from) {
-          return <span className="text-muted">N/A</span>;
-        }
-
-        const fromAddress = formattedAddressMap[`from-${record.id}`];
-
-        return (
-          <div>
-            <span>
-              {from.name}
-            </span><br />
-            <span>{from.postalCode}</span><br />
-
-            {from.latitude && from.longitude ? (
-              <Tooltip title="Nhấn để xem vị trí trên Google Maps">
-                <span
-                  className="navigate-link custom-table-content-limit"
-                  onClick={() =>
-                    window.open(
-                      `https://www.google.com/maps?q=${from.latitude},${from.longitude}`,
-                      "_blank",
-                      "noopener,noreferrer"
-                    )
-                  }
-                >
-                  {fromAddress || 'Chưa có địa chỉ'}
-                </span>
-              </Tooltip>
-            ) : (
-              <Tooltip title="Địa chỉ không có tọa độ">
-                <span>{fromAddress || 'Chưa có địa chỉ'}</span>
-              </Tooltip>
-            )}
+            <span className='text-muted'>
+            ({vehicle.capacity} Kg)</span>
           </div>
         );
       }
@@ -362,7 +313,7 @@ const RequestTable: React.FC<TableProps> = ({
                 key: "edit",
                 icon: <EditOutlined />,
                 label: "Sửa",
-                onClick: () => onEdit(record.id),
+                onClick: () => onEdit(record),
               },
             ]
             : []),
@@ -384,7 +335,7 @@ const RequestTable: React.FC<TableProps> = ({
             <Button
               className="action-button-link"
               type="link"
-              onClick={() => onDetail(record.id)}
+              onClick={() => onDetail(record)}
             >
               DS đơn hàng
             </Button>

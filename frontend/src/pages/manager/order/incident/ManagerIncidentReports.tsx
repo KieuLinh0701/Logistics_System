@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Col, Row, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
@@ -15,6 +15,7 @@ import ProcessingModal from "./components/ProcessingModal";
 
 const ManagerIncidentReports = () => {
   const navigate = useNavigate();
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
@@ -54,6 +55,7 @@ const ManagerIncidentReports = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const st = searchParams.get("status")?.toLocaleUpperCase();
     const type = searchParams.get("type")?.toLocaleUpperCase();
@@ -62,6 +64,7 @@ const ManagerIncidentReports = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setCurrentPage(pageParam);
     if (s) setSearchText(s);
     if (st) setFilterStatus(st);
     if (type) setFilterType(type);
@@ -77,6 +80,7 @@ const ManagerIncidentReports = () => {
   }, [searchParams]);
 
   const fetchIncidents = async (page = currentPage) => {
+    const requestId = ++latestRequestRef.current;
     const param: SearchRequest = {
       page,
       limit: pageSize,
@@ -92,11 +96,11 @@ const ManagerIncidentReports = () => {
     }
     try {
       const result = await incidentReportApi.listManagerIncidentReports(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setIncidents(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách yêu cầu");
       }
@@ -115,7 +119,6 @@ const ManagerIncidentReports = () => {
       if (result.success && result.data) {
         setSelectedIncident(result.data);
         setIsModalVisible(true);
-        // form.setFieldsValue(result.data);
       } else {
         message.error(result.message || "Lỗi khi lấy báo cáo");
       }
@@ -145,7 +148,6 @@ const ManagerIncidentReports = () => {
       setLoading(false);
     }
   };
-
 
   const handleModalClose = () => {
     setSelectedIncident(null);
@@ -180,14 +182,9 @@ const ManagerIncidentReports = () => {
   };
 
   useEffect(() => {
-    fetchIncidents();
-  }, []);
-
-  useEffect(() => {
     updateURL();
-    setCurrentPage(1);
-    fetchIncidents(1);
-  }, [searchText, filterType, dateRange, filterSort, filterStatus]);
+    fetchIncidents(currentPage);
+  }, [currentPage, pageSize, searchText, filterType, dateRange, filterSort, filterStatus]);
 
   return (
     <div className="list-page-layout">
@@ -203,6 +200,7 @@ const ManagerIncidentReports = () => {
             if (key === "status") setFilterStatus(val);
             if (key === "sort") setFilterSort(val);
             if (key === "priority") setFilterPriority(val);
+            setCurrentPage(1);
           }}
           onReset={() => {
             setSearchText("");
@@ -236,7 +234,6 @@ const ManagerIncidentReports = () => {
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);
-            fetchIncidents(page);
           }}
           onEdit={handleEditIncidentFromTable}
         />

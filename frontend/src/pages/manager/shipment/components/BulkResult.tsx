@@ -1,11 +1,11 @@
 import React from 'react';
 import { Modal, Table, Tag, Row, Col, Statistic, Card } from 'antd';
 import type { BulkResponse } from '../../../../types/response';
-import type { Product } from '../../../../types/product';
+import type { ManagerOrderShipment } from '../../../../types/shipment';
 
 interface BulkResultProps {
   open: boolean;
-  results: BulkResponse<Product>;
+  results: BulkResponse<ManagerOrderShipment>;
   onClose: () => void;
 }
 
@@ -20,7 +20,7 @@ const BulkResult: React.FC<BulkResultProps> = ({
 
   const columns = [
     {
-      title: 'Tên sản phẩm',
+      title: 'Mã đơn hàng',
       dataIndex: 'name',
       key: 'name',
       width: 200,
@@ -54,19 +54,19 @@ const BulkResult: React.FC<BulkResultProps> = ({
 
   return (
     <Modal
-      title={<span className='modal-title'>Kết quả thêm sản phẩm</span>}
+      title={<span className='modal-title'>Kết quả thêm đơn hàng vào chuyến</span>}
       open={open}
       onCancel={onClose}
       footer={null}
       width={800}
       centered
-      className="modal-bulk"
+      className="modal-bulk modal-hide-scrollbar"
     >
       {/* Thống kê */}
       <Row gutter={16} className="bulk-stat-row">
         <Col span={8}>
           <Card size="small" className="statistic-total">
-            <Statistic title="Tổng sản phẩm" value={totalCount} />
+            <Statistic title="Tổng đơn hàng" value={totalCount} />
           </Card>
         </Col>
         <Col span={8}>

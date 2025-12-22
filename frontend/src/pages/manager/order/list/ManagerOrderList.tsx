@@ -15,10 +15,18 @@ import serviceTypeApi from "../../../../api/serviceTypeApi";
 import { ShoppingOutlined } from "@ant-design/icons";
 import ConfirmCancelModal from "../detail/components/ConfirmCancelModal";
 import ConfirmModal from "../../../common/ConfirmModal";
+import ShipmentModal from "./components/ShipmentModal";
+import type { ManagerOrderShipment, ManagerShipment } from "../../../../types/shipment";
+import type { SearchRequest } from "../../../../types/request";
+import shipmentApi from "../../../../api/shipmentApi";
+import shipmentOrderApi from "../../../../api/shipmentOrderApi";
+import type { BulkResponse } from "../../../../types/response";
+import BulkResult from "./components/BulkResult";
 
 const ManagerOrderList = () => {
   const navigate = useNavigate();
   const latestRequestRef = useRef(0);
+  const selectAllRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [limit, setLimit] = useState(10);
@@ -42,9 +50,25 @@ const ManagerOrderList = () => {
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+  const [modalConfirmOpenAddOrders, setModalConfirmOpenAddOrders] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
 
   const [orderId, setOrderId] = useState<number | null>(null);
+
+  const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
+  const [shipments, setShipments] = useState<ManagerShipment[] | []>([]);
+  const [limitShipment, setLimitShipment] = useState(10);
+  const [pageShipment, setPageShipment] = useState(1);
+  const [totalShipment, setTotalShipment] = useState<number>(0);
+  const [loadingShipment, setLoadingShipment] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [searchShipment, setSearchShipment] = useState("");
+  const [filterTypeShipment, setFilterTypeShipment] = useState("ALL");
+  const [filterSortShipment, setFilterSortShipment] = useState("NEWEST");
+  const [selectedShipment, setSelectedShipment] = useState<ManagerShipment | null>(null);
+
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerOrderShipment>>();
 
   const updateURL = () => {
     const params: any = {};
@@ -175,8 +199,49 @@ const ManagerOrderList = () => {
     navigate(`/orders/print?orderIds=${selectedOrderIds.join(",")}`);
   };
 
+  const handleSelectAllFiltered = async (select: boolean) => {
+    if (!select) {
+      setSelectedOrderIds([]);
+      return;
+    }
+    const requestId = ++selectAllRequestRef.current;
+    try {
+      const param: ManagerOrderSearchRequest = {
+        page: 1,
+        limit: limit,
+        search: search || undefined,
+        payer: filterPayer !== "ALL" ? filterPayer : undefined,
+        status: filterStatus !== "ALL" ? filterStatus : undefined,
+        serviceTypeId: filterServiceType !== null ? filterServiceType : undefined,
+        paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
+        cod: filterCOD !== "ALL" ? filterCOD : undefined,
+        sort: filterSort,
+      };
+      if (dateRange) {
+        param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+        param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+      }
+
+      const result = await orderApi.getAllManagerOrderIds(param);
+
+      if (requestId !== selectAllRequestRef.current) return;
+
+      if (result.success && result.data) {
+        setSelectedOrderIds(result.data);
+      } else {
+        message.error(result.message || "Lấy toàn bộ ID thất bại");
+      }
+    } catch (err: any) {
+      message.error(err.message || "Lỗi server khi lấy toàn bộ ID");
+    }
+  };
+
+  useEffect(() => {
+    setSelectedOrderIds([]);
+  }, [orders]);
+
   const handleAddShipment = () => {
-    message.warning("Chức năng này đang được phát triển");
+    setIsShipmentModalOpen(true);
   };
 
   const handleEditOrder = (id: number, tracking: string) => {
@@ -281,6 +346,108 @@ const ManagerOrderList = () => {
     fetchOrders(page);
   }, [page, limit, search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort]);
 
+  // Shipment
+  const fetchShipments = async (currentPage = pageShipment) => {
+    try {
+      setLoadingShipment(true);
+      const requestId = ++latestRequestRef.current;
+      const param: SearchRequest = {
+        page: currentPage,
+        limit: limit,
+        search: searchShipment,
+        type: filterTypeShipment !== null ? filterTypeShipment : undefined,
+        sort: filterSortShipment,
+      };
+
+      const result = await shipmentApi.listManagerPendingShipments(param);
+
+      if (requestId !== latestRequestRef.current) return;
+
+      if (result.success && result.data) {
+        const shipmentList = result.data?.list || [];
+        setShipments(shipmentList);
+        setTotalShipment(result.data.pagination?.total || 0);
+      } else {
+        message.error(result.message || "Lỗi khi lấy danh sách chuyến hàng");
+      }
+    } catch (error: any) {
+      console.error(error.message || "Có lỗi xảy ra. Vui lòng thử lại sau");
+    } finally {
+      setLoadingShipment(false);
+    }
+  };
+
+  const handleFilterChangeShipment = (filter: string, value: string) => {
+    switch (filter) {
+      case 'type':
+        setFilterTypeShipment(value);
+        break;
+      case 'sort':
+        setFilterSortShipment(value);
+        break;
+    }
+    setPage(1);
+  };
+
+  const handleClearFiltersShipment = () => {
+    setSearchShipment("");
+    setFilterTypeShipment("ALL");
+    setFilterSortShipment("NEWEST");
+    setPageShipment(1);
+  };
+
+  const handleConfirmAddOrdersInShipment = (shipment: ManagerShipment) => {
+    if (!selectedOrderIds.length) {
+      message.warning("Vui lòng chọn ít nhất một đơn hàng");
+      return;
+    }
+
+    setSelectedShipment(shipment);
+    setModalConfirmOpenAddOrders(true);
+  };
+
+  const confirmAddOrdersInShipment = async () => {
+    if (!selectedShipment || !selectedOrderIds.length) {
+      message.error("Bạn chưa chọn chuyến hàng hoặc đơn hàng");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await shipmentOrderApi.saveManagerShipmentOrders(
+        selectedShipment.id,
+        [],
+        selectedOrderIds
+      );
+
+      if (result.success) {
+        message.success(result.message || "Cập nhật thành công");
+        selectAllRequestRef.current++;
+        setSelectedOrderIds([]);
+        setSelectedShipment(null);
+
+        console.log("orderIds", setSelectedOrderIds);
+      } else {
+        message.warning(result.message || "Một số đơn hàng không thể thêm");
+        if (result.results) {
+          setBulkResult(result as any);
+          setBulkModalOpen(true);
+        }
+      }
+    } catch (error: any) {
+      message.error(error.message || "Cập nhật thất bại");
+    } finally {
+      setLoading(false);
+      setModalConfirmOpenAddOrders(false);
+      setIsShipmentModalOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isShipmentModalOpen) return;
+    fetchShipments(page);
+  }, [pageShipment, limitShipment, searchShipment, filterTypeShipment, isShipmentModalOpen]);
+
   return (
     <div className="list-page-layout">
       <div className="list-page-content">
@@ -335,9 +502,44 @@ const ManagerOrderList = () => {
           }}
           selectedOrderIds={selectedOrderIds}
           setSelectedOrderIds={setSelectedOrderIds}
+          onSelectAllFiltered={handleSelectAllFiltered}
         />
 
       </div>
+
+      <ShipmentModal
+        open={isShipmentModalOpen}
+        data={shipments}
+        page={pageShipment}
+        limit={limitShipment}
+        total={totalShipment}
+        onPageChange={(page, size) => {
+          setPageShipment(page);
+          if (size) setLimitShipment(size);
+        }}
+
+        loading={loadingShipment}
+        onClose={() => setIsShipmentModalOpen(false)}
+        hover={hover}
+        searchText={searchShipment}
+        onSearch={setSearchShipment}
+        filterType={filterTypeShipment}
+        sort={filterSortShipment}
+        onHoverChange={setHover}
+        onFilterChange={handleFilterChangeShipment}
+        onSortChange={setFilterSortShipment}
+        onClearFilters={handleClearFiltersShipment}
+        onConfirm={handleConfirmAddOrdersInShipment}
+      />
+
+      <ConfirmModal
+        title="Xác nhận thêm đơn hàng vào chuyến"
+        message="Vui lòng xác nhận rằng bạn sẽ thêm các đơn hàng đã chọn vào chuyến này."
+        open={modalConfirmOpenAddOrders}
+        onOk={confirmAddOrdersInShipment}
+        onCancel={() => setModalConfirmOpenAddOrders(false)}
+        loading={loading}
+      />
 
       <ConfirmModal
         title='Xác nhận nhận hàng'
@@ -354,6 +556,14 @@ const ManagerOrderList = () => {
         onCancel={() => setCancelModalOpen(false)}
         loading={loading}
       />
+
+      {bulkResult && (
+        <BulkResult
+          open={bulkModalOpen}
+          results={bulkResult}
+          onClose={() => setBulkModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

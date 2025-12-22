@@ -124,6 +124,7 @@ export const ORDER_STATUS = [
   'DELIVERED',
   'FAILED_DELIVERY',
   'CANCELLED',
+  'RETURNING',
   'RETURNED',
 ] as const;
 export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
@@ -142,6 +143,7 @@ export const translateOrderStatus = (value: string): string => {
     case 'DELIVERED': return 'Đã giao hàng';
     case 'FAILED_DELIVERY': return 'Giao thất bại';
     case 'CANCELLED': return 'Đã hủy';
+    case 'RETURNING': return 'Đang hoàn trả';
     case 'RETURNED': return 'Đã hoàn trả';
     default: return value;
   }

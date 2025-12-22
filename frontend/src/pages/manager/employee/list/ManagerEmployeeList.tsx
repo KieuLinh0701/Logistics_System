@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   message,
   Row,
@@ -21,6 +21,7 @@ import SearchFilters from "./components/SearchFilters";
 import AddEditModal from "./components/AddEditModal";
 
 const ManagerEmployeeList = () => {
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<ManagerEmployee[] | []>([]);
@@ -35,16 +36,11 @@ const ManagerEmployeeList = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(
     null
   );
-  const [importModalOpen, setImportModalOpen] = useState(false);
-  const [importResults, setImportResults] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [hover, setHover] = useState(false);
   const [form] = Form.useForm();
-
-  const [bulkModalOpen, setBulkModalOpen] = useState(false);
-  const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerEmployee>>();
 
   const updateURL = () => {
     const params: any = {};
@@ -65,6 +61,7 @@ const ManagerEmployeeList = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const shift = searchParams.get("shift")?.toLocaleUpperCase();
     const status = searchParams.get("status")?.toLocaleUpperCase();
@@ -73,6 +70,7 @@ const ManagerEmployeeList = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setCurrentPage(pageParam);
     if (s) setSearchText(s);
     if (shift) setFilterShift(shift);
     if (status) setFilterStatus(status);
@@ -90,6 +88,7 @@ const ManagerEmployeeList = () => {
   const fetchEmployees = async (page = currentPage) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
       const param: ManagerEmployeeSearchRequest = {
         page,
         limit: pageSize,
@@ -106,11 +105,11 @@ const ManagerEmployeeList = () => {
       }
 
       const result = await employeeApi.listManagerEmployees(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setEmployees(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách nhân viên");
       }
@@ -189,15 +188,9 @@ const ManagerEmployeeList = () => {
   };
 
   useEffect(() => {
-    setCurrentPage(1);
     fetchEmployees(currentPage);
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchEmployees(1);
     updateURL();
-  }, [searchText, filterShift, filterStatus, filterRole, filterSort, dateRange]);
+  }, [currentPage, pageSize, searchText, filterShift, filterStatus, filterRole, filterSort, dateRange]);
 
   const handleSubmit = () => {
     if (modalMode == 'edit') {
@@ -301,7 +294,6 @@ const ManagerEmployeeList = () => {
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);
-            fetchEmployees(page);
           }}
         />
 

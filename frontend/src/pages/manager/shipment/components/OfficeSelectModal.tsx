@@ -9,6 +9,7 @@ const { Option } = Select;
 
 interface OfficeSelectModalProps {
     open: boolean;
+    value?: Office | null;
     onSelect: (office: Office) => void;
     onCancel: () => void;
 }
@@ -17,6 +18,7 @@ const OfficeSelectModal: React.FC<OfficeSelectModalProps> = ({
     open,
     onSelect,
     onCancel,
+    value,
 }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
@@ -24,49 +26,87 @@ const OfficeSelectModal: React.FC<OfficeSelectModalProps> = ({
     const [wards, setWards] = useState<Ward[]>([]);
     const [offices, setOffices] = useState<Office[]>([]);
     const [loadingOffices, setLoadingOffices] = useState(false);
+    const isRestoringRef = React.useRef(false);
     const [addressMap, setAddressMap] = useState<Record<number, string>>({});
 
     const selectedCity = Form.useWatch("cityCode", form);
     const selectedWard = Form.useWatch("wardCode", form);
 
     useEffect(() => {
-        if (open) {
-            locationApi.getCities().then(setCities).catch(console.error);
+        if (!open) return;
+
+        locationApi.getCities().then(setCities);
+
+        if (value) {
+            isRestoringRef.current = true;
+            form.setFieldsValue({
+                cityCode: value.cityCode,
+            });
+        } else {
             form.resetFields();
             setWards([]);
             setOffices([]);
-            setAddressMap({});
         }
-    }, [open, form]);
+    }, [open]);
 
     useEffect(() => {
         if (!selectedCity) {
             setWards([]);
-            form.setFieldsValue({ wardCode: undefined });
-            setOffices([]);
             return;
         }
+
         locationApi.getWardsByCity(selectedCity)
-            .then(setWards)
+            .then((data) => {
+                setWards(data);
+            })
             .catch(console.error);
-        form.setFieldsValue({ wardCode: undefined });
-        setOffices([]);
-    }, [selectedCity, form]);
+    }, [selectedCity]);
+
+    useEffect(() => {
+        if (!value || !selectedCity || wards.length === 0) return;
+
+        form.setFieldsValue({
+            wardCode: value.wardCode,
+        });
+    }, [wards]);
+
+    useEffect(() => {
+        if (!value || offices.length === 0) return;
+
+        const exists = offices.some(o => o.id === value.id);
+        if (exists) {
+            form.setFieldsValue({ officeId: value.id });
+        }
+
+        isRestoringRef.current = false;
+    }, [offices]);
 
     useEffect(() => {
         if (!selectedCity) {
             setOffices([]);
-            setAddressMap({});
             return;
         }
+
         setLoadingOffices(true);
         officeApi.listLocalOffices({ city: selectedCity, ward: selectedWard })
             .then(async (res) => {
                 const officesData = res.data || [];
                 setOffices(officesData);
 
+                const currentOfficeId = form.getFieldValue("officeId");
+                const stillValid = officesData.some(o => o.id === currentOfficeId);
+
+                if (!stillValid) {
+                    form.setFieldsValue({ officeId: undefined });
+                }
+
+                console.log("result", res.data);
+                console.log("office", officesData);
+
                 if (officesData.length === 0) {
                     message.warning("Bưu cục hiện chưa hoạt động ở khu vực này, vui lòng chọn khu vực khác");
+                    form.setFieldsValue({ officeId: undefined });
+                    return;
                 } else {
                     const newAddressMap: Record<number, string> = {};
                     await Promise.all(

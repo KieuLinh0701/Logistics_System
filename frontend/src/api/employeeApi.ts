@@ -1,6 +1,7 @@
 import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 import type { ManagerEmployee, ManagerEmployeeSearchRequest, ManagerEmployeeWithShipperAssignments } from "../types/employee";
+import type { SearchRequest } from "../types/request";
 
 const employeeApi = {
   // Manager
@@ -26,6 +27,11 @@ const employeeApi = {
 
   async getManagerActiveShippers(params: ManagerEmployeeSearchRequest) {
     const res = await axiosClient.get<ApiResponse<ListResponse<ManagerEmployee>>>("/manager/employees/shippers/active", { params });
+    return res;
+  },
+
+  async getManagerActiveEmployeesByShipmentType(params: SearchRequest) {
+    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerEmployee>>>("/manager/employees/shipment-type", { params });
     return res;
   },
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   message,
   Row,
@@ -19,6 +19,7 @@ import SearchFilters from "./components/SearchFilters";
 import { useSearchParams } from "react-router-dom";
 
 const ManagerShipperAssignmentHistories = () => {
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
@@ -55,12 +56,14 @@ const ManagerShipperAssignmentHistories = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const ward = searchParams.get("ward")?.toLocaleUpperCase();
     const sort = searchParams.get("sort")?.toLocaleUpperCase();
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setCurrentPage(pageParam)
     if (s) setSearchText(s);
     if (ward) setFilterWardCode(Number(ward));
     if (sort) setFilterSort(sort);
@@ -76,6 +79,7 @@ const ManagerShipperAssignmentHistories = () => {
   const fetchShipperAssignments = async (page = currentPage) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
       const param: ManagerShipperAssignmentSearchRequest = {
         page,
         limit: pageSize,
@@ -90,11 +94,11 @@ const ManagerShipperAssignmentHistories = () => {
       }
 
       const result = await shipperAssignmentApi.listManagerShipperAssignments(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setHistories(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách nhân viên");
       }
@@ -153,17 +157,13 @@ const ManagerShipperAssignmentHistories = () => {
         setLoading(false);
       }
     };
-
-    setCurrentPage(1);
     fetchOfficeCityCode();
-    fetchShipperAssignments(currentPage);
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1);
-    fetchShipperAssignments(1);
+    fetchShipperAssignments(currentPage);
     updateURL();
-  }, [searchText, filterSort, filterWardCode, dateRange]);
+  }, [currentPage, pageSize, searchText, filterSort, filterWardCode, dateRange]);
 
   const handleFilterChange = (filter: string, value: string | number | undefined) => {
     switch (filter) {
@@ -232,7 +232,6 @@ const ManagerShipperAssignmentHistories = () => {
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);
-            fetchShipperAssignments(page);
           }}
         />
       </div>

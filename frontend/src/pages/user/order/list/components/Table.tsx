@@ -23,6 +23,7 @@ interface Props {
   onPageChange: (page: number, limit?: number) => void;
   selectedOrderIds: number[];
   setSelectedOrderIds: React.Dispatch<React.SetStateAction<number[]>>;
+  onSelectAllFiltered: (select: boolean) => void;
 }
 
 const OrderTable: React.FC<Props> = ({
@@ -39,7 +40,9 @@ const OrderTable: React.FC<Props> = ({
   loading,
   onPageChange,
   selectedOrderIds,
-  setSelectedOrderIds }) => {
+  setSelectedOrderIds,
+  onSelectAllFiltered,
+}) => {
   const [locationMap, setLocationMap] = useState<Record<number, { city: string, ward: string }>>({});
   const navigate = useNavigate();
 
@@ -86,6 +89,12 @@ const OrderTable: React.FC<Props> = ({
       },
     },
     {
+      title: "Trạng thái",
+      key: "status",
+      align: "center",
+      render: (_, record) => translateOrderStatus(record.status)
+    },
+    {
       title: "Người nhận",
       key: "recipient",
       align: "left",
@@ -104,12 +113,6 @@ const OrderTable: React.FC<Props> = ({
           </>
         );
       }
-    },
-    {
-      title: "Trạng thái",
-      key: "status",
-      align: "center",
-      render: (_, record) => translateOrderStatus(record.status)
     },
     {
       title: "Khối lượng (Kg)",
@@ -350,8 +353,11 @@ const OrderTable: React.FC<Props> = ({
           type: 'checkbox',
           selectedRowKeys: selectedOrderIds,
           onChange: (keys) => setSelectedOrderIds(keys as number[]),
+          onSelectAll: (selected) => {
+            onSelectAllFiltered(selected);
+          },
           getCheckboxProps: (record) => ({
-            disabled: !canPrintUserOrder(record.status),
+            disabled: !record.trackingNumber,
           }),
         }}
         rowClassName={(record) =>

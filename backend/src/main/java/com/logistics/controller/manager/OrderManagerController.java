@@ -35,6 +35,15 @@ public class OrderManagerController {
         return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
     }
 
+    @GetMapping("/all-ids")
+    public ResponseEntity<ApiResponse<List<Integer>>> getAllOrderIds(
+            @Valid UserOrderSearchRequest userOrderSearchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.getAllOrderIds(userId, userOrderSearchRequest));
+    }
+
     @GetMapping("/{trackingNumber}")
     public ResponseEntity<ApiResponse<ManagerOrderDetailDto>> getOrderByTrackingNumber(
             @PathVariable String trackingNumber,

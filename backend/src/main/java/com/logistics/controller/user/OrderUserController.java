@@ -36,6 +36,15 @@ public class OrderUserController {
         return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
     }
 
+    @GetMapping("/all-ids")
+    public ResponseEntity<ApiResponse<List<Integer>>> getAllOrderIds(
+            @Valid UserOrderSearchRequest userOrderSearchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.getAllOrderIds(userId, userOrderSearchRequest));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<OrderCreateSuccess>> create(
             @RequestBody UserOrderCreateRequest userOrderCreateRequest,
@@ -46,7 +55,7 @@ public class OrderUserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> update( 
+    public ResponseEntity<ApiResponse<Boolean>> update(
             @PathVariable Integer id,
             @RequestBody UserOrderCreateRequest userOrderCreateRequest,
             HttpServletRequest request) {
@@ -63,7 +72,7 @@ public class OrderUserController {
         return ResponseEntity.ok(service.getOrderByTrackingNumber(userId, trackingNumber));
     }
 
-    @GetMapping("/id/{id}") 
+    @GetMapping("/id/{id}")
     public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderById(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");

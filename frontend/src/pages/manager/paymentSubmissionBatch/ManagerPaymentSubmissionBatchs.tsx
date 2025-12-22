@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Col, Form, Row, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
@@ -16,6 +16,7 @@ import AddBatchModal from "./components/AddBatchModal";
 
 
 const ManagerPaymentSubmissionBatchs = () => {
+  const latestRequestRef = useRef(0);
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -54,12 +55,14 @@ const ManagerPaymentSubmissionBatchs = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const st = searchParams.get("status")?.toLocaleUpperCase();
     const sort = searchParams.get("sort")?.toLocaleUpperCase();
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setCurrentPage(pageParam);
     if (s) setSearchText(s);
     if (st) setFilterStatus(st);
     if (sort) setFilterSort(sort);
@@ -75,6 +78,7 @@ const ManagerPaymentSubmissionBatchs = () => {
   const fetchPaymentSubmissionBatchs = async (page = currentPage) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
       const payload: SearchRequest = {
         page,
         limit: pageSize,
@@ -93,11 +97,11 @@ const ManagerPaymentSubmissionBatchs = () => {
       }
 
       const result = await paymentSubmissionBatchApi.listManagerPaymentSubmissionBatchs(payload);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setPaymentSubmissionBatchs(list);
         setTotal(result.data.pagination?.total || 0);
-        setCurrentPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách phiên đối soát của bưu cục");
       }
@@ -178,14 +182,9 @@ const ManagerPaymentSubmissionBatchs = () => {
   };
 
   useEffect(() => {
-    fetchPaymentSubmissionBatchs();
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchPaymentSubmissionBatchs(1);
+    fetchPaymentSubmissionBatchs(currentPage);
     updateURL();
-  }, [searchText, dateRange, filterSort, filterStatus]);
+  }, [currentPage, pageSize, searchText, dateRange, filterSort, filterStatus]);
 
   return (
     <div className="list-page-layout">
@@ -202,6 +201,7 @@ const ManagerPaymentSubmissionBatchs = () => {
           setFilters={(key, val) => {
             if (key === "sort") setFilterSort(val as string);
             if (key === "status") setFilterStatus(val as string);
+            setCurrentPage(1);
           }}
           onReset={() => {
             setSearchText("");
@@ -243,7 +243,6 @@ const ManagerPaymentSubmissionBatchs = () => {
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);
-            fetchPaymentSubmissionBatchs(page);
           }}
         />
 

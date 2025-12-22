@@ -43,17 +43,17 @@ public class OrderUtils {
     }
 
     // Những trạng thái user/manager được phép in vận đơn
-    private static final Set<OrderStatus> STATUSES_ALLOWED_TO_PRINT = Set.of(
+    private static final Set<OrderStatus> STATUSES_NOT_ALLOWED_TO_PRINT = Set.of(
             OrderStatus.DRAFT,
             OrderStatus.PENDING,
             OrderStatus.CANCELLED);
 
     public static boolean canUserPrint(OrderStatus status) {
-        return !STATUSES_ALLOWED_TO_PRINT.contains(status);
+        return !STATUSES_NOT_ALLOWED_TO_PRINT.contains(status);
     }
 
     public static boolean canManagerPrint(OrderStatus status) {
-        return !STATUSES_ALLOWED_TO_PRINT.contains(status);
+        return !STATUSES_NOT_ALLOWED_TO_PRINT.contains(status);
     }
 
     // Những trạng thái manager được phép hủy
@@ -95,6 +95,29 @@ public class OrderUtils {
 
     public static boolean canManagerSetAtOriginOffice(OrderStatus status) {
         return VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE.contains(status);
+    }
+
+    public static String translateOrderStatus(OrderStatus status) {
+        if (status == null) return ""; 
+
+        switch (status) {
+            case DRAFT: return "Bản nháp";
+            case PENDING: return "Chờ duyệt";
+            case CONFIRMED: return "Đã xác nhận";
+            case READY_FOR_PICKUP: return "Sẵn sàng để lấy";
+            case PICKING_UP: return "Đang lấy hàng";
+            case PICKED_UP: return "Đã lấy hàng";
+            case AT_ORIGIN_OFFICE: return "Tại bưu cục gốc";
+            case IN_TRANSIT: return "Đang vận chuyển";
+            case AT_DEST_OFFICE: return "Tại bưu cục đích";
+            case DELIVERING: return "Đang giao";
+            case DELIVERED: return "Đã giao hàng";
+            case FAILED_DELIVERY: return "Giao thất bại";
+            case CANCELLED: return "Đã hủy";
+            case RETURNING: return "Đang hoàn trả";
+            case RETURNED: return "Đã hoàn trả";
+            default: return status.name(); 
+        }
     }
 
 }

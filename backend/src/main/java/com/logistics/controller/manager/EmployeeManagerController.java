@@ -3,10 +3,12 @@ package com.logistics.controller.manager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
+import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -80,6 +82,15 @@ public class EmployeeManagerController {
 
         ApiResponse<ListResponse<ManagerEmployeeListDto>> result = service.getActiveShippers(userId,
                 managerShippingRequestSearchRequest);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/shipment-type")
+    public ResponseEntity<ApiResponse<ListResponse<ManagerEmployeeListDto>>> getActiveEmployeesByShipmentType(
+           @Valid SearchRequest searchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        ApiResponse<ListResponse<ManagerEmployeeListDto>> result = service.getActiveEmployeesByShipmentType(userId, searchRequest);
         return ResponseEntity.ok(result);
     }
 }

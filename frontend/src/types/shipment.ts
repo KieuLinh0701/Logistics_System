@@ -86,3 +86,10 @@ export interface ManagerOrderShipmentSearchRequest {
   limit: number;
   search?: string; 
 }
+
+export interface ManagerShipmentAddEditRequest {
+  type: string;
+  vehicleId?: number;
+  toOfficeId?: number;
+  employeeId?: number;
+}

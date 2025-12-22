@@ -20,4 +20,12 @@ public class ShipmentUtils {
     public static boolean canManagerEditShipment(ShipmentStatus status) {
         return EDITABLE_STATUSES_BY_MANAGER.contains(status);
     }
+
+    // Những Status mà Manager được phép thêm đơn hàng vào chuyến
+    private static final Set<ShipmentStatus> ADDED_ORDER_STATUSES_BY_MANAGER = Set.of(
+            ShipmentStatus.PENDING);
+
+    public static boolean canManagerAddOrderForShipment(ShipmentStatus status) {
+        return ADDED_ORDER_STATUSES_BY_MANAGER.contains(status);
+    }
 }

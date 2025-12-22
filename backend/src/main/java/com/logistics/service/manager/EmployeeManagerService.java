@@ -27,12 +27,14 @@ import com.logistics.entity.ShipperAssignment;
 import com.logistics.entity.User;
 import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.EmployeeStatus;
+import com.logistics.enums.ShipmentType;
 import com.logistics.mapper.EmployeeMapper;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
+import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -407,6 +409,12 @@ public class EmployeeManagerService {
             Account account = emp.getAccountRole().getAccount();
             EmployeeStatus currentStatus = emp.getStatus();
 
+            // Mới thêm
+            if (!emp.getAccountRole().getIsActive()) {
+                emp.getAccountRole().setIsActive(true);
+                accountRoleRepository.save(emp.getAccountRole());
+            }
+
             // ===== Kiểm tra employee ACTIVE/INACTIVE khác ở office khác =====
             boolean hasOtherOfficeActive = employeeRepository.findAllByAccountId(account.getId())
                     .stream()
@@ -467,16 +475,34 @@ public class EmployeeManagerService {
                     accountRoleRepository.save(newAR);
                 }
 
+                // check xem có employee LEAVE cùng office + newAR không
+                List<Employee> leaveEmployees = employeeRepository.findAllByAccountRoleId(newAR.getId())
+                        .stream()
+                        .filter(e -> e.getOffice().getId().equals(emp.getOffice().getId())
+                                && e.getStatus() == EmployeeStatus.LEAVE)
+                        .toList();
+
+                if (!leaveEmployees.isEmpty()) {
+                    Employee toRestore = leaveEmployees.get(0);
+                    toRestore.setStatus(EmployeeStatus.ACTIVE);
+                    toRestore.setHireDate(req.getHireDate() != null
+                            ? Instant.parse(req.getHireDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                            : toRestore.getHireDate());
+                    toRestore.setShift(req.getShift() != null
+                            ? EmployeeShift.valueOf(req.getShift())
+                            : toRestore.getShift());
+                    employeeRepository.save(toRestore);
+                } else {
+                    Employee newEmp = buildEmployee(account.getUser(), newAR, emp.getOffice(), req);
+                    employeeRepository.save(newEmp);
+                }
+
                 // deactivate employee + accountRole cũ
                 currentAR.setIsActive(false);
                 accountRoleRepository.save(currentAR);
 
                 emp.setStatus(EmployeeStatus.LEAVE);
                 employeeRepository.save(emp);
-
-                // tạo employee mới với role mới
-                Employee newEmp = buildEmployee(account.getUser(), newAR, emp.getOffice(), req);
-                employeeRepository.save(newEmp);
 
                 return new ApiResponse<>(true,
                         "Chức vụ đã được thay đổi. Nhân viên cũ đã kết thúc công việc, nhân viên mới đã được tạo.",
@@ -525,6 +551,8 @@ public class EmployeeManagerService {
                         account.setIsActive(false);
                         accountRepository.save(account);
                     }
+
+                    emp.setStatus(EmployeeStatus.LEAVE);
 
                     notificationService.create(
                             "Bạn đã nghỉ việc",
@@ -584,7 +612,7 @@ public class EmployeeManagerService {
                         employeeRepository.save(newEmp);
                     }
 
-                    account.setIsActive(true); 
+                    account.setIsActive(true);
                     accountRepository.save(account);
                 }
             }
@@ -771,4 +799,49 @@ public class EmployeeManagerService {
         }
     }
 
+    public ApiResponse<ListResponse<ManagerEmployeeListDto>> getActiveEmployeesByShipmentType(
+            int userId,
+            SearchRequest request) {
+        try {
+            String type = request.getType();
+            String search = request.getSearch();
+            int page = request.getPage();
+            int limit = request.getLimit();
+
+            Office office = getManagedOfficeByUserId(userId);
+
+            if (type == null || type.isBlank()) {
+                return new ApiResponse<>(false, "Chưa chọn loại chuyến", null);
+            }
+
+            String role = type.equals(ShipmentType.DELIVERY.name()) ? "Shipper" : "Driver";
+
+            Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
+                    .and(EmployeeSpecification.officeId(office.getId()))
+                    .and(EmployeeSpecification.search(search))
+                    .and(EmployeeSpecification.excludeStatus(EmployeeStatus.LEAVE.name()))
+                    .and(EmployeeSpecification.role(role, true));
+
+            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("hireDate").ascending());
+            Page<Employee> pageData = employeeRepository.findAll(spec, pageable);
+
+            List<ManagerEmployeeListDto> list = pageData.getContent().stream()
+                    .map(EmployeeMapper::toManagerEmployeeListDto)
+                    .toList();
+
+            Pagination pagination = new Pagination(
+                    (int) pageData.getTotalElements(),
+                    page,
+                    limit,
+                    pageData.getTotalPages());
+
+            ListResponse<ManagerEmployeeListDto> data = new ListResponse<>();
+            data.setList(list);
+            data.setPagination(pagination);
+
+            return new ApiResponse<>(true, "Lấy danh sách nhân viên " + type + " thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
 }

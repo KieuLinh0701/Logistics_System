@@ -21,6 +21,7 @@ interface Props {
   onPageChange: (page: number, limit?: number) => void;
   selectedOrderIds: number[];
   setSelectedOrderIds: React.Dispatch<React.SetStateAction<number[]>>;
+  onSelectAllFiltered: (select: boolean) => void;
 }
 
 const OrderTable: React.FC<Props> = ({
@@ -35,7 +36,9 @@ const OrderTable: React.FC<Props> = ({
   loading,
   onPageChange,
   selectedOrderIds,
-  setSelectedOrderIds }) => {
+  setSelectedOrderIds,
+  onSelectAllFiltered
+}) => {
 
   const navigate = useNavigate();
   const [locationMap, setLocationMap] = useState<Record<number, {
@@ -73,8 +76,6 @@ const OrderTable: React.FC<Props> = ({
     fetchLocations();
   }, [orders]);
 
-  const tableData = orders.map((o) => ({ ...o, key: String(o.id) }));
-
   const columns: ColumnsType<any> = [
     {
       title: "Mã đơn",
@@ -103,6 +104,12 @@ const OrderTable: React.FC<Props> = ({
           </Tooltip>
         );
       },
+    },
+    {
+      title: "Trạng thái",
+      key: "status",
+      align: "center",
+      render: (_, record) => translateOrderStatus(record.status)
     },
     {
       title: "Người gửi",
@@ -149,12 +156,6 @@ const OrderTable: React.FC<Props> = ({
           <span className="custom-table-content-strong">Phí dịch vụ:</span> {record.totalFee.toLocaleString('vi-VN')}
         </>
       )
-    },
-    {
-      title: "Trạng thái",
-      key: "status",
-      align: "center",
-      render: (_, record) => translateOrderStatus(record.status)
     },
     {
       title: "Thông tin giao hàng",
@@ -228,7 +229,7 @@ const OrderTable: React.FC<Props> = ({
       align: "center",
       render: (_, record) => {
         const canCancel = canCancelManagerOrder(record.status, record.createdByType);
-        const canEdit = canEditManagerOrder(record.status); 
+        const canEdit = canEditManagerOrder(record.status);
         const canPrint = canPrintManagerOrder(record.status);
         const canAtOriginOffice = canAtOriginOfficeManagerOrder(record.status) && record.pickupType === 'AT_OFFICE';
 
@@ -295,7 +296,7 @@ const OrderTable: React.FC<Props> = ({
     <div className="table-container">
       <Table
         columns={columns}
-        dataSource={tableData}
+        dataSource={orders}
         loading={loading}
         rowKey="id"
         scroll={{ x: "max-content" }}
@@ -308,8 +309,12 @@ const OrderTable: React.FC<Props> = ({
         }}
         rowSelection={{
           type: 'checkbox',
+          preserveSelectedRowKeys: false,
           selectedRowKeys: selectedOrderIds,
           onChange: (keys) => setSelectedOrderIds(keys as number[]),
+          onSelectAll: (selected) => {
+            onSelectAllFiltered(selected);
+          },
           getCheckboxProps: (record) => ({
             disabled: !record.trackingNumber,
           }),

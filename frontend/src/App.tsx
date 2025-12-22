@@ -52,6 +52,7 @@ import OrderTracking from "./pages/common/tracking/OrderTracking";
 import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
+import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
 
 const App: React.FC = () => {
   return (
@@ -124,6 +125,7 @@ const App: React.FC = () => {
             {/* <Route path="employees/performance/:employeeCode/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerfomanceShipment /></PrivateRoute>} /> */}
             {/* <Route path="employees/performance/:employeeCode/shipments/:shipmentCode/orders" element={<ShipmentOrders />} /> */}
             <Route path="/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipments /></PrivateRoute>} />
+            <Route path="/shipments/:shipmentId/orders" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipmentOrders /></PrivateRoute>} />
             <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />
             <Route path="/employees/assign-history" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssignmentHistory /></PrivateRoute>} />
             <Route path="/orders/incidents" element={<PrivateRoute allowedRoles={['manager']}><ManagerIncidentReports /></PrivateRoute>} />

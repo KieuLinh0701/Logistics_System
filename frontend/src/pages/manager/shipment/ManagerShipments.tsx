@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Col, Form, message, Row, Tag } from 'antd';
 import dayjs from 'dayjs';
 import SearchFilters from './components/SearchFilters';
@@ -9,12 +9,12 @@ import Title from 'antd/es/typography/Title';
 import { TruckOutlined } from '@ant-design/icons';
 import "./ManagerShipments.css"
 import ConfirmModal from '../../common/ConfirmModal';
-import type { ManagerOrderShipment, ManagerOrderShipmentSearchRequest, ManagerShipment, ManagerShipmentSearchRequest } from '../../../types/shipment';
+import type { ManagerShipment, ManagerShipmentSearchRequest } from '../../../types/shipment';
 import shipmentApi from '../../../api/shipmentApi';
-import OrdersModal from './components/OrdersModal';
 import AddEditShipmentModal from './components/AddEditShipmentModal';
 
 const ManagerShipments: React.FC = () => {
+  const latestRequestRef = useRef(0);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -24,11 +24,6 @@ const ManagerShipments: React.FC = () => {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-
-  const [orders, setOrders] = useState<ManagerOrderShipment[] | []>([]);
-  const [totalOrder, setTotalOrder] = useState(0)
-  const [pageOrder, setPageOrder] = useState(1);
-  const [searchTextOrder, setSearchTextOrder] = useState('');
 
   const [hover, setHover] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,7 +41,6 @@ const ManagerShipments: React.FC = () => {
   const [form] = Form.useForm();
 
   const [selectedShipment, setSelectedShipment] = useState<ManagerShipment | null>(null);
-  const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
 
   const updateURL = () => {
     const params: any = {};
@@ -66,6 +60,7 @@ const ManagerShipments: React.FC = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const st = searchParams.get("status")?.toLocaleUpperCase();
     const type = searchParams.get("type")?.toLocaleUpperCase();
@@ -73,6 +68,7 @@ const ManagerShipments: React.FC = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setPage(pageParam);
     if (s) setSearchText(s);
     if (st) setFilterStatus(st);
     if (type) setFilterType(type);
@@ -89,6 +85,7 @@ const ManagerShipments: React.FC = () => {
   const fetchShipments = async (currentPage = page) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
       const param: ManagerShipmentSearchRequest = {
         page: currentPage,
         limit: limit,
@@ -103,11 +100,11 @@ const ManagerShipments: React.FC = () => {
       }
 
       const result = await shipmentApi.listManagerShipments(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setShipments(list);
         setTotal(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách chuyến hàng");
       }
@@ -154,20 +151,6 @@ const ManagerShipments: React.FC = () => {
     }
   };
 
-  // Handler mở edit từ detail modal
-  const handleEditFromDetail = (request: ManagerShipment) => {
-    // setModalMode('edit');
-    // setShipment(request);
-    // setIsModalOpen(true);
-
-    // form.setFieldsValue({
-    //   id: request.id,
-    //   trackingNumber: request.orderTrackingNumber,
-    //   requestType: request.requestType,
-    //   requestContent: request.requestContent,
-    // });
-  };
-
   const handleFilterChange = (filter: string, value: string) => {
     switch (filter) {
       case 'search':
@@ -197,117 +180,29 @@ const ManagerShipments: React.FC = () => {
     setFilterType('ALL');
   };
 
-  const handleEditShipment = async (requestId: number) => {
-    // try {
-    //   setLoading(true);
-
-    //   const result = await shippingRequestApi.getUserShipmentByIdForEdit(requestId);
-    //   if (result.success && result.data) {
-    //     setShipment(result.data);
-    //     setModalMode('edit');
-    //     setIsModalOpen(true);
-    //     form.setFieldsValue(result.data);
-    //   } else {
-    //     message.error(result.message || "Lỗi khi lấy yêu cầu để chỉnh sửa");
-    //   }
-    // } catch (error) {
-    //   setSelectedShipment(null);
-    //   console.error("Lỗi khi lấy yêu cầu để chỉnh sửa:", error);
-    // } finally {
-    //   setLoading(false);
-    // }
+  const handleEditShipment = async (shipment: ManagerShipment) => {
+    setIsModalOpen(true);
+    setModalMode('edit');
+    setShipment(shipment);
   };
 
-  const fetchOrdersShipment = async (currentPage = pageOrder) => {
-    if (selectedShipmentId === null) return;
-    try {
-      setLoading(true);
-      const param: ManagerOrderShipmentSearchRequest = {
-        page: currentPage,
-        limit: limit,
-        search: searchTextOrder,
-      };
-      const result = await shipmentApi.getManagerOrdersByShipmentId(selectedShipmentId, param);
-      if (result.success && result.data) {
-        const list = result.data?.list || [];
-        setOrders(list);
-        setTotalOrder(result.data.pagination?.total || 0);
-        setPageOrder(currentPage);
-      } else {
-        setSelectedShipment(null);
-        message.error(result.message || "Lỗi khi lấy danh sách đơn hàng của chuyến hàng");
-      }
-    } catch (error: any) {
-      message.error(error.message || "Lỗi khi lấy danh sách đơn hàng của chuyến hàng");
-      setSelectedShipment(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  const handleViewDetailShipment = async (id: number) => {
-    setSelectedShipmentId(id);
-    setPageOrder(1);
-    setSearchTextOrder("");
-    setOrders([]);
-    setDetailModalVisible(true);
-    await fetchOrdersShipment(1);
+  const handleViewDetailShipment = async (shipment: ManagerShipment) => {
+    navigate(`/shipments/${shipment.id}/orders`)
   };
-
-  const handleSearch = (value: string) => {
-    setSearchTextOrder(value);
-    setPageOrder(1);
-    if (selectedShipmentId && detailModalVisible) {
-      fetchOrdersShipment(1);
-    }
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (!selectedShipmentId) return;
-    fetchOrdersShipment(newPage);
-  };
-
-  useEffect(() => {
-    if (!selectedShipmentId || !detailModalVisible) return;
-    const timeout = setTimeout(() => {
-      fetchOrdersShipment(1);
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, [searchTextOrder, selectedShipmentId, detailModalVisible]);
-
-  useEffect(() => {
-    if (!selectedShipmentId) return;
-
-    fetchOrdersShipment(1);
-  }, [selectedShipmentId]);
 
   const handleEditSuccessShipment = async () => {
-    // await fetchShipments(page);
-
-    // if (detailModalVisible && selectedShipment) {
-    //   try {
-    //     const result = await shippingRequestApi.getUserShipmentById(selectedShipment.id);
-    //     if (result.success && result.data) {
-    //       setSelectedShipment(result.data);
-    //     } else {
-    //       message.error(result.message || "Cập nhật chi tiết thất bại");
-    //     }
-    //   } catch (error) {
-    //     console.error("Lỗi khi load chi tiết:", error);
-    //     message.error("Cập nhật chi tiết thất bại");
-    //   }
-    // }
-
-    // setIsModalOpen(false);
+    if (modalMode == "create") {
+      await fetchShipments(1);
+      setPage(1);
+    } else {
+      await fetchShipments(page);
+    }
   };
 
   useEffect(() => {
     updateURL();
-    setPage(1);
-    fetchShipments(1);
-  }, [searchText, filterSort, filterStatus, dateRange, filterType]);
+    fetchShipments(page);
+  }, [page, limit, searchText, filterSort, filterStatus, dateRange, filterType]);
 
   return (
     <div className="list-page-layout">
@@ -362,7 +257,6 @@ const ManagerShipments: React.FC = () => {
           onPageChange={(page, size) => {
             setPage(page);
             if (size) setLimit(size);
-            fetchShipments(page);
           }}
         />
       </div>
@@ -373,24 +267,6 @@ const ManagerShipments: React.FC = () => {
         shipment={shipment}
         onSuccess={handleEditSuccessShipment}
         onCancel={() => setIsModalOpen(false)}
-      />
-
-
-      <OrdersModal
-        open={detailModalVisible}
-        orders={orders}
-        page={pageOrder}
-        limit={limit}
-        searchText={searchTextOrder}
-        total={totalOrder}
-        loading={loading}
-        onClose={() => {
-          setDetailModalVisible(false);
-          setSearchTextOrder("");
-          setOrders([]);
-        }}
-        onSearch={handleSearch}
-        onPageChange={handlePageChange}
       />
 
       <ConfirmModal

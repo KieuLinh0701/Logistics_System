@@ -233,6 +233,40 @@ const UserOrderList = () => {
     navigate(`/orders/print?orderIds=${selectedOrderIds.join(",")}`);
   };
 
+  const handleSelectAllFiltered = async (select: boolean) => {
+    if (select) {
+      try {
+        const param: UserOrderSearchRequest = {
+          page: 1,
+          limit: limit,
+          search: search,
+          payer: filterPayer !== "ALL" ? filterPayer : undefined,
+          status: filterStatus !== "ALL" ? filterStatus : undefined,
+          serviceTypeId: filterServiceType !== null ? filterServiceType : undefined,
+          paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
+          cod: filterCOD !== "ALL" ? filterCOD : undefined,
+          sort: filterSort,
+        };
+        if (dateRange) {
+          param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+          param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+        }
+
+        const result = await orderApi.getAllUserOrderIds(param);
+
+        if (result.success && result.data) {
+          setSelectedOrderIds(result.data);
+        } else {
+          message.error(result.message || "Lấy toàn bộ ID thất bại");
+        }
+      } catch (err: any) {
+        message.error(err.message || "Lỗi server khi lấy toàn bộ ID");
+      }
+    } else {
+      setSelectedOrderIds([]);
+    }
+  };
+
   const handleEditOrder = (id: number, tracking: string) => {
     if (tracking !== null) {
       navigate(`/orders/tracking/${tracking}/edit`);
@@ -327,23 +361,8 @@ const UserOrderList = () => {
     fetchServiceTypes();
   }, []);
 
-  // 1. Sync URL
   useEffect(() => {
     updateURL();
-  }, [
-    page,
-    search,
-    filterStatus,
-    filterServiceType,
-    filterPayer,
-    filterPaymentStatus,
-    filterCOD,
-    dateRange,
-    filterSort
-  ]);
-
-  // 2. Fetch data
-  useEffect(() => {
     fetchOrders(page);
   }, [
     page,
@@ -413,6 +432,7 @@ const UserOrderList = () => {
           }}
           selectedOrderIds={selectedOrderIds}
           setSelectedOrderIds={setSelectedOrderIds}
+          onSelectAllFiltered={handleSelectAllFiltered}
         />
 
       </div>

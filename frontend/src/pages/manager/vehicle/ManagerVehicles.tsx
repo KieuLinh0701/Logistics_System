@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Col, Form, message, Row, Tag } from 'antd';
 import dayjs from 'dayjs';
 import SearchFilters from './components/SearchFilters';
@@ -11,6 +11,7 @@ import vehicleApi from '../../../api/vehicleApi';
 import { useSearchParams } from 'react-router-dom';
 
 const ManagerVehicles: React.FC = () => {
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[] | []>([]);
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,7 @@ const ManagerVehicles: React.FC = () => {
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const t = searchParams.get("type")?.toLocaleUpperCase();
     const status = searchParams.get("status")?.toLocaleUpperCase();
@@ -55,6 +57,7 @@ const ManagerVehicles: React.FC = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setPage(pageParam);
     if (s) setSearchText(s);
     if (t) setFilterType(t);
     if (status) setFilterStatus(status);
@@ -98,6 +101,7 @@ const ManagerVehicles: React.FC = () => {
   const fetchVehicles = async (currentPage = page) => {
     try {
       setLoading(true);
+      const requestId = ++latestRequestRef.current;
       const param: ManagerVehicleSearchRequest = {
         page: currentPage,
         limit,
@@ -112,11 +116,11 @@ const ManagerVehicles: React.FC = () => {
       }
 
       const result = await vehicleApi.listManagerVehicles(param);
+      if (requestId !== latestRequestRef.current) return;
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setVehicles(list);
         setTotal(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách phương tiện");
       }
@@ -153,15 +157,9 @@ const ManagerVehicles: React.FC = () => {
   };
 
   useEffect(() => {
-    setPage(1);
-    fetchVehicles(page);
-  }, []);
-
-  useEffect(() => {
-    setPage(1);
     updateURL();
-    fetchVehicles(1);
-  }, [searchText, filterType, filterStatus, filterSort, dateRange]);
+    fetchVehicles(page);
+  }, [page, limit, searchText, filterType, filterStatus, filterSort, dateRange]);
 
   return (
     <div className="list-page-layout">
@@ -207,7 +205,6 @@ const ManagerVehicles: React.FC = () => {
           onPageChange={(page, size) => {
             setPage(page);
             if (size) setLimit(size);
-            fetchVehicles(page);
           }}
         />
 

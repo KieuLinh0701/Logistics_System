@@ -2,6 +2,10 @@
   margin-bottom: 16px;
 }
 
+.shipment-search-input {
+  width: 400px !important;
+}
+
 .shipment-detail-modal-response-background {
   background: #f6ffed;
   padding: 12px;

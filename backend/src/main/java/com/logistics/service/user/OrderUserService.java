@@ -167,6 +167,46 @@ public class OrderUserService {
         }
     }
 
+    public ApiResponse<List<Integer>> getAllOrderIds(int userId, UserOrderSearchRequest request) {
+        try {
+            String search = request.getSearch();
+            String payer = request.getPayer();
+            String status = request.getStatus();
+            String pickupType = request.getPickupType();
+            Integer serviceTypeId = request.getServiceTypeId();
+            String paymentStatus = request.getPaymentStatus();
+            String cod = request.getCod();
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                    ? LocalDateTime.parse(request.getStartDate())
+                    : null;
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                    ? LocalDateTime.parse(request.getEndDate())
+                    : null;
+
+            Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                    .and(OrderSpecification.userId(userId))
+                    .and(OrderSpecification.search(search))
+                    .and(OrderSpecification.payer(payer))
+                    .and(OrderSpecification.status(status))
+                    .and(OrderSpecification.pickupType(pickupType))
+                    .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                    .and(OrderSpecification.paymentStatus(paymentStatus))
+                    .and(OrderSpecification.cod(cod))
+                    .and(OrderSpecification.createdAtBetween(startDate, endDate));
+
+            List<Order> orders = repository.findAll(spec);
+
+            List<Integer> orderIds = orders.stream()
+                    .filter(order -> order.getTrackingNumber() != null) 
+                    .map(Order::getId)
+                    .toList();
+
+            return new ApiResponse<>(true, "Lấy toàn bộ ID đơn hàng thành công", orderIds);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
     public ApiResponse<OrderCreateSuccess> create(Integer userId, UserOrderCreateRequest request) {
         try {
             validateCreate(request);
@@ -613,10 +653,11 @@ public class OrderUserService {
             updateFieldIfEditable("recipientName", order.getRecipientName(), request.getRecipientName(), order,
                     currentStatus, order::setRecipientName);
             updateFieldIfEditable("recipientName", recipient.getName(), request.getRecipientName(), order,
-                    currentStatus, recipient::setName); 
+                    currentStatus, recipient::setName);
             updateFieldIfEditable("recipientPhoneNumber", order.getRecipientPhone(), request.getRecipientPhone(), order,
                     currentStatus, order::setRecipientPhone);
-            updateFieldIfEditable("recipientPhoneNumber", recipient.getPhoneNumber(), request.getRecipientPhone(), order,
+            updateFieldIfEditable("recipientPhoneNumber", recipient.getPhoneNumber(), request.getRecipientPhone(),
+                    order,
                     currentStatus, recipient::setPhoneNumber);
             updateFieldIfEditable("recipientCityCode", recipient.getCityCode(), request.getRecipientCityCode(), order,
                     currentStatus, recipient::setCityCode);

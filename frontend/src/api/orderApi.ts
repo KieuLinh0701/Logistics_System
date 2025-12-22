@@ -26,6 +26,12 @@ const orderApi = {
     return res;
   },
 
+  async getAllUserOrderIds(params: UserOrderSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<number[]>>("/user/orders/all-ids", { params });
+    return res;
+  },
+
+
   async createUserOrder(params: UserOrderRequest) {
     const res = await axiosClient.post<ApiResponse<CreateOrderSuccess>>("/user/orders", params);
     return res;
@@ -75,6 +81,11 @@ const orderApi = {
   // Manager
   async listManagerOrders(params: ManagerOrderSearchRequest) {
     const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders", { params });
+    return res;
+  },
+
+  async getAllManagerOrderIds(params: ManagerOrderSearchRequest) {
+    const res = await axiosClient.get<ApiResponse<number[]>>("/manager/orders/all-ids", { params });
     return res;
   },
 
