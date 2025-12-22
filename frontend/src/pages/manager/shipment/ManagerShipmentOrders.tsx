@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Input, Button, message, Tooltip, Space, Row, Col, Tag } from "antd";
-import { SearchOutlined, DeleteOutlined, ShoppingOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined, ShoppingOutlined, SaveOutlined, CloseCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import type { ManagerOrderShipment } from "../../../types/shipment";
 import type { BulkResponse } from "../../../types/response";
@@ -15,7 +15,6 @@ import "./ManagerShipments.css"
 
 const ManagerShipmentOrders: React.FC = () => {
     const { shipmentId } = useParams<{ shipmentId: string }>();
-    const latestRequestRef = useRef(0);
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -410,6 +409,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                             <Button
                                                 className="warning-button"
                                                 loading={addingLoading}
+                                                icon={<PlusOutlined />}
                                                 onClick={handleAddOrder}
                                             >
                                                 Thêm
@@ -419,6 +419,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                         {(tempAddedOrders.length > 0 || tempRemovedOrders.length > 0) && (
                                             <Button
                                                 className="modal-cancel-button"
+                                                icon={<CloseCircleOutlined />}
                                                 onClick={handleDiscardChanges}
                                             >
                                                 Hủy thay đổi
@@ -428,6 +429,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                         <Button
                                             onClick={handleSaveOrders}
                                             className="modal-ok-button"
+                                            icon={<SaveOutlined />}
                                         >
                                             Lưu
                                         </Button>

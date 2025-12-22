@@ -58,7 +58,7 @@ const BulkResult: React.FC<BulkResultProps> = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      width={800}
+      width={1000}
       centered
       className="modal-bulk modal-hide-scrollbar"
     >

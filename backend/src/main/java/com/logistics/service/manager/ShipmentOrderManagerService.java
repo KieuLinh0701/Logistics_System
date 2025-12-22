@@ -29,9 +29,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +41,7 @@ public class ShipmentOrderManagerService {
     private final EmployeeManagerService employeeManagerService;
 
     private BulkResult<ManagerShipmentDetailDto> validateOrderForShipment(
-            Office userOffice, Shipment shipment, Order order) {
+            Office userOffice, Shipment shipment, Order order, BigDecimal currentWeight) {
 
         BulkResult<ManagerShipmentDetailDto> result = new BulkResult<>();
         result.setName(order.getTrackingNumber());
@@ -169,16 +167,18 @@ public class ShipmentOrderManagerService {
             return result;
         }
 
+        // Trọng lượng
+        BigDecimal newWeight = currentWeight.add(order.getWeight());
+        if (shipment.getVehicle() != null && newWeight.compareTo(shipment.getVehicle().getCapacity()) > 0) {
+            result.setSuccess(false);
+            result.setMessage("Tổng trọng lượng vượt quá sức chứa của xe");
+            return result;
+        }
+
         result.setSuccess(true);
         result.setMessage("Đơn hàng hợp lệ");
         result.setResult(OrderMapper.toManagerShipmentDetailDto(order));
         return result;
-    }
-
-    private boolean isOverload(Shipment shipment, BigDecimal totalWeight, Order order) {
-        if (shipment.getVehicle() == null)
-            return false;
-        return totalWeight.add(order.getWeight()).compareTo(shipment.getVehicle().getCapacity()) > 0;
     }
 
     public BulkResponse<ManagerShipmentDetailDto> checkOrdersForShipment(Integer userId, Integer shipmentId,
@@ -223,7 +223,8 @@ public class ShipmentOrderManagerService {
                     continue;
                 }
 
-                BulkResult<ManagerShipmentDetailDto> result = validateOrderForShipment(userOffice, shipment, order);
+                BulkResult<ManagerShipmentDetailDto> result = validateOrderForShipment(userOffice, shipment, order,
+                        totalWeight);
                 results.add(result);
                 if (result.isSuccess()) {
                     totalValid++;
@@ -278,8 +279,7 @@ public class ShipmentOrderManagerService {
             List<Order> ordersToAdd = new ArrayList<>();
 
             if (addedOrderIds != null && !addedOrderIds.isEmpty()) {
-                for (int i = 0; i < addedOrderIds.size(); i++) {
-                    Integer orderId = addedOrderIds.get(i);
+                for (Integer orderId : addedOrderIds) {
                     BulkResult<String> result = new BulkResult<>();
 
                     Order order = orderRepository.findById(orderId).orElse(null);
@@ -298,38 +298,13 @@ public class ShipmentOrderManagerService {
 
                     // Kiểm tra hợp lệ
                     BulkResult<ManagerShipmentDetailDto> checkResult = validateOrderForShipment(userOffice, shipment,
-                            order);
+                            order, totalWeight);
                     if (!checkResult.isSuccess()) {
                         result.setSuccess(false);
                         result.setMessage(checkResult.getMessage());
                         results.add(result);
                         totalFailed++;
                         continue;
-                    }
-
-                    if (isOverload(shipment, totalWeight, order)) {
-                        // Tạo tracking list các đơn chưa xét
-                        List<String> remainingTrackingNumbers = new ArrayList<>();
-                        for (int j = i; j < addedOrderIds.size(); j++) {
-                            Order o = orderRepository.findById(addedOrderIds.get(j)).orElse(null);
-                            if (o != null)
-                                remainingTrackingNumbers.add(o.getTrackingNumber());
-                        }
-
-                        BulkResult<String> overloadResult = new BulkResult<>();
-                        overloadResult.setName(order.getTrackingNumber());
-                        overloadResult.setSuccess(false);
-                        String message = "Đơn hàng gây quá tải.";
-                        if (remainingTrackingNumbers != null && !remainingTrackingNumbers.isEmpty()) {
-                            message += "Các đơn chưa xét: " +
-                                    remainingTrackingNumbers.stream()
-                                            .filter(Objects::nonNull)
-                                            .collect(Collectors.joining(", "));
-                        }
-                        overloadResult.setMessage(message);
-                        results.add(overloadResult); 
-                        totalFailed++;
-                        break;
                     }
 
                     ordersToAdd.add(order);
