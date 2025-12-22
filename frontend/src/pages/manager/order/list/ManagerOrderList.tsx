@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { message, Tag, Row, Col } from "antd";
@@ -18,6 +18,7 @@ import ConfirmModal from "../../../common/ConfirmModal";
 
 const ManagerOrderList = () => {
   const navigate = useNavigate();
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [limit, setLimit] = useState(10);
@@ -44,7 +45,6 @@ const ManagerOrderList = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
 
   const [orderId, setOrderId] = useState<number | null>(null);
-  const [initialized, setInitialized] = useState(false);
 
   const updateURL = () => {
     const params: any = {};
@@ -64,10 +64,10 @@ const ManagerOrderList = () => {
     }
 
     setSearchParams(params, { replace: true });
-    setInitialized(true);
   };
 
   useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
     const s = searchParams.get("search");
     const status = searchParams.get("status")?.toLocaleUpperCase();
     const payer = searchParams.get("payer")?.toLocaleUpperCase();
@@ -78,6 +78,7 @@ const ManagerOrderList = () => {
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
 
+    setPage(pageParam);
     if (s) setSearch(s);
     if (status) setFilterStatus(status);
     if (payer) setFilterPayer(payer);
@@ -94,13 +95,13 @@ const ManagerOrderList = () => {
         dayjs(endDate, "YYYY-MM-DD")
       ]);
     }
-  }, []);
+  }, [searchParams]);
 
   // --- Fetch Orders ---
   const fetchOrders = async (currentPage = page) => {
     try {
       setLoading(true);
-
+      const requestId = ++latestRequestRef.current;
       const param: ManagerOrderSearchRequest = {
         page: currentPage,
         limit: limit,
@@ -118,22 +119,23 @@ const ManagerOrderList = () => {
       }
 
       const result = await orderApi.listManagerOrders(param);
+
+      if (requestId !== latestRequestRef.current) return;
+
       if (result.success && result.data) {
         const orderList = result.data?.list || [];
         setOrders(orderList);
         setTotal(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách đơn hàng");
       }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
+    } catch (error: any) {
+      console.error(error.message || "Error fetching orders:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Cancel Order ---
   const handleCancelOrder = (id: number) => {
     setOrderId(id);
     setCancelModalOpen(true);
@@ -151,8 +153,7 @@ const ManagerOrderList = () => {
         message.error(result.message || "Hủy đơn thất bại");
       }
     } catch (error: any) {
-      message.error("Lỗi server khi hủy đơn hàng");
-      console.log("Lỗi server khi hủy đơn hàng: ", error.message);
+      message.error(error.message || "Lỗi server khi hủy đơn hàng");
     } finally {
       setCancelModalOpen(false);
       setLoading(false);
@@ -252,6 +253,7 @@ const ManagerOrderList = () => {
         setFilterSort(value);
         break;
     }
+    setPage(1);
   };
 
   useEffect(() => {
@@ -262,8 +264,8 @@ const ManagerOrderList = () => {
         if (response.success && response.data) {
           setServiceTypes(response.data);
         }
-      } catch (error) {
-        console.error("Error fetching Service types:", error);
+      } catch (error: any) {
+        message.error(error.message || "Lỗi khi lấy danh sách dịch vụ");
       } finally {
         setLoading(false);
       }
@@ -274,12 +276,10 @@ const ManagerOrderList = () => {
   }, []);
 
   useEffect(() => {
-    if (!initialized) return;
-    
+
     updateURL();
-    setPage(1);
-    fetchOrders(1);
-  }, [search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort]);
+    fetchOrders(page);
+  }, [page, limit, search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort]);
 
   return (
     <div className="list-page-layout">
@@ -332,7 +332,6 @@ const ManagerOrderList = () => {
           onPageChange={(page, size) => {
             setPage(page);
             if (size) setLimit(size);
-            fetchOrders(page);
           }}
           selectedOrderIds={selectedOrderIds}
           setSelectedOrderIds={setSelectedOrderIds}

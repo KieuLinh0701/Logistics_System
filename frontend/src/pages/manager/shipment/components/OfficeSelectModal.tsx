@@ -60,7 +60,7 @@ const OfficeSelectModal: React.FC<OfficeSelectModalProps> = ({
             return;
         }
         setLoadingOffices(true);
-        officeApi.listLocalOffices({ cityCode: selectedCity, wardCode: selectedWard })
+        officeApi.listLocalOffices({ city: selectedCity, ward: selectedWard })
             .then(async (res) => {
                 const officesData = res.data || [];
                 setOffices(officesData);

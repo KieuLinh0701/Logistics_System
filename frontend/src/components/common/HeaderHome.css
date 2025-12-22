@@ -112,6 +112,14 @@
   height: 44px;
 }
 
+.header-home-btn-login:hover {
+  background: var(--bg-color-button-hero);
+  border-color: var(--primary) !important;
+  color: var(--text-color-light) !important;
+  font-weight: 500;
+  height: 44px;
+}
+
 .header-home-btn-register {
   border-radius: 4px;
   background-color: var(--bg-color-header-home) !important;
@@ -149,7 +157,6 @@
   background: transparent !important;
 }
 
-/* Stronger selector for avatar dropdown */
 .header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu,
 .header-home .ant-dropdown .ant-dropdown-menu {
   background: var(--bg-color-header-home) !important;
@@ -157,6 +164,73 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
   border: 1px solid var(--color-light) !important;
   padding: 8px 0 !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn {
+  background: var(--bg-color-button-hero) !important;
+  border: 1px solid var(--primary) !important;
+  color: var(--text-color-light) !important;
+  font-weight: 500;
+  height: 44px;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:focus,
+.header-home-auth-section .header-home-btn-login.ant-btn:hover,
+.header-home-auth-section .header-home-btn-login.ant-btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:hover {
+  background: var(--primary-dark) !important;
+  border: 1px solid var(--primary-dark) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn {
+  font-weight: 500;
+  height: 44px;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:focus,
+.header-home-auth-section .header-home-btn-register.ant-btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:hover {
+  transform: translateY(-2px); 
+  box-shadow: 0 4px 12px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
 }
 
 .header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item,
@@ -178,7 +252,6 @@
   margin: 4px 0 !important;
 }
 
-/* Specific styles for avatar dropdown items */
 .header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item .header-home-dropdown-item {
   color: var(--text-color-dark) !important;
   font-weight: 500;

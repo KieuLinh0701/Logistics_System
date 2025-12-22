@@ -1,5 +1,5 @@
 import type { ApiResponse, ListResponse } from "../types/response";
-import type { ManagerShippingRequestSearchRequest, ShippingRequest, UserShippingRequestSearchRequest } from "../types/shippingRequest";
+import type { ManagerShippingRequestSearchRequest, PublicShippingRequestCreate, ShippingRequest, UserShippingRequestSearchRequest } from "../types/shippingRequest";
 import axiosClient from "./axiosClient";
 
 const shippingRequestApi = {
@@ -69,6 +69,12 @@ async listManagerShippingRequests(
       `/manager/shipping-requests/${id}`,
       data
     );
+  },
+
+  // Public
+  async createPublicShippingRequest(data: PublicShippingRequestCreate) {
+    const res = await axiosClient.post<ApiResponse<boolean>>("/public/shipping-requests", data);
+    return res;
   },
 };
 

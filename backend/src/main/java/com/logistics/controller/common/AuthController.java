@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.logistics.entity.AccountRole;
 import com.logistics.request.common.auth.ChooseRoleRequest;
 import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
 import com.logistics.request.common.auth.ForgotPasswordResetRequest;

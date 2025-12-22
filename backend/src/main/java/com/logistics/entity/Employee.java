@@ -1,6 +1,7 @@
 package com.logistics.entity;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
@@ -65,6 +66,9 @@ public class Employee {
 
     @PostPersist
     private void generateCode() {
-        this.code = "EP" + office.getId() + id;
+        if (this.code == null) {
+            String date = LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            this.code = "EP" + date + office.getId() + this.id;
+        }
     }
 }

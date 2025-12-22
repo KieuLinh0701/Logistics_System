@@ -227,8 +227,8 @@ const OrderTable: React.FC<Props> = ({
       key: "action",
       align: "center",
       render: (_, record) => {
-        const canCancel = canCancelManagerOrder(record.status);
-        const canEdit = canEditManagerOrder(record.status); // này chưa sửa bên utils
+        const canCancel = canCancelManagerOrder(record.status, record.createdByType);
+        const canEdit = canEditManagerOrder(record.status); 
         const canPrint = canPrintManagerOrder(record.status);
         const canAtOriginOffice = canAtOriginOfficeManagerOrder(record.status) && record.pickupType === 'AT_OFFICE';
 

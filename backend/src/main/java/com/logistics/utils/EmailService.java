@@ -44,4 +44,22 @@ public class EmailService {
         message.setText(content);
         mailSender.send(message);
     }
+
+    public void sendNewEmployeeAccountEmail(String to, String tempPassword, String firstName, String lastName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(to);
+        message.setSubject("Thông báo tài khoản nhân viên mới");
+
+        String content = "Xin chào " + lastName + " " + firstName + ",\n\n"
+                + "Tài khoản nhân viên của bạn đã được tạo thành công.\n"
+                + "Thông tin đăng nhập tạm thời như sau:\n"
+                + "Email: " + to + "\n"
+                + "Mật khẩu tạm thời: " + tempPassword + "\n\n"
+                + "Vui lòng đăng nhập và thay đổi mật khẩu ngay sau lần đăng nhập đầu tiên.\n\n"
+                + "Trân trọng,\nĐội ngũ quản lý.";
+
+        message.setText(content);
+        mailSender.send(message);
+    }
 }

@@ -2,17 +2,49 @@ package com.logistics.mapper;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
+import com.logistics.dto.user.UserSettlementOrderDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
+import com.logistics.entity.Promotion;
 
 public class OrderMapper {
+
+    public static List<UserSettlementOrderDto> toUserSettlementOrderDtoList(
+            List<Order> entities) {
+
+        if (entities == null || entities.isEmpty())
+            return List.of();
+
+        return entities.stream()
+                .map(OrderMapper::toUserSettlementOrderDto)
+                .collect(Collectors.toList());
+    }
+
+    public static UserSettlementOrderDto toUserSettlementOrderDto(Order entity) {
+        if (entity == null)
+            return null;
+
+        UserSettlementOrderDto dto = new UserSettlementOrderDto();
+
+        dto.setId(entity.getId());
+        dto.setTrackingNumber(entity.getTrackingNumber());
+        dto.setCod(entity.getCod());
+        dto.setTotalFee(entity.getTotalFee());
+        dto.setStatus(entity.getStatus().name());
+        dto.setDeliveriedAt(entity.getDeliveredAt());
+        dto.setPayer(entity.getPayer().name());
+        dto.setPaymentStatus(entity.getPaymentStatus().name());
+
+        return dto;
+    }
 
     public static ManagerShipmentDetailDto toManagerShipmentDetailDto(Order entity) {
         if (entity == null)
@@ -91,7 +123,8 @@ public class OrderMapper {
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
                 entity.getEmployee() != null ? entity.getEmployee().getCode() : null,
-                entity.getUser() != null ? entity.getUser().getCode() : null);
+                entity.getUser() != null ? entity.getUser().getCode() : null,
+                entity.getCodStatus().name());
     }
 
     public static ManagerOrderListDto toManagerOrderListDto(Order entity) {
@@ -122,7 +155,8 @@ public class OrderMapper {
                 entity.getUser() != null ? entity.getUser().getCode() : null,
                 entity.getCreatedAt(),
                 entity.getDeliveredAt(),
-                entity.getPaidAt());
+                entity.getPaidAt(),
+                entity.getCodStatus().name());
     }
 
     public static UserOrderDetailDto toUserOrderDetailDto(Order entity,
@@ -161,8 +195,20 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
-                entity.getPromotion() != null ? entity.getPromotion().getId() : null,
+                OrderMapper.toUserOrderDetailDtoPromotion(entity.getPromotion()),
                 entity.getCodStatus().name());
+    }
+
+    public static UserOrderDetailDto.Promotion toUserOrderDetailDtoPromotion(Promotion entity) {
+        if (entity == null)
+            return null;
+
+        UserOrderDetailDto.Promotion dto = new UserOrderDetailDto.Promotion();
+
+        dto.setId(entity.getId());
+        dto.setCode(entity.getCode());
+
+        return dto;
     }
 
     public static UserOrderListDto toUserOrderListDto(Order entity) {

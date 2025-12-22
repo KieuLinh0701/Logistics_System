@@ -15,6 +15,9 @@ public class SearchRequest {
     private String type;
     private String role;
     private String shift;
+    private String cod; 
+    private String payer;
+    private String priority;
     private String startDate;
     private String endDate;
 }

@@ -79,6 +79,9 @@ public class OfficePublicService {
             Integer city = request.getCity();
             Integer ward = request.getWard();
 
+            System.out.println("city" + city);
+            System.out.println("ward" + ward);
+
             List<Office> offices;
 
             if (city != null && ward != null) {

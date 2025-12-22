@@ -1,5 +1,5 @@
 import React from 'react';
-import { Input, DatePicker, Row, Col } from 'antd';
+import { Input, Row, Col } from 'antd';
 import {SearchOutlined } from '@ant-design/icons';
 
 interface SearchFiltersProps {

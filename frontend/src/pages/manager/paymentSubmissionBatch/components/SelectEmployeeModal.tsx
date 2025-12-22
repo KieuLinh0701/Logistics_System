@@ -3,7 +3,6 @@ import { Modal, Input, Table, Tag, Row, Col } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { ManagerEmployee } from "../../../../types/employee";
-import { translateEmployeeShift } from "../../../../utils/employeeUtils";
 
 interface Props {
   open: boolean;

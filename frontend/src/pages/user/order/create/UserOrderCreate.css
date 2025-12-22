@@ -221,6 +221,11 @@
   margin: 16px 0;
 }
 
+.create-order-alert-bank-account {
+  margin: 16px 0;
+  margin-bottom: 36px;
+}
+
 .create-order-sender-info {
   padding: 0 16px;
   line-height: 1.6;

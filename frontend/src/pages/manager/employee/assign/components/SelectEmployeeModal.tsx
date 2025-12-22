@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Modal, Input, Table, Select, Tag, Row, Col } from "antd";
+import { Modal, Input, Table, Tag, Row, Col } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ManagerEmployee } from "../../../../../types/employee";
 import type { ColumnsType } from "antd/es/table";

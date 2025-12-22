@@ -1,6 +1,7 @@
 import type { ApiResponse, ListResponse } from "../types/response";
 import type { AdminOrder, CreateOrderSuccess, ManagerOrderRequest, ManagerOrderSearchRequest, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest } from "../types/order";
 import axiosClient from "./axiosClient";
+import type { OrderHistory } from "../types/orderHistory";
 
 export interface ShipperStats {
   totalAssigned: number;
@@ -192,6 +193,11 @@ const orderApi = {
     return res;
   },
 
+  async updateUserOrder(id: number, params: UserOrderRequest) {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/user/orders/${id}`, params);
+    return res;
+  },
+
   async getUserOrderByTrackingNumber(trackingNumber: string) {
     const res = await axiosClient.get<ApiResponse<Order>>(`/user/orders/${trackingNumber}`);
     return res;
@@ -239,6 +245,11 @@ const orderApi = {
     return res;
   },
 
+  async updateManagerOrder(id: number, params: ManagerOrderRequest) {
+    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/orders/${id}`, params);
+    return res;
+  },
+
   async getManagerOrderByTrackingNumber(trackingNumber: string) {
     const res = await axiosClient.get<ApiResponse<Order>>(`/manager/orders/${trackingNumber}`);
     return res;
@@ -257,6 +268,12 @@ const orderApi = {
 
   async setManagerOrderAtOriginOffice(id: number) {
     const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/at-origin-office`);
+    return res;
+  },
+
+  // Pubic
+  async getPublicOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
     return res;
   },
 };

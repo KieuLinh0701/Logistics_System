@@ -36,10 +36,6 @@ const OrderInfo: React.FC<Props> = ({
     onChangeOrderInfo?.({ orderValue: value ?? 0 });
   };
 
-  const handleCodChange = (value: number | null) => {
-    onChangeOrderInfo?.({ codAmount: value ?? 0 });
-  };
-
   return (
     <div className="create-order-card-container">
       <Form

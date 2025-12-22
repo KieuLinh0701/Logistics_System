@@ -50,4 +50,5 @@ public class ManagerOrderDetailDto {
     private List<OrderHistoryDto> orderHistories;
     private String employeeCode;
     private String userCode;
+    private String codStatus;
 }

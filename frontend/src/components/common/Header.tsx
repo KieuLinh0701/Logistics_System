@@ -126,7 +126,7 @@ const Header: React.FC = () => {
   const getNotificationLink = (type?: string) => {
     switch (type) {
       case "new_order":
-        return `/orders`;
+        return `/orders/list`;
       case "delivery_assigned":
         return `/deliveries`;
       case "cod_reminder":
@@ -134,7 +134,7 @@ const Header: React.FC = () => {
       case "ShippingRequest":
         return `/orders/requests`;
       case "order":
-        return `/orders`;
+        return `/orders/list`;
       default:
         return null;
     }

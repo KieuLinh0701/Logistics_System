@@ -1,0 +1,15 @@
+.incident-report-detail-modal-handle-background {
+    background: #f6ffed;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #52c41a;
+    white-space: pre-wrap;
+}
+
+.incident-report-detail-modal-desc-background {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    white-space: pre-wrap;
+}

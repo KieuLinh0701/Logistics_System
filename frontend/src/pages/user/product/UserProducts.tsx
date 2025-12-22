@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as XLSX from "xlsx";
 import { Col, Form, message, Row, Tag } from 'antd';
 import dayjs from 'dayjs';
@@ -17,6 +17,7 @@ import BulkResult from './components/BulkResult';
 import { useSearchParams } from 'react-router-dom';
 
 const UserProducts: React.FC = () => {
+  const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,7 +54,7 @@ const UserProducts: React.FC = () => {
     if (filterType !== "ALL") params.type = filterType.toLowerCase();
     if (filterStock !== "ALL") params.stock = filterStock.toLowerCase();
     params.sort = filterSort.toLowerCase();
-    if (page) params.page = page;
+    if (page >= 1) params.page = page;
 
     if (dateRange) {
       params.start = dateRange[0].format("YYYY-MM-DD");
@@ -64,27 +65,29 @@ const UserProducts: React.FC = () => {
   };
 
   useEffect(() => {
-      const s = searchParams.get("search");
-      const st = searchParams.get("status")?.toLocaleUpperCase();
-      const type = searchParams.get("type")?.toLocaleUpperCase();
-      const stock = searchParams.get("stock")?.toLocaleUpperCase();
-      const sort = searchParams.get("sort")?.toLocaleUpperCase();
-      const startDate = searchParams.get("start");
-      const endDate = searchParams.get("end");
-  
-      if (s) setSearch(s);
-      if (st) setFilterStatus(st);
-      if (type) setFilterType(type);
-      if (stock) setFilterStock(stock);
-      if (sort) setFilterSort(sort);
+    const pageParam = Number(searchParams.get("page")) || 1;
+    const s = searchParams.get("search");
+    const st = searchParams.get("status")?.toLocaleUpperCase();
+    const type = searchParams.get("type")?.toLocaleUpperCase();
+    const stock = searchParams.get("stock")?.toLocaleUpperCase();
+    const sort = searchParams.get("sort")?.toLocaleUpperCase();
+    const startDate = searchParams.get("start");
+    const endDate = searchParams.get("end");
 
-      if (startDate && endDate) {
-        setDateRange([
-          dayjs(startDate, "YYYY-MM-DD"),
-          dayjs(endDate, "YYYY-MM-DD")
-        ]);
-      }
-    }, [searchParams]);
+    setPage(pageParam);
+    if (s) setSearch(s);
+    if (st) setFilterStatus(st);
+    if (type) setFilterType(type);
+    if (stock) setFilterStock(stock);
+    if (sort) setFilterSort(sort);
+
+    if (startDate && endDate) {
+      setDateRange([
+        dayjs(startDate, "YYYY-MM-DD"),
+        dayjs(endDate, "YYYY-MM-DD")
+      ]);
+    }
+  }, [searchParams]);
 
   // Thêm sản phẩm
   const handleAddProduct = async () => {
@@ -113,9 +116,7 @@ const UserProducts: React.FC = () => {
         message.error(result.message || "Lỗi khi thêm sản phẩm");
       }
     } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Có lỗi khi thêm sản phẩm!';
-      console.log(errorMessage);
-      message.error("Lỗi khi thêm sản phẩm");
+          message.error(error.message || "Lỗi khi thêm sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -148,9 +149,7 @@ const UserProducts: React.FC = () => {
         message.error(result.message || "Lỗi khi sửa sản phẩm");
       }
     } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Có lỗi khi sửa sản phẩm!';
-      console.log(errorMessage);
-      message.error("Lỗi khi sửa sản phẩm");
+          message.error(error.message || "Lỗi khi sửa sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -230,9 +229,8 @@ const UserProducts: React.FC = () => {
           message.error(result?.message || "Thêm các sản phẩm thất bại");
         }
 
-      } catch (err: any) {
-        console.error("Chi tiết lỗi đọc Excel:", err);
-        message.error(`Có lỗi khi đọc file Excel: ${err.message}`);
+      } catch (error: any) {
+            message.error(error.message || `Có lỗi khi đọc file Excel`);
       } finally {
         setLoading(false);
       }
@@ -302,6 +300,7 @@ const UserProducts: React.FC = () => {
 
   const fetchProducts = async (currentPage = page) => {
     try {
+      const requestId = ++latestRequestRef.current;
       setLoading(true);
 
       const param: any = {
@@ -320,16 +319,18 @@ const UserProducts: React.FC = () => {
       }
 
       const result = await productApi.getUserProducts(param);
+      
+      if (requestId !== latestRequestRef.current) return;
+
       if (result.success && result.data) {
         const list = result.data?.list || [];
         setProducts(list);
         setTotal(result.data.pagination?.total || 0);
-        setPage(page);
       } else {
         message.error(result.message || "Lỗi khi lấy danh sách sản phẩm");
       }
-    } catch (error) {
-      console.error("Error fetching products:", error);
+    } catch (error: any) {
+          message.error(error.message || "Lỗi khi lấy danh sách sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -346,9 +347,7 @@ const UserProducts: React.FC = () => {
         message.error(result.message || "Lỗi khi xóa sản phẩm");
       }
     } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Có lỗi khi xóa sản phẩm!';
-      console.log(errorMessage);
-      message.error("Lỗi khi xóa sản phẩm")
+          message.error(error.message || "Lỗi khi xóa sản phẩm")
     }
   }
 
@@ -378,17 +377,10 @@ const UserProducts: React.FC = () => {
     setFilterStock('ALL');
   };
 
-  // Effects
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-
   useEffect(() => {
     updateURL();
-    setPage(1);
-    fetchProducts(1);
-  }, [search, filterType, filterStatus, filterSort, dateRange, filterStock]);
+    fetchProducts(page);
+  }, [page, search, filterType, filterStatus, filterSort, dateRange, filterStock]);
 
   return (
     <div className="list-page-layout">
@@ -451,7 +443,6 @@ const UserProducts: React.FC = () => {
           onPageChange={(page, size) => {
             setPage(page);
             if (size) setLimit(size);
-            fetchProducts(page);
           }}
         />
 

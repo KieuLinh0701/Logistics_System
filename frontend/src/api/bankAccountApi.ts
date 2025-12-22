@@ -35,6 +35,11 @@ const bankAccountApi = {
     const res = await axiosClient.patch<ApiResponse<string>>(`/user/bank-accounts/${id}/default`);
     return res;
   },
+
+  async existUserBankAccounts() {
+    const res = await axiosClient.get<ApiResponse<Boolean>>("/user/bank-accounts/exists");
+    return res;
+  },
 };
 
 export default bankAccountApi;

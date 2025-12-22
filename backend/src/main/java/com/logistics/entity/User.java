@@ -1,6 +1,7 @@
 package com.logistics.entity;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,6 +76,9 @@ public class User {
 
     @PostPersist
     private void generateCode() {
-        this.code = "USER" + id;
+        if (this.code == null) {
+            String date = LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            this.code = "USER" + date + this.id;
+        }
     }
 }

@@ -49,7 +49,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    label="Họ"
+                    label="Họ và tên đệm"
                     name="lastName"
                     rules={[{ required: true, message: "Nhập họ nhân viên!" }]}
                     style={{ marginBottom: 12 }}
@@ -81,7 +81,13 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                   <Form.Item
                     label="Số điện thoại"
                     name="phoneNumber"
-                    rules={[{ required: true, message: "Nhập số điện thoại!" }]}
+                    rules={[
+                      { required: true, message: "Nhập số điện thoại!" },
+                      {
+                        pattern: /^[0-9]{10,11}$/,
+                        message: "Số điện thoại không hợp lệ (10-11 chữ số)",
+                      },
+                    ]} 
                     style={{ marginBottom: 12 }}
                   >
                     <Input
@@ -167,7 +173,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                   placeholder="Chọn trạng thái..."
                 >
                   {EMPLOYEE_STATUSES
-                    ?.filter(item => mode !== 'create' || item !== 'LEAVE') 
+                    ?.filter(item => mode !== 'create' || item !== 'LEAVE')
                     .map((item) => (
                       <Select.Option key={item} value={item}>
                         {translateEmployeeStatus(item)}

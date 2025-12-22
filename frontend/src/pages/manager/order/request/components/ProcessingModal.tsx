@@ -184,8 +184,8 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
       } else {
         message.error(result.message || "Có lỗi khi phản hồi yêu cầu");
       }
-    } catch (error) {
-      message.error("Có lỗi khi phản hồi yêu cầu");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi phản hồi yêu cầu");
     } finally {
       setLoading(false);
     }
@@ -306,6 +306,10 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
           label={<span className="modal-lable">Nội dung phản hồi</span>}
           name="managerNote"
           rules={[{ max: 1000, message: "Tối đa 1000 ký tự!" }]}
+          getValueFromEvent={(e) => {
+            const value = e.target.value;
+            return value === "" ? null : value;
+          }}
         >
           <Input.TextArea
             className="modal-custom-input-textarea"

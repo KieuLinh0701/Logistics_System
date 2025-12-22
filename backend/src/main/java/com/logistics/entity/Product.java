@@ -33,7 +33,7 @@ public class Product {
     private Integer id;
 
     @Column(length = 20, nullable = true, unique = true)
-    private String code; // Thêm này cho mã sản phẩm (PROD_ID SẢN PHẨM)
+    private String code; // Thêm này cho mã sản phẩm (PROD_NGÀY THÁNG NĂM TẠO_ID SẢN PHẨM)
 
     // ------------------- Người bán / chủ sở hữu -------------------
     @ManyToOne
@@ -79,4 +79,11 @@ public class Product {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @PostPersist
+    private void generateCode() {
+        if (this.code == null) {
+            this.code = "PROD" + this.id;
+        }
+    }
 }

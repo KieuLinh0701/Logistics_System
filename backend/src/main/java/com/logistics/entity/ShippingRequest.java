@@ -2,7 +2,10 @@ package com.logistics.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.hibernate.envers.Audited;
@@ -107,4 +110,9 @@ public class ShippingRequest {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @PostPersist
+    private void generateCode() {
+        this.code = "SR" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + id;
+    }
 }

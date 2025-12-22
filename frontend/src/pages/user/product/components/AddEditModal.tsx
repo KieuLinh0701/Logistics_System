@@ -166,7 +166,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           rules={[{ required: true, message: 'Nhập tên sản phẩm!' }]}>
           <Input
             className="modal-custom-input"
-            value={product.name}
+            placeholder="Nhập tên sản phẩm"
             onChange={(e) => onProductChange({ ...product, name: e.target.value })}
           />
         </Form.Item>
@@ -189,8 +189,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           <InputNumber
             className="modal-custom-input-number"
             min={0}
+            placeholder="Nhập khối lượng sản phẩm"
             style={{ width: '100%' }}
-            value={product.weight}
             onChange={(val) => onProductChange({ ...product, weight: val ?? 0 })}
           />
         </Form.Item>
@@ -202,8 +202,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           <InputNumber
             className="modal-custom-input-number"
             min={0}
-            style={{ width: '100%' }}
-            value={product.price}
+            placeholder="Nhập giá sản phẩm"
             onChange={(val) => onProductChange({ ...product, price: val ?? 0 })}
           />
         </Form.Item>
@@ -214,8 +213,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           <InputNumber
             className="modal-custom-input-number"
             min={0}
-            style={{ width: '100%' }}
-            value={product.stock}
+            placeholder="Nhập số lượng tồn kho"
             defaultValue={0}
             onChange={(val) => onProductChange({ ...product, stock: val ?? 0 })}
           />
@@ -227,7 +225,6 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           rules={[{ required: true, message: 'Chọn loại sản phẩm!' }]}>
           <Select
             className="modal-custom-select"
-            value={product.type}
             onChange={(val) => onProductChange({ ...product, type: val })}
             placeholder="Chọn loại..."
           >
@@ -244,7 +241,6 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           name="status">
           <Select
             className="modal-custom-select"
-            value={product.status}
             onChange={(val) => onProductChange({ ...product, status: val as any })}
             defaultValue="ACTIVE"
           >

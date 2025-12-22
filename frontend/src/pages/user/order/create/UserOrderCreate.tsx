@@ -29,6 +29,7 @@ import shippingFeeApi from "../../../../api/shippingFeeApi";
 import officeApi from "../../../../api/officeApi";
 import SuccessOrderModal from "./components/SuccessOrderModal";
 import orderApi from "../../../../api/orderApi";
+import bankAccountApi from "../../../../api/bankAccountApi";
 
 const UserOrderCreate: React.FC = () => {
     const [form] = Form.useForm();
@@ -56,6 +57,7 @@ const UserOrderCreate: React.FC = () => {
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [promotionSearch, setPromotionSearch] = useState("");
     const [loadingPromotion, setLoadingPromotion] = useState(false);
+    const [loadingBank, setLoadingBank] = useState(false);
 
     // Sản phẩm
     const [loadingProduct, setLoadingProduct] = useState(false);
@@ -84,9 +86,11 @@ const UserOrderCreate: React.FC = () => {
     const [payer, setPayer] = useState<string>("CUSTOMER");
     const [discountAmount, setDiscountAmount] = useState<number | undefined>(undefined);
     const [notes, setNotes] = useState("");
-    const [_, setShippingFee] = useState<number | undefined>(undefined);
+    const [shippingFee, setShippingFee] = useState<number | undefined>(undefined);
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
+
+    const [existBankAccount, setExistBankAccount] = useState<Boolean>(false);
 
     // Người gửi và người nhận
     const [empty] = useState({
@@ -144,9 +148,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(result.message || "Không thể tải thông tin khuyến mãi")
             }
-        } catch (error) {
-            console.log("Lỗi tải thông tin khuyến mãi", error);
-            message.error("Không thể tải thông tin khuyến mãi");
+        } catch (error: any) {
+            message.error(error.message || "Không thể tải thông tin khuyến mãi");
         } finally {
             setLoadingPromotion(false);
         }
@@ -163,7 +166,7 @@ const UserOrderCreate: React.FC = () => {
         }
 
         fetchPromotions();
-    }, [serviceFee, weight, selectedServiceType, promotionSearch]);
+    }, [page, limit, serviceFee, weight, selectedServiceType, promotionSearch]);
 
 
     const handlePromotionSearch = async (value: string) => {
@@ -173,7 +176,6 @@ const UserOrderCreate: React.FC = () => {
     const handlePageChangePromotion = (newPage: number, newLimit?: number) => {
         setPage(newPage);
         setLimit(newLimit || limit);
-        fetchPromotions();
     };
 
     const handleOpenPromoModal = () => {
@@ -223,6 +225,27 @@ const UserOrderCreate: React.FC = () => {
         setDiscountAmount(discount);
     }, [selectedPromotion, serviceFee]);
 
+
+    // Kiểm tra tài khoản nhận cod
+    const existBankAccounts = async () => {
+        try {
+            setLoadingBank(true);
+            const response = await bankAccountApi.existUserBankAccounts();
+            if (response.success && response.data) {
+                setExistBankAccount(response.data);
+            }
+        } catch (error: any) {
+            message.error(error.message || "Error fetching Addresses:", error);
+            setExistBankAccount(false);
+        } finally {
+            setLoadingBank(false);
+        }
+    };
+
+    useEffect(() => {
+        existBankAccounts();
+    }, []);
+
     // Dịch vụ
     useEffect(() => {
         const fetchServiceTypes = async () => {
@@ -232,8 +255,8 @@ const UserOrderCreate: React.FC = () => {
                 if (response.success && response.data) {
                     setServiceTypes(response.data);
                 }
-            } catch (error) {
-                console.error("Error fetching Service types:", error);
+            } catch (error: any) {
+                message.error(error.message || "Error fetching Service types:", error);
             } finally {
                 setLoadingService(false);
             }
@@ -250,8 +273,8 @@ const UserOrderCreate: React.FC = () => {
             if (response.success && response.data) {
                 setAddresses(response.data);
             }
-        } catch (error) {
-            console.error("Error fetching Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Error fetching Addresses:", error);
         } finally {
             setLoadingAddress(false);
         }
@@ -297,9 +320,8 @@ const UserOrderCreate: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                message.error(error.message || "Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -389,9 +411,8 @@ const UserOrderCreate: React.FC = () => {
             }
 
             handleCancel();
-        } catch (error) {
-            console.error("Error saving address:", error);
-            message.error('Vui lòng kiểm tra lại thông tin!');
+        } catch (error: any) {
+            message.error(error.message || "Error saving address:");
         } finally {
             setLoadingAddress(false);
         }
@@ -407,9 +428,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(response.message || "Xóa địa chỉ thành công");
             }
-        } catch (error) {
-            message.error("Có lỗi khi xóa địa chỉ");
-            console.error("Error Delete Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Có lỗi khi xóa địa chỉ");
         } finally {
             setLoadingAddress(false);
         }
@@ -425,9 +445,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(response.message || "Có lỗi khi đặt địa chỉ làm mặc định");
             }
-        } catch (error) {
-            message.error("Có lỗi khi đặt địa chỉ làm mặc định");
-            console.error("Error Set Default Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Có lỗi khi đặt địa chỉ làm mặc định");
         } finally {
             setLoadingAddress(false);
         }
@@ -467,9 +486,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(result.message || "Không thể tải danh sách sản phẩm")
             }
-        } catch (error) {
-            console.log("Lỗi tải danh sách sản phẩm", error);
-            message.error("Không thể tải danh sách sản phẩm");
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tải danh sách sản phẩm");
         } finally {
             setLoadingProduct(false);
         }
@@ -485,13 +503,13 @@ const UserOrderCreate: React.FC = () => {
     }, [showProductModal]);
 
     useEffect(() => {
+        if (!showProductModal) return;
         fetchProducts();
-    }, [productFilterType, productSearch]);
+    }, [page, limit, productFilterType, productSearch, showProductModal]);
 
     const handlePageChangeProduct = (newPage: number, newLimit?: number) => {
         setPage(newPage);
         setLimit(newLimit || limit);
-        fetchProducts();
     };
 
     const handleProductSearch = async (value: string) => {
@@ -591,35 +609,35 @@ const UserOrderCreate: React.FC = () => {
         }
     };
 
-    // Fetch bưu cục ở địa phương khi người dùng chọn giao tại bưu cục
-    const fetchLocalOffices = async () => {
-        if (senderData.cityCode === 0) return;
-
-        setLoadingOffice(true);
-        try {
-            const param = {
-                cityCode: senderData.cityCode,
-                wardCode: senderData.wardCode,
-            }
-            const result = await officeApi.listLocalOffices(param);
-            if (result.success) {
-                const list = result.data || [];
-                setLocalOffices(list);
-            } else {
-                message.error(result.message || "Không thể tải danh sách bưu cục")
-            }
-        } catch (error) {
-            console.log("Lỗi tải danh sách bưu cục", error);
-            message.error("Không thể tải danh sách bưu cục");
-        } finally {
-            setLoadingOffice(false);
-        }
-    }
-
     useEffect(() => {
         if (!(pickupType === "AT_OFFICE")) return;
+
+        // Fetch bưu cục ở địa phương khi người dùng chọn giao tại bưu cục
+        const fetchLocalOffices = async () => {
+            if (senderData.cityCode === 0) return;
+
+            setLoadingOffice(true);
+            try {
+                const param = {
+                    city: senderData.cityCode,
+                    ward: senderData.wardCode,
+                }
+                const result = await officeApi.listLocalOffices(param);
+                if (result.success) {
+                    const list = result.data || [];
+                    setLocalOffices(list);
+                } else {
+                    message.error(result.message || "Không thể tải danh sách bưu cục")
+                }
+            } catch (error: any) {
+                message.error(error.message || "Không thể tải danh sách bưu cục");
+                setLocalOffices([]);
+            } finally {
+                setLoadingOffice(false);
+            }
+        }
         fetchLocalOffices()
-    }, [senderData.cityCode]);
+    }, [senderData.cityCode, senderData.wardCode, pickupType]);
 
     useEffect(() => {
         if (!selectedOffice) return;
@@ -649,9 +667,8 @@ const UserOrderCreate: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                  message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -723,13 +740,13 @@ const UserOrderCreate: React.FC = () => {
                 notes: notes || "",
                 promotionId: selectedPromotion?.id,
                 fromOfficeId: selectedOffice?.id,
+                discountAmount: discountAmount,
+                shippingFee: shippingFee,
                 orderProducts: orderProducts.map((op) => ({
                     productId: op.productId,
                     quantity: op.quantity,
                 })),
             } as UserOrderRequest;
-
-            console.log("orderData", orderData);
 
             const result = await orderApi.createUserOrder(orderData);
             if (result.success) {
@@ -742,9 +759,8 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 message.error(result.message || "Tạo đơn hàng thất bại")
             }
-        } catch (error) {
-            console.log("Lỗi tạo đơn hàng", error);
-            message.error("Tạo đơn hàng thất bại");
+        } catch (error: any) {
+            message.error(error.message || "Tạo đơn hàng thất bại");
         } finally {
             setLoadingOrder(false);
         }
@@ -998,6 +1014,7 @@ const UserOrderCreate: React.FC = () => {
                             <SenderInfo
                                 sender={senderData}
                                 addresses={addresses}
+                                existBankAccount={existBankAccount}
                                 initialSelected={selectedAddress}
                                 onSelectAddress={handleSelectedAddress}
                                 onAdd={() => showModal("create")}
@@ -1009,7 +1026,7 @@ const UserOrderCreate: React.FC = () => {
                             <RecipientInfo
                                 form={recipientInfo}
                                 recipient={recipientData}
-                                disabled={selectedAddress === null}
+                                disabled={!selectedAddress || !existBankAccount}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({
@@ -1031,7 +1048,7 @@ const UserOrderCreate: React.FC = () => {
                                 orderColumns={orderColumns}
                                 serviceTypes={serviceTypes}
                                 loading={loadingService}
-                                disabled={selectedAddress === null}
+                                disabled={!selectedAddress || !existBankAccount}
                                 setSelectedServiceType={(service) => {
                                     if (selectedAddress === null) return;
                                     setSelectedServiceType(service);
@@ -1047,10 +1064,7 @@ const UserOrderCreate: React.FC = () => {
                                 form={fromOffice}
                                 selectedOffice={selectedOffice}
                                 offices={localOffices}
-                                disabled={selectedAddress === null}
-                                onLoadOffices={() => {
-                                    fetchLocalOffices();
-                                }}
+                                disabled={!selectedAddress || !existBankAccount}
                                 onChange={({ office, pickupType }) => {
                                     setPickupType(pickupType);
 
@@ -1066,16 +1080,16 @@ const UserOrderCreate: React.FC = () => {
                             <PaymentCard
                                 form={paymentCard}
                                 payer={payer}
-                                disabled={selectedAddress === null}
+                                disabled={!selectedAddress || !existBankAccount}
                                 onChangePayment={(changedValues) => {
                                     if (selectedAddress === null) return;
-                                    setPayer(changedValues);
+                                    setPayer(changedValues.payer);
                                 }}
                             />
 
                             <NoteCard
                                 notes={notes}
-                                disabled={selectedAddress === null}
+                                disabled={!selectedAddress || !existBankAccount}
                                 onChange={(newNotes) => {
                                     if (selectedAddress === null) return;
                                     setNotes(newNotes);
@@ -1096,7 +1110,7 @@ const UserOrderCreate: React.FC = () => {
                                 selectedPromotion={selectedPromotion}
                                 setSelectedPromotion={setSelectedPromotion}
                                 setShowPromoModal={handleOpenPromoModal}
-                                disabled={selectedAddress === null}
+                                disabled={!selectedAddress || !existBankAccount}
                             />
                         }
                     </div>
@@ -1104,7 +1118,7 @@ const UserOrderCreate: React.FC = () => {
                     <Actions
                         onCreate={handleCreateOrder}
                         loading={loadingOrder}
-                        disabled={selectedAddress === null}
+                        disabled={!selectedAddress || !existBankAccount}
                     />
                 </Col>
             </Row>

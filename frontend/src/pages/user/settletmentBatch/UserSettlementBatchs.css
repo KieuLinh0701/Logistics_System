@@ -1,0 +1,17 @@
+.manager-batchs-divide {
+    height: 16px !important;
+}
+
+.manager-batchs-contain-select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.manager-batchs-payment-modal-amount-contain {
+    margin-bottom: 12px;
+}
+
+.manager-batchs-payment-modal-amount-text {
+    font-size: 18px;
+}

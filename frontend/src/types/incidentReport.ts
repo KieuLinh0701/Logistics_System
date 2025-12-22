@@ -1,5 +1,5 @@
 import type { Address } from "./address";
-import type { User } from "./auth";
+import type { User } from "./user";
 import type { Order } from "./orderHistory";
 
 export interface Incident {
@@ -10,13 +10,18 @@ export interface Incident {
   incidentType: string;
   title: string;
   description: string;
-  address?: Address;
+  address: Address;
   priority: string;
-  images?: string[];
+  images: string[];
   status: string;
-  resolution?: string;
+  resolution: string;
   handler: User;
-  handledAt?: string;
+  handledAt: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ManagerIncidentUpdateRequest {
+  status: string;
+  resolution: string;
 }

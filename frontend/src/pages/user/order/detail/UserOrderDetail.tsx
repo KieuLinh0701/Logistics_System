@@ -8,7 +8,6 @@ import OrderInfo from "./components/OrderInfo";
 import OrderProducts from "./components/ProductsInfo";
 import OrderPayment from "./components/PaymentInfo";
 import OrderActions from "./components/Actions";
-import FeedbackCard from "./components/FeedbackCard";
 import OrderHistoryCard from "./components/OrderHistoryCard";
 import type { Order } from "../../../../types/order";
 import "./UserOrderDetail.css";
@@ -20,6 +19,7 @@ import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import AddEditModal from "../request/components/AddEditModal";
 import FromOfficeInfo from "./components/FromOfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
+import { canCreateUserShippingRequestFromOrderDetail } from "../../../../utils/shippingRequestUtils";
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -27,7 +27,8 @@ const UserOrderDetail: React.FC = () => {
     const navigate = useNavigate();
 
     const [order, setOrder] = useState<Order | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [loadingView, setLoadingView] = useState(false);
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [publicModalOpen, setPublicModalOpen] = useState(false);
@@ -36,7 +37,7 @@ const UserOrderDetail: React.FC = () => {
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
     const fetchOrder = async () => {
-        setLoading(true);
+        setLoadingView(true);
         try {
             let result;
 
@@ -54,10 +55,10 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message);
             }
 
-        } catch (e) {
-            message.error("Lỗi tải đơn hàng");
+        } catch (e:any) {
+            message.error(e.message || "Lỗi tải đơn hàng");
         } finally {
-            setLoading(false);
+            setLoadingView(false);
         }
     };
 
@@ -91,8 +92,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Hủy đơn thất bại");
             }
         } catch (error: any) {
-            message.error("Lỗi server khi hủy đơn hàng");
-            console.log("Lỗi server khi hủy đơn hàng: ", error.message)
+              message.error(error.message || "Lỗi server khi hủy đơn hàng");
         } finally {
             setLoading(false);
             setCancelModalOpen(false);
@@ -117,8 +117,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Chuyển trạng thái thất bại");
             }
         } catch (error: any) {
-            console.error("Update status to pending failed:", error);
-            message.error("Lỗi khi chuyển trạng thái đơn hàng");
+              message.error(error.message || "Lỗi khi chuyển trạng thái đơn hàng");
         } finally {
             setPublicModalOpen(false);
             setLoading(false);
@@ -142,8 +141,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Xóa đơn hàng thất bại");
             }
         } catch (error: any) {
-            console.error("Lỗi khi xóa đơn hàng:", error);
-            message.error("Lỗi khi xóa đơn hàng");
+              message.error(error.message || "Lỗi khi xóa đơn hàng");
         } finally {
             setDeleteModalOpen(false);
             setLoading(false);
@@ -186,7 +184,7 @@ const UserOrderDetail: React.FC = () => {
     };
 
 
-    if (loading || !order) {
+    if (loadingView || !order) {
         return <div>Đang tải chi tiết đơn hàng...</div>;
     }
 
@@ -196,6 +194,7 @@ const UserOrderDetail: React.FC = () => {
     const canPrint = canPrintUserOrder(order.status);
     const canDelete = canDeleteUserOrder(order.status);
     const canReady = canReadyUserOrder(order.status);
+    const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status);
 
     return (
         <div className="order-detail container">
@@ -224,7 +223,6 @@ const UserOrderDetail: React.FC = () => {
             <OrderInfo order={order} />
             <OrderProducts products={order.orderProducts || []} />
             <OrderHistoryCard histories={order.orderHistories} />
-            <FeedbackCard orderId={order.id} orderStatus={order.status} />
             <OrderPayment order={order} />
             <OrderActions
                 canPublic={canPublic}
@@ -232,7 +230,7 @@ const UserOrderDetail: React.FC = () => {
                 canCancel={canCancel}
                 canPrint={canPrint}
                 canDelete={canDelete}
-                canRequest={true}
+                canRequest={canRequets}
                 canReady={canReady}
                 onPublic={handlePublicOrder}
                 onEdit={handleEditOrder}

@@ -167,7 +167,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
 
       const oldFileIds = fileList
         .filter(file => file.url && !file.originFileObj)
-        .map(file => file.uid); 
+        .map(file => file.uid);
       payload.append("oldAttachments", JSON.stringify(oldFileIds));
 
       console.log("payload keys", Array.from(payload.keys()));
@@ -199,9 +199,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
       }
       else message.error(result.message || "Có lỗi khi cập nhật");
 
-    } catch (error) {
-      console.log("Lỗi tạo yêu cầu: ", error);
-      message.error("Có lỗi khi cập nhật");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi cập nhật");
     } finally {
       setLoading(false);
     }
@@ -221,9 +220,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
       }
       else message.error(result.message || "Có lỗi khi sửa yêu cầu");
       form.resetFields();
-    } catch (error) {
-      console.log("Lỗi sửa yêu cầu: ", error);
-      message.error("Có lỗi khi sửa yêu cầu");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi sửa yêu cầu");
     } finally {
       setLoading(false);
     }
@@ -296,6 +294,10 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
               }),
               { max: 1000, message: "Nội dung tối đa 1000 ký tự!" },
             ]}
+            getValueFromEvent={(e) => {
+              const value = e.target.value;
+              return value === "" ? null : value;
+            }}
           >
             <Input.TextArea
               className="modal-custom-input-textarea"

@@ -33,7 +33,8 @@ const UserBankAccounts: React.FC = () => {
       try {
         const bankList = await bankAccountApi.getBanks();
         setBankNames(bankList);
-      } catch {
+      } catch (error: any) {
+        message.error(error.message || "Lỗi khi lấy các ngân hàng")
         setBankNames([]);
       }
     };
@@ -67,8 +68,8 @@ const UserBankAccounts: React.FC = () => {
       setIsModalOpen(false);
       setNewBankAccount({ ...emptyAccount });
       form.resetFields();
-    } catch {
-      message.error("Có lỗi khi thêm tài khoản");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi thêm tài khoản")
     } finally {
       setLoading(false);
     }
@@ -85,8 +86,8 @@ const UserBankAccounts: React.FC = () => {
       setIsModalOpen(false);
       setNewBankAccount({ ...emptyAccount });
       form.resetFields();
-    } catch {
-      message.error("Có lỗi khi cập nhật");
+    } catch (error: any) {
+      message.error(error.message || "Có lỗi khi cập nhật");
     } finally {
       setLoading(false);
     }
@@ -103,9 +104,7 @@ const UserBankAccounts: React.FC = () => {
         message.error(result.message || 'Xóa tài khoản thất bại!');
       }
     } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Có lỗi khi xóa tài khoản!';
-      console.log("Lỗi:", errorMessage)
-      message.error("Có lỗi khi xóa tài khoản");
+      message.error(error.message || 'Có lỗi khi xóa tài khoản!');
     }
   };
 
@@ -120,9 +119,7 @@ const UserBankAccounts: React.FC = () => {
         message.error(result.message || 'Cập nhật mặc định thất bại!');
       }
     } catch (error: any) {
-      const errorMessage = error?.message || error?.response?.data?.message || 'Có lỗi khi cập nhật mặc định!';
-      console.log("Lỗi:", errorMessage)
-      message.error("Có lỗi khi cập nhật mặc định!");
+      message.error(error.message || "Có lỗi khi cập nhật mặc định!");
     }
   };
 
@@ -137,10 +134,10 @@ const UserBankAccounts: React.FC = () => {
         setTotal(0);
         message.error("Có lỗi khi lấy danh sách tài khoản");
       }
-    } catch {
+    } catch (error: any) {
       setAccounts([]);
       setTotal(0);
-      message.error("Có lỗi khi lấy danh sách tài khoản");
+      message.error(error.message || "Có lỗi khi lấy danh sách tài khoản");
     }
   };
 

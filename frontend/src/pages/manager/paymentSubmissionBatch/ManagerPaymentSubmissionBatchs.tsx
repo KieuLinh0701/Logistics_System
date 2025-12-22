@@ -103,7 +103,6 @@ const ManagerPaymentSubmissionBatchs = () => {
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách phiên đối soát của bưu cục");
-      console.error("Error fetching payment submission batchs:", error);
     } finally {
       setLoading(false);
     }

@@ -27,9 +27,11 @@ import AddressModal from "../../../common/profile/components/userAddress/compone
 import productApi from "../../../../api/productApi";
 import shippingFeeApi from "../../../../api/shippingFeeApi";
 import officeApi from "../../../../api/officeApi";
-import SuccessOrderModal from "./components/SuccessOrderModal";
 import orderApi from "../../../../api/orderApi";
 import { useNavigate, useParams } from "react-router-dom";
+import { canEditUserOrderStatus, type OrderStatus } from "../../../../utils/orderUtils";
+import ConfirmModal from "../../../common/ConfirmModal";
+import { canEditUserOrderField } from "../../../../utils/userOrderEditRules";
 
 const UserOrderEdit: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -39,6 +41,7 @@ const UserOrderEdit: React.FC = () => {
 
     const [form] = Form.useForm();
     const [loadingOrder, setLoadingOrder] = useState(false);
+    const [loadingOrderView, setLoadingOrderView] = useState(false);
 
     const [loadingOffice, setLoadingOffice] = useState(false);
 
@@ -96,6 +99,10 @@ const UserOrderEdit: React.FC = () => {
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
 
+    const [tempStatus, setTempStatus] = useState<"DRAFT" | "PENDING">("DRAFT");
+
+    const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+
     // Người gửi và người nhận
     const [empty] = useState({
         name: "",
@@ -111,12 +118,6 @@ const UserOrderEdit: React.FC = () => {
     const [isHasOfficeSender, setIsHasOfficeSender] = useState(true);
     const [isHasOfficeRecipient, setIsHasOfficerRecipient] = useState(true);
 
-    // Đặt hàng thành công
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [successOrderId, setSuccessOrderId] = useState<number | null>(null);
-    const [successTrackingNumber, setSuccessTrackingNumber] = useState("");
-    const [successStatus, setSuccessStatus] = useState<"DRAFT" | "PENDING">("DRAFT");
-
     // Form instances
     const [senderInfo] = Form.useForm();
     const [recipientInfo] = Form.useForm();
@@ -126,7 +127,7 @@ const UserOrderEdit: React.FC = () => {
 
     // Đơn hàng để chỉnh sửa
     const fetchOrder = async () => {
-        setLoadingOrder(true);
+        setLoadingOrderView(true);
         try {
             let result;
 
@@ -144,10 +145,10 @@ const UserOrderEdit: React.FC = () => {
                 message.error(result.message);
             }
 
-        } catch (e) {
-            message.error("Lỗi tải đơn hàng");
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tải đơn hàng");
         } finally {
-            setLoadingOrder(false);
+            setLoadingOrderView(false);
         }
     };
 
@@ -164,8 +165,8 @@ const UserOrderEdit: React.FC = () => {
                 if (response.success && response.data) {
                     setServiceTypes(response.data);
                 }
-            } catch (error) {
-                console.error("Error fetching Service types:", error);
+            } catch (error: any) {
+                message.error(error.message || "Lỗi khi tải danh sách dịch vụ");
             } finally {
                 setLoadingService(false);
             }
@@ -182,8 +183,8 @@ const UserOrderEdit: React.FC = () => {
             if (response.success && response.data) {
                 setAddresses(response.data);
             }
-        } catch (error) {
-            console.error("Error fetching Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Lỗi khi tải địa chỉ");
         } finally {
             setLoadingAddress(false);
         }
@@ -222,8 +223,16 @@ const UserOrderEdit: React.FC = () => {
         setSelectedOffice(order.fromOffice);
         setPayer(order.payer);
         setOrderProducts(order.orderProducts);
-        setSelectedPromotionId(order.promotionId)
+        setSelectedPromotionId(order.promotion?.id);
+        setSelectedPromotion(order.promotion ?? null);
         setInitialOrderProducts(order.orderProducts);
+        setNotes(order.notes);
+
+        console.log("promotion", selectedPromotion);
+
+        if (order.status === "DRAFT" || order.status === "PENDING") {
+            setTempStatus(order.status);
+        }
     }, [order]);
 
     // Khuyến mãi
@@ -258,19 +267,19 @@ const UserOrderEdit: React.FC = () => {
                 if (found) {
                     setSelectedPromotion(found);
                 } else {
-                    setSelectedPromotion(null);
-                    setSelectedPromotionId(undefined);
+                    if (canEditUserOrderField('promotion', order?.status as OrderStatus)) {
+                        message.warning(
+                            "Khuyến mãi bạn đã chọn trước đó không còn áp dụng, vui lòng chọn lại nếu muốn sử dụng."
+                        );
+                        setSelectedPromotion(null);
+                        setSelectedPromotionId(undefined);
+                    }
+
                 }
-                return;
             }
 
-            setSelectedPromotion((prev) =>
-                prev && promoList.some(p => p.id === prev.id) ? prev : null
-            );
-
-        } catch (error) {
-            console.log("Lỗi tải thông tin khuyến mãi", error);
-            message.error("Không thể tải thông tin khuyến mãi");
+        } catch (error: any) {
+            message.error(error.message || "Không thể tải thông tin khuyến mãi");
         } finally {
             setLoadingPromotion(false);
         }
@@ -287,7 +296,7 @@ const UserOrderEdit: React.FC = () => {
         }
 
         fetchPromotions();
-    }, [serviceFee, weight, selectedServiceType, promotionSearch]);
+    }, [page, limit, serviceFee, weight, selectedServiceType, promotionSearch]);
 
     const handlePromotionSearch = async (value: string) => {
         setPromotionSearch(value);
@@ -299,7 +308,7 @@ const UserOrderEdit: React.FC = () => {
         fetchPromotions();
     };
 
-    const handleOpenPromoModal = () => {
+    const handleOpenPromoModal = async () => {
         const allSet =
             serviceFee !== undefined &&
             weight !== undefined &&
@@ -310,6 +319,7 @@ const UserOrderEdit: React.FC = () => {
             return;
         }
 
+        await fetchPromotions();
         setShowPromoModal(true);
     };
 
@@ -336,9 +346,7 @@ const UserOrderEdit: React.FC = () => {
         discount = Math.floor(discount);
 
         if (serviceFee < selectedPromotion.minOrderValue) {
-            setSelectedPromotion(null);
-            setDiscountAmount(0);
-            return;
+            discount = 0;
         }
 
         setDiscountAmount(discount);
@@ -373,9 +381,8 @@ const UserOrderEdit: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -465,9 +472,8 @@ const UserOrderEdit: React.FC = () => {
             }
 
             handleCancel();
-        } catch (error) {
-            console.error("Error saving address:", error);
-            message.error('Vui lòng kiểm tra lại thông tin!');
+        } catch (error: any) {
+            message.error(error.message || 'Vui lòng kiểm tra lại thông tin!');
         } finally {
             setLoadingAddress(false);
         }
@@ -483,9 +489,8 @@ const UserOrderEdit: React.FC = () => {
             } else {
                 message.error(response.message || "Xóa địa chỉ thành công");
             }
-        } catch (error) {
-            message.error("Có lỗi khi xóa địa chỉ");
-            console.error("Error Delete Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Có lỗi khi xóa địa chỉ");
         } finally {
             setLoadingAddress(false);
         }
@@ -501,9 +506,8 @@ const UserOrderEdit: React.FC = () => {
             } else {
                 message.error(response.message || "Có lỗi khi đặt địa chỉ làm mặc định");
             }
-        } catch (error) {
-            message.error("Có lỗi khi đặt địa chỉ làm mặc định");
-            console.error("Error Set Default Addresses:", error);
+        } catch (error: any) {
+            message.error(error.message || "Có lỗi khi đặt địa chỉ làm mặc định");
         } finally {
             setLoadingAddress(false);
         }
@@ -546,7 +550,6 @@ const UserOrderEdit: React.FC = () => {
                     if (initial) {
                         return {
                             ...p,
-                            stock: p.stock + initial.quantity
                         };
                     }
                     return p;
@@ -558,9 +561,8 @@ const UserOrderEdit: React.FC = () => {
             } else {
                 message.error(result.message || "Không thể tải danh sách sản phẩm");
             }
-        } catch (error) {
-            console.log("Lỗi tải danh sách sản phẩm", error);
-            message.error("Không thể tải danh sách sản phẩm");
+        } catch (error: any) {
+            message.error(error.message || "Không thể tải danh sách sản phẩm");
         } finally {
             setLoadingProduct(false);
         }
@@ -577,13 +579,13 @@ const UserOrderEdit: React.FC = () => {
     }, [showProductModal]);
 
     useEffect(() => {
+        if (!showProductModal) return;
         fetchProducts();
-    }, [productFilterType, productSearch]);
+    }, [page, limit, productFilterType, productSearch, showProductModal]);
 
     const handlePageChangeProduct = (newPage: number, newLimit?: number) => {
         setPage(newPage);
         setLimit(newLimit || limit);
-        fetchProducts();
     };
 
     const handleProductSearch = async (value: string) => {
@@ -690,8 +692,8 @@ const UserOrderEdit: React.FC = () => {
         setLoadingOffice(true);
         try {
             const param = {
-                cityCode: senderData.cityCode,
-                wardCode: senderData.wardCode,
+                city: senderData.cityCode,
+                ward: senderData.wardCode,
             }
             const result = await officeApi.listLocalOffices(param);
             if (result.success) {
@@ -700,9 +702,8 @@ const UserOrderEdit: React.FC = () => {
             } else {
                 message.error(result.message || "Không thể tải danh sách bưu cục")
             }
-        } catch (error) {
-            console.log("Lỗi tải danh sách bưu cục", error);
-            message.error("Không thể tải danh sách bưu cục");
+        } catch (error: any) {
+            message.error(error.message || "Không thể tải danh sách bưu cục");
         } finally {
             setLoadingOffice(false);
         }
@@ -741,9 +742,8 @@ const UserOrderEdit: React.FC = () => {
                 } else {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
-            } catch (error) {
-                console.log("Lỗi tải kiểm tra có bưu cục trong khu vực đã chọn", error);
-                message.error("Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+            } catch (error: any) {
+                message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -753,12 +753,8 @@ const UserOrderEdit: React.FC = () => {
 
     }, [recipientData.cityCode, recipientData.wardCode]);
 
-    // Xử lý khi tạo đơn hàng thành công
-    const handleOrderSuccess = () => {
-        setShowSuccessModal(true);
-    };
-
-    const handleCreateOrder = async (status: "DRAFT" | "PENDING") => {
+    const handleEdit = async () => {
+        if (!order) return;
         try {
             // Validate tất cả form
             await Promise.all([
@@ -799,7 +795,7 @@ const UserOrderEdit: React.FC = () => {
             }
 
             const orderData = {
-                status,
+                status: canEditUserOrderStatus(order.status) ? tempStatus : order.status,
                 senderAddressId: selectedAddress?.id,
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
@@ -823,20 +819,17 @@ const UserOrderEdit: React.FC = () => {
 
             console.log("orderData", orderData);
 
-            const result = await orderApi.createUserOrder(orderData);
+            const result = await orderApi.updateUserOrder(order.id, orderData);
             if (result.success) {
+                message.success(result.message || "Chỉnh sửa đơn hàng thành công")
                 if (result.data) {
-                    setSuccessTrackingNumber(result.data.trackingNumber);
-                    setSuccessOrderId(result.data.orderId);
-                    setSuccessStatus(orderData.status as "DRAFT" | "PENDING");
-                    handleOrderSuccess();
+                    navigate(-1);
                 }
             } else {
-                message.error(result.message || "Tạo đơn hàng thất bại")
+                message.error(result.message || "Chỉnh sửa đơn hàng thất bại")
             }
-        } catch (error) {
-            console.log("Lỗi tạo đơn hàng", error);
-            message.error("Tạo đơn hàng thất bại");
+        } catch (error: any) {
+            message.error(error.message || "Chỉnh sửa đơn hàng thất bại");
         } finally {
             setLoadingOrder(false);
         }
@@ -890,47 +883,16 @@ const UserOrderEdit: React.FC = () => {
         setTotalFee(Math.max(serviceFee - discountAmount, 0))
     }, [discountAmount, serviceFee]);
 
-    // Tạo đơn mới sau khi tạo thành công 
-    const handleResetForm = async () => {
-        // Reset tất cả form
-        senderInfo.resetFields();
-        recipientInfo.resetFields();
-        paymentCard.resetFields();
-        fromOffice.resetFields();
-        orderInfo.resetFields();
+    const handleCancelOrder = () => {
+        navigate(-1);
+    };
 
-        // Reset state
-        setOrderProducts([]);
-        setSelectedProductIds([]);
-        setQuantityValues({});
-        setOrderValue(undefined);
-        setWeight(undefined);
-        setCodAmount(undefined);
-        setTotalFee(undefined);
-        setPayer("CUSTOMER");
-        setDiscountAmount(undefined);
-        setNotes("");
-        setShippingFee(undefined);
-        setPickupType(undefined);
-        setSelectedOffice(null);
-        setSelectedPromotion(null);
-        setSelectedPromotionId(undefined);
+    const handleOpenCancelOrder = () => {
+        setModalConfirmOpen(true);
+    }
 
-        setSelectedAddress(null);
-        setSenderData(empty);
-        setRecipientData(empty);
-
-        await fetchAddresses();
-
-        recipientInfo.setFieldsValue({
-            name: "",
-            phoneNumber: "",
-            recipient: {
-                cityCode: undefined,
-                wardCode: undefined,
-                detail: ""
-            }
-        });
+    const handleStatusChange = (newStatus: "DRAFT" | "PENDING") => {
+        setTempStatus(newStatus);
     };
 
     const orderColumns = [
@@ -950,29 +912,29 @@ const UserOrderEdit: React.FC = () => {
             title: "Khối lượng quy đổi (Kg)",
             dataIndex: "productWeight",
             key: "productWeight",
-            align: "left",
+            align: "center",
             render: (weight: number) => weight ? `${weight.toLocaleString()}kg` : '0kg',
         },
         {
             title: "Giá (VNĐ)",
             dataIndex: "productPrice",
             key: "productPrice",
-            align: "left",
+            align: "center",
             render: (price: number) => `${price?.toLocaleString() || '0'}₫`,
         },
         {
             title: "Số lượng",
             dataIndex: "quantity",
             key: "quantity",
-            align: "left",
+            align: "center",
             render: (value: number, record: OrderProduct, index: number) => {
                 const currentValue = quantityValues[index] || value;
-
-                // 👉 tìm số lượng cũ của sản phẩm này trong đơn ban đầu
                 const initial = initialOrderProducts.find(p => p.productId === record.productId);
 
-                // 👉 tồn kho thực tế = tồn kho server trả về + số lượng ban đầu
-                const realStock = record.productStock + (initial?.quantity ?? 0);
+                const isDraft = order?.status === 'DRAFT';
+                const realStock = isDraft
+                    ? record.productStock
+                    : record.productStock + (initial?.quantity ?? 0);
 
                 const handleChange = (newValue: number | null) => {
                     const numValue = newValue || 0;
@@ -988,39 +950,37 @@ const UserOrderEdit: React.FC = () => {
                 return (
                     <Form.Item
                         name={['orderProducts', index, 'quantity']}
-                        rules={[
-                            {
-                                validator: (_, val) => {
-                                    if (val === undefined || val === null || val === '') {
-                                        return Promise.reject(new Error("Vui lòng nhập số lượng"));
-                                    }
+                        rules={[{
+                            validator: (_, val) => {
+                                if (val === undefined || val === null || val === '') {
+                                    return Promise.reject(new Error("Vui lòng nhập số lượng"));
+                                }
 
-                                    const numValue = Number(val);
-                                    if (isNaN(numValue)) {
-                                        return Promise.reject(new Error("Số lượng phải là số"));
-                                    }
+                                const numValue = Number(val);
+                                if (isNaN(numValue)) {
+                                    return Promise.reject(new Error("Số lượng phải là số"));
+                                }
 
-                                    if (numValue <= 0) {
-                                        return Promise.reject(new Error("Số lượng phải lớn hơn 0"));
-                                    }
+                                if (numValue <= 0) {
+                                    return Promise.reject(new Error("Số lượng phải lớn hơn 0"));
+                                }
 
-                                    if (numValue > realStock) {
-                                        return Promise.reject(
-                                            new Error(`Số lượng tối đa hiện tại: ${realStock}`)
-                                        );
-                                    }
+                                if (numValue > realStock) {
+                                    return Promise.reject(
+                                        new Error(`Số lượng tối đa hiện tại: ${realStock}`)
+                                    );
+                                }
 
-                                    return Promise.resolve();
-                                },
-                            },
-                        ]}
+                                return Promise.resolve();
+                            }
+                        }]}
                         initialValue={currentValue}
                         validateTrigger={['onChange', 'onBlur']}
                     >
                         <InputNumber
                             className="modal-custom-input-number fixed-width"
                             min={1}
-                            max={realStock}  // 👉 chỉnh max đúng tồn kho thực
+                            max={realStock}
                             value={currentValue}
                             onChange={handleChange}
                             onBlur={(e) => {
@@ -1030,9 +990,7 @@ const UserOrderEdit: React.FC = () => {
                                 }
                             }}
                             placeholder="Nhập số lượng"
-                            formatter={(value) =>
-                                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                            }
+                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                             parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as any}
                         />
                     </Form.Item>
@@ -1043,53 +1001,62 @@ const UserOrderEdit: React.FC = () => {
             title: "Tồn kho",
             dataIndex: "productStock",
             key: "productStock",
-            align: "left",
+            align: "center",
             render: (_: any, record: OrderProduct) => {
                 const initial = initialOrderProducts.find(p => p.productId === record.productId);
 
-                const realStock = record.productStock + (initial?.quantity ?? 0);
+                const realStock = tempStatus === 'DRAFT'
+                    ? record.productStock
+                    : record.productStock + (initial?.quantity ?? 0);
 
                 return realStock;
             }
         },
-        {
-            key: "action",
-            align: "left",
-            render: (_: any, record: OrderProduct) => (
-                <Tooltip title="Xoá sản phẩm">
-                    <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => {
-                            setOrderProducts((prev) => {
-                                const updated = prev.filter(
-                                    (op) => op.productId !== record.productId
-                                );
+        ...(order && canEditUserOrderField('products', order.status as OrderStatus)
+            ? [{
+                key: "action",
+                align: "left",
+                render: (_: any, record: OrderProduct) => (
+                    <Tooltip title="Xoá sản phẩm">
+                        <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                                setOrderProducts((prev) => {
+                                    const updated = prev.filter(
+                                        (op) => op.productId !== record.productId
+                                    );
 
-                                setSelectedProductIds((prevIds) =>
-                                    prevIds.filter(id => id !== record.productId)
-                                );
+                                    setSelectedProductIds((prevIds) =>
+                                        prevIds.filter(id => id !== record.productId)
+                                    );
 
-                                const totalValue = updated.reduce(
-                                    (sum, op) => sum + op.productPrice * op.quantity,
-                                    0
-                                );
-                                const totalWeight = updated.reduce(
-                                    (sum, op) => sum + (op.productWeight || 0) * op.quantity,
-                                    0
-                                );
-                                setOrderValue(totalValue);
-                                setWeight(totalWeight);
+                                    const totalValue = updated.reduce(
+                                        (sum, op) => sum + op.productPrice * op.quantity,
+                                        0
+                                    );
+                                    const totalWeight = updated.reduce(
+                                        (sum, op) => sum + (op.productWeight || 0) * op.quantity,
+                                        0
+                                    );
+                                    setOrderValue(totalValue);
+                                    setWeight(totalWeight);
 
-                                return updated;
-                            });
-                        }}
-                    />
-                </Tooltip>
-            ),
-        },
+                                    return updated;
+                                });
+                            }}
+                        />
+                    </Tooltip>
+                ),
+            }]
+            : []),
     ];
+
+    if (loadingOrderView || !order) {
+        return <div>Đang tải đơn hàng...</div>;
+    }
+
 
     return (
         <div className="create-order-container-edit">
@@ -1099,11 +1066,14 @@ const UserOrderEdit: React.FC = () => {
                     <div className="create-order-scrollable-content">
                         <div
                             className="create-order-main">
-                            <Header />
+                            <Header
+                                trackingNumber={order?.trackingNumber}
+                            />
 
                             <SenderInfo
                                 sender={senderData}
                                 addresses={addresses}
+                                status={order.status as OrderStatus}
                                 initialSelected={selectedAddress}
                                 onSelectAddress={handleSelectedAddress}
                                 onAdd={() => showModal("create")}
@@ -1117,6 +1087,7 @@ const UserOrderEdit: React.FC = () => {
                                 form={recipientInfo}
                                 recipient={recipientData}
                                 disabled={selectedAddress === null}
+                                status={order.status as OrderStatus}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({
@@ -1140,6 +1111,7 @@ const UserOrderEdit: React.FC = () => {
                                 serviceTypes={serviceTypes}
                                 loading={loadingService}
                                 disabled={selectedAddress === null}
+                                status={order.status as OrderStatus}
                                 setSelectedServiceType={(service) => {
                                     if (selectedAddress === null) return;
                                     setSelectedServiceType(service);
@@ -1157,6 +1129,7 @@ const UserOrderEdit: React.FC = () => {
                                 selectedOffice={selectedOffice}
                                 offices={localOffices}
                                 disabled={selectedAddress === null}
+                                status={order.status as OrderStatus}
                                 onLoadOffices={() => {
                                     fetchLocalOffices();
                                 }}
@@ -1177,14 +1150,16 @@ const UserOrderEdit: React.FC = () => {
                                 form={paymentCard}
                                 payer={payer}
                                 disabled={selectedAddress === null}
+                                status={order.status as OrderStatus}
                                 onChangePayment={(changedValues) => {
                                     if (selectedAddress === null) return;
-                                    setPayer(changedValues);
+                                    setPayer(changedValues.payer);
                                 }}
                             />
 
                             <NoteCard
                                 notes={notes}
+                                status={order.status as OrderStatus}
                                 disabled={selectedAddress === null}
                                 onChange={(newNotes) => {
                                     if (selectedAddress === null) return;
@@ -1195,7 +1170,6 @@ const UserOrderEdit: React.FC = () => {
                     </div>
                 </Col>
 
-                {/* RIGHT SIDEBAR */}
                 <Col xs={24} lg={6} className="rightSidebar">
                     <div>
                         {discountAmount !== undefined && totalFee != undefined && serviceFee !== undefined &&
@@ -1207,14 +1181,18 @@ const UserOrderEdit: React.FC = () => {
                                 setSelectedPromotion={setSelectedPromotion}
                                 setShowPromoModal={handleOpenPromoModal}
                                 disabled={selectedAddress === null}
+                                status={order.status as OrderStatus}
                             />
                         }
                     </div>
 
                     <Actions
-                        onCreate={handleCreateOrder}
+                        onEdit={handleEdit}
+                        onCancel={handleOpenCancelOrder}
+                        onStatusChange={handleStatusChange}
                         loading={loadingOrder}
                         disabled={selectedAddress === null}
+                        status={order.status as OrderStatus}
                     />
                 </Col>
             </Row>
@@ -1273,13 +1251,13 @@ const UserOrderEdit: React.FC = () => {
                 loading={loadingAddress}
             />
 
-            <SuccessOrderModal
-                open={showSuccessModal}
-                trackingNumber={successTrackingNumber}
-                orderId={successOrderId}
-                status={successStatus}
-                onClose={() => setShowSuccessModal(false)}
-                onCreateNew={handleResetForm}
+            <ConfirmModal
+                title='Xác nhận hủy chỉnh sửa'
+                message='Bạn chắc chắn muốn bỏ các chỉnh sửa này không?'
+                open={modalConfirmOpen}
+                onOk={handleCancelOrder}
+                onCancel={() => setModalConfirmOpen(false)}
+                loading={loadingOrder}
             />
         </div>
     );

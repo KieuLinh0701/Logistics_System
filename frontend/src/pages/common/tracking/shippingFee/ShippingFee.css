@@ -81,7 +81,6 @@
   margin: 0 auto;
 }
 
-/* Fix lỗi chồng chéo Form items */
 .shipping-fee-calculator-form .ant-form-item {
   margin-bottom: 0 !important;
   display: block !important;

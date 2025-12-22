@@ -31,10 +31,10 @@ public class OfficeMapper {
         if (entity == null) {
             return null;
         }
-
+ 
         return new PublicOfficeInformationDto(
                 entity.getId(),
-                entity.getCode(),
+                entity.getPostalCode(),
                 entity.getName(),
                 entity.getCityCode(),
                 entity.getWardCode(),

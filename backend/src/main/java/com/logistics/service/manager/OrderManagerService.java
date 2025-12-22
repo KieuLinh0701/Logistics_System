@@ -1,8 +1,12 @@
 package com.logistics.service.manager;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
+import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
@@ -23,6 +28,8 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
+import com.logistics.entity.Product;
+import com.logistics.entity.Promotion;
 import com.logistics.entity.ServiceType;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
@@ -33,23 +40,22 @@ import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.OrderPrintMapper;
+import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
-import com.logistics.repository.ProductRepository;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.FeePublicService;
 import com.logistics.service.common.NotificationService;
-import com.logistics.service.common.OfficePublicService;
 import com.logistics.service.user.AddressUserService;
 import com.logistics.service.user.OrderHistoryUserService;
 import com.logistics.service.user.ProductUserService;
 import com.logistics.service.user.PromotionUserService;
 import com.logistics.service.user.ServiceTypeUserService;
-import com.logistics.service.user.UserUserService;
 import com.logistics.specification.OrderSpecification;
+import com.logistics.utils.ManagerOrderEditRuleUtils;
 import com.logistics.utils.OrderUtils;
 
 import jakarta.transaction.Transactional;
@@ -59,32 +65,25 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderManagerService {
 
-    @Autowired
-    private OrderRepository repository;
+    private final OrderRepository repository;
 
-    @Autowired
-    private OrderProductRepository orderProductRepository;
+    private final OrderProductRepository orderProductRepository;
 
-    @Autowired
-    private OrderHistoryRepository orderHistoryRepository;
+    private final OrderHistoryRepository orderHistoryRepository;
 
-    @Autowired
-    private PromotionUserService promotionUserService;
+    private final PromotionUserService promotionUserService;
+    
+    private final OfficeRepository officeRepository;
 
-    @Autowired
-    private AddressUserService addressUserService;
+    private final AddressUserService addressUserService;
 
-    @Autowired
-    private ServiceTypeUserService serviceTypeUserService;
+    private final ServiceTypeUserService serviceTypeUserService;
 
-    @Autowired
-    private FeePublicService feeService;
+    private final FeePublicService feeService;
 
-    @Autowired
-    private ProductUserService productUserService;
+    private final ProductUserService productUserService;
 
-    @Autowired
-    private OrderHistoryUserService orderHistoryUserService;
+    private final OrderHistoryUserService orderHistoryUserService;
 
     private final EmployeeManagerService employeeManagerService;
 
@@ -238,7 +237,7 @@ public class OrderManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        if (!OrderUtils.canManagerCancel(order.getStatus())) {
+        if (!OrderUtils.canManagerCancel(order.getStatus(), order.getCreatedByType())) {
             throw new RuntimeException("Đơn hàng đã vận chuyển, không thể hủy");
         }
 
@@ -254,6 +253,11 @@ public class OrderManagerService {
 
         if (order.getPromotion() != null) {
             promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+        }
+
+        if (!order.getCreatedByType().equals(OrderCreatorType.USER) && order.getPayer().equals(OrderPayerType.SHOP)) {
+            order.setRefundedAt(LocalDateTime.now());
+            order.setPaymentStatus(OrderPaymentStatus.REFUNDED);
         }
 
         orderHistoryUserService.save(
@@ -351,6 +355,159 @@ public class OrderManagerService {
             return new ApiResponse<>(true, "Tạo đơn hàng thành công", newOrder.getTrackingNumber());
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    public ApiResponse<Boolean> update(Integer userId, Integer orderId, ManagerOrderCreateRequest request) {
+        try {
+            validateCreate(request);
+
+            Order order = repository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+            if (!ManagerOrderEditRuleUtils.canEditManagerOrder(order.getStatus())) {
+                throw new RuntimeException("Đơn hàng đã hoàn thành, không thể chỉnh sửa");
+            }
+
+            if (order.getFromOffice() == null
+                    || !userOffice.getId().equals(order.getFromOffice().getId())) {
+                return new ApiResponse<>(false, "Bạn không có quyền sửa đơn hàng này", false);
+            }
+
+            OrderStatus currentStatus = order.getStatus();
+            OrderCreatorType creatorType = order.getCreatedByType();
+
+            Address recipient = order.getRecipientAddress();
+
+            // NGƯỜI GỬI
+            updateManagerField("senderName",
+                    order.getSenderName(),
+                    request.getSenderName(),
+                    currentStatus, creatorType,
+                    order::setSenderName);
+
+            updateManagerField("senderPhoneNumber",
+                    order.getSenderPhone(),
+                    request.getSenderPhone(),
+                    currentStatus, creatorType,
+                    order::setSenderPhone);
+
+            updateManagerField("senderCityCode",
+                    order.getSenderCityCode(),
+                    request.getSenderCityCode(),
+                    currentStatus, creatorType,
+                    order::setSenderCityCode);
+
+            updateManagerField("senderWardCode",
+                    order.getSenderWardCode(),
+                    request.getSenderWardCode(),
+                    currentStatus, creatorType,
+                    order::setSenderWardCode);
+
+            updateManagerField("senderDetailAddress",
+                    order.getSenderDetail(),
+                    request.getSenderDetail(),
+                    currentStatus, creatorType,
+                    order::setSenderDetail);
+
+            // NGƯỜI NHẬN
+            updateManagerField("recipientName",
+                    recipient.getName(),
+                    request.getRecipientName(),
+                    currentStatus, creatorType,
+                    recipient::setName);
+
+            updateManagerField("recipientPhoneNumber",
+                    recipient.getPhoneNumber(),
+                    request.getRecipientPhone(),
+                    currentStatus, creatorType,
+                    recipient::setPhoneNumber);
+
+            updateManagerField("recipientCityCode",
+                    recipient.getCityCode(),
+                    request.getRecipientCityCode(),
+                    currentStatus, creatorType,
+                    recipient::setCityCode);
+
+            updateManagerField("recipientWardCode",
+                    recipient.getWardCode(),
+                    request.getRecipientWardCode(),
+                    currentStatus, creatorType,
+                    recipient::setWardCode);
+
+            updateManagerField("recipientDetailAddress",
+                    recipient.getDetail(),
+                    request.getRecipientDetail(),
+                    currentStatus, creatorType,
+                    recipient::setDetail);
+
+            // PICKUP TYPE
+            if (request.getPickupType() != null) {
+                if (creatorType == OrderCreatorType.MANAGER) {
+                    throw new RuntimeException("Đơn do bưu cục tạo không được thay đổi hình thức lấy hàng");
+                }
+
+                if (ManagerOrderEditRuleUtils.canManagerEditOrderField(
+                        "pickupType", currentStatus, creatorType)) {
+                    order.setPickupType(OrderPickupType.valueOf(request.getPickupType()));
+                }
+            }
+
+            // FROM OFFICE
+            if (request.getFromOfficeId() != null) {
+
+                if (creatorType == OrderCreatorType.MANAGER) {
+                    throw new RuntimeException("Đơn do bưu cục tạo không được đổi bưu cục gửi");
+                }
+
+                if (ManagerOrderEditRuleUtils.canManagerEditOrderField(
+                        "fromOffice", currentStatus, creatorType)) {
+
+                    Office newOffice = officeRepository.findById(request.getFromOfficeId())
+                            .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
+
+                    if (!Objects.equals(newOffice.getCityCode(), order.getSenderCityCode())) {
+                        throw new RuntimeException(
+                                "Bưu cục gửi phải cùng tỉnh/thành với địa chỉ người gửi");
+                    }
+
+                    order.setFromOffice(newOffice);
+                }
+            }
+
+            // NOTES
+            updateManagerField("notes",
+                    order.getNotes(),
+                    request.getNotes(),
+                    currentStatus, creatorType,
+                    order::setNotes);
+
+            repository.save(order);
+            return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
+
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    private <T> void updateManagerField(
+            String field,
+            T oldValue,
+            T newValue,
+            OrderStatus status,
+            OrderCreatorType creatorType,
+            java.util.function.Consumer<T> setter) {
+        if (!Objects.equals(oldValue, newValue)) {
+
+            if (!ManagerOrderEditRuleUtils.canManagerEditOrderField(field, status, creatorType)) {
+                throw new RuntimeException(
+                        "Trường '" + field + "' không thể chỉnh sửa ở trạng thái " + status);
+            }
+
+            setter.accept(newValue);
         }
     }
 

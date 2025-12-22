@@ -173,8 +173,6 @@ public class ProductUserService {
         }
 
         product = repository.save(product);
-        product.setCode("PROD" + product.getId());
-        repository.save(product);
 
         return ProductMapper.toDto(product);
     }

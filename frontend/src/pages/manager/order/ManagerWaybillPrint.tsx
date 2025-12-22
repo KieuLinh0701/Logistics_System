@@ -63,8 +63,8 @@ const CodWeightSection: React.FC<{ cod: number; weight: number }> = ({ cod, weig
       </Col>
       <Col span={12}>
         <div className="waybill-print-weight-info">
-          <div className="waybill-print-weight-label">Khối lượng tối đa:</div>
-          <div className="waybill-print-weight-value">{weight} g</div>
+          <div className="waybill-print-weight-label">Khối lượng:</div>
+          <div className="waybill-print-weight-value">{weight} Kg</div>
         </div>
       </Col>
     </Row>
@@ -92,7 +92,7 @@ const ManagerWaybillPrint: React.FC = () => {
         const result = await orderApi.printManagerOrders(orderIds);
         if (result.success && result.data) {
           if (result.data.length === 0 && !hasShownMessage.current) {
-            message.warning("Không có đơn hàng nào đủ điều kiện in");
+            message.warning("Không có đơn hàng nào đủ điều kiện in. Vui lòng chờ hệ thống xác nhận lấy hàng.");
             hasShownMessage.current = true;
           } else if (!hasShownMessage.current) {
             setOrders(result.data);
@@ -103,9 +103,9 @@ const ManagerWaybillPrint: React.FC = () => {
           message.error(result.message || "Lấy thông tin in ấn thất bại");
           hasShownMessage.current = true;
         }
-      } catch {
+      } catch (error: any) {
         if (!hasShownMessage.current) {
-          message.error("Lỗi khi lấy thông tin in ấn");
+          message.error(error.message || "Lỗi khi lấy thông tin in ấn");
           hasShownMessage.current = true;
         }
       } finally {

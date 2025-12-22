@@ -10,7 +10,6 @@ interface Props {
   selectedOffice?: Office | null;
   offices: Office[];
   onChange: (data: { office: Office | null; pickupType: string }) => void;
-  onLoadOffices?: () => void;
   disabled: boolean;
   loading: boolean;
 }
@@ -20,7 +19,6 @@ const PickupType: React.FC<Props> = ({
   selectedOffice,
   offices,
   onChange,
-  onLoadOffices,
   disabled,
   loading,
 }) => {
@@ -34,11 +32,7 @@ const PickupType: React.FC<Props> = ({
   useEffect(() => {
     const office = offices.find((o) => o.id === form.getFieldValue("senderOfficeId")) || null;
     onChange({ office, pickupType });
-
-    if (pickupType === "AT_OFFICE" && offices.length === 0) {
-      onLoadOffices?.();
-    }
-  }, [pickupType, form, offices, onChange, onLoadOffices]);
+  }, [pickupType, form, offices, onChange]);
 
   useEffect(() => {
     const fetchAddresses = async () => {

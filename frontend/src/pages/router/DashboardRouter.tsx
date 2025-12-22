@@ -1,6 +1,6 @@
 import { getUserRole } from "../../utils/authUtils";
 import ManagerDashboard from "../manager/ManagerDashboard";
-import UserDashboard from "../user/UserDashboard";
+import UserDashboard from "../user/dashboard/UserDashboard";
 import AdminDashboard from "../admin/Dashboard";
 import ShipperDashboard from "../shipper/Dashboard";
 import DriverDashboard from "../driver/Dashboard";

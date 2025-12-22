@@ -27,8 +27,8 @@ export interface OfficeSearchRequest {
 }
 
 export interface LocalOfficeRequest {
-  cityCode?: number; 
-  wardCode?: number;
+  city?: number; 
+  ward?: number;
 }
 
 export interface OfficeEditRequest {

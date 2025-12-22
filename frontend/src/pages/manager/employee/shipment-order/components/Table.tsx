@@ -1,10 +1,9 @@
 import React from "react";
-import { Table, Button, Space, message, Tooltip } from "antd";
-import { EyeOutlined, CopyOutlined } from "@ant-design/icons";
+import { Table, Button, Space, Tooltip } from "antd";
 import { useNavigate } from "react-router-dom";
-import { ColumnsType } from "antd/es/table";
-import { translateOrderPayer, translateOrderPaymentMethod } from "../../../../../utils/orderUtils";
-import { Order } from "../../../../../types/order";
+import type { Order } from "../../../../../types/order";
+import type { ColumnsType } from "antd/es/table";
+import { translateOrderPayerType } from "../../../../../utils/orderUtils";
 
 interface Props {
   orders: Order[];
@@ -61,16 +60,7 @@ const OrderTable: React.FC<Props> = ({
       key: "payer",
       align: "center",
       render: (payer) => (
-        translateOrderPayer(payer)
-      )
-    },
-    {
-      title: "Phương thức thanh toán",
-      dataIndex: "paymentMethod",
-      key: "paymentMethod",
-      align: "center",
-      render: (method) => (
-        translateOrderPaymentMethod(method)
+        translateOrderPayerType(payer)
       )
     },
     {

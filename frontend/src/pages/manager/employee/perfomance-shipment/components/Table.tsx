@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Button, Tag } from "antd";
+import { Table, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -98,24 +98,24 @@ const ShipmentTable: React.FC<Props> = ({
         );
       },
     },
-    {
-      title: "Thông tin chuyến đi",
-      key: "tripInfo",
-      align: "left",
-      render: (_, record) => {
-        const totalOrders = record.orderCount?.toLocaleString("vi-VN") || "0";
-        const weight = record.totalWeight
-          ? Number(record.totalWeight).toFixed(2)
-          : "0.00";
+    // {
+    //   title: "Thông tin chuyến đi",
+    //   key: "tripInfo",
+    //   align: "left",
+    //   render: (_, record) => {
+    //     const totalOrders = record.orderCount?.toLocaleString("vi-VN") || "0";
+    //     const weight = record.totalWeight
+    //       ? Number(record.totalWeight).toFixed(2)
+    //       : "0.00";
 
-        return (
-          <>
-            <span className="custom-table-content-strong">Tổng đơn:</span> {totalOrders}<br />
-            <span className="custom-table-content-strong">Tổng trọng lượng:</span> {weight} kg
-          </>
-        );
-      },
-    },
+    //     return (
+    //       <>
+    //         <span className="custom-table-content-strong">Tổng đơn:</span> {totalOrders}<br />
+    //         <span className="custom-table-content-strong">Tổng trọng lượng:</span> {weight} kg
+    //       </>
+    //     );
+    //   },
+    // },
     {
       key: "action",
       align: "center",

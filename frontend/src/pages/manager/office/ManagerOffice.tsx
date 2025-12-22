@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Row, Col, Typography, Space, Tag, Form, Input, TimePicker, Select, InputNumber, Button, message, Tooltip } from 'antd';
-import { BankOutlined, IdcardOutlined, PhoneOutlined, MailOutlined, ClockCircleOutlined, EditOutlined, CompassOutlined, FileTextOutlined, TagOutlined, UserOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { BankOutlined, IdcardOutlined, PhoneOutlined, MailOutlined, ClockCircleOutlined, EditOutlined, FileTextOutlined, TagOutlined, UserOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Office, OfficeEditRequest } from '../../../types/office';
 import officeApi from '../../../api/officeApi';

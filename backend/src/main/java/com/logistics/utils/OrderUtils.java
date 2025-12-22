@@ -2,6 +2,7 @@ package com.logistics.utils;
 
 import java.util.Set;
 
+import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderStatus;
 
 public class OrderUtils {
@@ -56,16 +57,24 @@ public class OrderUtils {
     }
 
     // Những trạng thái manager được phép hủy
-    private static final Set<OrderStatus> MANAGER_CANCELLABLE_STATUSES = Set.of(
+    private static final Set<OrderStatus> MANAGER_CANCEL_USER_ORDER_STATUSES = Set.of(
+            OrderStatus.PENDING,
+            OrderStatus.CONFIRMED,
+            OrderStatus.READY_FOR_PICKUP);
+
+    private static final Set<OrderStatus> MANAGER_CANCEL_OFFICE_ORDER_STATUSES = Set.of(
             OrderStatus.PENDING,
             OrderStatus.CONFIRMED,
             OrderStatus.READY_FOR_PICKUP,
-            OrderStatus.PICKING_UP,
-            OrderStatus.PICKED_UP,
             OrderStatus.AT_ORIGIN_OFFICE);
 
-    public static boolean canManagerCancel(OrderStatus status) {
-        return MANAGER_CANCELLABLE_STATUSES.contains(status);
+    public static boolean canManagerCancel(
+            OrderStatus status,
+            OrderCreatorType creatorType) {
+        if (creatorType == OrderCreatorType.USER) {
+            return MANAGER_CANCEL_USER_ORDER_STATUSES.contains(status);
+        }
+        return MANAGER_CANCEL_OFFICE_ORDER_STATUSES.contains(status);
     }
 
     // Những trạng thái Order mà manager được phép tạo chuyến giao hàng
@@ -79,11 +88,13 @@ public class OrderUtils {
         return VALID_ORDER_STATUSES_FOR_SHIPMENT_CREATION_MANAGER.contains(status);
     }
 
-    // Những trạng thái Order mà manager được xác nhận là được người dùng bàn giao đến bưu cục
+    // Những trạng thái Order mà manager được xác nhận là được người dùng bàn giao
+    // đến bưu cục
     private static final Set<OrderStatus> VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE = Set.of(
             OrderStatus.CONFIRMED);
 
     public static boolean canManagerSetAtOriginOffice(OrderStatus status) {
         return VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE.contains(status);
     }
+
 }

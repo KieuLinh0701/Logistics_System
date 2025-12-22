@@ -1,4 +1,8 @@
 // Điều kiện để thao tác với Shipping Request của user
+export const canCreateUserShippingRequestFromOrderDetail = (value: string) => {
+  return !['DRAFT'].includes(value);
+};
+
 export const canEditUserShippingRequest = (value: string) => {
   return ['PENDING'].includes(value);
 };
@@ -62,6 +66,9 @@ export const SHIPPING_REQUEST_FILTER_SORT = [
   'NEWEST',
   'OLDEST'
 ] as const;
+
+// Public 
+export const SHIPPING_REQUEST_TYPES_PUBLIC = ['COMPLAINT', 'INQUIRY'] as const;
 
 export const translateShippingRequestType = (value: string): string => {
   switch (value) {

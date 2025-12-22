@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { Button, Divider, Tooltip, Typography } from "antd";
 import { GiftOutlined, TagOutlined, DeleteOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import type { Promotion } from "../../../../../types/promotion";
+import { type OrderStatus } from "../../../../../utils/orderUtils";
+import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 
 const { Text } = Typography;
 
@@ -13,6 +15,7 @@ interface PromotionCardProps {
   setSelectedPromotion: (value: Promotion | null) => void;
   setShowPromoModal: (value: boolean) => void;
   disabled: boolean;
+  status: OrderStatus;
 }
 
 const PromotionCard: React.FC<PromotionCardProps> = ({
@@ -23,18 +26,19 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
   setSelectedPromotion,
   setShowPromoModal,
   disabled,
+  status,
 }) => {
-  
+
   const renderInfoIcon = () => (
     <span className="create-order-promotion-card info-icon">
       <InfoCircleOutlined />
     </span>
   );
 
-   useEffect(() => {
+  useEffect(() => {
     console.log("promotion", selectedPromotion);
-    }, [selectedPromotion]);
-  
+  }, [selectedPromotion]);
+
 
   return (
     <div className="create-order-promotion-card">
@@ -82,7 +86,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
         className="create-order-promotion-card promo-button"
         icon={selectedPromotion ? <TagOutlined /> : <GiftOutlined />}
         onClick={() => setShowPromoModal(true)}
-        disabled={disabled}
+        disabled={disabled || !canEditUserOrderField('promotion', status)}
       >
         {selectedPromotion ? "Đổi mã khuyến mãi" : "Chọn mã khuyến mãi"}
       </Button>
@@ -96,13 +100,14 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
             </Text>
             <div>{selectedPromotion.code}</div>
           </div>
-          <Button
+          {(disabled && !canEditUserOrderField('promotion', status)) && (<Button
             type="text"
             danger
             icon={<DeleteOutlined />}
             onClick={() => setSelectedPromotion(null)}
             aria-label="Xóa mã khuyến mãi"
           />
+          )}
         </div>
       )}
     </div>

@@ -24,4 +24,6 @@ public class ManagerOrderCreateRequest {
     private Integer orderValue;
     private String payer;
     private String notes;
+    private String pickupType;
+    private Integer fromOfficeId;
 }

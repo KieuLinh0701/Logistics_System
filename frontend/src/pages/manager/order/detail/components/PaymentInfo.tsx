@@ -1,7 +1,7 @@
 import React from "react";
 import Title from "antd/es/typography/Title";
 import type { Order } from "../../../../../types/order";
-import { translateOrderPayerType, translateOrderPaymentStatus } from "../../../../../utils/orderUtils";
+import { translateOrderCodStatus, translateOrderPayerType, translateOrderPaymentStatus } from "../../../../../utils/orderUtils";
 
 interface PaymentInfoProps {
   order: Order;
@@ -30,6 +30,7 @@ const PaymentInfo: React.FC<PaymentInfoProps> = ({ order }) => {
         <div className="order-detail-card-column">
           {renderPaymentField("Người thanh toán:", translateOrderPayerType(order.payer))}
           {renderPaymentField("Trạng thái:", translateOrderPaymentStatus(order.paymentStatus))}
+          {renderPaymentField("Trạng thái COD:", translateOrderCodStatus(order.codStatus))}
         </div>
 
         {/* Cột 2 - Phí dịch vụ */}

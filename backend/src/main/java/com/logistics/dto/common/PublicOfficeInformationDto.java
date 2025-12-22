@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PublicOfficeInformationDto {
     private Integer id;
-    private String code;
+    private String postalCode;
     private String name;
     private Integer cityCode;
     private Integer wardCode;

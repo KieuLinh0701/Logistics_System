@@ -17,8 +17,6 @@ interface Props {
   onReset: () => void;
 }
 
-const { Option } = Select;
-
 const SearchFilters: React.FC<Props> = ({
   searchText,
   setSearchText,
@@ -34,7 +32,7 @@ const SearchFilters: React.FC<Props> = ({
       <Row gutter={16} className="search-filters-row">
         <Col span={24}>
           <div className="list-page-actions">
-            <Tooltip title={searchText || "Tìm theo mã đơn hàng, tiêu đề, người nhận, SĐT người nhận, người xử lý"}>
+            <Tooltip title={searchText || "Tìm theo mã sự cố, mã đơn hàng, tiêu đề/mô tả sự cố, tên/SĐT người gửi, tên/SĐT người xử lý"}>
               <Input
                 className="search-input"
                 placeholder="Tìm kiếm..."
@@ -54,8 +52,8 @@ const SearchFilters: React.FC<Props> = ({
             </Select>
 
             <Select
-              value={filters.type}
-              onChange={(val) => setFilters("type", val)}
+              value={filters.priority}
+              onChange={(val) => setFilters("priority", val)}
               className="filter-select"
               listHeight={INCIDENT_PRIORITYS.length * 40 + 50}
             >

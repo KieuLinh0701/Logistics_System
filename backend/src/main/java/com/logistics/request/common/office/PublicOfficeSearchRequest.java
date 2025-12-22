@@ -9,5 +9,7 @@ import lombok.*;
 public class PublicOfficeSearchRequest {
     private Integer city;
     private Integer ward;
+    private Integer cityCode;
+    private Integer wardCode;
     private String search;
 }

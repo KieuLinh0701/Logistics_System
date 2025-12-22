@@ -3,6 +3,7 @@ package com.logistics.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,6 +23,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import lombok.*;
 
@@ -80,4 +82,12 @@ public class PaymentSubmission {
     @ManyToOne
     @JoinColumn(name = "batch_id")
     private PaymentSubmissionBatch batch;
+
+    @PostPersist
+    private void generateCode() {
+        if (this.code == null) {
+            String date = LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            this.code = "COD" + date + this.id;
+        }
+    }
 }
