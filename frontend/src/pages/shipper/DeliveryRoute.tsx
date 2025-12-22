@@ -60,9 +60,12 @@ const ShipperDeliveryRoute: React.FC = () => {
   const navigate = useNavigate();
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [deliveryStops, setDeliveryStops] = useState<DeliveryStop[]>([]);
+  const [shipperOrdersList, setShipperOrdersList] = useState<DeliveryStop[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedStop, setSelectedStop] = useState<DeliveryStop | null>(null);
   const [detailModal, setDetailModal] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [mapModalAddress, setMapModalAddress] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRouteData();
@@ -74,7 +77,41 @@ const ShipperDeliveryRoute: React.FC = () => {
       const routeData = await orderApi.getShipperRoute();
       console.log("API DATA:", routeData);
       setRouteInfo(routeData.routeInfo);
-      setDeliveryStops(routeData.deliveryStops || []);
+      const routeStops = routeData.deliveryStops || [];
+      // Also fetch shipper orders (for debugging / comparison) and use them to filter/sync route stops
+      try {
+        const ordersRes = await orderApi.getShipperOrders({ page: 1, limit: 200 });
+        const shipperOrders = (ordersRes.orders || []) as any[];
+        setShipperOrdersList(shipperOrders as any);
+
+        if (shipperOrders && shipperOrders.length > 0) {
+          // Build ordered list based on shipperOrders tracking numbers.
+          const routeByTracking = new Map(routeStops.map((s: any) => [s.trackingNumber, s]));
+          const synced = shipperOrders.map((o: any) => {
+            const tracking = o.trackingNumber;
+            if (routeByTracking.has(tracking)) return routeByTracking.get(tracking);
+            // fallback: build a minimal stop object from order data
+            return {
+              id: o.id,
+              trackingNumber: o.trackingNumber,
+              recipientName: o.recipientName,
+              recipientPhone: o.recipientPhone,
+              recipientAddress: typeof o.recipientAddress === 'string' ? o.recipientAddress : (o.recipientAddress?.fullAddress ?? ''),
+              codAmount: o.cod || 0,
+              priority: o.priority || 'normal',
+              serviceType: o.serviceType?.name || o.serviceType || '',
+              status: o.status || 'READY_FOR_PICKUP',
+            } as any;
+          });
+          setDeliveryStops(synced as any);
+        } else {
+          setDeliveryStops(routeStops as any);
+        }
+      } catch (err) {
+        console.warn("Could not fetch shipper orders for comparison", err);
+        setShipperOrdersList(null);
+        setDeliveryStops(routeStops as any);
+      }
     } catch (error) {
       console.error("Error fetching route data:", error);
       message.error("Lỗi khi tải dữ liệu lộ trình");
@@ -119,6 +156,11 @@ const ShipperDeliveryRoute: React.FC = () => {
         }
       },
     });
+  };
+
+  const openMapModal = (address: string) => {
+    setMapModalAddress(address);
+    setMapModalOpen(true);
   };
 
   const handleNavigateToStop = (stop: DeliveryStop) => {
@@ -233,10 +275,51 @@ const ShipperDeliveryRoute: React.FC = () => {
               <Button type="primary" icon={<CompassOutlined />} onClick={() => navigate("/shipper/orders")}>
                 Xem đơn hàng
               </Button>
+              <Button onClick={() => {
+                if (deliveryStops && deliveryStops.length > 0) {
+                  openMapModal(deliveryStops[0].recipientAddress);
+                } else {
+                  message.warning("Không có điểm dừng để hiển thị");
+                }
+              }}>
+                Xem bản đồ tuyến
+              </Button>
             </>
           )}
         </Space>
       </Card>
+
+      <Card title="Bản đồ tuyến" style={{ marginBottom: 24 }}>
+        <div style={{ width: "100%", height: 360 }}>
+          {(() => {
+            const first = deliveryStops && deliveryStops.length > 0 ? deliveryStops[0] : null;
+            let src = `https://www.google.com/maps?q=Vietnam&output=embed`;
+            if (first) {
+              const anyFirst = first as any;
+              const lat = anyFirst.latitude ?? anyFirst.lat ?? anyFirst.recipientLatitude ?? null;
+              const lng = anyFirst.longitude ?? anyFirst.lng ?? anyFirst.recipientLongitude ?? null;
+              if (lat != null && lng != null) {
+                src = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+              } else if (first.recipientAddress) {
+                src = `https://www.google.com/maps?q=${encodeURIComponent(first.recipientAddress)}&z=15&output=embed`;
+              }
+            }
+
+            return (
+              <iframe
+                title="route-inline-map"
+                src={src}
+                style={{ width: "100%", height: "100%", border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            );
+          })()}
+        </div>
+      </Card>
+
+      
 
       <Card title="Danh sách điểm giao hàng">
         <List
@@ -345,6 +428,30 @@ const ShipperDeliveryRoute: React.FC = () => {
               Mở Google Maps
             </Button>
           </Space>
+        )}
+      </Modal>
+
+      <Modal
+        title={mapModalAddress ? "Bản đồ điểm dừng" : "Bản đồ"}
+        open={mapModalOpen}
+        onCancel={() => {
+          setMapModalOpen(false);
+          setMapModalAddress(null);
+        }}
+        footer={null}
+        width={800}
+      >
+        {mapModalAddress && (
+          <div style={{ width: "100%", height: 500 }}>
+            <iframe
+              title="office-map"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(mapModalAddress)}&z=15&output=embed`}
+              style={{ width: "100%", height: "100%", border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         )}
       </Modal>
     </div>

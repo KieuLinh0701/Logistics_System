@@ -12,6 +12,7 @@ import {
   message,
   Spin,
   Alert,
+  Modal,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -29,6 +30,8 @@ const DriverRoute: React.FC = () => {
   const [routeInfo, setRouteInfo] = useState<DriverRouteInfo | null>(null);
   const [deliveryStops, setDeliveryStops] = useState<DriverDeliveryStop[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [mapModalAddress, setMapModalAddress] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRouteData();
@@ -55,6 +58,11 @@ const DriverRoute: React.FC = () => {
       window.open(mapsUrl, "_blank");
       message.success(`Đã mở bản đồ đến ${stop.officeName}`);
     }
+  };
+
+  const openMapModal = (address: string) => {
+    setMapModalAddress(address);
+    setMapModalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -150,6 +158,35 @@ const DriverRoute: React.FC = () => {
             )}
           </Col>
         </Row>
+        <div style={{ marginTop: 12 }}>
+          <div style={{ width: "100%", height: 360 }}>
+            {(() => {
+              const first = deliveryStops && deliveryStops.length > 0 ? deliveryStops[0] : null;
+              let src = `https://www.google.com/maps?q=Vietnam&output=embed`;
+              if (first) {
+                const anyFirst = first as any;
+                const lat = anyFirst.latitude ?? anyFirst.lat ?? anyFirst.officeLatitude ?? null;
+                const lng = anyFirst.longitude ?? anyFirst.lng ?? anyFirst.officeLongitude ?? null;
+                if (lat != null && lng != null) {
+                  src = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+                } else if (first.officeAddress) {
+                  src = `https://www.google.com/maps?q=${encodeURIComponent(first.officeAddress)}&z=15&output=embed`;
+                }
+              }
+
+              return (
+                <iframe
+                  title="route-inline-map"
+                  src={src}
+                  style={{ width: "100%", height: "100%", border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              );
+            })()}
+          </div>
+        </div>
       </Card>
 
       <Card title="Danh sách điểm dừng">
@@ -210,8 +247,33 @@ const DriverRoute: React.FC = () => {
           )}
         />
       </Card>
+      <Modal
+        title={mapModalAddress ? "Bản đồ điểm dừng" : "Bản đồ"}
+        open={mapModalOpen}
+        onCancel={() => {
+          setMapModalOpen(false);
+          setMapModalAddress(null);
+        }}
+        footer={null}
+        width={800}
+      >
+        {mapModalAddress && (
+          <div style={{ width: "100%", height: 500 }}>
+            <iframe
+              title="route-map"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(mapModalAddress)}&z=15&output=embed`}
+              style={{ width: "100%", height: "100%", border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
 
 export default DriverRoute;
+
+
