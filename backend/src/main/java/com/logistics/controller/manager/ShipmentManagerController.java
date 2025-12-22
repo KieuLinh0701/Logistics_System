@@ -2,11 +2,11 @@ package com.logistics.controller.manager;
 
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
+import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.shipment.ManagerOrdersShipmentSearchRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentAddEditRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentSearchRequest;
-import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentEditRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.ShipmentManagerService;

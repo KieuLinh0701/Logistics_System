@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
+import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.entity.Account;
 import com.logistics.entity.AccountRole;
 import com.logistics.entity.Employee;
@@ -131,6 +133,66 @@ public class EmployeeManagerService {
             data.setPagination(pagination);
 
             return new ApiResponse<>(true, "Lấy danh sách nhân viên thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<ListResponse<ManagerEmployeePerformanceDto>> getEmployeePerformance(
+            int userId,
+            SearchRequest request) {
+
+        try {
+            Office office = getManagedOfficeByUserId(userId);
+
+            int page = request.getPage();
+            int limit = request.getLimit();
+            String search = request.getSearch();
+            String status = request.getStatus();
+            String role = request.getRole();
+            String shift = request.getShift();
+
+            EmployeeShift employeeShift = null;
+            EmployeeStatus employeeStatus = null;
+
+            if (shift != null && !shift.isBlank()) {
+                try {
+                    employeeShift = EmployeeShift.valueOf(shift.trim().toUpperCase());
+                } catch (IllegalArgumentException ex) {
+                    throw new BadRequestException("Ca làm việc không hợp lệ");
+                }
+            }
+
+            if (status != null && !status.isBlank()) {
+                try {
+                    employeeStatus = EmployeeStatus.valueOf(status.trim().toUpperCase());
+                } catch (IllegalArgumentException ex) {
+                    throw new BadRequestException("Trạng thái làm việc không hợp lệ");
+                }
+            }
+
+            Pageable pageable = PageRequest.of(page - 1, limit);
+
+            Page<ManagerEmployeePerformanceDto> pageData = employeeRepository.getEmployeePerformance(
+                    office.getId(),
+                    search == null || search.isBlank() ? null : search,
+                    role,
+                    employeeShift,
+                    employeeStatus,
+                    pageable);
+
+            Pagination pagination = new Pagination(
+                    (int) pageData.getTotalElements(),
+                    page,
+                    limit,
+                    pageData.getTotalPages());
+
+            ListResponse<ManagerEmployeePerformanceDto> data = new ListResponse<>();
+            data.setList(pageData.getContent());
+            data.setPagination(pagination);
+
+            return new ApiResponse<>(true, "Lấy hiệu suất nhân viên thành công", data);
+
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }

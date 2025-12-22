@@ -3,6 +3,7 @@ package com.logistics.utils;
 import java.util.Set;
 
 import com.logistics.enums.OrderCreatorType;
+import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
 
 public class OrderUtils {
@@ -97,26 +98,53 @@ public class OrderUtils {
         return VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE.contains(status);
     }
 
+    // Những trạng thái mà Manager được phép chuyển sang trạng thái Xác nhận
+    // (CONFIRMED)
+    private static final Set<OrderStatus> STATUSES_ALLOWED_TO_CONFIRMED_FOR_MANAGER = Set.of(
+            OrderStatus.PENDING);
+
+    public static boolean canManagerConfirm(OrderStatus status, OrderPickupType pickupType) {
+        return STATUSES_ALLOWED_TO_CONFIRMED_FOR_MANAGER.contains(status)
+                && pickupType == OrderPickupType.AT_OFFICE;
+    }
+
     public static String translateOrderStatus(OrderStatus status) {
-        if (status == null) return ""; 
+        if (status == null)
+            return "";
 
         switch (status) {
-            case DRAFT: return "Bản nháp";
-            case PENDING: return "Chờ duyệt";
-            case CONFIRMED: return "Đã xác nhận";
-            case READY_FOR_PICKUP: return "Sẵn sàng để lấy";
-            case PICKING_UP: return "Đang lấy hàng";
-            case PICKED_UP: return "Đã lấy hàng";
-            case AT_ORIGIN_OFFICE: return "Tại bưu cục gốc";
-            case IN_TRANSIT: return "Đang vận chuyển";
-            case AT_DEST_OFFICE: return "Tại bưu cục đích";
-            case DELIVERING: return "Đang giao";
-            case DELIVERED: return "Đã giao hàng";
-            case FAILED_DELIVERY: return "Giao thất bại";
-            case CANCELLED: return "Đã hủy";
-            case RETURNING: return "Đang hoàn trả";
-            case RETURNED: return "Đã hoàn trả";
-            default: return status.name(); 
+            case DRAFT:
+                return "Bản nháp";
+            case PENDING:
+                return "Chờ duyệt";
+            case CONFIRMED:
+                return "Đã xác nhận";
+            case READY_FOR_PICKUP:
+                return "Sẵn sàng để lấy";
+            case PICKING_UP:
+                return "Đang lấy hàng";
+            case PICKED_UP:
+                return "Đã lấy hàng";
+            case AT_ORIGIN_OFFICE:
+                return "Tại bưu cục gốc";
+            case IN_TRANSIT:
+                return "Đang vận chuyển";
+            case AT_DEST_OFFICE:
+                return "Tại bưu cục đích";
+            case DELIVERING:
+                return "Đang giao";
+            case DELIVERED:
+                return "Đã giao hàng";
+            case FAILED_DELIVERY:
+                return "Giao thất bại";
+            case CANCELLED:
+                return "Đã hủy";
+            case RETURNING:
+                return "Đang hoàn trả";
+            case RETURNED:
+                return "Đã hoàn trả";
+            default:
+                return status.name();
         }
     }
 

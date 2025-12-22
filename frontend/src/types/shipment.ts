@@ -2,20 +2,6 @@ import type { ManagerEmployee } from "./employee";
 import type { Office } from "./office";
 import type { Vehicle } from "./vehicle";
 
-export interface ManagerEmployeePerformanceShipment {
-  id: number;
-  code: string;
-  vehicle: {
-    licensePlate: string;
-    capacity: number;
-  }
-  status: string;
-  startTime: Date;
-  endTime: Date;
-  orderCount: number;
-  totalWeight: number;
-}
-
 export interface ManagerShipment {
   id: number;
   code: string;
@@ -37,6 +23,9 @@ export interface ManagerShipment {
   endTime: string; 
   createdAt: string;
   updatedAt: string;
+
+  orderCount?: number;
+  totalWeight?: number;
 
   orders: ManagerOrderShipment[];
 }

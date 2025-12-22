@@ -317,6 +317,39 @@ public class OrderManagerService {
         return new ApiResponse<>(true, "Hủy đơn hàng thành công", true);
     }
 
+    public ApiResponse<Boolean> confirmOrder(Integer userId, Integer orderId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (!OrderUtils.canManagerConfirm(order.getStatus(), order.getPickupType())) {
+            throw new RuntimeException("Trạng thái đơn hàng hoặc hình thức lấy hàng không phù hợp");
+        }
+
+        if (order.getFromOffice() == null || !userOffice.getId().equals(order.getFromOffice().getId())) {
+            return new ApiResponse<>(false, "Bạn không có quyền xác nhận đơn hàng này", false);
+        }
+
+        order.setStatus(OrderStatus.CONFIRMED);
+        repository.save(order);
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Đơn hàng đã được xác nhận",
+                    String.format(
+                            "Đơn hàng #%s đã được xác nhận. Vui lòng chuẩn bị hàng hóa và mang đến bưu cục để hoàn tất việc gửi hàng.",
+                            order.getTrackingNumber()),
+                    "order",
+                    order.getUser().getId(),
+                    null,
+                    "orders/list",
+                    order.getTrackingNumber());
+        }
+
+        return new ApiResponse<>(true, "Xác nhận đơn hàng thành công", true);
+    }
+
     public ApiResponse<String> create(Integer userId, ManagerOrderCreateRequest request) {
         try {
             validateCreate(request);

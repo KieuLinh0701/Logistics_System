@@ -49,6 +49,7 @@ const ManagerOrderList = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
   const [modalConfirmOpenAddOrders, setModalConfirmOpenAddOrders] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
@@ -275,10 +276,10 @@ const ManagerOrderList = () => {
         message.success(result.message || "Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
         fetchOrders(page);
       } else {
-        message.error(result.message || "Có lỗi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+        message.error(result.message || "Có lỗi khi xác nhận bàn giao đơn hàng cho bưu cục xuất phát!");
       }
     } catch (err: any) {
-      message.error(err.message || "Có lỗi khi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+      message.error(err.message || "Có lỗi khi xác nhận bàn giao đơn hàng cho bưu cục xuất phát!");
     } finally {
       setLoading(false);
       setOrderId(null);
@@ -443,6 +444,35 @@ const ManagerOrderList = () => {
     }
   };
 
+  const handleConfirm = (id: number) => {
+    setOrderId(id);
+    setConfirmModalOpen(true);
+  };
+
+  const confirmConfirmOrder = async () => {
+    if (!orderId) return;
+
+    setConfirmModalOpen(false);
+
+    try {
+      setLoading(true);
+
+      const result = await orderApi.confirmManagerOrder(orderId);
+
+      if (result.success) {
+        message.success(result.message || "Xác nhận đơn hàng thành công.");
+        fetchOrders(page);
+      } else {
+        message.error(result.message || "Có lỗi khi xác nhận đơn hàng!");
+      }
+    } catch (err: any) {
+      message.error(err.message || "Có lỗi khi xác nhận đơn hàng!");
+    } finally {
+      setLoading(false);
+      setOrderId(null);
+    }
+  };
+
   useEffect(() => {
     if (!isShipmentModalOpen) return;
     fetchShipments(page);
@@ -491,6 +521,7 @@ const ManagerOrderList = () => {
           onCancel={handleCancelOrder}
           onPrint={handlePrintOrder}
           onEdit={handleEditOrder}
+          onConfirm={handleConfirm}
           onAtOriginOffice={handleAtOriginOfficeOrder}
           page={page}
           total={total}
@@ -543,10 +574,19 @@ const ManagerOrderList = () => {
 
       <ConfirmModal
         title='Xác nhận nhận hàng'
-        message='Vui lòng xác nhận rằng bạn đã nhận đơn hàng tại bưu cục để chuyển giao cho đơn vị vận chuyển.'
+        message='Bạn có chắc rằng bạn đã nhận đơn hàng này tại bưu cục để chuyển giao cho đơn vị vận chuyển không?'
         open={modalConfirmOpen}
         onOk={confirmAtOriginOfficeOrder}
         onCancel={() => setModalConfirmOpen(false)}
+        loading={loading}
+      />
+
+      <ConfirmModal
+        title="Xác nhận đơn hàng"
+        message="Bạn có chắc muốn xác nhận đơn hàng này để bưu cục tiếp nhận và xử lý không?"
+        open={confirmModalOpen}
+        onOk={confirmConfirmOrder}
+        onCancel={() => setConfirmModalOpen(false)}
         loading={loading}
       />
 

@@ -1,13 +1,14 @@
 import React from "react";
-import { Table, Button } from "antd";
+import { Table, Button, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import type { ManagerShipment } from "../../../../../types/shipment";
+import { translateShipmentStatus, translateShipmentType } from "../../../../../utils/shipmentUtils";
 
 interface Props {
   shipments: ManagerShipment[];
-  onDetail: (shipmentCode: string) => void;
+  onDetail: (id: number) => void;
   currentPage: number;
   pageSize: number;
   total: number;
@@ -31,91 +32,102 @@ const ShipmentTable: React.FC<Props> = ({
       dataIndex: "code",
       key: "code",
       align: "left",
-      render: (code) => {
-
+      render: (_, record) => {
         return (
-          <span
-            className="custom-table-content-strong"
-          >
-            {code}
-          </span>
+          <Tooltip title="Click để xem danh sách đơn hàng của chuyến hàng">
+            <span
+              className="navigate-link"
+              onClick={() => onDetail(record.id)}
+            >
+              {record.code}
+            </span>
+          </Tooltip>
         );
-      },
+      }
     },
     {
-      title: "Trạng thái",
-      key: "status",
-      align: "left",
-      render: (_, record) => (
-        <>
-          <span className="custom-table-content-strong">Trạng thái:</span><br />
-          {record.status || "N/A"}
-        </>
-      ),
+      title: 'Loại chuyến',
+      dataIndex: 'type',
+      key: 'type',
+      align: 'center',
+      render: (type) => translateShipmentType(type)
     },
     {
-      title: "Thông tin xe",
-      key: "vehicle",
-      align: "left",
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      align: 'center',
+      render: (status) => translateShipmentStatus(status)
+    },
+    {
+      title: 'Phương tiện',
+      dataIndex: 'vehicle',
+      key: 'vehicle',
+      align: 'center',
       render: (_, record) => {
         const vehicle = record.vehicle;
-        const plate = vehicle?.licensePlate || "N/A";
-        const capacity = vehicle?.capacity
-          ? Number(vehicle.capacity).toLocaleString("vi-VN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-          : "N/A";
+
+        if (!vehicle) {
+          return <span className="text-muted">N/A</span>;
+        }
 
         return (
-          <span className="long-column">
-            <span className="custom-table-content-strong">Biển số:</span> {plate}<br />
-            <span className="custom-table-content-strong">Tải trọng:</span> {capacity} kg
-          </span>
+          <div>
+            {vehicle.licensePlate}<br />
+            <span className='text-muted'>
+              ({vehicle.capacity} Kg)</span>
+          </div>
         );
-      },
+      }
     },
     {
-      title: "Thời gian",
-      key: "time",
-      align: "left",
+      title: 'Thời gian',
+      key: 'time',
+      align: 'left',
       render: (_, record) => {
-        const start = record.startTime
-          ? dayjs(record.startTime).format("DD/MM/YYYY HH:mm")
-          : "N/A";
+        const startTime = record.startTime
+          ? dayjs(record.startTime).format('HH:mm:ss DD/MM/YYYY')
+          : null;
 
-        const end = record.endTime
-          ? dayjs(record.endTime).format("DD/MM/YYYY HH:mm")
-          : "N/A";
+        const endTime = record.endTime
+          ? dayjs(record.endTime).format('HH:mm:ss DD/MM/YYYY')
+          : null;
+
+        if (!startTime && !endTime) {
+          return <span className="text-muted">N/A</span>;
+        }
 
         return (
-          <>
-            <span className="custom-table-content-strong">Bắt đầu:</span><br />
-            {start}<br />
-            <span className="custom-table-content-strong">Kết thúc:</span><br />
-            {end}
-          </>
+          <div>
+            {startTime && (
+              <div>
+                {startTime}
+              </div>
+            )}
+            {endTime && (
+              <div>
+                - {endTime}
+              </div>
+            )}
+          </div>
         );
-      },
+      }
     },
-    // {
-    //   title: "Thông tin chuyến đi",
-    //   key: "tripInfo",
-    //   align: "left",
-    //   render: (_, record) => {
-    //     const totalOrders = record.orderCount?.toLocaleString("vi-VN") || "0";
-    //     const weight = record.totalWeight
-    //       ? Number(record.totalWeight).toFixed(2)
-    //       : "0.00";
-
-    //     return (
-    //       <>
-    //         <span className="custom-table-content-strong">Tổng đơn:</span> {totalOrders}<br />
-    //         <span className="custom-table-content-strong">Tổng trọng lượng:</span> {weight} kg
-    //       </>
-    //     );
-    //   },
-    // },
+    {
+      title: "Tổng đơn",
+      dataIndex: "orderCount",
+      key: "orderCount",
+      align: "center",
+      render: (value) => value?.toLocaleString("vi-VN") || "0",
+    },
+    {
+      title: "Tổng trọng lượng (kg)",
+      dataIndex: "totalWeight",
+      key: "totalWeight",
+      align: "center",
+      render: (value) =>
+        value ? Number(value).toFixed(2) : "0.00",
+    },
     {
       key: "action",
       align: "center",
@@ -123,9 +135,9 @@ const ShipmentTable: React.FC<Props> = ({
         <Button
           className="action-button-link"
           type="link"
-          onClick={() => onDetail(record.code)}
+          onClick={() => onDetail(record.id)}
         >
-          Xem đơn hàng
+          DS Đơn hàng
         </Button>
       ),
     },
@@ -145,7 +157,7 @@ const ShipmentTable: React.FC<Props> = ({
           total,
           onChange: onPageChange,
         }}
-        />
+      />
     </div>
   );
 }

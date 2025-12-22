@@ -72,6 +72,7 @@ public class OrderManagerController {
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<Boolean>> cancelOrder(@PathVariable Integer id,
             HttpServletRequest request) {
+        System.out.println("Ba");
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.cancelOrder(userId, id));
@@ -99,8 +100,18 @@ public class OrderManagerController {
     @PatchMapping("/{id}/at-origin-office")
     public ResponseEntity<ApiResponse<Boolean>> setOrderAtOriginOffice(@PathVariable Integer id,
             HttpServletRequest request) {
+
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.setOrderAtOriginOffice(userId, id));
+    }
+
+    @PatchMapping("/{id}/confirm")
+    public ResponseEntity<ApiResponse<Boolean>> confirmOrder(@PathVariable Integer id,
+            HttpServletRequest request) {
+        System.out.println("Hi");
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.confirmOrder(userId, id));
     }
 }

@@ -6,13 +6,14 @@ import type { ColumnsType } from "antd/es/table";
 import type { Order } from "../../../../../types/order";
 import locationApi from "../../../../../api/locationApi";
 import dayjs from 'dayjs';
-import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canEditManagerOrder, canPrintManagerOrder, translateOrderCreatorType, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
+import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, translateOrderCreatorType, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
 
 interface Props {
   orders: Order[];
   onCancel: (id: number) => void;
   onPrint: (id: number) => void;
   onAtOriginOffice: (id: number) => void;
+  onConfirm: (id: number) => void;
   onEdit: (id: number, trackingNumber: string) => void;
   page: number;
   limit: number;
@@ -29,6 +30,7 @@ const OrderTable: React.FC<Props> = ({
   onCancel,
   onPrint,
   onEdit,
+  onConfirm,
   onAtOriginOffice,
   page,
   limit,
@@ -229,6 +231,7 @@ const OrderTable: React.FC<Props> = ({
       align: "center",
       render: (_, record) => {
         const canCancel = canCancelManagerOrder(record.status, record.createdByType);
+        const canConfirm = canConfirmManagerOrder(record.status, record.pickupType);
         const canEdit = canEditManagerOrder(record.status);
         const canPrint = canPrintManagerOrder(record.status);
         const canAtOriginOffice = canAtOriginOfficeManagerOrder(record.status) && record.pickupType === 'AT_OFFICE';
@@ -239,6 +242,13 @@ const OrderTable: React.FC<Props> = ({
             icon: <PrinterOutlined />,
             label: "In phiếu",
             onClick: () => onPrint(record.id),
+          }] : []),
+
+          ...(canConfirm ? [{
+            key: "confirm",
+            icon: <CheckCircleOutlined />,
+            label: "Xác nhận",
+            onClick: () => onConfirm(record.id),
           }] : []),
 
           ...(canAtOriginOffice ? [{

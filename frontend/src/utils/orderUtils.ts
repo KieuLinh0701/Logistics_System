@@ -58,6 +58,15 @@ export const canCancelManagerOrder = (
   return MANAGER_CANCEL_OFFICE_ORDER_STATUSES.includes(status);
 };
 
+const MANAGER_CONFIRM_ORDER_STATUSES: readonly OrderStatus[] = [
+  "PENDING",
+];
+export const canConfirmManagerOrder = (
+  status: OrderStatus,
+  creatorType: OrderPickupType
+): boolean => {
+  return MANAGER_CONFIRM_ORDER_STATUSES.includes(status) && creatorType === "AT_OFFICE";
+};
 
 export const canAtOriginOfficeManagerOrder = (value: string) => {
   return ["CONFIRMED"].includes(value)
@@ -102,6 +111,7 @@ export const translateOrderPaymentStatus = (value: string): string => {
 };
 
 export const ORDER_PICKUP_TYPES = ['PICKUP_BY_COURIER', 'AT_OFFICE'] as const;
+export type OrderPickupType = typeof ORDER_PICKUP_TYPES[keyof typeof ORDER_PICKUP_TYPES];
 export const translateOrderPickupType = (value: string): string => {
   switch (value) {
     case 'PICKUP_BY_COURIER': return 'Lấy hàng tại nhà';

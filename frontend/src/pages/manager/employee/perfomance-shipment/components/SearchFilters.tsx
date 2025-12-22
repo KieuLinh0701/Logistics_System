@@ -34,7 +34,7 @@ const SearchFilters: React.FC<Props> = ({
           <div className="list-page-actions">
             <Input
               className="search-input"
-              placeholder="Tìm kiếm theo mã chuyến xe"
+              placeholder="Tìm kiếm theo mã chuyến hàng"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
@@ -47,7 +47,6 @@ const SearchFilters: React.FC<Props> = ({
               onChange={(val) => setFilters("sort", val)}
               listHeight={SHIPMENT_FILTER_SORT.length * 40 + 50}
             >
-              <Select.Option value="NONE">Không áp dụng sắp xếp</Select.Option>
               {SHIPMENT_FILTER_SORT.map((t) => (
                 <Option key={t} value={t}>{translateShipmentFilterSort(t)}</Option>
               ))}
@@ -58,7 +57,7 @@ const SearchFilters: React.FC<Props> = ({
               value={filters.status}
               onChange={(val) => setFilters("status", val)}
             >
-              <Select.Option value="All">Tất cả trạng thái</Select.Option>
+              <Select.Option value="ALL">Tất cả trạng thái</Select.Option>
               {SHIPMENT_STATUSES.map((s) => (
                 <Select.Option key={s} value={s}>
                   {translateShipmentStatus(s)}

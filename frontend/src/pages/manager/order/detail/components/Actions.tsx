@@ -5,10 +5,12 @@ interface Props {
   canEdit: boolean;
   canCancel: boolean;
   canPrint: boolean;
+  canConfirm: boolean;
   canSetAtOriginOffice: boolean;
   onEdit: () => void;
   onCancel: () => void;
   onPrint: () => void;
+  onConfirm: () => void;
   onSetAtOriginOffice: () => void;
 }
 
@@ -16,10 +18,12 @@ const Actions: React.FC<Props> = ({
   canEdit,
   canCancel,
   canPrint,
+  canConfirm,
   canSetAtOriginOffice,
   onEdit,
   onCancel,
   onPrint,
+  onConfirm,
   onSetAtOriginOffice
 }) => (
   <div className="order-detail-actions-container">
@@ -55,6 +59,12 @@ const Actions: React.FC<Props> = ({
       {canSetAtOriginOffice && (
         <button className="order-detail-public-btn" onClick={onSetAtOriginOffice}>
           <CheckCircleOutlined /> Đã đến bưu cục
+        </button>
+      )}
+
+      {canConfirm && (
+        <button className="order-detail-public-btn" onClick={onConfirm}>
+          <CheckCircleOutlined /> Xác nhận
         </button>
       )}
     </div>

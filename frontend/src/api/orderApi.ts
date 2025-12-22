@@ -120,6 +120,11 @@ const orderApi = {
     return res;
   },
 
+  async confirmManagerOrder(id: number) {
+    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/confirm`);
+    return res;
+  },
+
   // Pubic
   async getPublicOrderByTrackingNumber(trackingNumber: string) {
     const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);

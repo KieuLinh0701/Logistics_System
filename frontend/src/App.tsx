@@ -53,6 +53,7 @@ import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
 import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
+import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 
 const App: React.FC = () => {
   return (
@@ -122,8 +123,8 @@ const App: React.FC = () => {
             <Route path="/supports" element={<PrivateRoute allowedRoles={['manager']}><ManagerShippingRequests /></PrivateRoute>} />
             <Route path="/employees/list" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeeList /></PrivateRoute>} />
             <Route path="/employees/performance" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerformance /></PrivateRoute>} />
-            {/* <Route path="employees/performance/:employeeCode/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerfomanceShipment /></PrivateRoute>} /> */}
-            {/* <Route path="employees/performance/:employeeCode/shipments/:shipmentCode/orders" element={<ShipmentOrders />} /> */}
+            <Route path="employees/performance/:employeeId/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerfomanceShipment /></PrivateRoute>} />
+            <Route path="employees/performance/:employeeId/shipments/:shipmentId/orders" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipmentOrders /></PrivateRoute>} />
             <Route path="/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipments /></PrivateRoute>} />
             <Route path="/shipments/:shipmentId/orders" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipmentOrders /></PrivateRoute>} />
             <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />

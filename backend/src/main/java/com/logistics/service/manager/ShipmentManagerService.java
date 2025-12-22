@@ -2,11 +2,11 @@ package com.logistics.service.manager;
 
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
+import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
 import com.logistics.entity.Shipment;
 import com.logistics.entity.Vehicle;
-import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
 import com.logistics.mapper.OrderMapper;
@@ -460,4 +460,83 @@ public class ShipmentManagerService {
         }
     }
 
+    public ApiResponse<ListResponse<ManagerShipmentPerformanceDto>> getShipmentsByEmployeeId(int userId,
+            int employeeId,
+            SearchRequest request) {
+        try {
+            int page = request.getPage();
+            int limit = request.getLimit();
+            String search = request.getSearch();
+            String status = request.getStatus();
+            String sort = request.getSort();
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                    ? LocalDateTime.parse(request.getStartDate())
+                    : null;
+
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                    ? LocalDateTime.parse(request.getEndDate())
+                    : null;
+
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+            Employee emp = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên này"));
+
+            if (!emp.getOffice().getId().equals(userOffice.getId())) {
+                return new ApiResponse<>(false,
+                        "Bạn chỉ có thể xem danh sách chuyến hàng của nhân viên trong bưu cục của mình.", null);
+            }
+
+            Specification<Shipment> spec = ShipmentSpecification.unrestricted()
+                    .and(ShipmentSpecification.employeeId(emp.getId()))
+                    .and(ShipmentSpecification.searchByCode(search))
+                    .and(ShipmentSpecification.status(status))
+                    .and(ShipmentSpecification.createdAtBetween(startDate, endDate));
+
+            Sort sortOpt = switch (sort.toLowerCase()) {
+                case "newest" -> Sort.by("createdAt").descending();
+                case "oldest" -> Sort.by("createdAt").ascending();
+                default -> Sort.unsorted();
+            };
+
+            Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
+            Page<Shipment> pageData = repository.findAll(spec, pageable);
+
+            List<ManagerShipmentPerformanceDto> list = pageData.getContent()
+                    .stream()
+                    .map(shipment -> {
+
+                        long orderCount = shipment.getShipmentOrders() != null
+                                ? shipment.getShipmentOrders().size()
+                                : 0;
+
+                        long totalWeight = shipment.getShipmentOrders() != null
+                                ? shipment.getShipmentOrders()
+                                        .stream()
+                                        .map(so -> so.getOrder())
+                                        .filter(o -> o != null && o.getWeight() != null)
+                                        .mapToLong(o -> o.getWeight().longValue())
+                                        .sum()
+                                : 0;
+
+                        return ShipmentMapper.toManagerShipmentPerformanceDto(
+                                shipment,
+                                orderCount,
+                                totalWeight);
+                    })
+                    .toList();
+
+            int total = (int) pageData.getTotalElements();
+
+            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+
+            ListResponse<ManagerShipmentPerformanceDto> data = new ListResponse<>();
+            data.setList(list);
+            data.setPagination(pagination);
+
+            return new ApiResponse<>(true, "Lấy danh sách chuyến hàng của nhân viên thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Đã xảy ra lỗi: " + e.getMessage(), null);
+        }
+    }
 }

@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Col, message, Row, Tag } from "antd";
-import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import EmployeeTable from "./components/Table";
 import Actions from "./components/Actions";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ManagerEmployeePerformanceData } from "../../../../types/employee";
 import Title from "antd/es/typography/Title";
 import { BarChartOutlined } from "@ant-design/icons";
+import employeeApi from "../../../../api/employeeApi";
 
 const ManagerEmployeePerformance = () => {
   const navigate = useNavigate();
+  const latestRequestRef = useRef(0);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,28 +20,64 @@ const ManagerEmployeePerformance = () => {
   const [total, setTotal] = useState(0);
 
   const [searchText, setSearchText] = useState("");
-  const [filterSort, setFilterSort] = useState("NONE");
   const [filterRole, setFilterRole] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterShift, setFilterShift] = useState("ALL");
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
-
   const [employeePerformances, setEmployeePerformances] = useState<ManagerEmployeePerformanceData[] | []>([]);
 
-  const fetchEmployeePerfomances = (page = currentPage, search?: string) => {
-    const payload: any = {
-      page,
-      limit: pageSize,
-      searchText: search ?? searchText,
-      sort: filterSort !== "NONE" ? filterSort : undefined,
-      role: filterRole !== "ALL" ? filterRole : undefined,
-    };
-    if (dateRange) {
-      payload.startDate = dateRange[0].startOf("day").toISOString();
-      payload.endDate = dateRange[1].endOf("day").toISOString();
-    }
+  const updateURL = () => {
+    const params: any = {};
 
-    // dispatch(getEmployeePerformance(payload));
+    if (searchText) params.search = searchText;
+    if (filterShift !== "ALL") params.shift = filterShift.toLowerCase();
+    if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
+    if (filterRole !== "ALL") params.role = filterRole;
+    if (currentPage) params.page = currentPage;
+
+    setSearchParams(params, { replace: true });
+  };
+
+  useEffect(() => {
+    const pageParam = Number(searchParams.get("page")) || 1;
+    const s = searchParams.get("search");
+    const shift = searchParams.get("shift")?.toLocaleUpperCase();
+    const status = searchParams.get("status")?.toLocaleUpperCase();
+    const r = searchParams.get("role");
+
+    setCurrentPage(pageParam);
+    if (s) setSearchText(s);
+    if (shift) setFilterShift(shift);
+    if (status) setFilterStatus(status);
+    if (r) setFilterRole(r);
+
+  }, [searchParams]);
+
+  const fetchEmployeePerfomances = async (page = currentPage) => {
+    try {
+      setLoading(true);
+      const requestId = ++latestRequestRef.current;
+      const param: any = {
+        page,
+        limit: pageSize,
+        search: searchText,
+        role: filterRole !== "ALL" ? filterRole : undefined,
+        shift: filterShift != "ALL" ? filterShift : undefined,
+      };
+
+      const result = await employeeApi.listManagerEmployeePerformances(param);
+      if (requestId !== latestRequestRef.current) return;
+      if (result.success && result.data) {
+        const list = result.data?.list || [];
+        setEmployeePerformances(list);
+        setTotal(result.data.pagination?.total || 0);
+      } else {
+        message.error(result.message || "Lỗi khi lấy danh sách nhân viên");
+      }
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi lấy danh sách nhân viên");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewEmployeeShipmentsDetail = (employeeId: number) => {
@@ -50,14 +88,8 @@ const ManagerEmployeePerformance = () => {
     try {
       const params: any = {
         searchText: searchText || undefined,
-        sort: filterSort !== "NONE" ? filterSort : undefined,
         role: filterRole !== "ALL" ? filterRole : undefined,
       };
-
-      if (dateRange) {
-        params.startDate = dateRange[0].startOf("day").toISOString();
-        params.endDate = dateRange[1].endOf("day").toISOString();
-      }
 
 
       // Api suất nhân viên
@@ -65,16 +97,10 @@ const ManagerEmployeePerformance = () => {
       message.error(error.message || "Xuất Excel thất bại!");
     }
   };
-
   useEffect(() => {
-    setCurrentPage(1);
+    updateURL();
     fetchEmployeePerfomances(currentPage);
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchEmployeePerfomances(1);
-  }, [searchText, dateRange, filterSort, filterRole]);
+  }, [currentPage, pageSize, searchText, filterRole, filterShift]);
 
   return (
     <div className="list-page-layout">
@@ -82,22 +108,18 @@ const ManagerEmployeePerformance = () => {
         <SearchFilters
           searchText={searchText}
           setSearchText={setSearchText}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          filters={{ sort: filterSort, role: filterRole, status: filterStatus, shift: filterShift }}
+          filters={{ role: filterRole, status: filterStatus, shift: filterShift }}
           setFilters={(key, val) => {
-            if (key === "sort") setFilterSort(val);
             if (key === "role") setFilterRole(val);
             if (key === "status") setFilterStatus(val);
             if (key === "shift") setFilterShift(val);
+            setCurrentPage(1);
           }}
           onReset={() => {
             setSearchText("");
-            setFilterSort("NONE");
             setFilterRole("ALL");
             setFilterStatus("ALL");
             setFilterShift("ALL");
-            setDateRange(null);
             setCurrentPage(1);
           }}
         />

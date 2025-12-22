@@ -20,20 +20,30 @@ public class ShipmentSpecification {
 
     public static Specification<Shipment> fromOffice(Integer officeId) {
         return (root, query, cb) -> {
-            if (officeId == null) return null;
+            if (officeId == null)
+                return null;
             return cb.equal(root.get("fromOffice").get("id"), officeId);
+        };
+    }
+
+    public static Specification<Shipment> employeeId(Integer id) {
+        return (root, query, cb) -> {
+            if (id == null)
+                return null;
+            return cb.equal(root.get("employee").get("id"), id);
         };
     }
 
     public static Specification<Shipment> status(String status) {
         return (root, query, cb) -> {
-            if (status == null || status.isBlank()) return null;
+            if (status == null || status.isBlank())
+                return null;
 
             ShipmentStatus parsed;
             try {
                 parsed = ShipmentStatus.valueOf(status.toUpperCase());
             } catch (Exception e) {
-                return null; 
+                return null;
             }
 
             return cb.equal(root.get("status"), parsed);
@@ -42,7 +52,8 @@ public class ShipmentSpecification {
 
     public static Specification<Shipment> type(String type) {
         return (root, query, cb) -> {
-            if (type == null || type.isBlank()) return null;
+            if (type == null || type.isBlank())
+                return null;
 
             ShipmentType parsed;
             try {
@@ -57,7 +68,8 @@ public class ShipmentSpecification {
 
     public static Specification<Shipment> search(String keyword) {
         return (root, query, cb) -> {
-            if (keyword == null || keyword.isBlank()) return null;
+            if (keyword == null || keyword.isBlank())
+                return null;
 
             String like = "%" + keyword.toLowerCase() + "%";
 
@@ -72,13 +84,27 @@ public class ShipmentSpecification {
                     cb.like(cb.lower(empJoin.get("code")), like), // mã nhân viên
                     cb.like(cb.lower(
                             cb.concat(userJoin.get("lastName"),
-                                    cb.concat(" ", userJoin.get("firstName")))
-                    ), like), 
+                                    cb.concat(" ", userJoin.get("firstName")))),
+                            like),
                     cb.like(cb.lower(userJoin.get("phoneNumber")), like), // sđt
                     cb.like(cb.lower(accountJoin.get("email")), like), // email
 
-                    cb.like(cb.lower(vehicleJoin.get("licensePlate")), like) //Biển số xe
+                    cb.like(cb.lower(vehicleJoin.get("licensePlate")), like) // Biển số xe
             );
+        };
+    }
+
+    public static Specification<Shipment> searchByCode(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) {
+                return null;
+            }
+
+            String like = "%" + keyword.toLowerCase() + "%";
+
+            return cb.like(
+                    cb.lower(root.get("code")),
+                    like);
         };
     }
 

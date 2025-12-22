@@ -2,6 +2,8 @@ import React from "react";
 import { Table, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { ManagerEmployeePerformanceData } from "../../../../../types/employee";
+import { translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
+import { translateRoleName } from "../../../../../utils/roleUtils";
 
 interface Props {
   data: ManagerEmployeePerformanceData[];
@@ -28,85 +30,93 @@ const EmployeeTable: React.FC<Props> = ({
   const columns: ColumnsType<ManagerEmployeePerformanceData> = [
     {
       title: "Nhân viên",
-      key: "employeeInfo",
+      key: "employee",
       align: "left",
-      render: (_, record) => {
-        return (
-          <div>
-            <div className="custom-table-content-strong">
-              {record.employeeName} ({record.employeeCode})
-            </div>
-
-            <div>{record.employeeRole}</div>
-
-            <div className="text-muted">
-              {record.employeePhone || "N/A"}
-            </div>
+      render: (_, record) => (
+        <div>
+          <div className="custom-table-content-strong">
+            {record.employeeName}
           </div>
-        );
-      }
+          <div className="text-muted text-sm">
+            {record.employeePhone}
+          </div>
+          <div className="text-muted text-sm">
+            {record.employeeCode} - {translateRoleName(record.employeeRole)}
+          </div>
+        </div>
+      ),
     },
     {
-      title: "Hiệu suất giao hàng",
+      title: "Làm việc",
+      key: "workingInfo",
+      align: "left",
+      render: (_, record) => (
+        <div>
+          <div>
+            {translateEmployeeShift(record.employeeShift)}
+          </div>
+          <div className="text-muted text-sm">
+            ({translateEmployeeStatus(record.employeeStatus)})
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Số Chuyến",
+      key: "shipments",
+      align: "center",
+      render: (_, record) => (
+        <div>
+          {record.totalShipments.toLocaleString("vi-VN")}
+        </div>
+      ),
+    },
+    {
+      title: "Số đơn thành công",
+      key: "orders",
+      align: "center",
+      render: (_, record) => (
+        <div>
+          {record.totalOrders.toLocaleString("vi-VN")} / {record.completedOrders.toLocaleString("vi-VN")}
+        </div>
+      ),
+    },
+    {
+      title: "Hiệu suất",
       key: "performance",
-      align: "center",
-      render: (_, record) => {
-        return (
+      align: "left",
+      render: (_, record) => (
+        <div>
           <div>
-            <div>
-              <span className="custom-table-content-strong">Tổng chuyến:</span>{" "}
-              {record.totalShipments.toLocaleString("vi-VN")}
-            </div>
-
-            <div>
-              <span className="custom-table-content-strong">Tổng đơn:</span>{" "}
-              {record.totalOrders.toLocaleString("vi-VN")}
-            </div>
-
-            <div>
-              <span className="custom-table-content-strong">Thành công:</span>{" "}
-              {record.completedOrders.toLocaleString("vi-VN")}
-            </div>
+            <span className="custom-table-content-strong">
+              Tỉ lệ giao thành công:
+            </span>{" "}
+            {record.completionRate.toFixed(2)}%
           </div>
-        );
-      }
-    },
-    {
-      title: "Tỉ lệ & Thời gian",
-      key: "rate",
-      align: "center",
-      render: (_, record) => {
-        return (
+
           <div>
-            <div>
-              <span className="custom-table-content-strong">Tỉ lệ thành công:</span>{" "}
-              {record.completionRate.toFixed(2)}%
-            </div>
-
-            <div>
-              <span className="custom-table-content-strong">Thời gian TB/đơn:</span>{" "}
-              {record.avgTimePerOrder.toFixed(2)} phút
-            </div>
+            <span className="custom-table-content-strong">
+              Thời gian TB / đơn:
+            </span>{" "}
+            {record.avgTimePerOrder.toFixed(2)} phút
           </div>
-        );
-      }
+        </div>
+      ),
     },
     {
       key: "action",
       align: "center",
-      render: (_, record) => {
-        return (
-          <Button
+      render: (_, record) => (
+        <Button
           className="action-button-link"
-            type="link"
-            size="small"
-            onClick={() => onDetail(record.id)}
-          >
-            DS chuyến đi
-          </Button>
-        );
-      }
-    }
+          type="link"
+          size="small"
+          onClick={() => onDetail(record.id)}
+        >
+          DS chuyến đi
+        </Button>
+      ),
+    },
   ];
 
   return (

@@ -1,17 +1,14 @@
 import React, { useState } from "react";
-import { Row, Col, Input, Button, Select, DatePicker, Tooltip } from "antd";
+import { Row, Col, Input, Button, Select, Tooltip } from "antd";
 import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
 import { OFFICE_MANAGER_ADDABLE_ROLES, translateRoleName } from "../../../../../utils/roleUtils";
-import { EMPLOYEE_PERFORMANCE_FILTER_SORT, EMPLOYEE_SHIFTS, EMPLOYEE_STATUSES, translateEmployeePerformanceFilterSort, translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
+import { EMPLOYEE_SHIFTS, EMPLOYEE_STATUSES, translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
 
-type FilterKeys = "sort" | "role" | 'shift' | 'status';
+type FilterKeys = "role" | 'shift' | 'status';
 
 interface Props {
   searchText: string;
   setSearchText: (val: string) => void;
-  dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null;
-  setDateRange: (val: [dayjs.Dayjs, dayjs.Dayjs] | null) => void;
   filters: Record<FilterKeys, string>;
   setFilters: (key: FilterKeys, value: string) => void;
   onReset: () => void;
@@ -22,8 +19,6 @@ const { Option } = Select;
 const SearchFilters: React.FC<Props> = ({
   searchText,
   setSearchText,
-  dateRange,
-  setDateRange,
   filters,
   setFilters,
   onReset,
@@ -46,19 +41,7 @@ const SearchFilters: React.FC<Props> = ({
             </Tooltip>
 
             <Select
-              className="filter-select-fit"
-              value={filters.sort}
-              onChange={(val) => setFilters("sort", val)}
-              listHeight={EMPLOYEE_PERFORMANCE_FILTER_SORT.length * 40 + 50}
-            >
-              <Select.Option value="NONE">Không áp dụng sắp xếp</Select.Option>
-              {EMPLOYEE_PERFORMANCE_FILTER_SORT.map((t) => (
-                <Option key={t} value={t}>{translateEmployeePerformanceFilterSort(t)}</Option>
-              ))}
-            </Select>
-
-            <Select
-              className="filter-select-fit"
+              className="filter-select"
               value={filters.shift}
               onChange={(val) => setFilters('shift', val)}
             >
@@ -86,12 +69,6 @@ const SearchFilters: React.FC<Props> = ({
                 <Option key={t} value={t}>{translateRoleName(t)}</Option>
               ))}
             </Select>
-
-            <DatePicker.RangePicker
-              className="date-picker"
-              value={dateRange as any}
-              onChange={(val) => setDateRange(val as any)}
-            />
 
             <Button
               type="default"

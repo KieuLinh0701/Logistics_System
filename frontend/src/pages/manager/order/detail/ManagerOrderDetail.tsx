@@ -13,7 +13,7 @@ import type { Order } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderStatus } from "../../../../utils/orderUtils";
+import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 
@@ -24,12 +24,14 @@ const UserOrderDetail: React.FC = () => {
 
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingView, setLoadingView] = useState(true);
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
     const fetchOrder = async () => {
-        setLoading(true);
+        setLoadingView(true);
         try {
             let result;
 
@@ -46,9 +48,9 @@ const UserOrderDetail: React.FC = () => {
             }
 
         } catch (error: any) {
-              message.error(error.message || "Lỗi tải đơn hàng");
+            message.error(error.message || "Lỗi tải đơn hàng");
         } finally {
-            setLoading(false);
+            setLoadingView(false);
         }
     };
 
@@ -80,7 +82,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Hủy đơn thất bại");
             }
         } catch (error: any) {
-              message.error(error.message || "Lỗi khi hủy đơn hàng");
+            message.error(error.message || "Lỗi khi hủy đơn hàng");
         } finally {
             setLoading(false);
             setCancelModalOpen(false);
@@ -118,7 +120,34 @@ const UserOrderDetail: React.FC = () => {
         }
     };
 
-    if (loading || !order) {
+    const handleConfirm = () => {
+        setConfirmModalOpen(true);
+    };
+
+    const confirmConfirmOrder = async () => {
+        if (!order) return;
+
+        setConfirmModalOpen(false);
+
+        try {
+            setLoading(true);
+
+            const result = await orderApi.confirmManagerOrder(order.id);
+
+            if (result.success) {
+                message.success(result.message || "Xác nhận đơn hàng thành công.");
+                fetchOrder();
+            } else {
+                message.error(result.message || "Có lỗi khi xác nhận đơn hàng!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi xác nhận đơn hàng!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loadingView || !order) {
         return <div>Đang tải chi tiết đơn hàng...</div>;
     }
 
@@ -126,6 +155,7 @@ const UserOrderDetail: React.FC = () => {
     const canCancel = canCancelManagerOrder(order.status as OrderStatus, order.createdByType as OrderCreatorType);
     const canPrint = canPrintManagerOrder(order.status);
     const canSetAtOriginOffice = canAtOriginOfficeManagerOrder(order.status);
+    const canConfirm = canConfirmManagerOrder(order.status as OrderStatus, order.pickupType as OrderPickupType);
 
     return (
         <div className="order-detail container">
@@ -161,9 +191,11 @@ const UserOrderDetail: React.FC = () => {
                 canCancel={canCancel}
                 canPrint={canPrint}
                 canSetAtOriginOffice={canSetAtOriginOffice}
+                canConfirm={canConfirm}
                 onEdit={handleEditOrder}
                 onCancel={handleCancelOrder}
                 onPrint={handlePrintOrder}
+                onConfirm={handleConfirm}
                 onSetAtOriginOffice={handleAtOriginOfficeOrder}
             />
 
@@ -176,10 +208,19 @@ const UserOrderDetail: React.FC = () => {
 
             <ConfirmModal
                 title='Xác nhận nhận hàng'
-                message='Vui lòng xác nhận rằng bạn đã nhận đơn hàng tại bưu cục để chuyển giao cho đơn vị vận chuyển.'
+                message='Bạn có chắc rằng bạn đã nhận đơn hàng này tại bưu cục để chuyển giao cho đơn vị vận chuyển không?'
                 open={modalConfirmOpen}
                 onOk={confirmAtOriginOfficeOrder}
                 onCancel={() => setModalConfirmOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Xác nhận đơn hàng"
+                message="Bạn có chắc muốn xác nhận đơn hàng này để bưu cục tiếp nhận và xử lý không?"
+                open={confirmModalOpen}
+                onOk={confirmConfirmOrder}
+                onCancel={() => setConfirmModalOpen(false)}
                 loading={loading}
             />
 

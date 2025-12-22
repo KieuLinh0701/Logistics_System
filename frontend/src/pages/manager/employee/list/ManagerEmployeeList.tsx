@@ -12,7 +12,6 @@ import {
 import dayjs from "dayjs";
 import Title from "antd/es/typography/Title";
 import type { ManagerEmployee, ManagerEmployeeSearchRequest } from "../../../../types/employee";
-import type { BulkResponse } from "../../../../types/response";
 import employeeApi from "../../../../api/employeeApi";
 import { useSearchParams } from "react-router-dom";
 import EmployeeTable from "./components/Table";
