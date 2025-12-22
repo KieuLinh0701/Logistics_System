@@ -36,4 +36,18 @@ public interface ShippingRequestRepository
             @Param("order") Order order,
             @Param("requestContent") String requestContent);
 
+        @Query("""
+                SELECT r FROM ShippingRequest r
+                LEFT JOIN FETCH r.order o
+                WHERE o.id = :orderId AND r.requestType = com.logistics.enums.ShippingRequestType.DELIVERY_REMINDER
+        """)
+        Optional<ShippingRequest> findDeliveryReminderByOrderId(@Param("orderId") Integer orderId);
+
+        @Query("""
+                SELECT r FROM ShippingRequest r
+                LEFT JOIN FETCH r.order o
+                WHERE r.id = :id
+        """)
+        Optional<ShippingRequest> findByIdWithOrder(@Param("id") Integer id);
+
 }

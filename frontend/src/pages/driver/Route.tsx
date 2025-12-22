@@ -70,6 +70,37 @@ const DriverRoute: React.FC = () => {
     }
   };
 
+  const translateStatus = (status?: string, scope: "route" | "stop" = "stop") => {
+    if (!status) return "";
+    if (scope === "route") {
+      const s = status.toString().toUpperCase();
+      switch (s) {
+        case "PENDING":
+          return "Chưa bắt đầu";
+        case "IN_TRANSIT":
+          return "Đang vận chuyển";
+        case "COMPLETED":
+          return "Hoàn tất";
+        case "CANCELLED":
+          return "Đã hủy";
+        default:
+          return status;
+      }
+    }
+
+    const sLow = status.toString().toLowerCase();
+    switch (sLow) {
+      case "pending":
+        return "Chờ giao";
+      case "in_progress":
+        return "Đang giao";
+      case "completed":
+        return "Hoàn tất";
+      default:
+        return status;
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: 24, textAlign: "center" }}>
@@ -106,17 +137,16 @@ const DriverRoute: React.FC = () => {
           <Col span={6}>
             <Statistic
               title="Trạng thái"
-              value={routeInfo.status}
+              value={translateStatus(routeInfo.status, "route")}
               valueStyle={{ textTransform: "uppercase" }}
             />
           </Col>
           <Col span={6}>
             {routeInfo.fromOffice && (
-              <div>
-                <Text type="secondary">Từ bưu cục:</Text>
-                <br />
-                <Text strong>{routeInfo.fromOffice.name}</Text>
-              </div>
+              <Statistic
+                title="Từ bưu cục"
+                value={routeInfo.fromOffice?.name}
+              />
             )}
           </Col>
         </Row>
@@ -158,7 +188,7 @@ const DriverRoute: React.FC = () => {
                 title={
                   <Space>
                     <Text strong>{stop.officeName}</Text>
-                    <Tag color={getStatusColor(stop.status)}>{stop.status}</Tag>
+                    <Tag style={{ background: 'transparent', color: '#000', border: '1px solid #d9d9d9' }}>{translateStatus(stop.status, "stop")}</Tag>
                   </Space>
                 }
                 description={

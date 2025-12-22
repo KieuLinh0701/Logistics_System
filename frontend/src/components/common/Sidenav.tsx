@@ -308,6 +308,12 @@ const Sidenav: React.FC = () => {
         icon: <CarOutlined />,
       },
       {
+        key: "/shipper/shipping-requests",
+        label: "Yêu cầu lấy hàng",
+        path: "/shipper/shipping-requests",
+        icon: <ExclamationCircleOutlined />,
+      },
+      {
         key: "/cod",
         label: "Quản lý COD",
         path: "/cod",

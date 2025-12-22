@@ -38,11 +38,23 @@ const shippingRequestApi = {
 async listManagerShippingRequests(
     params: ManagerShippingRequestSearchRequest
   ) {
-    const res =
-      await axiosClient.get<ListResponse<ShippingRequest>>(
-        "/manager/shipping-requests",
-        { params }
-      );
+    const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>(
+      "/manager/shipping-requests",
+      { params }
+    );
+    return res;
+  },
+
+  // Shipper
+  async listShipperShippingRequests() {
+    const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>(
+      "/shipper/shipping-requests"
+    );
+    return res;
+  },
+
+  async acceptShipperShippingRequest(id: number) {
+    const res = await axiosClient.post<ApiResponse<boolean>>(`/shipper/shipping-requests/${id}/accept`);
     return res;
   },
 

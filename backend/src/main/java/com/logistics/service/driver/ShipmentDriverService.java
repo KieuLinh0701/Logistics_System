@@ -38,6 +38,9 @@ public class ShipmentDriverService {
     private OrderRepository orderRepository;
 
     @Autowired
+    private com.logistics.service.assignment.AutoAssignService autoAssignService;
+
+    @Autowired
     private OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
@@ -169,6 +172,8 @@ public class ShipmentDriverService {
                 
                 orderHistoryRepository.save(history);
                 orderRepository.save(order);
+                // kích hoạt auto-assign khi đơn về bưu cục
+                autoAssignService.autoAssignOnArrival(order.getId());
             }
 
             return new ApiResponse<>(true, "Đã hoàn tất chuyến hàng", null);
@@ -277,14 +282,36 @@ public class ShipmentDriverService {
             List<Shipment> activeShipments = shipmentRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "createdAt"));
             
             if (activeShipments.isEmpty()) {
-                return new ApiResponse<>(true, "Không có chuyến hàng đang hoạt động", Map.of("routeInfo", null, "deliveryStops", Collections.emptyList()));
+                // quyết định nghiệp vụ: không có chuyến hàng đang hoạt động
+                Map<String, Object> emptyData = new HashMap<>();
+                emptyData.put("routeInfo", null);
+                emptyData.put("deliveryStops", Collections.emptyList());
+                return new ApiResponse<>(true, "Không có chuyến hàng đang hoạt động", emptyData);
             }
 
-            Shipment activeShipment = activeShipments.get(0);
-            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(activeShipment.getId());
+            // Ưu tiên chuyến hàng đang có đơn đã được gán.
+            Shipment activeShipment = null;
+            List<ShipmentOrder> shipmentOrders = new ArrayList<>();
+            for (Shipment s : activeShipments) {
+                List<ShipmentOrder> soList = shipmentOrderRepository.findByShipmentId(s.getId());
+                if (soList != null && !soList.isEmpty()) {
+                    activeShipment = s;
+                    shipmentOrders = soList;
+                    break;
+                }
+            }
+            // Nếu không có chuyến nào có đơn, chọn chuyến gần nhất
+            if (activeShipment == null) {
+                activeShipment = activeShipments.get(0);
+                shipmentOrders = shipmentOrderRepository.findByShipmentId(activeShipment.getId());
+            }
             
             if (shipmentOrders.isEmpty()) {
-                return new ApiResponse<>(true, "Chuyến hàng không có đơn", Map.of("routeInfo", null, "deliveryStops", Collections.emptyList()));
+                // quyết định nghiệp vụ: chuyến hàng tồn tại nhưng chưa có đơn
+                Map<String, Object> emptyData = new HashMap<>();
+                emptyData.put("routeInfo", null);
+                emptyData.put("deliveryStops", Collections.emptyList());
+                return new ApiResponse<>(true, "Chuyến hàng không có đơn", emptyData);
             }
 
             // Nhóm orders theo toOffice

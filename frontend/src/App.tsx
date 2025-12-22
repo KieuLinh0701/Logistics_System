@@ -65,6 +65,7 @@ import ShipperDeliveryRoute from "./pages/shipper/DeliveryRoute";
 import ShipperDeliveryHistory from "./pages/shipper/DeliveryHistory";
 import ShipperCODManagement from "./pages/shipper/CODManagement";
 import ShipperIncidentReport from "./pages/shipper/IncidentReport";
+import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
 
 // Driver
 import DriverDashboard from "./pages/driver/Dashboard";
@@ -159,6 +160,7 @@ const App: React.FC = () => {
             <Route path="/shipper/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
             <Route path="/shipper/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
             <Route path="/route" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryRoute /></PrivateRoute>} />
+            <Route path="/shipper/shipping-requests" element={<PrivateRoute allowedRoles={['shipper']}><ShippingRequests /></PrivateRoute>} />
             <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
             <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
             <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />

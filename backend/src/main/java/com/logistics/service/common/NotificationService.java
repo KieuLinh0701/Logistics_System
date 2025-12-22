@@ -38,7 +38,11 @@ public class NotificationService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void create(@NonNull String title, @NonNull String message, @NonNull String type,
-            @NonNull Integer userId, Integer creatorId, String relatedType, String relatedId) {
+            Integer userId, Integer creatorId, String relatedType, String relatedId) {
+        if (userId == null) {
+            return;
+        }
+
         Notification notification = new Notification();
 
         User user = new User();

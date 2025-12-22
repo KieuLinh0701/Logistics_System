@@ -28,6 +28,7 @@ const shipmentApi = {
     return {
       routeInfo: (data.routeInfo || null) as DriverRouteInfo | null,
       deliveryStops: (data.deliveryStops || []) as DriverDeliveryStop[],
+      debug: data.debug || null,
     };
   },
 

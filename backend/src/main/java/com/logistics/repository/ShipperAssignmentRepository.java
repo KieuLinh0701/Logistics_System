@@ -2,6 +2,8 @@ package com.logistics.repository;
 
 import com.logistics.entity.ShipperAssignment;
 import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -35,6 +37,42 @@ public interface ShipperAssignmentRepository
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt,
             @Param("excludeId") Long excludeId
+    );
+
+    @Query("""
+        SELECT sa FROM ShipperAssignment sa
+        WHERE sa.cityCode = :cityCode
+          AND sa.wardCode = :wardCode
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt >= :now)
+    """)
+    List<ShipperAssignment> findActiveByCityAndWard(
+            @Param("cityCode") Integer cityCode,
+            @Param("wardCode") Integer wardCode,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+        SELECT sa FROM ShipperAssignment sa
+        WHERE sa.cityCode = :cityCode
+          AND (sa.wardCode IS NULL OR sa.wardCode = 0)
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt >= :now)
+    """)
+    List<ShipperAssignment> findActiveByCity(
+            @Param("cityCode") Integer cityCode,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+        SELECT sa FROM ShipperAssignment sa
+        WHERE sa.shipper.id = :shipperId
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt >= :now)
+    """)
+    List<ShipperAssignment> findActiveByShipperId(
+            @Param("shipperId") Integer shipperId,
+            @Param("now") LocalDateTime now
     );
 
 }

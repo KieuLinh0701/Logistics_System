@@ -69,6 +69,8 @@ const ShipperOrders: React.FC = () => {
     switch (status) {
       case "PICKED_UP":
         return "orange";
+      case "READY_FOR_PICKUP":
+        return "blue";
       case "DELIVERING":
         return "processing";
       case "DELIVERED":
@@ -85,6 +87,8 @@ const ShipperOrders: React.FC = () => {
     switch (status) {
       case "PICKED_UP":
         return "Đã lấy hàng";
+      case "READY_FOR_PICKUP":
+        return "Sẵn sàng lấy hàng";
       case "DELIVERING":
         return "Đang giao hàng";
       case "DELIVERED":

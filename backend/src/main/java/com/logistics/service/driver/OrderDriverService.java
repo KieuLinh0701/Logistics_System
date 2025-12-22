@@ -5,6 +5,7 @@ import com.logistics.enums.OrderStatus;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.VehicleStatus;
+import com.logistics.enums.ShipmentType;
 import com.logistics.id.ShipmentOrderId;
 import com.logistics.repository.*;
 import com.logistics.request.driver.PickUpRequest;
@@ -200,6 +201,7 @@ public class OrderDriverService {
             shipment.setFromOffice(fromOffice);
             shipment.setToOffice(toOffice);
             shipment.setStatus(ShipmentStatus.PENDING);
+            shipment.setType(ShipmentType.TRANSFER);
             shipment.setStartTime(LocalDateTime.now());
             
             // Tạo mã shipment

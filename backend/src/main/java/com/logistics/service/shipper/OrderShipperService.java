@@ -59,6 +59,9 @@ public class OrderShipperService {
     private PaymentSubmissionRepository paymentSubmissionRepository;
 
     @Autowired
+    private com.logistics.service.assignment.AutoAssignService autoAssignService;
+
+    @Autowired
     private NotificationService notificationService;
 
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
@@ -94,6 +97,12 @@ public class OrderShipperService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
+
+            // Chỉ bao gồm các đơn đã được gán cho nhân viên này
+            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
+
+            // Chỉ lấy đơn thuộc về employee hiện tại (đã gán cho shipper)
+            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
             predicates.add(cb.between(root.get("createdAt"), startOfDay, endOfDay));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -156,15 +165,18 @@ public class OrderShipperService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
+            // Chỉ bao gồm các đơn đã được gán cho nhân viên này
+            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
 
-            // Đơn đã được shipper nhận / đang giao / đã giao
-            predicates.add(root.get("status").in(
+                // Đơn đã được shipper nhận / sẵn sàng để lấy / đang giao / đã giao
+                predicates.add(root.get("status").in(
                     OrderStatus.PICKED_UP,
+                    OrderStatus.READY_FOR_PICKUP,
                     OrderStatus.DELIVERING,
                     OrderStatus.DELIVERED,
                     OrderStatus.FAILED_DELIVERY,
                     OrderStatus.RETURNED
-            ));
+                ));
 
             if (status != null && !status.isBlank()) {
                 try {
@@ -217,11 +229,10 @@ public class OrderShipperService {
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
 
-            // Đơn đã đến bưu cục nhưng chưa có shipper nhận
-            predicates.add(root.get("status").in(
-                    OrderStatus.CONFIRMED,
+                // Đơn đã đến bưu cục nhưng chưa có shipper nhận (chỉ hiển thị AT_DEST_OFFICE)
+                predicates.add(root.get("status").in(
                     OrderStatus.AT_DEST_OFFICE
-            ));
+                ));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -249,6 +260,21 @@ public class OrderShipperService {
     public ApiResponse<Map<String, Object>> getOrderById(Integer id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+
+        boolean allowed = false;
+        if (order.getEmployee() != null && order.getEmployee().getId() != null) {
+            allowed = Objects.equals(order.getEmployee().getId(), employee.getId());
+        } else if (order.getToOffice() != null && officeId != null) {
+            allowed = Objects.equals(order.getToOffice().getId(), officeId);
+        }
+
+        if (!allowed) {
+            return new ApiResponse<>(false, "Không có quyền xem đơn hàng này", null);
+        }
+
         return new ApiResponse<>(true, "Lấy thông tin đơn hàng thành công", mapOrderDetail(order));
     }
 
@@ -264,11 +290,14 @@ public class OrderShipperService {
             return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
         }
 
-        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE) {
-            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận hoặc đã đến bưu cục đích", null);
+        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
         }
 
-        order.setStatus(OrderStatus.PICKED_UP);
+        // Khi shipper nhận đơn từ danh sách chưa gán, đặt trạng thái là READY_FOR_PICKUP
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        // Gán employee hiện tại khi shipper nhận đơn
+        order.setEmployee(employee);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper nhận đơn để giao");
         return new ApiResponse<>(true, "Nhận đơn thành công", null);
@@ -286,8 +315,8 @@ public class OrderShipperService {
             return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
         }
 
-        if (order.getStatus() != OrderStatus.PICKED_UP) {
-            return new ApiResponse<>(false, "Chỉ có thể hủy nhận đơn ở trạng thái đã lấy hàng", null);
+        if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            return new ApiResponse<>(false, "Chỉ có thể hủy nhận đơn ở trạng thái đã lấy hàng hoặc sẵn sàng lấy", null);
         }
 
         // Trả về trạng thái trước đó
@@ -299,6 +328,9 @@ public class OrderShipperService {
         }
 
         orderRepository.save(order);
+        if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
+            try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception ignored) {}
+        }
         return new ApiResponse<>(true, "Hủy nhận đơn thành công", null);
     }
 
@@ -518,6 +550,9 @@ public class OrderShipperService {
                     OrderStatus.FAILED_DELIVERY,
                     OrderStatus.RETURNED
             ));
+
+            // Chỉ bao gồm các đơn đã được gán cho nhân viên này
+            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
 
             if (status != null && !status.isBlank()) {
                 try {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Table, Button, Space, Tag, message, Typography } from "antd";
+import { Card, Table, Button, Space, Tag, message, Typography, Row, Col } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EyeOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -53,6 +53,8 @@ const ShipperUnassignedOrders: React.FC = () => {
       case "CONFIRMED":
       case "AT_DEST_OFFICE":
         return "blue";
+      case "READY_FOR_PICKUP":
+        return "blue";
       case "PICKED_UP":
         return "orange";
       case "DELIVERING":
@@ -74,6 +76,8 @@ const ShipperUnassignedOrders: React.FC = () => {
         return "Đã xác nhận";
       case "AT_DEST_OFFICE":
         return "Đã đến bưu cục";
+      case "READY_FOR_PICKUP":
+        return "Sẵn sàng lấy hàng";
       case "PICKED_UP":
         return "Đã lấy hàng";
       case "DELIVERING":
@@ -153,9 +157,18 @@ const ShipperUnassignedOrders: React.FC = () => {
     },
   ];
 
+  const { Title } = Typography;
+
   return (
     <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <Card title="Đơn chưa gán" bordered={false}>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Col>
+          <Title level={3} className="list-page-title-main">Đơn chưa gán</Title>
+        </Col>
+        <Col />
+      </Row>
+
+      <Card bordered={false}>
         <Table
           rowKey="id"
           loading={loading}

@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Lock;
+
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,4 +43,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
     List<Order> findByUserIdAndIdIn(Integer userId, List<Integer> orderIds);
 
     List<Order> findByIdIn(List<Integer> orderIds);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :id")
+    Optional<Order> findByIdForUpdate(@Param("id") Integer id);
 }

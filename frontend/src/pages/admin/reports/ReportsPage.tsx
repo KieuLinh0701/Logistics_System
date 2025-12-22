@@ -52,21 +52,16 @@ export default function ReportsPage() {
     try {
       const start = range[0].format('YYYY-MM-DD');
       const end = range[1].format('YYYY-MM-DD');
-      console.debug('[ReportsPage] load start', { start, end, token: sessionStorage.getItem('token') });
+      
       const f: any = await reportApi.getFinancial(start, end);
-      console.debug('[ReportsPage] getFinancial response', f);
       setFinancial((f || []).map((p: any) => ({ ...p, date: p.date, systemAmount: Number(p.systemAmount || 0), actualAmount: Number(p.actualAmount || 0) })));
       const s: any = await reportApi.getShippers(start, end);
-      console.debug('[ReportsPage] getShippers response', s);
       setShippers(s || []);
       const t: any = await reportApi.getTransferred(start, end);
-      console.debug('[ReportsPage] getTransferred response', t);
       setTransferred(t || []);
       const fee: any = await reportApi.getFees(start, end);
-      console.debug('[ReportsPage] getFees response', fee);
       setFees(fee || []);
       const ops: any = await reportApi.getOperations(start, end);
-      console.debug('[ReportsPage] getOperations response', ops);
       setOperations((ops || []).map((r: any) => ({
         ...r,
         totalOrders: Number(r.totalOrders || 0),
@@ -78,10 +73,8 @@ export default function ReportsPage() {
         returnRate: Number(r.returnRate || 0),
       })));
       const of: any = await reportApi.getOffice(start, end);
-      console.debug('[ReportsPage] getOffice response', of);
       setOffices(of || []);
       const sh: any = await reportApi.getShop(start, end);
-      console.debug('[ReportsPage] getShop response', sh);
       setShops(sh || []);
     } catch (e) {
       console.error('[ReportsPage] load error', e);
