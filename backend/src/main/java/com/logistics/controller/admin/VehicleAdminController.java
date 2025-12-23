@@ -22,17 +22,19 @@ public class VehicleAdminController {
         return !SecurityUtils.hasRole("admin");
     }
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> listVehicles(
+        @GetMapping
+        public ResponseEntity<ApiResponse<Map<String, Object>>> listVehicles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String status) {
 
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(vehicleAdminService.listVehicles(page, limit, search));
+        return ResponseEntity.ok(vehicleAdminService.listVehicles(page, limit, search, type, status));
     }
 
     @PostMapping

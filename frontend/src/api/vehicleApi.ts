@@ -3,7 +3,7 @@ import type { AdminVehicle, ManagerVehicleEditRequest, ManagerVehicleSearchReque
 import axiosClient from "./axiosClient";
 
 const vehicleApi = {
-  async listAdminVehicles(params: { page?: number; limit?: number; search?: string }) {
+  async listAdminVehicles(params: { page?: number; limit?: number; search?: string; type?: string; status?: string }) {
     const res = await axiosClient.get<ApiResponse<{ data: AdminVehicle[]; pagination: any }>>("/admin/vehicles", { params });
     return res;
   },

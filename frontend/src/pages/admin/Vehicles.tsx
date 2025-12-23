@@ -38,6 +38,8 @@ const AdminVehicles: React.FC = () => {
         page: query.page,
         limit: query.limit,
         search: query.search,
+        type: query.type,
+        status: query.status,
       });
       if (res.success && res.data) {
         setRows(res.data.data || []);
@@ -48,7 +50,7 @@ const AdminVehicles: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [query.page, query.limit, query.search]);
+  }, [query.page, query.limit, query.search, query.type, query.status]);
 
   useEffect(() => {
     fetchData();

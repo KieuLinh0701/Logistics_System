@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,16 +34,45 @@ public class VehicleAdminService {
     @Autowired
     private OfficeRepository officeRepository;
 
-    public ApiResponse<Map<String, Object>> listVehicles(int page, int limit, String search) {
+    public ApiResponse<Map<String, Object>> listVehicles(int page, int limit, String search, String type, String status) {
         try {
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-            Page<Vehicle> vehiclePage = vehicleRepository.findAll(pageable);
+            Specification<Vehicle> spec = Specification.where(null);
+
+            if (search != null && !search.trim().isEmpty()) {
+                String q = "%" + search.trim().toLowerCase() + "%";
+                spec = spec.and((root, query, cb) -> cb.or(
+                        cb.like(cb.lower(root.get("licensePlate")), q),
+                        cb.like(cb.lower(root.get("description")), q),
+                        cb.like(cb.lower(root.get("office").get("name")), q)
+                ));
+            }
+
+            if (type != null && !type.trim().isEmpty()) {
+                try {
+                    VehicleType vt = VehicleType.valueOf(type);
+                    spec = spec.and((root, query, cb) -> cb.equal(root.get("type"), vt));
+                } catch (IllegalArgumentException ex) {
+                    // ignore invalid type filter
+                }
+            }
+
+            if (status != null && !status.trim().isEmpty()) {
+                try {
+                    VehicleStatus vs = VehicleStatus.valueOf(status);
+                    spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), vs));
+                } catch (IllegalArgumentException ex) {
+                    // ignore invalid status filter
+                }
+            }
+
+            Page<Vehicle> vehiclePage = vehicleRepository.findAll(spec, pageable);
 
             List<Map<String, Object>> vehicles = vehiclePage.getContent().stream()
                     .map(this::mapVehicle)
                     .collect(Collectors.toList());
 
-            Pagination pagination = new Pagination(
+                Pagination pagination = new Pagination(
                     (int) vehiclePage.getTotalElements(),
                     page,
                     limit,

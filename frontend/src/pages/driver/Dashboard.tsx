@@ -175,7 +175,7 @@ const DriverDashboard: React.FC = () => {
         </Col>
         <Col span={14}>
           <Card
-            title="Đơn cần nhận (AT_ORIGIN_OFFICE)"
+            title="Đơn cần nhận"
             extra={<Button onClick={loadOrders}>Tải lại</Button>}
           >
             <Table

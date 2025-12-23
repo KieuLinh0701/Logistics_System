@@ -18,6 +18,7 @@ import com.logistics.request.admin.UpdateUserRequest;
 import com.logistics.entity.Account;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
+import com.logistics.entity.AccountRole;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
@@ -79,7 +80,7 @@ public class UserAdminService {
 
             return new ApiResponse<>(true, "Lấy thông tin người dùng thành công", mapAccount(account));
         } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
+            throw new RuntimeException(e);
         }
     }
 
@@ -94,18 +95,25 @@ public class UserAdminService {
                 return new ApiResponse<>(false, "Số điện thoại đã tồn tại", null);
             }
 
-            Role role = roleRepository.findById(request.getRoleId())
+                Role role = roleRepository.findById(request.getRoleId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy role"));
 
-            Account account = new Account();
-            account.setEmail(request.getEmail());
-            account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
+                Account account = new Account();
+                account.setEmail(request.getEmail());
+                account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
 
-            // Chỉnh này
-            // account.setRole(role);
-            account.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
-            account.setIsVerified(false);
-            account = accountRepository.save(account);
+                // Tạo AccountRole liên kết account <-> role
+                AccountRole ar = new AccountRole();
+                ar.setAccount(account);
+                ar.setRole(role);
+                ar.setIsActive(true);
+                List<AccountRole> ars = new java.util.ArrayList<>();
+                ars.add(ar);
+                account.setAccountRoles(ars);
+
+                account.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+                account.setIsVerified(false);
+                account = accountRepository.save(account);
 
             User user = new User();
             user.setAccount(account);
@@ -148,8 +156,38 @@ public class UserAdminService {
             if (request.getRoleId() != null) {
                 Role role = roleRepository.findById(request.getRoleId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy role"));
-                // Chỉnh này
-                // account.setRole(role);
+
+                List<AccountRole> current = account.getAccountRoles();
+                if (current == null) {
+                    current = new java.util.ArrayList<>();
+                    account.setAccountRoles(current);
+                }
+
+                AccountRole matched = null;
+                for (AccountRole ar : current) {
+                    if (ar != null && ar.getRole() != null && ar.getRole().getId() != null
+                            && ar.getRole().getId().equals(role.getId())) {
+                        matched = ar;
+                        break;
+                    }
+                }
+
+                // Deactivate others and activate matched
+                for (AccountRole ar : current) {
+                    if (ar == matched) {
+                        ar.setIsActive(true);
+                    } else {
+                        ar.setIsActive(false);
+                    }
+                }
+
+                if (matched == null) {
+                    AccountRole newAr = new AccountRole();
+                    newAr.setAccount(account);
+                    newAr.setRole(role);
+                    newAr.setIsActive(true);
+                    current.add(newAr);
+                }
             }
             if (request.getIsActive() != null) {
                 account.setIsActive(request.getIsActive());
@@ -158,7 +196,7 @@ public class UserAdminService {
 
             return new ApiResponse<>(true, "Cập nhật người dùng thành công", mapAccount(account));
         } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
+            throw new RuntimeException(e);
         }
     }
 
@@ -192,9 +230,18 @@ public class UserAdminService {
             userMap.put("createdAt", account.getUser().getCreatedAt());
             userMap.put("updatedAt", account.getUser().getUpdatedAt());
         }
-        // Chỉnh này
-        // userMap.put("role", account.getRole() != null ? account.getRole().getName() : null);
-        // userMap.put("roleId", account.getRole() != null ? account.getRole().getId() : null);
+        // Bao gồm thông tin role trong response (lấy role active đầu tiên nếu có)
+        Role activeRole = null;
+        if (account.getAccountRoles() != null) {
+            for (AccountRole ar : account.getAccountRoles()) {
+                if (ar != null && Boolean.TRUE.equals(ar.getIsActive()) && ar.getRole() != null) {
+                    activeRole = ar.getRole();
+                    break;
+                }
+            }
+        }
+        userMap.put("role", activeRole != null ? activeRole.getName() : null);
+        userMap.put("roleId", activeRole != null ? activeRole.getId() : null);
         userMap.put("isActive", account.getIsActive());
         userMap.put("isVerified", account.getIsVerified());
         return userMap;
