@@ -82,3 +82,61 @@ export interface ManagerShipmentAddEditRequest {
   toOfficeId?: number;
   employeeId?: number;
 }
+
+// DRIVER
+export interface DriverShipment {
+  id: number;
+  code: string;
+  status: string;
+  startTime?: string;
+  endTime?: string;
+  createdAt?: string;
+  vehicle?: {
+    id: number;
+    licensePlate: string;
+    type: string;
+  };
+  fromOffice?: {
+    id: number;
+    name: string;
+  };
+  toOffice?: {
+    id: number;
+    name: string;
+  };
+  orders?: Array<{
+    id: number;
+    trackingNumber: string;
+    toOffice?: {
+      id: number;
+      name: string;
+    };
+  }>;
+  orderCount?: number;
+}
+
+export interface DriverRouteInfo {
+  id: number;
+  code?: string;
+  name: string;
+  status: string;
+  totalStops: number;
+  totalOrders: number;
+  startTime?: string;
+  fromOffice?: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface DriverDeliveryStop {
+  id: number;
+  officeName: string;
+  officeAddress?: string;
+  orderCount: number;
+  orders: Array<{
+    id: number;
+    trackingNumber: string;
+  }>;
+  status: string;
+}

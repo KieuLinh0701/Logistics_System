@@ -21,12 +21,16 @@ import ShippingRates from "./pages/common/tracking/shippingRate/ShippingRates";
 import "./styles/theme.css";
 import CompanyInfo from "./pages/common/info/CompanyInfo";
 import ContactForm from "./pages/common/info/ContactForm";
-import PromotionList from "./pages/common/info/PromotionList";
+
 
 import AdminUsers from "./pages/admin/Users";
 import AdminOrders from "./pages/admin/Orders";
 import AdminPostOffices from "./pages/admin/PostOffices";
 import AdminServiceTypes from "./pages/admin/ServiceTypes";
+import AdminFeeConfigurations from "./pages/admin/FeeConfigurations";
+import AdminFinancialIndex from "./pages/admin/financial/AdminFinancialIndex";
+import ReportsPage from "./pages/admin/reports/ReportsPage";
+
 import UserProducts from "./pages/user/product/UserProducts";
 import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
 import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
@@ -55,6 +59,27 @@ import OrderEditRouter from "./pages/router/OrderEditRouter";
 import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
 import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 
+// Shipper
+import ShipperDashboard from "./pages/shipper/Dashboard";
+import ShipperOrders from "./pages/shipper/Orders";
+import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
+import ShipperOrderDetail from "./pages/shipper/OrderDetail";
+import ShipperDeliveryRoute from "./pages/shipper/DeliveryRoute";
+import ShipperDeliveryHistory from "./pages/shipper/DeliveryHistory";
+import ShipperCODManagement from "./pages/shipper/CODManagement";
+import ShipperIncidentReport from "./pages/shipper/IncidentReport";
+import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
+
+// Driver
+import DriverDashboard from "./pages/driver/Dashboard";
+import DriverOrders from "./pages/driver/Orders";
+import DriverShipments from "./pages/driver/Shipments";
+import DriverRoute from "./pages/driver/Route";
+import DriverHistory from "./pages/driver/History";
+import PromotionList from "./pages/common/info/PromotionList";
+import AdminPromotions from "./pages/admin/Promotions";
+import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
+
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={viVN}>
@@ -65,7 +90,6 @@ const App: React.FC = () => {
 
           {/* Public pages */}
           <Route path="/home" element={<Home />} />
-
           {/* Dịch vụ */}
           <Route path="/info/services" element={<ServiceTypes />} />
           <Route path="/info/company" element={<CompanyInfo />} />
@@ -95,7 +119,12 @@ const App: React.FC = () => {
             <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
             <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
             <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
-
+            <Route path="/shipping-requests" element={<PrivateRoute allowedRoles={['admin']}><ShippingRequestsAdmin /></PrivateRoute>} />
+            <Route path="/promotions" element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions /></PrivateRoute>} />
+            <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
+            <Route path="/financial" element={<PrivateRoute allowedRoles={["admin"]}><AdminFinancialIndex /></PrivateRoute>} />
+            <Route path="/reports" element={<PrivateRoute allowedRoles={["admin"]}><ReportsPage /></PrivateRoute>} />
+            
             {/* Admin & Manager routes */}
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin', 'manager']}><VehiclesRouter /></PrivateRoute>} />
 
@@ -130,6 +159,22 @@ const App: React.FC = () => {
             <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />
             <Route path="/employees/assign-history" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssignmentHistory /></PrivateRoute>} />
             <Route path="/orders/incidents" element={<PrivateRoute allowedRoles={['manager']}><ManagerIncidentReports /></PrivateRoute>} />
+
+            {/* Shipper routes */}
+            <Route path="/shipper/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
+            <Route path="/shipper/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
+            <Route path="/shipper/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
+            <Route path="/route" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryRoute /></PrivateRoute>} />
+            <Route path="/shipper/shipping-requests" element={<PrivateRoute allowedRoles={['shipper']}><ShippingRequests /></PrivateRoute>} />
+            <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
+            <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
+            <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
+
+            {/* Driver routes */}
+            <Route path="/driver/orders" element={<PrivateRoute allowedRoles={['driver']}><DriverOrders /></PrivateRoute>} />
+            <Route path="/driver/shipments" element={<PrivateRoute allowedRoles={['driver']}><DriverShipments /></PrivateRoute>} />
+            <Route path="/driver/route" element={<PrivateRoute allowedRoles={['driver']}><DriverRoute /></PrivateRoute>} />
+            <Route path="/driver/history" element={<PrivateRoute allowedRoles={['driver']}><DriverHistory /></PrivateRoute>} />
           </Route>
         </Routes>
       </Router>

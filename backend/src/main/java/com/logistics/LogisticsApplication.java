@@ -10,8 +10,8 @@ import com.logistics.config.JwtConfig;
 
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableScheduling
 @EnableConfigurationProperties(JwtConfig.class) 
+@EnableScheduling
 public class LogisticsApplication {
 
 	public static void main(String[] args) {

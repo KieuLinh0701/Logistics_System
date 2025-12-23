@@ -1,5 +1,5 @@
 import type { TokenResponse } from "../types/auth";
-import type { ApiResponse, ListResponse } from "../types/response";
+import type { ApiResponse } from "../types/response";
 import type { AdminUser, UpadteEmailData, UpadtePasswordData, VerifyEmailUpdateOTPData } from "../types/user";
 import axiosClient from "./axiosClient";
 
@@ -32,7 +32,7 @@ const userApi = {
 
   // Admin
   async listAdminUsers(params: { page?: number; limit?: number; search?: string }) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<AdminUser>>>("/admin/users", { params });
+    const res = await axiosClient.get<ApiResponse<{ data: AdminUser[]; pagination: any }>>("/admin/users", { params });
     return res;
   },
 

@@ -4,7 +4,7 @@ import axiosClient from "./axiosClient";
 
 const vehicleApi = {
   async listAdminVehicles(params: { page?: number; limit?: number; search?: string }) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<AdminVehicle>>>("/admin/vehicles", { params });
+    const res = await axiosClient.get<ApiResponse<{ data: AdminVehicle[]; pagination: any }>>("/admin/vehicles", { params });
     return res;
   },
 

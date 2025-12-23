@@ -77,21 +77,27 @@ public class RoleCheckFilter extends OncePerRequestFilter {
 
         request.setAttribute("currentRoleName", currentRoleName);
 
-        boolean authorized = SecurityUtils.PATH_ROLES.entrySet().stream()
-            .filter(entry -> path.startsWith(entry.getKey()))
-            .anyMatch(entry -> entry.getValue().contains(currentRoleName));
+        boolean needsRoleCheck = SecurityUtils.PATH_ROLES.keySet().stream()
+            .anyMatch(path::startsWith);
 
-        if (!authorized) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json; charset=UTF-8");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().write("""
-                    {
-                      "success": false,
-                      "message": "Bạn không có quyền truy cập chức năng này."
-                    }
-                    """);
-            return;
+        if (needsRoleCheck) {
+            boolean authorized = SecurityUtils.PATH_ROLES.entrySet().stream()
+                .filter(entry -> path.startsWith(entry.getKey()))
+                .anyMatch(entry -> entry.getValue().stream()
+                    .anyMatch(role -> role.equalsIgnoreCase(currentRoleName)));
+
+            if (!authorized) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json; charset=UTF-8");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write("""
+                        {
+                          "success": false,
+                          "message": "Bạn không có quyền truy cập chức năng này."
+                        }
+                        """);
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);

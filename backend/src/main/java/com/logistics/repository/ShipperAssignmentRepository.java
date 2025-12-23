@@ -42,4 +42,40 @@ public interface ShipperAssignmentRepository
         List<ShipperAssignment> findActiveAssignments(@Param("shipperId") Integer shipperId,
                         @Param("now") LocalDateTime now);
 
+    @Query("""
+        SELECT sa FROM ShipperAssignment sa
+        WHERE sa.cityCode = :cityCode
+          AND sa.wardCode = :wardCode
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt >= :now)
+    """)
+    List<ShipperAssignment> findActiveByCityAndWard(
+            @Param("cityCode") Integer cityCode,
+            @Param("wardCode") Integer wardCode,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+        SELECT sa FROM ShipperAssignment sa
+        WHERE sa.cityCode = :cityCode
+          AND (sa.wardCode IS NULL OR sa.wardCode = 0)
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt >= :now)
+    """)
+    List<ShipperAssignment> findActiveByCity(
+            @Param("cityCode") Integer cityCode,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+        SELECT sa FROM ShipperAssignment sa
+        WHERE sa.shipper.id = :shipperId
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt >= :now)
+    """)
+    List<ShipperAssignment> findActiveByShipperId(
+            @Param("shipperId") Integer shipperId,
+            @Param("now") LocalDateTime now
+    );
+
 }

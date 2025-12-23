@@ -25,7 +25,7 @@ const officeApi = {
 
   // Admin
   async listAdminOffices(params: { page?: number; limit?: number; search?: string }) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<AdminOffice>>>("/admin/offices", { params });
+    const res = await axiosClient.get<ApiResponse<{ data: AdminOffice[]; pagination: any }>>("/admin/offices", { params });
     return res;
   },
 

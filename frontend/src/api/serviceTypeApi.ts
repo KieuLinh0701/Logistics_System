@@ -15,7 +15,7 @@ const serviceTypeApi = {
   
   // Admin
   async listAdminServiceTypes(params: { page?: number; limit?: number; search?: string }) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<AdminServiceType>>>('/admin/service-types', { params });
+    const res = await axiosClient.get<ApiResponse<{ data: AdminServiceType[]; pagination: any }>>('/admin/service-types', { params });
     return res;
   },
 

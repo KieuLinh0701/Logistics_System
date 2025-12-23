@@ -53,4 +53,18 @@ public interface ShippingRequestRepository
                         "FROM ShippingRequest sr WHERE sr.office.id = :officeId")
         ManagerShippingRequestStatsDTO getShippingRequestStatsByOffice(@Param("officeId") Integer officeId);
 
+        @Query("""
+                SELECT r FROM ShippingRequest r
+                LEFT JOIN FETCH r.order o
+                WHERE o.id = :orderId AND r.requestType = com.logistics.enums.ShippingRequestType.DELIVERY_REMINDER
+        """)
+        Optional<ShippingRequest> findDeliveryReminderByOrderId(@Param("orderId") Integer orderId);
+
+        @Query("""
+                SELECT r FROM ShippingRequest r
+                LEFT JOIN FETCH r.order o
+                WHERE r.id = :id
+        """)
+        Optional<ShippingRequest> findByIdWithOrder(@Param("id") Integer id);
+
 }

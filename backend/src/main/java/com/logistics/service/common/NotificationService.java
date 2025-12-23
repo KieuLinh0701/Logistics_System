@@ -1,7 +1,9 @@
 package com.logistics.service.common;
 
 import com.logistics.dto.NotificationDto;
+import com.logistics.entity.Office;
 import com.logistics.entity.Notification;
+import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.mapper.NotificationMapper;
 import com.logistics.repository.NotificationRepository;
@@ -36,7 +38,11 @@ public class NotificationService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void create(@NonNull String title, @NonNull String message, @NonNull String type,
-            @NonNull Integer userId, Integer creatorId, String relatedType, String relatedId) {
+            Integer userId, Integer creatorId, String relatedType, String relatedId) {
+        if (userId == null) {
+            return;
+        }
+
         Notification notification = new Notification();
 
         User user = new User();
@@ -132,6 +138,20 @@ public class NotificationService {
             return new ApiResponse<>(true, "Đã đánh dấu tất cả thông báo đã đọc", null);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi khi đánh dấu tất cả thông báo đã đọc: " + e.getMessage(), null);
+        }
+    }
+
+    public void notifyOfficeManagerOnShippingRequestAssigned(Office office, ShippingRequest req) {
+        if (office == null || req == null) return;
+        try {
+            com.logistics.entity.Employee managerEmp = office.getManager();
+            if (managerEmp != null && managerEmp.getUser() != null) {
+                User managerUser = managerEmp.getUser();
+                String title = "Yêu cầu hỗ trợ mới được phân công";
+                String message = "Bạn vừa được phân công xử lý yêu cầu hỗ trợ #" + req.getCode();
+                this.create(title, message, "SHIPPING_REQUEST_ASSIGN", managerUser.getId(), null, "ShippingRequest", req.getId() + "");
+            }
+        } catch (Exception ignored) {
         }
     }
 }

@@ -75,6 +75,12 @@ const Sidenav: React.FC = () => {
         icon: <ShoppingCartOutlined />,
       },
       {
+        key: "/shipping-requests",
+        label: "Yêu cầu hỗ trợ",
+        path: "/shipping-requests",
+        icon: <ExclamationCircleOutlined />,
+      },
+      {
         key: "/vehicles",
         label: "Phương tiện",
         path: "/vehicles",
@@ -85,6 +91,12 @@ const Sidenav: React.FC = () => {
         label: "Khuyến mãi",
         path: "/promotions",
         icon: <GiftOutlined />,
+      },
+      {
+        key: "/fee-configurations",
+        label: "Cấu hình phí",
+        path: "/fee-configurations",
+        icon: <DollarOutlined />,
       },
       {
         key: "/reports",
@@ -277,14 +289,14 @@ const Sidenav: React.FC = () => {
         icon: <ShoppingOutlined />,
         children: [
           {
-            key: "/orders-unassigned",
+            key: "/shipper/orders-unassigned",
             label: "Danh sách đơn hàng",
-            path: "/orders-unassigned",
+            path: "/shipper/orders-unassigned",
           },
           {
-            key: "/orders",
+            key: "/shipper/orders",
             label: "Đơn hàng cần giao",
-            path: "/orders",
+            path: "/shipper/orders",
           },
         ],
       },
@@ -295,10 +307,10 @@ const Sidenav: React.FC = () => {
         icon: <CarOutlined />,
       },
       {
-        key: "/pickup",
-        label: "Nhận/Trả hàng",
-        path: "/pickup",
-        icon: <InboxOutlined />,
+        key: "/shipper/shipping-requests",
+        label: "Yêu cầu lấy hàng",
+        path: "/shipper/shipping-requests",
+        icon: <ExclamationCircleOutlined />,
       },
       {
         key: "/cod",
@@ -333,27 +345,27 @@ const Sidenav: React.FC = () => {
         icon: <DashboardOutlined />,
       },
       {
-        key: "/orders",
+        key: "/driver/orders",
         label: "Đơn hàng cần nhận",
-        path: "/orders",
+        path: "/driver/orders",
         icon: <ShoppingOutlined />,
       },
       {
-        key: "/shipments",
+        key: "/driver/shipments",
         label: "Quản lý chuyến vận chuyển",
-        path: "/shipments",
+        path: "/driver/shipments",
         icon: <TruckOutlined />,
       },
       {
-        key: "/route",
+        key: "/driver/route",
         label: "Lộ trình vận chuyển",
-        path: "/route",
+        path: "/driver/route",
         icon: <EnvironmentOutlined />,
       },
       {
-        key: "/history",
+        key: "/driver/history",
         label: "Lịch sử vận chuyển",
-        path: "/history",
+        path: "/driver/history",
         icon: <ClockCircleOutlined />,
       },
       {
