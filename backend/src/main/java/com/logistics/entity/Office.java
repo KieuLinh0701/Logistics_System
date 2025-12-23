@@ -3,6 +3,7 @@ package com.logistics.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.hibernate.envers.Audited;
@@ -10,8 +11,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Office.OfficeStatus;
-import com.logistics.enums.Office.OfficeType;
+import com.logistics.enums.OfficeStatus;
+import com.logistics.enums.OfficeType;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,15 +37,20 @@ public class Office {
 
     // Thêm này cho in vận đơn
     @Column(length = 10, nullable = true)
-    private String postalCode; // Mã bưu chính, không cần unique (PO_Mã tỉnh bưu cục _ Mã xã bưu cục) dùng hiển thị trên vận đơn
+    private String postalCode; // Mã bưu chính, không cần unique (PO_Mã tỉnh bưu cục_Mã xã bưu cục) dùng hiển thị trên vận đơn
 
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false, unique = true)
     private String name; // Tên bưu cục, unique
 
-    // Địa chỉ liên kết entity
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "address_id")
-    private Address address;
+    // Địa chỉ bưu cục
+    @Column(nullable = false)
+    private Integer cityCode;
+    
+    @Column(nullable = false)
+    private Integer wardCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String detail;
 
     @Column(nullable = false, precision = 12, scale = 7)
     private BigDecimal latitude; // Vĩ độ

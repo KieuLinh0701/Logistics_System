@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.OTP.OTPType;
+import com.logistics.enums.OTPType;
 
 @Entity
 @Table(name = "otps")
@@ -29,7 +29,7 @@ public class OTP {
     private String otp;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10, nullable = false)
+    @Column(length = 20, nullable = false)
     private OTPType type;
 
     @Column(nullable = false)

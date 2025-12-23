@@ -1,0 +1,920 @@
+.manager-dashboard-divide {
+  margin-top: 12px;
+}
+
+.manager-dashboard-note {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 12px;
+}
+
+/* Six Stats */
+.manager-dashboard-six-overview {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+.manager-dashboard-six-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f5f5f5;
+  gap: 12px;
+}
+
+.manager-dashboard-six-title {
+  color: #1C3D90 !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.manager-dashboard-six-icon {
+  color: #1C3D90 !important;
+  font-size: 22px;
+  margin-right: 12px;
+}
+
+.manager-dashboard-six-view-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1C3D90;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.manager-dashboard-six-view-detail:hover {
+  color: #0d2a6e;
+  background: #f8f9ff;
+  text-decoration: underline;
+}
+
+.manager-dashboard-six-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.manager-dashboard-six-item {
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.manager-dashboard-six-item:hover {
+  background: #f8f9ff;
+  border-color: #e8edff;
+  transform: translateY(-2px);
+}
+
+.manager-dashboard-six-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1C3D90;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.manager-dashboard-six-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 470;
+  line-height: 1.2;
+}
+
+.manager-dashboard-six-item:first-child {
+  background: linear-gradient(135deg, #1C3D90 0%, #2E5BBA 100%);
+  border: none;
+}
+
+.manager-dashboard-six-item:first-child .manager-dashboard-six-value {
+  color: white;
+}
+
+.manager-dashboard-six-item:first-child .manager-dashboard-six-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .manager-dashboard-six-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-dashboard-six-overview {
+    padding: 16px;
+  }
+
+  .manager-dashboard-six-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .manager-dashboard-six-item {
+    padding: 10px 6px;
+  }
+
+  .manager-dashboard-six-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard-six-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .manager-dashboard-six-value {
+    font-size: 16px;
+  }
+
+  .manager-dashboard-six-label {
+    font-size: 11px;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .manager-dashboard-six-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-dashboard-six-overview {
+    padding: 16px;
+  }
+
+  .manager-dashboard-six-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .manager-dashboard-six-item {
+    padding: 10px 6px;
+  }
+
+  .manager-dashboard-six-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard-six-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .manager-dashboard-six-value {
+    font-size: 16px;
+  }
+
+  .manager-dashboard-six-label {
+    font-size: 11px;
+  }
+}
+
+/* Five Stats */
+.manager-dashboard-five-overview {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+.manager-dashboard-five-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.manager-dashboard-five-icon {
+  color: #1C3D90 !important;
+  font-size: 22px;
+  margin-right: 12px;
+}
+
+.manager-dashboard-five-title {
+  color: #1C3D90 !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.manager-dashboard-five-view-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1C3D90;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.manager-dashboard-five-view-detail:hover {
+  color: #0d2a6e;
+  background: #f8f9ff;
+  text-decoration: underline;
+}
+
+.manager-dashboard-five-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.manager-dashboard-five-item {
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.manager-dashboard-five-item:hover {
+  background: #f8f9ff;
+  border-color: #e8edff;
+  transform: translateY(-2px);
+}
+
+.manager-dashboard-five-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1C3D90;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.manager-dashboard-five-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 470;
+  line-height: 1.2;
+}
+
+.manager-dashboard-five-item:first-child {
+  background: linear-gradient(135deg, #1C3D90 0%, #2E5BBA 100%);
+  border: none;
+}
+
+.manager-dashboard-five-item:first-child .manager-dashboard-five-value {
+  color: white;
+}
+
+.manager-dashboard-five-item:first-child .manager-dashboard-five-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .manager-dashboard-five-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-dashboard-five-overview {
+    padding: 16px;
+  }
+
+  .manager-dashboard-five-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .manager-dashboard-five-item {
+    padding: 10px 6px;
+  }
+
+  .manager-dashboard-five-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard-five-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .manager-dashboard-five-value {
+    font-size: 16px;
+  }
+
+  .manager-dashboard-five-label {
+    font-size: 11px;
+  }
+}
+
+/* Date Filter */
+.manager-dashboard-date-filter-container {
+  margin-bottom: 20px;
+}
+
+.manager-dashboard-date-filter-live {
+  background-color: #fff1f0;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.manager-dashboard-date-filter-clock-icon {
+  color: #f5222d;
+  font-size: 16px;
+}
+
+.manager-dashboard-date-filter-live-text {
+  color: #f5222d;
+  margin-right: 8px;
+}
+
+.manager-dashboard-date-filter-time {
+  color: #f5222d;
+}
+
+/* Vehicle Type Chart */
+.manager-dashboard-vehicle-type-chart {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+  height: 100%;
+}
+
+.manager-dashboard-vehicle-type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.manager-dashboard-vehicle-type-title {
+  color: #1C3D90 !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.manager-dashboard-vehicle-type-view-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #1C3D90;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.manager-dashboard-vehicle-type-view-detail:hover {
+  color: #0d2a6e;
+  text-decoration: underline;
+}
+
+.view-detail-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.manager-dashboard-vehicle-type-view-detail:hover .view-detail-icon {
+  transform: translateX(2px);
+}
+
+.manager-dashboard-vehicle-type-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manager-dashboard-vehicle-type-chart-container {
+  position: relative;
+  height: 180px;
+}
+
+.manager-dashboard-vehicle-type-total {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 1;
+}
+
+.total-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1C3D90;
+  line-height: 1;
+}
+
+.total-label {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* Phụ lục mini - cực gọn */
+.manager-dashboard-vehicle-type-legend-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 12px;
+  border-top: 1px solid #f5f5f5;
+}
+
+.manager-dashboard-vehicle-type-legend-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: #fafafa;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+  font-size: 11px;
+}
+
+.legend-mini-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-mini-name {
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-mini-value {
+  color: #1C3D90;
+  font-weight: 600;
+  background: #f8f9ff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.manager-dashboard-vehicle-type-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 13px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px dashed #e8e8e8;
+}
+
+/* Custom tooltip đơn giản */
+.custom-tooltip {
+  background-color: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  font-size: 11px;
+}
+
+.tooltip-name {
+  color: #1C3D90;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tooltip-value {
+  color: #333;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .manager-dashboard-vehicle-type-chart {
+    padding: 16px;
+  }
+
+  .manager-dashboard-vehicle-type-chart-container {
+    height: 160px;
+  }
+
+  .total-value {
+    font-size: 18px;
+  }
+
+  .manager-dashboard-vehicle-type-legend-mini {
+    gap: 8px;
+  }
+
+  .manager-dashboard-vehicle-type-legend-mini-item {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .legend-mini-name {
+    max-width: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard-vehicle-type-chart-container {
+    height: 140px;
+  }
+
+  .manager-dashboard-vehicle-type-legend-mini {
+    justify-content: space-between;
+  }
+
+  .manager-dashboard-vehicle-type-legend-mini-item {
+    flex: 1;
+    min-width: calc(50% - 4px);
+    justify-content: center;
+  }
+}
+
+/* Employee Stats */
+.manager-dashboard-employee-status-overview {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+.manager-dashboard-employee-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.manager-dashboard-employee-status-title {
+  color: #1C3D90 !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.manager-dashboard-employee-status-view-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1C3D90;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.manager-dashboard-employee-status-view-detail:hover {
+  color: #0d2a6e;
+  background: #f8f9ff;
+  text-decoration: underline;
+}
+
+.manager-dashboard-employee-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.manager-dashboard-employee-status-item {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px 12px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.manager-dashboard-employee-status-item:hover {
+  background: #f8f9ff;
+  border-color: #e8edff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(28, 61, 144, 0.08);
+}
+
+.manager-dashboard-employee-status-value {
+  font-size: 28px;
+  /* Tăng từ 20px lên 28px */
+  font-weight: 700;
+  color: #1C3D90;
+  margin-bottom: 6px;
+  /* Tăng khoảng cách */
+  line-height: 1;
+}
+
+.manager-dashboard-employee-status-label {
+  font-size: 13px;
+  /* Tăng từ 12px lên 13px */
+  color: #666;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.manager-dashboard-employee-status-item.primary-item {
+  background: linear-gradient(135deg, #1C3D90 0%, #2E5BBA 100%);
+  border: none;
+  grid-column: span 2;
+  /* Chiếm 2 cột cho item đầu tiên */
+}
+
+.manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-value {
+  font-size: 32px;
+  /* To hơn cho item chính */
+  color: white;
+  font-weight: 800;
+}
+
+.manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-label {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .manager-dashboard-employee-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .manager-dashboard-employee-status-value {
+    font-size: 26px;
+  }
+
+  .manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-value {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-dashboard-employee-status-overview {
+    padding: 16px;
+  }
+
+  .manager-dashboard-employee-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .manager-dashboard-employee-status-item {
+    padding: 14px 10px;
+  }
+
+  .manager-dashboard-employee-status-value {
+    font-size: 24px;
+  }
+
+  .manager-dashboard-employee-status-label {
+    font-size: 12px;
+  }
+
+  .manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-value {
+    font-size: 28px;
+  }
+
+  .manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard-employee-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .manager-dashboard-employee-status-item {
+    padding: 12px 8px;
+  }
+
+  .manager-dashboard-employee-status-value {
+    font-size: 22px;
+  }
+
+  .manager-dashboard-employee-status-label {
+    font-size: 11px;
+  }
+
+  .manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-value {
+    font-size: 26px;
+  }
+
+  .manager-dashboard-employee-status-item.primary-item .manager-dashboard-employee-status-label {
+    font-size: 12px;
+  }
+}
+
+/* Vehicle Stats */
+.manager-dashboard-vehicle-status-overview {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+.manager-dashboard-vehicle-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.manager-dashboard-vehicle-status-title {
+  color: #1C3D90 !important;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.manager-dashboard-vehicle-status-view-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1C3D90;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.manager-dashboard-vehicle-status-view-detail:hover {
+  color: #0d2a6e;
+  background: #f8f9ff;
+  text-decoration: underline;
+}
+
+.manager-dashboard-vehicle-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.manager-dashboard-vehicle-status-item {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px 12px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.manager-dashboard-vehicle-status-item:hover {
+  background: #f8f9ff;
+  border-color: #e8edff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(28, 61, 144, 0.08);
+}
+
+.manager-dashboard-vehicle-status-value {
+  font-size: 28px;
+  /* Tăng từ 20px lên 28px */
+  font-weight: 700;
+  color: #1C3D90;
+  margin-bottom: 6px;
+  /* Tăng khoảng cách */
+  line-height: 1;
+}
+
+.manager-dashboard-vehicle-status-label {
+  font-size: 13px;
+  /* Tăng từ 12px lên 13px */
+  color: #666;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.manager-dashboard-vehicle-status-item.primary-item {
+  background: linear-gradient(135deg, #1C3D90 0%, #2E5BBA 100%);
+  border: none;
+  grid-column: span 2;
+  /* Chiếm 2 cột cho item đầu tiên */
+}
+
+.manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-value {
+  font-size: 32px;
+  /* To hơn cho item chính */
+  color: white;
+  font-weight: 800;
+}
+
+.manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-label {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .manager-dashboard-vehicle-status-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .manager-dashboard-vehicle-status-value {
+    font-size: 26px;
+  }
+
+  .manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-value {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-dashboard-vehicle-status-overview {
+    padding: 16px;
+  }
+
+  .manager-dashboard-vehicle-status-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .manager-dashboard-vehicle-status-item {
+    padding: 14px 10px;
+  }
+
+  .manager-dashboard-vehicle-status-value {
+    font-size: 24px;
+  }
+
+  .manager-dashboard-vehicle-status-label {
+    font-size: 12px;
+  }
+
+  .manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-value {
+    font-size: 28px;
+  }
+
+  .manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard-vehicle-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .manager-dashboard-vehicle-status-item {
+    padding: 12px 8px;
+  }
+
+  .manager-dashboard-vehicle-status-value {
+    font-size: 22px;
+  }
+
+  .manager-dashboard-vehicle-status-label {
+    font-size: 11px;
+  }
+
+  .manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-value {
+    font-size: 26px;
+  }
+
+  .manager-dashboard-vehicle-status-item.primary-item .manager-dashboard-vehicle-status-label {
+    font-size: 12px;
+  }
+}

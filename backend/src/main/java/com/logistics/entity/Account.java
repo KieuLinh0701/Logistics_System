@@ -1,9 +1,9 @@
 package com.logistics.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -29,16 +29,11 @@ public class Account {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, unique = true, length = 15)
-    private String phoneNumber;
-
     @Column(nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id")
-    @NotAudited
-    private Role role;
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AccountRole> accountRoles;
 
     @Column(nullable = false)
     private Boolean isVerified = false;

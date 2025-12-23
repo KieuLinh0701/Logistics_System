@@ -2,7 +2,10 @@ package com.logistics.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.hibernate.envers.Audited;
@@ -11,9 +14,9 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.ShippingRequest.ShippingRequestStatus;
-import com.logistics.enums.ShippingRequest.ShippingRequestType;
-import com.logistics.enums.ShippingRequestAttachment.ShippingRequestAttachmentType;
+import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.enums.ShippingRequestType;
+import com.logistics.enums.ShippingRequestAttachmentType;
 
 @Entity
 @Table(name = "shipping_requests")
@@ -107,4 +110,9 @@ public class ShippingRequest {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @PostPersist
+    private void generateCode() {
+        this.code = "SR" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + id;
+    }
 }

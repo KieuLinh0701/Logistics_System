@@ -1,7 +1,7 @@
 package com.logistics.repository;
 
 import com.logistics.entity.OTP;
-import com.logistics.enums.OTP.OTPType;
+import com.logistics.enums.OTPType;
 
 import org.springframework.transaction.annotation.Transactional;
 

@@ -9,8 +9,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Product.ProductStatus;
-import com.logistics.enums.Product.ProductType;
+import com.logistics.enums.ProductStatus;
+import com.logistics.enums.ProductType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,7 +33,7 @@ public class Product {
     private Integer id;
 
     @Column(length = 20, nullable = true, unique = true)
-    private String code; // Thêm này cho mã sản phẩm (PROD_SỐ SẢN PHẨM HIỆN TẠI NGƯỜI DÙNG + 1)
+    private String code; // Thêm này cho mã sản phẩm (PROD_NGÀY THÁNG NĂM TẠO_ID SẢN PHẨM)
 
     // ------------------- Người bán / chủ sở hữu -------------------
     @ManyToOne
@@ -79,4 +79,11 @@ public class Product {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @PostPersist
+    private void generateCode() {
+        if (this.code == null) {
+            this.code = "PROD" + this.id;
+        }
+    }
 }

@@ -1,5 +1,5 @@
 .header-home {
-  background: #fff;
+  background: var(--bg-color-header-home);
   width: 100%;
   height: 100px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -8,7 +8,7 @@
   overflow: visible !important;
 }
 
-.header-container {
+.header-home-container {
   width: 100%;
   height: 100%;
   padding: 0 80px;
@@ -16,33 +16,33 @@
 }
 
 /* Logo section */
-.logo-section {
+.header-home-logo-section {
   flex: 0 0 auto;
 }
 
-.logo-container {
+.header-home-logo-container {
   display: flex;
   align-items: center;
   gap: 12px;
   height: 100px;
 }
 
-.header-logo-image {
-  width: 90px;
-  height: 90px;
+.header-home-logo-image {
+  width: 70px;
+  height: 70px;
   object-fit: contain;
 }
 
-.header-logo-text {
+.header-home-logo-text {
   margin: 0 !important;
-  color: #1c3d90 !important;
+  color: var(--primary) !important;
   font-weight: 700;
-  font-size: 1.75rem !important;
+  font-size: 1.7rem !important;
   white-space: nowrap;
 }
 
 /* Menu chính */
-.desktop-menu {
+.header-home-desktop-menu {
   flex: 1;
   display: flex;
   justify-content: center;
@@ -50,7 +50,7 @@
   overflow: visible;
 }
 
-.custom-menu {
+.header-home-custom-menu {
   border-bottom: none !important;
   display: flex !important;
   justify-content: center !important;
@@ -59,103 +59,257 @@
   background: transparent !important;
 }
 
-.custom-menu .ant-menu-overflow {
+.header-home-custom-menu .ant-menu-overflow {
   display: grid !important;
   grid-template-columns: repeat(6, 1fr); 
   width: 100%;
   gap: 4px;
 }
 
-.custom-menu .ant-menu-item,
-.custom-menu .ant-menu-submenu,
-.custom-menu .ant-menu-submenu-title {
+.header-home-custom-menu .ant-menu-item,
+.header-home-custom-menu .ant-menu-submenu,
+.header-home-custom-menu .ant-menu-submenu-title {
   text-align: center;
   margin: 0 !important;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
   position: relative;
-  color: #000 !important;
+  color: var(--text-color-dark) !important;
   transition: color 0.3s ease;
 }
 
-.custom-menu .ant-menu-item::after,
-.custom-menu .ant-menu-submenu::after {
+.header-home-custom-menu .ant-menu-item::after,
+.header-home-custom-menu .ant-menu-submenu::after {
   display: none !important;
   content: none !important;
 }
 
-.custom-menu .ant-menu-item:hover,
-.custom-menu .ant-menu-submenu-title:hover {
-  color: #1c3d90 !important;
+.header-home-custom-menu .ant-menu-item:hover,
+.header-home-custom-menu .ant-menu-submenu-title:hover {
+  color: var(--primary) !important;
 }
 
-.custom-menu .ant-menu-item-selected,
-.custom-menu .ant-menu-submenu-selected {
-  color: #1c3d90  !important;
+.header-home-custom-menu .ant-menu-item-selected,
+.header-home-custom-menu .ant-menu-submenu-selected {
+  color: var(--primary)  !important;
 }
 
 /* Nút đăng nhập/đăng ký */
-.auth-section {
+.header-home-auth-section {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
 
-.btn-login {
+.header-home-btn-login {
   border-radius: 4px;
-  background-color: #1c3d90 !important;
-  border-color: #1c3d90 !important;
-  color: #fff !important;
+  background: var(--bg-color-button-hero);
+  border-color: var(--primary) !important;
+  color: var(--text-color-light) !important;
   font-weight: 500;
   height: 44px;
 }
 
-.btn-register {
+.header-home-btn-login:hover {
+  background: var(--bg-color-button-hero);
+  border-color: var(--primary) !important;
+  color: var(--text-color-light) !important;
+  font-weight: 500;
+  height: 44px;
+}
+
+.header-home-btn-register {
   border-radius: 4px;
-  background-color: #fff !important;
-  border-color: #1c3d90 !important;
-  color: #1c3d90 !important;
+  background-color: var(--bg-color-header-home) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
   font-weight: 500;
   height: 44px;
 }
 
 /* Avatar */
-.user-avatar {
+.header-home-user-avatar {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
 
-.avatar-icon {
-  background-color: #1c3d90 !important;
-  color: #f5f5f5 !important;
+.header-home-avatar-icon {
+  background-color: var(--primary) !important;
+  color: var(--bg-color-header-home) !important;
 }
 
-.avatar-name {
-  color: #000;
+.header-home-avatar-name {
+  color: var(--text-color-dark);
   font-weight: 500;
 }
 
-.dropdown-item {
+.header-home-dropdown-item {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.header-home .ant-dropdown {
+  background: transparent !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu,
+.header-home .ant-dropdown .ant-dropdown-menu {
+  background: var(--bg-color-header-home) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--color-light) !important;
+  padding: 8px 0 !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn {
+  background: var(--bg-color-button-hero) !important;
+  border: 1px solid var(--primary) !important;
+  color: var(--text-color-light) !important;
+  font-weight: 500;
+  height: 44px;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:focus,
+.header-home-auth-section .header-home-btn-login.ant-btn:hover,
+.header-home-auth-section .header-home-btn-login.ant-btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:hover {
+  background: var(--primary-dark) !important;
+  border: 1px solid var(--primary-dark) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-login.ant-btn:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn {
+  font-weight: 500;
+  height: 44px;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:focus,
+.header-home-auth-section .header-home-btn-register.ant-btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:hover {
+  transform: translateY(-2px); 
+  box-shadow: 0 4px 12px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 6px rgba(28, 61, 144, 0.3) !important;
+}
+
+.header-home-auth-section .header-home-btn-register.ant-btn:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item,
+.header-home .ant-dropdown .ant-dropdown-menu-item {
+  background: var(--bg-color-header-home) !important;
+  padding: 8px 16px !important;
+  margin: 0 !important;
+  color: var(--text-color-dark) !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item:hover,
+.header-home .ant-dropdown .ant-dropdown-menu-item:hover {
+  background: var(--bg-hover-color-light) !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item-divider,
+.header-home .ant-dropdown .ant-dropdown-menu-item-divider {
+  background-color: var(--color-light) !important;
+  margin: 4px 0 !important;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item .header-home-dropdown-item {
+  color: var(--text-color-dark) !important;
+  font-weight: 500;
+}
+
+.header-home .header-home-auth-section .ant-dropdown .ant-dropdown-menu-item:hover .header-home-dropdown-item {
+  color: var(--primary) !important;
+}
+
+/* Submenu dropdown styles */
+.header-home .ant-menu-submenu-popup {
+  background: transparent !important;
+}
+
+.header-home .ant-menu-submenu-popup .ant-menu {
+  background: var(--bg-color-header-home) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--color-light) !important;
+}
+
+.header-home .ant-menu-submenu-popup .ant-menu-item {
+  background: var(--bg-color-header-home) !important;
+  margin: 0 !important;
+}
+
+.header-home .ant-menu-submenu-popup .ant-menu-item:hover {
+  background: var(--bg-hover-color-light) !important;
+}
+
+/* Global fix for all dropdowns in header-home */
+.ant-dropdown:has(.header-home-dropdown-item) .ant-dropdown-menu {
+  background: var(--bg-color-header-home) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.ant-dropdown:has(.header-home-dropdown-item) .ant-dropdown-menu-item {
+  background: var(--bg-color-header-home) !important;
+  padding: 8px 16px !important;
+}
+
+.ant-dropdown:has(.header-home-dropdown-item) .ant-dropdown-menu-item:hover {
+  background: var(--bg-hover-color-light) !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
-  .header-container {
+  .header-home-container {
     padding: 0 20px;
   }
 
-  .desktop-menu {
+  .header-home-desktop-menu {
     display: none !important;
   }
 
-  .auth-section {
+  .header-home-auth-section {
     gap: 6px;
   }
 
@@ -163,31 +317,31 @@
     height: 80px;
   }
 
-  .logo-container {
+  .header-home-logo-container {
     height: 80px;
   }
 
-  .header-logo-image {
+  .header-home-logo-image {
     width: 32px;
     height: 32px;
   }
 
-  .header-logo-text {
+  .header-home-logo-text {
     font-size: 1.25rem !important;
   }
 }
 
 @media (max-width: 480px) {
-  .logo-container {
+  .header-home-logo-container {
     gap: 8px;
   }
   
-  .header-logo-image {
+  .header-home-logo-image {
     width: 28px;
     height: 28px;
   }
   
-  .header-logo-text {
+  .header-home-logo-text {
     font-size: 1.1rem !important;
   }
 }

@@ -3,17 +3,20 @@ package com.logistics.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.Order.OrderStatus;
-import com.logistics.enums.Order.OrderCreatorType;
-import com.logistics.enums.Order.OrderPayerType;
-import com.logistics.enums.Order.OrderPaymentStatus;
-import com.logistics.enums.Order.OrderPickupType;
+import com.logistics.enums.OrderStatus;
+import com.logistics.enums.OrderCodStatus;
+import com.logistics.enums.OrderCreatorType;
+import com.logistics.enums.OrderPayerType;
+import com.logistics.enums.OrderPaymentStatus;
+import com.logistics.enums.OrderPickupType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,9 +25,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Table(name = "orders")
-@Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Audited
 @EntityListeners(AuditingEntityListener.class)
 public class Order {
@@ -35,7 +36,7 @@ public class Order {
     private Integer id;
 
     // Mã vận đơn
-    @Column(length = 50, unique = true, nullable = false)
+    @Column(length = 50, unique = true, nullable = true)
     private String trackingNumber; // Mã vận đơn kiểu UTE_11 chữ số khác
 
     // Trạng thái
@@ -50,7 +51,11 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = true)
-    private User user;
+    private User user; // Người sở hữu đơn hàng
+
+    @ManyToOne
+    @JoinColumn(name = "employee_id", nullable = true)
+    private Employee employee; // Nhân viên tạo đơn hàng nếu như tạo tại bưu cục
 
     // ------------------- Người gửi -------------------
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
@@ -59,8 +64,18 @@ public class Order {
     @Column(nullable = false)
     private String senderPhone;
 
+    @Column(nullable = false)
+    private Integer senderCityCode;
+
+    @Column(nullable = false)
+    private Integer senderWardCode;
+
+    @Column(nullable = false)
+    private String senderDetail;
+
     @ManyToOne
-    @JoinColumn(name = "sender_address_id")
+    @JoinColumn(name = "sender_address_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Address senderAddress;
 
     // ------------------- Người nhận -------------------
@@ -71,7 +86,8 @@ public class Order {
     private String recipientPhone;
 
     @ManyToOne
-    @JoinColumn(name = "recipient_address_id")
+    @JoinColumn(name = "recipient_address_id", nullable = true)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Address recipientAddress;
 
     // ------------------- Hình thức lấy hàng -------------------
@@ -117,7 +133,7 @@ public class Order {
     private OrderPaymentStatus paymentStatus = OrderPaymentStatus.UNPAID;
 
     // ------------------- Thông tin khác -------------------
-    @Lob
+    @Column(columnDefinition = "NVARCHAR(1000)")
     private String notes;
 
     private LocalDateTime deliveredAt;
@@ -139,4 +155,16 @@ public class Order {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OrderCodStatus codStatus;
+
+    @OneToOne(mappedBy = "order")
+    private PaymentSubmission paymentSubmission;
+
+    @ManyToOne
+    @JoinColumn(name = "settlement_batch_id")
+    private SettlementBatch settlementBatch;
+
 }

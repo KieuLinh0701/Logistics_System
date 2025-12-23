@@ -1,6 +1,8 @@
 package com.logistics.entity;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.envers.Audited;
@@ -45,6 +47,9 @@ public class User {
         return lastName + " " + firstName;
     }
 
+    @Column(nullable = false, unique = true, length = 15)
+    private String phoneNumber;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses;
 
@@ -52,13 +57,15 @@ public class User {
     private String images; // Lưu đường dẫn ảnh
 
     // Quan hệ với Employee
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private Employee employee;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Employee> employees = new ArrayList<>();
 
     // Quan hệ với Product
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval =
-    true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> products;
+
+    @OneToMany(mappedBy = "shipper", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ShipperAssignment> shipperAssignments = new ArrayList<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -66,4 +73,12 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @PostPersist
+    private void generateCode() {
+        if (this.code == null) {
+            String date = LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            this.code = "USER" + date + this.id;
+        }
+    }
 }

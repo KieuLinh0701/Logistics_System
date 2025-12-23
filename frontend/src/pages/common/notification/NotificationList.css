@@ -1,0 +1,487 @@
+.notification-layout {
+  background: #fafbfc !important;
+  min-height: 100vh;
+}
+
+.notification-content {
+  padding: 0 30px 30px 30px;
+  width: 100%; 
+  max-width: none; 
+  margin: 0 auto;
+}
+
+.notification-header {
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.notification-title-main {
+  color: #1C3D90 !important;
+  margin-bottom: 8px !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-icon {
+  color: #1C3D90;
+  font-size: 22px;
+}
+
+.notification-subtitle {
+  color: #666;
+  font-size: 15px;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.notification-search {
+  flex: 1;
+}
+
+.notification-search .ant-input {
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.notification-search .ant-input:focus {
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1);
+}
+
+.refresh-button {
+  background: #1C3D90 !important;
+  border-color: #1C3D90 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 400;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: #0d2a6e !important;
+  border-color: #0d2a6e !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(28, 61, 144, 0.2);
+}
+
+.loading-container {
+  text-align: center;
+  padding: 60px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-text {
+  color: #666;
+  font-size: 16px;
+}
+
+.empty-container {
+  text-align: center;
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: #666;
+  font-weight: 500;
+}
+
+.empty-subtext {
+  font-size: 14px;
+}
+
+.table-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  margin-top: 0px;
+}
+
+.notification-table {
+  width: 100% !important;
+}
+
+.notification-table .ant-table {
+  table-layout: fixed !important;
+}
+
+.notification-table .ant-table-thead > tr > th {
+  background: #fafafa !important; 
+  color: #1C3D90 !important;
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f5f5f5;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(1),
+.notification-table .ant-table-tbody > tr > td:nth-child(1) {
+  width: 20% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(2),
+.notification-table .ant-table-tbody > tr > td:nth-child(2) {
+  width: 40% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(3),
+.notification-table .ant-table-tbody > tr > td:nth-child(3) {
+  width: 20% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(4),
+.notification-table .ant-table-tbody > tr > td:nth-child(4) {
+  width: 20% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(1),
+.notification-table .ant-table-tbody > tr > td:nth-child(1) {
+  width: 25% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(2),
+.notification-table .ant-table-tbody > tr > td:nth-child(2) {
+  width: 55% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-table-thead > tr > th:nth-child(3),
+.notification-table .ant-table-tbody > tr > td:nth-child(3) {
+  width: 20% !important;
+  padding: 15px 20px 15px 20px !important; 
+}
+
+.notification-table .ant-pagination {
+  padding: 5px 10px !important;
+}
+
+.notification-table .ant-pagination .ant-pagination-item {
+  border: 1px solid #e8edff;
+  border-radius: 8px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  min-width: 32px;
+  height: 32px;
+}
+
+.notification-table .ant-pagination .ant-pagination-item a {
+  color: #666;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  font-size: 13px;
+  line-height: 30px;
+}
+
+.notification-table .ant-pagination .ant-pagination-item:hover {
+  border-color: #1C3D90;
+}
+
+.notification-table .ant-pagination .ant-pagination-item:hover a {
+  color: #1C3D90;
+}
+
+.notification-table .ant-pagination .ant-pagination-item-active {
+  border-color: #1C3D90;
+  background: linear-gradient(135deg, #1C3D90, #2E5BBA);
+}
+
+.notification-table .ant-pagination .ant-pagination-item-active a {
+  color: white;
+}
+
+.notification-table .ant-pagination .ant-pagination-prev,
+.notification-table .ant-pagination .ant-pagination-next {
+  border-radius: 8px;
+  border: 1px solid #e8edff;
+  min-width: 32px;
+  height: 32px;
+  transition: all 0.3s ease;
+}
+
+.notification-table .ant-pagination .ant-pagination-prev:hover,
+.notification-table .ant-pagination .ant-pagination-next:hover {
+  border-color: #1C3D90;
+}
+
+.notification-table .ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
+.notification-table .ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
+  color: #1C3D90;
+}
+
+.notification-table .ant-pagination .ant-pagination-jump-prev,
+.notification-table .ant-pagination .ant-pagination-jump-next {
+  color: #666;
+}
+
+.notification-table .ant-pagination .ant-pagination-total-text {
+  color: #666;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Style cho phần quick jumper (Đến trang) */
+.notification-table .ant-pagination .ant-pagination-options {
+  margin-left: 16px;
+}
+
+.notification-table .ant-pagination .ant-pagination-options-quick-jumper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.notification-table .ant-pagination .ant-pagination-options-quick-jumper input {
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #e8edff;
+  padding: 0 8px;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  width: 60px;
+  text-align: center;
+}
+
+.notification-table .ant-pagination .ant-pagination-options-quick-jumper input:focus {
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1);
+  outline: none;
+}
+
+.notification-table .ant-pagination .ant-pagination-options-quick-jumper input:hover {
+  border-color: #1C3D90;
+}
+
+/* Style cho phần hiển thị tổng số trang */
+.notification-table .ant-pagination .ant-pagination-total-text {
+  color: #666;
+  font-weight: 500;
+  font-size: 13px;
+  margin-right: 16px;
+}
+
+/* Đảm bảo pagination container hiển thị đúng */
+.notification-table .ant-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 16px 20px !important;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.notification-row {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-row:hover > td {
+  background: #f8f9ff !important;
+}
+
+.unread-row > td {
+  background: #f0fff0 !important;
+}
+
+.read-row > td {
+  background: #fff;
+}
+
+.notification-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unread-text {
+  color: #000 !important; 
+  font-weight: 600 !important;
+}
+
+.read-text {
+  color: #666 !important;
+}
+
+.notification-tag {
+  display: inline-block;
+  background: #f0f8ff;
+  color: #1C3D90;
+  border: 1px solid #1C3D90;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+/* Checkbox chỉ hiển thị chưa đọc */
+.notification-actions .ant-checkbox-wrapper {
+  padding: 8px 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+  transition: all 0.2s ease;
+  margin: 0 !important;
+}
+
+.notification-actions .ant-checkbox-wrapper:hover {
+  border-color: #1C3D90;
+  background: #f8f9ff;
+}
+
+.notification-actions .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #1C3D90;
+  border-color: #1C3D90;
+}
+
+.notification-actions .ant-checkbox-wrapper .ant-checkbox + span {
+  color: #333;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Nút đánh dấu tất cả đã đọc */
+.mark-all-read-button {
+  background: #52c41a !important;
+  border-color: #52c41a !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 400;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.mark-all-read-button:hover {
+  background: #389e0d !important;
+  border-color: #389e0d !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
+}
+
+.mark-all-read-button:disabled {
+  background: #f5f5f5 !important;
+  border-color: #d9d9d9 !important;
+  color: #bfbfbf !important;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .notification-content {
+    padding: 16px;
+  }
+  
+  .notification-actions {
+    flex-direction: column;
+  }
+  
+  .notification-search {
+    width: 100%;
+  }
+  
+  .refresh-button {
+    width: 100%;
+  }
+  
+  .notification-table .ant-table-thead > tr > th,
+  .notification-table .ant-table-tbody > tr > td {
+    padding: 12px 12px 12px 16px; /* Giữ padding-left trên mobile */
+  }
+
+  /* Trên mobile, cho phép xuống dòng */
+  .notification-table .ant-table-tbody > tr > td {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* Pagination nhỏ hơn trên mobile */
+  .notification-table .ant-pagination .ant-pagination-item {
+    min-width: 28px !important;
+    height: 28px !important;
+    margin: 0 2px !important;
+  }
+
+  .notification-table .ant-pagination .ant-pagination-item a {
+    font-size: 12px;
+    line-height: 26px;
+  }
+
+  .notification-table .ant-pagination .ant-pagination-prev,
+  .notification-table .ant-pagination .ant-pagination-next {
+    min-width: 28px !important;
+    height: 28px !important;
+  }
+
+  .notification-table .ant-pagination .ant-pagination-total-text {
+    font-size: 12px;
+  }
+
+  .notification-table .ant-pagination .ant-pagination-options-quick-jumper {
+    font-size: 12px;
+  }
+  
+  .notification-table .ant-pagination .ant-pagination-options-quick-jumper input {
+    height: 28px;
+    font-size: 12px;
+    width: 50px;
+  }
+  
+  .notification-table .ant-pagination {
+    padding: 12px 16px !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .notification-table .ant-pagination .ant-pagination-total-text {
+    margin-right: 8px;
+    font-size: 12px;
+  }
+  
+  .notification-table .ant-pagination .ant-pagination-options {
+    margin-left: 8px;
+  }
+}

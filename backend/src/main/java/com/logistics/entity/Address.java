@@ -9,11 +9,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Builder
 @Entity
 @Audited
 @Data
@@ -39,8 +41,16 @@ public class Address {
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
     private String detail;
 
+    @Column(columnDefinition = "NVARCHAR(50)")
+    private String name;
+
+    @Column(columnDefinition = "NVARCHAR(11)")
+    private String phoneNumber;
+
+    private Boolean isDefault;
+
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @CreatedDate

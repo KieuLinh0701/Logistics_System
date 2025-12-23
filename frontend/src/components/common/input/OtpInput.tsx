@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
-import { Input, Row, Col } from "antd";
+import { Input } from "antd";
 import type { InputRef } from "antd";
-import "./OtpInput.css"; 
+import "./OtpInput.css";
 
 interface OtpInputProps {
   length: number;
@@ -51,23 +51,29 @@ const OtpInput: React.FC<OtpInputProps> = ({ length, value = "", onChange }) => 
   };
 
   return (
-    <Row justify="center" gutter={12} style={{ width: "100%" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: "12px",
+        flexWrap: "nowrap", 
+        width: "100%",
+      }}
+    >
       {Array.from({ length }).map((_, idx) => (
-        <Col key={idx}>
-          <Input
-            ref={(el) => { inputsRef.current[idx] = el; }}
-            value={values[idx]}
-            onChange={(e) => handleChange(e, idx)}
-            onKeyDown={(e) => handleKeyDown(e, idx)}
-            onPaste={handlePaste}
-            maxLength={1}
-            size="large"
-            prefix={undefined}
-            className="form-input otp-input"
-          />
-        </Col>
+        <Input
+          key={idx}
+          ref={(el) => { inputsRef.current[idx] = el; }}
+          value={values[idx]}
+          onChange={(e) => handleChange(e, idx)}
+          onKeyDown={(e) => handleKeyDown(e, idx)}
+          onPaste={handlePaste}
+          maxLength={1}
+          size="large"
+          className="form-input otp-input"
+        />
       ))}
-    </Row>
+    </div>
   );
 };
 

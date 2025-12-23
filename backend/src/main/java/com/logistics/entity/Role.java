@@ -3,6 +3,7 @@ package com.logistics.entity;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -14,6 +15,7 @@ import lombok.*;
 @Data
 @Getter
 @Setter
+@Audited
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "roles")
@@ -40,9 +42,8 @@ public class Role {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    // Liên kết với Account 
-    // (Khi tạo Role mới → tự thêm Account liên quan, 
-    // Khi xóa Role → Account không bị xóa)
+    // Liên kết với AccountRole
     @OneToMany(mappedBy = "role", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    private List<Account> accounts;
+    private List<AccountRole> accountRoles;
+
 }

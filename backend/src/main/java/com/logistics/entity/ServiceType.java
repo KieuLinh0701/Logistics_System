@@ -7,7 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.ServiceType.ServiceTypeStatus;
+import com.logistics.enums.ServiceTypeStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +33,9 @@ public class ServiceType {
     // Thời gian giao hàng (VD: "1-2 ngày", "Trong ngày")
     @Column(columnDefinition = "TEXT")
     private String deliveryTime;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     // Trạng thái hoạt động
     @Enumerated(EnumType.STRING)

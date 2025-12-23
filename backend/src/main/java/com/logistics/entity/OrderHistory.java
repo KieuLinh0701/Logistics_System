@@ -8,8 +8,9 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.OrderHistory.OrderHistoryActionType;
+import com.logistics.enums.OrderHistoryActionType;
 
+@Builder
 @Entity
 @Table(name = "order_histories")
 @Data

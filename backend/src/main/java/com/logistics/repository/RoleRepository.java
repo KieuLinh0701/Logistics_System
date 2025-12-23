@@ -10,4 +10,5 @@ import com.logistics.entity.Role;
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Integer> {
     Optional<Role> findByName(String name);
+     Optional<Role> findByNameAndIsSystemRole(String name, Boolean isSystemRole);
 }

@@ -1,10 +1,9 @@
-/* Dashboard Layout */
-.base-layout {
+.dashboard-layout {
   min-height: 100vh;
+  background: #f0f2f5;
 }
 
-/* Header */
-.base-header {
+.fixed-header {
   position: fixed;
   top: 0;
   left: 0;
@@ -16,62 +15,88 @@
   padding: 0;
 }
 
-/* Content Layout */
-.base-content-layout {
+.main-content-layout {
   padding: 8px;
   margin-top: 64px;
 }
 
-/* Sider */
-.base-sider {
+.sider {
   position: fixed;
   top: 72px;
   left: 8px;
-  height: calc(100vh - 80px); 
+  height: calc(100vh - 80px);
   background: #fff;
   border-radius: 6px;
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Sider Collapse Button */
-.sider-collapse-btn {
+.sider .ant-layout-sider-children {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+.sidenav-container {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 0;
+  width: 100% !important;
+}
+
+.toggle-button {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
+  width: 100% !important;
   text-align: center;
   background: #fff;
   border-top: 1px solid #f0f0f0;
   border-radius: 0;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding: 12px 0;
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  z-index: 100;
+  box-sizing: border-box !important;
 }
 
-.sider-collapse-btn:hover {
-  background: #f5f5f5 !important;
+.sider .ant-layout-sider-trigger {
+  width: 100% !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  background: #fff !important;
+  color: #000 !important;
+  border-top: 1px solid #f0f0f0 !important;
+  border-radius: 0 !important;
+  border-bottom-left-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+  height: auto !important;
+  line-height: normal !important;
+  padding: 12px 0 !important;
 }
 
-/* Main Content */
-.base-main-content {
+.content-wrapper {
   background: #fff;
   padding: 8px;
   border-radius: 6px;
   flex: 1;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.base-main-content.expanded {
-  margin-left: 248px; 
+.content-wrapper.collapsed {
+  margin-left: 68px;
 }
 
-.base-main-content.collapsed {
-  margin-left: 68px; 
+.content-wrapper.expanded {
+  margin-left: 248px;
 }
 
-/* Content Area */
-.base-content {
+.content-area {
   background: #fff;
   padding: 8px;
   border-radius: 6px;
@@ -79,53 +104,30 @@
   overflow-y: auto;
 }
 
-/* Responsive Design */
-@media (max-width: 992px) {
-  .base-sider {
-    position: fixed;
-    top: 72px;
-    left: 8px;
-    z-index: 999;
-  }
-  
-  .base-main-content.expanded,
-  .base-main-content.collapsed {
-    margin-left: 8px;
-  }
+.ant-card {
+  border-radius: 12px;
+  box-shadow: none;
+}
+.ant-card .ant-card-body {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 16px;
 }
 
-@media (max-width: 768px) {
-  .base-content-layout {
-    padding: 4px;
-    margin-top: 64px;
-  }
-  
-  .base-sider {
-    top: 68px;
-    left: 4px;
-    height: calc(100vh - 72px); 
-  }
-  
-  .base-main-content {
-    padding: 4px;
-  }
-  
-  .base-content {
-    padding: 4px;
-  }
+.content-area .ant-typography {
+  color: #1C3D90;
 }
 
-@media (max-width: 480px) {
-  .base-header {
-    height: 56px;
-  }
-  
-  .base-content-layout {
-    margin-top: 56px;
-  }
-  
-  .base-sider {
-    top: 60px; 
-    height: calc(100vh - 64px); 
-  }
+.admin-export-btn, .admin-action-btn {
+  background-color: #107C10 !important;
+  border-color: #107C10 !important;
+  color: #ffffff !important;
+}
+.admin-pdf-btn {
+  background-color: #ff6b6b !important;
+  border-color: #ff6b6b !important;
+  color: #ffffff !important;
+}
+.admin-btn-small {
+  padding: 4px 10px !important;
 }

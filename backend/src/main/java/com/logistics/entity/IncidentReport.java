@@ -8,11 +8,12 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.IncidentReport.IncidentPriority;
-import com.logistics.enums.IncidentReport.IncidentStatus;
-import com.logistics.enums.IncidentReport.IncidentType;
+import com.logistics.enums.IncidentPriority;
+import com.logistics.enums.IncidentStatus;
+import com.logistics.enums.IncidentType;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Entity
@@ -31,7 +32,7 @@ public class IncidentReport {
     private Integer id;
 
     @Column(length = 50, nullable = true, unique = true)
-    private String code; // Thêm này cho mã báo cáo (IR_NGÀY THÁNG NĂM TẠO_id)
+    private String code; // Thêm này cho mã báo cáo (IR_NGÀY THÁNG NĂM TẠO_officeId_id)
 
     // Quan hệ với đơn hàng
     @ManyToOne
@@ -69,17 +70,21 @@ public class IncidentReport {
 
     @ElementCollection
     @CollectionTable(name = "incident_report_images", joinColumns = @JoinColumn(name = "incident_report_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private List<String> images;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private IncidentStatus status = IncidentStatus.PENDING;
 
-    @Lob
+    @Column(columnDefinition = "NVARCHAR(1000)")
     private String resolution;
 
     private LocalDateTime handledAt;
+
+    @ManyToOne
+    @JoinColumn(name = "office_id", nullable = false)
+    private Office office;
 
     @CreatedDate
     @Column(updatable = false)
@@ -87,4 +92,12 @@ public class IncidentReport {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-}
+
+    @PostPersist
+    private void generateCode() {
+        if (this.code == null) {
+            String date = LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+            this.code = "IR" + date + office.getId() + this.id;
+        }
+    }
+}   
