@@ -59,8 +59,17 @@ const AdminFeeConfigurations: React.FC = () => {
         active: query.active,
       });
       if (res.success && res.data) {
-        setRows(res.data.list || []);
-        setTotal(res.data.pagination?.total || 0);
+        const payload: any = res.data;
+        const list = Array.isArray(payload.list)
+          ? payload.list
+          : Array.isArray(payload.data)
+          ? payload.data
+          : [];
+        setRows(list);
+        setTotal(payload.pagination?.total || 0);
+        if (list.length === 0) {
+          message.info("Không có cấu hình phí trả về", 1.5);
+        }
       }
     } catch (e: any) {
       message.error(e?.response?.data?.message || "Tải dữ liệu thất bại");

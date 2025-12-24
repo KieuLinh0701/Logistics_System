@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import userApi from "../../api/userApi";
+import { translateRoleName } from "../../utils/roleUtils";
 import type { AdminUser } from "../../types/user";
 
 
@@ -16,6 +17,7 @@ const AdminUsers: React.FC = () => {
   const [query, setQuery] = useState<QueryState>({ page: 1, limit: 10, search: "" });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [roles, setRoles] = useState<Array<{ id: number; name: string }>>([]);
   const [form] = Form.useForm();
 
   const fetchData = async () => {
@@ -36,6 +38,14 @@ const AdminUsers: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [query.page, query.limit, query.search]);
+
+  const optionsRoles = [
+    { id: 1, name: 'Admin' },
+    { id: 2, name: 'Manager' },
+    { id: 3, name: 'User' },
+    { id: 4, name: 'Shipper' },
+    { id: 5, name: 'Driver' },
+  ];
 
   const onCreate = () => {
     setEditing(null);
@@ -105,9 +115,22 @@ const AdminUsers: React.FC = () => {
       manager: "blue",
       staff: "green",
       driver: "purple",
-      user: "default",
+      user: "gold",
+      shipper: "orange",
+      employee: "cyan",
     };
     return colors[role] || "default";
+  };
+
+  // Nhãn vai trò bằng tiếng Việt để hiển thị trên UI
+  const ROLE_LABELS: Record<string, string> = {
+    admin: "Quản trị viên",
+    manager: "Quản lý bưu cục",
+    user: "Cửa hàng",
+    employee: "Nhân viên",
+    shipper: "Nhân viên giao hàng",
+    driver: "Tài xế lái xe",
+    staff: "Nhân viên",
   };
 
   const columns = useMemo(
@@ -119,7 +142,10 @@ const AdminUsers: React.FC = () => {
       {
         title: "Vai trò",
         dataIndex: "role",
-        render: (v: string) => <Tag color={getRoleColor(v)}>{v}</Tag>,
+        render: (v: string) => {
+          const key = v ? v.toLowerCase() : "";
+          return <Tag color={getRoleColor(key)}>{ROLE_LABELS[key] || v}</Tag>;
+        },
       },
       {
         title: "Trạng thái",
@@ -217,11 +243,13 @@ const AdminUsers: React.FC = () => {
             </Form.Item>
             <Form.Item name="roleId" label="Vai trò" rules={[{ required: true }]}>
               <Select placeholder="Chọn vai trò">
-                <Select.Option value={1}>admin</Select.Option>
-                <Select.Option value={2}>manager</Select.Option>
-                <Select.Option value={3}>user</Select.Option>
-                <Select.Option value={4}>shipper</Select.Option>
-                <Select.Option value={5}>driver</Select.Option>
+                {optionsRoles.map((r) => (
+                  <Select.Option key={r.id} value={r.id}>{translateRoleName(r.name)}</Select.Option>
+                ))}
+                {/* Nếu đang edit một account có roleId không nằm trong list, hiển thị option động */}
+                {editing && editing.roleId && !optionsRoles.map(r=>r.id).includes(editing.roleId) && (
+                  <Select.Option value={editing.roleId}>{ROLE_LABELS[(editing.role||"").toLowerCase()] || editing.role || `Role ${editing.roleId}`}</Select.Option>
+                )}
               </Select>
             </Form.Item>
             <Form.Item name="isActive" label="Trạng thái" initialValue={true}>

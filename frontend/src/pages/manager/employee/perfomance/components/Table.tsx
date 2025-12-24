@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Button } from "antd";
+import { Table, Button, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { ManagerEmployeePerformanceData } from "../../../../../types/employee";
 import { translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
@@ -41,7 +41,33 @@ const EmployeeTable: React.FC<Props> = ({
             {record.employeePhone}
           </div>
           <div className="text-muted text-sm">
-            {record.employeeCode} - {translateRoleName(record.employeeRole)}
+            {record.employeeCode} - {
+              (() => {
+                const r = record.employeeRole ? String(record.employeeRole).toLowerCase() : "";
+                const ROLE_LABELS: Record<string, string> = {
+                  admin: "Quản trị viên",
+                  manager: "Quản lý bưu cục",
+                  user: "Cửa hàng",
+                  shipper: "Nhân viên giao hàng",
+                  driver: "Tài xế lái xe",
+                  staff: "Nhân viên",
+                  employee: "Nhân viên",
+                };
+                const getRoleColor = (role: string) => {
+                  const colors: Record<string, string> = {
+                    admin: "red",
+                    manager: "blue",
+                    staff: "green",
+                    driver: "purple",
+                    user: "gold",
+                    shipper: "orange",
+                    employee: "cyan",
+                  };
+                  return colors[role] || "default";
+                };
+                return <Tag color={getRoleColor(r)}>{ROLE_LABELS[r] || record.employeeRole}</Tag>;
+              })()
+            }
           </div>
         </div>
       ),

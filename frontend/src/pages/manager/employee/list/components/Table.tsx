@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Space, Table } from 'antd';
+import { Button, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
@@ -61,7 +61,31 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
       key: "role",
       dataIndex: "role",
       align: "center",
-      render: (role) => translateRoleName(role),
+      render: (role) => {
+        const key = role ? (String(role)).toLowerCase() : "";
+        const ROLE_LABELS: Record<string, string> = {
+          admin: "Quản trị viên",
+          manager: "Quản lý bưu cục",
+          user: "Cửa hàng",
+          shipper: "Nhân viên giao hàng",
+          driver: "Tài xế lái xe",
+          staff: "Nhân viên",
+          employee: "Nhân viên",
+        };
+        const getRoleColor = (r: string) => {
+          const colors: Record<string, string> = {
+            admin: "red",
+            manager: "blue",
+            staff: "green",
+            driver: "purple",
+            user: "gold",
+            shipper: "orange",
+            employee: "cyan",
+          };
+          return colors[r] || "default";
+        };
+        return <Tag color={getRoleColor(key)}>{ROLE_LABELS[key] || String(role)}</Tag>;
+      },
     },
     {
       title: "Ca làm việc",

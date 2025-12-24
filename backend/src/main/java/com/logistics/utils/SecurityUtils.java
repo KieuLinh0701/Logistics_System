@@ -14,13 +14,13 @@ public class SecurityUtils {
     private SecurityUtils() {
     }
 
-    public static final Map<String, List<String>> PATH_ROLES = Map.of(
-            "/api/user/", List.of("User"),
+        public static final Map<String, List<String>> PATH_ROLES = Map.of(
+            "/api/user/", List.of("User", "Driver", "Shipper", "Manager", "Admin"),
             "/api/manager/", List.of("Manager"),
             "/api/admin/", List.of("Admin"),
             "/api/shipper/", List.of("Shipper"),
             "/api/driver/", List.of("Driver")
-    );
+        );
 
     public static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/",

@@ -37,9 +37,25 @@ const AdminOrders: React.FC = () => {
         search: query.search,
         status: query.status,
       });
+      if (!res || !res.success) {
+        message.error("Lấy danh sách đơn hàng không thành công");
+        setRows([]);
+        setTotal(0);
+        return;
+      }
       if (res.success && res.data) {
-        setRows(res.data.list || []);
-        setTotal(res.data.pagination?.total || 0);
+        const payload = res.data as any;
+        let list: AdminOrder[] = [];
+        if (Array.isArray(payload.list)) {
+          list = payload.list;
+        } else if (Array.isArray(payload.data)) {
+          list = payload.data;
+        } else if (Array.isArray((payload as any).orders)) {
+          list = (payload as any).orders;
+        }
+
+        setRows(list);
+        setTotal(payload.pagination?.total || 0);
       }
     } catch (e: any) {
       message.error(e?.response?.data?.message || "Tải dữ liệu thất bại");
@@ -96,29 +112,37 @@ const AdminOrders: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
+    const key = (status || "").toString().toUpperCase();
     const colors: Record<string, string> = {
       PENDING: "orange",
       CONFIRMED: "blue",
       PICKED_UP: "cyan",
+      READY_FOR_PICKUP: "cyan",
+      DELIVERING: "purple",
+      AT_DEST_OFFICE: "gold",
       IN_TRANSIT: "purple",
       DELIVERED: "green",
       CANCELLED: "red",
       DRAFT: "default",
     };
-    return colors[status] || "default";
+    return colors[key] || "default";
   };
 
   const getStatusText = (status: string) => {
+    const key = (status || "").toString().toUpperCase();
     const texts: Record<string, string> = {
       DRAFT: "Nháp",
       PENDING: "Chờ xử lý",
       CONFIRMED: "Đã xác nhận",
       PICKED_UP: "Đã lấy hàng",
+      READY_FOR_PICKUP: "Sẵn sàng lấy hàng",
+      DELIVERING: "Đang giao",
+      AT_DEST_OFFICE: "Tại văn phòng đích",
       IN_TRANSIT: "Đang vận chuyển",
       DELIVERED: "Đã giao",
       CANCELLED: "Đã hủy",
     };
-    return texts[status] || status;
+    return texts[key] || status;
   };
 
   const columns = useMemo(
