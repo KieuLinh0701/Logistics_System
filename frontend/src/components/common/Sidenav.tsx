@@ -25,6 +25,7 @@ import {
   EnvironmentOutlined,
   BankOutlined,
   CheckCircleOutlined,
+  ScanOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
 import { useMemo } from "react";
@@ -282,6 +283,12 @@ const Sidenav: React.FC = () => {
         label: "Tổng quan",
         path: "/dashboard",
         icon: <DashboardOutlined />,
+      },
+      {
+        key: "/shipper/scan-barcode",
+        label: "Quét mã vận đơn",
+        path: "/shipper/scan-barcode",
+        icon: <ScanOutlined />,
       },
       {
         key: "shipper-orders",

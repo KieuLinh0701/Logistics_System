@@ -183,14 +183,23 @@ const ShipperDeliveryRoute: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
+    const s = (status || "").toString().toUpperCase();
+    switch (s) {
+      case "PENDING":
+      case "READY_FOR_PICKUP":
         return "default";
-      case "in_progress":
+      case "IN_PROGRESS":
+      case "IN_TRANSIT":
+      case "DELIVERING":
+      case "PICKED_UP":
         return "processing";
-      case "completed":
+      case "COMPLETED":
+      case "DELIVERED":
         return "success";
-      case "failed":
+      case "FAILED":
+      case "FAILED_DELIVERY":
+      case "RETURNED":
+      case "CANCELLED":
         return "error";
       default:
         return "default";
@@ -198,17 +207,32 @@ const ShipperDeliveryRoute: React.FC = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
+    const s = (status || "").toString().toUpperCase();
+    switch (s) {
+      case "PENDING":
         return "Chờ giao";
-      case "in_progress":
+      case "READY_FOR_PICKUP":
+        return "Sẵn sàng lấy hàng";
+      case "PICKED_UP":
+        return "Đã lấy hàng";
+      case "IN_PROGRESS":
+      case "IN_TRANSIT":
+      case "DELIVERING":
         return "Đang giao";
-      case "completed":
+      case "DELIVERED":
+        return "Đã giao";
+      case "COMPLETED":
         return "Hoàn thành";
-      case "failed":
-        return "Thất bại";
+      case "FAILED":
+      case "FAILED_DELIVERY":
+        return "Giao hàng thất bại";
+      case "RETURNED":
+        return "Đã hoàn trả";
+      case "CANCELLED":
+        return "Đã hủy";
       default:
-        return status;
+        // Nếu không khớp, cố gắng chuyển từ snake/upper case sang readable
+        return status.replaceAll("_", " ");
     }
   };
 

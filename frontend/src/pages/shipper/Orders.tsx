@@ -11,7 +11,6 @@ import {
   Select,
   Input,
   message,
-  Modal,
 } from "antd";
 import {
   SearchOutlined,
@@ -171,29 +170,6 @@ const ShipperOrders: React.FC = () => {
       key: "action",
       render: (record: ShipperOrder) => (
         <Space>
-          {record.status === "READY_FOR_PICKUP" && (
-            <Button
-              type="primary"
-              onClick={() => {
-                Modal.confirm({
-                  title: "Xác nhận",
-                  content: `Đánh dấu đơn ${record.trackingNumber} là đã lấy hàng?`,
-                  onOk: async () => {
-                    try {
-                      await orderApi.updateShipperDeliveryStatus(record.id, { status: "PICKED_UP" });
-                      message.success("Cập nhật trạng thái: Đã lấy hàng");
-                      fetchOrders();
-                    } catch (error) {
-                      console.error(error);
-                      message.error("Không thể cập nhật trạng thái");
-                    }
-                  },
-                });
-              }}
-            >
-              Đã lấy hàng
-            </Button>
-          )}
           <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`)}>
             Chi tiết
           </Button>

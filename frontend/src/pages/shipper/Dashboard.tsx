@@ -88,6 +88,8 @@ const ShipperDashboard: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "READY_FOR_PICKUP":
+        return "gold";
       case "PENDING":
         return "default";
       case "CONFIRMED":
@@ -109,6 +111,8 @@ const ShipperDashboard: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case "READY_FOR_PICKUP":
+        return "Sẵn sàng lấy hàng";
       case "PENDING":
         return "Chờ xử lý";
       case "CONFIRMED":
