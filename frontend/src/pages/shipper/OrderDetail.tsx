@@ -272,7 +272,7 @@ const fetchOrderDetail = async () => {
                     >
                       Giao thành công
                     </Button>
-                    {order.cod && order.cod > 0 && (
+                    {order.cod > 0 && (
                       <Button
                         type="default"
                         icon={<DollarOutlined />}
@@ -359,11 +359,11 @@ const fetchOrderDetail = async () => {
                   <DollarOutlined style={{ color: "#f50" }} />
                   <div>
                     <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                      {order.cod && order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "Không"}
+                      {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "Không"}
                     </Text>
 
                     {/* If cod exists but codStatus explicitly NONE, show explanatory note */}
-                    {order.cod && order.cod > 0 && order.codStatus === "NONE" && (
+                    {order.cod > 0 && order.codStatus === "NONE" && (
                       <div style={{ marginTop: 6 }}>
                         <Text type="secondary" style={{ fontSize: 12 }}>(Không thu COD)</Text>
                       </div>

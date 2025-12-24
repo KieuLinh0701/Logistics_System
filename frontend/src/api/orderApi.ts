@@ -134,6 +134,10 @@ const orderApi = {
     await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/claim`);
   },
 
+  async claimShipperOrderRequest(orderId: number) {
+    await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/claim-request`);
+  },
+
   async markShipperPickedUp(orderId: number, payload?: { latitude?: number; longitude?: number; photoUrl?: string; notes?: string }) {
     const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/picked-up`, payload || {});
     return res.data;

@@ -55,7 +55,7 @@ export default function ShippingRequests() {
         return;
       }
 
-      await orderApi.claimShipperOrder(rec.id);
+      await orderApi.claimShipperOrderRequest(rec.id);
       message.success("Đã nhận đơn");
       // Tự động tải lại toàn bộ danh sách từ backend để đảm bảo đồng bộ
       await load(1, pagination.pageSize);

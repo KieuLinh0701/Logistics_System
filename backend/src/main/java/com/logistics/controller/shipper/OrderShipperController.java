@@ -87,6 +87,14 @@ public class OrderShipperController {
         return ResponseEntity.ok(shipperService.claimOrder(id));
     }
 
+    @PostMapping("/orders/{id}/claim-request")
+    public ResponseEntity<ApiResponse<String>> claimOrderRequest(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        return ResponseEntity.ok(shipperService.claimOrderRequest(id));
+    }
+
     @PostMapping("/orders/{id}/unclaim")
     public ResponseEntity<ApiResponse<String>> unclaimOrder(@PathVariable Integer id) {
         if (isNotShipper()) {

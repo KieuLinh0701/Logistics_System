@@ -316,7 +316,7 @@ public class OrderShipperService {
             // Điều kiện: (employee = currentEmployee && status IN (PICKING_UP, PICKED_UP) && pickupType = PICKUP_BY_COURIER)
             List<Predicate> assignedPreds = new ArrayList<>();
             assignedPreds.add(cb.equal(root.get("employee").get("id"), employee.getId()));
-            assignedPreds.add(root.get("status").in(OrderStatus.PICKING_UP, OrderStatus.PICKED_UP));
+            assignedPreds.add(root.get("status").in(OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKING_UP, OrderStatus.PICKED_UP));
             assignedPreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
 
             // Thu hẹp theo bưu cục của shipper: chỉ theo fromOffice nếu có
@@ -376,6 +376,38 @@ public class OrderShipperService {
         return new ApiResponse<>(true, "Lấy thông tin đơn hàng thành công", mapOrderDetail(order));
     }
 
+        @Transactional
+    public ApiResponse<String> claimOrderRequest(Integer id) {
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice().getId();
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        // Kiểm tra quyền theo bưu cục: nếu là đơn lấy tại nhà thì so với fromOffice, ngược lại so với toOffice
+        if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+            if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
+                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            }
+        } else {
+            if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
+                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            }
+        }
+
+        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
+        }
+
+        // Khi shipper nhận yêu cầu lấy hàng tại nhà, gán shipper và chuyển trạng thái sang PICKING_UP
+        order.setStatus(OrderStatus.PICKING_UP);
+        // Gán employee hiện tại khi shipper nhận đơn
+        order.setEmployee(employee);
+        orderRepository.save(order);
+        saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper nhận yêu cầu lấy hàng (bắt đầu lấy)");
+        return new ApiResponse<>(true, "Nhận đơn thành công", null);
+    }
+
     @Transactional
     public ApiResponse<String> claimOrder(Integer id) {
         Employee employee = getCurrentEmployee();
@@ -384,31 +416,20 @@ public class OrderShipperService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        // Nếu đây là đơn loại PICKUP_BY_COURIER (người gửi yêu cầu shipper tới lấy),
-        // kiểm tra dựa trên fromOffice của đơn
-        if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
-            if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
-                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
-            }
-            if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-                return new ApiResponse<>(false, "Chỉ có thể nhận đơn đang ở trạng thái SẴN SÀNG LẤY", null);
-            }
-        } else {
-            // Trường hợp nhận đơn truyền thống: kiểm tra toOffice
-            if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
-            }
-
-            if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-                return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
-            }
+        if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
+            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
         }
 
-        // Gán employee hiện tại khi shipper nhận đơn và chuyển trạng thái sang PICKING_UP
+        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
+        }
+
+        // Khi shipper nhận đơn từ danh sách chưa gán, đặt trạng thái là READY_FOR_PICKUP
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        // Gán employee hiện tại khi shipper nhận đơn
         order.setEmployee(employee);
-        order.setStatus(OrderStatus.PICKING_UP);
         orderRepository.save(order);
-        saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper nhận đơn để lấy hàng");
+        saveHistory(order, OrderHistoryActionType.READY_FOR_PICKUP, "Shipper nhận đơn (sẵn sàng lấy)");
         return new ApiResponse<>(true, "Nhận đơn thành công", null);
     }
 
