@@ -19,9 +19,9 @@ public interface ProductRepository extends JpaRepository<Product, Integer>, JpaS
     // Tổng quan sản phẩm
     @Query("SELECT new com.logistics.dto.user.dashboard.UserProductStatsDTO(" +
             "COUNT(p), " +
-            "SUM(CASE WHEN p.stock = 0 THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN p.stock < 10 THEN 1 ELSE 0 END), " + 
-            "SUM(CASE WHEN p.status = 'ACTIVE' THEN 1 ELSE 0 END)) " +
+            "COALESCE(SUM(CASE WHEN p.stock = 0 THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN p.stock < 10 THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN p.status = 'ACTIVE' THEN 1 ELSE 0 END), 0)) " +
             "FROM Product p WHERE p.user.id = :userId")
     UserProductStatsDTO getUserProductStats(@Param("userId") Integer userId);
 

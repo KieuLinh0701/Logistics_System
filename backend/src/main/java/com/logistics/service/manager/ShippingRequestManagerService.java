@@ -208,12 +208,6 @@ public class ShippingRequestManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        if (userOffice == null
-                || userOffice.getManager() == null
-                || !userOffice.getManager().getId().equals(userId)) {
-            return new ApiResponse<>(false, "Không có quyền phản hồi yêu cầu này", null);
-        }
-
         User user = userOffice.getManager().getUser();
 
         validateForm(request);

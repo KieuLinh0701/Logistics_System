@@ -14,7 +14,6 @@ interface PromotionCardProps {
   selectedPromotion: Promotion | null;
   setSelectedPromotion: (value: Promotion | null) => void;
   setShowPromoModal: (value: boolean) => void;
-  disabled: boolean;
   status: OrderStatus;
 }
 
@@ -25,7 +24,6 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
   selectedPromotion,
   setSelectedPromotion,
   setShowPromoModal,
-  disabled,
   status,
 }) => {
 
@@ -86,7 +84,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
         className="create-order-promotion-card promo-button"
         icon={selectedPromotion ? <TagOutlined /> : <GiftOutlined />}
         onClick={() => setShowPromoModal(true)}
-        disabled={disabled || !canEditUserOrderField('promotion', status)}
+        disabled={ !canEditUserOrderField('promotion', status)}
       >
         {selectedPromotion ? "Đổi mã khuyến mãi" : "Chọn mã khuyến mãi"}
       </Button>
@@ -100,7 +98,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
             </Text>
             <div>{selectedPromotion.code}</div>
           </div>
-          {(disabled && !canEditUserOrderField('promotion', status)) && (<Button
+          {(!canEditUserOrderField('promotion', status)) && (<Button
             type="text"
             danger
             icon={<DeleteOutlined />}

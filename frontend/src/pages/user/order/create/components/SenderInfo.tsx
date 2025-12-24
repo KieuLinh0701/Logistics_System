@@ -22,6 +22,7 @@ interface Props {
     onEdit: (a: Address) => void;
     onDelete: (id: number) => void;
     onSetDefault: (id: number) => void;
+    userLocked: boolean;
 }
 
 const SenderInfo: React.FC<Props> = ({
@@ -34,8 +35,9 @@ const SenderInfo: React.FC<Props> = ({
     onEdit,
     onDelete,
     onSetDefault,
+    userLocked
 }) => {
-    
+
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [cityName, setCityName] = useState<string>('Unknown');
@@ -70,7 +72,16 @@ const SenderInfo: React.FC<Props> = ({
 
     return (
         <>
-            {!existBankAccount && (
+            {userLocked && (
+                <Alert
+                    message="Tài khoản đã bị khóa"
+                    description="Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi tạo đơn hàng mới."
+                    type="error"
+                    showIcon
+                    className="create-order-alert"
+                />
+            )}
+            {!existBankAccount && !userLocked && (
                 <Alert
                     message="Chưa có tài khoản ngân hàng"
                     description="Bạn cần thêm tài khoản ngân hàng trong hồ sơ cá nhân để nhận tiền COD hoặc thanh toán khi tạo đơn hàng. Vui lòng cập nhật trước khi tiếp tục."
@@ -106,7 +117,11 @@ const SenderInfo: React.FC<Props> = ({
                     ) : (
                         <Alert
                             message="Chưa có địa chỉ"
-                            description="Bạn cần cập nhật địa chỉ trong hồ sơ cá nhân để tiếp tục tạo đơn hàng"
+                            description={
+                                userLocked
+                                    ? "Tài khoản đang bị khóa, không thể cập nhật địa chỉ lúc này"
+                                    : "Bạn cần cập nhật địa chỉ trong hồ sơ cá nhân để tiếp tục tạo đơn hàng"
+                            }
                             type="warning"
                             showIcon
                             className="create-order-alert"
@@ -116,6 +131,7 @@ const SenderInfo: React.FC<Props> = ({
                     <Button
                         className="create-order-btn"
                         icon={<EditOutlined />}
+                        disabled={userLocked}
                         onClick={() => setShowModal(true)}
                     >
                         Chọn địa chỉ

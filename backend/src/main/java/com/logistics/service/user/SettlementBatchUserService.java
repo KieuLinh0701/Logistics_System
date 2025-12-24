@@ -2,7 +2,6 @@ package com.logistics.service.user;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -19,8 +18,6 @@ import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
 import com.logistics.entity.Order;
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
-import com.logistics.enums.OrderPayerType;
-import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.SettlementStatus;
 import com.logistics.enums.SettlementTransactionStatus;
@@ -56,17 +53,21 @@ public class SettlementBatchUserService {
         try {
             Sort sort = buildSort(request.getSort());
             Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
-            List<SettlementBatch> batchs = getSettlementBatchs(userId, request, pageable);
+            Page<SettlementBatch> pageData = getSettlementBatchs(userId, request, pageable);
 
-            List<UserSettlementBatchListDto> list = batchs.stream()
+            List<UserSettlementBatchListDto> list = pageData.getContent()
+                    .stream()
                     .map(batch -> {
                         BigDecimal remainAmount = calculateRemainAmount(batch);
                         return SettlementBatchMapper.toListDtos(batch, remainAmount);
                     })
                     .toList();
 
-            int total = batchs.size();
-            Pagination pagination = new Pagination(total, request.getPage(), request.getLimit(), 1);
+            Pagination pagination = new Pagination(
+                    (int) pageData.getTotalElements(),
+                    request.getPage(),
+                    request.getLimit(),
+                    pageData.getTotalPages());
 
             ListResponse<UserSettlementBatchListDto> data = new ListResponse<>();
             data.setList(list);
@@ -78,10 +79,33 @@ public class SettlementBatchUserService {
         }
     }
 
-    private List<SettlementBatch> getSettlementBatchs(Integer userId, SearchRequest request,
-            Pageable pageable) {
+    public ApiResponse<List<Integer>> getAllIds(int userId, SearchRequest request) {
+        try {
+            Specification<SettlementBatch> spec = SettlementBatchSpecification.unrestricted()
+                    .and(SettlementBatchSpecification.userId(userId))
+                    .and(SettlementBatchSpecification.search(request.getSearch()))
+                    .and(SettlementBatchSpecification.createdAtBetween(
+                            parseDate(request.getStartDate()),
+                            parseDate(request.getEndDate())))
+                    .and((root, query, cb) -> cb.notEqual(root.get("status"), "COMPLETED"))
+                    .and((root, query, cb) -> cb.lessThan(root.get("balanceAmount"), 0));
 
-        System.out.println("type" + request.getType());
+            List<SettlementBatch> batches = batchRepository.findAll(spec);
+
+            List<Integer> batchIds = batches.stream()
+                    .map(SettlementBatch::getId)
+                    .toList();
+
+            return new ApiResponse<>(true, "Lấy toàn bộ ID phiên đối soát thành công", batchIds);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    private Page<SettlementBatch> getSettlementBatchs(
+            Integer userId,
+            SearchRequest request,
+            Pageable pageable) {
 
         Specification<SettlementBatch> spec = SettlementBatchSpecification.unrestricted()
                 .and(SettlementBatchSpecification.userId(userId))
@@ -89,13 +113,10 @@ public class SettlementBatchUserService {
                 .and(SettlementBatchSpecification.status(request.getStatus()))
                 .and(SettlementBatchSpecification.balanceType(request.getType()))
                 .and(SettlementBatchSpecification.createdAtBetween(
-                        parseDate(request.getStartDate()), parseDate(request.getEndDate())));
+                        parseDate(request.getStartDate()),
+                        parseDate(request.getEndDate())));
 
-        if (pageable != null) {
-            return batchRepository.findAll(spec, pageable).getContent();
-        } else {
-            return batchRepository.findAll(spec, buildSort(request.getSort()));
-        }
+        return batchRepository.findAll(spec, pageable);
     }
 
     private BigDecimal calculateRemainAmount(SettlementBatch batch) {
@@ -108,6 +129,10 @@ public class SettlementBatchUserService {
         BigDecimal paidAmount = transactionRepository.sumAmountByBatchAndStatus(
                 batch.getId(),
                 SettlementTransactionStatus.SUCCESS);
+
+        if (paidAmount == null) {
+            paidAmount = BigDecimal.ZERO;
+        }
 
         return balance.abs().subtract(paidAmount);
     }
@@ -191,6 +216,10 @@ public class SettlementBatchUserService {
             Integer userId, Integer batchId) {
         try {
             Sort sort = Sort.by(Sort.Direction.DESC, "paidAt");
+
+            SettlementBatch batch = batchRepository
+                    .findByIdAndShop_Id(batchId, userId)
+                    .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
 
             List<SettlementTransaction> transactions = transactionRepository.findBySettlementBatchId(batchId, sort);
 

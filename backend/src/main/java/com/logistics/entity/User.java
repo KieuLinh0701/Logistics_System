@@ -74,6 +74,9 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private Boolean locked = false;
+
     @PostPersist
     private void generateCode() {
         if (this.code == null) {

@@ -48,6 +48,11 @@ public class UserOrderEditRuleUtils {
         Map<String, EditableRule> map = new HashMap<>();
 
         map.put("senderAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("senderName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("senderPhoneNumber", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("senderCityCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("senderWardCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("senderDetailAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
 
         // Thông tin recipient dùng chung
         map.put("recipientName", new EditableRule(EDITABLE_RECIPIENT_STATUSES, USER_FINAL_STATUSES));

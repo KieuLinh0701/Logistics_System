@@ -41,7 +41,7 @@ public class NotificationService {
             Integer userId, Integer creatorId, String relatedType, String relatedId) {
         if (userId == null) {
             return;
-        }
+        } 
 
         Notification notification = new Notification();
 

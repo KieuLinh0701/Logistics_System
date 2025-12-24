@@ -88,10 +88,11 @@ const PaymentModal: React.FC<Props> = ({
 
             {showNextMinAlert && (
                 <Text type="warning">
-                    Lưu ý: Sau khi thanh toán {amount.toLocaleString()} VND, số dư còn lại chỉ {nextRemain.toLocaleString()} VND, dưới mức tối thiểu 10,000 VND.
-                    Lần thanh toán tiếp theo sẽ không thể thực hiện do không đủ mức tối thiểu.
+                    Lưu ý: Sau khi thanh toán {amount.toLocaleString()} VND, số dư còn lại {nextRemain.toLocaleString()} VND dưới mức tối thiểu 10,000 VND.
+                    Để tránh nợ xấu, vui lòng gộp với các phiên đối soát khác cho các lần thanh toán tiếp theo.
                 </Text>
             )}
+
         </Modal>
     );
 };

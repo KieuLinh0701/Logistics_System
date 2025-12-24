@@ -347,12 +347,12 @@
 }
 
 .manager-dashboard-date-filter-live-text {
-  color: #f5222d;
+  color: #f5222d !important;
   margin-right: 8px;
 }
 
 .manager-dashboard-date-filter-time {
-  color: #f5222d;
+  color: #f5222d !important;
 }
 
 /* Vehicle Type Chart */

@@ -17,6 +17,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -58,14 +59,18 @@ public class PaymentSubmissionManagerService {
         try {
             Sort sort = buildSort(request.getSort());
             Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
-            List<PaymentSubmission> submissions = getPaymentSubmissions(userId, batchId, request, pageable);
+            Page<PaymentSubmission> pageData = getPaymentSubmissionPage(userId, batchId, request, pageable);
 
-            List<ManagerPaymentSubmissionListDto> list = submissions.stream()
+            List<ManagerPaymentSubmissionListDto> list = pageData.getContent()
+                    .stream()
                     .map(PaymentSubmissionMapper::toDto)
                     .toList();
 
-            int total = submissions.size();
-            Pagination pagination = new Pagination(total, request.getPage(), request.getLimit(), 1);
+            Pagination pagination = new Pagination(
+                    (int) pageData.getTotalElements(),
+                    request.getPage(),
+                    request.getLimit(),
+                    pageData.getTotalPages());
 
             ListResponse<ManagerPaymentSubmissionListDto> data = new ListResponse<>();
             data.setList(list);
@@ -181,7 +186,34 @@ public class PaymentSubmissionManagerService {
         }
     }
 
-    private List<PaymentSubmission> getPaymentSubmissions(Integer userId, @NonNull Integer batchId, SearchRequest request,
+    private Page<PaymentSubmission> getPaymentSubmissionPage(
+            Integer userId,
+            Integer batchId,
+            SearchRequest request,
+            Pageable pageable) {
+
+        Office office = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        PaymentSubmissionBatch batch = batchRepository.findById(batchId)
+                .orElseThrow(() -> new RuntimeException("Phiên đối soát không tồn tại"));
+
+        if (!batch.getOffice().getId().equals(office.getId())) {
+            throw new RuntimeException("Bạn không có quyền xem batch này");
+        }
+
+        Specification<PaymentSubmission> spec = PaymentSubmissonSpecification.unrestricted()
+                .and(PaymentSubmissonSpecification.batchId(batch.getId()))
+                .and(PaymentSubmissonSpecification.search(request.getSearch()))
+                .and(PaymentSubmissonSpecification.status(request.getStatus()))
+                .and(PaymentSubmissonSpecification.createdAtBetween(
+                        parseDate(request.getStartDate()),
+                        parseDate(request.getEndDate())));
+
+        return paymentSubmissionRepository.findAll(spec, pageable);
+    }
+
+    private List<PaymentSubmission> getPaymentSubmissions(Integer userId, @NonNull Integer batchId,
+            SearchRequest request,
             Pageable pageable) {
         Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
@@ -230,12 +262,6 @@ public class PaymentSubmissionManagerService {
         }
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
-        if (userOffice == null
-                || userOffice.getManager() == null
-                || !userOffice.getManager().getId().equals(userId)) {
-            return new ApiResponse<>(false, "Không có quyền xử lý phiên đối soát này", null);
-        }
 
         User user = userOffice.getManager().getUser();
 

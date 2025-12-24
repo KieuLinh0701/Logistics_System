@@ -8,8 +8,8 @@ interface Props {
   onEdit: () => void;
   onCancel: () => void;
   loading?: boolean;
-  disabled: boolean;
   status: OrderStatus;
+  userLocked: boolean;
 }
 
 const Actions: React.FC<Props> = ({
@@ -17,8 +17,8 @@ const Actions: React.FC<Props> = ({
   onEdit,
   onCancel,
   loading = false,
-  disabled,
   status,
+  userLocked
 }) => {
   const [isOn, setIsOn] = useState(status === "PENDING");
   const [tempStatus, setTempStatus] = useState<"DRAFT" | "PENDING">(
@@ -31,6 +31,13 @@ const Actions: React.FC<Props> = ({
   }, [status]);
 
   const handleToggle = (checked: boolean) => {
+    if (userLocked) {
+      setIsOn(false);
+      setTempStatus("DRAFT");
+      onStatusChange("DRAFT");
+      return;
+    }
+
     setIsOn(checked);
     const newStatus = checked ? "PENDING" : "DRAFT";
     setTempStatus(newStatus);
@@ -38,7 +45,7 @@ const Actions: React.FC<Props> = ({
   };
 
   const handleEditClick = () => {
-    onEdit(); 
+    onEdit();
   };
 
   return (
@@ -68,7 +75,7 @@ const Actions: React.FC<Props> = ({
             icon={<CloseOutlined />}
             onClick={onCancel}
             loading={loading}
-            disabled={loading || disabled || !canEditUserOrder(status as string)}
+            disabled={loading  || !canEditUserOrder(status as string)}
           >
             Hủy
           </Button>
@@ -81,7 +88,7 @@ const Actions: React.FC<Props> = ({
             icon={<SaveOutlined />}
             onClick={handleEditClick}
             loading={loading}
-            disabled={loading || disabled || !canEditUserOrder(status as string)}
+            disabled={loading || !canEditUserOrder(status as string)}
           >
             Lưu thay đổi
           </Button>

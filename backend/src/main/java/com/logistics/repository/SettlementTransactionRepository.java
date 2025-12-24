@@ -1,6 +1,5 @@
 package com.logistics.repository;
 
-import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.enums.SettlementTransactionStatus;
 
@@ -16,29 +15,31 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SettlementTransactionRepository
-                extends JpaRepository<SettlementTransaction, Integer>, JpaSpecificationExecutor<SettlementTransaction> {
-        @Query("""
-                            SELECT COALESCE(SUM(t.amount), 0)
-                            FROM SettlementTransaction t
-                            WHERE t.settlementBatch.id = :batchId
-                              AND t.status = :status
-                        """)
-        BigDecimal sumAmountByBatchAndStatus(
-                        Integer batchId,
-                        SettlementTransactionStatus status);
+    extends JpaRepository<SettlementTransaction, Integer>, JpaSpecificationExecutor<SettlementTransaction> {
+  @Query("""
+          SELECT COALESCE(SUM(t.amount), 0)
+          FROM SettlementTransaction t
+          WHERE t.settlementBatch.id = :batchId
+            AND t.status = :status
+      """)
+  BigDecimal sumAmountByBatchAndStatus(
+      Integer batchId,
+      SettlementTransactionStatus status);
 
-        List<SettlementTransaction> findBySettlementBatchId(Integer settlementBatchId, Sort sort);
+  List<SettlementTransaction> findBySettlementBatchId(Integer settlementBatchId, Sort sort);
 
-        Optional<SettlementTransaction> findByCode(String code);
+  Optional<SettlementTransaction> findByCode(String code);
 
-        // Tổng tiền đã trả thành công
-        @Query("""
-                            SELECT COALESCE(SUM(t.amount), 0)
-                            FROM SettlementTransaction t
-                            WHERE t.settlementBatch.id = :batchId
-                              AND t.status = com.logistics.enums.SettlementTransactionStatus.SUCCESS
-                              AND t.type = com.logistics.enums.SettlementTransactionType.SHOP_TO_SYSTEM
-                        """)
-        BigDecimal sumPaidDebtByBatch(Integer batchId);
+  // Tổng tiền đã trả thành công
+  @Query("""
+          SELECT COALESCE(SUM(t.amount), 0)
+          FROM SettlementTransaction t
+          WHERE t.settlementBatch.id = :batchId
+            AND t.status = com.logistics.enums.SettlementTransactionStatus.SUCCESS
+            AND t.type = com.logistics.enums.SettlementTransactionType.SHOP_TO_SYSTEM
+      """)
+  BigDecimal sumPaidDebtByBatch(Integer batchId);
+
+  List<SettlementTransaction> findAllByCodeIn(List<String> codes);
 
 }

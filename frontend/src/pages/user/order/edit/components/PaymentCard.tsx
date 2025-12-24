@@ -7,7 +7,6 @@ import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 interface Props {
   form: FormInstance;
   payer: string;
-  disabled: boolean;
   onChangePayment?: (changedValues: any) => void;
   status: OrderStatus;
 }
@@ -15,7 +14,6 @@ interface Props {
 const PaymentCard: React.FC<Props> = ({
   form,
   payer,
-  disabled,
   onChangePayment,
   status,
 }) => {
@@ -42,7 +40,7 @@ const PaymentCard: React.FC<Props> = ({
             rules={[{ required: true, message: "Chọn người trả phí" }]}
           >
             <Radio.Group
-              disabled={disabled || !canEditUserOrderField('payer', status)}
+              disabled={!canEditUserOrderField('payer', status)}
               className="custom-radio-group"
             >
               {ORDER_PAYER_TYPES.map((payerType) => (

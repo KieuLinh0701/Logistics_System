@@ -165,26 +165,26 @@ public class IncidentReportManagerService {
             ManagerIncidentUpdateRequest request) {
 
         try {
+            IncidentReport incident = incidentRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Báo cáo sự cố không tồn tại"));
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             System.out.println("status" + request.getStatus());
             System.out.println("resi" + request.getResolution());
+            System.out.println("UserId: " + userId);
+            System.out.println("Office id: " + userOffice.getId());
+            System.out.println("Manager id: " + userOffice.getManager().getUser().getId());
 
-            IncidentReport incident = incidentRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Báo cáo sự cố không tồn tại"));
-
+            System.out.println(
+                    "Incident office id: " + (incident.getOffice() != null ? incident.getOffice().getId() : "null"));
             if (!checkPermission(userId, incident)) {
                 return new ApiResponse<>(false, "Không có quyền xử lý báo cáo này", null);
             }
 
-            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
-            if (userOffice == null
-                    || userOffice.getManager() == null
-                    || !userOffice.getManager().getId().equals(userId)) {
-                return new ApiResponse<>(false, "Không có quyền xử lý báo cáo này", null);
-            }
-
             User user = userOffice.getManager().getUser();
+
+            System.out.println("Incident current status: " + incident.getStatus());
+            System.out.println("Requested status: " + request.getStatus());
 
             validateForm(request);
 

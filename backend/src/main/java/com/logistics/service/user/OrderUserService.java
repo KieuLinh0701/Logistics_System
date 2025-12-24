@@ -197,7 +197,7 @@ public class OrderUserService {
             List<Order> orders = repository.findAll(spec);
 
             List<Integer> orderIds = orders.stream()
-                    .filter(order -> order.getTrackingNumber() != null) 
+                    .filter(order -> order.getTrackingNumber() != null)
                     .map(Order::getId)
                     .toList();
 
@@ -209,10 +209,17 @@ public class OrderUserService {
 
     public ApiResponse<OrderCreateSuccess> create(Integer userId, UserOrderCreateRequest request) {
         try {
-            validateCreate(request);
+            validateCreate(request, false);
+
+            User user = userUserService.findById(userId);
+            if (user.getLocked()) {
+                return new ApiResponse<>(false,
+                        "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi tạo đơn hàng mới.",
+                        null);
+            }
 
             if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), userId)) {
-                return new ApiResponse<>(false, "Địa chỉ người nhận không thuộc người dùng", null);
+                return new ApiResponse<>(false, "Địa chỉ người gửi không thuộc người dùng", null);
             }
 
             if (request.getFromOfficeId() != null) {
@@ -278,8 +285,6 @@ public class OrderUserService {
                         "Rất tiếc! Khuyến mãi bạn chọn có thể đã thay đổi, hết hạn hoặc hết lượt sử dụng. Vui lòng kiểm tra lại trước khi đặt hàng.",
                         null);
             }
-
-            User user = userUserService.findById(userId);
 
             ServiceType serviceType = serviceTypeUserService.findById(request.getServiceTypeId())
                     .orElseThrow(() -> new RuntimeException("Dịch vụ vận chuyển không tồn tại"));
@@ -418,6 +423,14 @@ public class OrderUserService {
 
     public ApiResponse<String> publicOrder(Integer userId, Integer orderId) {
         try {
+
+            User user = userUserService.findById(userId);
+            if (user.getLocked()) {
+                return new ApiResponse<>(false,
+                        "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.",
+                        null);
+            }
+
             Order order = repository.findByIdAndUserId(orderId, userId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
@@ -615,7 +628,7 @@ public class OrderUserService {
     public ApiResponse<Boolean> updateOrder(Integer userId, Integer orderId, UserOrderCreateRequest request) {
         try {
             // 1. Validate cơ bản
-            validateCreate(request);
+            validateCreate(request, true);
 
             // 2. Lấy order
             Order order = repository.findByIdAndUserId(orderId, userId)
@@ -649,6 +662,36 @@ public class OrderUserService {
             }
 
             // 4. Cập nhật các field theo rule
+            if (request.getSenderAddressId() != null) {
+                Address sender = order.getSenderAddress();
+
+                if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), userId)) {
+                    return new ApiResponse<>(false, "Địa chỉ người gửi không thuộc người dùng", null);
+                }
+
+                Address reqSenderAddress = addressUserService.findById(request.getSenderAddressId())
+                        .orElseThrow(() -> new RuntimeException("Địa chỉ người gửi không tồn tại"));
+
+                // Cập nhật toàn bộ object senderAddress
+                updateFieldIfEditable("senderAddress", sender, reqSenderAddress, order,
+                        currentStatus, order::setSenderAddress);
+
+                // Cập nhật từng field để giữ consistency nếu cần
+                updateFieldIfEditable("senderName", sender.getName(), reqSenderAddress.getName(), order,
+                        currentStatus, order::setSenderName);
+                updateFieldIfEditable("senderPhoneNumber", sender.getPhoneNumber(),
+                        reqSenderAddress.getPhoneNumber(), order,
+                        currentStatus, order::setSenderPhone);
+                updateFieldIfEditable("senderCityCode", sender.getCityCode(),
+                        reqSenderAddress.getCityCode(), order,
+                        currentStatus, order::setSenderCityCode);
+                updateFieldIfEditable("senderWardCode", sender.getWardCode(),
+                        reqSenderAddress.getWardCode(), order,
+                        currentStatus, order::setSenderWardCode);
+                updateFieldIfEditable("senderDetailAddress", sender.getDetail(),
+                        reqSenderAddress.getDetail(), order,
+                        currentStatus, order::setSenderDetail);
+            }
             Address recipient = order.getRecipientAddress();
             updateFieldIfEditable("recipientName", order.getRecipientName(), request.getRecipientName(), order,
                     currentStatus, order::setRecipientName);
@@ -750,7 +793,9 @@ public class OrderUserService {
 
             repository.save(order);
             return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
@@ -893,8 +938,15 @@ public class OrderUserService {
 
     // --- Hàm validate trước khi publish DRAFT sang PENDING ---
     private void validateBeforePublish(Integer userId, UserOrderCreateRequest request) {
+
+        User user = userUserService.findById(userId);
+        if (user.getLocked()) {
+            throw new RuntimeException(
+                    "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.");
+        }
+
         // Kiểm tra các field bắt buộc
-        validateCreate(request);
+        validateCreate(request, true);
 
         // Kiểm tra sản phẩm
         if (request.getOrderProducts() != null && !request.getOrderProducts().isEmpty()) {
@@ -967,13 +1019,13 @@ public class OrderUserService {
         return bankAccountRepository.existsByUserId(userId);
     }
 
-    private void validateCreate(UserOrderCreateRequest request) {
+    private void validateCreate(UserOrderCreateRequest request, boolean isEdit) {
 
         List<String> missing = new ArrayList<>();
 
         if (isBlank(request.getStatus()))
             missing.add("Trạng thái đơn hàng");
-        if (request.getSenderAddressId() == null)
+        if (request.getSenderAddressId() == null && !isEdit)
             missing.add("Địa chỉ người gửi");
         if (isBlank(request.getRecipientName()))
             missing.add("Tên người nhận");
@@ -1023,7 +1075,7 @@ public class OrderUserService {
             throw new RuntimeException("Người trả phí không hợp lệ");
         }
 
-        if (request.getSenderAddressId() <= 0)
+        if (request.getSenderAddressId() != null && request.getSenderAddressId() <= 0)
             throw new RuntimeException("Mã địa chỉ người gửi không hợp lệ");
 
         if (!request.getRecipientPhone().matches("\\d{10}"))

@@ -70,6 +70,11 @@ const userApi = {
     const res = await axiosClient.delete<ApiResponse<null>>(`/admin/users/${id}`);
     return res;
   },
+
+  // USER
+  async checkUserLocked(): Promise<ApiResponse<Boolean>> {
+    return axiosClient.get<ApiResponse<Boolean>>("/user/users/check");
+  },
 };
 
 export default userApi;

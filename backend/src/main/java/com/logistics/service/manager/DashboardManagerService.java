@@ -77,7 +77,8 @@ public class DashboardManagerService {
 
             if (rows != null) {
                 for (Object[] rowEmployee : rowEmployees) {
-                    if (rowEmployee != null && rowEmployee[0] instanceof EmployeeShift && rowEmployee[1] instanceof Long) {
+                    if (rowEmployee != null && rowEmployee[0] instanceof EmployeeShift
+                            && rowEmployee[1] instanceof Long) {
                         EmployeeShift shift = (EmployeeShift) rowEmployee[0];
                         Long count = (Long) rowEmployee[1];
                         employeeShiftCounts.put(shift, count);
@@ -86,20 +87,42 @@ public class DashboardManagerService {
             }
 
             ManagerVehicleStatsDto vehicles = vehicleRepository.getVehicleStatsByOffice(officeId);
-            ManagerShippingRequestStatsDTO shippingRequets = shippingRequestRepository.getShippingRequestStatsByOffice(officeId);
+            if (vehicles == null)
+                vehicles = new ManagerVehicleStatsDto();
+
+            ManagerShippingRequestStatsDTO shippingRequests = shippingRequestRepository
+                    .getShippingRequestStatsByOffice(officeId);
+            if (shippingRequests == null)
+                shippingRequests = new ManagerShippingRequestStatsDTO();
+
             ManagerShipmentStatsDTO shipments = shipmentRepository.getShipmentStatsByOffice(officeId);
-            ManagerPaymentSubmissionBatchStatsDto payments = paymentSubmissionBatchRepository.getPaymentSubmissionBatchStatsByOffice(officeId);
+            if (shipments == null)
+                shipments = new ManagerShipmentStatsDTO();
+
+            ManagerPaymentSubmissionBatchStatsDto payments = paymentSubmissionBatchRepository
+                    .getPaymentSubmissionBatchStatsByOffice(officeId);
+            if (payments == null)
+                payments = new ManagerPaymentSubmissionBatchStatsDto();
+
             ManagerIncidentStatsDTO incidents = incidentRepository.getIncidentStatsByOffice(officeId);
+            if (incidents == null)
+                incidents = new ManagerIncidentStatsDTO();
+
             ManagerEmployeeStatsDTO employees = employeeRepository.getEmployeeStatsByOffice(officeId);
+            if (employees == null)
+                employees = new ManagerEmployeeStatsDTO();
+
             ManagerOrderStatsDTO orders = orderRepository.getOrderStatsByOfficeId(officeId);
+            if (orders == null)
+                orders = new ManagerOrderStatsDTO();
 
             ManagerDashboardOverviewResponseDTO data = new ManagerDashboardOverviewResponseDTO();
             data.setVehicleCounts(vehicleCounts);
             data.setVehicles(vehicles);
-            data.setShippingRequests(shippingRequets);
+            data.setShippingRequests(shippingRequests); 
             data.setShipments(shipments);
             data.setPayments(payments);
-            data.setIncidents(incidents); 
+            data.setIncidents(incidents);
             data.setEmployees(employees);
             data.setOrders(orders);
             data.setEmployeeShiftCounts(employeeShiftCounts);
@@ -110,76 +133,85 @@ public class DashboardManagerService {
         }
     }
 
-    // public ApiResponse<UserDashboardChartResponseDTO> getChart(Integer userId, SearchRequest request) {
-    //     try {
-    //         LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-    //                 ? LocalDateTime.parse(request.getStartDate())
-    //                 : null;
+    // public ApiResponse<UserDashboardChartResponseDTO> getChart(Integer userId,
+    // SearchRequest request) {
+    // try {
+    // LocalDateTime startDate = request.getStartDate() != null &&
+    // !request.getStartDate().isBlank()
+    // ? LocalDateTime.parse(request.getStartDate())
+    // : null;
 
-    //         LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-    //                 ? LocalDateTime.parse(request.getEndDate())
-    //                 : null;
+    // LocalDateTime endDate = request.getEndDate() != null &&
+    // !request.getEndDate().isBlank()
+    // ? LocalDateTime.parse(request.getEndDate())
+    // : null;
 
-    //         List<UserTopProductItemDto> topSelling = orderProductRepository.findTopSellingProducts(
-    //                 userId,
-    //                 OrderStatus.DELIVERED,
-    //                 startDate,
-    //                 endDate,
-    //                 PageRequest.of(0, 5));
+    // List<UserTopProductItemDto> topSelling =
+    // orderProductRepository.findTopSellingProducts(
+    // userId,
+    // OrderStatus.DELIVERED,
+    // startDate,
+    // endDate,
+    // PageRequest.of(0, 5));
 
-    //         List<UserTopProductItemDto> topReturned = orderProductRepository.findTopReturnedProducts(
-    //                 userId,
-    //                 List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
-    //                 startDate,
-    //                 endDate,
-    //                 PageRequest.of(0, 5));
+    // List<UserTopProductItemDto> topReturned =
+    // orderProductRepository.findTopReturnedProducts(
+    // userId,
+    // List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
+    // startDate,
+    // endDate,
+    // PageRequest.of(0, 5));
 
-    //         List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(userId, startDate,
-    //                 endDate);
+    // List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(userId,
+    // startDate,
+    // endDate);
 
-    //         UserDashboardChartResponseDTO data = new UserDashboardChartResponseDTO();
-    //         data.setTopSelling(topSelling);
-    //         data.setTopReturned(topReturned);
-    //         data.setOrderTimelines(orderTimelineDTOs);
+    // UserDashboardChartResponseDTO data = new UserDashboardChartResponseDTO();
+    // data.setTopSelling(topSelling);
+    // data.setTopReturned(topReturned);
+    // data.setOrderTimelines(orderTimelineDTOs);
 
-    //         return new ApiResponse<>(true, "Lấy thông tin biểu đồ thành công", data);
-    //     } catch (Exception e) {
-    //         return new ApiResponse<>(false, "Lỗi khi lấy biểu đồ: " + e.getMessage(), null);
-    //     }
+    // return new ApiResponse<>(true, "Lấy thông tin biểu đồ thành công", data);
+    // } catch (Exception e) {
+    // return new ApiResponse<>(false, "Lỗi khi lấy biểu đồ: " + e.getMessage(),
+    // null);
+    // }
     // }
 
     // public List<UserOrderTimelineDTO> getOrderTimeline(
-    //         Integer userId,
-    //         LocalDateTime startDate,
-    //         LocalDateTime endDate) {
-    //     List<UserCreatedOrderCountDTO> createdList = orderRepository.countCreatedOrdersByDate(userId, startDate,
-    //             endDate);
+    // Integer userId,
+    // LocalDateTime startDate,
+    // LocalDateTime endDate) {
+    // List<UserCreatedOrderCountDTO> createdList =
+    // orderRepository.countCreatedOrdersByDate(userId, startDate,
+    // endDate);
 
-    //     List<UserDeliveredOrderCountDTO> deliveredList = orderRepository.countDeliveredOrdersByDate(userId, startDate,
-    //             endDate);
+    // List<UserDeliveredOrderCountDTO> deliveredList =
+    // orderRepository.countDeliveredOrdersByDate(userId, startDate,
+    // endDate);
 
-    //     Map<LocalDate, UserOrderTimelineDTO> map = new TreeMap<>();
+    // Map<LocalDate, UserOrderTimelineDTO> map = new TreeMap<>();
 
-    //     for (UserCreatedOrderCountDTO c : createdList) {
-    //         LocalDate date = c.getDate().toLocalDate();
-    //         map.put(
-    //                 date,
-    //                 new UserOrderTimelineDTO(date, c.getCreatedCount(), 0L));
-    //     }
+    // for (UserCreatedOrderCountDTO c : createdList) {
+    // LocalDate date = c.getDate().toLocalDate();
+    // map.put(
+    // date,
+    // new UserOrderTimelineDTO(date, c.getCreatedCount(), 0L));
+    // }
 
-    //     for (UserDeliveredOrderCountDTO d : deliveredList) {
-    //         LocalDate date = d.getDate().toLocalDate();
-    //         map.compute(
-    //                 date,
-    //                 (k, v) -> {
-    //                     if (v == null) {
-    //                         return new UserOrderTimelineDTO(date, 0L, d.getDeliveredCount());
-    //                     }
-    //                     v.setDeliveredCount(d.getDeliveredCount());
-    //                     return v;
-    //                 });
-    //     }
+    // for (UserDeliveredOrderCountDTO d : deliveredList) {
+    // LocalDate date = d.getDate().toLocalDate();
+    // map.compute(
+    // date,
+    // (k, v) -> {
+    // if (v == null) {
+    // return new UserOrderTimelineDTO(date, 0L, d.getDeliveredCount());
+    // }
+    // v.setDeliveredCount(d.getDeliveredCount());
+    // return v;
+    // });
+    // }
 
-    //     return new ArrayList<>(map.values());
+    // return new ArrayList<>(map.values());
     // }
 }

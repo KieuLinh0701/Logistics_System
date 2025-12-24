@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import FinancialTable from './FinancialTable';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { reportApi } from '../../../api/reportApi';
+import { reportApi } from '../../../api/reportApi'; 
 
 const { RangePicker } = DatePicker;
 const { Title } = Typography;

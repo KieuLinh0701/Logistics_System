@@ -164,7 +164,7 @@ const ServiceTypes: React.FC = () => {
 
                     {/* Price Check Section */}
                     <div className="price-check-section">
-                        <Card className="price-check-card">
+                        <div className="price-check-card">
                             <Row align="middle" justify="space-between">
                                 <Col xs={24} md={16}>
                                     <Title level={2} className="price-check-title">
@@ -185,7 +185,7 @@ const ServiceTypes: React.FC = () => {
                                     </Button>
                                 </Col>
                             </Row>
-                        </Card>
+                        </div>
                     </div>
 
                     {/* Free Services Section */}

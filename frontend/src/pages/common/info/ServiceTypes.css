@@ -284,9 +284,9 @@
 
 .price-check-card {
   border-radius: 12px !important;
-  background: var(--bg-color-icon);
+  background: var(--primary) !important;
   border: none !important;
-  padding: 10px 30px 20px 30px !important;
+  padding: 20px 30px 40px 60px !important;
 }
 
 .price-check-title {

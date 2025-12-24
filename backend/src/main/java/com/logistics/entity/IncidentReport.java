@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import org.hibernate.envers.Audited;
+import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -55,7 +56,7 @@ public class IncidentReport {
     private IncidentType incidentType;
 
     @Column(columnDefinition = "NVARCHAR(255)", length = 255, nullable = false)
-    private String title;
+    private String title; 
 
     @Lob
     private String description;
@@ -69,6 +70,7 @@ public class IncidentReport {
     private IncidentPriority priority = IncidentPriority.MEDIUM;
 
     @ElementCollection
+    @org.hibernate.envers.NotAudited
     @CollectionTable(name = "incident_report_images", joinColumns = @JoinColumn(name = "incident_report_id"))
     @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private List<String> images;

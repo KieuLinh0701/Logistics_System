@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import dayjs from 'dayjs';
 import { Table, Button, Dropdown, Tooltip } from "antd";
 import { DownOutlined } from "@ant-design/icons";
@@ -15,6 +15,9 @@ interface Props {
   total: number;
   loading: boolean;
   onPageChange: (page: number, pageSize?: number) => void;
+  onSelectionChange?: (settlements: SettlementBatch[]) => void;
+  selectedIds?: number[];
+  onSelectAllAction?: () => void;
 }
 
 const DataTable: React.FC<Props> = ({
@@ -26,8 +29,40 @@ const DataTable: React.FC<Props> = ({
   total,
   onPageChange,
   loading,
+  onSelectionChange,
+  selectedIds,
+  onSelectAllAction,
 }) => {
   const tableData = datas.map((o) => ({ ...o, key: String(o.id) }));
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  React.useEffect(() => {
+    setSelectedRowKeys(selectedIds || []);
+  }, [selectedIds]);
+
+  const onSelectChange = (newSelectedRowKeys: React.Key[], selectedRows: SettlementBatch[]) => {
+    setSelectedRowKeys(newSelectedRowKeys);
+    if (onSelectionChange) {
+      onSelectionChange(selectedRows); 
+    }
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+    onSelectAll: (selected: boolean, selectedRows: SettlementBatch[], changeRows: SettlementBatch[]) => {
+      if (!selected) {
+        if (onSelectionChange) onSelectionChange([]);
+        setSelectedRowKeys([]);
+      } else {
+        setSelectedRowKeys(selectedRows.map(r => String(r.id)));
+        if (onSelectionChange) onSelectionChange(selectedRows);
+      }
+    },
+    getCheckboxProps: (record: SettlementBatch) => ({
+      disabled: (record.status === "COMPLETED" && record.balanceAmount < 0) || record.balanceAmount >= 0,
+    }),
+  };
 
   const columns: ColumnsType<SettlementBatch> = [
     {
@@ -166,6 +201,7 @@ const DataTable: React.FC<Props> = ({
           total,
           onChange: onPageChange,
         }}
+        rowSelection={rowSelection}
       />
     </div>
   );

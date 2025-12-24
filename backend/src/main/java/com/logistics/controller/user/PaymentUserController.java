@@ -11,6 +11,7 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import com.logistics.request.user.payment.UserPaymentCheck;
 import com.logistics.request.user.payment.UserPaymentRequest;
+import com.logistics.request.user.payment.UserPaymentsRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.PaymentUserService;
 
@@ -55,6 +56,15 @@ public class PaymentUserController {
                 // Gọi service truyền toàn bộ PaymentCheck
                 return ResponseEntity.ok(
                                 service.handleVNPayReturn(userId, paymentCheck));
+        }
+
+         @PostMapping("/vnpay/settlements")
+        public ResponseEntity<ApiResponse<String>> createVNPayURLForSettlements(
+                        @Valid @RequestBody UserPaymentsRequest paymentRequest,
+                        HttpServletRequest request) {
+
+                Integer userId = (Integer) request.getAttribute("currentUserId");
+                return ResponseEntity.ok(service.createVNPayURLForSettlements(userId, paymentRequest, request));
         }
 
 }
