@@ -12,6 +12,7 @@ import com.logistics.request.driver.PickUpRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -141,6 +141,11 @@ public class OrderDriverService {
             List<Integer> orderIds = request.getOrderIds();
             if (orderIds == null || orderIds.isEmpty()) {
                 return new ApiResponse<>(false, "Thiếu danh sách đơn", null);
+            }
+
+            // Bắt buộc chọn phương tiện khi driver nhận hàng
+            if (request.getVehicleId() == null) {
+                return new ApiResponse<>(false, "Vui lòng chọn phương tiện trước khi nhận hàng", null);
             }
 
             // Kiểm tra và cập nhật trạng thái xe

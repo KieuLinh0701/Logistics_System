@@ -84,13 +84,12 @@ const AdminOrders: React.FC = () => {
   // Prioritize offices by selectedOrder sender city/ward (suggest local offices first)
   const officeOptions = useMemo(() => {
     if (!selectedOrder || !Array.isArray(offices) || offices.length === 0) return offices;
-    const sel: any = selectedOrder;
-    const senderCity = (sel?.senderCityCode !== undefined && sel?.senderCityCode !== null)
-      ? sel.senderCityCode
-      : sel.senderAddress?.cityCode;
-    const senderWard = (sel?.senderWardCode !== undefined && sel?.senderWardCode !== null)
-      ? sel.senderWardCode
-      : sel.senderAddress?.wardCode;
+    const senderCity = (selectedOrder.senderCityCode !== undefined && selectedOrder.senderCityCode !== null)
+      ? selectedOrder.senderCityCode
+      : selectedOrder.senderAddress?.cityCode;
+    const senderWard = (selectedOrder.senderWardCode !== undefined && selectedOrder.senderWardCode !== null)
+      ? selectedOrder.senderWardCode
+      : selectedOrder.senderAddress?.wardCode;
 
     const scored = offices.map((o) => {
       let score = 0;

@@ -96,6 +96,37 @@ const DriverShipments: React.FC = () => {
     }
   };
 
+  const translateVehicleType = (type?: string) => {
+    if (!type) return "";
+    switch (type.toString().toUpperCase()) {
+      case "TRUCK":
+        return "Xe tải";
+      case "VAN":
+        return "Xe van";
+      case "CONTAINER":
+        return "Xe container";
+      default:
+        return type;
+    }
+  };
+
+  const formatStartTime = (iso?: string) => {
+    if (!iso) return "-";
+    try {
+      const d = new Date(iso);
+      const date = d.toLocaleDateString("vi-VN");
+      const time = d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+      return (
+        <div>
+          <div>{date}</div>
+          <div>{time}</div>
+        </div>
+      );
+    } catch (e) {
+      return iso;
+    }
+  };
+
   const columns = [
     { title: "Mã chuyến", dataIndex: "code", key: "code" },
     {
@@ -108,8 +139,17 @@ const DriverShipments: React.FC = () => {
     {
       title: "Phương tiện",
       key: "vehicle",
-      render: (_: any, r: DriverShipment) =>
-        r.vehicle ? `${r.vehicle.licensePlate} (${r.vehicle.type})` : "-",
+      render: (_: any, r: DriverShipment) => {
+        if (!r.vehicle) return "-";
+        return (
+          <div>
+            <div style={{ fontWeight: 700, color: "#111827" }}>{r.vehicle.licensePlate}</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>
+              ({translateVehicleType(r.vehicle.type)})
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: "Từ bưu cục",
@@ -122,7 +162,7 @@ const DriverShipments: React.FC = () => {
       render: (_: any, r: DriverShipment) => r.toOffice?.name || "-",
     },
     { title: "Số đơn", dataIndex: "orderCount", key: "orderCount" },
-    { title: "Thời gian bắt đầu", dataIndex: "startTime", key: "startTime" },
+    { title: "Thời gian bắt đầu", dataIndex: "startTime", key: "startTime", render: (_: any, r: DriverShipment) => formatStartTime(r.startTime) },
     {
       title: "Thao tác",
       key: "actions",
