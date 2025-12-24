@@ -2,7 +2,6 @@ package com.logistics.controller.manager;
 
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
-import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.shipment.ManagerOrdersShipmentSearchRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentAddEditRequest;
@@ -14,7 +13,12 @@ import com.logistics.service.manager.ShipmentManagerService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +48,28 @@ public class ShipmentManagerController {
         ApiResponse<ListResponse<ManagerShipmentDetailDto>> result = service.getOrdersByShipmentId(userId, id,
                 searchRequest);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}/export")
+    public ResponseEntity<byte[]> exportShipmentPerformance(HttpServletRequest request,
+            @PathVariable Integer id,
+            SearchRequest searchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.exportShipmentPerformance(userId, id, searchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách chuyến hàng của nhân viên.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 
     @GetMapping("/pending")

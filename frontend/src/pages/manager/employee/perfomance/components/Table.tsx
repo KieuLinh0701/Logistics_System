@@ -3,7 +3,6 @@ import { Table, Button, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { ManagerEmployeePerformanceData } from "../../../../../types/employee";
 import { translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
-import { translateRoleName } from "../../../../../utils/roleUtils";
 
 interface Props {
   data: ManagerEmployeePerformanceData[];

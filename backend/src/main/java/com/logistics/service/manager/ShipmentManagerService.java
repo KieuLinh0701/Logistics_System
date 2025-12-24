@@ -30,6 +30,17 @@ import com.logistics.utils.ShipmentUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,7 +49,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -539,4 +552,141 @@ public class ShipmentManagerService {
             return new ApiResponse<>(false, "Đã xảy ra lỗi: " + e.getMessage(), null);
         }
     }
+
+    public byte[] exportShipmentPerformance(Integer userId, Integer employeeId,
+            SearchRequest request) {
+        // Lấy toàn bộ danh sách không phân trang
+        List<ManagerShipmentPerformanceDto> shipments = getShipmentsByEmployeeIdForExport(userId, employeeId, request);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Shipments");
+
+            // Header style
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[] { (byte) 0xFF, (byte) 0xFF, (byte) 0xFF }, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle
+                    .setFillForegroundColor(new XSSFColor(new byte[] { (byte) 0x1C, (byte) 0x3D, (byte) 0x90 }, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // Header row
+            Row header = sheet.createRow(0);
+            String[] headers = { "Mã chuyến", "Loại chuyến", "Trạng thái", "Biển số xe",
+                    "Khối lượng", "Thời gian bắt đầu", "Thời gian kết thúc",
+                    "Tổng đơn", "Tổng trọng lượng" };
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            DecimalFormat df = new DecimalFormat("#,###");
+            df.setGroupingUsed(true);
+
+            int rowIdx = 1;
+            for (ManagerShipmentPerformanceDto dto : shipments) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(dto.getCode() != null ? dto.getCode() : "");
+                row.createCell(1).setCellValue(dto.getType() != null ? dto.getType() : "");
+                row.createCell(2).setCellValue(dto.getStatus() != null ? dto.getStatus() : "");
+                row.createCell(3).setCellValue(
+                        dto.getVehicle() != null && dto.getVehicle().getLicensePlate() != null
+                                ? dto.getVehicle().getLicensePlate()
+                                : "");
+                row.createCell(4).setCellValue(
+                        dto.getVehicle() != null && dto.getVehicle().getCapacity() != null
+                                ? df.format(dto.getVehicle().getCapacity())
+                                : "");
+                row.createCell(5).setCellValue(dto.getStartTime() != null ? dtf.format(dto.getStartTime()) : "");
+                row.createCell(6).setCellValue(dto.getEndTime() != null ? dtf.format(dto.getEndTime()) : "");
+                row.createCell(7).setCellValue(df.format(dto.getOrderCount()));
+                row.createCell(8).setCellValue(df.format(dto.getTotalWeight()));
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
+    public List<ManagerShipmentPerformanceDto> getShipmentsByEmployeeIdForExport(int userId,
+            int employeeId,
+            SearchRequest request) {
+        try {
+            String search = request.getSearch();
+            String status = request.getStatus();
+            String sort = request.getSort();
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                    ? LocalDateTime.parse(request.getStartDate())
+                    : null;
+
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                    ? LocalDateTime.parse(request.getEndDate())
+                    : null;
+
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+            Employee emp = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên này"));
+
+            if (!emp.getOffice().getId().equals(userOffice.getId())) {
+                throw new RuntimeException(
+                        "Bạn chỉ có thể xem danh sách chuyến hàng của nhân viên trong bưu cục của mình.");
+            }
+
+            Specification<Shipment> spec = ShipmentSpecification.unrestricted()
+                    .and(ShipmentSpecification.employeeId(emp.getId()))
+                    .and(ShipmentSpecification.searchByCode(search))
+                    .and(ShipmentSpecification.status(status))
+                    .and(ShipmentSpecification.createdAtBetween(startDate, endDate));
+
+            Sort sortOpt = switch ((sort != null ? sort.toLowerCase() : "")) {
+                case "newest" -> Sort.by("createdAt").descending();
+                case "oldest" -> Sort.by("createdAt").ascending();
+                default -> Sort.unsorted();
+            };
+
+            // Lấy toàn bộ list không phân trang
+            List<Shipment> shipments = repository.findAll(spec, sortOpt);
+
+            // Map sang DTO
+            List<ManagerShipmentPerformanceDto> list = shipments.stream().map(shipment -> {
+                long totalOrders = shipment.getShipmentOrders() != null
+                        ? shipment.getShipmentOrders().size()
+                        : 0;
+
+                long totalWeight = shipment.getShipmentOrders() != null
+                        ? shipment.getShipmentOrders()
+                                .stream()
+                                .map(so -> so.getOrder())
+                                .filter(o -> o != null && o.getWeight() != null)
+                                .mapToLong(o -> o.getWeight().longValue())
+                                .sum()
+                        : 0;
+
+                return ShipmentMapper.toManagerShipmentPerformanceDto(
+                        shipment,
+                        totalOrders,
+                        totalWeight);
+            }).toList();
+
+            return list;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi lấy danh sách chuyến hàng: " + e.getMessage(), e);
+        }
+    }
+
 }

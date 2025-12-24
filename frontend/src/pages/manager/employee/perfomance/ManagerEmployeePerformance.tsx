@@ -60,6 +60,7 @@ const ManagerEmployeePerformance = () => {
         page,
         limit: pageSize,
         search: searchText,
+        status: filterStatus !== "ALL" ? filterStatus : undefined,
         role: filterRole !== "ALL" ? filterRole : undefined,
         shift: filterShift != "ALL" ? filterShift : undefined,
       };
@@ -87,20 +88,27 @@ const ManagerEmployeePerformance = () => {
   const handleExportEmployeesPerformance = async () => {
     try {
       const params: any = {
-        searchText: searchText || undefined,
+        search: searchText,
+        status: filterStatus !== "ALL" ? filterStatus : undefined,
         role: filterRole !== "ALL" ? filterRole : undefined,
+        shift: filterShift != "ALL" ? filterShift : undefined,
       };
 
+      const result = await employeeApi.exportManagerEmployeePerformance(params);
 
-      // Api suất nhân viên
+      if (!result.success) {
+        console.error("Export thất bại:", result.error);
+      }
+
     } catch (error: any) {
       message.error(error.message || "Xuất Excel thất bại!");
     }
   };
+
   useEffect(() => {
     updateURL();
     fetchEmployeePerfomances(currentPage);
-  }, [currentPage, pageSize, searchText, filterRole, filterShift]);
+  }, [currentPage, pageSize, searchText, filterRole, filterShift, filterStatus]);
 
   return (
     <div className="list-page-layout">

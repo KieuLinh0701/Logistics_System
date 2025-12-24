@@ -3,6 +3,7 @@ import axiosClient from "./axiosClient";
 import type { ManagerEmployee, ManagerEmployeePerformanceData, ManagerEmployeeSearchRequest, ManagerEmployeeWithShipperAssignments } from "../types/employee";
 import type { SearchRequest } from "../types/request";
 import type { ManagerShipment } from "../types/shipment";
+import { axiosExport } from "./exportClient";
 
 const employeeApi = {
   // Manager
@@ -44,6 +45,45 @@ const employeeApi = {
   async listManagerShipmentsByEmployeeId(id: number, params: SearchRequest) {
     const res = await axiosClient.get<ApiResponse<ListResponse<ManagerShipment>>>(`/manager/employees/${id}/shipments`, { params });
     return res;
+  },
+
+  async exportManagerEmployeePerformance(params: SearchRequest) {
+    try {
+      const res = await axiosExport.get("/manager/employees/export", {
+        params,
+        responseType: "blob",
+      });
+
+      const blob = res.data;
+      const contentDisposition = res.headers['content-disposition'];
+
+      let fileName = "BaoCao.xlsx";
+
+      if (contentDisposition) {
+        let fileNameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = decodeURIComponent(fileNameMatch[1].trim());
+        } else {
+          fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+          if (fileNameMatch && fileNameMatch[1]) {
+            fileName = fileNameMatch[1].trim();
+          }
+        }
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true, fileName };
+    } catch (error) {
+      return { success: false, error };
+    }
   },
 };
 

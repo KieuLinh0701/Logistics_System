@@ -10,6 +10,7 @@ import { CarOutlined } from "@ant-design/icons";
 import type { ManagerShipment } from "../../../../types/shipment";
 import employeeApi from "../../../../api/employeeApi";
 import type { SearchRequest } from "../../../../types/request";
+import shipmentApi from "../../../../api/shipmentApi";
 
 const ManagerEmployeePerfomanceShipment = () => {
   const navigate = useNavigate();
@@ -109,8 +110,10 @@ const ManagerEmployeePerfomanceShipment = () => {
   };
 
   const handleExportEmployeeShipments = async () => {
+    if (!employeeId) return;
     try {
       const params: SearchRequest = {
+        search: searchText,
         sort: filterSort !== "NONE" ? filterSort : undefined,
         status: filterStatus !== "ALL" ? filterStatus : undefined,
       };
@@ -120,51 +123,13 @@ const ManagerEmployeePerfomanceShipment = () => {
         params.endDate = dateRange[1].endOf("day").toISOString();
       }
 
-      // const resultAction = await dispatch(exportEmployeeShipments(params));
-      // const payload = resultAction.payload as any;
-      // const data = Array.isArray(payload) ? payload : payload?.exportShipments ?? [];
+      const result = await shipmentApi.exportManagerShipmentPerformance(Number(employeeId), params);
 
-      // if (data.length === 0) {
-      //   return message.info("Không có dữ liệu để xuất Excel");
-      // }
+      if (!result.success) {
+        console.error("Export thất bại:", result.error);
+      }
 
-      // // Map dữ liệu xuất Excel theo bảng hiển thị
-      // const exportData = data.map((t: any) => ({
-      //   "Mã chuyến": t.id,
-      //   "Trạng thái": translateShipmentStatus(t.status) || "N/A",
-      //   "Biển số phương tiện": t.vehicle?.licensePlate || "N/A",
-      //   "Tải trọng xe (kg)": t.vehicle?.capacity || "N/A",
-      //   "Tổng số đơn": t.orderCount ?? 0,
-      //   "Tổng trọng lượng (kg)": Number(t.totalWeight || 0).toFixed(2),
-      //   "Thời gian bắt đầu": t.startTime
-      //     ? dayjs(t.startTime).locale("vi").format("DD/MM/YYYY HH:mm")
-      //     : "N/A",
-      //   "Thời gian kết thúc": t.endTime
-      //     ? dayjs(t.endTime).locale("vi").format("DD/MM/YYYY HH:mm")
-      //     : "N/A",
-      // }));
-
-      // const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-      // // Căn chỉnh độ rộng cột (dựa trên độ dài tên cột và dữ liệu)
-      // worksheet["!cols"] = [
-      //   { wch: 12 }, // Mã chuyến
-      //   { wch: 15 }, // Trạng thái
-      //   { wch: 18 }, // Biển số phương tiện
-      //   { wch: 20 }, // Tên phương tiện
-      //   { wch: 18 }, // Tổng số đơn
-      //   { wch: 22 }, // Tổng trọng lượng (kg)
-      //   { wch: 22 }, // Thời gian bắt đầu
-      //   { wch: 22 }, // Thời gian kết thúc
-      // ];
-
-      // const workbook = XLSX.utils.book_new();
-      // XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách chuyến giao");
-
-      // const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-      // const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
-      // saveAs(blob, `DanhSachChuyenGiao_${dayjs().format("YYYYMMDD_HHmm")}.xlsx`);
+      
     } catch (error) {
       console.error(error);
       message.error("Xuất Excel thất bại!");

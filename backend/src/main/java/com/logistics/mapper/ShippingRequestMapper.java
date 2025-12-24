@@ -15,7 +15,7 @@ public class ShippingRequestMapper {
 
     // Manager
     public static ManagerShippingRequestListDto toManagerShippingRequestListDto(ShippingRequest entity,
-    Address address) {
+            Address address) {
         if (entity == null) {
             return null;
         }
@@ -28,9 +28,12 @@ public class ShippingRequestMapper {
                 entity.getUser() != null ? entity.getUser().getFullName() : entity.getContactName(),
                 entity.getUser() != null ? entity.getUser().getAccount().getEmail() : entity.getContactEmail(),
                 entity.getUser() != null ? entity.getUser().getPhoneNumber() : entity.getContactPhoneNumber(),
-                entity.getAddress() != null ? entity.getAddress().getCityCode() : address.getCityCode(),
-                entity.getAddress() != null ? entity.getAddress().getWardCode() : address.getWardCode(),
-                entity.getAddress() != null ? entity.getAddress().getDetail() : address.getDetail(),
+                entity.getAddress() != null ? entity.getAddress().getCityCode()
+                        : (address != null ? address.getCityCode() : null),
+                entity.getAddress() != null ? entity.getAddress().getWardCode()
+                        : (address != null ? address.getWardCode() : null),
+                entity.getAddress() != null ? entity.getAddress().getDetail()
+                        : (address != null ? address.getDetail() : null),
                 entity.getRequestType() != null ? entity.getRequestType().name() : null,
                 entity.getRequestContent(),
                 entity.getStatus() != null ? entity.getStatus().name() : null,
@@ -40,8 +43,8 @@ public class ShippingRequestMapper {
     }
 
     public static ManagerShippingRequestDetailDto toManagerShippingRequestDetailDto(ShippingRequest entity,
-    Address address,
-    List<ShippingRequestAttachment> requestAttachments,
+            Address address,
+            List<ShippingRequestAttachment> requestAttachments,
             List<ShippingRequestAttachment> responseAttachments) {
         if (entity == null) {
             return null;

@@ -3,6 +3,7 @@ import axiosClient from "./axiosClient";
 import type { ManagerOrderShipment, ManagerOrderShipmentSearchRequest, ManagerShipment, ManagerShipmentAddEditRequest, ManagerShipmentSearchRequest } from "../types/shipment";
 import type { SearchRequest } from "../types/request";
 import type { DriverShipment, DriverRouteInfo, DriverDeliveryStop } from "../types/shipment";
+import { axiosExport } from "./exportClient";
 
 const shipmentApi = {
   // DRIVER
@@ -65,7 +66,7 @@ const shipmentApi = {
     };
   },
 
-    // Manager
+  // Manager
   async listManagerShipments(params: ManagerShipmentSearchRequest) {
     const res = await axiosClient.get<ApiResponse<ListResponse<ManagerShipment>>>("/manager/shipments", { params });
     return res;
@@ -94,6 +95,45 @@ const shipmentApi = {
   async updateManagerShipment(id: number, data: ManagerShipmentAddEditRequest) {
     const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/shipments/${id}`, data);
     return res;
+  },
+
+  async exportManagerShipmentPerformance(id: number, params: SearchRequest) {
+    try {
+      const res = await axiosExport.get(`/manager/shipments/${id}/export`, {
+        params,
+        responseType: "blob",
+      });
+
+      const blob = res.data;
+      const contentDisposition = res.headers['content-disposition'];
+
+      let fileName = "BaoCao.xlsx";
+
+      if (contentDisposition) {
+        let fileNameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = decodeURIComponent(fileNameMatch[1].trim());
+        } else {
+          fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+          if (fileNameMatch && fileNameMatch[1]) {
+            fileName = fileNameMatch[1].trim();
+          }
+        }
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true, fileName };
+    } catch (error) {
+      return { success: false, error };
+    }
   },
 };
 

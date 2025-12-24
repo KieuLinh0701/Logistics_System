@@ -1,9 +1,13 @@
 package com.logistics.controller.manager;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
@@ -117,8 +121,29 @@ public class EmployeeManagerController {
             @Valid SearchRequest searchRequest,
             @PathVariable Integer id,
             HttpServletRequest request) {
-        Integer userId = (Integer) request.getAttribute("currentUserId"); 
+        Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(shipmentManagerService.getShipmentsByEmployeeId(userId, id, searchRequest));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportPerformance(HttpServletRequest request,
+            SearchRequest searchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.exportPerformance(userId, searchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo hiệu suất nhân viên.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

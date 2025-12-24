@@ -1,13 +1,27 @@
 package com.logistics.service.manager;
 
+import java.io.ByteArrayOutputStream;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.apache.coyote.BadRequestException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,10 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
+import com.logistics.dto.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchListDto;
 import com.logistics.entity.Account;
 import com.logistics.entity.AccountRole;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
+import com.logistics.entity.PaymentSubmissionBatch;
 import com.logistics.entity.Role;
 import com.logistics.entity.ShipperAssignment;
 import com.logistics.entity.User;
@@ -31,6 +47,7 @@ import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.EmployeeStatus;
 import com.logistics.enums.ShipmentType;
 import com.logistics.mapper.EmployeeMapper;
+import com.logistics.mapper.PaymentSubmissionBatchMapper;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
 import com.logistics.repository.EmployeeRepository;
@@ -47,6 +64,7 @@ import com.logistics.specification.EmployeeSpecification;
 import com.logistics.specification.UserSpecification;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.PasswordUtils;
+import com.logistics.utils.PaymentSubmissionBatchUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -906,4 +924,97 @@ public class EmployeeManagerService {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
     }
+
+    public byte[] exportPerformance(Integer userId, SearchRequest request) {
+    List<ManagerEmployeePerformanceDto> datas = getEmployeePerformanceForExport(userId, request);
+
+    try (Workbook workbook = new XSSFWorkbook()) {
+        Sheet sheet = workbook.createSheet("EmployeePerformance");
+
+        // Header style
+        XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+        XSSFFont font = (XSSFFont) workbook.createFont();
+        font.setBold(true);
+        font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+        headerStyle.setFont(font);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        headerStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        // Header row
+        Row header = sheet.createRow(0);
+        String[] headers = { "Tên nhân viên", "Mã nhân viên",
+                "Số điện thoại", "Chức vụ",
+                "Ca làm việc", "Trạng thái làm việc", "Số chuyến",
+                "Tổng đơn", "Đơn thành công", "Tỉ lệ giao thành công",
+                "Thời gian giao TB" };
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = header.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        DecimalFormat df = new DecimalFormat("#,###");
+        df.setGroupingUsed(true);
+        df.setGroupingSize(3);
+
+        int rowIdx = 1;
+        for (ManagerEmployeePerformanceDto data : datas) {
+            Row row = sheet.createRow(rowIdx++);
+
+            row.createCell(0).setCellValue(data.getEmployeeName() != null ? data.getEmployeeName() : "");
+            row.createCell(1).setCellValue(data.getEmployeeCode() != null ? data.getEmployeeCode() : "");
+            row.createCell(2).setCellValue(data.getEmployeePhone() != null ? data.getEmployeePhone() : "");
+            row.createCell(3).setCellValue(data.getEmployeeRole() != null ? data.getEmployeeRole() : "");
+
+            // Ca làm việc (string)
+            row.createCell(4).setCellValue(data.getEmployeeShift() != null ? data.getEmployeeShift().toString() : "");
+            // Trạng thái làm việc
+            row.createCell(5).setCellValue(data.getEmployeeStatus() != null ? PaymentSubmissionBatchUtils.translateStatus(data.getEmployeeStatus()) : "");
+
+            row.createCell(6).setCellValue(data.getTotalShipments() != null ? df.format(data.getTotalShipments()) : "");
+            row.createCell(7).setCellValue(data.getTotalOrders() != null ? df.format(data.getTotalOrders()) : "");
+            row.createCell(8).setCellValue(data.getCompletedOrders() != null ? df.format(data.getCompletedOrders()) : "");
+            row.createCell(9).setCellValue(data.getCompletionRate() != null ? data.getCompletionRate() : 0);
+            row.createCell(10).setCellValue(data.getAvgTimePerOrder() != null ? df.format(data.getAvgTimePerOrder()) : "");
+        }
+
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        workbook.write(out);
+        return out.toByteArray();
+
+    } catch (Exception e) {
+        throw new RuntimeException("Lỗi khi xuất Excel", e);
+    }
+}
+
+
+    public List<ManagerEmployeePerformanceDto> getEmployeePerformanceForExport(
+            int userId,
+            SearchRequest request) {
+
+        Office office = getManagedOfficeByUserId(userId);
+
+        EmployeeShift employeeShift = null;
+        EmployeeStatus employeeStatus = null;
+
+        if (request.getShift() != null && !request.getShift().isBlank()) {
+            employeeShift = EmployeeShift.valueOf(request.getShift().trim().toUpperCase());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            employeeStatus = EmployeeStatus.valueOf(request.getStatus().trim().toUpperCase());
+        }
+
+        return employeeRepository.getEmployeePerformanceList(
+                office.getId(),
+                request.getSearch(),
+                request.getRole(),
+                employeeShift,
+                employeeStatus);
+    }
+
 }
