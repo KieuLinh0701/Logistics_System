@@ -77,6 +77,30 @@ public class VehicleAdminController {
         }
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getVehicleById(@PathVariable Integer id) {
+        if (isNotAdmin()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        ApiResponse<Map<String, Object>> response = vehicleAdminService.getVehicleById(id);
+        if (!response.isSuccess()) {
+            return ResponseEntity.status(404).body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/trackings")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getVehicleTrackings(@PathVariable Integer id) {
+        if (isNotAdmin()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        ApiResponse<Map<String, Object>> response = vehicleAdminService.getVehicleTrackings(id);
+        if (!response.isSuccess()) {
+            return ResponseEntity.status(404).body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
 }
 
 

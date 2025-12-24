@@ -10,6 +10,14 @@ export interface AdminOrder {
   id: number;
   trackingNumber: string;
   senderName: string;
+  senderPhone?: string;
+  senderCityCode?: number;
+  senderWardCode?: number;
+  senderDetail?: string;
+  senderAddress?: Address;
+  fromOffice?: Office;
+  toOffice?: Office;
+  pickupType?: string;
   recipientName: string;
   status: string;
   totalFee: number;

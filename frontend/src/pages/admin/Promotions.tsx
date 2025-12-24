@@ -19,6 +19,7 @@ import {
   Row,
   Col,
 } from "antd";
+import { CheckCircleOutlined } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import promotionApi from "../../api/promotionApi";
 import serviceTypeApi from "../../api/serviceTypeApi";
@@ -26,6 +27,7 @@ import userApi from "../../api/userApi";
 import type { Promotion, CreatePromotionPayload } from "../../types/promotion";
 import type { AdminServiceType } from "../../types/serviceType";
 import type { AdminUser } from "../../types/user";
+import "./AdminModal.css";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -54,6 +56,8 @@ const AdminPromotions: React.FC = () => {
   const [serviceTypes, setServiceTypes] = useState<AdminServiceType[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isGlobal, setIsGlobal] = useState(true);
+  const [canSubmit, setCanSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -79,6 +83,14 @@ const AdminPromotions: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (open) {
+      form.validateFields().then(() => setCanSubmit(true)).catch(() => setCanSubmit(false));
+    } else {
+      setCanSubmit(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     const loadServiceTypes = async () => {
@@ -167,6 +179,7 @@ const AdminPromotions: React.FC = () => {
 
   const submit = async () => {
     try {
+      setSubmitting(true);
       const values = await form.validateFields();
       const payload: CreatePromotionPayload = {
         code: values.code?.toUpperCase().trim(),
@@ -207,6 +220,8 @@ const AdminPromotions: React.FC = () => {
       if (!e?.errorFields) {
         message.error(e?.response?.data?.message || "Lưu thất bại");
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -298,7 +313,7 @@ const AdminPromotions: React.FC = () => {
         title: "Thao tác",
         render: (_: any, record: Promotion) => (
           <Space>
-            <Button size="small" onClick={() => onEdit(record)}>
+            <Button size="small" type="primary" onClick={() => onEdit(record)}>
               Sửa
             </Button>
             <Popconfirm title="Xóa khuyến mãi này?" onConfirm={() => onDelete(record.id)}>
@@ -374,15 +389,33 @@ const AdminPromotions: React.FC = () => {
         />
 
         <Modal
-          title={editing ? "Cập nhật khuyến mãi" : "Thêm khuyến mãi"}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <CheckCircleOutlined style={{ color: '#1C9CD5', fontSize: 20 }} />
+              <span style={{ textAlign: 'center' }}>{editing ? "Cập nhật khuyến mãi" : "Thêm khuyến mãi"}</span>
+            </div>
+          }
           open={open}
-          onOk={submit}
-          onCancel={() => setOpen(false)}
+          closable={false}
+          maskClosable={false}
+          centered
+          className="admin-user-modal"
           destroyOnClose
           width={900}
           style={{ top: 20 }}
+          footer={[
+            <Button key="cancel" onClick={() => setOpen(false)}>Hủy</Button>,
+            <Button key="submit" type="primary" onClick={submit} disabled={!canSubmit || submitting} loading={submitting}>{editing ? "Cập nhật" : "Tạo"}</Button>
+          ]}
         >
-          <Form form={form} layout="vertical">
+          <Form form={form} layout="vertical" onValuesChange={async () => {
+            try {
+              await form.validateFields();
+              setCanSubmit(true);
+            } catch {
+              setCanSubmit(false);
+            }
+          }}>
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
@@ -502,7 +535,7 @@ const AdminPromotions: React.FC = () => {
                 </Form.Item>
               </Col>
               <Col span={8}>
-                <Form.Item name="firstTimeUser" label="Chỉ user mới" valuePropName="checked">
+                <Form.Item name="firstTimeUser" label="Chỉ người dùng mới" valuePropName="checked">
                   <Switch />
                 </Form.Item>
               </Col>
@@ -520,12 +553,12 @@ const AdminPromotions: React.FC = () => {
                 </Form.Item>
               </Col>
               <Col span={6}>
-                <Form.Item name="dailyUsageLimitGlobal" label="Giới hạn/ngày (global)">
+                <Form.Item name="dailyUsageLimitGlobal" label="Giới hạn/ngày">
                   <InputNumber style={{ width: "100%" }} min={1} />
                 </Form.Item>
               </Col>
               <Col span={6}>
-                <Form.Item name="dailyUsageLimitPerUser" label="Giới hạn/ngày/user">
+                <Form.Item name="dailyUsageLimitPerUser" label="Giới hạn/ngày/người dùng">
                   <InputNumber style={{ width: "100%" }} min={1} />
                 </Form.Item>
               </Col>

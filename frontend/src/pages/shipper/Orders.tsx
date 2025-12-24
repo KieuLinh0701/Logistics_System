@@ -56,7 +56,11 @@ const ShipperOrders: React.FC = () => {
         search: filters.search,
       } as any;
       const res = await orderApi.getShipperOrders(params);
-      setOrders(res.orders);
+      // Exclude orders that are already delivered or failed from the "Đơn hàng cần giao" list
+      const visible = (res.orders || []).filter(
+        (o: any) => o.status !== "DELIVERED" && o.status !== "FAILED_DELIVERY"
+      );
+      setOrders(visible as ShipperOrder[]);
       setPagination((prev) => ({ ...prev, total: res.pagination.total }));
     } catch (error) {
       console.error("Error fetching orders:", error);

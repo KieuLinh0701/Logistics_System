@@ -157,6 +157,11 @@ const fetchOrderDetail = async () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "PENDING":
+        return "default";
+      case "CONFIRMED":
+      case "AT_DEST_OFFICE":
+        return "blue";
       case "PICKED_UP":
         return "orange";
       case "DELIVERING":
@@ -172,7 +177,16 @@ const fetchOrderDetail = async () => {
   };
 
   const getStatusText = (status: string) => {
+    if (!status) return "";
     switch (status) {
+      case "PENDING":
+        return "Chờ xử lý";
+      case "CONFIRMED":
+        return "Đã xác nhận";
+      case "AT_DEST_OFFICE":
+        return "Đã đến bưu cục";
+      case "READY_FOR_PICKUP":
+        return "Sẵn sàng lấy";
       case "PICKED_UP":
         return "Đã lấy hàng";
       case "DELIVERING":
@@ -345,9 +359,18 @@ const fetchOrderDetail = async () => {
                   <DollarOutlined style={{ color: "#f50" }} />
                   <div>
                     <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                      {order.cod ? `${order.cod.toLocaleString()}đ` : "Không COD"}
+                      {order.cod && order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "Không"}
                     </Text>
-                    {order.codStatus && (
+
+                    {/* If cod exists but codStatus explicitly NONE, show explanatory note */}
+                    {order.cod && order.cod > 0 && order.codStatus === "NONE" && (
+                      <div style={{ marginTop: 6 }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>(Không thu COD)</Text>
+                      </div>
+                    )}
+
+                    {/* Show cod status tag only when status is meaningful (not NONE) */}
+                    {order.codStatus && order.codStatus !== "NONE" && (
                       <div style={{ marginTop: 6 }}>
                         <Tag color={
                           order.codStatus === "PENDING" ? "orange" :

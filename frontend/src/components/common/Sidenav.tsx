@@ -46,7 +46,7 @@ const Sidenav: React.FC = () => {
     admin: [
       {
         key: "/dashboard",
-        label: "Báo cáo & Thống kê",
+        label: "Tổng quan",
         path: "/dashboard",
         icon: <DashboardOutlined />,
       },

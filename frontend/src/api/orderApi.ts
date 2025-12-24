@@ -20,8 +20,9 @@ const orderApi = {
     return res;
   },
 
-  async updateAdminOrderStatus(id: number, status: string) {
-    const res = await axiosClient.put<ApiResponse<AdminOrder>>(`/admin/orders/${id}/status`, { status });
+  async updateAdminOrderStatus(id: number, statusOrPayload: string | { status: string; fromOfficeId?: number }) {
+    const payload = typeof statusOrPayload === "string" ? { status: statusOrPayload } : statusOrPayload;
+    const res = await axiosClient.put<ApiResponse<AdminOrder>>(`/admin/orders/${id}/status`, payload);
     return res;
   },
 
@@ -58,6 +59,11 @@ const orderApi = {
 
   async getUserOrderById(id: number) {
     const res = await axiosClient.get<ApiResponse<Order>>(`/user/orders/id/${id}`);
+    return res;
+  },
+
+  async getAdminOrderById(id: number) {
+    const res = await axiosClient.get<ApiResponse<Order>>(`/admin/orders/${id}`);
     return res;
   },
 
@@ -115,8 +121,27 @@ const orderApi = {
     };
   },
 
+  async getShipperPickupByCourierRequests(params: { page?: number; limit?: number }) {
+    const res = await axiosClient.get<ApiResponse<any>>("/shipper/pickup-requests", { params });
+    const data = res.data || {};
+    return {
+      orders: (data.orders || []) as ShipperOrder[],
+      pagination: data.pagination || { page: 1, limit: 10, total: 0 },
+    };
+  },
+
   async claimShipperOrder(orderId: number) {
     await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/claim`);
+  },
+
+  async markShipperPickedUp(orderId: number, payload?: { latitude?: number; longitude?: number; photoUrl?: string; notes?: string }) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/picked-up`, payload || {});
+    return res.data;
+  },
+
+  async deliverShipperToOrigin(orderId: number, payload?: { officeId?: number; latitude?: number; longitude?: number; photoUrl?: string; notes?: string }) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/deliver-origin`, payload || {});
+    return res.data;
   },
 
   async unclaimShipperOrder(orderId: number) {

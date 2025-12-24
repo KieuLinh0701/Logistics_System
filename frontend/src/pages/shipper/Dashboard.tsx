@@ -205,7 +205,7 @@ const ShipperDashboard: React.FC = () => {
       key: "action",
       render: (record: ShipperOrder) => (
         <Space>
-          <Button type="link" onClick={() => navigate(`/orders/${record.id}`)}>
+          <Button type="link" onClick={() => navigate(`/shipper/orders/${record.id}`)}>
             Chi tiết
           </Button>
         </Space>

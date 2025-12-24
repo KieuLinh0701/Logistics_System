@@ -17,12 +17,15 @@ import com.logistics.enums.OrderStatus;
 import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.enums.OrderCodStatus;
+import com.logistics.enums.OrderPickupType;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.IncidentReportRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
+import com.logistics.repository.OfficeRepository;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
+import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
@@ -64,6 +67,9 @@ public class OrderShipperService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private OfficeRepository officeRepository;
+
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
         OrderHistory history = new OrderHistory();
         history.setOrder(order);
@@ -92,43 +98,55 @@ public class OrderShipperService {
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
 
-        // Lấy danh sách đơn trong ngày tại bưu cục của shipper
+        // Lấy danh sách đơn trong ngày tại bưu cục của shipper (nội bộ filter)
         Specification<Order> todaySpec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
-
             // Chỉ bao gồm các đơn đã được gán cho nhân viên này
             predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
-
-            // Chỉ lấy đơn thuộc về employee hiện tại (đã gán cho shipper)
-            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
+            // Giữ filter theo createdAt nếu cần, nhưng phần hiển thị sẽ dùng assignedOrders
             predicates.add(cb.between(root.get("createdAt"), startOfDay, endOfDay));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        List<Order> todayOrders = orderRepository.findAll(todaySpec, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // Thống kê cơ bản: tính trên tất cả các đơn đã được gán cho shipper (không chỉ những đơn tạo trong ngày)
+        Specification<Order> assignedSpec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
+            predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
+            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-        // Thống kê cơ bản
-        int totalAssigned = (int) todayOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.DELIVERING
-                        || o.getStatus() == OrderStatus.DELIVERED
-                        || o.getStatus() == OrderStatus.FAILED_DELIVERY
-                        || o.getStatus() == OrderStatus.RETURNED)
-                .count();
+        List<Order> assignedOrders = orderRepository.findAll(assignedSpec);
 
-        int inProgress = (int) todayOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.DELIVERING)
-                .count();
+        // Lấy danh sách đơn hiển thị ở phần "Đơn hàng trong ngày".
+        // Trước kia chỉ lấy dựa trên createdAt trong ngày, dẫn tới danh sách trống nếu đơn được gán trước ngày hôm nay.
+        // Hiện tại dùng các đơn đã được gán cho shipper (assignedOrders) để hiển thị tiện lợi cho shipper.
+        List<Order> todayOrders = assignedOrders.stream()
+            .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+            .toList();
 
-        int delivered = (int) todayOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
-                .count();
+        int totalAssigned = (int) assignedOrders.stream()
+            .filter(o -> o.getStatus() == OrderStatus.DELIVERING
+                || o.getStatus() == OrderStatus.DELIVERED
+                || o.getStatus() == OrderStatus.FAILED_DELIVERY
+                || o.getStatus() == OrderStatus.RETURNED)
+            .count();
 
-        int failed = (int) todayOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.FAILED_DELIVERY
-                        || o.getStatus() == OrderStatus.RETURNED)
-                .count();
+        int inProgress = (int) assignedOrders.stream()
+            .filter(o -> o.getStatus() == OrderStatus.DELIVERING)
+            .count();
+
+        int delivered = (int) assignedOrders.stream()
+            .filter(o -> o.getStatus() == OrderStatus.DELIVERED)
+            .count();
+
+        int failed = (int) assignedOrders.stream()
+            .filter(o -> o.getStatus() == OrderStatus.FAILED_DELIVERY
+                || o.getStatus() == OrderStatus.RETURNED)
+            .count();
 
         // COD shipper đã thu (PENDING / IN_BATCH)
         int codCollected = paymentSubmissionRepository
@@ -140,6 +158,26 @@ public class OrderShipperService {
 
         List<Map<String, Object>> todayOrderSummaries = todayOrders.stream().map(this::mapOrderSummary).toList();
 
+        // Lấy thông báo gần đây cho shipper (5 thông báo mới nhất)
+        List<Map<String, Object>> notificationMaps = Collections.emptyList();
+        try {
+            NotificationSearchRequest nreq = new NotificationSearchRequest(1, 5, null, null);
+            ApiResponse<com.logistics.response.NotificationResponse> nres = notificationService.getNotifications(employee.getUser().getId(), nreq);
+            if (nres != null && nres.isSuccess() && nres.getData() != null) {
+                notificationMaps = nres.getData().getNotifications().stream().map(dto -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", dto.getId());
+                    m.put("title", dto.getTitle());
+                    m.put("message", dto.getMessage());
+                    m.put("type", dto.getType());
+                    m.put("isRead", dto.getIsRead());
+                    m.put("createdAt", dto.getCreatedAt());
+                    m.put("creatorName", dto.getCreatorName());
+                    return m;
+                }).toList();
+            }
+        } catch (Exception ignored) {}
+
         Map<String, Object> data = new HashMap<>();
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalAssigned", totalAssigned);
@@ -150,7 +188,7 @@ public class OrderShipperService {
 
         data.put("stats", stats);
         data.put("todayOrders", todayOrderSummaries);
-        data.put("notifications", Collections.emptyList());
+        data.put("notifications", notificationMaps);
 
         return new ApiResponse<>(true, "Lấy dashboard shipper thành công", data);
     }
@@ -257,6 +295,66 @@ public class OrderShipperService {
         return new ApiResponse<>(true, "Lấy danh sách đơn chưa gán thành công", result);
     }
 
+    // Mới: lấy danh sách các đơn mà người dùng chọn Yêu cầu lấy hàng (PICKUP_BY_COURIER)
+    // và đã đánh dấu SẴN SÀNG LẤY (READY_FOR_PICKUP), chưa có shipper gán.
+    public ApiResponse<Map<String, Object>> listPickupByCourierRequests(int page, int limit) {
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice().getId();
+
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Specification<Order> spec = (root, query, cb) -> {
+            // Chỉ các đơn do USER tạo
+            Predicate createdByUser = cb.equal(root.get("createdByType"), OrderCreatorType.USER);
+
+            // Điều kiện: (READY_FOR_PICKUP && pickupType = PICKUP_BY_COURIER && employee IS NULL)
+            List<Predicate> availablePreds = new ArrayList<>();
+            availablePreds.add(cb.equal(root.get("status"), OrderStatus.READY_FOR_PICKUP));
+            availablePreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
+            availablePreds.add(cb.isNull(root.get("employee")));
+
+            // Điều kiện: (employee = currentEmployee && status IN (PICKING_UP, PICKED_UP) && pickupType = PICKUP_BY_COURIER)
+            List<Predicate> assignedPreds = new ArrayList<>();
+            assignedPreds.add(cb.equal(root.get("employee").get("id"), employee.getId()));
+            assignedPreds.add(root.get("status").in(OrderStatus.PICKING_UP, OrderStatus.PICKED_UP));
+            assignedPreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
+
+            // Thu hẹp theo bưu cục của shipper: chỉ theo fromOffice nếu có
+            try {
+                Predicate fromOfficeMatch = cb.equal(root.get("fromOffice").get("id"), officeId);
+                availablePreds.add(fromOfficeMatch);
+                assignedPreds.add(fromOfficeMatch);
+            } catch (Exception ignored) {
+                // nếu không có fromOffice, bỏ qua điều kiện
+            }
+
+            Predicate available = cb.and(availablePreds.toArray(new Predicate[0]));
+            Predicate assignedToMe = cb.and(assignedPreds.toArray(new Predicate[0]));
+
+            // Kết hợp: tạo predicate chính là createdByUser AND (available OR assignedToMe)
+            return cb.and(createdByUser, cb.or(available, assignedToMe));
+        };
+
+        Page<Order> orderPage = orderRepository.findAll(spec, pageable);
+        List<Map<String, Object>> orders = orderPage.getContent()
+                .stream()
+                .map(this::mapOrderDetail)
+                .toList();
+
+        Pagination pagination = new Pagination(
+                (int) orderPage.getTotalElements(),
+                page,
+                limit,
+                orderPage.getTotalPages()
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orders", orders);
+        result.put("pagination", pagination);
+
+        return new ApiResponse<>(true, "Lấy danh sách yêu cầu lấy hàng thành công", result);
+    }
+
     public ApiResponse<Map<String, Object>> getOrderById(Integer id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
@@ -286,20 +384,31 @@ public class OrderShipperService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+        // Nếu đây là đơn loại PICKUP_BY_COURIER (người gửi yêu cầu shipper tới lấy),
+        // kiểm tra dựa trên fromOffice của đơn
+        if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+            if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
+                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            }
+            if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+                return new ApiResponse<>(false, "Chỉ có thể nhận đơn đang ở trạng thái SẴN SÀNG LẤY", null);
+            }
+        } else {
+            // Trường hợp nhận đơn truyền thống: kiểm tra toOffice
+            if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
+                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            }
+
+            if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+                return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
+            }
         }
 
-        if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
-        }
-
-        // Khi shipper nhận đơn từ danh sách chưa gán, đặt trạng thái là READY_FOR_PICKUP
-        order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        // Gán employee hiện tại khi shipper nhận đơn
+        // Gán employee hiện tại khi shipper nhận đơn và chuyển trạng thái sang PICKING_UP
         order.setEmployee(employee);
+        order.setStatus(OrderStatus.PICKING_UP);
         orderRepository.save(order);
-        saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper nhận đơn để giao");
+        saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper nhận đơn để lấy hàng");
         return new ApiResponse<>(true, "Nhận đơn thành công", null);
     }
 
@@ -311,20 +420,31 @@ public class OrderShipperService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
-        }
-
-        if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            return new ApiResponse<>(false, "Chỉ có thể hủy nhận đơn ở trạng thái đã lấy hàng hoặc sẵn sàng lấy", null);
-        }
-
-        // Trả về trạng thái trước đó
-        if (order.getFromOffice() != null && order.getToOffice() != null
-                && Objects.equals(order.getFromOffice().getId(), order.getToOffice().getId())) {
-            order.setStatus(OrderStatus.CONFIRMED);
+        // Nếu đây là đơn PICKUP_BY_COURIER thì kiểm tra dựa trên fromOffice
+        if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+            if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
+                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            }
         } else {
-            order.setStatus(OrderStatus.AT_DEST_OFFICE);
+            if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
+                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            }
+        }
+
+        if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP && order.getStatus() != OrderStatus.PICKING_UP) {
+            return new ApiResponse<>(false, "Chỉ có thể hủy nhận đơn ở trạng thái đã lấy hàng hoặc sẵn sàng lấy hoặc đang lấy", null);
+        }
+
+        // Trả về trạng thái trước đó: nếu là đơn lấy tại nhà, quay lại READY_FOR_PICKUP
+        if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        } else {
+            if (order.getFromOffice() != null && order.getToOffice() != null
+                    && Objects.equals(order.getFromOffice().getId(), order.getToOffice().getId())) {
+                order.setStatus(OrderStatus.CONFIRMED);
+            } else {
+                order.setStatus(OrderStatus.AT_DEST_OFFICE);
+            }
         }
 
         orderRepository.save(order);
@@ -535,6 +655,97 @@ public class OrderShipperService {
         return new ApiResponse<>(true, "Cập nhật trạng thái giao hàng thành công", null);
     }
 
+    @Transactional
+    public ApiResponse<String> markPickedUp(Integer id, com.logistics.request.shipper.PickedUpRequest request) {
+        Employee employee = getCurrentEmployee();
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        // Chỉ shipper đã nhận (employee) mới có thể đánh dấu đã lấy
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể xác nhận đã lấy hàng", null);
+        }
+
+        // Kiểm tra trạng thái phù hợp (đang lấy hàng)
+        if (order.getStatus() != OrderStatus.PICKING_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
+            return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy khi đơn ở trạng thái đang lấy hoặc sẵn sàng lấy", null);
+        }
+
+        order.setStatus(OrderStatus.PICKED_UP);
+        try {
+            order.setDeliveredAt(java.time.LocalDateTime.now());
+        } catch (Exception ignored) {}
+
+        // Ghi lại notes / ảnh / vị trí nếu có (lưu tạm vào notes để không thay đổi schema)
+        if (request != null) {
+            String extra = "";
+            if (request.getLatitude() != null && request.getLongitude() != null) {
+                extra += "Location:" + request.getLatitude() + "," + request.getLongitude() + ";";
+            }
+            if (request.getPhotoUrl() != null) {
+                extra += "Photo:" + request.getPhotoUrl() + ";";
+            }
+            if (request.getNotes() != null) {
+                extra += "Notes:" + request.getNotes();
+            }
+            if (!extra.isBlank()) {
+                String old = order.getNotes() != null ? order.getNotes() + "\n" : "";
+                order.setNotes(old + extra);
+            }
+        }
+
+        orderRepository.save(order);
+        saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper xác nhận đã lấy hàng");
+
+        // Gửi notification đơn giản
+        try {
+            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "order", order.getTrackingNumber());
+        } catch (Exception ignored) {}
+
+        return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
+    }
+
+    @Transactional
+    public ApiResponse<String> deliverToOrigin(Integer id, com.logistics.request.shipper.DeliverOriginRequest request) {
+        Employee employee = getCurrentEmployee();
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        // Kiểm tra shipper được gán
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể xác nhận giao tới bưu cục", null);
+        }
+
+        // Chỉ hợp lệ nếu đã pick up
+        if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.PICKING_UP) {
+            return new ApiResponse<>(false, "Chỉ có thể nộp hàng vào bưu cục khi trạng thái là ĐÃ LẤY hoặc ĐANG LẤY", null);
+        }
+
+        // Nếu request chỉ định officeId thì dùng office đó, ngược lại dùng office của shipper
+        try {
+            if (request != null && request.getOfficeId() != null) {
+                officeRepository.findById(request.getOfficeId()).ifPresent(order::setToOffice);
+            } else {
+                order.setToOffice(employee.getOffice());
+            }
+        } catch (Exception ignored) {}
+
+        order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
+        orderRepository.save(order);
+
+        saveHistory(order, OrderHistoryActionType.IMPORTED, "Shipper nộp hàng tại bưu cục nguồn");
+
+        try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception ignored) {}
+
+        try {
+            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "order", order.getTrackingNumber());
+        } catch (Exception ignored) {}
+
+        return new ApiResponse<>(true, "Đã nộp hàng tại bưu cục", null);
+    }
+
     public ApiResponse<Map<String, Object>> getDeliveryHistory(int page, int limit, String status) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
@@ -693,6 +904,20 @@ public class OrderShipperService {
         Map<String, Object> map = new HashMap<>();
         map.put("id", order.getId());
         map.put("trackingNumber", order.getTrackingNumber());
+        map.put("senderName", order.getSenderName());
+        map.put("senderPhone", order.getSenderPhone());
+        map.put("senderAddress", buildAddress(order.getSenderAddress()));
+        if (order.getFromOffice() != null) {
+            Map<String, Object> f = new HashMap<>();
+            f.put("id", order.getFromOffice().getId());
+            f.put("name", order.getFromOffice().getName());
+            f.put("detail", order.getFromOffice().getDetail());
+            f.put("latitude", order.getFromOffice().getLatitude());
+            f.put("longitude", order.getFromOffice().getLongitude());
+            map.put("fromOffice", f);
+        } else {
+            map.put("fromOffice", null);
+        }
         map.put("recipientName", order.getRecipientName());
         map.put("recipientPhone", order.getRecipientPhone());
         map.put("recipientAddress", buildAddress(order.getRecipientAddress()));
@@ -711,6 +936,7 @@ public class OrderShipperService {
         map.put("trackingNumber", order.getTrackingNumber());
         map.put("senderName", order.getSenderName());
         map.put("senderPhone", order.getSenderPhone());
+        map.put("senderAddress", buildAddress(order.getSenderAddress()));
         map.put("recipientName", order.getRecipientName());
         map.put("recipientPhone", order.getRecipientPhone());
         map.put("recipientAddress", buildAddress(order.getRecipientAddress()));
@@ -745,6 +971,17 @@ public class OrderShipperService {
         map.put("notes", order.getNotes());
         map.put("createdAt", order.getCreatedAt());
         map.put("deliveredAt", order.getDeliveredAt());
+        if (order.getFromOffice() != null) {
+            Map<String, Object> f = new HashMap<>();
+            f.put("id", order.getFromOffice().getId());
+            f.put("name", order.getFromOffice().getName());
+            f.put("detail", order.getFromOffice().getDetail());
+            f.put("latitude", order.getFromOffice().getLatitude());
+            f.put("longitude", order.getFromOffice().getLongitude());
+            map.put("fromOffice", f);
+        } else {
+            map.put("fromOffice", null);
+        }
         return map;
     }
 
@@ -768,6 +1005,45 @@ public class OrderShipperService {
     private void createPaymentSubmission(Order order, User shipperUser, int amount, String note) {
         if (amount <= 0) {
             return;
+        }
+
+        try {
+            // Nếu đã có submission cho order (vì mapping 1-1), cập nhật bản ghi hiện có thay vì tạo mới
+            List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+            if (existing != null && !existing.isEmpty()) {
+                PaymentSubmission ex = existing.get(0);
+                boolean changed = false;
+
+                if (ex.getSystemAmount() == null || ex.getSystemAmount().intValue() == 0) {
+                    ex.setSystemAmount(BigDecimal.valueOf(amount));
+                    changed = true;
+                }
+                if (ex.getActualAmount() == null || ex.getActualAmount().intValue() == 0) {
+                    ex.setActualAmount(BigDecimal.valueOf(amount));
+                    changed = true;
+                }
+                if (ex.getStatus() == null || ex.getStatus() != PaymentSubmissionStatus.PENDING) {
+                    ex.setStatus(PaymentSubmissionStatus.PENDING);
+                    changed = true;
+                }
+
+                ex.setShipper(shipperUser);
+                ex.setNotes(note);
+                ex.setPaidAt(LocalDateTime.now());
+
+                if (changed || ex.getCode() == null) {
+                    ex = paymentSubmissionRepository.save(ex);
+                }
+
+                if (ex.getCode() == null) {
+                    String submissionCode = "SUB_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + ex.getId();
+                    ex.setCode(submissionCode);
+                    paymentSubmissionRepository.save(ex);
+                }
+
+                return;
+            }
+        } catch (Exception ignored) {
         }
 
         PaymentSubmission submission = new PaymentSubmission();
@@ -824,16 +1100,34 @@ public class OrderShipperService {
             builder.append(address.getDetail());
         }
         if (address.getWardCode() != null) {
-            if (builder.length() > 0) {
-                builder.append(", ");
+            try {
+                String wardName = com.logistics.utils.LocationUtils.getWardNameByCode(address.getCityCode(), address.getWardCode());
+                if (wardName != null && !wardName.isBlank()) {
+                    if (builder.length() > 0) builder.append(", ");
+                    builder.append(wardName);
+                } else {
+                    if (builder.length() > 0) builder.append(", ");
+                    builder.append("Phường ").append(address.getWardCode());
+                }
+            } catch (Exception ignored) {
+                if (builder.length() > 0) builder.append(", ");
+                builder.append("Phường ").append(address.getWardCode());
             }
-            builder.append("Phường ").append(address.getWardCode());
         }
         if (address.getCityCode() != null) {
-            if (builder.length() > 0) {
-                builder.append(", ");
+            try {
+                String cityName = com.logistics.utils.LocationUtils.getCityNameByCode(address.getCityCode());
+                if (cityName != null && !cityName.isBlank()) {
+                    if (builder.length() > 0) builder.append(", ");
+                    builder.append(cityName);
+                } else {
+                    if (builder.length() > 0) builder.append(", ");
+                    builder.append("TP ").append(address.getCityCode());
+                }
+            } catch (Exception ignored) {
+                if (builder.length() > 0) builder.append(", ");
+                builder.append("TP ").append(address.getCityCode());
             }
-            builder.append("TP ").append(address.getCityCode());
         }
         return builder.toString();
     }

@@ -14,8 +14,10 @@ import {
   message,
   Typography,
 } from "antd";
+import { CheckCircleOutlined } from "@ant-design/icons";
 import serviceTypeApi from "../../api/serviceTypeApi";
 import type { AdminServiceType } from "../../types/serviceType";
+import "./AdminModal.css";
 
 const { Title } = Typography;
 
@@ -39,6 +41,8 @@ const AdminServiceTypes: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminServiceType | null>(null);
   const [form] = Form.useForm();
+  const [canSubmit, setCanSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -62,6 +66,14 @@ const AdminServiceTypes: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (open) {
+      form.validateFields().then(() => setCanSubmit(true)).catch(() => setCanSubmit(false));
+    } else {
+      setCanSubmit(false);
+    }
+  }, [open]);
 
   const onCreate = () => {
     setEditing(null);
@@ -95,6 +107,7 @@ const AdminServiceTypes: React.FC = () => {
 
   const submit = async () => {
     try {
+      setSubmitting(true);
       const values = await form.validateFields();
       const payload = {
         name: values.name,
@@ -118,6 +131,8 @@ const AdminServiceTypes: React.FC = () => {
       if (!e?.errorFields) {
         message.error(e?.response?.data?.message || "Lưu thất bại");
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -139,7 +154,7 @@ const AdminServiceTypes: React.FC = () => {
         title: "Thao tác",
         render: (_: any, record: AdminServiceType) => (
           <Space>
-            <Button size="small" onClick={() => onEdit(record)}>
+            <Button size="small" type="primary" onClick={() => onEdit(record)}>
               Sửa
             </Button>
             <Popconfirm title="Xóa loại dịch vụ này?" onConfirm={() => onDelete(record.id)}>
@@ -191,13 +206,31 @@ const AdminServiceTypes: React.FC = () => {
         />
 
         <Modal
-          title={editing ? "Cập nhật loại dịch vụ" : "Thêm loại dịch vụ"}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <CheckCircleOutlined style={{ color: '#1C9CD5', fontSize: 20 }} />
+              <span style={{ textAlign: 'center' }}>{editing ? "Cập nhật loại dịch vụ" : "Thêm loại dịch vụ"}</span>
+            </div>
+          }
           open={open}
-          onOk={submit}
-          onCancel={() => setOpen(false)}
+          closable={false}
+          maskClosable={false}
+          centered
+          className="admin-user-modal"
           destroyOnClose
+          footer={[
+            <Button key="cancel" onClick={() => setOpen(false)}>Hủy</Button>,
+            <Button key="submit" type="primary" onClick={submit} disabled={!canSubmit || submitting} loading={submitting}>{editing ? "Cập nhật" : "Tạo"}</Button>
+          ]}
         >
-          <Form form={form} layout="vertical">
+          <Form form={form} layout="vertical" onValuesChange={async () => {
+            try {
+              await form.validateFields();
+              setCanSubmit(true);
+            } catch {
+              setCanSubmit(false);
+            }
+          }}>
             <Form.Item name="name" label="Tên dịch vụ" rules={[{ required: true }]}>
               <Input placeholder="Nhập tên dịch vụ" />
             </Form.Item>
