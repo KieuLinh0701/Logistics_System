@@ -24,9 +24,8 @@ public class SettlementBatchWarningScheduler {
         private final NotificationService notificationService;
         private final UserRepository userRepository;
 
-        // Chạy mỗi 1 tiếng
-        // @Scheduled(cron = "0 * * * * ?")
-        @Scheduled(cron = "0 0 * * * ?")
+        @Scheduled(cron = "0 0 20 * * ?")
+        // @Scheduled(cron = "0 * * * * ?") 
         @Transactional
         public void scanUnpaidSettlementBatches() {
 

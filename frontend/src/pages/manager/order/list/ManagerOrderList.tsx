@@ -45,6 +45,7 @@ const ManagerOrderList = () => {
   const [filterPaymentStatus, setFilterPaymentStatus] = useState("ALL");
   const [filterServiceType, setFilterServiceType] = useState<number | null>(null);
   const [filterCOD, setFilterCOD] = useState("ALL");
+  const [filterPickupType, setFilterPickupType] = useState("ALL");
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -80,6 +81,7 @@ const ManagerOrderList = () => {
     if (filterPaymentStatus !== "ALL") params.payment = filterPaymentStatus.toLowerCase();
     if (filterServiceType !== null) params.service = filterServiceType;
     if (filterCOD !== "ALL") params.cod = filterCOD.toLowerCase();
+    if (filterPickupType !== "ALL") params.pickupType = filterPickupType.toLowerCase();
     params.sort = filterSort.toLowerCase();
     if (page) params.page = page;
 
@@ -102,6 +104,7 @@ const ManagerOrderList = () => {
     const sort = searchParams.get("sort")?.toLocaleUpperCase();
     const startDate = searchParams.get("start");
     const endDate = searchParams.get("end");
+    const pick = searchParams.get("pickupType")?.toLocaleUpperCase();
 
     setPage(pageParam);
     if (s) setSearch(s);
@@ -113,6 +116,7 @@ const ManagerOrderList = () => {
 
     if (cod) setFilterCOD(cod);
     if (sort) setFilterSort(sort);
+    if (pick) setFilterPickupType(pick);
 
     if (startDate && endDate) {
       setDateRange([
@@ -137,6 +141,7 @@ const ManagerOrderList = () => {
         paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
         cod: filterCOD !== "ALL" ? filterCOD : undefined,
         sort: filterSort,
+        pickupType: filterPickupType !== "ALL" ? filterPickupType : undefined,
       };
       if (dateRange) {
         param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
@@ -217,6 +222,7 @@ const ManagerOrderList = () => {
         paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
         cod: filterCOD !== "ALL" ? filterCOD : undefined,
         sort: filterSort,
+        pickupType: filterPickupType !== "ALL" ? filterPickupType : undefined,
       };
       if (dateRange) {
         param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
@@ -294,6 +300,7 @@ const ManagerOrderList = () => {
     setFilterPayer("ALL");
     setFilterPaymentStatus("ALL");
     setFilterCOD("ALL");
+    setFilterPickupType("ALL");
     setDateRange(null);
     setPage(1);
   };
@@ -317,6 +324,9 @@ const ManagerOrderList = () => {
         break;
       case 'sort':
         setFilterSort(value);
+        break;
+      case 'pickupType':
+        setFilterPickupType(value);
         break;
     }
     setPage(1);
@@ -345,7 +355,7 @@ const ManagerOrderList = () => {
 
     updateURL();
     fetchOrders(page);
-  }, [page, limit, search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort]);
+  }, [page, limit, search, filterStatus, filterServiceType, filterPayer, filterPaymentStatus, filterCOD, dateRange, filterSort, filterPickupType]);
 
   // Shipment
   const fetchShipments = async (currentPage = pageShipment) => {
@@ -488,7 +498,7 @@ const ManagerOrderList = () => {
           setDateRange={setDateRange}
           showAdvancedFilters={showAdvancedFilters}
           setShowAdvancedFilters={setShowAdvancedFilters}
-          filters={{ status: filterStatus, payer: filterPayer, paymentStatus: filterPaymentStatus, serviceType: filterServiceType, cod: filterCOD, sort: filterSort }}
+          filters={{ status: filterStatus, payer: filterPayer, paymentStatus: filterPaymentStatus, serviceType: filterServiceType, cod: filterCOD, sort: filterSort, pickupType: filterPickupType }}
           setFilters={handleFilterChange}
           serviceTypes={serviceTypes}
           onReset={handleClearFilters}
