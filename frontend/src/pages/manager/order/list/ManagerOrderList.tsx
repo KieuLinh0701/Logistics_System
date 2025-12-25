@@ -498,7 +498,7 @@ const ManagerOrderList = () => {
           setDateRange={setDateRange}
           showAdvancedFilters={showAdvancedFilters}
           setShowAdvancedFilters={setShowAdvancedFilters}
-          filters={{ status: filterStatus, payer: filterPayer, paymentStatus: filterPaymentStatus, serviceType: filterServiceType, cod: filterCOD, sort: filterSort, pickupType: setFilterPickupType }}
+          filters={{ status: filterStatus, payer: filterPayer, paymentStatus: filterPaymentStatus, serviceType: filterServiceType, cod: filterCOD, sort: filterSort, pickupType: filterPickupType }}
           setFilters={handleFilterChange}
           serviceTypes={serviceTypes}
           onReset={handleClearFilters}
