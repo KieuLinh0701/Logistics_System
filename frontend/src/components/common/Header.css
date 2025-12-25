@@ -135,6 +135,11 @@
   font-weight: 500;
 }
 
+.role-name {
+  color: #fff !important;
+  font-weight: 400;
+}
+
 /* FIX: Vô hiệu hóa hoàn toàn style mặc định cho notification dropdown */
 .ant-dropdown:has(.notification-dropdown) {
   background: transparent !important;

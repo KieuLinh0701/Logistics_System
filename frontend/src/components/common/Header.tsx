@@ -24,13 +24,14 @@ import {
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import authApi from "../../api/authApi";
-import { getCurrentUser } from "../../utils/authUtils";
+import { getCurrentUser, getUserRole } from "../../utils/authUtils";
 import notificationApi from "../../api/notificationApi";
 import type { Notification } from "../../types/notification";
 import { connectWebSocket, disconnectWebSocket } from "../../socket/socket";
 import "./Header.css";
 import logo from "../../assets/images/home/logo_white.png";
 import { getFullName, type User } from "../../types/auth";
+import { translateRoleNameHeader } from "../../utils/roleUtils";
 
 const { Header: AntHeader } = Layout;
 const { Text, Title } = Typography;
@@ -45,6 +46,8 @@ const Header: React.FC = () => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   const avatarSrc = currentUser?.images || undefined;
+
+  const role = getUserRole();
 
   useEffect(() => {
     const handleUserUpdate = (e: any) => {
@@ -245,6 +248,7 @@ const Header: React.FC = () => {
             <Space className="user-profile">
               <Avatar src={avatarSrc} icon={<UserOutlined />} className="user-avatar" />
               <Text className="user-name">{getFullName(currentUser!)}</Text>
+              <Text className="role-name">({translateRoleNameHeader(role!)})</Text>
             </Space>
           </Dropdown>
         </Space>

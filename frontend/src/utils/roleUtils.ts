@@ -9,5 +9,16 @@ export const translateRoleName = (value: string): string => {
   }
 };
 
+export const translateRoleNameHeader = (value: string): string => {
+  switch (value) {
+    case 'driver': return 'tài xế';
+    case 'shipper': return 'nhân viên giao hàng';
+    case 'admin': return 'quản trị viên';
+    case 'manager': return 'quản lý bưu cục';
+    case 'user': return 'chủ cửa hàng';
+    default: return value;
+  }
+};
+
 export const OFFICE_MANAGER_ADDABLE_ROLES = ['Driver', 'Shipper'] as const;
 
