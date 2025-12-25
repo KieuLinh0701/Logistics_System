@@ -23,11 +23,13 @@ interface DeliveryStop {
 
 interface SimpleMapProps {
   deliveryStops: DeliveryStop[];
+  title?: string;
+  deliverOffice?: { id?: number; name?: string; address?: string; latitude?: number; longitude?: number } | null;
 }
 
 const { Text } = Typography;
 
-const SimpleMap: React.FC<SimpleMapProps> = ({ deliveryStops }) => {
+const SimpleMap: React.FC<SimpleMapProps> = ({ deliveryStops, title, deliverOffice = null, }: SimpleMapProps & { showReceive?: boolean }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'default';
@@ -63,24 +65,43 @@ const SimpleMap: React.FC<SimpleMapProps> = ({ deliveryStops }) => {
 
   const openRouteInGoogleMaps = () => {
     if (deliveryStops.length === 0) return;
-    
-    const addresses = deliveryStops.map(stop => stop.recipientAddress);
-    const routeUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
-    window.open(routeUrl, '_blank');
+
+    const destination = deliveryStops[0].recipientAddress || '';
+
+    const tryOpenWithCurrent = async () => {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error('no-geolocation'));
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+        const origin = `${pos.coords.latitude},${pos.coords.longitude}`;
+        const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+        window.open(routeUrl, '_blank');
+      } catch (e) {
+        // fallback: open route by addresses list
+        const addresses = deliveryStops.map(stop => stop.recipientAddress);
+        const routeUrl = `https://www.google.com/maps/dir/${addresses.join('/')}`;
+        window.open(routeUrl, '_blank');
+      }
+    };
+
+    tryOpenWithCurrent();
   };
 
   return (
-    <Card 
-      title="Lộ trình giao hàng" 
-      style={{ marginBottom: '24px' }}
-      extra={
-        <Space>
-          <a onClick={openRouteInGoogleMaps} style={{ cursor: 'pointer' }}>
-            <EnvironmentOutlined /> Xem lộ trình trên Google Maps
-          </a>
-        </Space>
-      }
-    >
+    <>
+      { (typeof (title) !== 'undefined') || (deliveryStops && deliveryStops.length > 0) ? (
+        <Card 
+          title={title || "Lộ trình nhận hàng"} 
+          style={{ marginBottom: '24px' }}
+          extra={
+            <Space>
+              <a onClick={openRouteInGoogleMaps} style={{ cursor: 'pointer' }}>
+                <EnvironmentOutlined /> Xem lộ trình trên Google Maps
+              </a>
+            </Space>
+          }
+        >
       <List
         dataSource={deliveryStops}
         renderItem={(stop, index) => (
@@ -114,15 +135,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({ deliveryStops }) => {
                 </div>
               }
               title={
-                <Space>
-                  <Text strong>{stop.recipientName}</Text>
-                  <Tag color={getStatusColor(stop.status)}>
-                    {getStatusText(stop.status)}
-                  </Tag>
-                  <Tag color={getPriorityColor(stop.priority)}>
-                    {getPriorityText(stop.priority)}
-                  </Tag>
-                </Space>
+                <Text strong>{stop.recipientName}</Text>
               }
               description={
                 <Space direction="vertical" size={0}>
@@ -130,25 +143,75 @@ const SimpleMap: React.FC<SimpleMapProps> = ({ deliveryStops }) => {
                   <Space>
                     <PhoneOutlined style={{ color: '#666' }} />
                     <Text style={{ fontSize: '12px' }}>{stop.recipientPhone}</Text>
-                    {stop.codAmount > 0 && (
-                      <>
-                        <DollarOutlined style={{ color: '#f50' }} />
-                        <Text style={{ fontSize: '12px', color: '#f50' }}>
-                          {stop.codAmount.toLocaleString()}đ
-                        </Text>
-                      </>
-                    )}
                   </Space>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Dịch vụ: {stop.serviceType} | Thời gian ước tính: {stop.estimatedTime}
-                  </Text>
                 </Space>
               }
             />
           </List.Item>
         )}
       />
-    </Card>
+        </Card>
+      ) : null}
+
+      {deliverOffice && (
+        <Card
+          title="Lộ trình nộp hàng"
+          style={{ marginBottom: '24px' }}
+          extra={
+            <Space>
+              <a
+                onClick={async () => {
+                  // open route from current position to office address
+                  const destination = deliverOffice.address || deliverOffice.name || '';
+                  try {
+                    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                      if (!navigator.geolocation) return reject(new Error('no-geolocation'));
+                      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                    });
+                    const origin = `${pos.coords.latitude},${pos.coords.longitude}`;
+                    const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+                    window.open(routeUrl, '_blank');
+                  } catch (e) {
+                    const routeUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
+                    window.open(routeUrl, '_blank');
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <EnvironmentOutlined /> Xem lộ trình nộp hàng trên Google Maps
+              </a>
+            </Space>
+          }
+        >
+          <List
+            dataSource={[{ ...deliverOffice, id: deliverOffice.id || 0, recipientName: deliverOffice.name || '', recipientPhone: '', recipientAddress: deliverOffice.address || '', codAmount: 0, priority: 'normal', serviceType: '', estimatedTime: '', status: 'pending', coordinates: { lat: deliverOffice.latitude || 0, lng: deliverOffice.longitude || 0 }, distance: 0, travelTime: 0 }]}
+            renderItem={(stop) => (
+              <List.Item
+                actions={[
+                  <a
+                    key="map"
+                    onClick={() => {
+                      const addr = stop.recipientAddress || stop.recipientName || '';
+                      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;
+                      window.open(mapsUrl, '_blank');
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <EnvironmentOutlined /> Chỉ đường
+                  </a>
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={<div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#faad14', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '16px' }}>B</div>}
+                  title={<Space><Text strong>{stop.recipientName}</Text></Space>}
+                  description={<Space direction="vertical" size={0}><Text>{stop.recipientAddress}</Text><Text type="secondary" style={{ fontSize: 12 }}>{stop.recipientPhone}</Text></Space>}
+                />
+              </List.Item>
+            )}
+          />
+        </Card>
+      )}
+    </>
   );
 };
 

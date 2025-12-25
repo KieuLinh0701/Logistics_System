@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message, Typography } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import userApi from "../../api/userApi";
 import { translateRoleName } from "../../utils/roleUtils";
 import type { AdminUser } from "../../types/user";
+import "./AdminModal.css";
 
 
 const { Title } = Typography;
@@ -19,6 +20,8 @@ const AdminUsers: React.FC = () => {
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [roles, setRoles] = useState<Array<{ id: number; name: string }>>([]);
   const [form] = Form.useForm();
+  const [canSubmit, setCanSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -39,6 +42,14 @@ const AdminUsers: React.FC = () => {
     fetchData();
   }, [query.page, query.limit, query.search]);
 
+  useEffect(() => {
+    if (open) {
+      form.validateFields().then(() => setCanSubmit(true)).catch(() => setCanSubmit(false));
+    } else {
+      setCanSubmit(false);
+    }
+  }, [open]);
+
   const optionsRoles = [
     { id: 1, name: 'Admin' },
     { id: 2, name: 'Manager' },
@@ -56,6 +67,7 @@ const AdminUsers: React.FC = () => {
   const onEdit = (record: AdminUser) => {
     setEditing(record);
     form.setFieldsValue({
+      email: record.email,
       firstName: record.firstName,
       lastName: record.lastName,
       phoneNumber: record.phoneNumber,
@@ -77,6 +89,7 @@ const AdminUsers: React.FC = () => {
 
   const submit = async () => {
     try {
+      setSubmitting(true);
       const values = await form.validateFields();
       if (editing) {
         await userApi.updateAdminUser(editing.id!, {
@@ -106,6 +119,8 @@ const AdminUsers: React.FC = () => {
       if (!e?.errorFields) {
         message.error(e?.response?.data?.message || "Lưu thất bại");
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -156,7 +171,7 @@ const AdminUsers: React.FC = () => {
         title: "Thao tác",
         render: (_: any, record: AdminUser) => (
           <Space>
-            <Button size="small" onClick={() => onEdit(record)}>
+            <Button size="small" type="primary" onClick={() => onEdit(record)}>
               Sửa
             </Button>
             <Popconfirm title="Xóa người dùng này?" onConfirm={() => onDelete(record.id)}>
@@ -208,14 +223,36 @@ const AdminUsers: React.FC = () => {
         />
 
         <Modal
-          title={editing ? "Cập nhật người dùng" : "Tạo người dùng"}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <CheckCircleOutlined style={{ color: '#1C9CD5', fontSize: 20 }} />
+              <span style={{ textAlign: 'center' }}>{editing ? "Cập nhật người dùng" : "Tạo người dùng"}</span>
+            </div>
+          }
           open={open}
-          onOk={submit}
-          onCancel={() => setOpen(false)}
+          closable={false}
+          maskClosable={false}
+          centered
+          className="admin-user-modal"
           destroyOnClose
           forceRender
+          footer={[
+            <Button key="cancel" onClick={() => setOpen(false)}>
+              Hủy
+            </Button>,
+            <Button key="submit" type="primary" onClick={submit} disabled={!canSubmit || submitting} loading={submitting}>
+              {editing ? "Cập nhật" : "Tạo"}
+            </Button>,
+          ]}
         >
-          <Form form={form} layout="vertical" preserve={false}>
+          <Form form={form} layout="vertical" preserve={false} onValuesChange={async () => {
+            try {
+              await form.validateFields();
+              setCanSubmit(true);
+            } catch {
+              setCanSubmit(false);
+            }
+          }}>
             {editing ? (
               <Form.Item name="email" label="Email">
                 <Input disabled />

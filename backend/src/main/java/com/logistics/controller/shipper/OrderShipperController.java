@@ -2,6 +2,8 @@ package com.logistics.controller.shipper;
 
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
+import com.logistics.request.shipper.PickedUpRequest;
+import com.logistics.request.shipper.DeliverOriginRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.utils.SecurityUtils;
@@ -57,6 +59,18 @@ public class OrderShipperController {
         return ResponseEntity.ok(shipperService.listUnassignedOrders(page, limit));
     }
 
+    @GetMapping("/pickup-requests")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> listPickupRequests(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+
+        return ResponseEntity.ok(shipperService.listPickupByCourierRequests(page, limit));
+    }
+
     @GetMapping("/orders/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOrder(@PathVariable Integer id) {
         if (isNotShipper()) {
@@ -71,6 +85,14 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
         return ResponseEntity.ok(shipperService.claimOrder(id));
+    }
+
+    @PostMapping("/orders/{id}/claim-request")
+    public ResponseEntity<ApiResponse<String>> claimOrderRequest(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        return ResponseEntity.ok(shipperService.claimOrderRequest(id));
     }
 
     @PostMapping("/orders/{id}/unclaim")
@@ -115,6 +137,22 @@ public class OrderShipperController {
         }
 
         return ResponseEntity.ok(shipperService.createIncidentReport(request));
+    }
+
+    @PostMapping("/orders/{id}/picked-up")
+    public ResponseEntity<ApiResponse<String>> markPickedUp(@PathVariable Integer id, @RequestBody PickedUpRequest request) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        return ResponseEntity.ok(shipperService.markPickedUp(id, request));
+    }
+
+    @PostMapping("/orders/{id}/deliver-origin")
+    public ResponseEntity<ApiResponse<String>> deliverToOrigin(@PathVariable Integer id, @RequestBody(required = false) DeliverOriginRequest request) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        return ResponseEntity.ok(shipperService.deliverToOrigin(id, request));
     }
 
     @GetMapping("/incidents")

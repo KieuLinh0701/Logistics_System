@@ -23,7 +23,7 @@ const AdminDashboard: React.FC = () => {
     <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
       <div style={{ marginBottom: 24 }}>
         <Title level={2} style={{ color: "#1C3D90" }}>
-          Báo cáo & Thống kê
+          Dashboard Admin
         </Title>
       </div>
 

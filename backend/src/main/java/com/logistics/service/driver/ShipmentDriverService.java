@@ -491,15 +491,26 @@ public class ShipmentDriverService {
                 return new ApiResponse<>(false, "Chuyến hàng không có phương tiện", null);
             }
 
-            VehicleTracking tracking = new VehicleTracking();
-            tracking.setVehicle(shipment.getVehicle());
-            tracking.setShipment(shipment);
-            tracking.setLatitude(BigDecimal.valueOf(request.getLatitude()));
-            tracking.setLongitude(BigDecimal.valueOf(request.getLongitude()));
-            tracking.setSpeed(BigDecimal.valueOf(request.getSpeed()));
-            tracking.setRecordedAt(LocalDateTime.now());
-
-            vehicleTrackingRepository.save(tracking);
+            // Thay vì tạo nhiều bản ghi, cập nhật bản ghi tracking gần nhất cho shipment này (nếu có),
+            // mục tiêu: chỉ giữ 1 bản ghi đang được cập nhật liên tục
+            List<VehicleTracking> existing = vehicleTrackingRepository.findByShipmentIdOrderByRecordedAtDesc(shipment.getId());
+            if (existing != null && !existing.isEmpty()) {
+                VehicleTracking t = existing.get(0);
+                t.setLatitude(BigDecimal.valueOf(request.getLatitude()));
+                t.setLongitude(BigDecimal.valueOf(request.getLongitude()));
+                t.setSpeed(BigDecimal.valueOf(request.getSpeed()));
+                t.setRecordedAt(LocalDateTime.now());
+                vehicleTrackingRepository.save(t);
+            } else {
+                VehicleTracking tracking = new VehicleTracking();
+                tracking.setVehicle(shipment.getVehicle());
+                tracking.setShipment(shipment);
+                tracking.setLatitude(BigDecimal.valueOf(request.getLatitude()));
+                tracking.setLongitude(BigDecimal.valueOf(request.getLongitude()));
+                tracking.setSpeed(BigDecimal.valueOf(request.getSpeed()));
+                tracking.setRecordedAt(LocalDateTime.now());
+                vehicleTrackingRepository.save(tracking);
+            }
 
             // Cập nhật vị trí hiện tại của xe
             Vehicle vehicle = shipment.getVehicle();

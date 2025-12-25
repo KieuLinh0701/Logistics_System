@@ -45,39 +45,24 @@ public class ShippingRequestShipperService {
     private NotificationService notificationService;
 
     public List<ShippingRequest> listForCurrentShipper() {
-        Integer userId = SecurityUtils.getAuthenticatedUserId();
-        LocalDateTime now = LocalDateTime.now();
-        List<ShipperAssignment> assigns = shipperAssignmentRepo.findActiveByShipperId(userId, now);
+        // Trả về tất cả yêu cầu nhắc lấy hàng đang chờ để shipper có thể tự nhận
+        List<ShippingRequest> all = shippingRequestRepo.findAll();
+        if (all != null) {
+            for (ShippingRequest r : all) {
+                String rt = r.getRequestType() == null ? "null" : r.getRequestType().name();
+                String st = r.getStatus() == null ? "null" : r.getStatus().name();
+                Integer oid = r.getOrder() == null ? null : r.getOrder().getId();
+                String ostatus = "null";
+                try { if (r.getOrder() != null && r.getOrder().getStatus() != null) ostatus = r.getOrder().getStatus().name(); } catch (Exception ignored) {}
+            }
+        }
 
-        if (assigns == null || assigns.isEmpty()) return List.of();
-
-        return shippingRequestRepo.findAll().stream()
+        List<ShippingRequest> filtered = all.stream()
             .filter(r -> r.getRequestType() == ShippingRequestType.PICKUP_REMINDER)
             .filter(r -> r.getStatus() == ShippingRequestStatus.PENDING)
-            .filter(r -> {
-                Order o = r.getOrder();
-                if (o == null) return false;
-
-                Integer oCity = null;
-                Integer oWard = null;
-                if (o.getRecipientAddress() != null) {
-                    oCity = o.getRecipientAddress().getCityCode();
-                    oWard = o.getRecipientAddress().getWardCode();
-                } else if (o.getToOffice() != null) {
-                    oCity = o.getToOffice().getCityCode();
-                    oWard = o.getToOffice().getWardCode();
-                }
-
-                if (oCity == null || oWard == null) return false;
-
-                final Integer finalCity = oCity;
-                final Integer finalWard = oWard;
-
-                return assigns.stream().anyMatch(a ->
-                    a.getCityCode().equals(finalCity) && a.getWardCode().equals(finalWard)
-                );
-            })
+            .filter(r -> r.getOrder() != null)
             .toList();
+        return filtered;
     }
 
     @Transactional
@@ -93,23 +78,7 @@ public class ShippingRequestShipperService {
         Order order = req.getOrder();
         if (order == null) return new ApiResponse<>(false, "Order liên quan không tồn tại", false);
 
-        // Kiểm tra phân công shipper
-        LocalDateTime now = LocalDateTime.now();
-        Integer cityCode = null;
-        Integer wardCode = null;
-        if (order.getRecipientAddress() != null) {
-            cityCode = order.getRecipientAddress().getCityCode();
-            wardCode = order.getRecipientAddress().getWardCode();
-        } else if (order.getToOffice() != null) {
-            cityCode = order.getToOffice().getCityCode();
-            wardCode = order.getToOffice().getWardCode();
-        }
-
-        if (cityCode == null || wardCode == null) return new ApiResponse<>(false, "Không có thông tin khu vực của đơn", false);
-
-        List<ShipperAssignment> candidates = shipperAssignmentRepo.findActiveByCityAndWard(cityCode, wardCode, now);
-        boolean allowed = candidates.stream().anyMatch(a -> a.getShipper().getId().equals(shipperUserId));
-        if (!allowed) return new ApiResponse<>(false, "Bạn không có phân công cho khu vực này", false);
+        // Cho phép shipper nhận yêu cầu nhắc lấy mà không cần kiểm tra phân công shipper trước đó
 
         User shipper = userRepository.findById(shipperUserId).orElseThrow(() -> new RuntimeException("Shipper not found"));
 

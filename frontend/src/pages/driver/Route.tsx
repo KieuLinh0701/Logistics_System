@@ -22,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
 import type { DriverRouteInfo, DriverDeliveryStop } from "../../types/shipment";
+import { useRef } from "react";
 
 const { Title, Text } = Typography;
 
@@ -32,10 +33,59 @@ const DriverRoute: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [mapModalAddress, setMapModalAddress] = useState<string | null>(null);
+  const trackingIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetchRouteData();
   }, []);
+
+  // Start periodic tracking when routeInfo (active shipment) exists
+  useEffect(() => {
+    // clear any previous interval
+    if (trackingIntervalRef.current) {
+      window.clearInterval(trackingIntervalRef.current);
+      trackingIntervalRef.current = null;
+    }
+
+    if (!routeInfo || !routeInfo.id) return;
+
+    const sendPosition = () => {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const speed = pos.coords.speed || 0;
+            console.log("[tracking] sending position", { shipmentId: routeInfo.id, lat, lng, speed });
+            await shipmentApi.updateVehicleTracking({ shipmentId: routeInfo.id, latitude: lat, longitude: lng, speed });
+            console.log("[tracking] sent");
+          } catch (e) {
+            console.warn("[tracking] error sending", e);
+          }
+        },
+        (err) => {
+          console.warn("Geolocation error", err);
+        },
+        { enableHighAccuracy: true, maximumAge: 5000 }
+      );
+    };
+
+    // send immediately, then every 5 seconds
+    sendPosition();
+    const id = window.setInterval(sendPosition, 5000);
+    trackingIntervalRef.current = id;
+
+    return () => {
+      if (trackingIntervalRef.current) {
+        window.clearInterval(trackingIntervalRef.current);
+        trackingIntervalRef.current = null;
+      }
+    };
+  }, [routeInfo]);
 
   const fetchRouteData = async () => {
     try {

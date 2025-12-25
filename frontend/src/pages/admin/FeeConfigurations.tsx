@@ -15,10 +15,12 @@ import {
   Typography,
   Switch,
 } from "antd";
+import { CheckCircleOutlined } from "@ant-design/icons";
 import feeConfigurationApi from "../../api/feeConfigurationApi";
 import serviceTypeApi from "../../api/serviceTypeApi";
 import type { FeeConfiguration, CreateFeeConfigurationPayload } from "../../types/feeConfiguration";
 import type { AdminServiceType } from "../../types/serviceType";
+import "./AdminModal.css";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -46,6 +48,8 @@ const AdminFeeConfigurations: React.FC = () => {
   const [editing, setEditing] = useState<FeeConfiguration | null>(null);
   const [form] = Form.useForm();
   const [serviceTypes, setServiceTypes] = useState<AdminServiceType[]>([]);
+  const [canSubmit, setCanSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -134,6 +138,7 @@ const AdminFeeConfigurations: React.FC = () => {
 
   const submit = async () => {
     try {
+      setSubmitting(true);
       const values = await form.validateFields();
       const payload: CreateFeeConfigurationPayload = {
         serviceTypeId: values.serviceTypeId,
@@ -159,6 +164,8 @@ const AdminFeeConfigurations: React.FC = () => {
       if (!e?.errorFields) {
         message.error(e?.response?.data?.message || "Lưu thất bại");
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -220,7 +227,7 @@ const AdminFeeConfigurations: React.FC = () => {
         title: "Thao tác",
         render: (_: any, record: FeeConfiguration) => (
           <Space>
-            <Button size="small" onClick={() => onEdit(record)}>
+            <Button size="small" type="primary" onClick={() => onEdit(record)}>
               Sửa
             </Button>
             <Popconfirm title="Xóa cấu hình này?" onConfirm={() => onDelete(record.id)}>
@@ -296,14 +303,40 @@ const AdminFeeConfigurations: React.FC = () => {
         />
 
         <Modal
-          title={editing ? "Cập nhật cấu hình phí" : "Thêm cấu hình phí"}
+          title={
+            <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+              <CheckCircleOutlined style={{ color: "#1C9BF0", fontSize: 20 }} />
+              <div style={{ fontWeight: 600 }}>{editing ? "Cập nhật cấu hình phí" : "Thêm cấu hình phí"}</div>
+            </div>
+          }
           open={open}
-          onOk={submit}
-          onCancel={() => setOpen(false)}
+          closable={false}
+          maskClosable={false}
+          centered
+          className="admin-user-modal"
           destroyOnClose
           width={700}
+          footer={
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <Button onClick={() => setOpen(false)}>Huỷ</Button>
+              <Button type="primary" onClick={submit} disabled={!canSubmit} loading={submitting}>
+                Lưu
+              </Button>
+            </div>
+          }
         >
-          <Form form={form} layout="vertical">
+          <Form
+            form={form}
+            layout="vertical"
+            onValuesChange={async () => {
+              try {
+                await form.validateFields();
+                setCanSubmit(true);
+              } catch (e) {
+                setCanSubmit(false);
+              }
+            }}
+          >
             <Form.Item name="serviceTypeId" label="Loại dịch vụ (để trống = áp dụng tất cả)">
               <Select placeholder="Chọn loại dịch vụ" allowClear>
                 {serviceTypes.map((st) => (

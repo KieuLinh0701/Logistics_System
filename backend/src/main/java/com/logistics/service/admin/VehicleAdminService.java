@@ -33,6 +33,9 @@ public class VehicleAdminService {
 
     @Autowired
     private OfficeRepository officeRepository;
+    
+    @Autowired
+    private com.logistics.repository.VehicleTrackingRepository vehicleTrackingRepository;
 
     public ApiResponse<Map<String, Object>> listVehicles(int page, int limit, String search, String type, String status) {
         try {
@@ -172,9 +175,47 @@ public class VehicleAdminService {
             vehicleMap.put("office", null);
         }
 
+        vehicleMap.put("gpsDeviceId", vehicle.getGpsDeviceId());
+        vehicleMap.put("lastMaintenanceAt", vehicle.getLastMaintenanceAt());
+        vehicleMap.put("nextMaintenanceDue", vehicle.getNextMaintenanceDue());
+        vehicleMap.put("latitude", vehicle.getLatitude());
+        vehicleMap.put("longitude", vehicle.getLongitude());
+
         vehicleMap.put("createdAt", vehicle.getCreatedAt());
         vehicleMap.put("updatedAt", vehicle.getUpdatedAt());
         return vehicleMap;
+    }
+
+    public ApiResponse<Map<String, Object>> getVehicleById(Integer vehicleId) {
+        try {
+            Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện"));
+            return new ApiResponse<>(true, "Lấy thông tin phương tiện thành công", mapVehicle(vehicle));
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<Map<String, Object>> getVehicleTrackings(Integer vehicleId) {
+        try {
+            java.util.List<com.logistics.entity.VehicleTracking> trackings = vehicleTrackingRepository.findByVehicleId(vehicleId);
+            java.util.List<Map<String, Object>> list = trackings.stream().map(t -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", t.getId());
+                m.put("latitude", t.getLatitude());
+                m.put("longitude", t.getLongitude());
+                m.put("speed", t.getSpeed());
+                m.put("recordedAt", t.getRecordedAt());
+                m.put("shipmentId", t.getShipment() != null ? t.getShipment().getId() : null);
+                return m;
+            }).collect(Collectors.toList());
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("data", list);
+            return new ApiResponse<>(true, "Lấy lịch sử hành trình thành công", result);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
     }
 }
 

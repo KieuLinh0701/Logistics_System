@@ -1,0 +1,47 @@
+.admin-user-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.admin-user-modal .ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 18px 20px;
+  margin-bottom: 0;
+  background: #fff;
+  border-radius: 12px 12px 0 0;
+}
+
+.admin-user-modal .ant-modal-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1C3D90;
+}
+
+.admin-user-modal .ant-input,
+.admin-user-modal .ant-input-affix-wrapper,
+.admin-user-modal .ant-select-selector,
+.admin-user-modal .ant-input-password {
+  background-color: #f5f7fb;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.admin-user-modal .ant-input:hover,
+.admin-user-modal .ant-input-affix-wrapper:hover,
+.admin-user-modal .ant-select-selector:hover,
+.admin-user-modal .ant-input-password:hover {
+  background-color: #e8ecf1;
+  border-color: #1C3D90;
+}
+
+.admin-user-modal .ant-input:focus,
+.admin-user-modal .ant-input-affix-wrapper:focus,
+.admin-user-modal .ant-select-focused .ant-select-selector,
+.admin-user-modal .ant-input-password:focus {
+  background-color: #fff;
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 3px rgba(28, 61, 144, 0.08);
+}

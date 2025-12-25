@@ -12,6 +12,11 @@ export interface AdminVehicle {
   } | null;
   createdAt: string;
   updatedAt?: string;
+  lastMaintenanceAt?: string | null;
+  nextMaintenanceDue?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  gpsDeviceId?: string | null;
 }
 
 export interface Vehicle {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Select, Modal, message, Tag, Typography } from "antd";
+import { Table, Button, Select, Modal, message, Tag, Typography, Tooltip } from "antd";
 import axiosClient from "../../api/axiosClient";
 import { translateShippingRequestStatus, translateShippingRequestType } from "../../utils/shippingRequestUtils";
 
@@ -153,14 +153,46 @@ const ShippingRequestsAdmin: React.FC = () => {
     },
     { title: "Bưu cục", dataIndex: ["office", "name"], key: "office", render: (_: any, r: ShippingRequest) => r.office?.name || "-" },
     { title: "Người gửi", dataIndex: ["user", "firstName"], key: "user", render: (_: any, r: ShippingRequest) => r.user ? `${r.user.firstName} ${r.user.lastName}` : "Khách" },
-    { title: "Ngày tạo", dataIndex: "createdAt", key: "createdAt" },
-    { title: "Nội dung", dataIndex: "content", key: "content", ellipsis: true },
-    {
+    { title: "Ngày tạo", dataIndex: "createdAt", key: "createdAt", render: (createdAt: string) => {
+        if (!createdAt) return "-";
+        const d = new Date(createdAt);
+        if (isNaN(d.getTime())) return createdAt;
+        const date = d.toLocaleDateString('vi-VN');
+        const time = d.toLocaleTimeString('vi-VN');
+        return (
+          <div>
+            <div style={{ fontWeight: 600 }}>{date}</div>
+            <div style={{ color: '#6B7280' }}>{time}</div>
+          </div>
+        );
+      }
+    },
+    { title: "Nội dung", dataIndex: "content", key: "content", render: (text: string) => {
+        if (!text) return "-";
+        return (
+          <Tooltip
+            title={<div style={{ whiteSpace: 'pre-wrap', maxWidth: 480 }}>{text}</div>}
+            mouseEnterDelay={0.4}
+            placement="topLeft"
+          >
+            <div style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: 480,
+            }}>{text}</div>
+          </Tooltip>
+        );
+      }
+    },
+      {
       title: "Hành động",
       key: "action",
       render: (_: any, record: ShippingRequest) => (
-        <Button onClick={() => handleAssign(record)} disabled={!!record.office}>
-          Phân cho bưu cục
+        <Button type="primary" onClick={() => handleAssign(record)} disabled={!!record.office}>
+          Phân công
         </Button>
       ),
     },

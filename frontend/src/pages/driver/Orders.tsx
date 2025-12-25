@@ -70,6 +70,11 @@ const DriverOrders: React.FC = () => {
     return;
   }
 
+  if (!selectedVehicle) {
+    message.warning("Vui lòng chọn phương tiện trước khi nhận hàng");
+    return;
+  }
+
   Modal.confirm({
     title: "Xác nhận nhận hàng",
     content: `Bạn có chắc chắn muốn nhận ${selectedOrders.length} đơn hàng đã chọn?`,
@@ -182,7 +187,7 @@ const DriverOrders: React.FC = () => {
                 icon={<CheckOutlined />}
                 onClick={handlePickup}
                 loading={pickupLoading}
-                disabled={selectedOrders.length === 0}
+                disabled={selectedOrders.length === 0 || !selectedVehicle}
               >
                 Nhận hàng ({selectedOrders.length})
               </Button>

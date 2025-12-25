@@ -77,20 +77,27 @@ const ShipperDeliveryRoute: React.FC = () => {
       const routeData = await orderApi.getShipperRoute();
       console.log("API DATA:", routeData);
       setRouteInfo(routeData.routeInfo);
-      const routeStops = routeData.deliveryStops || [];
-      // Also fetch shipper orders (for debugging / comparison) and use them to filter/sync route stops
+      const routeStops = (routeData.deliveryStops || []) as any[];
+      const isFinalStatus = (s: any) => {
+        const st = (s?.status || "").toString().toUpperCase();
+        return st === "DELIVERED" || st === "FAILED_DELIVERY" || st === "COMPLETED" || st === "FAILED";
+      };
+      const filteredRouteStops = routeStops.filter((s) => !isFinalStatus(s));
       try {
         const ordersRes = await orderApi.getShipperOrders({ page: 1, limit: 200 });
         const shipperOrders = (ordersRes.orders || []) as any[];
         setShipperOrdersList(shipperOrders as any);
 
-        if (shipperOrders && shipperOrders.length > 0) {
-          // Build ordered list based on shipperOrders tracking numbers.
-          const routeByTracking = new Map(routeStops.map((s: any) => [s.trackingNumber, s]));
-          const synced = shipperOrders.map((o: any) => {
+        const visibleOrders = (shipperOrders || []).filter((o: any) => {
+          const st = (o?.status || "").toString().toUpperCase();
+          return st !== "DELIVERED" && st !== "FAILED_DELIVERY";
+        });
+
+        if (visibleOrders && visibleOrders.length > 0) {
+          const routeByTracking = new Map(filteredRouteStops.map((s: any) => [s.trackingNumber, s]));
+          const synced = visibleOrders.map((o: any) => {
             const tracking = o.trackingNumber;
             if (routeByTracking.has(tracking)) return routeByTracking.get(tracking);
-            // fallback: build a minimal stop object from order data
             return {
               id: o.id,
               trackingNumber: o.trackingNumber,
@@ -105,7 +112,7 @@ const ShipperDeliveryRoute: React.FC = () => {
           });
           setDeliveryStops(synced as any);
         } else {
-          setDeliveryStops(routeStops as any);
+          setDeliveryStops(filteredRouteStops as any);
         }
       } catch (err) {
         console.warn("Could not fetch shipper orders for comparison", err);
@@ -176,14 +183,23 @@ const ShipperDeliveryRoute: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
+    const s = (status || "").toString().toUpperCase();
+    switch (s) {
+      case "PENDING":
+      case "READY_FOR_PICKUP":
         return "default";
-      case "in_progress":
+      case "IN_PROGRESS":
+      case "IN_TRANSIT":
+      case "DELIVERING":
+      case "PICKED_UP":
         return "processing";
-      case "completed":
+      case "COMPLETED":
+      case "DELIVERED":
         return "success";
-      case "failed":
+      case "FAILED":
+      case "FAILED_DELIVERY":
+      case "RETURNED":
+      case "CANCELLED":
         return "error";
       default:
         return "default";
@@ -191,17 +207,32 @@ const ShipperDeliveryRoute: React.FC = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
+    const s = (status || "").toString().toUpperCase();
+    switch (s) {
+      case "PENDING":
         return "Chờ giao";
-      case "in_progress":
+      case "READY_FOR_PICKUP":
+        return "Sẵn sàng lấy hàng";
+      case "PICKED_UP":
+        return "Đã lấy hàng";
+      case "IN_PROGRESS":
+      case "IN_TRANSIT":
+      case "DELIVERING":
         return "Đang giao";
-      case "completed":
+      case "DELIVERED":
+        return "Đã giao";
+      case "COMPLETED":
         return "Hoàn thành";
-      case "failed":
-        return "Thất bại";
+      case "FAILED":
+      case "FAILED_DELIVERY":
+        return "Giao hàng thất bại";
+      case "RETURNED":
+        return "Đã hoàn trả";
+      case "CANCELLED":
+        return "Đã hủy";
       default:
-        return status;
+        // Nếu không khớp, cố gắng chuyển từ snake/upper case sang readable
+        return status.replaceAll("_", " ");
     }
   };
 
