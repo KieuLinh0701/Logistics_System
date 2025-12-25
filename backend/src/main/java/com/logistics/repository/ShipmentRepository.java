@@ -19,16 +19,19 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     // Thống kê tổng quan theo officeId (fromOffice)
     @Query("SELECT new com.logistics.dto.manager.dashboard.ManagerShipmentStatsDTO(" +
             "COUNT(s), " +
-            "SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.PENDING THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.IN_TRANSIT THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.COMPLETED THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.CANCELLED THEN 1 ELSE 0 END)) " +
+            "COALESCE(SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.PENDING THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.IN_TRANSIT THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.COMPLETED THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN s.status = com.logistics.enums.ShipmentStatus.CANCELLED THEN 1 ELSE 0 END), 0)) " +
             "FROM Shipment s " +
             "WHERE s.fromOffice.id = :officeId")
     ManagerShipmentStatsDTO getShipmentStatsByOffice(@Param("officeId") Integer officeId);
 
     Optional<Shipment> findByCode(String code);
+
     List<Shipment> findByStatus(ShipmentStatus status);
+
     List<Shipment> findByVehicleId(Integer vehicleId);
+
     List<Shipment> findByEmployeeId(Integer employeeId);
 }

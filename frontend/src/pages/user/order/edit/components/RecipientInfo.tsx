@@ -14,7 +14,6 @@ interface Props {
         wardCode: number;
         cityCode: number;
     };
-    disabled: boolean;
     status: OrderStatus;
     onChange?: (values: any) => void;
 }
@@ -22,7 +21,6 @@ interface Props {
 const RecipientInfo: React.FC<Props> = ({
     form,
     recipient,
-    disabled,
     onChange,
     status,
 }) => {
@@ -63,7 +61,7 @@ const RecipientInfo: React.FC<Props> = ({
                                     <Input
                                         className="modal-custom-input"
                                         placeholder="Nhập tên người nhận"
-                                        disabled={disabled || !canEditUserOrderField('recipientName', status)} />
+                                        disabled={!canEditUserOrderField('recipientName', status)} />
                                 </Form.Item>
 
                                 <Form.Item
@@ -80,7 +78,7 @@ const RecipientInfo: React.FC<Props> = ({
                                     <Input
                                         className="modal-custom-input"
                                         placeholder="Ví dụ: 0901234567"
-                                        disabled={disabled || !canEditUserOrderField('recipientPhoneNumber', status)} />
+                                        disabled={!canEditUserOrderField('recipientPhoneNumber', status)} />
                                 </Form.Item>
                             </Col>
 
@@ -88,9 +86,9 @@ const RecipientInfo: React.FC<Props> = ({
                                 <AddressForm
                                     form={form}
                                     prefix="recipient"
-                                    disableCity={disabled || !canEditUserOrderField('recipientCityCode', status)}
-                                    disableWard={disabled || !canEditUserOrderField('recipientWardCode', status)}
-                                    disableDetailAddress={disabled || !canEditUserOrderField('recipientDetailAddress', status)}
+                                    disableCity={!canEditUserOrderField('recipientCityCode', status)}
+                                    disableWard={!canEditUserOrderField('recipientWardCode', status)}
+                                    disableDetailAddress={!canEditUserOrderField('recipientDetailAddress', status)}
                                 />
                             </Col>
                         </Row>

@@ -20,6 +20,7 @@ import AddEditModal from "../request/components/AddEditModal";
 import FromOfficeInfo from "./components/FromOfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 import { canCreateUserShippingRequestFromOrderDetail } from "../../../../utils/shippingRequestUtils";
+import userApi from "../../../../api/userApi";
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -35,6 +36,8 @@ const UserOrderDetail: React.FC = () => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [requestModalOpen, setRequestModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+
+    const [userLocked, setUserLocked] = useState<Boolean>(false);
 
     const fetchOrder = async () => {
         setLoadingView(true);
@@ -55,7 +58,14 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message);
             }
 
-        } catch (e:any) {
+            const lockRes = await userApi.checkUserLocked();
+            if (lockRes.success && lockRes.data != null) {
+                setUserLocked(lockRes.data);
+            } else {
+                message.error(lockRes.message || "Lỗi khi kiểm tra trạng thái khóa");
+            }
+
+        } catch (e: any) {
             message.error(e.message || "Lỗi tải đơn hàng");
         } finally {
             setLoadingView(false);
@@ -92,7 +102,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Hủy đơn thất bại");
             }
         } catch (error: any) {
-              message.error(error.message || "Lỗi server khi hủy đơn hàng");
+            message.error(error.message || "Lỗi server khi hủy đơn hàng");
         } finally {
             setLoading(false);
             setCancelModalOpen(false);
@@ -100,6 +110,11 @@ const UserOrderDetail: React.FC = () => {
     };
 
     const handlePublicOrder = () => {
+        if (userLocked) {
+            message.error("Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.");
+            return;
+        }
+
         setPublicModalOpen(true);
     };
 
@@ -117,7 +132,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Chuyển trạng thái thất bại");
             }
         } catch (error: any) {
-              message.error(error.message || "Lỗi khi chuyển trạng thái đơn hàng");
+            message.error(error.message || "Lỗi khi chuyển trạng thái đơn hàng");
         } finally {
             setPublicModalOpen(false);
             setLoading(false);
@@ -141,7 +156,7 @@ const UserOrderDetail: React.FC = () => {
                 message.error(result.message || "Xóa đơn hàng thất bại");
             }
         } catch (error: any) {
-              message.error(error.message || "Lỗi khi xóa đơn hàng");
+            message.error(error.message || "Lỗi khi xóa đơn hàng");
         } finally {
             setDeleteModalOpen(false);
             setLoading(false);

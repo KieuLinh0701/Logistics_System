@@ -11,6 +11,7 @@ import com.logistics.dto.user.UserSettlementBatchListDto;
 import com.logistics.dto.user.UserSettlementOrderDto;
 import com.logistics.dto.user.UserSettlementTransactionDto;
 import com.logistics.request.SearchRequest;
+import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.SettlementBatchUserService;
@@ -39,6 +40,15 @@ public class SettlementBatchUserController {
                 return ResponseEntity.ok(result);
         }
 
+        @GetMapping("/all-ids")
+        public ResponseEntity<ApiResponse<List<Integer>>> getAllIds(
+                        @Valid SearchRequest searchRequest,
+                        HttpServletRequest request) {
+                Integer userId = (Integer) request.getAttribute("currentUserId");
+
+                return ResponseEntity.ok(service.getAllIds(userId, searchRequest));
+        }
+
         @GetMapping("/{id}")
         public ResponseEntity<ApiResponse<UserSettlementBatchListDto>> getBySettlementBatchId(
                         @PathVariable Integer id,
@@ -49,7 +59,7 @@ public class SettlementBatchUserController {
                                 userId,
                                 id);
                 return ResponseEntity.ok(result);
-        } 
+        }
 
         @GetMapping("/{id}/orders")
         public ResponseEntity<ApiResponse<ListResponse<UserSettlementOrderDto>>> getOrdersBySettlementBatchId(
@@ -63,7 +73,7 @@ public class SettlementBatchUserController {
                                 id,
                                 searchRequest);
                 return ResponseEntity.ok(result);
-        } 
+        }
 
         @GetMapping("/{id}/transactions")
         public ResponseEntity<ApiResponse<List<UserSettlementTransactionDto>>> getSettlementTransactionsBySettlementBatchId(
@@ -72,11 +82,12 @@ public class SettlementBatchUserController {
                         HttpServletRequest request) {
                 Integer userId = (Integer) request.getAttribute("currentUserId");
 
-                ApiResponse<List<UserSettlementTransactionDto>> result = service.getSettlementTransactionsBySettlementBatchId(
-                                userId,
-                                id);
+                ApiResponse<List<UserSettlementTransactionDto>> result = service
+                                .getSettlementTransactionsBySettlementBatchId(
+                                                userId,
+                                                id);
                 return ResponseEntity.ok(result);
-        } 
+        }
 
         // @GetMapping("/export")
         // public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,

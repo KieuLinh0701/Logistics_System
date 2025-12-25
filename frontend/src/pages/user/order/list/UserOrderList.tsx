@@ -17,6 +17,7 @@ import ConfirmPublicModal from "../detail/components/ConfirmPublicModal";
 import ConfirmCancelModal from "../detail/components/ConfirmCancelModal";
 import ConfirmDeleteModal from "../detail/components/ConfirmDeleteModal";
 import ConfirmModal from "../../../common/ConfirmModal";
+import userApi from "../../../../api/userApi";
 
 const UserOrderList = () => {
   const navigate = useNavigate();
@@ -46,7 +47,9 @@ const UserOrderList = () => {
   const [publicModalOpen, setPublicModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
-  const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+
+  const [userLocked, setUserLocked] = useState<Boolean>(false);
 
   const [orderId, setOrderId] = useState<number | null>(null);
 
@@ -168,6 +171,10 @@ const UserOrderList = () => {
   };
 
   const handlePublicOrder = (id: number) => {
+    if (userLocked) {
+      message.error("Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.");
+      return;
+    }
     setOrderId(id);
     setPublicModalOpen(true);
   };
@@ -276,6 +283,10 @@ const UserOrderList = () => {
   };
 
   const handleAdd = () => {
+    if (userLocked) {
+      message.error("Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi tạo đơn hàng mới.");
+      return;
+    }
     navigate(`/orders/create`);
   };
 
@@ -345,20 +356,33 @@ const UserOrderList = () => {
   };
 
   useEffect(() => {
-    const fetchServiceTypes = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const response = await serviceTypeApi.getActiveServiceTypes();
-        if (response.success && response.data) {
-          setServiceTypes(response.data);
+        // Kiểm tra user khóa
+        const lockRes = await userApi.checkUserLocked();
+        if (lockRes.success && lockRes.data != null) {
+          setUserLocked(lockRes.data);
+        } else {
+          message.error(lockRes.message || "Lỗi khi kiểm tra trạng thái khóa");
         }
+
+        // Lấy danh sách dịch vụ
+        const serviceRes = await serviceTypeApi.getActiveServiceTypes();
+        if (serviceRes.success && serviceRes.data) {
+          setServiceTypes(serviceRes.data);
+        } else {
+          message.error(serviceRes.message || "Lỗi khi lấy danh sách dịch vụ");
+        }
+
       } catch (error: any) {
-        message.error(error.message || "Lỗi khi lấy danh sách dịch vụ");
+        message.error(error.message || "Đã xảy ra lỗi khi tải dữ liệu");
       } finally {
         setLoading(false);
       }
     };
-    fetchServiceTypes();
+
+    fetchData();
   }, []);
 
   useEffect(() => {

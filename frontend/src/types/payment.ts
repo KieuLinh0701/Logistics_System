@@ -18,3 +18,8 @@ export interface PaymentCheck {
     transactionStatus?: string;    // vnp_TransactionStatus - trạng thái giao dịch
     secureHashType?: string;       // vnp_SecureHashType - loại hash (SHA256)
 }
+
+export interface PaymentsRequest {
+    settlementIds: string;
+    amount: number;
+}

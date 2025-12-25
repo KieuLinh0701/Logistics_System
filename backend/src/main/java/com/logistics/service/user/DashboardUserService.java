@@ -1,5 +1,6 @@
 package com.logistics.service.user;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,7 +20,6 @@ import com.logistics.dto.user.dashboard.UserDeliveredOrderCountDTO;
 import com.logistics.dto.user.dashboard.UserOrderStatsDTO;
 import com.logistics.dto.user.dashboard.UserOrderTimelineDTO;
 import com.logistics.dto.user.dashboard.UserProductStatsDTO;
-import com.logistics.dto.user.dashboard.UserProductTypeCountDto;
 import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
 import com.logistics.dto.user.dashboard.UserTopProductItemDto;
 import com.logistics.enums.OrderStatus;
@@ -53,17 +53,55 @@ public class DashboardUserService {
 
             if (rows != null) {
                 for (Object[] row : rows) {
-                    if (row != null && row[0] instanceof ProductType && row[1] instanceof Long) {
-                        ProductType type = (ProductType) row[0];
-                        Long count = (Long) row[1];
+                    if (row != null && row[0] != null && row[1] != null) {
+                        ProductType type;
+                        try {
+                            type = row[0] instanceof ProductType ? (ProductType) row[0]
+                                    : ProductType.valueOf(row[0].toString());
+                        } catch (IllegalArgumentException e) {
+                            continue; // bỏ qua loại không hợp lệ
+                        }
+                        Long count = ((Number) row[1]).longValue();
                         productCounts.put(type, count);
                     }
                 }
             }
 
-            UserOrderStatsDTO orders = orderRepository.getUserOrderStats(userId);
+            // Tổng quan sản phẩm
             UserProductStatsDTO products = productRepository.getUserProductStats(userId);
+            if (products == null) {
+                products = new UserProductStatsDTO();
+                products.setTotal(0L);
+                products.setOutOfStock(0L);
+                products.setLowStock(0L);
+                products.setActive(0L);
+            }
+
+            UserOrderStatsDTO orders = orderRepository.getUserOrderStats(userId);
+            if (orders == null) {
+                orders = new UserOrderStatsDTO();
+                orders.setTotal(0L);
+                orders.setDraft(0L);
+                orders.setPending(0L);
+                orders.setConfirmed(0L);
+                orders.setReadyForPickup(0L);
+                orders.setPickingUp(0L);
+                orders.setShipping(0L);
+                orders.setDelivering(0L);
+                orders.setDelivered(0L);
+                orders.setFailedDelivery(0L);
+                orders.setReturning(0L);
+                orders.setReturnedCancelled(0L);
+            }
+
             UserRevenueStatsDTO revenue = settlementBatchUserService.getUserRevenueStats(userId);
+            if (revenue == null) {
+                revenue = new UserRevenueStatsDTO();
+                revenue.setReceived(BigDecimal.ZERO);
+                revenue.setNextSettlement(BigDecimal.ZERO);
+                revenue.setPendingDebt(BigDecimal.ZERO);
+                revenue.setNextSettlementDate("");
+            }
 
             UserDashboardOverviewResponseDTO data = new UserDashboardOverviewResponseDTO();
             data.setOrders(orders);

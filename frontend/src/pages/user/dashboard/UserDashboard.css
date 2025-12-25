@@ -25,12 +25,12 @@
 }
 
 .dashboard-date-filter-live-text {
-  color: #f5222d;
+  color: #f5222d !important;
   margin-right: 8px;
 }
 
 .dashboard-date-filter-time {
-  color: #f5222d;
+  color: #f5222d !important;
 }
 
 .dashboard-date-filter-right-section {

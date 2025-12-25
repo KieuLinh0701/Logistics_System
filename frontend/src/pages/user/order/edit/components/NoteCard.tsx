@@ -6,11 +6,10 @@ import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 interface Props {
   notes: string;
   onChange?: (value: string) => void;
-  disabled: boolean;
   status: OrderStatus;
 }
 
-const NoteCard: React.FC<Props> = ({ notes, onChange, disabled, status }) => {
+const NoteCard: React.FC<Props> = ({ notes, onChange, status }) => {
   return (
     <div className="create-order-card-container">
       <Card className="create-order-custom-card">
@@ -19,7 +18,7 @@ const NoteCard: React.FC<Props> = ({ notes, onChange, disabled, status }) => {
           className="modal-custom-input-textarea"
           placeholder="Nhập ghi chú cho đơn hàng..."
           autoSize={{ minRows: 3, maxRows: 6 }}
-          disabled={disabled || !canEditUserOrderField('notes', status)}
+          disabled={!canEditUserOrderField('notes', status)}
           value={notes}
           onChange={(e) => onChange?.(e.target.value)}
         />

@@ -32,6 +32,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { canEditUserOrderStatus, type OrderStatus } from "../../../../utils/orderUtils";
 import ConfirmModal from "../../../common/ConfirmModal";
 import { canEditUserOrderField } from "../../../../utils/userOrderEditRules";
+import userApi from "../../../../api/userApi";
 
 const UserOrderEdit: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -118,6 +119,8 @@ const UserOrderEdit: React.FC = () => {
     const [isHasOfficeSender, setIsHasOfficeSender] = useState(true);
     const [isHasOfficeRecipient, setIsHasOfficerRecipient] = useState(true);
 
+    const [userLocked, setUserLocked] = useState<Boolean>(false);
+
     // Form instances
     const [senderInfo] = Form.useForm();
     const [recipientInfo] = Form.useForm();
@@ -143,6 +146,13 @@ const UserOrderEdit: React.FC = () => {
                 setOrder(result.data);
             } else {
                 message.error(result.message);
+            }
+
+            const lockRes = await userApi.checkUserLocked();
+            if (lockRes.success && lockRes.data != null) {
+                setUserLocked(lockRes.data);
+            } else {
+                message.error(lockRes.message || "Lỗi khi kiểm tra trạng thái khóa");
             }
 
         } catch (error: any) {
@@ -892,6 +902,11 @@ const UserOrderEdit: React.FC = () => {
     }
 
     const handleStatusChange = (newStatus: "DRAFT" | "PENDING") => {
+        if (userLocked) {
+            message.error("Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.");
+            return;
+        }
+
         setTempStatus(newStatus);
     };
 
@@ -1086,10 +1101,8 @@ const UserOrderEdit: React.FC = () => {
                             <RecipientInfo
                                 form={recipientInfo}
                                 recipient={recipientData}
-                                disabled={selectedAddress === null}
                                 status={order.status as OrderStatus}
                                 onChange={(values) => {
-                                    if (selectedAddress === null) return;
                                     setRecipientData(prev => ({
                                         ...prev,
                                         name: values.name ?? prev.name,
@@ -1110,14 +1123,11 @@ const UserOrderEdit: React.FC = () => {
                                 orderColumns={orderColumns}
                                 serviceTypes={serviceTypes}
                                 loading={loadingService}
-                                disabled={selectedAddress === null}
                                 status={order.status as OrderStatus}
                                 setSelectedServiceType={(service) => {
-                                    if (selectedAddress === null) return;
                                     setSelectedServiceType(service);
                                 }}
                                 onOpenProductModal={() => {
-                                    if (selectedAddress === null) return;
                                     setShowProductModal(true);
                                 }}
                                 onChangeOrderInfo={handleOrderInfoChange}
@@ -1128,7 +1138,6 @@ const UserOrderEdit: React.FC = () => {
                                 form={fromOffice}
                                 selectedOffice={selectedOffice}
                                 offices={localOffices}
-                                disabled={selectedAddress === null}
                                 status={order.status as OrderStatus}
                                 onLoadOffices={() => {
                                     fetchLocalOffices();
@@ -1149,10 +1158,8 @@ const UserOrderEdit: React.FC = () => {
                             <PaymentCard
                                 form={paymentCard}
                                 payer={payer}
-                                disabled={selectedAddress === null}
                                 status={order.status as OrderStatus}
                                 onChangePayment={(changedValues) => {
-                                    if (selectedAddress === null) return;
                                     setPayer(changedValues.payer);
                                 }}
                             />
@@ -1160,9 +1167,7 @@ const UserOrderEdit: React.FC = () => {
                             <NoteCard
                                 notes={notes}
                                 status={order.status as OrderStatus}
-                                disabled={selectedAddress === null}
                                 onChange={(newNotes) => {
-                                    if (selectedAddress === null) return;
                                     setNotes(newNotes);
                                 }}
                             />
@@ -1180,7 +1185,6 @@ const UserOrderEdit: React.FC = () => {
                                 selectedPromotion={selectedPromotion}
                                 setSelectedPromotion={setSelectedPromotion}
                                 setShowPromoModal={handleOpenPromoModal}
-                                disabled={selectedAddress === null}
                                 status={order.status as OrderStatus}
                             />
                         }
@@ -1191,7 +1195,7 @@ const UserOrderEdit: React.FC = () => {
                         onCancel={handleOpenCancelOrder}
                         onStatusChange={handleStatusChange}
                         loading={loadingOrder}
-                        disabled={selectedAddress === null}
+                        userLocked={userLocked as boolean}
                         status={order.status as OrderStatus}
                     />
                 </Col>

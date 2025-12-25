@@ -17,15 +17,15 @@ public interface PaymentSubmissionBatchRepository
         // Thống kê tổng quan theo officeId
         @Query("SELECT new com.logistics.dto.manager.dashboard.ManagerPaymentSubmissionBatchStatsDto(" +
                         "COUNT(b), " +
-                        "SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.PENDING THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.PENDING THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.CHECKING THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.CHECKING THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.COMPLETED THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.COMPLETED THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.PARTIAL THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.PARTIAL THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.CANCELLED THEN 1 ELSE 0 END)) "
+                        "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.CANCELLED THEN 1 ELSE 0 END), 0)) "
                         +
                         "FROM PaymentSubmissionBatch b " +
                         "WHERE b.office.id = :officeId")

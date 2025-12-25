@@ -30,6 +30,7 @@ import officeApi from "../../../../api/officeApi";
 import SuccessOrderModal from "./components/SuccessOrderModal";
 import orderApi from "../../../../api/orderApi";
 import bankAccountApi from "../../../../api/bankAccountApi";
+import userApi from "../../../../api/userApi";
 
 const UserOrderCreate: React.FC = () => {
     const [form] = Form.useForm();
@@ -91,6 +92,7 @@ const UserOrderCreate: React.FC = () => {
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
 
     const [existBankAccount, setExistBankAccount] = useState<Boolean>(false);
+    const [userLocked, setUserLocked] = useState<Boolean>(false);
 
     // Người gửi và người nhận
     const [empty] = useState({
@@ -242,7 +244,20 @@ const UserOrderCreate: React.FC = () => {
         }
     };
 
+    const checkUserLocked = async () => {
+        try {
+            const response = await userApi.checkUserLocked();
+            if (response.success && response.data) {
+                setUserLocked(response.data);
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi khi kiểm tra trạng thái của người dùng");
+            setExistBankAccount(false);
+        }
+    };
+
     useEffect(() => {
+        checkUserLocked();
         existBankAccounts();
     }, []);
 
@@ -329,7 +344,7 @@ const UserOrderCreate: React.FC = () => {
 
         hasLocalOffices();
 
-    }, [selectedAddress]);
+    }, [selectedAddress?.cityCode, selectedAddress?.wardCode]);
 
     const showModal = (mode: 'create' | 'edit', address?: Address) => {
         setModalModeAddress(mode);
@@ -1015,6 +1030,7 @@ const UserOrderCreate: React.FC = () => {
                                 sender={senderData}
                                 addresses={addresses}
                                 existBankAccount={existBankAccount}
+                                userLocked={userLocked as boolean}
                                 initialSelected={selectedAddress}
                                 onSelectAddress={handleSelectedAddress}
                                 onAdd={() => showModal("create")}
@@ -1026,7 +1042,7 @@ const UserOrderCreate: React.FC = () => {
                             <RecipientInfo
                                 form={recipientInfo}
                                 recipient={recipientData}
-                                disabled={!selectedAddress || !existBankAccount}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({
@@ -1048,7 +1064,7 @@ const UserOrderCreate: React.FC = () => {
                                 orderColumns={orderColumns}
                                 serviceTypes={serviceTypes}
                                 loading={loadingService}
-                                disabled={!selectedAddress || !existBankAccount}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 setSelectedServiceType={(service) => {
                                     if (selectedAddress === null) return;
                                     setSelectedServiceType(service);
@@ -1064,7 +1080,7 @@ const UserOrderCreate: React.FC = () => {
                                 form={fromOffice}
                                 selectedOffice={selectedOffice}
                                 offices={localOffices}
-                                disabled={!selectedAddress || !existBankAccount}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onChange={({ office, pickupType }) => {
                                     setPickupType(pickupType);
 
@@ -1080,7 +1096,7 @@ const UserOrderCreate: React.FC = () => {
                             <PaymentCard
                                 form={paymentCard}
                                 payer={payer}
-                                disabled={!selectedAddress || !existBankAccount}
+                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
                                 onChangePayment={(changedValues) => {
                                     if (selectedAddress === null) return;
                                     setPayer(changedValues.payer);
@@ -1089,7 +1105,7 @@ const UserOrderCreate: React.FC = () => {
 
                             <NoteCard
                                 notes={notes}
-                                disabled={!selectedAddress || !existBankAccount}
+                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
                                 onChange={(newNotes) => {
                                     if (selectedAddress === null) return;
                                     setNotes(newNotes);
@@ -1110,7 +1126,7 @@ const UserOrderCreate: React.FC = () => {
                                 selectedPromotion={selectedPromotion}
                                 setSelectedPromotion={setSelectedPromotion}
                                 setShowPromoModal={handleOpenPromoModal}
-                                disabled={!selectedAddress || !existBankAccount}
+                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
                             />
                         }
                     </div>
@@ -1118,7 +1134,7 @@ const UserOrderCreate: React.FC = () => {
                     <Actions
                         onCreate={handleCreateOrder}
                         loading={loadingOrder}
-                        disabled={!selectedAddress || !existBankAccount}
+                        disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
                     />
                 </Col>
             </Row>

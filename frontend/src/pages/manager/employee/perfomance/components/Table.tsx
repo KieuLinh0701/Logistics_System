@@ -3,7 +3,6 @@ import { Table, Button, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { ManagerEmployeePerformanceData } from "../../../../../types/employee";
 import { translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
-import { translateRoleName } from "../../../../../utils/roleUtils";
 
 interface Props {
   data: ManagerEmployeePerformanceData[];
@@ -98,36 +97,45 @@ const EmployeeTable: React.FC<Props> = ({
       ),
     },
     {
-      title: "Số đơn thành công",
-      key: "orders",
+      title: "Tổng đơn",
+      dataIndex: "totalOrders",
+      key: "totalOrders",
       align: "center",
-      render: (_, record) => (
-        <div>
-          {record.totalOrders.toLocaleString("vi-VN")} / {record.completedOrders.toLocaleString("vi-VN")}
-        </div>
-      ),
+      render: (value) => (value ?? 0).toLocaleString("vi-VN"),
+    },
+    {
+      title: "Đơn thành công",
+      dataIndex: "completedOrders",
+      key: "completedOrders",
+      align: "center",
+      render: (value) => (value ?? 0).toLocaleString("vi-VN"),
     },
     {
       title: "Hiệu suất",
       key: "performance",
       align: "left",
-      render: (_, record) => (
-        <div>
-          <div>
-            <span className="custom-table-content-strong">
-              Tỉ lệ giao thành công:
-            </span>{" "}
-            {record.completionRate.toFixed(2)}%
-          </div>
+      render: (_, record) => {
+        const completionRate = record.completionRate ?? 0;
+        const avgTimePerOrder = record.avgTimePerOrder ?? 0;
 
+        return (
           <div>
-            <span className="custom-table-content-strong">
-              Thời gian TB / đơn:
-            </span>{" "}
-            {record.avgTimePerOrder.toFixed(2)} phút
+            <div>
+              <span className="custom-table-content-strong">
+                Tỉ lệ giao thành công:
+              </span>{" "}
+              {completionRate.toFixed(2)}%
+            </div>
+
+            <div>
+              <span className="custom-table-content-strong">
+                Thời gian TB / đơn:
+              </span>{" "}
+              {avgTimePerOrder.toFixed(2)} phút
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "action",

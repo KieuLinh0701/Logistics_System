@@ -29,7 +29,6 @@ interface Props {
   setSelectedServiceType: (val: any) => void;
   onOpenProductModal: () => void;
   onChangeOrderInfo?: (changedValues: any) => void;
-  disabled: boolean;
   selectedServiceType: ServiceType | null;
   status: OrderStatus;
 }
@@ -46,7 +45,6 @@ const OrderInfo: React.FC<Props> = ({
   setSelectedServiceType,
   onOpenProductModal,
   onChangeOrderInfo,
-  disabled,
   selectedServiceType,
   status
 }) => {
@@ -116,7 +114,7 @@ const OrderInfo: React.FC<Props> = ({
 
           <Button
             icon={<PlusOutlined />}
-            disabled={disabled || !canEditUserOrderField('products', status)}
+            disabled={!canEditUserOrderField('products', status)}
             className="create-order-btn"
             onClick={onOpenProductModal}
           >
@@ -164,7 +162,7 @@ const OrderInfo: React.FC<Props> = ({
                   <InputNumber
                     className="modal-custom-input-number"
                     placeholder="Ví dụ: 1.5"
-                    disabled={isWeightDisabled || disabled || !canEditUserOrderField('weight', status)}
+                    disabled={isWeightDisabled || !canEditUserOrderField('weight', status)}
                     onChange={handleWeightChange}
                     min={0.01}
                     step={0.01}
@@ -182,7 +180,7 @@ const OrderInfo: React.FC<Props> = ({
                   <Select
                     className="modal-custom-select"
                     placeholder="Chọn dịch vụ..."
-                    disabled={disabled || !canEditUserOrderField('serviceType', status)}
+                    disabled={!canEditUserOrderField('serviceType', status)}
                     showSearch
                     optionLabelProp="label"
                     filterOption={(input, option) =>
@@ -238,7 +236,7 @@ const OrderInfo: React.FC<Props> = ({
                   <InputNumber
                     className="modal-custom-input-number"
                     placeholder="Ví dụ: 200,000"
-                    disabled={disabled || !canEditUserOrderField('cod', status)}
+                    disabled={!canEditUserOrderField('cod', status)}
                     min={0}
                     step={1000}
                     onChange={handleCodChange}
@@ -272,7 +270,7 @@ const OrderInfo: React.FC<Props> = ({
                     placeholder="Ví dụ: 150,000"
                     min={0}
                     step={1000}
-                    disabled={isOrderValueDisabled || disabled || !canEditUserOrderField('orderValue', status)}
+                    disabled={isOrderValueDisabled || !canEditUserOrderField('orderValue', status)}
                     onChange={handleOrderValueChange}
                     formatter={(value) =>
                       value

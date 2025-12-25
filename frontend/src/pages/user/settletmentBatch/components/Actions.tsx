@@ -1,38 +1,25 @@
 import React from "react";
 import { Button, Space } from "antd";
-import { FileExcelOutlined, ScheduleOutlined } from "@ant-design/icons";
-import { weekdayOrder } from "../../../../utils/userSettlementScheduleUtils";
+import { FileExcelOutlined, PayCircleOutlined } from "@ant-design/icons";
 
 interface Props {
-  weekdays: string[];
   onExport: () => void;
-  onSetSchedule: () => void;
+  onPayment: () => void;
+  countIds: number;
+  totalAmount: number;
 }
 
-const Actions: React.FC<Props> = ({ weekdays, onExport, onSetSchedule }) => {
+const Actions: React.FC<Props> = ({ onExport, onPayment, countIds, totalAmount }) => {
+  const formattedAmount = totalAmount.toLocaleString("vi-VN") + "₫";
+
   return (
     <Space align="center">
-      {weekdays.length > 0 && (
-        <div className="text-muted">
-          COD của bạn sẽ được chuyển vào thứ{" "}
-          {weekdays
-            .slice()
-            .sort((a, b) => (weekdayOrder[a] || 0) - (weekdayOrder[b] || 0))
-            .map((day, index, arr) => (
-              <span key={day}>
-                {weekdayOrder[day]}
-                {index < arr.length - 1 ? ", " : ""}
-              </span>
-            ))}
-          {" "}lúc 20:00 hàng tuần
-        </div>
-      )}
       <Button
-        className="primary-button"
-        icon={<ScheduleOutlined />}
-        onClick={onSetSchedule}
+        className="warning-button"
+        icon={<PayCircleOutlined />}
+        onClick={onPayment}
       >
-        Đổi lịch đối soát
+        Thanh toán {countIds ? `(${countIds})` : ""} {totalAmount > 0 ? `~ ${formattedAmount}` : ""}
       </Button>
       <Button
         className="success-button"

@@ -28,10 +28,10 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Integer>, JpaS
     // Thống kê tổng quan theo officeId
     @Query("SELECT new com.logistics.dto.manager.dashboard.ManagerVehicleStatsDto(" +
             "COUNT(v), " +
-            "SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.AVAILABLE THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.IN_USE THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.MAINTENANCE THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.ARCHIVED THEN 1 ELSE 0 END)) " +
+            "COALESCE(SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.AVAILABLE THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.IN_USE THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.MAINTENANCE THEN 1 ELSE 0 END), 0), " +
+            "COALESCE(SUM(CASE WHEN v.status = com.logistics.enums.VehicleStatus.ARCHIVED THEN 1 ELSE 0 END), 0)) " +
             "FROM Vehicle v WHERE v.office.id = :officeId")
     ManagerVehicleStatsDto getVehicleStatsByOffice(@Param("officeId") Integer officeId);
 

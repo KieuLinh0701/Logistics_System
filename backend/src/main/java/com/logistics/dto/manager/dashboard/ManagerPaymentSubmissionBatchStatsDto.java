@@ -4,13 +4,22 @@ import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 public class ManagerPaymentSubmissionBatchStatsDto {
-    private long total;
-    private long pending;
-    private long checking;
-    private long completed;
-    private long partial;
-    private long cancelled;
+    private Long total = 0L;
+    private Long pending = 0L;
+    private Long checking = 0L;
+    private Long completed = 0L;
+    private Long partial = 0L;
+    private Long cancelled = 0L;
+
+    public ManagerPaymentSubmissionBatchStatsDto(Long total, Long pending, Long checking, Long completed,
+                                                 Long partial, Long cancelled) {
+        this.total = total;
+        this.pending = pending;
+        this.checking = checking;
+        this.completed = completed;
+        this.partial = partial;
+        this.cancelled = cancelled;
+    }
 }

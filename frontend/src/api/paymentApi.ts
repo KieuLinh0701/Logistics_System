@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
 import type { ApiResponse } from "../types/response";
-import type { PaymentCheck, PaymentRequest } from "../types/payment";
+import type { PaymentCheck, PaymentRequest, PaymentsRequest } from "../types/payment";
 
 const paymentApi = {
   // User
@@ -16,6 +16,11 @@ const paymentApi = {
 
   async checkPaymentVPN(param: PaymentCheck) {
     const res = await axiosClient.post<ApiResponse<boolean>>("/user/payment/vnpay/check", param);
+    return res;
+  },
+
+  async createVNPayURLForSettlements(param: PaymentsRequest) {
+    const res = await axiosClient.post<ApiResponse<string>>("/user/payment/vnpay/settlements", param);
     return res;
   },
 };

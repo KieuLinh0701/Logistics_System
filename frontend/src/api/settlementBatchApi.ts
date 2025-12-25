@@ -1,7 +1,7 @@
 import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 import type { SearchRequest } from "../types/request";
-import type { SettlementBatch } from "../types/settlementBatch";
+import type { SettlementBatch, SettlementBatchSelectedAllResponse } from "../types/settlementBatch";
 import type { Order } from "../types/order";
 import type { SettlementTransaction } from "../types/settlementTransaction";
 import { axiosExport } from "./exportClient";
@@ -25,6 +25,11 @@ const settlementBatchApi = {
 
   async getbyUserSettlementBatchId(id: number) {
     const res = await axiosClient.get<ApiResponse<SettlementBatch>>(`/user/settlement-batchs/${id}`);
+    return res;
+  },
+
+  async getAllUserIds(params: SearchRequest) {
+    const res = await axiosClient.get<ApiResponse<SettlementBatchSelectedAllResponse>>("/user/settlement-batchs/all-ids", { params });
     return res;
   },
 

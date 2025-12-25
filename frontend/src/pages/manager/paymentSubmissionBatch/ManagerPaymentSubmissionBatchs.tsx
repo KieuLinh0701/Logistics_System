@@ -114,7 +114,6 @@ const ManagerPaymentSubmissionBatchs = () => {
 
   const handleExportPaymentSubmissionBatchs = async () => {
     try {
-      setLoading(true);
       const param: SearchRequest = {
         status: filterStatus !== "ALL" ? filterStatus : undefined,
         search: searchText,
@@ -134,9 +133,7 @@ const ManagerPaymentSubmissionBatchs = () => {
 
     } catch (error: any) {
       console.error("Export lỗi:", error.message);
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   const handleProcessPaymentSubmissionBatch = (batch: ManagerPaymentSubmissionBatch) => {

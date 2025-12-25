@@ -10,3 +10,8 @@ export interface SettlementBatch {
     updatedAt: string;
     shop: User;
 }
+
+export interface SettlementBatchSelectedAllResponse {
+    ids: number[] | [];
+    totalAmount: number;
+}

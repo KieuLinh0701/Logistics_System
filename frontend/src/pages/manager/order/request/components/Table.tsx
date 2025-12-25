@@ -105,7 +105,7 @@ const RequestTable: React.FC<TableProps> = ({
         const email = record.contactEmail || 'N/A';
         const phone = record.contactPhoneNumber || 'N/A';
 
-        const address = addressMap[record.id] || '...';
+        const address = addressMap[record.id] || 'N/A';
 
         return (
           <div>

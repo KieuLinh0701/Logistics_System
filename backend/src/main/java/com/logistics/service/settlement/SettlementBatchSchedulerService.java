@@ -28,7 +28,7 @@ public class SettlementBatchSchedulerService {
     private final UserSettlementScheduleRepository scheduleRepository;
     private final NotificationService notificationService;
 
-    // @Scheduled(cron = "0 * * * * ?")
+    // @Scheduled(cron = "0 * * * * ?") 
     @Scheduled(cron = "0 0 20 * * ?") // 20:00 mỗi ngày
     @Transactional
     public void createDailySettlementBatch() {

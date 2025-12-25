@@ -4,19 +4,36 @@ import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 public class ManagerOrderStatsDTO {
-    private long total;                 // Tổng số đơn
-    private long pending;               // Đơn chờ xác nhận (PENDING) -> fromOffice
-    private long confirmed;             // Đơn đã xác nhận (CONFIRMED) -> fromOffice
-    private long readyForPickup;        // Đơn sẵn cho shipper lấy (READY_FOR_PICKUP) -> fromOffice
-    private long pickingOrPicked;       // Shipper đang lấy / đã lấy (PICKING / PICKED) -> fromOffice
-    private long inWarehouse;           // Đơn trong kho (AT_ORIGIN_OFFICE -> fromOffice / AT_DEST_OFFICE -> toOffice)
-    private long customerAtOffice;      // Khách chuẩn bị mang đến kho (CONFIRMED + pickupType = AT_OFFICE -> fromOffice)
-    private long delivering;            // Đơn đang đi giao (DELIVERING --> toOffice)
-    private long delivered;             // Đơn hoàn tất (DELIVERED -> toOffice)
-    private long returned;             // Đơn hoàn tất trả về (RETURNED -> fromOffice)
-    private long returning;             // Đơn đang trả về (RETURNING -> fromOffice)
-    private long failedDelivery;        // Đơn giao thất bại (FAILED_DELIVERY -> toOffice)
+    private Long total = 0L;
+    private Long pending = 0L;
+    private Long confirmed = 0L;
+    private Long readyForPickup = 0L;
+    private Long pickingOrPicked = 0L;
+    private Long inWarehouse = 0L;
+    private Long customerAtOffice = 0L;
+    private Long delivering = 0L;
+    private Long delivered = 0L;
+    private Long returned = 0L;
+    private Long returning = 0L;
+    private Long failedDelivery = 0L;
+
+    public ManagerOrderStatsDTO(Long total, Long pending, Long confirmed, Long readyForPickup,
+                                Long pickingOrPicked, Long inWarehouse, Long customerAtOffice,
+                                Long delivering, Long delivered, Long returned, Long returning,
+                                Long failedDelivery) {
+        this.total = total;
+        this.pending = pending;
+        this.confirmed = confirmed;
+        this.readyForPickup = readyForPickup;
+        this.pickingOrPicked = pickingOrPicked;
+        this.inWarehouse = inWarehouse;
+        this.customerAtOffice = customerAtOffice;
+        this.delivering = delivering;
+        this.delivered = delivered;
+        this.returned = returned;
+        this.returning = returning;
+        this.failedDelivery = failedDelivery;
+    }
 }

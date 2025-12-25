@@ -1,18 +1,19 @@
 package com.logistics.dto.user.dashboard;
 
-import java.util.List;
-
-import com.logistics.enums.ProductType;
-
 import lombok.*;
 
-@Getter
-@Setter
-@AllArgsConstructor
+@Getter @Setter
 @NoArgsConstructor
 public class UserProductStatsDTO {
-    private long total;
-    private long outOfStock;
-    private long lowStock;
-    private long active;
+    private Long total = 0L;
+    private Long outOfStock = 0L;
+    private Long lowStock = 0L;
+    private Long active = 0L;
+
+    public UserProductStatsDTO(Long total, Long outOfStock, Long lowStock, Long active) {
+        this.total = total;
+        this.outOfStock = outOfStock;
+        this.lowStock = lowStock;
+        this.active = active;
+    }
 }

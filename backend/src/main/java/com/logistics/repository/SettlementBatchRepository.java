@@ -1,8 +1,11 @@
 package com.logistics.repository;
 
 import com.logistics.entity.SettlementBatch;
+import com.logistics.entity.User;
+import com.logistics.enums.SettlementStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,4 +62,16 @@ public interface SettlementBatchRepository
             )
       """)
   List<SettlementBatch> findDebtBatchesByUser(Integer userId);
+
+  List<SettlementBatch> findByStatusInAndCreatedAtBefore(
+      List<SettlementStatus> statuses,
+      LocalDateTime time);
+
+  boolean existsByShopAndStatusIn(User shop, List<SettlementStatus> statuses);
+
+  List<SettlementBatch> findByStatusIn(List<SettlementStatus> statuses);
+
+  List<SettlementBatch> findAllByIdInAndShop_Id(List<Integer> ids, Integer shopId);
+
+  List<SettlementBatch> findByShopAndStatusIn(User shop, List<SettlementStatus> statuses);
 }

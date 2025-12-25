@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Col, Form, Row, Tag, message } from "antd";
+import { Button, Col, Form, Row, Space, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import SubmissionTable from "./components/Table";
 import Actions from "./components/Actions";
 import Title from "antd/es/typography/Title";
-import { CheckCircleOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, ScheduleOutlined } from "@ant-design/icons";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { SearchRequest } from "../../../types/request";
 import "./UserSettlementBatchs.css";
@@ -13,9 +13,10 @@ import type { SettlementBatch } from "../../../types/settlementBatch";
 import settlementBatchApi from "../../../api/settlementBatchApi";
 import UserScheduleModal from "./components/UserScheduleModal";
 import userSettlementScheduleApi from "../../../api/userSettlementScheduleApi";
-import type { PaymentCheck, PaymentRequest } from "../../../types/payment";
+import type { PaymentCheck, PaymentRequest, PaymentsRequest } from "../../../types/payment";
 import paymentApi from "../../../api/paymentApi";
 import PaymentModal from "./components/PaymentModal";
+import { weekdayOrder } from "../../../utils/userSettlementScheduleUtils";
 
 
 const UserSettlementBatchs = () => {
@@ -42,6 +43,11 @@ const UserSettlementBatchs = () => {
 
   const [processModalVisible, setProcessModalVisible] = useState(false);
   const [selectedSettlementBatch, setSelectedSettlementBatch] = useState<SettlementBatch | null>(null);
+
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [allTotalAmount, setAllTotalAmount] = useState(0);
+
 
   const updateURL = () => {
     const params: any = {};
@@ -154,6 +160,29 @@ const UserSettlementBatchs = () => {
     }
   };
 
+  const fetchAllSettlementBatchIds = async () => {
+    try {
+      setLoading(true);
+      const param: SearchRequest = {
+        status: filterStatus !== "ALL" ? filterStatus : undefined,
+        search: searchText,
+        sort: filterSort,
+        type: filterType,
+      };
+      if (dateRange) {
+        param.startDate = dateRange[0].startOf("day").toISOString();
+        param.endDate = dateRange[1].endOf("day").toISOString();
+      }
+      const result = await settlementBatchApi.getAllUserIds(param);
+      if (result.success && result.data) {
+        setSelectedIds(result.data.ids);
+        setAllTotalAmount(result.data.totalAmount || 0);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePayment = (batch: SettlementBatch) => {
     setSelectedSettlementBatch(batch);
     setProcessModalVisible(true);
@@ -169,6 +198,38 @@ const UserSettlementBatchs = () => {
       };
 
       const result = await paymentApi.createVNPayURLFromList(param);
+
+      if (result.success && result.data) {
+        window.location.href = result.data;
+        message.info("Đang chuyển tới VNPay để thanh toán...");
+      } else {
+        const errMsg = result.message || "Không tạo được link thanh toán";
+        message.error(errMsg);
+      }
+    } catch (error: any) {
+      message.error(error.message || "Lỗi khi tạo link thanh toán VNPay");
+    }
+  };
+
+  const handlePaymentSettlements = async () => {
+    if (selectedIds.length == 0) {
+      message.error("Vui lòng chọn các phiên đối soát cần thanh toán!")
+      return;
+    }
+
+    if (allTotalAmount < 10000) {
+      message.error("Tổng tiền thanh toán chưa đạt mức tối thiểu!")
+      return;
+    }
+
+    try {
+      const selectedIdsString = selectedIds.join(",");
+      const param: PaymentsRequest = {
+        settlementIds: selectedIdsString,
+        amount: allTotalAmount,
+      };
+
+      const result = await paymentApi.createVNPayURLForSettlements(param);
 
       if (result.success && result.data) {
         window.location.href = result.data;
@@ -284,6 +345,16 @@ const UserSettlementBatchs = () => {
     fetchUserSchedule();
   }, []);
 
+  const handleSelectedChange = (values: SettlementBatch[]) => {
+    const ids = values.map(item => item.id);
+
+    const totalRemain = values.reduce((sum, item) => sum + (item.remainAmount || 0), 0);
+
+    setSelectedIds(ids);
+    setAllTotalAmount(totalRemain);
+  };
+
+
   useEffect(() => {
     fetch(currentPage);
     updateURL();
@@ -328,15 +399,46 @@ const UserSettlementBatchs = () => {
           <Col>
             <div className="list-page-actions">
               <Actions
-                weekdays={userWeekdays}
-                onSetSchedule={handleOpenModalSetSchedule}
+                totalAmount={allTotalAmount}
+                countIds={selectedIds?.length}
+                onPayment={handlePaymentSettlements}
                 onExport={handleExport}
               />
             </div>
           </Col>
         </Row>
 
-        <Tag className="list-page-tag">Kết quả trả về: {total} phiên đối soát</Tag>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Tag className="list-page-tag">Kết quả trả về: {total} phiên đối soát</Tag>
+          </Col>
+          <Col>
+            <Space align="center">
+              {userWeekdays.length > 0 && (
+                <div className="text-muted">
+                  COD của bạn sẽ được chuyển vào thứ{" "}
+                  {userWeekdays
+                    .slice()
+                    .sort((a, b) => (weekdayOrder[a] || 0) - (weekdayOrder[b] || 0))
+                    .map((day, index, arr) => (
+                      <span key={day}>
+                        {weekdayOrder[day]}
+                        {index < arr.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                  {" "}lúc 20:00 hàng tuần
+                </div>
+              )}
+              <Button
+                className="primary-button"
+                icon={<ScheduleOutlined />}
+                onClick={handleOpenModalSetSchedule}
+              >
+                Đổi lịch đối soát
+              </Button>
+            </Space>
+          </Col>
+        </Row>
 
         <SubmissionTable
           datas={settlementBatchs}
@@ -346,6 +448,8 @@ const UserSettlementBatchs = () => {
           pageSize={pageSize}
           total={total}
           loading={loading}
+          onSelectionChange={handleSelectedChange}
+          onSelectAllAction={fetchAllSettlementBatchIds}
           onPageChange={(page, size) => {
             setCurrentPage(page);
             if (size) setPageSize(size);

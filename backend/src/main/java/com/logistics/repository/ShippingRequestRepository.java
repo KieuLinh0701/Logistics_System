@@ -40,31 +40,31 @@ public interface ShippingRequestRepository
         // Thống kê tổng quan theo officeId
         @Query("SELECT new com.logistics.dto.manager.dashboard.ManagerShippingRequestStatsDTO(" +
                         "COUNT(sr), " +
-                        "SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.PENDING THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.PENDING THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.PROCESSING THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.PROCESSING THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.RESOLVED THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.RESOLVED THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.REJECTED THEN 1 ELSE 0 END), "
+                        "COALESCE(SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.REJECTED THEN 1 ELSE 0 END), 0), "
                         +
-                        "SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.CANCELLED THEN 1 ELSE 0 END)) "
+                        "COALESCE(SUM(CASE WHEN sr.status = com.logistics.enums.ShippingRequestStatus.CANCELLED THEN 1 ELSE 0 END), 0)) "
                         +
                         "FROM ShippingRequest sr WHERE sr.office.id = :officeId")
         ManagerShippingRequestStatsDTO getShippingRequestStatsByOffice(@Param("officeId") Integer officeId);
 
         @Query("""
-                SELECT r FROM ShippingRequest r
-                LEFT JOIN FETCH r.order o
-                WHERE o.id = :orderId AND r.requestType = com.logistics.enums.ShippingRequestType.DELIVERY_REMINDER
-        """)
+                                SELECT r FROM ShippingRequest r
+                                LEFT JOIN FETCH r.order o
+                                WHERE o.id = :orderId AND r.requestType = com.logistics.enums.ShippingRequestType.DELIVERY_REMINDER
+                        """)
         Optional<ShippingRequest> findDeliveryReminderByOrderId(@Param("orderId") Integer orderId);
 
         @Query("""
-                SELECT r FROM ShippingRequest r
-                LEFT JOIN FETCH r.order o
-                WHERE r.id = :id
-        """)
+                                SELECT r FROM ShippingRequest r
+                                LEFT JOIN FETCH r.order o
+                                WHERE r.id = :id
+                        """)
         Optional<ShippingRequest> findByIdWithOrder(@Param("id") Integer id);
 
 }

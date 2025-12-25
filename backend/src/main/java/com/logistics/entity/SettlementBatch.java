@@ -57,6 +57,12 @@ public class SettlementBatch {
     @OneToMany(mappedBy = "settlementBatch")
     private List<Order> orders;
 
+    @Column(nullable = false)
+    private boolean warningSent = false;
+
+    @Column(nullable = false)
+    private boolean lockedSent = false;
+
     @PostPersist
     private void generateCode() {
         if (this.code == null) {

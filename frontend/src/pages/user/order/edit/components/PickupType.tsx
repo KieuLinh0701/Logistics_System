@@ -12,7 +12,6 @@ interface Props {
   offices: Office[];
   onChange: (data: { office: Office | null; pickupType: string }) => void;
   onLoadOffices?: () => void;
-  disabled: boolean;
   loading: boolean;
   initialPickupType?: string;
   status: OrderStatus;
@@ -24,7 +23,6 @@ const PickupType: React.FC<Props> = ({
   offices,
   onChange,
   onLoadOffices,
-  disabled,
   loading,
   initialPickupType,
   status
@@ -105,7 +103,7 @@ const PickupType: React.FC<Props> = ({
             rules={[{ required: true, message: "Vui lòng chọn hình thức lấy hàng" }]}
           >
             <Radio.Group
-              disabled={disabled || !canEditUserOrderField('pickupType', status)}
+              disabled={!canEditUserOrderField('pickupType', status)}
               className="custom-radio-group">
               {ORDER_PICKUP_TYPES.map((type) => (
                 <Radio key={type} value={type} className="custom-radio">
@@ -125,7 +123,7 @@ const PickupType: React.FC<Props> = ({
               <Select
                 className="modal-custom-select"
                 placeholder="Chọn bưu cục"
-                disabled={disabled || !canEditUserOrderField('fromOffice', status)}
+                disabled={!canEditUserOrderField('fromOffice', status)}
                 showSearch
                 optionLabelProp="label"
                 filterOption={(input, option) =>
