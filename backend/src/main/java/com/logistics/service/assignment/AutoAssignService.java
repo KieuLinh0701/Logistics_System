@@ -152,4 +152,99 @@ public class AutoAssignService {
 
         return Optional.of(chosen);
     }
+
+    @Transactional
+    public Optional<User> autoAssignPickupRequest(Integer orderId) {
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getPickupType() != com.logistics.enums.OrderPickupType.PICKUP_BY_COURIER) return Optional.empty();
+        // Cho phép khi admin vừa xác nhận (CONFIRMED), đang ở trạng thái PENDING, hoặc đã được đánh dấu READY_FOR_PICKUP
+        if (order.getStatus() != com.logistics.enums.OrderStatus.CONFIRMED
+            && order.getStatus() != com.logistics.enums.OrderStatus.PENDING
+            && order.getStatus() != com.logistics.enums.OrderStatus.READY_FOR_PICKUP) return Optional.empty();
+
+        Integer cityCode = order.getSenderCityCode();
+        Integer wardCode = order.getSenderWardCode();
+        if ((cityCode == null || wardCode == null) && order.getFromOffice() != null) {
+            cityCode = order.getFromOffice().getCityCode();
+            wardCode = order.getFromOffice().getWardCode();
+        }
+
+        List<ShipperAssignment> candidates = List.of();
+        if (cityCode != null && wardCode != null) {
+            candidates = shipperAssignmentRepo.findActiveByCityAndWard(cityCode, wardCode, LocalDateTime.now());
+        }
+
+        if (candidates == null || candidates.isEmpty()) {
+            if (cityCode != null) {
+                candidates = shipperAssignmentRepo.findActiveByCity(cityCode, LocalDateTime.now());
+            }
+        }
+
+        if (candidates == null || candidates.isEmpty()) {
+            // không có shipper gần đó -> để nguyên chưa gán để shipper trong bưu cục có thể nhận
+            return Optional.empty();
+        }
+
+        ShipperAssignment chosenAssignment = candidates.stream()
+                .min(Comparator.comparing(ShipperAssignment::getCreatedAt))
+                .orElse(candidates.get(0));
+
+        User chosen = chosenAssignment.getShipper();
+
+        List<Employee> empList = employeeRepository.findByUserId(chosen.getId());
+        if (empList != null && !empList.isEmpty()) {
+            Employee selected = null;
+            if (order.getFromOffice() != null) {
+                Integer fromOfficeId = order.getFromOffice().getId();
+                selected = empList.stream()
+                        .filter(e -> e.getOffice() != null && Objects.equals(e.getOffice().getId(), fromOfficeId))
+                        .findFirst()
+                        .orElse(null);
+            }
+            if (selected == null) selected = empList.get(0);
+            order.setEmployee(selected);
+        }
+
+        Optional<ShippingRequest> existing = shippingRequestRepo.findDeliveryReminderByOrderId(order.getId());
+        ShippingRequest sr = existing.orElseGet(() -> {
+            ShippingRequest s = new ShippingRequest();
+            s.setOrder(order);
+            s.setRequestType(com.logistics.enums.ShippingRequestType.PICKUP_REMINDER);
+            s.setRequestContent("Auto-assign for pickup");
+            return s;
+        });
+
+        sr.setHandler(chosen);
+        sr.setStatus(com.logistics.enums.ShippingRequestStatus.PROCESSING);
+        shippingRequestRepo.save(sr);
+
+        // Lưu employee/handler nhưng KHÔNG thay đổi trạng thái đơn ở đây (admin giữ CONFIRMED)
+        orderRepository.save(order);
+
+        notificationService.create(
+                "Bạn được phân công lấy hàng",
+                "Bạn được phân công lấy đơn " + order.getTrackingNumber(),
+                "assignment",
+                chosen.getId(),
+                null,
+                "order",
+                order.getTrackingNumber()
+        );
+
+        if (order.getUser() != null && order.getUser().getId() != null) {
+            notificationService.create(
+                    "Đã phân công shipper",
+                    "Đơn của bạn đã được phân công shipper: " + chosen.getFullName(),
+                    "assignment",
+                    order.getUser().getId(),
+                    null,
+                    "order",
+                    order.getTrackingNumber()
+            );
+        }
+
+        return Optional.of(chosen);
+    }
 }

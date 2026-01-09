@@ -37,10 +37,16 @@ public class OrderAdminService {
     private OfficeRepository officeRepository;
 
     @Autowired
+    private com.logistics.service.common.OfficePublicService officePublicService;
+
+    @Autowired
     private OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
     private OrderProductRepository orderProductRepository;
+
+    @Autowired
+    private com.logistics.service.assignment.AutoAssignService autoAssignService;
 
     public ApiResponse<Map<String, Object>> listOrders(int page, int limit, String search, String status) {
         try {
@@ -95,22 +101,59 @@ public class OrderAdminService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-            // Nếu admin xác nhận đơn Lấy hàng tại nhà (PICKUP_BY_COURIER),
-            // thì yêu cầu phải chọn `fromOfficeId` và gán bưu cục lấy vào đơn
+            // Khi admin chuyển trạng thái sang CONFIRMED -> tự động gán fromOffice và toOffice
             String newStatus = request.getStatus();
-            if (newStatus != null && newStatus.equalsIgnoreCase("CONFIRMED")
-                && order.getPickupType() != null
-                && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
-                if (request.getFromOfficeId() == null) {
-                    return new ApiResponse<>(false, "Vui lòng chọn bưu cục lấy hàng khi xác nhận đơn Lấy hàng tại nhà", null);
-                }
-                Office of = officeRepository.findById(request.getFromOfficeId())
-                    .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
-                order.setFromOffice(of);
+            if (newStatus != null && newStatus.equalsIgnoreCase("CONFIRMED")) {
+                // gán fromOffice dựa trên địa chỉ người gửi (ưu tiên ward, fallback city)
+                try {
+                    Integer senderCity = order.getSenderCityCode();
+                    Integer senderWard = order.getSenderWardCode();
+                    if (senderCity != null) {
+                        com.logistics.request.common.office.PublicOfficeSearchRequest psr =
+                                new com.logistics.request.common.office.PublicOfficeSearchRequest(senderCity, senderWard, null, null, null);
+                        com.logistics.response.ApiResponse<java.util.List<com.logistics.dto.common.PublicOfficeInformationDto>> offRes =
+                                officePublicService.listLocalOffices(psr);
+                        if (offRes != null && offRes.isSuccess() && offRes.getData() != null && !offRes.getData().isEmpty()) {
+                            Integer ofId = offRes.getData().get(0).getId();
+                            officeRepository.findById(ofId).ifPresent(order::setFromOffice);
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                // gán toOffice dựa trên địa chỉ người nhận (ưu tiên ward, fallback city)
+                try {
+                    Integer recipCity = null;
+                    Integer recipWard = null;
+                    if (order.getRecipientAddress() != null) {
+                        recipCity = order.getRecipientAddress().getCityCode();
+                        recipWard = order.getRecipientAddress().getWardCode();
+                    }
+
+                    if (recipCity != null) {
+                        com.logistics.request.common.office.PublicOfficeSearchRequest psrTo =
+                                new com.logistics.request.common.office.PublicOfficeSearchRequest(recipCity, recipWard, null, null, null);
+                        com.logistics.response.ApiResponse<java.util.List<com.logistics.dto.common.PublicOfficeInformationDto>> offResTo =
+                                officePublicService.listLocalOffices(psrTo);
+                        if (offResTo != null && offResTo.isSuccess() && offResTo.getData() != null && !offResTo.getData().isEmpty()) {
+                            Integer toId = offResTo.getData().get(0).getId();
+                            officeRepository.findById(toId).ifPresent(order::setToOffice);
+                        }
+                    }
+                } catch (Exception ignored) {}
             }
 
+            // Giữ trạng thái CONFIRMED do admin xác nhận
             order.setStatus(OrderStatus.valueOf(request.getStatus()));
             order = orderRepository.save(order);
+
+            // Gán shipper cho yêu cầu lấy hàng; nếu không có thì để nguyên không gán
+            if (newStatus != null && newStatus.equalsIgnoreCase("CONFIRMED")
+                    && order.getPickupType() != null
+                    && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+                try {
+                    autoAssignService.autoAssignPickupRequest(order.getId());
+                } catch (Exception ignored) {}
+            }
 
             return new ApiResponse<>(true, "Cập nhật trạng thái đơn hàng thành công", mapOrder(order));
         } catch (Exception e) {

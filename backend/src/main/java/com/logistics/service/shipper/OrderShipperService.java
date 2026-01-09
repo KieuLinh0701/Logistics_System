@@ -744,12 +744,10 @@ public class OrderShipperService {
             return new ApiResponse<>(false, "Chỉ có thể nộp hàng vào bưu cục khi trạng thái là ĐÃ LẤY hoặc ĐANG LẤY", null);
         }
 
-        // Nếu request chỉ định officeId thì dùng office đó, ngược lại dùng office của shipper
+        // Nếu request chỉ định officeId thì dùng office đó
         try {
             if (request != null && request.getOfficeId() != null) {
                 officeRepository.findById(request.getOfficeId()).ifPresent(order::setToOffice);
-            } else {
-                order.setToOffice(employee.getOffice());
             }
         } catch (Exception ignored) {}
 

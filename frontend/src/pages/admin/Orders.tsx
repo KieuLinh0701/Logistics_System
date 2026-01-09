@@ -394,24 +394,6 @@ const AdminOrders: React.FC = () => {
                 ))}
               </Select>
             </Form.Item>
-            {/* If admin confirms and order is PICKUP_BY_COURIER, allow selecting fromOffice */}
-            {selectedOrder && selectedOrder.pickupType === "PICKUP_BY_COURIER" && (
-              <Form.Item noStyle shouldUpdate={(prev, cur) => prev.status !== cur.status}>
-                {({ getFieldValue }) => {
-                  const statusVal = getFieldValue("status");
-                  const rules = statusVal === "CONFIRMED" ? [{ required: true, message: "Vui lòng chọn bưu cục lấy hàng" }] : [];
-                  return (
-                    <Form.Item name="fromOfficeId" label="Chọn bưu cục lấy hàng" rules={rules}>
-                      <Select showSearch placeholder="Chọn bưu cục">
-                        {officeOptions.map((o) => (
-                          <Select.Option key={o.id} value={o.id}>{o.name + (o.cityCode ? ` - TP ${o.cityCode}` : '')}</Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  );
-                }}
-              </Form.Item>
-            )}
           </Form>
         </Modal>
       </Card>
