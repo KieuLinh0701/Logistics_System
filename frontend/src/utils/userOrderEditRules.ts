@@ -37,7 +37,7 @@ export const USER_ORDER_FIELD_EDIT_RULES: Record<string, EditableRule> = {
     editableStatuses: ['DRAFT'],
   },
   cod: {
-    editableStatuses: ['DRAFT'],
+    nonEditableStatuses: USER_FINAL_STATUSES,
   },
   orderValue: {
     editableStatuses: ['DRAFT'],

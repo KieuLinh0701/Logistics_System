@@ -47,33 +47,33 @@ public class UserOrderEditRuleUtils {
     static {
         Map<String, EditableRule> map = new HashMap<>();
 
-        map.put("senderAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("senderName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("senderPhoneNumber", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("senderCityCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("senderWardCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("senderDetailAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("senderAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderPhoneNumber", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderCityCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderWardCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderDetailAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
 
         // Thông tin recipient dùng chung
-        map.put("recipientName", new EditableRule(EDITABLE_RECIPIENT_STATUSES, USER_FINAL_STATUSES));
-        map.put("recipientPhoneNumber", new EditableRule(EDITABLE_RECIPIENT_STATUSES, USER_FINAL_STATUSES));
-        map.put("recipientCityCode", new EditableRule(EDITABLE_RECIPIENT_STATUSES, USER_FINAL_STATUSES));
-        map.put("recipientWardCode", new EditableRule(EDITABLE_RECIPIENT_STATUSES, USER_FINAL_STATUSES));
-        map.put("recipientDetailAddress", new EditableRule(EDITABLE_RECIPIENT_STATUSES, USER_FINAL_STATUSES));
+        map.put("recipientName", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientPhoneNumber", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientCityCode", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientWardCode", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientDetailAddress", new EditableRule(null, USER_FINAL_STATUSES));
 
         // Các field khác
-        map.put("weight", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("serviceType", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("cod", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("orderValue", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("products", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("pickupType", new EditableRule(EnumSet.of(OrderStatus.DRAFT, OrderStatus.PENDING), USER_FINAL_STATUSES));
+        map.put("weight", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("serviceType", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("cod", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("orderValue", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("products", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("pickupType", new EditableRule(EnumSet.of(OrderStatus.DRAFT, OrderStatus.PENDING), null));
         map.put("fromOffice",
-                new EditableRule(EnumSet.of(OrderStatus.DRAFT, OrderStatus.PENDING), USER_FINAL_STATUSES));
-        map.put("payer", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
-        map.put("notes", new EditableRule(EDITABLE_RECIPIENT_STATUSES,
+                new EditableRule(EnumSet.of(OrderStatus.DRAFT, OrderStatus.PENDING), null));
+        map.put("payer", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("notes", new EditableRule(null,
                 EnumSet.of(OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.RETURNED)));
-        map.put("promotion", new EditableRule(EnumSet.of(OrderStatus.DRAFT), USER_FINAL_STATUSES));
+        map.put("promotion", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
 
         USER_ORDER_FIELD_EDIT_RULES = Collections.unmodifiableMap(map);
     }

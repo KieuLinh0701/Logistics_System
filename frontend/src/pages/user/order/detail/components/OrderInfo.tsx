@@ -44,7 +44,12 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
 
           <div className="order-detail-card-column">
             {renderField("Dịch vụ:", order.serviceType?.name)}
-            {renderField("Trọng lượng:", `${order.weight} kg`)}
+            {renderField("Trọng lượng:",
+            <div>
+              <span className="custom-table-content-error">{order.adjustedWeight} kg </span>
+              (<span className="text-muted custom-text-removed">{order.weight} kg</span>)
+            </div>
+            )}
             {renderField("Giá trị:", `${order.orderValue.toLocaleString()} VNĐ`)}
             {renderField("COD:", `${(order.cod || 0).toLocaleString()} VNĐ`)}
           </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   Card,
   Row,
@@ -21,6 +21,7 @@ interface Props {
   form: FormInstance;
   codAmount?: number;
   weight?: number;
+  adjustedWeight?: number;
   orderValue?: number;
   orderProducts: OrderProduct[];
   orderColumns: any[];
@@ -37,6 +38,7 @@ const OrderInfo: React.FC<Props> = ({
   form,
   codAmount,
   weight,
+  adjustedWeight,
   orderValue,
   orderProducts,
   orderColumns,
@@ -51,6 +53,10 @@ const OrderInfo: React.FC<Props> = ({
   const isOrderValueDisabled = !(orderProducts.length === 0);
   const isWeightDisabled = !(orderProducts.length === 0);
 
+  const isAdjusted = useMemo(() => {
+    return adjustedWeight != null;
+  }, [adjustedWeight]);
+
   useEffect(() => {
     form.setFieldsValue({
       weight: weight ?? undefined,
@@ -59,7 +65,6 @@ const OrderInfo: React.FC<Props> = ({
       serviceType: selectedServiceType?.id ?? undefined,
     });
   }, [weight, orderValue, codAmount, selectedServiceType]);
-
 
   useEffect(() => {
     if (orderProducts.length === 0) return;
@@ -158,6 +163,21 @@ const OrderInfo: React.FC<Props> = ({
                       },
                     },
                   ]}
+                  extra={
+                    isAdjusted && (
+                      <div className="text-muted text-extra-time">
+                        Đã khai báo:{" "}
+                        <span className="custom-text-removed">
+                          {weight?.toFixed(2)} kg
+                        </span>
+                        {"  "}–{"  "}
+                        Đã điều chỉnh:{" "}
+                        <b className="custom-table-content-error">
+                          {adjustedWeight?.toFixed(2)} kg
+                        </b>
+                      </div>
+                    )
+                  }
                 >
                   <InputNumber
                     className="modal-custom-input-number"

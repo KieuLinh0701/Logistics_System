@@ -96,7 +96,7 @@ const UserOrderEdit: React.FC = () => {
     const [payer, setPayer] = useState<string>("CUSTOMER");
     const [discountAmount, setDiscountAmount] = useState<number | undefined>(undefined);
     const [notes, setNotes] = useState("");
-    const [shippingFee, setShippingFee] = useState<number | undefined>(undefined);
+    const [_, setShippingFee] = useState<number | undefined>(undefined);
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
 
@@ -227,6 +227,7 @@ const UserOrderEdit: React.FC = () => {
 
         setSelectedServiceType(order.serviceType);
         setWeight(order.weight);
+        setDiscountAmount(order.discountAmount);
         setCodAmount(order.cod);
         setOrderValue(order.orderValue);
         setPickupType(order.pickupType);
@@ -334,6 +335,10 @@ const UserOrderEdit: React.FC = () => {
     };
 
     useEffect(() => {
+        if (order != null && !canEditUserOrderField('promotion', order.status as OrderStatus)) {
+            return;
+        }
+
         if (!selectedPromotion) {
             setDiscountAmount(0);
             return;
@@ -361,7 +366,6 @@ const UserOrderEdit: React.FC = () => {
 
         setDiscountAmount(discount);
     }, [selectedPromotion, serviceFee]);
-
 
     // Người gửi với địa chỉ mặc định
     useEffect(() => {
@@ -847,8 +851,15 @@ const UserOrderEdit: React.FC = () => {
 
     useEffect(() => {
         const fetchShippingFee = async () => {
-            const hasEnoughData = senderData.cityCode && recipientData.cityCode &&
-                weight && selectedServiceType && codAmount !== undefined && orderValue !== undefined;
+            const effectiveWeight = order?.adjustedWeight != null ? order?.adjustedWeight : weight;
+
+            const hasEnoughData =
+                senderData.cityCode &&
+                recipientData.cityCode &&
+                effectiveWeight &&
+                selectedServiceType &&
+                codAmount !== undefined &&
+                orderValue !== undefined;
 
             if (!hasEnoughData) {
                 setShippingFee(0);
@@ -859,13 +870,13 @@ const UserOrderEdit: React.FC = () => {
             try {
                 const [result1, result2] = await Promise.all([
                     shippingFeeApi.calculateShippingFee({
-                        weight,
+                        weight: effectiveWeight,
                         serviceTypeId: selectedServiceType.id,
                         senderCodeCity: senderData.cityCode,
                         recipientCodeCity: recipientData.cityCode,
                     }),
                     shippingFeeApi.calculateTotalFeeUser({
-                        weight,
+                        weight: effectiveWeight,
                         serviceTypeId: selectedServiceType.id,
                         senderCodeCity: senderData.cityCode,
                         recipientCodeCity: recipientData.cityCode,
@@ -886,7 +897,15 @@ const UserOrderEdit: React.FC = () => {
         };
 
         fetchShippingFee();
-    }, [senderData.cityCode, recipientData.cityCode, weight, selectedServiceType, codAmount, orderValue]);
+    }, [
+        senderData.cityCode,
+        recipientData.cityCode,
+        weight,
+        order?.adjustedWeight,
+        selectedServiceType,
+        codAmount,
+        orderValue
+    ]);
 
     useEffect(() => {
         if (serviceFee === undefined || discountAmount === undefined) return;
@@ -1118,6 +1137,7 @@ const UserOrderEdit: React.FC = () => {
                                 form={orderInfo}
                                 codAmount={codAmount}
                                 weight={weight}
+                                adjustedWeight={order.adjustedWeight}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}

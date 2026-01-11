@@ -165,6 +165,9 @@ const ManagerOrderEdit: React.FC = () => {
     const handleOrderInfoChange = (changedValues: any) => {
         if (changedValues.weight !== undefined) {
             setWeight(changedValues.weight);
+            if (order?.createdByType === 'USER') {
+                setDiscountAmount(0);
+            }
         }
 
         if (changedValues.orderValue !== undefined) {
@@ -309,9 +312,17 @@ const ManagerOrderEdit: React.FC = () => {
     };
 
     useEffect(() => {
+        // chọn weight dùng để tính phí
+        const effectiveWeight = order?.adjustedWeight != null ? order?.adjustedWeight : weight;
+
         const fetchShippingFee = async () => {
-            const hasEnoughData = senderData.cityCode && recipientData.cityCode &&
-                weight && selectedServiceType && codAmount !== undefined && orderValue !== undefined;
+            const hasEnoughData =
+                senderData.cityCode &&
+                recipientData.cityCode &&
+                effectiveWeight &&
+                selectedServiceType &&
+                codAmount !== undefined &&
+                orderValue !== undefined;
 
             if (!hasEnoughData) {
                 setShippingFee(0);
@@ -322,24 +333,23 @@ const ManagerOrderEdit: React.FC = () => {
             try {
                 const [result1, result2] = await Promise.all([
                     shippingFeeApi.calculateShippingFee({
-                        weight,
+                        weight: effectiveWeight,
                         serviceTypeId: selectedServiceType.id,
                         senderCodeCity: senderData.cityCode,
                         recipientCodeCity: recipientData.cityCode,
                     }),
                     shippingFeeApi.calculateTotalFeeUser({
-                        weight,
+                        weight: effectiveWeight,
                         serviceTypeId: selectedServiceType.id,
                         senderCodeCity: senderData.cityCode,
                         recipientCodeCity: recipientData.cityCode,
                         cod: codAmount,
-                        orderValue: orderValue
-                    })
+                        orderValue: orderValue,
+                    }),
                 ]);
 
                 if (result1?.data) setShippingFee(result1.data);
                 if (result2?.data) setServiceFee(result2.data);
-
             } catch (error) {
                 console.error(error);
                 message.error("Tính cước thất bại");
@@ -349,7 +359,15 @@ const ManagerOrderEdit: React.FC = () => {
         };
 
         fetchShippingFee();
-    }, [senderData.cityCode, recipientData.cityCode, weight, selectedServiceType, codAmount, orderValue]);
+    }, [
+        senderData.cityCode,
+        recipientData.cityCode,
+        weight,
+        selectedServiceType,
+        codAmount,
+        orderValue,
+    ]);
+
 
     useEffect(() => {
         if (serviceFee === undefined || discountAmount === undefined) return;
@@ -456,6 +474,7 @@ const ManagerOrderEdit: React.FC = () => {
                                 form={orderInfo}
                                 codAmount={codAmount}
                                 weight={weight}
+                                adjustedWeight={order.adjustedWeight}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}

@@ -99,6 +99,9 @@ public class Order {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal weight;
 
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedWeight;
+
     @ManyToOne
     @JoinColumn(name = "service_type_id", nullable = false)
     @NotAudited

@@ -1,5 +1,6 @@
 package com.logistics.service.manager;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -432,6 +433,8 @@ public class OrderManagerService {
             Order order = repository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
+            BigDecimal oldWeight = order.getWeight();
+
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             if (!ManagerOrderEditRuleUtils.canEditManagerOrder(order.getStatus())) {
@@ -510,37 +513,70 @@ public class OrderManagerService {
                     currentStatus, creatorType,
                     recipient::setDetail);
 
-            // PICKUP TYPE
-            if (request.getPickupType() != null) {
-                if (creatorType == OrderCreatorType.MANAGER) {
-                    throw new RuntimeException("Đơn do bưu cục tạo không được thay đổi hình thức lấy hàng");
+            if (request.getWeight() != null) {
+
+                if (order.getUser() != null) {
+                    updateManagerField(
+                            "weight",
+                            order.getWeight(),
+                            request.getWeight(),
+                            currentStatus,
+                            creatorType,
+                            order::setAdjustedWeight);
+                } else {
+                    updateManagerField(
+                            "weight",
+                            order.getWeight(),
+                            request.getWeight(),
+                            currentStatus,
+                            creatorType,
+                            order::setWeight);
                 }
 
-                if (ManagerOrderEditRuleUtils.canManagerEditOrderField(
-                        "pickupType", currentStatus, creatorType)) {
-                    order.setPickupType(OrderPickupType.valueOf(request.getPickupType()));
-                }
             }
 
-            // FROM OFFICE
-            if (request.getFromOfficeId() != null) {
+            if (order.getUser() != null && request.getWeight() != null) {
 
-                if (creatorType == OrderCreatorType.MANAGER) {
-                    throw new RuntimeException("Đơn do bưu cục tạo không được đổi bưu cục gửi");
-                }
+                if (oldWeight == null || oldWeight.compareTo(request.getWeight()) != 0) {
 
-                if (ManagerOrderEditRuleUtils.canManagerEditOrderField(
-                        "fromOffice", currentStatus, creatorType)) {
+                    int calcShippingFee = feeService.calculateShippingFee(request.getWeight(),
+                            order.getServiceType().getId(),
+                            order.getSenderCityCode(), order.getRecipientAddress().getCityCode());
+                    order.setShippingFee(calcShippingFee);
 
-                    Office newOffice = officeRepository.findById(request.getFromOfficeId())
-                            .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
+                    int calcServiceFee = feeService.calculateTotalFee(
+                            request.getWeight(),
+                            order.getServiceType().getId(),
+                            order.getSenderCityCode(),
+                            order.getRecipientAddress().getCityCode(),
+                            order.getOrderValue(),
+                            order.getCod());
 
-                    if (!Objects.equals(newOffice.getCityCode(), order.getSenderCityCode())) {
-                        throw new RuntimeException(
-                                "Bưu cục gửi phải cùng tỉnh/thành với địa chỉ người gửi");
+                    int discountAmount = 0;
+
+                    if (order.getPromotion() != null) {
+                        promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+
+                        order.setPromotion(null);
                     }
 
-                    order.setFromOffice(newOffice);
+                    int calcTotalFee = calcServiceFee - discountAmount;
+                    order.setDiscountAmount(discountAmount);
+                    order.setTotalFee(calcTotalFee);
+
+                    notificationService.create(
+                            "Điều chỉnh khối lượng đơn hàng",
+                            String.format(
+                                    "Đơn hàng với mã vận đơn #%s phát hiện sai lệch khối lượng so với khai báo ban đầu. " +
+                                            "Hệ thống đã tự động điều chỉnh từ %s kg thành %s kg, phí vận chuyển được cập nhật và khuyến mãi đã bị hủy.",
+                                    order.getTrackingNumber(),
+                                    oldWeight == null ? "0" : oldWeight.toPlainString(),
+                                    request.getWeight().toPlainString()),
+                            "order",
+                            order.getUser().getId(),
+                            null,
+                            "orders/tracking",
+                            order.getTrackingNumber());
                 }
             }
 
@@ -552,6 +588,7 @@ public class OrderManagerService {
                     order::setNotes);
 
             repository.save(order);
+
             return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
 
         } catch (Exception e) {

@@ -40,6 +40,7 @@ export interface Order {
   recipientAddress: Address;
   pickupType: string;
   weight: number;
+  adjustedWeight: number;
   serviceTypeName: string;
   serviceType: ServiceType;
   discountAmount: number;

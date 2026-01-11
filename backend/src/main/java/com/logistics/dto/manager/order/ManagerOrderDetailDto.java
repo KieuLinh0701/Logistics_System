@@ -32,6 +32,7 @@ public class ManagerOrderDetailDto {
     private AddressDto recipientAddress;
     private String pickupType;
     private BigDecimal weight;
+    private BigDecimal adjustedWeight;
     private ServiceTypeDto serviceType;
     private Integer discountAmount;
     private Integer cod;

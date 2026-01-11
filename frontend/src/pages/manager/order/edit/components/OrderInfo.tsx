@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   Card,
   Row,
@@ -13,13 +13,17 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import type { FormInstance } from "antd/lib";
 import type { OrderProduct } from "../../../../../types/orderProduct";
 import type { ServiceType } from "../../../../../types/serviceType";
-import { type OrderCreatorType, type OrderStatus } from "../../../../../utils/orderUtils";
+import {
+  type OrderCreatorType,
+  type OrderStatus,
+} from "../../../../../utils/orderUtils";
 import { canManagerEditOrderField } from "../../../../../utils/managerOrderEditRules";
 
 interface Props {
   form: FormInstance;
   codAmount?: number;
   weight?: number;
+  adjustedWeight?: number;
   orderValue?: number;
   orderProducts: OrderProduct[];
   orderColumns: any[];
@@ -36,6 +40,7 @@ const OrderInfo: React.FC<Props> = ({
   form,
   codAmount,
   weight,
+  adjustedWeight,
   orderValue,
   orderProducts,
   orderColumns,
@@ -47,8 +52,6 @@ const OrderInfo: React.FC<Props> = ({
   status,
   creator,
 }) => {
-  const isOrderValueDisabled = !(orderProducts.length === 0);
-  const isWeightDisabled = !(orderProducts.length === 0);
 
   useEffect(() => {
     form.setFieldsValue({
@@ -59,44 +62,20 @@ const OrderInfo: React.FC<Props> = ({
     });
   }, [weight, orderValue, codAmount, selectedServiceType]);
 
-
-  useEffect(() => {
-    if (orderProducts.length === 0) return;
-
-    const totalWeight = orderProducts.reduce(
-      (sum, p) => sum + (p.productWeight * p.quantity),
-      0
-    );
-
-    const totalValue = orderProducts.reduce(
-      (sum, p) => sum + (p.productPrice * p.quantity),
-      0
-    );
-
-    form.setFieldsValue({
-      weight: totalWeight,
-      orderValue: totalValue,
-    });
-
-    onChangeOrderInfo?.({
-      weight: totalWeight,
-      orderValue: totalValue,
-    });
-  }, [orderProducts]);
+  const isAdjusted = useMemo(() => {
+    return adjustedWeight != null;
+  }, [adjustedWeight]);
 
   const handleWeightChange = (value: number | null) => {
-    const newValue = value ?? 0;
-    onChangeOrderInfo?.({ weight: newValue });
+    onChangeOrderInfo?.({ weight: value ?? 0 });
   };
 
   const handleOrderValueChange = (value: number | null) => {
-    const newValue = value ?? 0;
-    onChangeOrderInfo?.({ orderValue: newValue });
+    onChangeOrderInfo?.({ orderValue: value ?? 0 });
   };
 
   const handleCodChange = (value: number | null) => {
-    const newValue = value ?? 0;
-    onChangeOrderInfo?.({ codAmount: newValue });
+    onChangeOrderInfo?.({ codAmount: value ?? 0 });
   };
 
   return (
@@ -109,9 +88,12 @@ const OrderInfo: React.FC<Props> = ({
         }}
       >
         <Card className="create-order-custom-card">
-          <div className="create-order-custom-card-title">Thông tin đơn hàng</div>
+          <div className="create-order-custom-card-title">
+            Thông tin đơn hàng
+          </div>
 
           <div className="create-order-content">
+
             {orderProducts.length > 0 && (
               <Table<OrderProduct>
                 dataSource={orderProducts}
@@ -148,11 +130,32 @@ const OrderInfo: React.FC<Props> = ({
                       },
                     },
                   ]}
+                  extra={
+                    isAdjusted && (
+                      <div className="text-muted text-extra-time">
+                        Đã khai báo:{" "}
+                        <span className="custom-text-removed">
+                          {weight?.toFixed(2)} kg
+                        </span>
+                        {"  "}–{"  "}
+                        Đã điều chỉnh:{" "}
+                        <b className="custom-table-content-error">
+                          {adjustedWeight?.toFixed(2)} kg
+                        </b>
+                      </div>
+                    )
+                  }
                 >
                   <InputNumber
                     className="modal-custom-input-number"
                     placeholder="Ví dụ: 1.5"
-                    disabled={isWeightDisabled || !canManagerEditOrderField('weight', status, creator)}
+                    disabled={
+                      // adjustedWeight != null || 
+                      !canManagerEditOrderField(
+                      "weight",
+                      status,
+                      creator
+                    )}
                     onChange={handleWeightChange}
                     min={0.01}
                     step={0.01}
@@ -164,13 +167,23 @@ const OrderInfo: React.FC<Props> = ({
               <Col span={12}>
                 <Form.Item
                   name="serviceType"
-                  label={<span className="modal-lable">Loại dịch vụ giao hàng</span>}
+                  label={
+                    <span className="modal-lable">
+                      Loại dịch vụ giao hàng
+                    </span>
+                  }
                   rules={[{ required: true, message: "Chọn loại dịch vụ" }]}
                 >
                   <Select
                     className="modal-custom-select"
                     placeholder="Chọn dịch vụ..."
-                    disabled={!canManagerEditOrderField('serviceType', status, creator)}
+                    disabled={
+                      !canManagerEditOrderField(
+                        "serviceType",
+                        status,
+                        creator
+                      )
+                    }
                     showSearch
                     optionLabelProp="label"
                     filterOption={(input, option) =>
@@ -181,17 +194,15 @@ const OrderInfo: React.FC<Props> = ({
                     loading={loading}
                     allowClear
                     onChange={(value) => {
-                      const selected = serviceTypes?.find((s) => s.id === value);
+                      const selected = serviceTypes?.find(
+                        (s) => s.id === value
+                      );
                       setSelectedServiceType(selected || null);
                       form.setFieldValue("serviceType", value);
                     }}
                   >
                     {serviceTypes?.map((s) => (
-                      <Select.Option
-                        key={s.id}
-                        value={s.id}
-                        label={s.name}
-                      >
+                      <Select.Option key={s.id} value={s.id} label={s.name}>
                         <div className="create-order-pickup-type office-contain">
                           <span className="create-order-pickup-type office-name">
                             {s.name}
@@ -226,7 +237,11 @@ const OrderInfo: React.FC<Props> = ({
                   <InputNumber
                     className="modal-custom-input-number"
                     placeholder="Ví dụ: 200,000"
-                    disabled={!canManagerEditOrderField('cod', status, creator)}
+                    disabled={!canManagerEditOrderField(
+                      "cod",
+                      status,
+                      creator
+                    )}
                     min={0}
                     step={1000}
                     onChange={handleCodChange}
@@ -235,7 +250,9 @@ const OrderInfo: React.FC<Props> = ({
                         ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                         : ""
                     }
-                    parser={(value) => value?.replace(/\$\s?|(,*)/g, "") as any}
+                    parser={(value) =>
+                      value?.replace(/\$\s?|(,*)/g, "") as any
+                    }
                   />
                 </Form.Item>
               </Col>
@@ -260,14 +277,22 @@ const OrderInfo: React.FC<Props> = ({
                     placeholder="Ví dụ: 150,000"
                     min={0}
                     step={1000}
-                    disabled={isOrderValueDisabled || !canManagerEditOrderField('orderValue', status, creator)}
+                    disabled={
+                      !canManagerEditOrderField(
+                        "orderValue",
+                        status,
+                        creator
+                      )
+                    }
                     onChange={handleOrderValueChange}
                     formatter={(value) =>
                       value
                         ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                         : ""
                     }
-                    parser={(value) => value?.replace(/\$\s?|(,*)/g, "") as any}
+                    parser={(value) =>
+                      value?.replace(/\$\s?|(,*)/g, "") as any
+                    }
                   />
                 </Form.Item>
               </Col>
