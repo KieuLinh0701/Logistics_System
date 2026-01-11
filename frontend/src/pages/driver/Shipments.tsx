@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Table, Button, Space, Typography, message, Tag, Modal, Descriptions } from "antd";
+import { Card, Table, Button, Space, Typography, message, Tag, Modal, Descriptions, Checkbox } from "antd";
 import { ReloadOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
 import type { DriverShipment } from "../../types/shipment";
@@ -13,6 +13,8 @@ const DriverShipments: React.FC = () => {
   const [shipments, setShipments] = useState<DriverShipment[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+  const [pickupModal, setPickupModal] = useState<{ visible: boolean; shipmentId?: number; orders?: any[] }>({ visible: false });
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
 
   useEffect(() => {
     loadShipments();
@@ -40,11 +42,60 @@ const DriverShipments: React.FC = () => {
       content: "Bạn có chắc chắn muốn bắt đầu vận chuyển chuyến hàng này?",
       onOk: async () => {
         try {
-          await shipmentApi.startShipment(shipmentId);
+          const res = await shipmentApi.startShipment(shipmentId);
+          if (res && !res.success) {
+            message.error(res.message || "Không thể bắt đầu chuyến");
+            return;
+          }
           message.success("Đã bắt đầu vận chuyển");
           loadShipments();
         } catch (e: any) {
           message.error(e?.message || "Lỗi khi bắt đầu vận chuyển");
+        }
+      },
+    });
+  };
+
+  const openPickupModal = (shipment: DriverShipment) => {
+    // Không tự động chọn; người dùng sẽ click thủ công hoặc dùng Chọn tất cả
+    setSelectedOrderIds([]);
+    setPickupModal({ visible: true, shipmentId: shipment.id, orders: shipment.orders || [] });
+  };
+
+  const handlePickupConfirm = async () => {
+    if (!pickupModal.shipmentId) return;
+    if (!selectedOrderIds || selectedOrderIds.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một đơn");
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await shipmentApi.pickupShipmentOrders(pickupModal.shipmentId, selectedOrderIds);
+      if (res && !res.success) {
+        message.error(res.message || "Không thể xác nhận lấy hàng");
+      } else {
+        message.success(res?.message || "Đã đánh dấu đơn là đã lấy");
+        setPickupModal({ visible: false });
+        loadShipments();
+      }
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || e?.message || "Lỗi khi xác nhận lấy hàng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClaimShipment = async (shipmentId: number) => {
+    Modal.confirm({
+      title: "Nhận chuyến",
+      content: "Bạn có muốn nhận chuyến này?",
+      onOk: async () => {
+        try {
+          await shipmentApi.claimShipment(shipmentId);
+          message.success("Bạn đã nhận chuyến");
+          loadShipments();
+        } catch (e: any) {
+          message.error(e?.message || "Lỗi khi nhận chuyến");
         }
       },
     });
@@ -169,21 +220,37 @@ const DriverShipments: React.FC = () => {
       render: (_: any, r: DriverShipment) => (
         <Space direction="vertical" size="small">
           {r.status === "PENDING" && (
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={() => handleStartShipment(r.id)}
-              block
-            >
-              Bắt đầu
-            </Button>
+            <>
+              <Button type="primary" onClick={() => openPickupModal(r)} block>
+                Lấy hàng
+              </Button>
+              {/** Disable Start unless all orders are PICKED_UP */}
+              <Button
+                style={{ marginTop: 8 }}
+                type="default"
+                icon={<PlayCircleOutlined />}
+                onClick={() => {
+                  const allPicked = Array.isArray(r.orders) && r.orders.length > 0 && r.orders.every((o: any) => o.status === "PICKED_UP");
+                  if (!allPicked) {
+                    message.error("Không thể bắt đầu: vẫn còn đơn chưa được xác nhận đã lấy (PICKED_UP)");
+                    return;
+                  }
+                  handleStartShipment(r.id);
+                }}
+                disabled={!(Array.isArray(r.orders) && r.orders.length > 0 && r.orders.every((o: any) => o.status === "PICKED_UP"))}
+                block
+              >
+                Bắt đầu
+              </Button>
+            </>
           )}
           {r.status === "IN_TRANSIT" && (
-            <Space>
+            <Space direction="vertical" style={{ width: "100%" }}>
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleFinishShipment(r.id, "COMPLETED")}
+                block
               >
                 Hoàn tất
               </Button>
@@ -191,14 +258,15 @@ const DriverShipments: React.FC = () => {
                 danger
                 icon={<CloseCircleOutlined />}
                 onClick={() => handleFinishShipment(r.id, "CANCELLED")}
+                block
               >
                 Hủy
               </Button>
+              <Button onClick={() => navigate(`/driver/route`)} block>
+                Xem lộ trình
+              </Button>
             </Space>
           )}
-          <Button onClick={() => navigate(`/driver/route`)} block>
-            Xem lộ trình
-          </Button>
         </Space>
       ),
     },
@@ -250,6 +318,56 @@ const DriverShipments: React.FC = () => {
             rowExpandable: (record: DriverShipment) => !!(record.orders && record.orders.length > 0),
           }}
         />
+        {/* Pickup modal */}
+        <Modal
+          title="Lấy hàng - Chọn đơn"
+          open={pickupModal.visible}
+          onOk={handlePickupConfirm}
+          onCancel={() => setPickupModal({ visible: false })}
+          okText="Xác nhận"
+          cancelText="Hủy"
+        >
+          {pickupModal.orders && pickupModal.orders.length > 0 ? (
+            (() => {
+              const available = (pickupModal.orders || []).filter((o: any) => o.status !== "PICKED_UP");
+              if (available.length === 0) {
+                return <Text>Đã lấy tất cả các đơn</Text>;
+              }
+              return (
+                <div>
+                  <Checkbox
+                    checked={selectedOrderIds.length > 0 && selectedOrderIds.length === available.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedOrderIds(available.map(o => o.id));
+                      } else {
+                        setSelectedOrderIds([]);
+                      }
+                    }}
+                  >
+                    Chọn tất cả
+                  </Checkbox>
+
+                  <Checkbox.Group
+                    style={{ width: "100%", marginTop: 12 }}
+                    value={selectedOrderIds}
+                    onChange={(vals) => setSelectedOrderIds((vals as any[]).map(v => Number(v)))}
+                  >
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      {available.map((o: any) => (
+                        <Checkbox key={o.id} value={o.id}>
+                          {o.trackingNumber}
+                        </Checkbox>
+                      ))}
+                    </Space>
+                  </Checkbox.Group>
+                </div>
+              );
+            })()
+          ) : (
+            <Text>Không có đơn để chọn</Text>
+          )}
+        </Modal>
       </Card>
     </div>
   );

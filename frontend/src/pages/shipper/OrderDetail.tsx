@@ -31,6 +31,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import orderApi from "../../api/orderApi";
+import { getUserRole } from "../../utils/authUtils";
 import type { ShipperOrder } from "../../api/orderApi";
 import { translateOrderCodStatus, translatePaymentSubmissionStatus } from "../../utils/orderUtils";
 
@@ -254,6 +255,25 @@ const fetchOrderDetail = async () => {
             </Col>
             <Col>
               <Space>
+                {(getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && (
+                  <Button
+                    type="dashed"
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        await orderApi.markShipperPickedUp(Number(id));
+                        message.success("Đã cập nhật: đã lấy hàng");
+                        fetchOrderDetail();
+                      } catch (error: any) {
+                        message.error(error?.response?.data?.message || "Lỗi khi đánh dấu đã lấy hàng");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                  >
+                    Đã lấy hàng
+                  </Button>
+                )}
                 {order.status === "PICKED_UP" && (
                   <Button
                     type="primary"

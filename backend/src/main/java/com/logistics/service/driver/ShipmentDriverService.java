@@ -10,6 +10,7 @@ import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.service.common.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -53,6 +54,9 @@ public class ShipmentDriverService {
     private EmployeeRepository employeeRepository;
 
     @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
     private OfficeRepository officeRepository;
 
     private Employee getCurrentEmployee() {
@@ -80,20 +84,30 @@ public class ShipmentDriverService {
                 return new ApiResponse<>(false, "Chuyến hàng không ở trạng thái PENDING", null);
             }
 
+            // Lấy danh sách orders rồi kiểm tra toàn bộ trạng thái trước khi cập nhật
+            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
+            List<String> notPicked = new ArrayList<>();
+            for (ShipmentOrder so : shipmentOrders) {
+                Order order = so.getOrder();
+                if (order.getStatus() != OrderStatus.PICKED_UP) {
+                    notPicked.add(order.getTrackingNumber());
+                }
+            }
+
+            if (!notPicked.isEmpty()) {
+                String joined = String.join(", ", notPicked);
+                return new ApiResponse<>(false,
+                        "Không thể bắt đầu chuyến: các đơn sau chưa được xác nhận đã lấy (PICKED_UP): " + joined,
+                        null);
+            }
+
             shipment.setStatus(ShipmentStatus.IN_TRANSIT);
             shipment.setStartTime(LocalDateTime.now());
             shipmentRepository.save(shipment);
 
             // Cập nhật trạng thái đơn hàng từ PICKED_UP -> IN_TRANSIT
-            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                
-                // Kiểm tra đơn hàng phải ở trạng thái PICKED_UP
-                if (order.getStatus() != OrderStatus.PICKED_UP) {
-                    return new ApiResponse<>(false, "Đơn hàng " + order.getTrackingNumber() + " không ở trạng thái PICKED_UP", null);
-                }
-                
                 order.setStatus(OrderStatus.IN_TRANSIT);
                 orderRepository.save(order);
 
@@ -109,6 +123,186 @@ public class ShipmentDriverService {
             }
 
             return new ApiResponse<>(true, "Đã bắt đầu vận chuyển", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    public ApiResponse<String> claimShipment(Integer shipmentId) {
+        try {
+            Employee employee = getCurrentEmployee();
+
+            Shipment shipment = shipmentRepository.findById(shipmentId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
+
+            if (shipment.getEmployee() != null) {
+                return new ApiResponse<>(false, "Chuyến hàng đã được gán", null);
+            }
+
+            if (shipment.getStatus() != ShipmentStatus.PENDING) {
+                return new ApiResponse<>(false, "Chuyến hàng không ở trạng thái PENDING", null);
+            }
+
+            Office office = employee.getOffice();
+            if (office == null || shipment.getFromOffice() == null || !office.getId().equals(shipment.getFromOffice().getId())) {
+                return new ApiResponse<>(false, "Bạn chỉ có thể nhận chuyến thuộc bưu cục của bạn", null);
+            }
+
+            shipment.setEmployee(employee);
+            shipmentRepository.save(shipment);
+
+            if (employee.getUser() != null) {
+                notificationService.create(
+                        "Bạn được gán chuyến hàng",
+                        "Bạn đã nhận chuyến " + shipment.getCode(),
+                        "shipment",
+                        employee.getUser().getId(),
+                        null,
+                        "shipments",
+                        shipment.getCode());
+            }
+
+            return new ApiResponse<>(true, "Nhận chuyến thành công", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    public ApiResponse<String> markShipmentPickedUp(Integer shipmentId) {
+        try {
+            Employee employee = getCurrentEmployee();
+
+            Shipment shipment = shipmentRepository.findById(shipmentId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
+
+            if (shipment.getStatus() != ShipmentStatus.PENDING) {
+                return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy cho chuyến ở trạng thái PENDING", null);
+            }
+
+            Office office = employee.getOffice();
+            if (office == null || shipment.getFromOffice() == null || !office.getId().equals(shipment.getFromOffice().getId())) {
+                return new ApiResponse<>(false, "Bạn chỉ có thể xác nhận cho chuyến thuộc bưu cục của bạn", null);
+            }
+
+            // Gán nhân viên nếu chưa có
+            if (shipment.getEmployee() == null) {
+                shipment.setEmployee(employee);
+            } else if (!shipment.getEmployee().getId().equals(employee.getId())) {
+                return new ApiResponse<>(false, "Chuyến đã được gán cho người khác", null);
+            }
+
+            // Lấy danh sách đơn và đặt trạng thái PICKED_UP
+            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
+            for (ShipmentOrder so : shipmentOrders) {
+                Order order = so.getOrder();
+                // Only update if not already PICKED_UP or beyond
+                if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.IN_TRANSIT && order.getStatus() != OrderStatus.DELIVERING && order.getStatus() != OrderStatus.DELIVERED) {
+                    order.setStatus(OrderStatus.PICKED_UP);
+                    try { order.setDeliveredAt(java.time.LocalDateTime.now()); } catch (Exception ignored) {}
+                    orderRepository.save(order);
+
+                    // Ghi OrderHistory
+                    OrderHistory history = new OrderHistory();
+                    history.setOrder(order);
+                    history.setFromOffice(order.getFromOffice());
+                    history.setToOffice(order.getToOffice());
+                    history.setShipment(shipment);
+                    history.setAction(OrderHistoryActionType.PICKED_UP);
+                    history.setNote("Driver xác nhận đã lấy hàng cho chuyến " + shipment.getCode());
+                    orderHistoryRepository.save(history);
+                }
+            }
+
+            shipmentRepository.save(shipment);
+
+            // Notify
+            if (employee.getUser() != null) {
+                notificationService.create(
+                        "Xác nhận đã lấy hàng",
+                        "Bạn đã xác nhận lấy hàng cho chuyến " + shipment.getCode(),
+                        "shipment",
+                        employee.getUser().getId(),
+                        null,
+                        "shipments",
+                        shipment.getCode()
+                );
+            }
+
+            return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    @Transactional
+    public ApiResponse<String> pickupShipmentOrders(Integer shipmentId, List<Integer> orderIds) {
+        try {
+            Employee employee = getCurrentEmployee();
+
+            Shipment shipment = shipmentRepository.findById(shipmentId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
+
+            if (shipment.getStatus() != ShipmentStatus.PENDING) {
+                return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy cho chuyến ở trạng thái PENDING", null);
+            }
+
+            Office office = employee.getOffice();
+            if (office == null || shipment.getFromOffice() == null || !office.getId().equals(shipment.getFromOffice().getId())) {
+                return new ApiResponse<>(false, "Bạn chỉ có thể xác nhận cho chuyến thuộc bưu cục của bạn", null);
+            }
+
+            // Gán nhân viên nếu chưa có
+            if (shipment.getEmployee() == null) {
+                shipment.setEmployee(employee);
+            } else if (!shipment.getEmployee().getId().equals(employee.getId())) {
+                return new ApiResponse<>(false, "Chuyến đã được gán cho người khác", null);
+            }
+
+            // Build map of shipment orders for quick lookup
+            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
+            Map<Integer, ShipmentOrder> byOrderId = shipmentOrders.stream().collect(Collectors.toMap(so -> so.getOrder().getId(), so -> so));
+
+            List<String> updated = new ArrayList<>();
+            List<String> skipped = new ArrayList<>();
+
+            for (Integer oid : orderIds) {
+                if (!byOrderId.containsKey(oid)) {
+                    skipped.add("#" + oid);
+                    continue;
+                }
+                Order order = byOrderId.get(oid).getOrder();
+                if (order.getStatus() == OrderStatus.PICKED_UP || order.getStatus() == OrderStatus.IN_TRANSIT || order.getStatus() == OrderStatus.DELIVERING || order.getStatus() == OrderStatus.DELIVERED) {
+                    skipped.add(order.getTrackingNumber());
+                    continue;
+                }
+
+                order.setStatus(OrderStatus.PICKED_UP);
+                try { order.setDeliveredAt(java.time.LocalDateTime.now()); } catch (Exception ignored) {}
+                orderRepository.save(order);
+
+                OrderHistory history = new OrderHistory();
+                history.setOrder(order);
+                history.setFromOffice(order.getFromOffice());
+                history.setToOffice(order.getToOffice());
+                history.setShipment(shipment);
+                history.setAction(OrderHistoryActionType.PICKED_UP);
+                history.setNote("Nhân viên xác nhận đã lấy cho chuyến " + shipment.getCode());
+                orderHistoryRepository.save(history);
+
+                updated.add(order.getTrackingNumber());
+            }
+
+            shipmentRepository.save(shipment);
+
+            String message = "Cập nhật thành công: " + String.join(", ", updated);
+            if (!skipped.isEmpty()) message += "; Bỏ qua: " + String.join(", ", skipped);
+
+            return new ApiResponse<>(true, message, null);
         } catch (Exception e) {
             e.printStackTrace();
             return new ApiResponse<>(false, e.getMessage(), null);
@@ -187,10 +381,25 @@ public class ShipmentDriverService {
         try {
             Employee employee = getCurrentEmployee();
 
+            Office employeeOffice = employee.getOffice();
+
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
             Specification<Shipment> spec = (root, query, cb) -> {
-                return cb.equal(root.get("employee").get("id"), employee.getId());
+                // Hiển thị các chuyến đã gán cho driver hoặc chưa gán nhưng thuộc bưu cục của driver
+                var predicates = new ArrayList<Predicate>();
+                Predicate assignedToMe = cb.equal(root.get("employee").get("id"), employee.getId());
+                predicates.add(assignedToMe);
+
+                if (employeeOffice != null) {
+                    Predicate unassignedAndSameOffice = cb.and(
+                            cb.isNull(root.get("employee")),
+                            cb.equal(root.get("fromOffice").get("id"), employeeOffice.getId())
+                    );
+                    predicates.add(unassignedAndSameOffice);
+                }
+
+                return cb.or(predicates.toArray(new Predicate[0]));
             };
 
             Page<Shipment> shipmentPage = shipmentRepository.findAll(spec, pageable);
@@ -210,6 +419,13 @@ public class ShipmentDriverService {
                                     "id", shipment.getVehicle().getId(),
                                     "licensePlate", shipment.getVehicle().getLicensePlate(),
                                     "type", shipment.getVehicle().getType().name()
+                            ));
+                        }
+
+                        if (shipment.getEmployee() != null) {
+                            map.put("employee", Map.of(
+                                    "id", shipment.getEmployee().getId(),
+                                    "userId", shipment.getEmployee().getUser() != null ? shipment.getEmployee().getUser().getId() : null
                             ));
                         }
 
@@ -235,6 +451,7 @@ public class ShipmentDriverService {
                                     Map<String, Object> orderMap = new HashMap<>();
                                     orderMap.put("id", order.getId());
                                     orderMap.put("trackingNumber", order.getTrackingNumber());
+                                            orderMap.put("status", order.getStatus() != null ? order.getStatus().name() : null);
                                     if (order.getToOffice() != null) {
                                         orderMap.put("toOffice", Map.of(
                                                 "id", order.getToOffice().getId(),

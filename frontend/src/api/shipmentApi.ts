@@ -8,7 +8,8 @@ import { axiosExport } from "./exportClient";
 const shipmentApi = {
   // DRIVER
   async startShipment(shipmentId: number) {
-    await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/start`);
+    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/start`);
+    return res;
   },
 
   async finishShipment(payload: { shipmentId: number; status: "COMPLETED" | "CANCELLED" }) {
@@ -64,6 +65,19 @@ const shipmentApi = {
         recordedAt: string;
       }>,
     };
+  },
+
+  async claimShipment(shipmentId: number) {
+    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/claim`);
+    return res;
+  },
+  async markShipmentPickedUp(shipmentId: number) {
+    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/mark-picked-up`);
+    return res;
+  },
+  async pickupShipmentOrders(shipmentId: number, orderIds: number[]) {
+    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/pickup`, { orderIds });
+    return res;
   },
 
   // Manager

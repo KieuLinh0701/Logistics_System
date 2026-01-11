@@ -77,6 +77,12 @@ public class OrderShipperService {
         history.setToOffice(order.getToOffice());
         history.setShipment(null);
         history.setAction(action);
+        try {
+            Integer userId = SecurityUtils.getAuthenticatedUserId();
+            if (userId != null) {
+                note = (note != null ? note : "") + " (performedBy:userId=" + userId + ")";
+            }
+        } catch (Exception ignored) {}
         history.setNote(note);
         orderHistoryRepository.save(history);
     }
