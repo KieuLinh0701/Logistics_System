@@ -56,6 +56,9 @@ public class OrderShipperService {
     private IncidentReportRepository incidentReportRepository;
 
     @Autowired
+    private com.cloudinary.Cloudinary cloudinary;
+
+    @Autowired
     private OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
@@ -77,12 +80,6 @@ public class OrderShipperService {
         history.setToOffice(order.getToOffice());
         history.setShipment(null);
         history.setAction(action);
-        try {
-            Integer userId = SecurityUtils.getAuthenticatedUserId();
-            if (userId != null) {
-                note = (note != null ? note : "") + " (performedBy:userId=" + userId + ")";
-            }
-        } catch (Exception ignored) {}
         history.setNote(note);
         orderHistoryRepository.save(history);
     }
@@ -380,6 +377,30 @@ public class OrderShipperService {
         }
 
         return new ApiResponse<>(true, "Lấy thông tin đơn hàng thành công", mapOrderDetail(order));
+    }
+
+    public ApiResponse<Map<String, Object>> getOrderByTrackingNumber(String trackingNumber) {
+        Order order = orderRepository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+
+        boolean allowed = false;
+        if (order.getEmployee() != null && order.getEmployee().getId() != null) {
+            allowed = Objects.equals(order.getEmployee().getId(), employee.getId());
+        } else if (order.getToOffice() != null && officeId != null) {
+            allowed = Objects.equals(order.getToOffice().getId(), officeId);
+        }
+
+        if (!allowed) {
+            return new ApiResponse<>(false, "Không có quyền xem đơn hàng này", null);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", order.getId());
+        data.put("trackingNumber", order.getTrackingNumber());
+        return new ApiResponse<>(true, "Lấy đơn hàng theo mã vận đơn thành công", data);
     }
 
         @Transactional
@@ -870,6 +891,91 @@ public class OrderShipperService {
         }
 
         incident.setStatus(IncidentStatus.PENDING);
+
+        // Gán office dựa trên bản ghi employee hiện tại của shipper (role SHIPPER)
+        try {
+            List<Employee> employees = employeeRepository.findByUserId(shipperUser.getId());
+            Employee matched = employees.stream()
+                    .filter(e -> e.getAccountRole() != null && e.getAccountRole().getRole() != null
+                            && e.getAccountRole().getRole().getName() != null
+                            && e.getAccountRole().getRole().getName().equalsIgnoreCase("SHIPPER")
+                            && (e.getStatus() != null && (e.getStatus().name().equals("ACTIVE") || e.getStatus().name().equals("INACTIVE"))))
+                    .max((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                    .orElse(null);
+            if (matched != null) {
+                incident.setOffice(matched.getOffice());
+            }
+        } catch (Exception ex) {
+            System.err.println("Cảnh báo: không thể tra cứu văn phòng (office) của nhân viên shipper: " + ex.getMessage());
+        }
+
+        IncidentReport saved = incidentReportRepository.save(incident);
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", saved.getId());
+
+        return new ApiResponse<>(true, "Tạo báo cáo sự cố thành công", data);
+    }
+
+    @Transactional
+    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
+        Employee employee = getCurrentEmployee();
+        User shipperUser = employee.getUser();
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        IncidentReport incident = new IncidentReport();
+        incident.setOrder(order);
+        incident.setShipper(shipperUser);
+
+        if (incidentType != null) {
+            try {
+                incident.setIncidentType(com.logistics.enums.IncidentType.valueOf(incidentType.toUpperCase()));
+            } catch (Exception e) {
+                incident.setIncidentType(com.logistics.enums.IncidentType.OTHER);
+            }
+        } else {
+            incident.setIncidentType(com.logistics.enums.IncidentType.OTHER);
+        }
+
+        incident.setTitle(title);
+        incident.setDescription(description);
+
+        if (priority != null) {
+            try {
+                incident.setPriority(com.logistics.enums.IncidentPriority.valueOf(priority.toUpperCase()));
+            } catch (Exception e) {
+                incident.setPriority(com.logistics.enums.IncidentPriority.MEDIUM);
+            }
+        } else {
+            incident.setPriority(com.logistics.enums.IncidentPriority.MEDIUM);
+        }
+
+        incident.setStatus(com.logistics.enums.IncidentStatus.PENDING);
+
+        // upload images to Cloudinary
+        if (images != null && images.length > 0) {
+            List<String> urls = new ArrayList<>();
+            try {
+                for (org.springframework.web.multipart.MultipartFile f : images) {
+                    if (f != null && !f.isEmpty()) {
+                        try {
+                            com.cloudinary.utils.ObjectUtils a = null;
+                            @SuppressWarnings("unchecked")
+                            java.util.Map<String, Object> uploadResult = (java.util.Map<String, Object>) this.cloudinary.uploader().upload(f.getBytes(), com.cloudinary.utils.ObjectUtils.asMap("folder", "incident_reports", "resource_type", "image"));
+                            if (uploadResult != null && uploadResult.get("secure_url") != null) {
+                                urls.add(uploadResult.get("secure_url").toString());
+                            }
+                        } catch (Exception ex) {
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            if (!urls.isEmpty()) {
+                incident.setImages(urls);
+            }
+        }
 
         // Gán office dựa trên bản ghi employee hiện tại của shipper (role SHIPPER)
         try {

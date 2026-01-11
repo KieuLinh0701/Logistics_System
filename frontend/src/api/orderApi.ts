@@ -157,6 +157,11 @@ const orderApi = {
     return res.data as ShipperOrder;
   },
 
+  async getShipperOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<any>>(`/shipper/orders/tracking/${trackingNumber}`);
+    return res.data as { id?: number; trackingNumber?: string };
+  },
+
   async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string }) {
     await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
   },
@@ -225,8 +230,10 @@ const orderApi = {
   },
 
   // Report
-  async createShipperIncident(payload: { orderId: number; incidentType?: string; title: string; description?: string; priority?: string; images?: string[] }) {
-    await axiosClient.post<ApiResponse<any>>("/shipper/incident", payload);
+  async createShipperIncident(payload: FormData) {
+    await axiosClient.post<ApiResponse<any>>("/shipper/incident", payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
 
   async getShipperIncidents() {

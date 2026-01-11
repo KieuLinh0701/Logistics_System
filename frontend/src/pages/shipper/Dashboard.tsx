@@ -76,7 +76,10 @@ const ShipperDashboard: React.FC = () => {
       const res = await orderApi.getShipperDashboard();
       setStats(res.stats);
       const today = Array.isArray((res as any).todayOrders) ? (res as any).todayOrders : [];
-      setTodayOrders(today as ShipperOrder[]);
+      const filteredToday = (today as ShipperOrder[]).filter(
+        (o) => ((o?.status || "")?.toString().toUpperCase() !== "AT_ORIGIN_OFFICE")
+      );
+      setTodayOrders(filteredToday as ShipperOrder[]);
       setNotifications((res as any).notifications || []);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);

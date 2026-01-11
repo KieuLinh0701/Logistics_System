@@ -17,6 +17,7 @@ import {
   InputNumber,
   Input,
   Alert,
+  Select,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -44,8 +45,10 @@ const ShipperOrderDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [deliveryModal, setDeliveryModal] = useState(false);
   const [codModal, setCodModal] = useState(false);
+  const [failedModal, setFailedModal] = useState(false);
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
+  const [failedForm] = Form.useForm();
 
   useEffect(() => {
     if (id) {
@@ -145,11 +148,8 @@ const fetchOrderDetail = async () => {
   };
 
   const handleFailedDelivery = () => {
-    Modal.confirm({
-      title: "Xác nhận giao thất bại",
-      content: "Đơn hàng sẽ được chuyển sang trạng thái GIAO THẤT BẠI.",
-      onOk: () => updateDeliveryStatus("FAILED_DELIVERY", ""),
-    });
+    failedForm.resetFields();
+    setFailedModal(true);
   };
 
   const handleNavigateToRoute = () => {
@@ -505,6 +505,44 @@ const fetchOrderDetail = async () => {
           </Form.Item>
           <Form.Item name="notes" label="Ghi chú về giao hàng">
             <Input.TextArea rows={3} placeholder="Ghi chú về việc giao hàng (nếu có)" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: Giao thất bại (bắt buộc nhập lý do) */}
+      <Modal
+        title="Báo giao thất bại"
+        open={failedModal}
+        onOk={() => failedForm.submit()}
+        onCancel={() => setFailedModal(false)}
+        width={600}
+        okText="Xác nhận"
+      >
+        <Form
+          form={failedForm}
+          layout="vertical"
+          onFinish={(values: any) => {
+            const note = (values?.reason || "") + (values?.detail ? `: ${values.detail}` : "");
+            updateDeliveryStatus("FAILED_DELIVERY", note);
+            setFailedModal(false);
+          }}
+        >
+          <Form.Item
+            name="reason"
+            label="Lý do thất bại"
+            rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
+          >
+            <Select placeholder="Chọn lý do thất bại">
+              <Select.Option value="Người nhận không có mặt">Người nhận không có mặt</Select.Option>
+              <Select.Option value="Người nhận từ chối">Người nhận từ chối</Select.Option>
+              <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
+              <Select.Option value="Hàng hư hỏng">Hàng hư hỏng</Select.Option>
+              <Select.Option value="Khác">Khác</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="detail" label="Chi tiết (nếu có)">
+            <Input.TextArea rows={3} placeholder="Mô tả chi tiết lý do (tuỳ chọn)" />
           </Form.Item>
         </Form>
       </Modal>
