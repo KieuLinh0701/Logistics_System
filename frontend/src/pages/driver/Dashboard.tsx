@@ -4,6 +4,8 @@ import { TruckOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import orderApi from "../../api/orderApi";
 import shipmentApi from "../../api/shipmentApi";
 import { translateOrderStatus } from "../../utils/orderUtils";
+import { translateShipmentStatus } from "../../utils/shipmentUtils";
+import { formatAddress } from "../../utils/locationUtils";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -12,6 +14,9 @@ interface OfficeInfo {
   id: number;
   name: string;
   address?: string;
+  detail?: string;
+  cityCode?: number;
+  wardCode?: number;
 }
 
 interface Vehicle {
@@ -36,6 +41,7 @@ const DriverDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [vehicleId, setVehicleId] = useState<number | undefined>(undefined);
   const [activeShipment, setActiveShipment] = useState<any>(null);
+  const [formattedAddress, setFormattedAddress] = useState<string>("");
 
   useEffect(() => {
     loadContext();
@@ -48,6 +54,18 @@ const DriverDashboard: React.FC = () => {
       const res = await orderApi.getDriverContext();
       setOffice(res.office || null);
       setVehicles(Array.isArray(res.vehicles) ? res.vehicles : []);
+      
+      // Format địa chỉ nếu có office
+      if (res.office && res.office.detail && res.office.cityCode && res.office.wardCode) {
+        const formatted = await formatAddress(
+          res.office.detail,
+          res.office.wardCode,
+          res.office.cityCode
+        );
+        setFormattedAddress(formatted);
+      } else if (res.office && res.office.address) {
+        setFormattedAddress(res.office.address);
+      }
     } catch (e: any) {
       message.error("Không tải được thông tin driver");
     }
@@ -116,7 +134,7 @@ const DriverDashboard: React.FC = () => {
             <div>
               <Text strong>Chuyến hàng đang hoạt động: {activeShipment.code || `#${activeShipment.id}`}</Text>
               <br />
-              <Text type="secondary">Trạng thái: {activeShipment.status}</Text>
+              <Text type="secondary">Trạng thái: {translateShipmentStatus(activeShipment.status)}</Text>
             </div>
           </Space>
         </Card>
@@ -133,7 +151,7 @@ const DriverDashboard: React.FC = () => {
             {office ? (
               <Space direction="vertical">
                 <Text strong>{office.name}</Text>
-                {office.address && <Text type="secondary">{office.address}</Text>}
+                {formattedAddress && <Text type="secondary">{formattedAddress}</Text>}
               </Space>
             ) : (
               <Text>—</Text>

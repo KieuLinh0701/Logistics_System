@@ -11,6 +11,7 @@ import com.logistics.repository.*;
 import com.logistics.request.driver.PickUpRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.utils.LocationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.data.domain.Page;
@@ -289,17 +290,41 @@ public class OrderDriverService {
         if (office.getDetail() != null && !office.getDetail().isBlank()) {
             builder.append(office.getDetail());
         }
-        if (office.getWardCode() != null) {
+        if (office.getWardCode() != null && office.getCityCode() != null) {
+            String wardName = null;
+            try {
+                wardName = LocationUtils.getWardNameByCode(office.getCityCode(), office.getWardCode());
+            } catch (Exception e) {
+                // Will use fallback below
+            }
+            
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            builder.append("Phường ").append(office.getWardCode());
+            
+            if (wardName != null && !wardName.isEmpty()) {
+                builder.append(wardName);
+            } else {
+                builder.append("Phường ").append(office.getWardCode());
+            }
         }
         if (office.getCityCode() != null) {
+            String cityName = null;
+            try {
+                cityName = LocationUtils.getCityNameByCode(office.getCityCode());
+            } catch (Exception e) {
+                // Will use fallback below
+            }
+            
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            builder.append("TP ").append(office.getCityCode());
+            
+            if (cityName != null && !cityName.isEmpty()) {
+                builder.append(cityName);
+            } else {
+                builder.append("TP ").append(office.getCityCode());
+            }
         }
         return builder.toString();
     }
