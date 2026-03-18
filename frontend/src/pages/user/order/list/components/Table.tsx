@@ -119,7 +119,23 @@ const OrderTable: React.FC<Props> = ({
       dataIndex: "weight",
       key: "weight",
       align: "center",
-      render: (weight: number) => (weight || 0).toFixed(2)
+      render: (_: any, record: any) => {
+        const declared = (record.weight || 0).toFixed(2);
+        const adjusted = record.adjustedWeight?.toFixed(2);
+
+        // nếu có chỉnh
+        if (record.adjustedWeight != null) {
+          return (
+            <div>
+              <span className="custom-table-content-error">{adjusted}</span><br />
+              (<span className="text-muted custom-text-removed">{declared}</span>)
+            </div>
+          );
+        }
+
+        // nếu không chỉnh
+        return <span>{declared}</span>;
+      }
     },
     {
       title: "Thông tin giao hàng",

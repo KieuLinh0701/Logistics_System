@@ -21,6 +21,7 @@ public class UserOrderListDto {
     private AddressDto recipientAddress;
     private String pickupType;
     private BigDecimal weight;
+    private BigDecimal adjustedWeight;
     private String serviceTypeName;
     private Integer cod;
     private Integer orderValue;

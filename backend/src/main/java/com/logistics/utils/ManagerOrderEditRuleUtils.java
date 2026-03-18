@@ -53,40 +53,28 @@ public class ManagerOrderEditRuleUtils {
         map.put("senderDetailAddress", new EditableRule(null, null));
 
         // Người nhận
-        map.put("recipientName", new EditableRule(null, MANAGER_FINAL_STATUSES));
-        map.put("recipientPhoneNumber", new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("recipientName", new EditableRule(null, null));
+        map.put("recipientPhoneNumber", new EditableRule(null, null));
         map.put("recipientCityCode", new EditableRule(null, null));
-        map.put("recipientWardCode",
-                new EditableRule(
-                        EnumSet.of(
-                                OrderStatus.PENDING,
-                                OrderStatus.CONFIRMED,
-                                OrderStatus.READY_FOR_PICKUP
-                        ),
-                        null
-                )
-        );
-        map.put("recipientDetailAddress", new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("recipientWardCode",null);
+        map.put("recipientDetailAddress", new EditableRule(null, null));
 
         // Thông tin đơn hàng 
-        map.put("weight", new EditableRule(null, null));
+        map.put("weight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
         map.put("serviceType", new EditableRule(null, null));
         map.put("cod", new EditableRule(null, null));
         map.put("orderValue", new EditableRule(null, null));
         map.put("products", new EditableRule(null, null));
 
         // Lấy hàng
-        map.put("pickupType",
-                new EditableRule(EnumSet.of(OrderStatus.PENDING), null));
-        map.put("fromOffice",
-                new EditableRule(EnumSet.of(OrderStatus.PENDING), null));
+        map.put("pickupType", new EditableRule(null, null));
+        map.put("fromOffice", new EditableRule(null, null));
 
         // Người trả phí
         map.put("payer", new EditableRule(null, null));
 
         // Ghi chú
-        map.put("notes",
-                new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("notes", new EditableRule(null, null));
 
         // Khuyến mãi
         map.put("promotion", new EditableRule(null, null));

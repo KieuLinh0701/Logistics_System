@@ -405,6 +405,10 @@
   color:#D9381E !important;
 }
 
+.custom-text-removed {
+  text-decoration: line-through;
+}
+
 .custom-table-content-pending {
   font-weight: 450 !important;
   color: #096dd9 !important;

@@ -8,51 +8,38 @@ interface EditableRule {
 export const MANAGER_FINAL_STATUSES = ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED_DELIVERY'] as const;
 
 // Điều kiện sửa order của manager cho đơn do user tạo
+// Chỉ cho phép sửa weight khi gian lận
 export const MANAGER_EDIT_USER_ORDER_FIELD_RULES: Record<string, EditableRule> = {
-  // Người gửi
+  // Người gửi (KHÓA)
   senderName: { editableStatuses: [] },
   senderPhoneNumber: { editableStatuses: [] },
   senderCityCode: { editableStatuses: [] },
   senderWardCode: { editableStatuses: [] },
   senderDetailAddress: { editableStatuses: [] },
 
-  // Người nhận
-  recipientName: {
-    nonEditableStatuses: MANAGER_FINAL_STATUSES,
-  },
-  recipientPhoneNumber: {
-    nonEditableStatuses: MANAGER_FINAL_STATUSES,
-  },
+  // Người nhận (KHÓA)
+  recipientName: { editableStatuses: [] },
+  recipientPhoneNumber: { editableStatuses: [] },
   recipientCityCode: { editableStatuses: [] },
-  recipientWardCode: {
-    editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP'],
-  },
-  recipientDetailAddress: {
-    nonEditableStatuses: MANAGER_FINAL_STATUSES,
-  },
+  recipientWardCode: { editableStatuses: [] },
+  recipientDetailAddress: { editableStatuses: [] },
 
-  // Thông tin đơn hàng (KHÓA)
-  weight: { editableStatuses: [] },
+  // Thông tin đơn hàng
+  weight: { editableStatuses: ['PICKED_UP', 'AT_ORIGIN_OFFICE'] },
   serviceType: { editableStatuses: [] },
   cod: { editableStatuses: [] },
   orderValue: { editableStatuses: [] },
   products: { editableStatuses: [] },
 
-  // Lấy hàng
-  pickupType: {
-    editableStatuses: ['PENDING'],
-  },
-  fromOffice: {
-    editableStatuses: ['PENDING'],
-  },
+  // Lấy hàng (KHÓA)
+  pickupType: { editableStatuses: [] },
+  fromOffice: { editableStatuses: [] },
 
   // Người trả phí
   payer: { editableStatuses: [] },
 
   // Ghi chú
-  notes: {
-    nonEditableStatuses: MANAGER_FINAL_STATUSES,
-  },
+  notes: { editableStatuses: [] },
 
   promotion: { editableStatuses: [] },
 };

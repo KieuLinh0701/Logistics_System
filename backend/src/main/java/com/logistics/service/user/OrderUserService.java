@@ -729,9 +729,6 @@ public class OrderUserService {
             BigDecimal calcWeight = calculateWeight(request.getOrderProducts(), request.getWeight());
             int calcOrderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
 
-            System.out.println("weightRe" + calcWeight);
-            System.out.println("weightsYS" + order.getWeight());
-
             updateFieldIfEditable("weight", order.getWeight(), calcWeight, order, currentStatus, order::setWeight);
             updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, order, currentStatus,
                     order::setOrderValue);

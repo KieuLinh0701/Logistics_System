@@ -84,7 +84,7 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
         className="create-order-promotion-card promo-button"
         icon={selectedPromotion ? <TagOutlined /> : <GiftOutlined />}
         onClick={() => setShowPromoModal(true)}
-        disabled={ !canEditUserOrderField('promotion', status)}
+        disabled={!canEditUserOrderField('promotion', status)}
       >
         {selectedPromotion ? "Đổi mã khuyến mãi" : "Chọn mã khuyến mãi"}
       </Button>
@@ -98,13 +98,14 @@ const PromotionCard: React.FC<PromotionCardProps> = ({
             </Text>
             <div>{selectedPromotion.code}</div>
           </div>
-          {(!canEditUserOrderField('promotion', status)) && (<Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => setSelectedPromotion(null)}
-            aria-label="Xóa mã khuyến mãi"
-          />
+          {selectedPromotion && canEditUserOrderField('promotion', status) && (
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => setSelectedPromotion(null)}
+              aria-label="Xóa mã khuyến mãi"
+            />
           )}
         </div>
       )}
