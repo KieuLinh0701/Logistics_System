@@ -37,9 +37,7 @@ const DriverRoute: React.FC = () => {
     fetchRouteData();
   }, []);
 
-  // Start periodic tracking when routeInfo (active shipment) exists
   useEffect(() => {
-    // clear any previous interval
     if (trackingIntervalRef.current) {
       window.clearInterval(trackingIntervalRef.current);
       trackingIntervalRef.current = null;
@@ -72,7 +70,7 @@ const DriverRoute: React.FC = () => {
       );
     };
 
-    // send immediately, then every 5 seconds
+    // gửi vị trí mỗi 5s
     sendPosition();
     const id = window.setInterval(sendPosition, 5000);
     trackingIntervalRef.current = id;
@@ -116,7 +114,7 @@ const DriverRoute: React.FC = () => {
         return;
       }
 
-      let destination = encodeURIComponent(stops[stops.length - 1]);
+      const destination = encodeURIComponent(stops[stops.length - 1]);
       let waypoints = "";
 
       if (stops.length > 1) {
@@ -265,7 +263,7 @@ const DriverRoute: React.FC = () => {
                   return;
                 }
 
-                let destination = encodeURIComponent(stops[stops.length - 1]);
+                const destination = encodeURIComponent(stops[stops.length - 1]);
                 let waypoints = "";
 
                 if (stops.length > 1) {
@@ -290,8 +288,28 @@ const DriverRoute: React.FC = () => {
               let src = `https://www.google.com/maps?q=Vietnam&output=embed`;
               if (first) {
                 const anyFirst = first as any;
-                const lat = anyFirst.latitude ?? anyFirst.lat ?? anyFirst.officeLatitude ?? null;
-                const lng = anyFirst.longitude ?? anyFirst.lng ?? anyFirst.officeLongitude ?? null;
+                const latRaw =
+                  anyFirst.latitude ??
+                  anyFirst.lat ??
+                  anyFirst.officeLatitude ??
+                  null;
+
+                const lngRaw =
+                  anyFirst.longitude ??
+                  anyFirst.lng ??
+                  anyFirst.officeLongitude ??
+                  null;
+
+                const toNumber = (v: unknown): number | null => {
+                  if (typeof v === "number") return v;
+                  if (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))) {
+                    return Number(v);
+                  }
+                  return null;
+                };
+
+                const lat = toNumber(latRaw);
+                const lng = toNumber(lngRaw);
                 if (lat != null && lng != null) {
                   src = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
                 } else if (first.officeAddress) {

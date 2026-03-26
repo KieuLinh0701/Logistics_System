@@ -247,33 +247,6 @@ const orderApi = {
     return res.data;
   },
 
-  // DRIVER
-  async getDriverContext() {
-    const res = await axiosClient.get<ApiResponse<any>>("/driver/orders/context");
-    const data = res.data || {};
-    return {
-      office: data.office || null,
-      vehicles: data.vehicles || [],
-    };
-  },
-
-  async getDriverPendingOrders(params: { page?: number; limit?: number }) {
-    const res = await axiosClient.get<ApiResponse<any>>("/driver/orders/pending", { params });
-    const data = res.data || {};
-    return {
-      orders: (data.orders || []) as any[],
-      pagination: data.pagination || { page: 1, limit: 10, total: 0 },
-    };
-  },
-
-  async driverPickUp(payload: { vehicleId?: number; orderIds: number[] }) {
-    const res = await axiosClient.post<ApiResponse<any>>(
-      "/driver/orders/pickup",
-      payload
-    );
-    return res.data;
-  },
-
   // Manager
   async listManagerOrders(params: ManagerOrderSearchRequest) {
     const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders", { params });

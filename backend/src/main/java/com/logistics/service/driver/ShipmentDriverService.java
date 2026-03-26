@@ -85,28 +85,14 @@ public class ShipmentDriverService {
                 return new ApiResponse<>(false, "Chuyến hàng không ở trạng thái PENDING", null);
             }
 
-            // Lấy danh sách orders rồi kiểm tra toàn bộ trạng thái trước khi cập nhật
+            // Lấy danh sách orders cho shipment và cập nhật shipment -> IN_TRANSIT
             List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
-            List<String> notPicked = new ArrayList<>();
-            for (ShipmentOrder so : shipmentOrders) {
-                Order order = so.getOrder();
-                if (order.getStatus() != OrderStatus.PICKED_UP) {
-                    notPicked.add(order.getTrackingNumber());
-                }
-            }
-
-            if (!notPicked.isEmpty()) {
-                String joined = String.join(", ", notPicked);
-                return new ApiResponse<>(false,
-                        "Không thể bắt đầu chuyến: các đơn sau chưa được xác nhận đã lấy (PICKED_UP): " + joined,
-                        null);
-            }
 
             shipment.setStatus(ShipmentStatus.IN_TRANSIT);
             shipment.setStartTime(LocalDateTime.now());
             shipmentRepository.save(shipment);
 
-            // Cập nhật trạng thái đơn hàng từ PICKED_UP -> IN_TRANSIT
+            // Cập nhật trạng thái tất cả đơn trong shipment -> IN_TRANSIT
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
                 order.setStatus(OrderStatus.IN_TRANSIT);
@@ -130,187 +116,7 @@ public class ShipmentDriverService {
         }
     }
 
-    @Transactional
-    public ApiResponse<String> claimShipment(Integer shipmentId) {
-        try {
-            Employee employee = getCurrentEmployee();
-
-            Shipment shipment = shipmentRepository.findById(shipmentId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
-
-            if (shipment.getEmployee() != null) {
-                return new ApiResponse<>(false, "Chuyến hàng đã được gán", null);
-            }
-
-            if (shipment.getStatus() != ShipmentStatus.PENDING) {
-                return new ApiResponse<>(false, "Chuyến hàng không ở trạng thái PENDING", null);
-            }
-
-            Office office = employee.getOffice();
-            if (office == null || shipment.getFromOffice() == null || !office.getId().equals(shipment.getFromOffice().getId())) {
-                return new ApiResponse<>(false, "Bạn chỉ có thể nhận chuyến thuộc bưu cục của bạn", null);
-            }
-
-            shipment.setEmployee(employee);
-            shipmentRepository.save(shipment);
-
-            if (employee.getUser() != null) {
-                notificationService.create(
-                        "Bạn được gán chuyến hàng",
-                        "Bạn đã nhận chuyến " + shipment.getCode(),
-                        "shipment",
-                        employee.getUser().getId(),
-                        null,
-                        "shipments",
-                        shipment.getCode());
-            }
-
-            return new ApiResponse<>(true, "Nhận chuyến thành công", null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
-    }
-
-    @Transactional
-    public ApiResponse<String> markShipmentPickedUp(Integer shipmentId) {
-        try {
-            Employee employee = getCurrentEmployee();
-
-            Shipment shipment = shipmentRepository.findById(shipmentId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
-
-            if (shipment.getStatus() != ShipmentStatus.PENDING) {
-                return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy cho chuyến ở trạng thái PENDING", null);
-            }
-
-            Office office = employee.getOffice();
-            if (office == null || shipment.getFromOffice() == null || !office.getId().equals(shipment.getFromOffice().getId())) {
-                return new ApiResponse<>(false, "Bạn chỉ có thể xác nhận cho chuyến thuộc bưu cục của bạn", null);
-            }
-
-            // Gán nhân viên nếu chưa có
-            if (shipment.getEmployee() == null) {
-                shipment.setEmployee(employee);
-            } else if (!shipment.getEmployee().getId().equals(employee.getId())) {
-                return new ApiResponse<>(false, "Chuyến đã được gán cho người khác", null);
-            }
-
-            // Lấy danh sách đơn và đặt trạng thái PICKED_UP
-            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
-            for (ShipmentOrder so : shipmentOrders) {
-                Order order = so.getOrder();
-                // Only update if not already PICKED_UP or beyond
-                if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.IN_TRANSIT && order.getStatus() != OrderStatus.DELIVERING && order.getStatus() != OrderStatus.DELIVERED) {
-                    order.setStatus(OrderStatus.PICKED_UP);
-                    try { order.setDeliveredAt(java.time.LocalDateTime.now()); } catch (Exception ignored) {}
-                    orderRepository.save(order);
-
-                    // Ghi OrderHistory
-                    OrderHistory history = new OrderHistory();
-                    history.setOrder(order);
-                    history.setFromOffice(order.getFromOffice());
-                    history.setToOffice(order.getToOffice());
-                    history.setShipment(shipment);
-                    history.setAction(OrderHistoryActionType.PICKED_UP);
-                    history.setNote("Driver xác nhận đã lấy hàng cho chuyến " + shipment.getCode());
-                    orderHistoryRepository.save(history);
-                }
-            }
-
-            shipmentRepository.save(shipment);
-
-            // Notify
-            if (employee.getUser() != null) {
-                notificationService.create(
-                        "Xác nhận đã lấy hàng",
-                        "Bạn đã xác nhận lấy hàng cho chuyến " + shipment.getCode(),
-                        "shipment",
-                        employee.getUser().getId(),
-                        null,
-                        "shipments",
-                        shipment.getCode()
-                );
-            }
-
-            return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
-    }
-
-    @Transactional
-    public ApiResponse<String> pickupShipmentOrders(Integer shipmentId, List<Integer> orderIds) {
-        try {
-            Employee employee = getCurrentEmployee();
-
-            Shipment shipment = shipmentRepository.findById(shipmentId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chuyến hàng"));
-
-            if (shipment.getStatus() != ShipmentStatus.PENDING) {
-                return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy cho chuyến ở trạng thái PENDING", null);
-            }
-
-            Office office = employee.getOffice();
-            if (office == null || shipment.getFromOffice() == null || !office.getId().equals(shipment.getFromOffice().getId())) {
-                return new ApiResponse<>(false, "Bạn chỉ có thể xác nhận cho chuyến thuộc bưu cục của bạn", null);
-            }
-
-            // Gán nhân viên nếu chưa có
-            if (shipment.getEmployee() == null) {
-                shipment.setEmployee(employee);
-            } else if (!shipment.getEmployee().getId().equals(employee.getId())) {
-                return new ApiResponse<>(false, "Chuyến đã được gán cho người khác", null);
-            }
-
-            // Build map of shipment orders for quick lookup
-            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
-            Map<Integer, ShipmentOrder> byOrderId = shipmentOrders.stream().collect(Collectors.toMap(so -> so.getOrder().getId(), so -> so));
-
-            List<String> updated = new ArrayList<>();
-            List<String> skipped = new ArrayList<>();
-
-            for (Integer oid : orderIds) {
-                if (!byOrderId.containsKey(oid)) {
-                    skipped.add("#" + oid);
-                    continue;
-                }
-                Order order = byOrderId.get(oid).getOrder();
-                if (order.getStatus() == OrderStatus.PICKED_UP || order.getStatus() == OrderStatus.IN_TRANSIT || order.getStatus() == OrderStatus.DELIVERING || order.getStatus() == OrderStatus.DELIVERED) {
-                    skipped.add(order.getTrackingNumber());
-                    continue;
-                }
-
-                order.setStatus(OrderStatus.PICKED_UP);
-                try { order.setDeliveredAt(java.time.LocalDateTime.now()); } catch (Exception ignored) {}
-                orderRepository.save(order);
-
-                OrderHistory history = new OrderHistory();
-                history.setOrder(order);
-                history.setFromOffice(order.getFromOffice());
-                history.setToOffice(order.getToOffice());
-                history.setShipment(shipment);
-                history.setAction(OrderHistoryActionType.PICKED_UP);
-                history.setNote("Nhân viên xác nhận đã lấy cho chuyến " + shipment.getCode());
-                orderHistoryRepository.save(history);
-
-                updated.add(order.getTrackingNumber());
-            }
-
-            shipmentRepository.save(shipment);
-
-            String message = "Cập nhật thành công: " + String.join(", ", updated);
-            if (!skipped.isEmpty()) message += "; Bỏ qua: " + String.join(", ", skipped);
-
-            return new ApiResponse<>(true, message, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
-    }
-
-    @Transactional
+    
     public ApiResponse<String> finishShipment(FinishShipmentRequest request) {
         try {
             Employee employee = getCurrentEmployee();
@@ -445,23 +251,22 @@ public class ShipmentDriverService {
                         }
 
                         // Lấy danh sách đơn hàng
-                        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
-                        List<Map<String, Object>> orders = shipmentOrders.stream()
-                                .map(so -> {
-                                    Order order = so.getOrder();
-                                    Map<String, Object> orderMap = new HashMap<>();
-                                    orderMap.put("id", order.getId());
-                                    orderMap.put("trackingNumber", order.getTrackingNumber());
-                                            orderMap.put("status", order.getStatus() != null ? order.getStatus().name() : null);
-                                    if (order.getToOffice() != null) {
-                                        orderMap.put("toOffice", Map.of(
-                                                "id", order.getToOffice().getId(),
-                                                "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
-                                        ));
-                                    }
-                                    return orderMap;
-                                })
-                                .collect(Collectors.toList());
+                        List<ShipmentOrder> soList = shipmentOrderRepository.findByShipmentId(shipment.getId());
+                        List<Map<String, Object>> orders = soList.stream().map(so -> {
+                            Order order = so.getOrder();
+                            Map<String, Object> om = new HashMap<>();
+                            om.put("id", order.getId());
+                            om.put("trackingNumber", order.getTrackingNumber());
+                            om.put("status", order.getStatus() != null ? order.getStatus().name() : null);
+                            if (order.getToOffice() != null) {
+                                om.put("toOffice", Map.of(
+                                        "id", order.getToOffice().getId(),
+                                        "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
+                                ));
+                            }
+                            return om;
+                        }).collect(Collectors.toList());
+
                         map.put("orders", orders);
                         map.put("orderCount", orders.size());
 
@@ -653,25 +458,25 @@ public class ShipmentDriverService {
                             ));
                         }
 
-                        // Lấy danh sách đơn hàng
-                        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
-                        List<Map<String, Object>> orders = shipmentOrders.stream()
-                                .map(so -> {
-                                    Order order = so.getOrder();
-                                    Map<String, Object> orderMap = new HashMap<>();
-                                    orderMap.put("id", order.getId());
-                                    orderMap.put("trackingNumber", order.getTrackingNumber());
-                                    if (order.getToOffice() != null) {
-                                        orderMap.put("toOffice", Map.of(
-                                                "id", order.getToOffice().getId(),
-                                                "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
-                                        ));
-                                    }
-                                    return orderMap;
-                                })
-                                .collect(Collectors.toList());
-                        map.put("orders", orders);
-                        map.put("orderCount", orders.size());
+                        // Trả chi tiết đơn ở dạng read-only cho driver trong lịch sử
+                        List<ShipmentOrder> soListHist = shipmentOrderRepository.findByShipmentId(shipment.getId());
+                        List<Map<String, Object>> ordersHist = soListHist.stream().map(so -> {
+                            Order order = so.getOrder();
+                            Map<String, Object> om = new HashMap<>();
+                            om.put("id", order.getId());
+                            om.put("trackingNumber", order.getTrackingNumber());
+                            om.put("status", order.getStatus() != null ? order.getStatus().name() : null);
+                            if (order.getToOffice() != null) {
+                                om.put("toOffice", Map.of(
+                                        "id", order.getToOffice().getId(),
+                                        "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
+                                ));
+                            }
+                            return om;
+                        }).collect(Collectors.toList());
+
+                        map.put("orders", ordersHist);
+                        map.put("orderCount", ordersHist.size());
 
                         return map;
                     })
@@ -709,8 +514,7 @@ public class ShipmentDriverService {
                 return new ApiResponse<>(false, "Chuyến hàng không có phương tiện", null);
             }
 
-            // Thay vì tạo nhiều bản ghi, cập nhật bản ghi tracking gần nhất cho shipment này (nếu có),
-            // mục tiêu: chỉ giữ 1 bản ghi đang được cập nhật liên tục
+            // Cập nhật bản ghi tracking gần nhất cho shipment này (nếu có)
             List<VehicleTracking> existing = vehicleTrackingRepository.findByShipmentIdOrderByRecordedAtDesc(shipment.getId());
             if (existing != null && !existing.isEmpty()) {
                 VehicleTracking t = existing.get(0);

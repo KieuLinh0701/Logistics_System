@@ -73,7 +73,6 @@ import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 
 // Driver
 import DriverDashboard from "./pages/driver/Dashboard";
-import DriverOrders from "./pages/driver/Orders";
 import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
@@ -173,7 +172,6 @@ const App: React.FC = () => {
             <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
 
             {/* Driver routes */}
-            <Route path="/driver/orders" element={<PrivateRoute allowedRoles={['driver']}><DriverOrders /></PrivateRoute>} />
             <Route path="/driver/shipments" element={<PrivateRoute allowedRoles={['driver']}><DriverShipments /></PrivateRoute>} />
             <Route path="/driver/route" element={<PrivateRoute allowedRoles={['driver']}><DriverRoute /></PrivateRoute>} />
             <Route path="/driver/history" element={<PrivateRoute allowedRoles={['driver']}><DriverHistory /></PrivateRoute>} />

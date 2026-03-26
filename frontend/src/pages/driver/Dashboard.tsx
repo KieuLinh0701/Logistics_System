@@ -1,14 +1,48 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, List, Tag, Button, Space, Typography, message, Table, Select } from "antd";
-import { TruckOutlined, EnvironmentOutlined } from "@ant-design/icons";
-import orderApi from "../../api/orderApi";
+import { Card, Row, Col, Statistic, Space, Typography, Table, Tag } from "antd";
+import { TruckOutlined, EnvironmentOutlined, ClockCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
-import { translateOrderStatus } from "../../utils/orderUtils";
 import { translateShipmentStatus } from "../../utils/shipmentUtils";
-import { formatAddress } from "../../utils/locationUtils";
+
+function translateVehicleStatus(status: string) {
+  if (!status) return '';
+  switch (status.toUpperCase()) {
+    case 'AVAILABLE':
+      return 'Sẵn sàng';
+    case 'IN_USE':
+      return 'Đang sử dụng';
+    case 'MAINTENANCE':
+      return 'Bảo trì';
+    default:
+      return status;
+  }
+}
+
+function getShipmentTagColor(status: string) {
+  switch ((status || "").toUpperCase()) {
+    case "READY_FOR_PICKUP":
+      return "gold";
+    case "PENDING":
+      return "default";
+    case "CONFIRMED":
+    case "AT_DEST_OFFICE":
+      return "blue";
+    case "PICKED_UP":
+      return "orange";
+    case "IN_TRANSIT":
+    case "DELIVERING":
+      return "processing";
+    case "DELIVERED":
+      return "success";
+    case "FAILED_DELIVERY":
+    case "RETURNED":
+      return "error";
+    default:
+      return "default";
+  }
+}
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 interface OfficeInfo {
   id: number;
@@ -27,114 +61,99 @@ interface Vehicle {
   status: string;
 }
 
-interface OrderItem {
-  id: number;
-  trackingNumber: string;
-  toOffice?: { id: number; name: string };
-  serviceType?: { id: number; name: string };
+
+interface ShipmentSummary {
+  id?: number;
+  code?: string;
+  status?: string;
+  fromOffice?: { name?: string };
+  toOffice?: { name?: string };
 }
 
 const DriverDashboard: React.FC = () => {
+  const [activeShipment, setActiveShipment] = useState<ShipmentSummary | null>(null);
   const [office, setOffice] = useState<OfficeInfo | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [vehicleId, setVehicleId] = useState<number | undefined>(undefined);
-  const [activeShipment, setActiveShipment] = useState<any>(null);
-  const [formattedAddress, setFormattedAddress] = useState<string>("");
+  const [stats, setStats] = useState({ pending: 0, inTransit: 0, completed: 0 });
+  const [recentShipments, setRecentShipments] = useState<ShipmentSummary[]>([]);
 
   useEffect(() => {
-    loadContext();
-    loadOrders();
-    loadActiveShipment();
+    (async () => {
+      try {
+        const res = await shipmentApi.getDriverRoute();
+        if (res.routeInfo) setActiveShipment(res.routeInfo);
+      } catch {
+        // ignore
+      }
+    })();
+    (async () => {
+      try {
+        const ctx = await shipmentApi.getDriverContext();
+        if (ctx.office) setOffice(ctx.office);
+        if (Array.isArray(ctx.vehicles)) setVehicles(ctx.vehicles);
+      } catch {
+        // ignore
+      }
+    })();
+
+    (async () => {
+      try {
+        const shipRes = await shipmentApi.getDriverShipments({ page: 1, limit: 10 });
+        const historyRes = await shipmentApi.getDriverHistory({ page: 1, limit: 10 });
+        const current = (shipRes.shipments || []) as ShipmentSummary[];
+        const history = (historyRes.shipments || []) as ShipmentSummary[];
+        const pending = current.filter(s => (s.status || '').toString().toUpperCase() === 'PENDING').length;
+        const inTransit = current.filter(s => (s.status || '').toString().toUpperCase() === 'IN_TRANSIT').length;
+        const completed = history.filter(s => (s.status || '').toString().toUpperCase() === 'COMPLETED').length;
+        setStats({ pending, inTransit, completed });
+        const combined = [...current, ...history];
+        const seen = new Set<number>();
+        const deduped: ShipmentSummary[] = [];
+        for (const s of combined) {
+          if (!s || s.id == null) continue;
+          if (!seen.has(s.id)) {
+            seen.add(s.id);
+            deduped.push(s);
+          }
+        }
+        setRecentShipments(deduped.slice(0, 8));
+      } catch {
+        // ignore
+      }
+    })();
   }, []);
-
-  const loadContext = async () => {
-    try {
-      const res = await orderApi.getDriverContext();
-      setOffice(res.office || null);
-      setVehicles(Array.isArray(res.vehicles) ? res.vehicles : []);
-      
-      // Format địa chỉ nếu có office
-      if (res.office && res.office.detail && res.office.cityCode && res.office.wardCode) {
-        const formatted = await formatAddress(
-          res.office.detail,
-          res.office.wardCode,
-          res.office.cityCode
-        );
-        setFormattedAddress(formatted);
-      } else if (res.office && res.office.address) {
-        setFormattedAddress(res.office.address);
-      }
-    } catch (e: any) {
-      message.error("Không tải được thông tin driver");
-    }
-  };
-
-  const loadOrders = async () => {
-    try {
-      setLoading(true);
-      const res = await orderApi.getDriverPendingOrders({ page: 1, limit: 50 });
-      setOrders(Array.isArray(res.orders) ? res.orders : []);
-    } catch (e: any) {
-      message.error("Không tải được danh sách đơn");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadActiveShipment = async () => {
-    try {
-      const res = await shipmentApi.getDriverRoute();
-      if (res.routeInfo) {
-        setActiveShipment(res.routeInfo);
-      }
-    } catch (e: any) {
-      // Không có chuyến đang hoạt động
-    }
-  };
-
-  const handlePickup = async () => {
-    try {
-      if (!orders.length) return message.info("Không có đơn để nhận");
-      const orderIds = orders.map((o) => o.id);
-      await orderApi.driverPickUp({ vehicleId, orderIds });
-      message.success("Đã nhận hàng, tạo chuyến Pending");
-      loadOrders();
-      loadActiveShipment();
-    } catch (e: any) {
-      message.error(e?.message || "Lỗi nhận hàng");
-    }
-  };
-
-  const columns = [
-    { title: "Mã đơn", dataIndex: "trackingNumber", key: "trackingNumber" },
-    {
-      title: "Đến bưu cục",
-      key: "toOffice",
-      render: (_: any, r: OrderItem) => r.toOffice?.name || "-",
-    },
-    {
-      title: "Dịch vụ",
-      key: "serviceType",
-      render: (_: any, r: OrderItem) => r.serviceType?.name || "-",
-    },
-  ];
-
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={2}>Dashboard Tài Xế</Title>
+    <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ color: "#1C3D90" }}>Dashboard Tài Xế</Title>
+      </div>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={8} lg={8}>
+          <Card style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+            <Statistic title="Chuyến chờ" value={stats.pending} prefix={<ClockCircleOutlined />} valueStyle={{ color: '#1890ff' }} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8} lg={8}>
+          <Card style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+            <Statistic title="Đang vận chuyển" value={stats.inTransit} prefix={<TruckOutlined />} valueStyle={{ color: '#faad14' }} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8} lg={8}>
+          <Card style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+            <Statistic title="Hoàn thành" value={stats.completed} prefix={<CheckCircleOutlined />} valueStyle={{ color: '#52c41a' }} />
+          </Card>
+        </Col>
+      </Row>
 
       {activeShipment && (
-        <Card
-          style={{ marginBottom: 16, background: "#e6f7ff", border: "1px solid #91d5ff" }}
-        >
+        <Card style={{ marginBottom: 16, background: "#e6f7ff", border: "1px solid #91d5ff" }}>
           <Space>
             <TruckOutlined style={{ fontSize: 24, color: "#1890ff" }} />
             <div>
-              <Text strong>Chuyến hàng đang hoạt động: {activeShipment.code || `#${activeShipment.id}`}</Text>
+              <Text strong>Chuyến hàng đang hoạt động: {activeShipment.code || `#${activeShipment.id ?? ''}`}</Text>
               <br />
-              <Text type="secondary">Trạng thái: {translateShipmentStatus(activeShipment.status)}</Text>
+              <Text type="secondary">Trạng thái: <Tag color={getShipmentTagColor(activeShipment.status || '')}>{translateShipmentStatus(activeShipment.status || '')}</Tag></Text>
             </div>
           </Space>
         </Card>
@@ -142,76 +161,53 @@ const DriverDashboard: React.FC = () => {
 
       <Row gutter={16}>
         <Col span={10}>
-          <Card title={(
+          <Card style={{ marginBottom: 12 }} title={(
             <Space>
               <EnvironmentOutlined />
               <span>Văn phòng làm việc</span>
             </Space>
           )}>
             {office ? (
-              <Space direction="vertical">
-                <Text strong>{office.name}</Text>
-                {formattedAddress && <Text type="secondary">{formattedAddress}</Text>}
-              </Space>
+              <div>
+                <Text strong style={{ color: '#111' }}>{office.name}</Text>
+                <br />
+                <Text type="secondary">{office.address || office.detail || ""}</Text>
+              </div>
             ) : (
-              <Text>—</Text>
+              <Text style={{ color: '#333' }}>Thông tin văn phòng được quản lý bởi bưu cục/quản lý. Vui lòng liên hệ quản lý để nhận hàng.</Text>
             )}
           </Card>
 
-          <Card title="Phương tiện tại văn phòng" style={{ marginTop: 16 }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Select
-                allowClear
-                placeholder="Chọn phương tiện cho chuyến đi"
-                style={{ width: "100%" }}
-                value={vehicleId}
-                onChange={(v) => setVehicleId(v)}
-              >
-                {vehicles.map((v) => (
-                  <Option key={v.id} value={v.id}>
-                    {v.licensePlate} - {v.type} - {v.capacity}kg
-                  </Option>
-                ))}
-              </Select>
-              <List
-                dataSource={vehicles}
-                renderItem={(v) => (
-                  <List.Item>
-                    <Space>
-                      <Text strong>{v.licensePlate}</Text>
-                      <Tag>{v.type}</Tag>
-                      <Tag color="blue">{v.capacity}kg</Tag>
-                      <Tag color={v.status === "AVAILABLE" ? "green" : "orange"}>
-                        {v.status}
-                      </Tag>
-                    </Space>
-                  </List.Item>
-                )}
-              />
+          <Card title={(
+            <Space>
+              <TruckOutlined />
+              <span>Phương tiện</span>
             </Space>
+          )}>
+            {vehicles.length === 0 ? (
+              <Text type="secondary">Không có phương tiện khả dụng</Text>
+            ) : (
+              <ul style={{ marginTop: 8, paddingLeft: 18 }}>
+                {vehicles.map((v, idx) => (
+                  <li key={`${v.id}-${idx}`}><Text strong style={{ color: '#111' }}>{v.licensePlate}</Text>{` — ${v.type} `}{v.status ? <Text type="secondary">({translateVehicleStatus(v.status)})</Text> : null}</li>
+                ))}
+              </ul>
+            )}
           </Card>
         </Col>
         <Col span={14}>
-          <Card
-            title="Đơn cần nhận"
-            extra={<Button onClick={loadOrders}>Tải lại</Button>}
-          >
+          <Card title="Chuyến vận chuyển">
             <Table
-              rowKey="id"
-              columns={columns}
-              dataSource={orders}
-              loading={loading}
+              rowKey={(r: ShipmentSummary, index?: number) => `${r.id ?? ''}-${index ?? 0}`}
+              dataSource={recentShipments}
               pagination={false}
+              columns={[
+                { title: 'Mã chuyến', dataIndex: 'code', key: 'code', render: (t: string, r: ShipmentSummary) => t || `#${r.id ?? ''}` },
+                { title: 'Từ', dataIndex: ['fromOffice', 'name'], key: 'fromOffice' },
+                { title: 'Đến', dataIndex: ['toOffice', 'name'], key: 'toOffice' },
+                { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s?: string) => <Tag>{translateShipmentStatus(s || '')}</Tag> }
+              ]}
             />
-            <div style={{ marginTop: 12 }}>
-              <Button
-                type="primary"
-                onClick={handlePickup}
-                disabled={!orders.length}
-              >
-                Xác nhận nhận hàng
-              </Button>
-            </div>
           </Card>
         </Col>
       </Row>

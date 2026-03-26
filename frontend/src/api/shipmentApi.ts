@@ -35,6 +35,15 @@ const shipmentApi = {
     };
   },
 
+  async getDriverContext() {
+    const res = await axiosClient.get<ApiResponse<any>>("/driver/context");
+    const data = res.data || {};
+    return {
+      office: data.office || null,
+      vehicles: data.vehicles || [],
+    };
+  },
+
   async getDriverHistory(params: { page?: number; limit?: number }) {
     const res = await axiosClient.get<ApiResponse<any>>("/driver/shipments/history", { params });
     const data = res.data || {};
@@ -65,19 +74,6 @@ const shipmentApi = {
         recordedAt: string;
       }>,
     };
-  },
-
-  async claimShipment(shipmentId: number) {
-    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/claim`);
-    return res;
-  },
-  async markShipmentPickedUp(shipmentId: number) {
-    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/mark-picked-up`);
-    return res;
-  },
-  async pickupShipmentOrders(shipmentId: number, orderIds: number[]) {
-    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/pickup`, { orderIds });
-    return res;
   },
 
   // Manager
