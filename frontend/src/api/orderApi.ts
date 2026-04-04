@@ -162,6 +162,27 @@ const orderApi = {
     return res.data as { id?: number; trackingNumber?: string };
   },
 
+  // Partial delivery APIs for shipper
+  async startPartialDelivery(orderId: number) {
+    const res = await axiosClient.get<ApiResponse<any>>(`/shipper/orders/${orderId}/partial-start`);
+    return res.data;
+  },
+
+  async markProductDelivered(orderProductId: number, deliveredQuantity: number) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/order-products/${orderProductId}/delivered`, { deliveredQuantity });
+    return res.data;
+  },
+
+  async markProductReturned(orderProductId: number, returnedQuantity: number, reason?: string) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/order-products/${orderProductId}/returned`, { returnedQuantity, reason });
+    return res.data;
+  },
+
+  async finishPartialDelivery(orderId: number) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/partial-finish`);
+    return res.data;
+  },
+
   async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string }) {
     await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
   },

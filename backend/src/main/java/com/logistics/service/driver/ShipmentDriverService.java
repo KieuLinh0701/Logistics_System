@@ -1,6 +1,13 @@
 package com.logistics.service.driver;
 
-import com.logistics.entity.*;
+import com.logistics.entity.Shipment;
+import com.logistics.entity.ShipmentOrder;
+import com.logistics.entity.Order;
+import com.logistics.entity.OrderHistory;
+import com.logistics.entity.Vehicle;
+import com.logistics.entity.VehicleTracking;
+import com.logistics.entity.Employee;
+import com.logistics.entity.Office;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.ShipmentStatus;
@@ -12,6 +19,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
 import com.logistics.utils.LocationUtils;
 import com.logistics.service.common.NotificationService;
+import com.logistics.service.assignment.AutoAssignService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,7 +48,7 @@ public class ShipmentDriverService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private com.logistics.service.assignment.AutoAssignService autoAssignService;
+    private AutoAssignService autoAssignService;
 
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
@@ -341,15 +349,17 @@ public class ShipmentDriverService {
             Map<Integer, Map<String, Object>> officeGroups = new HashMap<>();
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                if (order.getToOffice() == null) continue;
+                // Nếu order.toOffice là null thì dùng shipment.toOffice (một số chuyến có thể chỉ có 1 bưu cục đích)
+                Office targetOffice = order.getToOffice() != null ? order.getToOffice() : activeShipment.getToOffice();
+                if (targetOffice == null) continue;
 
-                Integer officeId = order.getToOffice().getId();
+                Integer officeId = targetOffice.getId();
                 officeGroups.computeIfAbsent(officeId, k -> {
                     Map<String, Object> group = new HashMap<>();
                     group.put("office", Map.of(
-                            "id", order.getToOffice().getId(),
-                            "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : "",
-                            "address", buildOfficeAddress(order.getToOffice())
+                            "id", targetOffice.getId(),
+                            "name", targetOffice.getName() != null ? targetOffice.getName() : "",
+                            "address", buildOfficeAddress(targetOffice)
                     ));
                     group.put("orders", new ArrayList<>());
                     return group;
@@ -596,14 +606,14 @@ public class ShipmentDriverService {
             try {
                 wardName = LocationUtils.getWardNameByCode(office.getCityCode(), office.getWardCode());
             } catch (Exception e) {
-                // Will use fallback below
+                // Sẽ dùng phương án thay thế bên dưới
             }
             
             if (builder.length() > 0) {
                 builder.append(", ");
             }
             
-            // Use wardName if available, otherwise fallback to "Phường {code}"
+            // Dùng tên phường nếu có; nếu không thì hiển thị "Phường {code}"
             if (wardName != null && !wardName.isEmpty()) {
                 builder.append(wardName);
             } else {
@@ -615,13 +625,14 @@ public class ShipmentDriverService {
             try {
                 cityName = LocationUtils.getCityNameByCode(office.getCityCode());
             } catch (Exception e) {
-                // Will use fallback below
+                // Sẽ dùng phương án thay thế bên dưới
             }
             
             if (builder.length() > 0) {
                 builder.append(", ");
             }
             
+            // Dùng tên thành phố nếu có; nếu không thì hiển thị "TP {code}"
             if (cityName != null && !cityName.isEmpty()) {
                 builder.append(cityName);
             } else {

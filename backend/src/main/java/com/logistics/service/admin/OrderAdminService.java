@@ -26,6 +26,12 @@ import com.logistics.mapper.OrderMapper;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
+import com.logistics.entity.OrderHistory;
+import com.logistics.entity.OrderProduct;
+import com.logistics.service.common.OfficePublicService;
+import com.logistics.service.assignment.AutoAssignService;
+import com.logistics.request.common.office.PublicOfficeSearchRequest;
+import com.logistics.dto.common.PublicOfficeInformationDto;
 
 @Service
 public class OrderAdminService {
@@ -37,7 +43,7 @@ public class OrderAdminService {
     private OfficeRepository officeRepository;
 
     @Autowired
-    private com.logistics.service.common.OfficePublicService officePublicService;
+    private OfficePublicService officePublicService;
 
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
@@ -46,7 +52,7 @@ public class OrderAdminService {
     private OrderProductRepository orderProductRepository;
 
     @Autowired
-    private com.logistics.service.assignment.AutoAssignService autoAssignService;
+    private AutoAssignService autoAssignService;
 
     public ApiResponse<Map<String, Object>> listOrders(int page, int limit, String search, String status) {
         try {
@@ -84,8 +90,8 @@ public class OrderAdminService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-            List<com.logistics.entity.OrderHistory> orderHistories = orderHistoryRepository.findByOrderIdOrderByActionTimeDesc(order.getId());
-            List<com.logistics.entity.OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+            List<OrderHistory> orderHistories = orderHistoryRepository.findByOrderIdOrderByActionTimeDesc(order.getId());
+            List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
 
             ManagerOrderDetailDto dto = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts);
 
@@ -109,16 +115,14 @@ public class OrderAdminService {
                     Integer senderCity = order.getSenderCityCode();
                     Integer senderWard = order.getSenderWardCode();
                     if (senderCity != null) {
-                        com.logistics.request.common.office.PublicOfficeSearchRequest psr =
-                                new com.logistics.request.common.office.PublicOfficeSearchRequest(senderCity, senderWard, null, null, null);
-                        com.logistics.response.ApiResponse<java.util.List<com.logistics.dto.common.PublicOfficeInformationDto>> offRes =
-                                officePublicService.listLocalOffices(psr);
+                        PublicOfficeSearchRequest psr = new PublicOfficeSearchRequest(senderCity, senderWard, null, null, null);
+                        ApiResponse<List<PublicOfficeInformationDto>> offRes = officePublicService.listLocalOffices(psr);
                         if (offRes != null && offRes.isSuccess() && offRes.getData() != null && !offRes.getData().isEmpty()) {
                             Integer ofId = offRes.getData().get(0).getId();
                             officeRepository.findById(ofId).ifPresent(order::setFromOffice);
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) { throw new RuntimeException(e); }
 
                 // gán toOffice dựa trên địa chỉ người nhận (ưu tiên ward, fallback city)
                 try {
@@ -130,16 +134,14 @@ public class OrderAdminService {
                     }
 
                     if (recipCity != null) {
-                        com.logistics.request.common.office.PublicOfficeSearchRequest psrTo =
-                                new com.logistics.request.common.office.PublicOfficeSearchRequest(recipCity, recipWard, null, null, null);
-                        com.logistics.response.ApiResponse<java.util.List<com.logistics.dto.common.PublicOfficeInformationDto>> offResTo =
-                                officePublicService.listLocalOffices(psrTo);
+                        PublicOfficeSearchRequest psrTo = new PublicOfficeSearchRequest(recipCity, recipWard, null, null, null);
+                        ApiResponse<List<PublicOfficeInformationDto>> offResTo = officePublicService.listLocalOffices(psrTo);
                         if (offResTo != null && offResTo.isSuccess() && offResTo.getData() != null && !offResTo.getData().isEmpty()) {
                             Integer toId = offResTo.getData().get(0).getId();
                             officeRepository.findById(toId).ifPresent(order::setToOffice);
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) { throw new RuntimeException(e); }
             }
 
             // Giữ trạng thái CONFIRMED do admin xác nhận
@@ -152,7 +154,7 @@ public class OrderAdminService {
                     && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
                 try {
                     autoAssignService.autoAssignPickupRequest(order.getId());
-                } catch (Exception ignored) {}
+                } catch (Exception e) { throw new RuntimeException(e); }
             }
 
             return new ApiResponse<>(true, "Cập nhật trạng thái đơn hàng thành công", mapOrder(order));

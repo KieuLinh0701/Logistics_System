@@ -1,6 +1,5 @@
 package com.logistics.controller.shipper;
 
-import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
 import com.logistics.request.shipper.PickedUpRequest;
 import com.logistics.request.shipper.DeliverOriginRequest;
@@ -159,6 +158,49 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
         return ResponseEntity.ok(shipperService.markPickedUp(id, request));
+    }
+
+    @GetMapping("/orders/{id}/partial-start")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> startPartialDelivery(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        return ResponseEntity.ok(shipperService.startPartialDelivery(id));
+    }
+
+    @PostMapping("/order-products/{orderProductId}/delivered")
+    public ResponseEntity<ApiResponse<String>> markProductDelivered(@PathVariable Integer orderProductId, @RequestBody Map<String, Object> payload) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        Integer qty = payload.get("deliveredQuantity") instanceof Number ? ((Number) payload.get("deliveredQuantity")).intValue() : null;
+        // Use atomic delivery update to avoid race conditions
+        return ResponseEntity.ok(shipperService.markProductDeliveredAtomic(orderProductId, qty));
+    }
+
+    @PostMapping("/order-products/{orderProductId}/returned")
+    public ResponseEntity<ApiResponse<String>> markProductReturned(@PathVariable Integer orderProductId, @RequestBody Map<String, Object> payload) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        Integer qty = payload.get("returnedQuantity") instanceof Number ? ((Number) payload.get("returnedQuantity")).intValue() : null;
+        String reason = payload.get("reason") != null ? String.valueOf(payload.get("reason")) : null;
+        // Forward to service implementation (atomic, concurrency-safe)
+        return ResponseEntity.ok(shipperService.markProductReturnedAtomic(orderProductId, qty, reason));
+    }
+
+    @PostMapping("/orders/{id}/partial-finish")
+    public ResponseEntity<ApiResponse<String>> finishPartialDelivery(@PathVariable Integer id) {
+        try {
+            String role = SecurityUtils.getAuthenticatedUserRole();
+            Integer userId = SecurityUtils.getAuthenticatedUserId();
+        } catch (Exception e) {
+        }
+
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+        return ResponseEntity.ok(shipperService.finishPartialDelivery(id));
     }
 
     @PostMapping("/orders/{id}/deliver-origin")

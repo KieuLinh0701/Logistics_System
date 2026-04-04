@@ -88,9 +88,10 @@ public class AutoAssignService {
         }
 
         // Chọn đơn giản: lấy shipper có ít phân công nhất (theo trường createdAt của ShipperAssignment)
-        ShipperAssignment chosenAssignment = candidates.stream()
-                .min(Comparator.comparing(ShipperAssignment::getCreatedAt))
-                .orElse(candidates.get(0));
+        final List<ShipperAssignment> finalCandidates = candidates;
+        ShipperAssignment chosenAssignment = finalCandidates.stream()
+            .min(Comparator.comparing(ShipperAssignment::getCreatedAt))
+            .orElseGet(() -> finalCandidates.isEmpty() ? null : finalCandidates.get(0));
 
         User chosen = chosenAssignment.getShipper();
 
@@ -187,9 +188,10 @@ public class AutoAssignService {
             return Optional.empty();
         }
 
-        ShipperAssignment chosenAssignment = candidates.stream()
-                .min(Comparator.comparing(ShipperAssignment::getCreatedAt))
-                .orElse(candidates.get(0));
+        final List<ShipperAssignment> finalCandidates2 = candidates;
+        ShipperAssignment chosenAssignment = finalCandidates2.stream()
+            .min(Comparator.comparing(ShipperAssignment::getCreatedAt))
+            .orElseGet(() -> finalCandidates2.isEmpty() ? null : finalCandidates2.get(0));
 
         User chosen = chosenAssignment.getShipper();
 

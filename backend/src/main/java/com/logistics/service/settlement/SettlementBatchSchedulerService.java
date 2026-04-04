@@ -60,7 +60,15 @@ public class SettlementBatchSchedulerService {
             BigDecimal totalCOD = BigDecimal.ZERO;
 
             for (Order order : orders) {
-                PaymentSubmission ps = order.getPaymentSubmission();
+                List<PaymentSubmission> submissions = order.getPaymentSubmissions();
+                PaymentSubmission ps = null;
+                if (submissions != null && !submissions.isEmpty()) {
+                    ps = submissions.stream()
+                            .filter(s -> s.getStatus() == PaymentSubmissionStatus.MATCHED
+                                    || s.getStatus() == PaymentSubmissionStatus.ADJUSTED)
+                            .findFirst()
+                            .orElse(submissions.get(0));
+                }
 
                 if (ps == null && order.getCod() == 0 && order.getPayer() == OrderPayerType.SHOP) {
                     continue;

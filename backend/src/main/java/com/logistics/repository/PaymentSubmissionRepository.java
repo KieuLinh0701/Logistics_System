@@ -1,6 +1,7 @@
 package com.logistics.repository;
 
 import com.logistics.entity.PaymentSubmission;
+import com.logistics.entity.Order;
 import com.logistics.enums.PaymentSubmissionStatus;
 
 import java.util.List;
@@ -13,11 +14,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.math.BigDecimal;
 
 @Repository
 public interface PaymentSubmissionRepository extends JpaRepository<PaymentSubmission, Integer>, JpaSpecificationExecutor<PaymentSubmission> {
     Optional<PaymentSubmission> findByCode(String code);
     List<PaymentSubmission> findByOrderId(Integer orderId);
+    @Query("SELECT DISTINCT p FROM PaymentSubmission p LEFT JOIN FETCH p.items it WHERE p.order.id = :orderId")
+    List<PaymentSubmission> findByOrderIdWithItems(@Param("orderId") Integer orderId);
     List<PaymentSubmission> findByStatus(PaymentSubmissionStatus status);
     
     List<PaymentSubmission> findByBatchIsNullAndStatusIn(List<PaymentSubmissionStatus> statuses);
@@ -27,6 +31,12 @@ public interface PaymentSubmissionRepository extends JpaRepository<PaymentSubmis
     @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM PaymentSubmission p WHERE p.id IN :ids")
     List<PaymentSubmission> findByIdInForUpdate(@Param("ids") List<Integer> ids);
+
+    Optional<PaymentSubmission> findTopByOrderAndStatusInOrderByPaidAtDesc(Order order, List<PaymentSubmissionStatus> statuses);
+
+        @Query("SELECT COALESCE(SUM(p.actualAmount), 0) FROM PaymentSubmission p WHERE p.order.id = :orderId AND p.status IN :statuses")
+        BigDecimal sumActualAmountByOrderIdAndStatusIn(@Param("orderId") Integer orderId,
+                @Param("statuses") List<PaymentSubmissionStatus> statuses);
 
 }
 

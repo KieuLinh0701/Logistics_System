@@ -17,7 +17,7 @@ import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderPayerType;
 import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.OrderPickupType;
-
+import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -163,11 +163,17 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderCodStatus codStatus;
 
-    @OneToOne(mappedBy = "order")
-    private PaymentSubmission paymentSubmission;
+    @OneToMany(mappedBy = "order")
+    private List<PaymentSubmission> paymentSubmissions;
 
     @ManyToOne
     @JoinColumn(name = "settlement_batch_id")
     private SettlementBatch settlementBatch;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal actualCollected = BigDecimal.ZERO;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal returnedAmount = BigDecimal.ZERO;
 
 }

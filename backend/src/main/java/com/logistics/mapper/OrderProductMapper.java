@@ -23,7 +23,10 @@ public class OrderProductMapper {
                 entity.getProduct().getName(),
                 entity.getProduct().getWeight(),
                 entity.getQuantity(),
-                entity.getPrice());
+                entity.getPrice(),
+                entity.getDeliveredQuantity() != null ? entity.getDeliveredQuantity() : 0,
+                entity.getReturnedQuantity() != null ? entity.getReturnedQuantity() : 0
+        );
     }
 
     public static List<OrderProductDto> toDtoList(List<OrderProduct> entities) {

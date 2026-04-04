@@ -125,7 +125,9 @@ public class OrderMapper {
                 OrderHistoryMapper.toDtoList(orderHistories),
                 entity.getEmployee() != null ? entity.getEmployee().getCode() : null,
                 entity.getUser() != null ? entity.getUser().getCode() : null,
-                entity.getCodStatus().name());
+                entity.getCodStatus().name(),
+                entity.getActualCollected(),
+                entity.getReturnedAmount());
     }
 
     public static ManagerOrderListDto toManagerOrderListDto(Order entity) {
@@ -150,6 +152,8 @@ public class OrderMapper {
                 entity.getCod(),
                 entity.getOrderValue(),
                 entity.getTotalFee(),
+                entity.getActualCollected(),
+                entity.getReturnedAmount(),
                 entity.getPayer().name(),
                 entity.getPaymentStatus().name(),
                 entity.getCreatedByType().name(),

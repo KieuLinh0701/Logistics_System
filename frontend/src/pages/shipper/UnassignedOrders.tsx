@@ -84,6 +84,10 @@ const ShipperUnassignedOrders: React.FC = () => {
         return "Đang giao hàng";
       case "DELIVERED":
         return "Đã giao";
+      case "PARTIAL_DELIVERY":
+        return "Giao 1 phần";
+      case "PARTIAL_RETURN":
+        return "Trả 1 phần";
       case "CANCELLED":
         return "Đã hủy";
       default:

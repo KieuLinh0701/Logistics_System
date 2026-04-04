@@ -31,6 +31,8 @@ public class ManagerOrderListDto {
     private Integer cod;
     private Integer orderValue;
     private Integer totalFee;
+    private BigDecimal actualCollected;
+    private BigDecimal returnedAmount;
     private String payer;
     private String paymentStatus;
     private String createdByType;

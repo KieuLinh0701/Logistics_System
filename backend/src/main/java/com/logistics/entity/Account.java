@@ -13,17 +13,19 @@ import lombok.*;
 
 @Entity
 @Audited
-@Data
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"user", "accountRoles"})
 @Table(name = "accounts")
 @EntityListeners(AuditingEntityListener.class)
 public class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 100)
