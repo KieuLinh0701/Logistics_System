@@ -80,6 +80,13 @@ import PromotionList from "./pages/common/info/PromotionList";
 import AdminPromotions from "./pages/admin/Promotions";
 import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
 
+// Recruitment
+import RecruitmentPage from "./pages/common/recruitment/RecruitmentPage";
+import JobDetailPage from "./pages/common/recruitment/JobDetailPage";
+import ApplyJobPage from "./pages/common/recruitment/ApplyJobPage";
+import JobPostingManagementPage from "./pages/hr/recruitment/job-posting/JobPostingManagementPage";
+import ApplicationReviewPage from "./pages/hr/recruitment/application/ApplicationReviewPage";
+
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={viVN}>
@@ -103,6 +110,11 @@ const App: React.FC = () => {
           <Route path="/tracking/order-tracking" element={<OrderTracking />} />
           <Route path="/tracking/order-tracking/:trackingNumber" element={<OrderTracking />} />
 
+          {/* Recruitment public routes */}
+          <Route path="/jobs" element={<RecruitmentPage />} />
+          <Route path="/jobs/:id" element={<JobDetailPage />} />
+          <Route path="/jobs/:id/apply" element={<ApplyJobPage />} />
+
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />
           <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword /></AuthRoute>} />
@@ -124,6 +136,14 @@ const App: React.FC = () => {
             <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
             <Route path="/financial" element={<PrivateRoute allowedRoles={["admin"]}><AdminFinancialIndex /></PrivateRoute>} />
             <Route path="/reports" element={<PrivateRoute allowedRoles={["admin"]}><ReportsPage /></PrivateRoute>} />
+            <Route
+              path="/recruitment/hr/jobs"
+              element={<PrivateRoute allowedRoles={["admin", "manager"]}><JobPostingManagementPage /></PrivateRoute>}
+            />
+            <Route
+              path="/recruitment/hr/applications"
+              element={<PrivateRoute allowedRoles={["admin", "manager"]}><ApplicationReviewPage /></PrivateRoute>}
+            />
             
             {/* Admin & Manager routes */}
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin', 'manager']}><VehiclesRouter /></PrivateRoute>} />

@@ -106,6 +106,23 @@ const Sidenav: React.FC = () => {
         icon: <BarChartOutlined />,
       },
       {
+        key: "recruitment-admin",
+        label: "Tuyển dụng",
+        icon: <TeamOutlined />,
+        children: [
+          {
+            key: "/recruitment/hr/jobs",
+            label: "Tin tuyển dụng",
+            path: "/recruitment/hr/jobs",
+          },
+          {
+            key: "/recruitment/hr/applications",
+            label: "Duyệt hồ sơ",
+            path: "/recruitment/hr/applications",
+          },
+        ],
+      },
+      {
         key: "/financial",
         label: "Quản lý dòng tiền",
         path: "/financial",
@@ -178,6 +195,23 @@ const Sidenav: React.FC = () => {
             key: "/employees/assign-history",
             label: "Lịch sử phân công",
             path: "/employees/assign-history",
+          },
+        ],
+      },
+      {
+        key: "recruitment",
+        label: "Tuyển dụng",
+        icon: <TeamOutlined />,
+        children: [
+          {
+            key: "/recruitment/hr/jobs",
+            label: "Tin tuyển dụng",
+            path: "/recruitment/hr/jobs",
+          },
+          {
+            key: "/recruitment/hr/applications",
+            label: "Duyệt hồ sơ",
+            path: "/recruitment/hr/applications",
           },
         ],
       },

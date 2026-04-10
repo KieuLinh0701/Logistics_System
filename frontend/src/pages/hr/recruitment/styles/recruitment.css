@@ -1,0 +1,161 @@
+.public-hero-banner{
+  position: relative;
+  background: linear-gradient(90deg, rgba(6,48,85,0.85) 0%, rgba(2,112,183,0.85) 100%);
+  background-image: url('/assets/images/joblist.png'), url('/assets/images/hero-logistics.jpg'), url('/assets/images/bg-1.jpg');
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  height: 28vh;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+}
+
+.public-hero-overlay{
+  position: absolute;
+  inset: 0;
+  background: var(--bg-color-hero);
+  display: flex;
+  align-items: center;
+}
+
+.public-hero-content {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+  color: var(--text-color-light);
+}
+
+.public-hero-title {
+  color: var(--text-color-light) !important;
+  font-size: 1.5rem !important;
+  margin-bottom: 0.6rem !important;
+  text-shadow: 1px 1px 2px var(--text-shadow-title);
+  font-weight: normal;
+  line-height: 1.15;
+}
+
+.public-hero-subtitle {
+  color: var(--text-color-light) !important;
+  font-size: 0.95rem !important;
+  margin: 0 auto !important;
+  max-width: 700px;
+  text-shadow: 1px 1px 2px var(--text-shadow-subtitle);
+  line-height: 1.35;
+}
+
+.public-hero-img{
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  z-index: 0;
+  background-color: var(--bg-color-hero-fallback, #f0f4ff);
+}
+
+.public-hero-content{position:relative;z-index:2}
+.public-page-container{max-width:1200px;margin:0 auto;padding:40px 24px}
+.public-page-section{margin-top:48px;margin-bottom:48px}
+.public-job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
+.public-job-card{border-radius:12px;box-shadow:0 6px 18px rgba(2,24,52,0.06);padding:18px}
+.public-job-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.public-job-title{margin:0 0 4px 0}
+.public-job-meta{display:flex;justify-content:space-between;align-items:center;color:#666;margin-bottom:12px}
+.public-job-actions{display:flex;gap:12px;justify-content:flex-end}
+.modal-title {
+  color: #1C3D90;
+  font-weight: bold;
+  font-size: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.public-job-actions .ant-btn-primary:hover {
+  background: #2563eb !important;
+}
+.public-job-actions .ant-btn-primary {
+  background: #1e3a8a !important;
+  border: none !important;
+  color: #fff !important;
+}
+.public-job-actions .ant-btn {
+  border-radius: 8px !important;
+  height: 38px !important;
+  font-weight: 600;
+}
+
+:where(.css-dev-only-do-not-override-11mmrso).ant-select-single.ant-select-lg:not(.ant-select-customize-input) .ant-select-selector {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  padding: 0 11px;
+}
+
+.ant-select-show-search:where(.css-dev-only-do-not-override-11mmrso).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  cursor: text;
+}
+
+.office-search-form .ant-select .ant-select-selector {
+  background-color: #f5f7fb !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  transition: all 0.3s ease !important;
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+}
+
+:where(.css-dev-only-do-not-override-11mmrso).ant-select-outlined:not(.ant-select-customize-input) .ant-select-selector {
+  border: 1px solid #d9d9d9;
+  background: #ffffff;
+}
+
+.office-search-form .ant-input-affix-wrapper {
+  background-color: #f5f7fb !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  transition: all 0.3s ease !important;
+  height: 44px !important;
+  font-size: 14px !important;
+  padding: 0 12px !important;
+}
+
+.recruitment-filter-card .recruitment-select {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  font-size: 14px;
+  background-color: #f5f7fb;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.recruitment-filter-card .recruitment-select:focus {
+  outline: none;
+  border-color: #d9d9d9;
+}
+
+.recruitment-search-wrapper .recruitment-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  background-color: #f5f7fb;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.recruitment-search-wrapper .recruitment-search-input:focus {
+  outline: none;
+  border-color: #d9d9d9;
+}

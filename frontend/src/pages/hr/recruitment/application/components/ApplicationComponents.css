@@ -1,0 +1,42 @@
+.hr-application-candidate {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hr-application-email {
+  color: var(--text-color-subtitle);
+  font-size: 12px;
+}
+
+.hr-application-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hr-application-detail-link {
+  color: var(--primary);
+  word-break: break-all;
+}
+
+.hr-application-detail-link:hover {
+  color: var(--primary-dark);
+}
+
+.hr-application-status {
+  color: #000;
+  font-weight: normal;
+}
+
+.hr-application-table-card {
+  padding: 0;
+}
+
+.hr-recruitment-card.hr-recruitment-header {
+  margin-bottom: 12px;
+}
+
+.hr-recruitment-card.hr-recruitment-table-card {
+  margin-top: 12px;
+}

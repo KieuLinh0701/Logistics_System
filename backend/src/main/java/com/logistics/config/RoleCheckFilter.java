@@ -27,7 +27,22 @@ public class RoleCheckFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
+        boolean isPublicRecruitmentSubmit = "POST".equalsIgnoreCase(request.getMethod())
+                && "/api/job-applications".equals(path);
+        if (isPublicRecruitmentSubmit) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (SecurityUtils.PUBLIC_PATHS.stream().anyMatch(path::startsWith)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Allow public GET access to job listings and details
+        boolean isPublicJobsGet = "GET".equalsIgnoreCase(request.getMethod())
+                && ("/api/jobs".equals(path) || path.startsWith("/api/jobs/"));
+        if (isPublicJobsGet) {
             filterChain.doFilter(request, response);
             return;
         }

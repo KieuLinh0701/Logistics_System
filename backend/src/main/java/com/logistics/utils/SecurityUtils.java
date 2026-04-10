@@ -19,7 +19,8 @@ public class SecurityUtils {
             "/api/manager/", List.of("Manager"),
             "/api/admin/", List.of("Admin"),
             "/api/shipper/", List.of("Shipper"),
-            "/api/driver/", List.of("Driver")
+            "/api/driver/", List.of("Driver"),
+            "/api/job-applications", List.of("Admin", "Manager")
         );
 
     public static final List<String> PUBLIC_PATHS = List.of(
