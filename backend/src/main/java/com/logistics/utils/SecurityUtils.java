@@ -20,6 +20,7 @@ public class SecurityUtils {
             "/api/admin/", List.of("Admin"),
             "/api/shipper/", List.of("Shipper"),
             "/api/driver/", List.of("Driver"),
+            "/api/leaves", List.of("Manager", "Shipper", "Driver"),
             "/api/job-applications", List.of("Admin", "Manager")
         );
 

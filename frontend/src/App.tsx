@@ -79,6 +79,8 @@ import DriverHistory from "./pages/driver/History";
 import PromotionList from "./pages/common/info/PromotionList";
 import AdminPromotions from "./pages/admin/Promotions";
 import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
+import MyLeavePage from "./pages/leave/MyLeavePage";
+import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
 
 // Recruitment
 import RecruitmentPage from "./pages/common/recruitment/RecruitmentPage";
@@ -179,6 +181,7 @@ const App: React.FC = () => {
             <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />
             <Route path="/employees/assign-history" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssignmentHistory /></PrivateRoute>} />
             <Route path="/orders/incidents" element={<PrivateRoute allowedRoles={['manager']}><ManagerIncidentReports /></PrivateRoute>} />
+            <Route path="/manager/leaves" element={<PrivateRoute allowedRoles={['manager']}><LeaveManagementPage /></PrivateRoute>} />
 
             {/* Shipper routes */}
             <Route path="/shipper/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
@@ -190,6 +193,7 @@ const App: React.FC = () => {
             <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
             <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
             <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
+            <Route path="/employee/leaves" element={<PrivateRoute allowedRoles={['shipper', 'driver']}><MyLeavePage /></PrivateRoute>} />
 
             {/* Driver routes */}
             <Route path="/driver/shipments" element={<PrivateRoute allowedRoles={['driver']}><DriverShipments /></PrivateRoute>} />

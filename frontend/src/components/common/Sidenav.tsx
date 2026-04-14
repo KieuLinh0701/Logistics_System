@@ -222,6 +222,12 @@ const Sidenav: React.FC = () => {
         icon: <HomeOutlined />,
       },
       {
+        key: "/manager/leaves",
+        label: "Duyệt nghỉ phép",
+        path: "/manager/leaves",
+        icon: <ClockCircleOutlined />,
+      },
+      {
         key: "/settlements",
         label: "Đối soát",
         icon: <CheckCircleOutlined />, 
@@ -372,6 +378,12 @@ const Sidenav: React.FC = () => {
         icon: <ExclamationCircleOutlined />,
       },
       {
+        key: "/employee/leaves",
+        label: "Xin nghỉ phép",
+        path: "/employee/leaves",
+        icon: <ClockCircleOutlined />,
+      },
+      {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
         path: "/account/settings?tab=profile",
@@ -401,6 +413,12 @@ const Sidenav: React.FC = () => {
         key: "/driver/history",
         label: "Lịch sử vận chuyển",
         path: "/driver/history",
+        icon: <ClockCircleOutlined />,
+      },
+      {
+        key: "/employee/leaves",
+        label: "Xin nghỉ phép",
+        path: "/employee/leaves",
         icon: <ClockCircleOutlined />,
       },
       {
