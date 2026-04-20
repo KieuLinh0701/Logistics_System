@@ -21,6 +21,7 @@ public class SecurityUtils {
             "/api/shipper/", List.of("Shipper"),
             "/api/driver/", List.of("Driver"),
             "/api/leaves", List.of("Manager", "Shipper", "Driver"),
+            "/api/support", List.of("User", "Manager", "Admin"),
             "/api/job-applications", List.of("Admin", "Manager")
         );
 

@@ -60,7 +60,6 @@ import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrder
 import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 
 // Shipper
-import ShipperDashboard from "./pages/shipper/Dashboard";
 import ShipperOrders from "./pages/shipper/Orders";
 import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
 import ShipperOrderDetail from "./pages/shipper/OrderDetail";
@@ -72,7 +71,6 @@ import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests"
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 
 // Driver
-import DriverDashboard from "./pages/driver/Dashboard";
 import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
@@ -81,6 +79,8 @@ import AdminPromotions from "./pages/admin/Promotions";
 import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
 import MyLeavePage from "./pages/leave/MyLeavePage";
 import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
+import SupportChatPage from "./pages/chat/SupportChatPage";
+import ChatWidget from "./pages/chat/ChatWidget";
 
 // Recruitment
 import RecruitmentPage from "./pages/common/recruitment/RecruitmentPage";
@@ -138,6 +138,10 @@ const App: React.FC = () => {
             <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
             <Route path="/financial" element={<PrivateRoute allowedRoles={["admin"]}><AdminFinancialIndex /></PrivateRoute>} />
             <Route path="/reports" element={<PrivateRoute allowedRoles={["admin"]}><ReportsPage /></PrivateRoute>} />
+            
+            <Route path="/support/tickets" element={<PrivateRoute allowedRoles={["admin", "manager"]}><SupportChatPage /></PrivateRoute>} />
+            <Route path="/support/tickets/:id" element={<PrivateRoute allowedRoles={["admin", "manager"]}><SupportChatPage /></PrivateRoute>} />
+            
             <Route
               path="/recruitment/hr/jobs"
               element={<PrivateRoute allowedRoles={["admin", "manager"]}><JobPostingManagementPage /></PrivateRoute>}
@@ -201,6 +205,7 @@ const App: React.FC = () => {
             <Route path="/driver/history" element={<PrivateRoute allowedRoles={['driver']}><DriverHistory /></PrivateRoute>} />
           </Route>
         </Routes>
+        <ChatWidget />
       </Router>
     </ConfigProvider>
   );

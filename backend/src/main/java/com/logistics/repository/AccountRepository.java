@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.logistics.entity.Account;
 import com.logistics.entity.User;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -26,4 +27,29 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
         @Param("search") String search4,
         Pageable pageable
     );
+
+        @Query("""
+                        SELECT DISTINCT a FROM Account a
+                        JOIN FETCH a.user u
+                        JOIN a.accountRoles ar
+                        JOIN ar.role r
+                        WHERE a.isActive = true
+                            AND ar.isActive = true
+                            AND LOWER(r.name) IN ('manager', 'admin')
+                        """)
+        List<Account> findActiveSupportStaffAccounts();
+
+        @Query("""
+                        SELECT DISTINCT a FROM Account a
+                        JOIN FETCH a.user u
+                        JOIN a.accountRoles ar
+                        JOIN ar.role r
+                        WHERE a.isActive = true
+                            AND ar.isActive = true
+                            AND LOWER(r.name) = 'manager'
+                        """)
+        List<Account> findActiveSupportManagers();
+
+    @Query("SELECT r.name FROM Account a JOIN a.accountRoles ar JOIN ar.role r WHERE a.id = :accountId AND ar.isActive = true")
+    List<String> findActiveRoleNamesByAccountId(@Param("accountId") Integer accountId);
 }

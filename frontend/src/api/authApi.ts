@@ -11,6 +11,11 @@ const authApi = {
       const user = res.data.user;
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("user", JSON.stringify(user));
+      try {
+        window.dispatchEvent(new Event("auth-change"));
+      } catch (e) {
+        // ignore
+      }
     }
 
     return res;
@@ -24,6 +29,11 @@ const authApi = {
       const user = res.data.user;
       sessionStorage.setItem("token", token);
       sessionStorage.setItem("user", JSON.stringify(user));
+      try {
+        window.dispatchEvent(new Event("auth-change"));
+      } catch (e) {
+        // ignore
+      }
     }
 
     return res;
@@ -49,6 +59,11 @@ const authApi = {
   logout() {
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("user");
+    try {
+      window.dispatchEvent(new Event("auth-change"));
+    } catch (e) {
+      // ignore
+    }
   },
 
   forgotPasswordEmail(data: ForgotPasswordEmailData): Promise<ApiResponse<null>> {

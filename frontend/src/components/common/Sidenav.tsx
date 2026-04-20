@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   DashboardOutlined,
   GlobalOutlined,
+  CustomerServiceOutlined,
   ShoppingOutlined,
   CarOutlined,
   HomeOutlined,
@@ -106,6 +107,12 @@ const Sidenav: React.FC = () => {
         icon: <BarChartOutlined />,
       },
       {
+        key: "/support/tickets",
+        label: "Chăm sóc khách hàng",
+        path: "/support/tickets",
+        icon: <CustomerServiceOutlined />,
+      },
+      {
         key: "recruitment-admin",
         label: "Tuyển dụng",
         icon: <TeamOutlined />,
@@ -170,6 +177,12 @@ const Sidenav: React.FC = () => {
         label: "Hỗ trợ & Khiếu nại",
         path: "/supports",
         icon: <GlobalOutlined />,
+      },
+      {
+        key: "/support/tickets",
+        label: "Chăm sóc khách hàng",
+        path: "/support/tickets",
+        icon: <CustomerServiceOutlined />,
       },
       {
         key: "staff",
