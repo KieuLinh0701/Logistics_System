@@ -40,7 +40,11 @@ const DriverShipments: React.FC = () => {
       content: "Bạn có chắc chắn muốn bắt đầu vận chuyển chuyến hàng này?",
       onOk: async () => {
         try {
-          await shipmentApi.startShipment(shipmentId);
+          const res = await shipmentApi.startShipment(shipmentId);
+          if (res && !res.success) {
+            message.error(res.message || "Không thể bắt đầu chuyến");
+            return;
+          }
           message.success("Đã bắt đầu vận chuyển");
           loadShipments();
         } catch (e: any) {
@@ -169,21 +173,25 @@ const DriverShipments: React.FC = () => {
       render: (_: any, r: DriverShipment) => (
         <Space direction="vertical" size="small">
           {r.status === "PENDING" && (
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={() => handleStartShipment(r.id)}
-              block
-            >
-              Bắt đầu
-            </Button>
+            <>
+              <Button
+                style={{ marginTop: 8 }}
+                type="default"
+                icon={<PlayCircleOutlined />}
+                onClick={() => handleStartShipment(r.id)}
+                block
+              >
+                Bắt đầu
+              </Button>
+            </>
           )}
           {r.status === "IN_TRANSIT" && (
-            <Space>
+            <Space direction="vertical" style={{ width: "100%" }}>
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleFinishShipment(r.id, "COMPLETED")}
+                block
               >
                 Hoàn tất
               </Button>
@@ -191,14 +199,15 @@ const DriverShipments: React.FC = () => {
                 danger
                 icon={<CloseCircleOutlined />}
                 onClick={() => handleFinishShipment(r.id, "CANCELLED")}
+                block
               >
                 Hủy
               </Button>
+              <Button onClick={() => navigate(`/driver/route`)} block>
+                Xem lộ trình
+              </Button>
             </Space>
           )}
-          <Button onClick={() => navigate(`/driver/route`)} block>
-            Xem lộ trình
-          </Button>
         </Space>
       ),
     },
@@ -229,25 +238,25 @@ const DriverShipments: React.FC = () => {
           }}
           expandable={{
             expandedRowRender: (record: DriverShipment) => (
-              <div style={{ margin: 0 }}>
-                <Title level={5}>Chi tiết đơn hàng trong chuyến</Title>
-                {record.orders && record.orders.length > 0 ? (
-                  <Descriptions size="small" column={2}>
-                    {record.orders.map((order: DriverOrderItem, index: number) => (
-                      <Descriptions.Item key={order.id} label={`Đơn ${index + 1}`}>
-                        <Space direction="vertical" size={0}>
-                          <Text strong>{order.trackingNumber}</Text>
-                          <Text type="secondary">{order.toOffice?.name || "—"}</Text>
-                        </Space>
-                      </Descriptions.Item>
-                    ))}
-                  </Descriptions>
-                ) : (
-                  <Text type="secondary">Không có đơn hàng</Text>
-                )}
-              </div>
-            ),
-            rowExpandable: (record: DriverShipment) => !!(record.orders && record.orders.length > 0),
+                <div style={{ margin: 0 }}>
+                  <Title level={5}>Chi tiết đơn hàng trong chuyến</Title>
+                  {record.orders && record.orders.length > 0 ? (
+                    <Descriptions size="small" column={2}>
+                      {record.orders.map((order: DriverOrderItem, index: number) => (
+                        <Descriptions.Item key={order.id} label={`Đơn ${index + 1}`}>
+                          <Space direction="vertical" size={0}>
+                            <Text strong>{order.trackingNumber}</Text>
+                            <Text type="secondary">{order.toOffice?.name || "—"}</Text>
+                          </Space>
+                        </Descriptions.Item>
+                      ))}
+                    </Descriptions>
+                  ) : (
+                    <Text type="secondary">Không có đơn hàng</Text>
+                  )}
+                </div>
+              ),
+              rowExpandable: (record: DriverShipment) => !!((record.orders && record.orders.length > 0) || (record.orderCount && record.orderCount > 0)),
           }}
         />
       </Card>

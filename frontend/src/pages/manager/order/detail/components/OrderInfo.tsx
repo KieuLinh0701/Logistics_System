@@ -50,7 +50,7 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
               </div>
             )}
             {renderField("Giá trị:", `${order.orderValue.toLocaleString()} VNĐ`)}
-            {renderField("COD:", `${(order.cod || 0).toLocaleString()} VNĐ`)}
+            {renderField("COD (Dự kiến):", `${(order.cod || 0).toLocaleString()} VNĐ`)}
             {renderField("Người tạo:", translateOrderCreatorType(order.createdByType))}
             {order.userCode && renderField("Mã người tạo đơn:", order.userCode)}
             {order.employeeCode && renderField("Mã nhân viên tạo đơn:", order.employeeCode)}

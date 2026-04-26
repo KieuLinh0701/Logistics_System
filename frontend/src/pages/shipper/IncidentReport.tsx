@@ -39,7 +39,7 @@ const ShipperIncidentReport: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState<IncidentReport[]>([]);
   const [submitModal, setSubmitModal] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   // Upload file list for preview
   const [uploadList, setUploadList] = useState<any[]>([]);
@@ -64,14 +64,54 @@ const ShipperIncidentReport: React.FC = () => {
   const handleSubmitReport = async (values: any) => {
     try {
       setLoading(true);
-      await orderApi.createShipperIncident({
-        orderId: values.orderId,
-        incidentType: values.incidentType,
-        title: values.title,
-        description: values.description,
-        priority: values.priority,
-        images: selectedImages,
-      });
+
+      let orderIdToSend: number | undefined = undefined;
+      const idOrTracking = values.orderId;
+      if (!idOrTracking) {
+        message.error("Vui lòng nhập mã vận đơn hoặc ID đơn hàng");
+        setLoading(false);
+        return;
+      }
+
+      if (!isNaN(Number(idOrTracking))) {
+        orderIdToSend = Number(idOrTracking);
+      } else {
+        try {
+          const sh = await orderApi.getShipperOrderByTrackingNumber(idOrTracking);
+          if (sh && sh.id) {
+            orderIdToSend = sh.id;
+          }
+        } catch (e) {
+          try {
+            const res = await orderApi.getUserOrderByTrackingNumber(idOrTracking);
+            if (res && res.data && res.data.id) {
+              orderIdToSend = res.data.id;
+            }
+          } catch (e2) {
+            try {
+              const pub = await orderApi.getPublicOrderByTrackingNumber(idOrTracking);
+            } catch (e3) {
+              // ignore
+            }
+          }
+        }
+      }
+
+      if (!orderIdToSend) {
+        message.error("Không tìm thấy đơn hàng với mã/ID cung cấp");
+        setLoading(false);
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append("orderId", String(orderIdToSend));
+      if (values.incidentType) fd.append("incidentType", values.incidentType);
+      fd.append("title", values.title);
+      if (values.description) fd.append("description", values.description);
+      if (values.priority) fd.append("priority", values.priority);
+      selectedImages.forEach((f) => fd.append("images", f));
+
+      await orderApi.createShipperIncident(fd);
 
       message.success("Đã gửi báo cáo sự cố thành công");
       setSubmitModal(false);
@@ -90,21 +130,16 @@ const ShipperIncidentReport: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      // Add base64 string to selectedImages and show preview
-      setSelectedImages((s) => [...s, result]);
-      setUploadList((u) => [...u, { uid: String(Date.now()), name: file.name, status: 'done', url: result }]);
+      setSelectedImages((s) => [...s, file]);
+      setUploadList((u) => [...u, { uid: String(Date.now()), name: file.name, status: "done", url: result, originFileObj: file }]);
     };
     reader.readAsDataURL(file);
-    // prevent default upload
     return false;
   };
 
   const handleRemoveImage = (file: any) => {
     setUploadList((u) => u.filter((it) => it.uid !== file.uid));
-    setSelectedImages((s) => {
-      // remove by index matching name/url
-      return s.filter((img) => img !== file.url);
-    });
+    setSelectedImages((s) => s.filter((f) => f.name !== file.name));
   };
 
   const getPriorityColor = (priority: string) => {
@@ -261,8 +296,12 @@ const ShipperIncidentReport: React.FC = () => {
         width={600}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmitReport}>
-          <Form.Item name="orderId" label="ID Đơn hàng" rules={[{ required: true, message: "Vui lòng nhập ID đơn hàng" }]}>
-            <Input type="number" placeholder="Nhập ID đơn hàng" />
+          <Form.Item
+            name="orderId"
+            label="Mã vận đơn"
+            rules={[{ required: true, message: "Vui lòng nhập mã vận đơn hoặc ID đơn hàng" }]}
+          >
+            <Input placeholder="Nhập mã vận đơn hoặc ID đơn hàng" />
           </Form.Item>
           <Form.Item name="incidentType" label="Loại sự cố" rules={[{ required: true, message: "Vui lòng chọn loại sự cố" }]}>
             <Select placeholder="Chọn loại sự cố">

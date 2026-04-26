@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -37,6 +38,7 @@ import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.repository.UserRepository;
+import com.logistics.service.financial.FinancialValidationService;
 import com.logistics.request.admin.CreateBatchRequest;
 import com.logistics.request.admin.CreatePaymentSubmissionRequest;
 import com.logistics.response.ApiResponse;
@@ -52,6 +54,7 @@ public class FinancialAdminService {
     private final PaymentSubmissionBatchRepository batchRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final FinancialValidationService financialValidationService;
 
     public ApiResponse<ListResponse<AdminPaymentSubmissionListDto>> listSubmissions(String status) {
         try {
@@ -318,8 +321,20 @@ public class FinancialAdminService {
                     Order o = s.getOrder();
                     if (o != null) {
                         o.setCodStatus(OrderCodStatus.TRANSFERRED);
-                        o.setPaymentStatus(OrderPaymentStatus.PAID);
-                        o.setPaidAt(LocalDateTime.now());
+                        try {
+                            try {
+                                Optional<Order> locked = orderRepository.findByIdForUpdate(o.getId());
+                                if (locked.isPresent()) {
+                                    financialValidationService.markOrderPaidIfEligible(locked.get());
+                                } else {
+                                    financialValidationService.markOrderPaidIfEligible(o);
+                                }
+                            } catch (Exception lockEx) {
+                                financialValidationService.markOrderPaidIfEligible(o);
+                            }
+                        } catch (Exception ex) {
+                            System.err.println("Error while validating payment for order " + o.getId() + ": " + ex.getMessage());
+                        }
                         orderRepository.save(o);
                     }
                 }

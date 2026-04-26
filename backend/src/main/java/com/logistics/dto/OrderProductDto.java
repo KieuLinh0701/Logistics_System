@@ -21,4 +21,6 @@ public class OrderProductDto {
     private BigDecimal productWeight;
     private Integer quantity;
     private Integer price;
+    private Integer deliveredQuantity;
+    private Integer returnedQuantity;
 }

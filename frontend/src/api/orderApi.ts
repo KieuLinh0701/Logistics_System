@@ -157,6 +157,32 @@ const orderApi = {
     return res.data as ShipperOrder;
   },
 
+  async getShipperOrderByTrackingNumber(trackingNumber: string) {
+    const res = await axiosClient.get<ApiResponse<any>>(`/shipper/orders/tracking/${trackingNumber}`);
+    return res.data as { id?: number; trackingNumber?: string };
+  },
+
+  // Partial delivery APIs for shipper
+  async startPartialDelivery(orderId: number) {
+    const res = await axiosClient.get<ApiResponse<any>>(`/shipper/orders/${orderId}/partial-start`);
+    return res.data;
+  },
+
+  async markProductDelivered(orderProductId: number, deliveredQuantity: number) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/order-products/${orderProductId}/delivered`, { deliveredQuantity });
+    return res.data;
+  },
+
+  async markProductReturned(orderProductId: number, returnedQuantity: number, reason?: string) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/order-products/${orderProductId}/returned`, { returnedQuantity, reason });
+    return res.data;
+  },
+
+  async finishPartialDelivery(orderId: number) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/partial-finish`);
+    return res.data;
+  },
+
   async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string }) {
     await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
   },
@@ -225,8 +251,10 @@ const orderApi = {
   },
 
   // Report
-  async createShipperIncident(payload: { orderId: number; incidentType?: string; title: string; description?: string; priority?: string; images?: string[] }) {
-    await axiosClient.post<ApiResponse<any>>("/shipper/incident", payload);
+  async createShipperIncident(payload: FormData) {
+    await axiosClient.post<ApiResponse<any>>("/shipper/incident", payload, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   },
 
   async getShipperIncidents() {
@@ -237,33 +265,6 @@ const orderApi = {
 
   async getShipperIncidentDetail(id: number) {
     const res = await axiosClient.get<ApiResponse<any>>(`/shipper/incidents/${id}`);
-    return res.data;
-  },
-
-  // DRIVER
-  async getDriverContext() {
-    const res = await axiosClient.get<ApiResponse<any>>("/driver/orders/context");
-    const data = res.data || {};
-    return {
-      office: data.office || null,
-      vehicles: data.vehicles || [],
-    };
-  },
-
-  async getDriverPendingOrders(params: { page?: number; limit?: number }) {
-    const res = await axiosClient.get<ApiResponse<any>>("/driver/orders/pending", { params });
-    const data = res.data || {};
-    return {
-      orders: (data.orders || []) as any[],
-      pagination: data.pagination || { page: 1, limit: 10, total: 0 },
-    };
-  },
-
-  async driverPickUp(payload: { vehicleId?: number; orderIds: number[] }) {
-    const res = await axiosClient.post<ApiResponse<any>>(
-      "/driver/orders/pickup",
-      payload
-    );
     return res.data;
   },
 

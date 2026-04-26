@@ -52,4 +52,6 @@ public class ManagerOrderDetailDto {
     private String employeeCode;
     private String userCode;
     private String codStatus;
+    private BigDecimal actualCollected;
+    private BigDecimal returnedAmount;
 }

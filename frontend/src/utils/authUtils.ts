@@ -37,3 +37,34 @@ export function getUserId(): number | null {
     return null;
   }
 }
+
+type DecodedWithOffice = {
+  account?: {
+    id?: number | string;
+    officeId?: number | string;
+    office?: { id?: number | string } | number;
+    role?: string;
+  };
+  user?: {
+    id?: number | string;
+    officeId?: number | string;
+    office?: { id?: number | string };
+  };
+};
+
+export function getUserOfficeId(): number | null {
+  const decoded = getDecodedToken() as DecodedWithOffice | null;
+  if (decoded?.account?.officeId) return Number(decoded.account.officeId);
+
+  const userStr = sessionStorage.getItem("user");
+  if (!userStr) return null;
+
+  try {
+    const u = JSON.parse(userStr) as { officeId?: number | string; office?: { id?: number | string } };
+    if (u.officeId) return Number(u.officeId);
+    if (u.office && u.office.id) return Number(u.office.id);
+    return null;
+  } catch {
+    return null;
+  }
+}

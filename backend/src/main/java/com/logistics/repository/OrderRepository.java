@@ -52,6 +52,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     List<Order> findByIdIn(List<Integer> orderIds);
 
+    Optional<Order> findTopByUserIdOrderByCreatedAtDesc(Integer userId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findByIdForUpdate(@Param("id") Integer id);

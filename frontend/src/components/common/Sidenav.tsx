@@ -4,6 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   DashboardOutlined,
   GlobalOutlined,
+  CustomerServiceOutlined,
   ShoppingOutlined,
   CarOutlined,
   HomeOutlined,
@@ -106,6 +107,29 @@ const Sidenav: React.FC = () => {
         icon: <BarChartOutlined />,
       },
       {
+        key: "/support/tickets",
+        label: "Chăm sóc khách hàng",
+        path: "/support/tickets",
+        icon: <CustomerServiceOutlined />,
+      },
+      {
+        key: "recruitment-admin",
+        label: "Tuyển dụng",
+        icon: <TeamOutlined />,
+        children: [
+          {
+            key: "/recruitment/hr/jobs",
+            label: "Tin tuyển dụng",
+            path: "/recruitment/hr/jobs",
+          },
+          {
+            key: "/recruitment/hr/applications",
+            label: "Duyệt hồ sơ",
+            path: "/recruitment/hr/applications",
+          },
+        ],
+      },
+      {
         key: "/financial",
         label: "Quản lý dòng tiền",
         path: "/financial",
@@ -155,6 +179,12 @@ const Sidenav: React.FC = () => {
         icon: <GlobalOutlined />,
       },
       {
+        key: "/support/tickets",
+        label: "Chăm sóc khách hàng",
+        path: "/support/tickets",
+        icon: <CustomerServiceOutlined />,
+      },
+      {
         key: "staff",
         label: "Quản lý nhân sự",
         icon: <TeamOutlined />,
@@ -182,10 +212,33 @@ const Sidenav: React.FC = () => {
         ],
       },
       {
+        key: "recruitment",
+        label: "Tuyển dụng",
+        icon: <TeamOutlined />,
+        children: [
+          {
+            key: "/recruitment/hr/jobs",
+            label: "Tin tuyển dụng",
+            path: "/recruitment/hr/jobs",
+          },
+          {
+            key: "/recruitment/hr/applications",
+            label: "Duyệt hồ sơ",
+            path: "/recruitment/hr/applications",
+          },
+        ],
+      },
+      {
         key: "/office",
         label: "Thông tin bưu cục",
         path: "/office",
         icon: <HomeOutlined />,
+      },
+      {
+        key: "/manager/leaves",
+        label: "Duyệt nghỉ phép",
+        path: "/manager/leaves",
+        icon: <ClockCircleOutlined />,
       },
       {
         key: "/settlements",
@@ -338,6 +391,12 @@ const Sidenav: React.FC = () => {
         icon: <ExclamationCircleOutlined />,
       },
       {
+        key: "/employee/leaves",
+        label: "Xin nghỉ phép",
+        path: "/employee/leaves",
+        icon: <ClockCircleOutlined />,
+      },
+      {
         key: "/account/settings",
         label: "Cài đặt tài khoản",
         path: "/account/settings?tab=profile",
@@ -350,12 +409,6 @@ const Sidenav: React.FC = () => {
         label: "Tổng quan",
         path: "/dashboard",
         icon: <DashboardOutlined />,
-      },
-      {
-        key: "/driver/orders",
-        label: "Đơn hàng cần nhận",
-        path: "/driver/orders",
-        icon: <ShoppingOutlined />,
       },
       {
         key: "/driver/shipments",
@@ -373,6 +426,12 @@ const Sidenav: React.FC = () => {
         key: "/driver/history",
         label: "Lịch sử vận chuyển",
         path: "/driver/history",
+        icon: <ClockCircleOutlined />,
+      },
+      {
+        key: "/employee/leaves",
+        label: "Xin nghỉ phép",
+        path: "/employee/leaves",
         icon: <ClockCircleOutlined />,
       },
       {

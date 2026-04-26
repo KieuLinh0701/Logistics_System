@@ -24,6 +24,7 @@ import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.VehicleRepository;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
+import com.logistics.repository.VehicleTrackingRepository;
 
 @Service
 public class VehicleAdminService {
@@ -35,7 +36,7 @@ public class VehicleAdminService {
     private OfficeRepository officeRepository;
     
     @Autowired
-    private com.logistics.repository.VehicleTrackingRepository vehicleTrackingRepository;
+    private VehicleTrackingRepository vehicleTrackingRepository;
 
     public ApiResponse<Map<String, Object>> listVehicles(int page, int limit, String search, String type, String status) {
         try {

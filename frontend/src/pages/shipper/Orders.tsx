@@ -99,6 +99,10 @@ const ShipperOrders: React.FC = () => {
         return "Đã giao";
       case "FAILED_DELIVERY":
         return "Giao thất bại";
+      case "PARTIAL_DELIVERY":
+        return "Giao 1 phần";
+      case "PARTIAL_RETURN":
+        return "Trả 1 phần";
       case "RETURNED":
         return "Đã hoàn";
       default:

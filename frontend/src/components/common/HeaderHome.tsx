@@ -96,6 +96,7 @@ const HeaderHome: React.FC = () => {
     { key: "/info/promotions", label: <Link to="/info/promotions">Khuyến mãi</Link> },
     { key: "/info/company", label: <Link to="/info/company">Về chúng tôi</Link> },
     { key: "/info/contact", label: <Link to="/info/contact">Liên hệ</Link> },
+    { key: "/jobs", label: <Link to="/jobs">Tuyển dụng</Link> },
   ];
 
   return (

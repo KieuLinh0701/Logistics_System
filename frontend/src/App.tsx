@@ -60,7 +60,6 @@ import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrder
 import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 
 // Shipper
-import ShipperDashboard from "./pages/shipper/Dashboard";
 import ShipperOrders from "./pages/shipper/Orders";
 import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
 import ShipperOrderDetail from "./pages/shipper/OrderDetail";
@@ -72,14 +71,23 @@ import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests"
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 
 // Driver
-import DriverDashboard from "./pages/driver/Dashboard";
-import DriverOrders from "./pages/driver/Orders";
 import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
 import PromotionList from "./pages/common/info/PromotionList";
 import AdminPromotions from "./pages/admin/Promotions";
 import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
+import MyLeavePage from "./pages/leave/MyLeavePage";
+import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
+import SupportChatPage from "./pages/chat/SupportChatPage";
+import ChatWidget from "./pages/chat/ChatWidget";
+
+// Recruitment
+import RecruitmentPage from "./pages/common/recruitment/RecruitmentPage";
+import JobDetailPage from "./pages/common/recruitment/JobDetailPage";
+import ApplyJobPage from "./pages/common/recruitment/ApplyJobPage";
+import JobPostingManagementPage from "./pages/hr/recruitment/job-posting/JobPostingManagementPage";
+import ApplicationReviewPage from "./pages/hr/recruitment/application/ApplicationReviewPage";
 
 const App: React.FC = () => {
   return (
@@ -104,6 +112,11 @@ const App: React.FC = () => {
           <Route path="/tracking/order-tracking" element={<OrderTracking />} />
           <Route path="/tracking/order-tracking/:trackingNumber" element={<OrderTracking />} />
 
+          {/* Recruitment public routes */}
+          <Route path="/jobs" element={<RecruitmentPage />} />
+          <Route path="/jobs/:id" element={<JobDetailPage />} />
+          <Route path="/jobs/:id/apply" element={<ApplyJobPage />} />
+
           <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
           <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />
           <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword /></AuthRoute>} />
@@ -125,6 +138,18 @@ const App: React.FC = () => {
             <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
             <Route path="/financial" element={<PrivateRoute allowedRoles={["admin"]}><AdminFinancialIndex /></PrivateRoute>} />
             <Route path="/reports" element={<PrivateRoute allowedRoles={["admin"]}><ReportsPage /></PrivateRoute>} />
+            
+            <Route path="/support/tickets" element={<PrivateRoute allowedRoles={["admin", "manager"]}><SupportChatPage /></PrivateRoute>} />
+            <Route path="/support/tickets/:id" element={<PrivateRoute allowedRoles={["admin", "manager"]}><SupportChatPage /></PrivateRoute>} />
+            
+            <Route
+              path="/recruitment/hr/jobs"
+              element={<PrivateRoute allowedRoles={["admin", "manager"]}><JobPostingManagementPage /></PrivateRoute>}
+            />
+            <Route
+              path="/recruitment/hr/applications"
+              element={<PrivateRoute allowedRoles={["admin", "manager"]}><ApplicationReviewPage /></PrivateRoute>}
+            />
             
             {/* Admin & Manager routes */}
             <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin', 'manager']}><VehiclesRouter /></PrivateRoute>} />
@@ -160,6 +185,7 @@ const App: React.FC = () => {
             <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />
             <Route path="/employees/assign-history" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssignmentHistory /></PrivateRoute>} />
             <Route path="/orders/incidents" element={<PrivateRoute allowedRoles={['manager']}><ManagerIncidentReports /></PrivateRoute>} />
+            <Route path="/manager/leaves" element={<PrivateRoute allowedRoles={['manager']}><LeaveManagementPage /></PrivateRoute>} />
 
             {/* Shipper routes */}
             <Route path="/shipper/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
@@ -171,14 +197,15 @@ const App: React.FC = () => {
             <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
             <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
             <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
+            <Route path="/employee/leaves" element={<PrivateRoute allowedRoles={['shipper', 'driver']}><MyLeavePage /></PrivateRoute>} />
 
             {/* Driver routes */}
-            <Route path="/driver/orders" element={<PrivateRoute allowedRoles={['driver']}><DriverOrders /></PrivateRoute>} />
             <Route path="/driver/shipments" element={<PrivateRoute allowedRoles={['driver']}><DriverShipments /></PrivateRoute>} />
             <Route path="/driver/route" element={<PrivateRoute allowedRoles={['driver']}><DriverRoute /></PrivateRoute>} />
             <Route path="/driver/history" element={<PrivateRoute allowedRoles={['driver']}><DriverHistory /></PrivateRoute>} />
           </Route>
         </Routes>
+        <ChatWidget />
       </Router>
     </ConfigProvider>
   );

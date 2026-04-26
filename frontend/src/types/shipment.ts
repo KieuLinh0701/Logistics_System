@@ -88,6 +88,7 @@ export interface DriverShipment {
   id: number;
   code: string;
   status: string;
+  employee?: { id: number; userId?: number; };
   startTime?: string;
   endTime?: string;
   createdAt?: string;

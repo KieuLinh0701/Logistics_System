@@ -45,6 +45,8 @@ export interface Order {
   serviceType: ServiceType;
   discountAmount: number;
   cod: number;
+  actualCollected?: number;
+  returnedAmount?: number;
   totalFee: number;
   orderValue: number;
   payer: string;

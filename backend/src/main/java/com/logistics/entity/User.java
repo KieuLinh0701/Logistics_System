@@ -15,17 +15,19 @@ import lombok.*;
 
 @Entity
 @Audited
-@Data
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"account", "addresses", "employees", "products", "shipperAssignments"})
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Integer id;
 
     @Column(length = 50, nullable = true, unique = true)
