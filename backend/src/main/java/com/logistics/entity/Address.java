@@ -47,6 +47,10 @@ public class Address {
     @Column(columnDefinition = "NVARCHAR(11)")
     private String phoneNumber;
 
+    private long latitude;
+
+    private long longitude;
+
     private Boolean isDefault;
 
     @ManyToOne

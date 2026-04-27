@@ -33,7 +33,15 @@ public class UserOrderDetailDto {
     private AddressDto recipientAddress;
     private String pickupType;
     private BigDecimal weight;
+    private BigDecimal originalWeight;
+    private BigDecimal height;
+    private BigDecimal width;
+    private BigDecimal length;
     private BigDecimal adjustedWeight;
+    private BigDecimal adjustedOriginalWeight;
+    private BigDecimal adjustedHeight;
+    private BigDecimal adjustedWidth;
+    private BigDecimal adjustedLength;
     private ServiceTypeDto serviceType;
     private Integer discountAmount;
     private Integer cod;

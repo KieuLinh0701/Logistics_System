@@ -58,7 +58,7 @@ const UserOrderCreate: React.FC = () => {
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [promotionSearch, setPromotionSearch] = useState("");
     const [loadingPromotion, setLoadingPromotion] = useState(false);
-    const [loadingBank, setLoadingBank] = useState(false);
+    const [_, setLoadingBank] = useState(false);
 
     // Sản phẩm
     const [loadingProduct, setLoadingProduct] = useState(false);
@@ -90,6 +90,10 @@ const UserOrderCreate: React.FC = () => {
     const [shippingFee, setShippingFee] = useState<number | undefined>(undefined);
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
+    const [originalWeight, setOriginalWeight] = useState<number | undefined>(undefined);
+    const [length, setLength] = useState<number | undefined>(undefined);
+    const [width, setWidth] = useState<number | undefined>(undefined);
+    const [height, setHeight] = useState<number | undefined>(undefined);
 
     const [existBankAccount, setExistBankAccount] = useState<Boolean>(false);
     const [userLocked, setUserLocked] = useState<Boolean>(false);
@@ -567,7 +571,7 @@ const UserOrderCreate: React.FC = () => {
         );
 
         setOrderValue(totalValue);
-        setWeight(totalWeight);
+        setOriginalWeight(totalWeight);
         setShowProductModal(false);
     };
 
@@ -601,13 +605,29 @@ const UserOrderCreate: React.FC = () => {
                 0
             );
             setOrderValue(totalValue);
-            setWeight(Number(totalWeight.toFixed(2)));
+            setOriginalWeight(Number(totalWeight.toFixed(2)));
         }
     };
 
     const handleOrderInfoChange = (changedValues: any) => {
         if (changedValues.weight !== undefined) {
             setWeight(changedValues.weight);
+        }
+
+        if (changedValues.originalWeight !== undefined) {
+            setOriginalWeight(changedValues.originalWeight);
+        }
+
+        if (changedValues.length !== undefined) {
+            setLength(changedValues.length);
+        }
+
+        if (changedValues.height !== undefined) {
+            setHeight(changedValues.height);
+        }
+
+        if (changedValues.width !== undefined) {
+            setWidth(changedValues.width);
         }
 
         if (changedValues.orderValue !== undefined) {
@@ -623,6 +643,38 @@ const UserOrderCreate: React.FC = () => {
             setSelectedServiceType(selected || null);
         }
     };
+
+    const handleCalculateWeight = async (
+        length: number,
+        width: number,
+        height: number,
+        originalWeight: number
+    ) => {
+        try {
+            const result = await shippingFeeApi.calculateWeight({
+                length,
+                width,
+                height,
+                originalWeight,
+            });
+
+            if (result.success && result.data !== undefined) {
+                const calculated = result.data;
+                setWeight(calculated || undefined);
+                orderInfo.setFieldValue("weight", calculated);
+            } else {
+                message.error(result.message || "Không thể tính khối lượng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tính khối lượng");
+        }
+    };
+
+    useEffect(() => {
+        if (length && width && originalWeight && height) {
+            handleCalculateWeight(length, width, height, originalWeight);
+        }
+    }, [originalWeight, height, length, width]);
 
     useEffect(() => {
         if (!(pickupType === "AT_OFFICE")) return;
@@ -683,7 +735,7 @@ const UserOrderCreate: React.FC = () => {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
             } catch (error: any) {
-                  message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+                message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -748,6 +800,10 @@ const UserOrderCreate: React.FC = () => {
                 recipientDetail: recipientData.detail,
                 pickupType: pickupType,
                 weight,
+                length,
+                width,
+                height,
+                originalWeight,
                 serviceTypeId: selectedServiceType?.id,
                 cod: codAmount || 0,
                 orderValue: orderValue || 0,
@@ -844,6 +900,10 @@ const UserOrderCreate: React.FC = () => {
         setQuantityValues({});
         setOrderValue(undefined);
         setWeight(undefined);
+        setLength(undefined);
+        setWidth(undefined);
+        setHeight(undefined);
+        setOriginalWeight(undefined);
         setCodAmount(undefined);
         setTotalFee(undefined);
         setPayer("CUSTOMER");
@@ -1005,7 +1065,7 @@ const UserOrderCreate: React.FC = () => {
                                     0
                                 );
                                 setOrderValue(totalValue);
-                                setWeight(totalWeight);
+                                setOriginalWeight(totalWeight);
 
                                 return updated;
                             });
@@ -1058,7 +1118,7 @@ const UserOrderCreate: React.FC = () => {
 
                             <OrderInfo
                                 form={orderInfo}
-                                weight={weight}
+                                originalWeight={originalWeight}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}
@@ -1096,7 +1156,7 @@ const UserOrderCreate: React.FC = () => {
                             <PaymentCard
                                 form={paymentCard}
                                 payer={payer}
-                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onChangePayment={(changedValues) => {
                                     if (selectedAddress === null) return;
                                     setPayer(changedValues.payer);
@@ -1105,7 +1165,7 @@ const UserOrderCreate: React.FC = () => {
 
                             <NoteCard
                                 notes={notes}
-                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onChange={(newNotes) => {
                                     if (selectedAddress === null) return;
                                     setNotes(newNotes);
@@ -1126,7 +1186,7 @@ const UserOrderCreate: React.FC = () => {
                                 selectedPromotion={selectedPromotion}
                                 setSelectedPromotion={setSelectedPromotion}
                                 setShowPromoModal={handleOpenPromoModal}
-                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                             />
                         }
                     </div>
@@ -1134,7 +1194,7 @@ const UserOrderCreate: React.FC = () => {
                     <Actions
                         onCreate={handleCreateOrder}
                         loading={loadingOrder}
-                        disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                        disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                     />
                 </Col>
             </Row>

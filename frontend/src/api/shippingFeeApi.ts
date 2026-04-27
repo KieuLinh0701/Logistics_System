@@ -1,5 +1,5 @@
 import type { ApiResponse } from "../types/response";
-import type { CalculateShippingFeeRequest, CalculateTotalFeeUserRequest } from "../types/shippingFee";
+import type { CalculateShippingFeeRequest, CalculateTotalFeeUserRequest, CalculateWeightRequest } from "../types/shippingFee";
 import axiosClient from "./axiosClient";
 
 const shippingFeeApi = {
@@ -23,6 +23,14 @@ const shippingFeeApi = {
   calculateTotalFeeMananager: async (params: CalculateTotalFeeUserRequest) => {
     const res = await axiosClient.get<ApiResponse<number>>(
       "/public/fees/total-manager",
+      { params }
+    );
+    return res;
+  },
+
+  calculateWeight: async (params: CalculateWeightRequest) => {
+    const res = await axiosClient.get<ApiResponse<number>>(
+      "/public/fees/weight",
       { params }
     );
     return res;

@@ -20,6 +20,10 @@ public class ManagerOrderCreateRequest {
     private Integer recipientWardCode;
     private String recipientDetail;
     private BigDecimal weight;
+    private BigDecimal originalWeight;
+    private BigDecimal height;
+    private BigDecimal length;
+    private BigDecimal width;
     private Integer serviceTypeId;
     private Integer orderValue;
     private String payer;

@@ -99,6 +99,30 @@ public class Order {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal weight;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal length;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal width;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal height;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal originalWeight; 
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedOriginalWeight;
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedHeight;
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedLength;
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedWidth;
+
     @Column(precision = 10, scale = 2, nullable = true)
     private BigDecimal adjustedWeight;
 

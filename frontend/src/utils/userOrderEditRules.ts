@@ -30,6 +30,18 @@ export const USER_ORDER_FIELD_EDIT_RULES: Record<string, EditableRule> = {
     nonEditableStatuses: USER_FINAL_STATUSES,
   },
   // Thông tin đơn hàng
+  originalWeight: {
+    editableStatuses: ['DRAFT'],
+  },
+  length: {
+    editableStatuses: ['DRAFT'],
+  },
+  height: {
+    editableStatuses: ['DRAFT'],
+  },
+  width: {
+    editableStatuses: ['DRAFT'],
+  },
   weight: {
     editableStatuses: ['DRAFT'],
   },

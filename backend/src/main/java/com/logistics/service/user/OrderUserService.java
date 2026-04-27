@@ -1,5 +1,6 @@
 package com.logistics.service.user;
 
+import com.logistics.service.common.ShippingRequestPublicService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -57,48 +58,36 @@ import com.logistics.utils.OrderUtils;
 import com.logistics.utils.UserOrderEditRuleUtils;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class OrderUserService {
+    private final OrderRepository repository;
 
-    @Autowired
-    private OrderRepository repository;
+    private final ProductRepository productRepository;
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final OrderProductRepository orderProductRepository;
 
-    @Autowired
-    private OrderProductRepository orderProductRepository;
+    private final OrderHistoryRepository orderHistoryRepository;
 
-    @Autowired
-    private OrderHistoryRepository orderHistoryRepository;
+    private final PromotionUserService promotionUserService;
 
-    @Autowired
-    private PromotionUserService promotionUserService;
+    private final AddressUserService addressUserService;
 
-    @Autowired
-    private AddressUserService addressUserService;
+    private final ServiceTypeUserService serviceTypeUserService;
 
-    @Autowired
-    private ServiceTypeUserService serviceTypeUserService;
+    private final OfficePublicService officePublicService;
 
-    @Autowired
-    private OfficePublicService officePublicService;
+    private final FeePublicService feeService;
 
-    @Autowired
-    private FeePublicService feeService;
+    private final UserUserService userUserService;
 
-    @Autowired
-    private UserUserService userUserService;
+    private final ProductUserService productUserService;
 
-    @Autowired
-    private ProductUserService productUserService;
+    private final OrderHistoryUserService orderHistoryUserService;
 
-    @Autowired
-    private OrderHistoryUserService orderHistoryUserService;
-
-    @Autowired
-    private BankAccountRepository bankAccountRepository;
+    private final BankAccountRepository bankAccountRepository;
 
     public ApiResponse<ListResponse<UserOrderListDto>> list(int userId, UserOrderSearchRequest request) {
         try {
@@ -239,7 +228,12 @@ public class OrderUserService {
             Address senderAddress = addressUserService.findById(request.getSenderAddressId())
                     .orElseThrow(() -> new RuntimeException("Địa chỉ người gửi không tồn tại"));
 
-            BigDecimal weight = calculateWeight(request.getOrderProducts(), request.getWeight());
+            BigDecimal weight = calculateWeight(
+                request.getOrderProducts(),
+                request.getOriginalWeight(),
+                request.getHeight(),
+                request.getLength(),
+                request.getWidth());
 
             if (weight.compareTo(request.getWeight()) != 0 && request.getWeight() != null) {
                 return new ApiResponse<>(
@@ -344,6 +338,10 @@ public class OrderUserService {
             order.setRecipientAddress(recipientAddress);
             order.setPickupType(OrderPickupType.valueOf(request.getPickupType()));
             order.setWeight(request.getWeight());
+            order.setOriginalWeight(request.getOriginalWeight());
+            order.setHeight(request.getHeight());
+            order.setWidth(request.getWidth());
+            order.setLength(request.getLength());
             order.setServiceType(serviceType);
             order.setPromotion(promotion);
             order.setDiscountAmount(discountAmount);
@@ -726,10 +724,24 @@ public class OrderUserService {
             }
 
             // 6. Cập nhật weight và orderValue chỉ khi được phép
-            BigDecimal calcWeight = calculateWeight(request.getOrderProducts(), request.getWeight());
+            BigDecimal calcWeight = calculateWeight(
+                request.getOrderProducts(),
+                request.getOriginalWeight(),
+                request.getHeight(),
+                request.getLength(),
+                request.getWidth());
             int calcOrderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
 
             updateFieldIfEditable("weight", order.getWeight(), calcWeight, order, currentStatus, order::setWeight);
+            updateFieldIfEditable("originalWeight", order.getOriginalWeight(), request.getOriginalWeight(), order
+                    , currentStatus,
+                    order::setOriginalWeight);
+            updateFieldIfEditable("height", order.getHeight(), request.getHeight(), order, currentStatus,
+                    order::setHeight);
+            updateFieldIfEditable("length", order.getLength(), request.getLength(), order, currentStatus,
+                    order::setLength);
+            updateFieldIfEditable("width", order.getWidth(), request.getWidth(), order, currentStatus,
+                    order::setWidth);
             updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, order, currentStatus,
                     order::setOrderValue);
 
@@ -804,7 +816,6 @@ public class OrderUserService {
         List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
         boolean adjustStock = movingDraftToPending || order.getStatus() != OrderStatus.DRAFT;
 
-        // --- XỬ LÝ TRƯỜNG HỢP LIST RỖNG ---
         if (items.isEmpty()) {
             for (OrderProduct oldOp : existingProducts) {
                 Product product = oldOp.getProduct();
@@ -815,10 +826,9 @@ public class OrderUserService {
                 }
                 orderProductRepository.delete(oldOp);
             }
-            return; // Xóa xong thì thoát hàm
+            return; 
         }
 
-        // --- Phần update bình thường ---
         Map<Integer, OrderProduct> existingMap = new HashMap<>();
         for (OrderProduct op : existingProducts)
             existingMap.put(op.getProduct().getId(), op);
@@ -955,9 +965,17 @@ public class OrderUserService {
             Promotion promotion = promotionUserService.findById(request.getPromotionId())
                     .orElseThrow(() -> new RuntimeException("Khuyến mãi không tồn tại"));
 
-            if (!promotionUserService.canUsePromotion(userId, promotion.getId(),
-                    request.getServiceTypeId(), request.getShippingFee(),
-                    calculateWeight(request.getOrderProducts(), null))) {
+            if (!promotionUserService.canUsePromotion(
+                userId, 
+                promotion.getId(),
+                request.getServiceTypeId(), 
+                request.getShippingFee(),
+                calculateWeight(
+                    request.getOrderProducts(),
+                    request.getOriginalWeight(),
+                    request.getHeight(),
+                    request.getLength(),
+                    request.getWidth()))) {
                 throw new RuntimeException("Bạn không đủ điều kiện để dùng mã giảm giá");
             }
         }
@@ -1037,7 +1055,15 @@ public class OrderUserService {
         if (isBlank(request.getPickupType()))
             missing.add("Hình thức giao hàng");
         if (request.getWeight() == null)
-            missing.add("Khối lượng");
+            missing.add("Khối lượng quy đổi");
+        if (request.getOriginalWeight() == null)
+            missing.add("Khối lượng thực tế");
+        if (request.getHeight() == null)
+            missing.add("Chiều cao");
+        if (request.getLength() == null)
+            missing.add("Chiều dài");
+        if (request.getWidth() == null)
+            missing.add("Chiều rộng");
         if (request.getServiceTypeId() == null)
             missing.add("Loại dịch vụ");
         if (request.getCod() == null)
@@ -1084,7 +1110,19 @@ public class OrderUserService {
             throw new RuntimeException("Mã Phường/Xã không hợp lệ");
 
         if (request.getWeight().doubleValue() <= 0)
-            throw new RuntimeException("Khối lượng phải lớn hơn 0");
+            throw new RuntimeException("Khối lượng quy đổi phải lớn hơn 0");
+
+        if (request.getOriginalWeight().doubleValue() <= 0)
+            throw new RuntimeException("Khối lượng thực tế phải lớn hơn 0");
+
+        if (request.getHeight().doubleValue() <= 0)
+            throw new RuntimeException("Chiều cao phải lớn hơn 0");
+
+        if (request.getLength().doubleValue() <= 0)
+            throw new RuntimeException("Chiều dài phải lớn hơn 0");
+
+        if (request.getWidth().doubleValue() <= 0)
+            throw new RuntimeException("Chiều rộng phải lớn hơn 0");
 
         if (request.getServiceTypeId() <= 0)
             throw new RuntimeException("Mã dịch vụ không hợp lệ");
@@ -1174,19 +1212,24 @@ public class OrderUserService {
         return tracking;
     }
 
-    public BigDecimal calculateWeight(List<UserOrderCreateRequest.OrderProduct> items, BigDecimal weight) {
-        if (items == null || items.isEmpty()) {
-            return weight != null ? weight : BigDecimal.ZERO;
+    public BigDecimal calculateWeight(
+        List<UserOrderCreateRequest.OrderProduct> items, 
+        BigDecimal originalWeight,
+        BigDecimal height,
+        BigDecimal length,
+        BigDecimal width) {
+        if (items == null || items.isEmpty()) { 
+            return feeService.calculateWeight(originalWeight, height, length, width);
         }
 
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal totalOriginalWeight = BigDecimal.ZERO;
         for (var item : items) {
             Product product = productRepository.findById(item.getProductId()).orElseThrow();
             BigDecimal itemWeight = product.getWeight().multiply(BigDecimal.valueOf(item.getQuantity()));
-            total = total.add(itemWeight);
+            totalOriginalWeight = totalOriginalWeight.add(itemWeight);
         }
 
-        return total;
+        return feeService.calculateWeight(totalOriginalWeight, height, length, width);
     }
 
     public int calculateOrderValue(List<UserOrderCreateRequest.OrderProduct> items, Integer orderValue) {

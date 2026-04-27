@@ -61,6 +61,10 @@ public class ManagerOrderEditRuleUtils {
 
         // Thông tin đơn hàng 
         map.put("weight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("originalWeight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("height", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("length", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("width", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
         map.put("serviceType", new EditableRule(null, null));
         map.put("cod", new EditableRule(null, null));
         map.put("orderValue", new EditableRule(null, null));
@@ -119,6 +123,10 @@ public class ManagerOrderEditRuleUtils {
 
         // Thông tin đơn hàng
         map.put("weight", new EditableRule(null, null));
+        map.put("originalWeight", new EditableRule(null, null));
+        map.put("height", new EditableRule(null, null));
+        map.put("length", new EditableRule(null, null));
+        map.put("width", new EditableRule(null, null));
         map.put("serviceType", new EditableRule(null, null));
         map.put("cod", new EditableRule(null, null));
         map.put("orderValue", new EditableRule(null, null));

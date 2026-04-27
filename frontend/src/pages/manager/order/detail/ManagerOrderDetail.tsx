@@ -23,7 +23,7 @@ const UserOrderDetail: React.FC = () => {
     const navigate = useNavigate();
 
     const [order, setOrder] = useState<Order | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [loadingView, setLoadingView] = useState(true);
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);

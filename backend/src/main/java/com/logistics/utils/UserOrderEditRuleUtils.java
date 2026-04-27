@@ -63,6 +63,10 @@ public class UserOrderEditRuleUtils {
 
         // Các field khác
         map.put("weight", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("originalWeight", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("height", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("length", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("width", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("serviceType", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("cod", new EditableRule(null, USER_FINAL_STATUSES));
         map.put("orderValue", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));

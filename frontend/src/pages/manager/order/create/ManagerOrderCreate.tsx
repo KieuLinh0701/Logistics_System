@@ -35,6 +35,10 @@ const ManagerOrderCreate: React.FC = () => {
     const [payer, setPayer] = useState<string>("CUSTOMER");
     const [notes, setNotes] = useState("");
     const [_, setShippingFee] = useState<number | undefined>(undefined);
+    const [originalWeight, setOriginalWeight] = useState<number | undefined>(undefined);
+    const [length, setLength] = useState<number | undefined>(undefined);
+    const [width, setWidth] = useState<number | undefined>(undefined);
+    const [height, setHeight] = useState<number | undefined>(undefined);
 
     // Người gửi và người nhận
     const [empty] = useState({
@@ -162,6 +166,10 @@ const ManagerOrderCreate: React.FC = () => {
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
                 weight,
+                originalWeight,
+                length,
+                width,
+                height,
                 serviceTypeId: selectedServiceType?.id,
                 orderValue: orderValue || 0,
                 payer: payer,
@@ -227,6 +235,38 @@ const ManagerOrderCreate: React.FC = () => {
         fetchShippingFee();
     }, [officeCityCode, recipientData.cityCode, weight, selectedServiceType, orderValue]);
 
+    const handleCalculateWeight = async (
+        length: number,
+        width: number,
+        height: number,
+        originalWeight: number
+    ) => {
+        try {
+            const result = await shippingFeeApi.calculateWeight({
+                length,
+                width,
+                height,
+                originalWeight,
+            });
+
+            if (result.success && result.data !== undefined) {
+                const calculated = result.data;
+                setWeight(calculated || undefined);
+                orderInfo.setFieldValue("weight", calculated);
+            } else {
+                message.error(result.message || "Không thể tính khối lượng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tính khối lượng");
+        }
+    };
+
+    useEffect(() => {
+        if (length && width && originalWeight && height) {
+            handleCalculateWeight(length, width, height, originalWeight);
+        }
+    }, [originalWeight, height, length, width]);
+
     // Tạo đơn mới sau khi tạo thành công 
     const handleResetForm = async () => {
         // Reset tất cả form
@@ -237,6 +277,10 @@ const ManagerOrderCreate: React.FC = () => {
 
         setOrderValue(undefined);
         setWeight(undefined);
+        setOriginalWeight(undefined);
+        setHeight(undefined);
+        setLength(undefined);
+        setWidth(undefined);
         setTotalFee(undefined);
         setPayer("CUSTOMER");
         setNotes("");
@@ -305,6 +349,10 @@ const ManagerOrderCreate: React.FC = () => {
                                 }}
                                 onChangeOrderInfo={(values) => {
                                     if (values.weight !== undefined) setWeight(values.weight);
+                                    if (values.length !== undefined) setLength(values.length);
+                                    if (values.width !== undefined) setWidth(values.width);
+                                    if (values.height !== undefined) setHeight(values.height);
+                                    if (values.originalWeight !== undefined) setOriginalWeight(values.originalWeight);
                                     if (values.orderValue !== undefined) setOrderValue(values.orderValue);
                                 }}
                             />
