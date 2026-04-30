@@ -41,6 +41,17 @@ public class ShippingRequestAdminService {
                 m.put("requestContent", r.getRequestContent());
                 m.put("status", r.getStatus() != null ? r.getStatus().name() : null);
                 m.put("paidAt", r.getPaidAt());
+                m.put("contactName", r.getContactName());
+                m.put("contactPhoneNumber", r.getContactPhoneNumber());
+                m.put("contactEmail", r.getContactEmail());
+                m.put("response", r.getResponse());
+                m.put("responseAt", r.getResponseAt());
+
+                if (r.getOrder() != null) {
+                    m.put("orderTrackingNumber", r.getOrder().getTrackingNumber());
+                } else {
+                    m.put("orderTrackingNumber", null);
+                }
                 if (r.getOffice() != null) {
                     Map<String, Object> o = new HashMap<>();
                     o.put("id", r.getOffice().getId());

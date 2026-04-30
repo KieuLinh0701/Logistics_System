@@ -1,5 +1,3 @@
-import type { ListResponse } from "./response";
-
 export interface FeeConfiguration {
   id: number;
   serviceTypeId?: number;
@@ -26,6 +24,27 @@ export interface CreateFeeConfigurationPayload {
   notes?: string;
 }
 
+export interface QueryState {
+  page: number;
+  limit: number;
+  search: string;
+  feeType?: string;
+  serviceTypeId?: number;
+  active?: boolean;
+}
+
+export interface Option {
+  label: string;
+  value: string;
+}
+
+export interface FeeConfigurationsTableProps {
+  loading: boolean;
+  rows: FeeConfiguration[];
+  onView: (record: FeeConfiguration) => void;
+  onEdit: (record: FeeConfiguration) => void;
+  onDelete: (id: number) => void;
+  feeTypeLabel: (value: string) => string;
+}
+
 export type UpdateFeeConfigurationPayload = Partial<CreateFeeConfigurationPayload>;
-
-

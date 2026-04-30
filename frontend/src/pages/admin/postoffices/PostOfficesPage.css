@@ -1,0 +1,35 @@
+.postoffices-toolbar-actions {
+  flex-wrap: nowrap !important;
+  gap: 10px;
+}
+
+.postoffices-toolbar-actions .primary-button {
+  white-space: nowrap;
+}
+
+.postoffices-page .admin-actions-trigger {
+  color: #000;
+  border: 1px solid #000;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.postoffices-page .admin-actions-trigger:hover {
+  background: #f6f7fb;
+}
+
+.postoffices-page .list-page-table .ant-table-tbody > tr > td,
+.postoffices-page .list-page-table .ant-table-thead > tr > th {
+  color: #000;
+}
+
+@media (max-width: 1200px) {
+  .postoffices-toolbar-actions {
+    flex-wrap: wrap !important;
+  }
+}

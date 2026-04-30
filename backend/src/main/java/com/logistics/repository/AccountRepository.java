@@ -52,4 +52,14 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     @Query("SELECT r.name FROM Account a JOIN a.accountRoles ar JOIN ar.role r WHERE a.id = :accountId AND ar.isActive = true")
     List<String> findActiveRoleNamesByAccountId(@Param("accountId") Integer accountId);
+
+    @Query("SELECT DISTINCT a FROM Account a JOIN a.accountRoles ar JOIN ar.role r " +
+        "WHERE (:search IS NULL OR a.email LIKE %:search% OR a.user.firstName LIKE %:search% OR a.user.lastName LIKE %:search% OR a.user.phoneNumber LIKE %:search%) " +
+        "AND (:roleName IS NULL OR LOWER(r.name) = LOWER(:roleName)) " +
+        "AND (:statusBool IS NULL OR a.isActive = :statusBool) " +
+        "AND ar.isActive = true")
+    Page<Account> findBySearchAndRoleAndStatus(@Param("search") String search,
+                            @Param("roleName") String roleName,
+                            @Param("statusBool") Boolean statusBool,
+                            Pageable pageable);
 }

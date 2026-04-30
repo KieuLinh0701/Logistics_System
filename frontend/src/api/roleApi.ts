@@ -5,7 +5,7 @@ type Role = { id: number; name: string };
 
 const roleApi = {
   async getAdminRoles() {
-    const res = await axiosClient.get<ApiResponse<Role[]>>('/admin/roles');
+    const res = await axiosClient.get<ApiResponse<Role[]>>('/admin/users/roles');
     return res;
   }
 };

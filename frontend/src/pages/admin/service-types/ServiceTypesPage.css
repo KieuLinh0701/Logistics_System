@@ -1,0 +1,35 @@
+.service-types-toolbar-actions {
+  flex-wrap: nowrap !important;
+  gap: 10px;
+}
+
+.service-types-toolbar-actions .primary-button {
+  white-space: nowrap;
+}
+
+.service-types-page .admin-actions-trigger {
+  color: #000;
+  border: 1px solid #000;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.service-types-page .admin-actions-trigger:hover {
+  background: #f6f7fb;
+}
+
+.service-types-page .list-page-table .ant-table-tbody > tr > td,
+.service-types-page .list-page-table .ant-table-thead > tr > th {
+  color: #000;
+}
+
+@media (max-width: 1200px) {
+  .service-types-toolbar-actions {
+    flex-wrap: wrap !important;
+  }
+}

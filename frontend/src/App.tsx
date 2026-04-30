@@ -23,11 +23,11 @@ import CompanyInfo from "./pages/common/info/CompanyInfo";
 import ContactForm from "./pages/common/info/ContactForm";
 
 
-import AdminUsers from "./pages/admin/Users";
-import AdminOrders from "./pages/admin/Orders";
-import AdminPostOffices from "./pages/admin/PostOffices";
-import AdminServiceTypes from "./pages/admin/ServiceTypes";
-import AdminFeeConfigurations from "./pages/admin/FeeConfigurations";
+import AdminUsers from "./pages/admin/users/UsersPage";
+import AdminOrders from "./pages/admin/orders/OrdersPage";
+import AdminPostOffices from "./pages/admin/postoffices/PostOfficesPage";
+import AdminServiceTypes from "./pages/admin/service-types/ServiceTypesPage";
+import AdminFeeConfigurations from "./pages/admin/fee-configurations/FeeConfigurationsPage";
 import AdminFinancialIndex from "./pages/admin/financial/AdminFinancialIndex";
 import ReportsPage from "./pages/admin/reports/ReportsPage";
 
@@ -75,8 +75,8 @@ import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
 import PromotionList from "./pages/common/info/PromotionList";
-import AdminPromotions from "./pages/admin/Promotions";
-import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
+import AdminPromotions from "./pages/admin/promotions/PromotionsPage";
+import ShippingRequestsAdmin from "./pages/admin/shipping-requests/ShippingRequestsPage";
 import MyLeavePage from "./pages/leave/MyLeavePage";
 import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
 import SupportChatPage from "./pages/chat/SupportChatPage";

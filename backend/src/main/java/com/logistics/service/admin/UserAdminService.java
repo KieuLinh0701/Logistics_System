@@ -3,6 +3,7 @@ package com.logistics.service.admin;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,20 +39,26 @@ public class UserAdminService {
     @Autowired
     private RoleRepository roleRepository;
 
-    public ApiResponse<Map<String, Object>> listUsers(int page, int limit, String search) {
+    public ApiResponse<Map<String, Object>> listUsers(int page, int limit, String search, String status, String roleName) {
         try {
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
             Page<Account> accountPage;
 
-            if (search != null && !search.trim().isEmpty()) {
-                accountPage = accountRepository
-                        .findByEmailContainingOrUserFirstNameContainingOrUserLastNameContainingOrUserPhoneNumberContaining(
-                                search, search, search, search, pageable);
+            Boolean statusBool = null;
+            if (status != null) {
+                if ("ACTIVE".equalsIgnoreCase(status)) statusBool = true;
+                else if ("INACTIVE".equalsIgnoreCase(status)) statusBool = false;
+            }
+
+            if ((search != null && !search.trim().isEmpty()) || roleName != null || statusBool != null) {
+                String searchParam = (search != null && !search.trim().isEmpty()) ? search : null;
+                accountPage = accountRepository.findBySearchAndRoleAndStatus(searchParam, roleName, statusBool, pageable);
             } else {
                 accountPage = accountRepository.findAll(pageable);
             }
 
-            List<Map<String, Object>> users = accountPage.getContent().stream().map(this::mapAccount)
+                List<Map<String, Object>> users = accountPage.getContent().stream()
+                    .map(acc -> mapAccount(acc, roleName))
                     .collect(Collectors.toList());
 
             Pagination pagination = new Pagination(
@@ -95,20 +102,23 @@ public class UserAdminService {
                 return new ApiResponse<>(false, "Số điện thoại đã tồn tại", null);
             }
 
-                Role role = roleRepository.findById(request.getRoleId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy role"));
-
                 Account account = new Account();
                 account.setEmail(request.getEmail());
                 account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
 
-                // Tạo AccountRole liên kết account <-> role
-                AccountRole ar = new AccountRole();
-                ar.setAccount(account);
-                ar.setRole(role);
-                ar.setIsActive(true);
-                List<AccountRole> ars = new java.util.ArrayList<>();
-                ars.add(ar);
+                // Tạo AccountRole liên kết account <-> roles (hỗ trợ nhiều role)
+                List<AccountRole> ars = new ArrayList<>();
+                if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
+                    for (Integer rid : request.getRoleIds()) {
+                        Role role = roleRepository.findById(rid)
+                                .orElseThrow(() -> new RuntimeException("Không tìm thấy role id=" + rid));
+                        AccountRole ar = new AccountRole();
+                        ar.setAccount(account);
+                        ar.setRole(role);
+                        ar.setIsActive(true);
+                        ars.add(ar);
+                    }
+                }
                 account.setAccountRoles(ars);
 
                 account.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
@@ -153,40 +163,42 @@ public class UserAdminService {
             if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
                 account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
             }
-            if (request.getRoleId() != null) {
-                Role role = roleRepository.findById(request.getRoleId())
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy role"));
-
+            if (request.getRoleIds() != null) {
+                List<Integer> target = request.getRoleIds();
                 List<AccountRole> current = account.getAccountRoles();
                 if (current == null) {
-                    current = new java.util.ArrayList<>();
+                    current = new ArrayList<>();
                     account.setAccountRoles(current);
                 }
 
-                AccountRole matched = null;
                 for (AccountRole ar : current) {
-                    if (ar != null && ar.getRole() != null && ar.getRole().getId() != null
-                            && ar.getRole().getId().equals(role.getId())) {
-                        matched = ar;
-                        break;
+                    if (ar != null && ar.getRole() != null && ar.getRole().getId() != null) {
+                        if (target.contains(ar.getRole().getId())) {
+                            ar.setIsActive(true);
+                        } else {
+                            ar.setIsActive(false);
+                        }
                     }
                 }
 
-                // Deactivate others and activate matched
-                for (AccountRole ar : current) {
-                    if (ar == matched) {
-                        ar.setIsActive(true);
-                    } else {
-                        ar.setIsActive(false);
+                for (Integer rid : target) {
+                    boolean exists = false;
+                    for (AccountRole ar : current) {
+                        if (ar != null && ar.getRole() != null && ar.getRole().getId() != null
+                                && ar.getRole().getId().equals(rid)) {
+                            exists = true;
+                            break;
+                        }
                     }
-                }
-
-                if (matched == null) {
-                    AccountRole newAr = new AccountRole();
-                    newAr.setAccount(account);
-                    newAr.setRole(role);
-                    newAr.setIsActive(true);
-                    current.add(newAr);
+                    if (!exists) {
+                        Role role = roleRepository.findById(rid)
+                                .orElseThrow(() -> new RuntimeException("Không tìm thấy role id=" + rid));
+                        AccountRole newAr = new AccountRole();
+                        newAr.setAccount(account);
+                        newAr.setRole(role);
+                        newAr.setIsActive(true);
+                        current.add(newAr);
+                    }
                 }
             }
             if (request.getIsActive() != null) {
@@ -219,6 +231,10 @@ public class UserAdminService {
     }
 
     private Map<String, Object> mapAccount(Account account) {
+        return mapAccount(account, null);
+    }
+
+    private Map<String, Object> mapAccount(Account account, String preferredRoleName) {
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("id", account.getUser() != null ? account.getUser().getId() : null);
         userMap.put("email", account.getEmail());
@@ -230,18 +246,43 @@ public class UserAdminService {
             userMap.put("createdAt", account.getUser().getCreatedAt());
             userMap.put("updatedAt", account.getUser().getUpdatedAt());
         }
-        // Bao gồm thông tin role trong response (lấy role active đầu tiên nếu có)
-        Role activeRole = null;
+
+        Role chosenRole = null;
         if (account.getAccountRoles() != null) {
-            for (AccountRole ar : account.getAccountRoles()) {
-                if (ar != null && Boolean.TRUE.equals(ar.getIsActive()) && ar.getRole() != null) {
-                    activeRole = ar.getRole();
-                    break;
+            // Lọc theo role
+            if (preferredRoleName != null) {
+                for (AccountRole ar : account.getAccountRoles()) {
+                    if (ar != null && ar.getRole() != null && preferredRoleName.equals(ar.getRole().getName())) {
+                        chosenRole = ar.getRole();
+                        break;
+                    }
+                }
+            }
+
+            if (chosenRole == null) {
+                for (AccountRole ar : account.getAccountRoles()) {
+                    if (ar != null && Boolean.TRUE.equals(ar.getIsActive()) && ar.getRole() != null) {
+                        chosenRole = ar.getRole();
+                        break;
+                    }
                 }
             }
         }
-        userMap.put("role", activeRole != null ? activeRole.getName() : null);
-        userMap.put("roleId", activeRole != null ? activeRole.getId() : null);
+        userMap.put("role", chosenRole != null ? chosenRole.getName() : null);
+        userMap.put("roleId", chosenRole != null ? chosenRole.getId() : null);
+
+        List<String> rolesList = new ArrayList<>();
+        List<Integer> rolesIdList = new ArrayList<>();
+        if (account.getAccountRoles() != null) {
+            for (AccountRole ar : account.getAccountRoles()) {
+                if (ar != null && ar.getRole() != null && ar.getRole().getName() != null) {
+                    rolesList.add(ar.getRole().getName());
+                    if (ar.getRole().getId() != null) rolesIdList.add(ar.getRole().getId());
+                }
+            }
+        }
+        userMap.put("roles", rolesList);
+        userMap.put("rolesIds", rolesIdList);
         userMap.put("isActive", account.getIsActive());
         userMap.put("isVerified", account.getIsVerified());
         return userMap;
