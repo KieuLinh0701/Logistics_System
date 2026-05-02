@@ -334,6 +334,16 @@
   vertical-align: middle !important;
 }
 
+.list-page-table .ant-table-bordered .ant-table-thead > tr > th,
+.list-page-table .ant-table-bordered .ant-table-tbody > tr > td {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.list-page-table .ant-table-tbody>tr>td {
+  color: #111827 !important;
+}
+
 .list-page-table .ant-table-tbody>tr:hover>td {
   background: #f8f9ff !important;
 }
@@ -393,6 +403,17 @@
   font-weight: 500;
   line-height: 1.2;
   margin-bottom: 8px;
+}
+
+/* Plain status text (no surrounding box) for driver pages */
+.list-table-status-text {
+  color: #111827 !important;
+  font-weight: 400 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  display: inline !important;
 }
 
 .custom-table-content-strong {

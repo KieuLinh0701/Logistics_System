@@ -1,0 +1,111 @@
+/**
+ * Layout & table styling dùng chung cho các trang shipper (danh sách),
+ * căn chỉnh với admin/manager: hàng bộ lọc trên → tiêu đề → khoảng cách → bảng.
+ * Không import JobPostingComponents.css — file độc lập cho shipper.
+ */
+
+.shipper-page-root .shipper-filter-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.shipper-page-root .shipper-filter-panel.shipper-filter-panel--end {
+  justify-content: flex-end;
+}
+
+.shipper-page-root .shipper-filter-grow {
+  flex: 1;
+  min-width: 220px;
+}
+
+.shipper-page-root .shipper-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.shipper-page-root .shipper-page-header.list-page-header {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.shipper-page-root .shipper-header-meta {
+  margin-top: 12px;
+}
+
+.shipper-page-root .shipper-stats-section {
+  margin-bottom: 16px;
+}
+
+.shipper-page-root .shipper-stats-section .ant-card {
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.shipper-page-root .shipper-page-table.list-page-table {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Bảng: chữ nội dung đen như trang admin shipping-requests */
+.shipper-page-root .shipper-page-table .ant-table-tbody > tr > td {
+  color: #000 !important;
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+.shipper-page-root .shipper-page-table .ant-table-thead > tr > th {
+  color: #1c3d90 !important;
+}
+
+.shipper-page-root .shipper-page-table .ant-table-header,
+.shipper-page-root .shipper-page-table .ant-table-body {
+  min-width: auto !important;
+}
+
+.shipper-page-root .shipper-page-table .shipper-table-strong {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+.shipper-page-root .shipper-page-table .shipper-table-muted {
+  color: #595959 !important;
+  font-size: 12px;
+}
+
+.shipper-page-root .shipper-page-table .shipper-cod-value {
+  color: #cf1322 !important;
+  font-weight: 600;
+}
+
+.shipper-page-root .shipper-page-table .shipper-amount-ok {
+  color: #52c41a !important;
+  font-weight: 600;
+}
+
+.shipper-page-root .shipper-cod-tabs > .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
+.shipper-page-root .shipper-cod-tab-block .shipper-filter-panel {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 960px) {
+  .shipper-page-root .shipper-filter-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

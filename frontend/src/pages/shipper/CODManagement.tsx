@@ -4,7 +4,6 @@ import {
   Table,
   Tag,
   Button,
-  Space,
   Typography,
   Row,
   Col,
@@ -28,11 +27,12 @@ import {
   HistoryOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import dayjs from "dayjs";
+import "../../styles/ListPage.css";
+import "./ShipperPagesShared.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -51,7 +51,6 @@ interface PaymentSubmissionItem {
 }
 
 const ShipperCODManagement: React.FC = () => {
-  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<PaymentSubmissionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<{ status?: string; dateFrom?: string; dateTo?: string }>({});
@@ -211,16 +210,18 @@ const ShipperCODManagement: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string) => <Text strong>{text || "-"}</Text>,
+      render: (text: string) => (
+        <Text strong className="shipper-table-strong">
+          {text || "-"}
+        </Text>
+      ),
     },
     {
       title: "Số tiền",
       dataIndex: "actualAmount",
       key: "actualAmount",
       render: (amount: number) => (
-        <Text strong style={{ color: "#f50" }}>
-          {(amount || 0).toLocaleString()}đ
-        </Text>
+        <Text strong className="shipper-cod-value">{(amount || 0).toLocaleString()}đ</Text>
       ),
     },
     {
@@ -260,26 +261,30 @@ const ShipperCODManagement: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string) => <Text strong>{text || "-"}</Text>,
+      render: (text: string) => (
+        <Text strong className="shipper-table-strong">
+          {text || "-"}
+        </Text>
+      ),
     },
     {
       title: "Số tiền hệ thống",
       dataIndex: "systemAmount",
       key: "systemAmount",
-      render: (amount: number) => <Text>{amount.toLocaleString()}đ</Text>,
+      render: (amount: number) => <Text className="shipper-table-strong">{amount.toLocaleString()}đ</Text>,
     },
     {
       title: "Số tiền thực nộp",
       dataIndex: "actualAmount",
       key: "actualAmount",
-      render: (amount: number) => <Text strong>{amount.toLocaleString()}đ</Text>,
+      render: (amount: number) => <Text strong className="shipper-table-strong">{amount.toLocaleString()}đ</Text>,
     },
     {
       title: "Chênh lệch",
       dataIndex: "discrepancy",
       key: "discrepancy",
       render: (discrepancy: number) => (
-        <Text style={{ color: discrepancy !== 0 ? "#f50" : "#52c41a" }}>
+        <Text className={discrepancy !== 0 ? "shipper-cod-value" : "shipper-amount-ok"}>
           {discrepancy > 0 ? "+" : ""}
           {discrepancy.toLocaleString()}đ
         </Text>
@@ -312,159 +317,219 @@ const ShipperCODManagement: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <Title level={2} style={{ color: "#1C3D90", marginBottom: 24 }}>
-        Quản lý COD
-      </Title>
+    <div className="list-page-layout shipper-page-root">
+      <div className="list-page-content">
+        <div className="list-page-header shipper-page-header">
+          <div>
+            <h3 className="list-page-title-main">Quản lý COD</h3>
+            <div className="shipper-header-meta">
+              <div className="list-page-tag">
+                {activeTab === "transactions"
+                  ? `Giao dịch: ${transactions.length} dòng`
+                  : `Lịch sử nộp: ${submissions.length} dòng`}
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          {
-            key: "transactions",
-            label: "Giao dịch COD",
-            icon: <DollarOutlined />,
-            children: (
-              <Card>
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                      <Statistic title="Tổng đã thu" value={summary.totalCollected} prefix={<DollarOutlined />} formatter={(value) => `${value?.toLocaleString()}đ`} />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                      <Statistic title="Đã nộp" value={summary.totalSubmitted} prefix={<CheckCircleOutlined />} formatter={(value) => `${value?.toLocaleString()}đ`} />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                      <Statistic title="Còn nợ" value={summary.totalPending} prefix={<ClockCircleOutlined />} formatter={(value) => `${value?.toLocaleString()}đ`} />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card>
-                      <Statistic title="Tổng giao dịch" value={summary.transactionCount} />
-                    </Card>
-                  </Col>
-                </Row>
+        <Tabs
+          className="shipper-cod-tabs"
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: "transactions",
+              label: "Giao dịch COD",
+              icon: <DollarOutlined />,
+              children: (
+                <div className="shipper-cod-tab-block">
+                  <div className="shipper-filter-panel">
+                    <div className="shipper-filter-grow" />
+                    <div className="shipper-filter-actions">
+                      <Select
+                        placeholder="Lọc theo trạng thái"
+                        allowClear
+                        style={{ width: 200 }}
+                        value={filters.status}
+                        onChange={(value) => setFilters({ ...filters, status: value || undefined })}
+                      >
+                        <Option value="PENDING">Chờ thu</Option>
+                        <Option value="SUCCESS">Đã thu</Option>
+                      </Select>
+                      <RangePicker
+                        onChange={(dates) => {
+                          if (dates) {
+                            setFilters({
+                              ...filters,
+                              dateFrom: dates[0]?.format("YYYY-MM-DD"),
+                              dateTo: dates[1]?.format("YYYY-MM-DD"),
+                            });
+                          } else {
+                            setFilters({ ...filters, dateFrom: undefined, dateTo: undefined });
+                          }
+                        }}
+                      />
+                      <Button onClick={fetchTransactions}>Tải lại</Button>
+                      {selectedTransactions.length > 0 && (
+                        <Button type="primary" className="primary-button" icon={<SwapOutlined />} onClick={() => setSubmitModal(true)}>
+                          Nộp tiền ({selectedTransactions.length})
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-                <Space style={{ marginBottom: 16 }}>
-                  <Select
-                    placeholder="Lọc theo trạng thái"
-                    allowClear
-                    style={{ width: 200 }}
-                    onChange={(value) => setFilters({ ...filters, status: value || undefined })}
-                  >
-                    <Option value="PENDING">Chờ thu</Option>
-                    <Option value="SUCCESS">Đã thu</Option>
-                  </Select>
-                  <RangePicker
-                    onChange={(dates) => {
-                      if (dates) {
-                        setFilters({
-                          ...filters,
-                          dateFrom: dates[0]?.format("YYYY-MM-DD"),
-                          dateTo: dates[1]?.format("YYYY-MM-DD"),
-                        });
-                      } else {
-                        setFilters({ ...filters, dateFrom: undefined, dateTo: undefined });
-                      }
-                    }}
-                  />
-                  <Button onClick={fetchTransactions}>Tải lại</Button>
-                  {selectedTransactions.length > 0 && (
-                    <Button type="primary" icon={<SwapOutlined />} onClick={() => setSubmitModal(true)}>
-                      Nộp tiền ({selectedTransactions.length})
-                    </Button>
-                  )}
-                </Space>
+                  <div className="shipper-stats-section">
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card>
+                          <Statistic
+                            title="Tổng đã thu"
+                            value={summary.totalCollected}
+                            prefix={<DollarOutlined />}
+                            formatter={(value) => `${value?.toLocaleString()}đ`}
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card>
+                          <Statistic
+                            title="Đã nộp"
+                            value={summary.totalSubmitted}
+                            prefix={<CheckCircleOutlined />}
+                            formatter={(value) => `${value?.toLocaleString()}đ`}
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card>
+                          <Statistic
+                            title="Còn nợ"
+                            value={summary.totalPending}
+                            prefix={<ClockCircleOutlined />}
+                            formatter={(value) => `${value?.toLocaleString()}đ`}
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} sm={12} lg={6}>
+                        <Card>
+                          <Statistic title="Tổng giao dịch" value={summary.transactionCount} />
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
 
-                <Table
-                  rowKey="id"
-                  loading={loading}
-                  columns={transactionColumns}
-                  dataSource={transactions}
-                  pagination={{
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: pagination.total,
-                    onChange: (page, pageSize) => setPagination({ ...pagination, current: page, pageSize: pageSize || 10 }),
-                  }}
-                />
-              </Card>
-            ),
-          },
-          {
-            key: "submissions",
-            label: "Lịch sử nộp tiền",
-            icon: <HistoryOutlined />,
-            children: (
-              <Card>
-                <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col xs={24} sm={8}>
-                    <Card>
-                      <Statistic title="Tổng đã nộp" value={submissionSummary.totalSubmitted} prefix={<DollarOutlined />} formatter={(value) => `${value?.toLocaleString()}đ`} />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Card>
-                      <Statistic title="Tổng chênh lệch" value={submissionSummary.totalDiscrepancy} formatter={(value) => `${value?.toLocaleString()}đ`} />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={8}>
-                    <Card>
-                      <Statistic title="Số lần nộp" value={submissionSummary.totalSubmissions} />
-                    </Card>
-                  </Col>
-                </Row>
+                  <div className="list-page-table shipper-page-table">
+                    <Table
+                      rowKey="id"
+                      loading={loading}
+                      columns={transactionColumns}
+                      dataSource={transactions}
+                      pagination={{
+                        current: pagination.current,
+                        pageSize: pagination.pageSize,
+                        total: pagination.total,
+                        onChange: (page, pageSize) =>
+                          setPagination({ ...pagination, current: page, pageSize: pageSize || 10 }),
+                      }}
+                      scroll={{ x: 900 }}
+                    />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "submissions",
+              label: "Lịch sử nộp tiền",
+              icon: <HistoryOutlined />,
+              children: (
+                <div className="shipper-cod-tab-block">
+                  <div className="shipper-filter-panel">
+                    <div className="shipper-filter-grow" />
+                    <div className="shipper-filter-actions">
+                      <Select
+                        placeholder="Lọc theo trạng thái"
+                        allowClear
+                        style={{ width: 200 }}
+                        value={submissionFilters.status || undefined}
+                        onChange={(value) => setSubmissionFilters({ ...submissionFilters, status: value || "" })}
+                      >
+                        <Option value="PENDING">Chờ xác nhận</Option>
+                        <Option value="MATCHED">Khớp</Option>
+                        <Option value="ADJUSTED">Đã điều chỉnh</Option>
+                        <Option value="MISMATCHED">Không khớp</Option>
+                      </Select>
+                      <RangePicker
+                        onChange={(dates) => {
+                          if (dates) {
+                            setSubmissionFilters({
+                              ...submissionFilters,
+                              dateFrom: dates?.[0]?.format("YYYY-MM-DD") ?? "",
+                              dateTo: dates?.[1]?.format("YYYY-MM-DD") ?? "",
+                            });
+                          } else {
+                            setSubmissionFilters({ ...submissionFilters, dateFrom: "", dateTo: "" });
+                          }
+                        }}
+                      />
+                      <Button onClick={fetchSubmissions}>Tải lại</Button>
+                    </div>
+                  </div>
 
-                <Space style={{ marginBottom: 16 }}>
-                  <Select
-                    placeholder="Lọc theo trạng thái"
-                    allowClear
-                    style={{ width: 200 }}
-                    onChange={(value) => setSubmissionFilters({ ...submissionFilters, status: value || "" })}
-                  >
-                    <Option value="PENDING">Chờ xác nhận</Option>
-                    <Option value="MATCHED">Khớp</Option>
-                    <Option value="ADJUSTED">Đã điều chỉnh</Option>
-                    <Option value="MISMATCHED">Không khớp</Option>
-                  </Select>
-                  <RangePicker
-                    onChange={(dates) => {
-                      if (dates) {
-                        setSubmissionFilters({
-                          ...submissionFilters,
-                          dateFrom: dates?.[0]?.format("YYYY-MM-DD") ?? "",
-                          dateTo: dates?.[1]?.format("YYYY-MM-DD") ?? "",
-                        });
-                      } else {
-                        setSubmissionFilters({ ...submissionFilters, dateFrom: "", dateTo: "" });
-                      }
-                    }}
-                  />
-                  <Button onClick={fetchSubmissions}>Tải lại</Button>
-                </Space>
+                  <div className="shipper-stats-section">
+                    <Row gutter={16}>
+                      <Col xs={24} sm={8}>
+                        <Card>
+                          <Statistic
+                            title="Tổng đã nộp"
+                            value={submissionSummary.totalSubmitted}
+                            prefix={<DollarOutlined />}
+                            formatter={(value) => `${value?.toLocaleString()}đ`}
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <Card>
+                          <Statistic
+                            title="Tổng chênh lệch"
+                            value={submissionSummary.totalDiscrepancy}
+                            formatter={(value) => `${value?.toLocaleString()}đ`}
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} sm={8}>
+                        <Card>
+                          <Statistic title="Số lần nộp" value={submissionSummary.totalSubmissions} />
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
 
-                <Table
-                  rowKey="id"
-                  loading={loading}
-                  columns={submissionColumns}
-                  dataSource={submissions}
-                  pagination={{
-                    current: submissionPagination.current,
-                    pageSize: submissionPagination.pageSize,
-                    total: submissionPagination.total,
-                    onChange: (page, pageSize) => setSubmissionPagination({ ...submissionPagination, current: page, pageSize: pageSize || 10 }),
-                  }}
-                />
-              </Card>
-            ),
-          },
-        ]}
-      />
+                  <div className="list-page-table shipper-page-table">
+                    <Table
+                      rowKey="id"
+                      loading={loading}
+                      columns={submissionColumns}
+                      dataSource={submissions}
+                      pagination={{
+                        current: submissionPagination.current,
+                        pageSize: submissionPagination.pageSize,
+                        total: submissionPagination.total,
+                        onChange: (page, pageSize) =>
+                          setSubmissionPagination({
+                            ...submissionPagination,
+                            current: page,
+                            pageSize: pageSize || 10,
+                          }),
+                      }}
+                      scroll={{ x: 900 }}
+                    />
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
 
       <Modal
         title="Nộp tiền COD"

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Card,
   Form,
   Input,
   Select,
@@ -12,12 +11,13 @@ import {
   Tag,
   Upload,
 } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import orderApi from "../../api/orderApi";
 import dayjs from "dayjs";
+import "../../styles/ListPage.css";
+import "./ShipperPagesShared.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
@@ -40,8 +40,6 @@ const ShipperIncidentReport: React.FC = () => {
   const [reports, setReports] = useState<IncidentReport[]>([]);
   const [submitModal, setSubmitModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-
-  // Upload file list for preview
   const [uploadList, setUploadList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -89,7 +87,7 @@ const ShipperIncidentReport: React.FC = () => {
             }
           } catch (e2) {
             try {
-              const pub = await orderApi.getPublicOrderByTrackingNumber(idOrTracking);
+              await orderApi.getPublicOrderByTrackingNumber(idOrTracking);
             } catch (e3) {
               // ignore
             }
@@ -131,7 +129,10 @@ const ShipperIncidentReport: React.FC = () => {
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setSelectedImages((s) => [...s, file]);
-      setUploadList((u) => [...u, { uid: String(Date.now()), name: file.name, status: "done", url: result, originFileObj: file }]);
+      setUploadList((u) => [
+        ...u,
+        { uid: String(Date.now()), name: file.name, status: "done", url: result, originFileObj: file },
+      ]);
     };
     reader.readAsDataURL(file);
     return false;
@@ -223,28 +224,38 @@ const ShipperIncidentReport: React.FC = () => {
       dataIndex: "trackingNumber",
       key: "trackingNumber",
       width: 140,
-      render: (text: string) => <Text strong style={{ fontSize: "13px" }}>{text || "—"}</Text>,
+      render: (text: string) => (
+        <Text strong className="shipper-table-strong" style={{ fontSize: "13px" }}>
+          {text || "—"}
+        </Text>
+      ),
     },
     {
       title: "Tiêu đề",
       dataIndex: "title",
       key: "title",
       width: 200,
-      render: (text: string) => <Text ellipsis style={{ maxWidth: 200 }}>{text}</Text>,
+      render: (text: string) => (
+        <Text ellipsis style={{ maxWidth: 200 }} className="shipper-table-strong">
+          {text}
+        </Text>
+      ),
     },
     {
       title: "Loại sự cố",
       dataIndex: "incidentType",
       key: "incidentType",
       width: 150,
-      render: (type: string) => getIncidentTypeText(type || ""),
+      render: (type: string) => <span className="shipper-table-strong">{getIncidentTypeText(type || "")}</span>,
     },
     {
       title: "Mức độ",
       dataIndex: "priority",
       key: "priority",
       width: 100,
-      render: (priority: string) => <Tag color={getPriorityColor(priority || "")}>{getPriorityText(priority || "")}</Tag>,
+      render: (priority: string) => (
+        <Tag color={getPriorityColor(priority || "")}>{getPriorityText(priority || "")}</Tag>
+      ),
     },
     {
       title: "Trạng thái",
@@ -263,25 +274,32 @@ const ShipperIncidentReport: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Title level={2} style={{ color: "#1C3D90", margin: 0 }}>
-          Báo cáo sự cố
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setSubmitModal(true)}>
-          Tạo báo cáo mới
-        </Button>
-      </div>
+    <div className="list-page-layout shipper-page-root">
+      <div className="list-page-content">
+        <div className="shipper-filter-panel shipper-filter-panel--end">
+          <div className="shipper-filter-actions">
+            <Button icon={<ReloadOutlined />} onClick={fetchReports}>
+              Làm mới
+            </Button>
+            <Button type="primary" className="primary-button" icon={<PlusOutlined />} onClick={() => setSubmitModal(true)}>
+              Tạo báo cáo mới
+            </Button>
+          </div>
+        </div>
 
-      <Card>
-        <Table
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={reports}
-          pagination={{ pageSize: 10 }}
-        />
-      </Card>
+        <div className="list-page-header shipper-page-header">
+          <div>
+            <h3 className="list-page-title-main">Báo cáo sự cố</h3>
+            <div className="shipper-header-meta">
+              <div className="list-page-tag">Kết quả: {reports.length} báo cáo</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="list-page-table shipper-page-table">
+          <Table rowKey="id" loading={loading} columns={columns} dataSource={reports} pagination={{ pageSize: 10 }} />
+        </div>
+      </div>
 
       <Modal
         title="Tạo báo cáo sự cố"
