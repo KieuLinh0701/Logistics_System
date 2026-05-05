@@ -14,14 +14,22 @@ export const MANAGER_EDIT_USER_ORDER_FIELD_RULES: Record<string, EditableRule> =
     senderName: {editableStatuses: []},
     senderPhoneNumber: {editableStatuses: []},
     senderCityCode: {editableStatuses: []},
+    senderCityName: {editableStatuses: []},
     senderWardCode: {editableStatuses: []},
+    senderWardName: {editableStatuses: []},
     senderDetailAddress: {editableStatuses: []},
+    senderLatitude: {editableStatuses: []},
+    senderLongitude: {editableStatuses: []},
 
     // Người nhận (KHÓA)
     recipientName: {editableStatuses: []},
     recipientPhoneNumber: {editableStatuses: []},
     recipientCityCode: {editableStatuses: []},
+    recipientCityName: {editableStatuses: []},
     recipientWardCode: {editableStatuses: []},
+    recipientWardName: {editableStatuses: []},
+    recipientLatitude: {editableStatuses: []},
+    recipientLongitude: {editableStatuses: []},
     recipientDetailAddress: {editableStatuses: []},
 
     // Thông tin đơn hàng
@@ -60,10 +68,22 @@ export const MANAGER_EDIT_OFFICE_ORDER_FIELD_RULES: Record<string, EditableRule>
     senderCityCode: {
         editableStatuses: [],
     },
+    senderCityName: {
+        editableStatuses: [],
+    },
     senderWardCode: {
         editableStatuses: ['AT_ORIGIN_OFFICE'],
     },
+    senderWardName: {
+        editableStatuses: ['AT_ORIGIN_OFFICE'],
+    },
     senderDetailAddress: {
+        editableStatuses: ['AT_ORIGIN_OFFICE'],
+    },
+    senderLatitude: {
+        editableStatuses: ['AT_ORIGIN_OFFICE'],
+    },
+    senderLongitude: {
         editableStatuses: ['AT_ORIGIN_OFFICE'],
     },
     // Người nhận
@@ -76,10 +96,22 @@ export const MANAGER_EDIT_OFFICE_ORDER_FIELD_RULES: Record<string, EditableRule>
     recipientCityCode: {
         editableStatuses: [],
     },
+    recipientCityName: {
+        editableStatuses: [],
+    },
     recipientWardCode: {
         editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKING_UP', 'PICKED_UP', 'AT_ORIGIN_OFFICE'],
     },
+    recipientWardName: {
+        editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKING_UP', 'PICKED_UP', 'AT_ORIGIN_OFFICE'],
+    },
     recipientDetailAddress: {
+        nonEditableStatuses: MANAGER_FINAL_STATUSES,
+    },
+    recipientLatitude: {
+        nonEditableStatuses: MANAGER_FINAL_STATUSES,
+    },
+    recipientLongitude: {
         nonEditableStatuses: MANAGER_FINAL_STATUSES,
     },
     // Thông tin đơn hàng

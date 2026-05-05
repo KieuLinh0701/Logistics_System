@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import { Card, Col, Form, Input, Row } from "antd";
 import type { FormInstance } from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
@@ -10,7 +10,12 @@ interface Props {
         phoneNumber: string;
         detail: string;
         wardCode: number;
-        cityCode: number;
+        wardName: string,
+        cityCode: number,
+        cityName: string,
+        latitude: number,
+        longitude: number,
+        fullAddress: string
     };
     disabled: boolean;
     onChange?: (values: any) => void;
@@ -22,6 +27,13 @@ const RecipientInfo: React.FC<Props> = ({
     disabled,
     onChange
 }) => {
+
+    const recipientValues = Form.useWatch('recipient', form);
+
+    useEffect(() => {
+        onChange?.(form.getFieldsValue(true));
+    }, [recipientValues]);
+
     return (
         <div className="create-order-card-container">
             <Form
@@ -32,12 +44,16 @@ const RecipientInfo: React.FC<Props> = ({
                     recipientPhone: recipient.phoneNumber,
                     recipient: {
                         cityCode: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
+                        cityName: recipient.cityName,
                         wardCode: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
+                        wardName: recipient.wardName,
+                        latitude: recipient.latitude,
+                        longitude: recipient.longitude,
                         detail: recipient.detail,
                     }
                 }}
                 onValuesChange={(_, allValues) => {
-                    onChange?.(allValues);
+                    onChange?.(form.getFieldsValue(true));
                 }}
             >
                 <Card className="create-order-custom-card">

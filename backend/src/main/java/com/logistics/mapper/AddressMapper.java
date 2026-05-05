@@ -17,6 +17,11 @@ public class AddressMapper {
                 entity.getDetail(),
                 Boolean.TRUE.equals(entity.getIsDefault()),
                 entity.getName(),
-                entity.getPhoneNumber());
+                entity.getPhoneNumber(),
+                entity.getFullAddress(),
+                entity.getCityName(),
+                entity.getWardName(),
+                entity.getLatitude(),
+                entity.getLongitude());
     }
 }

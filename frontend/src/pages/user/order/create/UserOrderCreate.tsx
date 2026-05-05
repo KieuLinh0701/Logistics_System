@@ -31,6 +31,7 @@ import SuccessOrderModal from "./components/SuccessOrderModal";
 import orderApi from "../../../../api/orderApi";
 import bankAccountApi from "../../../../api/bankAccountApi";
 import userApi from "../../../../api/userApi";
+import {geocodeAddress} from "../../../../service/mapsService.ts";
 
 const UserOrderCreate: React.FC = () => {
     const [form] = Form.useForm();
@@ -104,7 +105,12 @@ const UserOrderCreate: React.FC = () => {
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: "",
         cityCode: 0,
+        cityName: "",
+        latitude: 0,
+        longitude: 0,
+        fullAddress: ""
     });
     const [senderData, setSenderData] = useState(empty);
     const [recipientData, setRecipientData] = useState(empty);
@@ -319,7 +325,12 @@ const UserOrderCreate: React.FC = () => {
                 phoneNumber: selectedAddress?.phoneNumber || '',
                 detail: selectedAddress?.detail || '',
                 cityCode: selectedAddress?.cityCode ?? 0,
-                wardCode: selectedAddress?.wardCode ?? 0
+                wardCode: selectedAddress?.wardCode ?? 0,
+                cityName: selectedAddress?.cityName || '',
+                wardName: selectedAddress?.wardName || '',
+                latitude: selectedAddress?.latitude ?? 0,
+                longitude: selectedAddress?.longitude ?? 0,
+                fullAddress: selectedAddress?.fullAddress || '',
             });
         }
 
@@ -348,7 +359,7 @@ const UserOrderCreate: React.FC = () => {
 
         hasLocalOffices();
 
-    }, [selectedAddress?.cityCode, selectedAddress?.wardCode]);
+    }, [selectedAddress]);
 
     const showModal = (mode: 'create' | 'edit', address?: Address) => {
         setModalModeAddress(mode);
@@ -361,7 +372,11 @@ const UserOrderCreate: React.FC = () => {
                 address: {
                     cityCode: address.cityCode || undefined,
                     wardCode: address.wardCode || undefined,
-                    detail: address.detail || ''
+                    detail: address.detail || '',
+                    cityName: address.cityName || '',
+                    wardName: address.wardName || '',
+                    latitude: address.latitude || undefined,
+                    longitude: address.longitude || undefined
                 }
             });
         } else {
@@ -371,7 +386,11 @@ const UserOrderCreate: React.FC = () => {
                 detail: '',
                 wardCode: 0,
                 cityCode: 0,
-                isDefault: addresses.length === 0
+                isDefault: addresses.length === 0,
+                wardName: '',
+                cityName: '',
+                longitude: 0,
+                latitude: 0
             };
             setEditingAddress(emptyAddress);
             form.resetFields();
@@ -407,6 +426,10 @@ const UserOrderCreate: React.FC = () => {
                 wardCode: values.address.wardCode,
                 detail: values.address.detail,
                 isDefault: values.isDefault,
+                cityName: values.address.cityName,
+                wardName: values.address.wardName,
+                longitude: values.address.longitude,
+                latitude: values.address.latitude
             };
 
             if (modalModeAddress === 'edit' && editingAddress?.id) {
@@ -482,6 +505,11 @@ const UserOrderCreate: React.FC = () => {
             detail: address.detail,
             wardCode: address.wardCode,
             cityCode: address.cityCode,
+            cityName:address.cityName,
+            wardName: address.wardName,
+            latitude: address.latitude,
+            longitude: address.longitude,
+            fullAddress: address.fullAddress
         });
 
         setSelectedAddress(address);
@@ -798,6 +826,10 @@ const UserOrderCreate: React.FC = () => {
                 recipientCityCode: recipientData.cityCode,
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
+                recipientWardName: recipientData.wardName,
+                recipientCityName: recipientData.cityName,
                 pickupType: pickupType,
                 weight,
                 length,
@@ -809,6 +841,7 @@ const UserOrderCreate: React.FC = () => {
                 orderValue: orderValue || 0,
                 payer: payer,
                 notes: notes || "",
+                saveRecipient: false, // tạm thời set false --> sửa sau nhé
                 promotionId: selectedPromotion?.id,
                 fromOfficeId: selectedOffice?.id,
                 discountAmount: discountAmount,
@@ -884,6 +917,34 @@ const UserOrderCreate: React.FC = () => {
         if (serviceFee === undefined || discountAmount === undefined) return;
         setTotalFee(Math.max(serviceFee - discountAmount, 0))
     }, [discountAmount, serviceFee]);
+
+    useEffect(() => {
+        const shouldGeocode =
+            recipientData.cityCode &&
+            recipientData.wardCode &&
+            recipientData.detail &&
+            (!recipientData.latitude || !recipientData.longitude);
+
+        if (!shouldGeocode) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                const fullAddr = `${recipientData.detail}, ${recipientData.wardName}, ${recipientData.cityName}, Việt Nam`;
+                const geo = await geocodeAddress(fullAddr);
+                if (geo.results[0]) {
+                    setRecipientData(prev => ({
+                        ...prev,
+                        latitude: geo.results[0].geometry.location.lat,
+                        longitude: geo.results[0].geometry.location.lng,
+                    }));
+                }
+            } catch (err) {
+                console.error("Geocode recipient thất bại:", err);
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [recipientData.cityCode, recipientData.wardCode, recipientData.detail]);
 
     // Tạo đơn mới sau khi tạo thành công 
     const handleResetForm = async () => {
@@ -1112,6 +1173,10 @@ const UserOrderCreate: React.FC = () => {
                                         detail: values.recipient?.detail ?? prev.detail,
                                         wardCode: values.recipient?.wardCode ?? prev.wardCode,
                                         cityCode: values.recipient?.cityCode ?? prev.cityCode,
+                                        cityName: values.recipient?.cityName ?? prev.cityName,
+                                        wardName: values.recipient?.wardName ?? prev.wardName,
+                                        latitude: values.recipient?.latitude ?? prev.latitude,
+                                        longitude: values.recipient?.longitude ?? prev.longitude,
                                     }));
                                 }}
                             />

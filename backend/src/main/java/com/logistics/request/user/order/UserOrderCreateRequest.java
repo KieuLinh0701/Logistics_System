@@ -17,6 +17,12 @@ public class UserOrderCreateRequest {
     private Integer recipientCityCode;
     private Integer recipientWardCode;
     private String recipientDetail;
+    private String recipientWardName;
+    private String recipientCityName;
+    private Double recipientLatitude;
+    private Double recipientLongitude;
+    private Integer recipientAddressId;
+    private Boolean saveRecipient;
     private String pickupType;
     private BigDecimal weight;
     private BigDecimal originalWeight;

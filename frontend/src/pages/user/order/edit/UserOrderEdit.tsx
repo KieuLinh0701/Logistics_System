@@ -34,6 +34,7 @@ import ConfirmModal from "../../../common/ConfirmModal";
 import { canEditUserOrderField } from "../../../../utils/userOrderEditRules";
 import userApi from "../../../../api/userApi";
 import HeaderHome from "../../../../components/common/HeaderHome";
+import {geocodeAddress} from "../../../../service/mapsService.ts";
 
 const UserOrderEdit: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -115,7 +116,12 @@ const UserOrderEdit: React.FC = () => {
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: "",
         cityCode: 0,
+        cityName: "",
+        latitude: 0,
+        longitude: 0,
+        fullAddress: ""
     });
     const [senderData, setSenderData] = useState(empty);
     const [recipientData, setRecipientData] = useState(empty);
@@ -219,7 +225,12 @@ const UserOrderEdit: React.FC = () => {
             phoneNumber: order.senderPhone || '',
             detail: order?.senderDetail || '',
             cityCode: order?.senderCityCode ?? 0,
-            wardCode: order?.senderWardCode ?? 0
+            cityName: order?.senderCityName || '',
+            wardCode: order?.senderWardCode ?? 0,
+            wardName: order?.senderWardName || '',
+            latitude: order?.senderLatitude || 0,
+            longitude: order?.senderLongitude || 0,
+            fullAddress: order?.senderFullAddress || '',
         });
 
         setRecipientData({
@@ -227,7 +238,12 @@ const UserOrderEdit: React.FC = () => {
             phoneNumber: order.recipientAddress.phoneNumber || '',
             detail: order.recipientAddress.detail || '',
             cityCode: order.recipientAddress.cityCode ?? 0,
-            wardCode: order.recipientAddress.wardCode ?? 0
+            cityName: order?.recipientCityName || '',
+            wardCode: order.recipientAddress.wardCode ?? 0,
+            wardName: order?.recipientWardName || '',
+            latitude: order?.recipientLatitude || 0,
+            longitude: order?.recipientLongitude || 0,
+            fullAddress: order?.recipientFullAddress || '',
         });
 
         setSelectedServiceType(order.serviceType);
@@ -416,7 +432,12 @@ const UserOrderEdit: React.FC = () => {
                 phoneNumber: selectedAddress?.phoneNumber || '',
                 detail: selectedAddress?.detail || '',
                 cityCode: selectedAddress?.cityCode ?? 0,
-                wardCode: selectedAddress?.wardCode ?? 0
+                wardCode: selectedAddress?.wardCode ?? 0,
+                cityName: selectedAddress?.cityName || '',
+                wardName: selectedAddress?.wardName || '',
+                latitude: selectedAddress?.latitude ?? 0,
+                longitude: selectedAddress?.longitude ?? 0,
+                fullAddress: selectedAddress?.fullAddress || ''
             });
         }
 
@@ -457,8 +478,12 @@ const UserOrderEdit: React.FC = () => {
                 ...address,
                 address: {
                     cityCode: address.cityCode || undefined,
+                    cityName: address.cityName || '',
                     wardCode: address.wardCode || undefined,
-                    detail: address.detail || ''
+                    wardName: address.wardName || '',
+                    detail: address.detail || '',
+                    latitude: address.latitude || undefined,
+                    longitude: address.longitude || undefined
                 }
             });
         } else {
@@ -467,14 +492,26 @@ const UserOrderEdit: React.FC = () => {
                 phoneNumber: '',
                 detail: '',
                 wardCode: 0,
+                wardName: '',
                 cityCode: 0,
+                cityName: '',
+                longitude: 0,
+                latitude: 0,
                 isDefault: addresses.length === 0
             };
             setEditingAddress(emptyAddress);
             form.resetFields();
             form.setFieldsValue({
                 ...emptyAddress,
-                address: { cityCode: undefined, wardCode: undefined, detail: '' }
+                address: {
+                    cityCode: undefined,
+                    cityName: '',
+                    wardCode: undefined,
+                    wardName: '',
+                    detail: '',
+                    latitude: undefined,
+                    longitude: undefined,
+                }
             });
         }
 
@@ -501,7 +538,11 @@ const UserOrderEdit: React.FC = () => {
                 name: values.name,
                 phoneNumber: values.phoneNumber,
                 cityCode: values.address.cityCode,
+                cityName: values.address.cityName,
                 wardCode: values.address.wardCode,
+                wardName: values.address.wardName,
+                latitude: values.address.latitude,
+                longitude: values.address.longitude,
                 detail: values.address.detail,
                 isDefault: values.isDefault,
             };
@@ -579,6 +620,11 @@ const UserOrderEdit: React.FC = () => {
             detail: address.detail,
             wardCode: address.wardCode,
             cityCode: address.cityCode,
+            cityName: address.cityName,
+            wardName: address.wardName,
+            latitude: address.latitude,
+            longitude: address.longitude,
+            fullAddress: address.fullAddress
         });
 
         setSelectedAddress(address);
@@ -871,8 +917,13 @@ const UserOrderEdit: React.FC = () => {
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
+                recipientCityName: recipientData.cityName,
+                recipientWardName: recipientData.wardName,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
+                saveRecipient: false, // set mặc định false tạm nhen
                 pickupType: pickupType,
                 weight,
                 originalWeight,
@@ -972,6 +1023,34 @@ const UserOrderEdit: React.FC = () => {
         if (serviceFee === undefined || discountAmount === undefined) return;
         setTotalFee(Math.max(serviceFee - discountAmount, 0))
     }, [discountAmount, serviceFee]);
+
+    useEffect(() => {
+        const shouldGeocode =
+            recipientData.cityCode &&
+            recipientData.wardCode &&
+            recipientData.detail &&
+            (!recipientData.latitude || !recipientData.longitude);
+
+        if (!shouldGeocode) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                const fullAddr = `${recipientData.detail}, ${recipientData.wardName}, ${recipientData.cityName}, Việt Nam`;
+                const geo = await geocodeAddress(fullAddr);
+                if (geo.results[0]) {
+                    setRecipientData(prev => ({
+                        ...prev,
+                        latitude: geo.results[0].geometry.location.lat,
+                        longitude: geo.results[0].geometry.location.lng,
+                    }));
+                }
+            } catch (err) {
+                console.error("Geocode recipient thất bại:", err);
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [recipientData.cityCode, recipientData.wardCode, recipientData.detail]);
 
     const handleCancelOrder = () => {
         navigate(-1);

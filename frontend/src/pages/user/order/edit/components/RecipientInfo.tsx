@@ -25,6 +25,12 @@ const RecipientInfo: React.FC<Props> = ({
     status,
 }) => {
 
+    const recipientValues = Form.useWatch('recipient', form);
+
+    useEffect(() => {
+        onChange?.(form.getFieldsValue(true));
+    }, [recipientValues]);
+
     useEffect(() => {
         if (recipient) {
             form.setFieldsValue({

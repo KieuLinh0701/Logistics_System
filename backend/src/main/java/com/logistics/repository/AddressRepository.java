@@ -11,26 +11,31 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.logistics.enums.AddressType;
+
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Integer> {
-    List<Address> findByUserIdOrderByCreatedAtDesc(int userId);
+    List<Address> findByUserIdAndTypeOrderByCreatedAtDesc(int userId, AddressType type);
 
-    Optional<Address> findByIdAndUserId(int id, int userId);
+    Optional<Address> findByIdAndUserIdAndType(int id, int userId, AddressType type);
 
-    boolean existsByIdAndUser_Id(Integer id, Integer userId);
+    boolean existsByIdAndUser_IdAndType(Integer id, Integer userId, AddressType type);
 
-    long countByUserId(int userId);
+    long countByUserIdAndType(int userId, AddressType type);
 
     @Query("SELECT a.cityCode FROM Address a WHERE a.id = :id")
     Integer findCityCodeById(int id);
 
     @Modifying
-    @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId AND (:exceptId = -1 OR a.id <> :exceptId)")
-    void clearDefaultExcept(int userId, int exceptId);
+    @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId AND type = :type AND (:exceptId = "
+            + "-1 OR a.id <> :exceptId)")
+    void clearDefaultExcept(int userId, int exceptId, AddressType type);
 
     @Modifying
-    @Query("update Address a set a.isDefault = false where a.user.id = :userId")
-    void clearAllDefaultForUser(@Param("userId") int userId);
+    @Query("update Address a set a.isDefault = false where a.user.id = :userId and a.type = :type")
+    void clearAllDefaultForUser(
+            @Param("userId") int userId,
+            @Param("type") AddressType type);
 
     Optional<Address> findByUserIdAndIsDefaultTrue(Integer userId);
 
