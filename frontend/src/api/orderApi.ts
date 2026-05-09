@@ -1,5 +1,5 @@
 import type { ApiResponse, ListResponse } from "../types/response";
-import type { AdminOrder, CreateOrderSuccess, ManagerOrderRequest, ManagerOrderSearchRequest, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest } from "../types/order";
+import type { AdminOrder, CreateOrderSuccess, ManagerOrderRequest, ManagerOrderSearchRequest, Order, OrderPrint, UserOrderRequest, UserOrderSearchRequest, OrderFulfillmentSummary } from "../types/order";
 import axiosClient from "./axiosClient";
 import type { OrderHistory } from "../types/orderHistory";
 
@@ -318,6 +318,12 @@ const orderApi = {
   // Pubic
   async getPublicOrderByTrackingNumber(trackingNumber: string) {
     const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
+    return res;
+  },
+
+  //
+  async getFulfillmentSummary(orderId: number) {
+    const res = await axiosClient.get<ApiResponse<OrderFulfillmentSummary>>(`/orders/${orderId}/fulfillment-summary`);
     return res;
   },
 };

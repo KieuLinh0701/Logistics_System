@@ -168,3 +168,14 @@ export interface OrderPrint {
   createdAt: Date;
   orderProducts: OrderProductPrint[];
 }
+
+export interface OrderFulfillmentSummary {
+  orderId: number;
+  orderStatus: string;
+  totalItems: number;
+  deliveredItems: number;
+  returnedItems: number;
+  expectedCOD: number;
+  collectedCOD: number;
+  returnedValue: number;
+}

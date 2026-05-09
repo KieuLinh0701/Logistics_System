@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { message } from "antd";
+import { message, Descriptions, Table, Typography } from "antd";
 
 import Header from "./components/Header";
 import OrderSenderRecipient from "./components/SenderRecipientInfo";
@@ -9,18 +9,21 @@ import OrderProducts from "./components/ProductsInfo";
 import OrderPayment from "./components/PaymentInfo";
 import OrderActions from "./components/Actions";
 import OrderHistoryCard from "./components/OrderHistoryCard";
-import type { Order } from "../../../../types/order";
+import type { Order, OrderFulfillmentSummary } from "../../../../types/order";
 import "./UserOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
 import ConfirmPublicModal from "./components/ConfirmPublicModal";
-import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder, canReadyUserOrder } from "../../../../utils/orderUtils";
+import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder, canReadyUserOrder, translateOrderStatus } from "../../../../utils/orderUtils";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import AddEditModal from "../request/components/AddEditModal";
 import FromOfficeInfo from "./components/FromOfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 import { canCreateUserShippingRequestFromOrderDetail } from "../../../../utils/shippingRequestUtils";
 import userApi from "../../../../api/userApi";
+
+
+const { Title } = Typography;
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -38,6 +41,34 @@ const UserOrderDetail: React.FC = () => {
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
     const [userLocked, setUserLocked] = useState<Boolean>(false);
+
+
+    const [summary, setSummary] = useState<OrderFulfillmentSummary | null>(null);
+    const [summaryLoading, setSummaryLoading] = useState(false);
+
+    const fetchSummary = async (orderId?: number) => {
+        if (!orderId) {
+            setSummary(null);
+            return;
+        }
+        setSummaryLoading(true);
+        try {
+            const res = await orderApi.getFulfillmentSummary(orderId);
+            if (res.success && res.data) {
+                setSummary(res.data);
+            } else {
+                setSummary(null);
+            }
+        } catch {
+            setSummary(null);
+        } finally {
+            setSummaryLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (order?.id) fetchSummary(order.id);
+    }, [order?.id]);
 
     const fetchOrder = async () => {
         setLoadingView(true);
@@ -211,6 +242,31 @@ const UserOrderDetail: React.FC = () => {
     const canReady = canReadyUserOrder(order.status);
     const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status);
 
+    const productColumns = [
+        {
+            title: "Tên sản phẩm",
+            dataIndex: "productName",
+            key: "productName",
+        },
+        {
+            title: "Số lượng đặt",
+            dataIndex: "quantity",
+            key: "quantity",
+        },
+        {
+            title: "Số lượng đã giao",
+            dataIndex: "deliveredQuantity",
+            key: "deliveredQuantity",
+            render: (value: number | undefined) => value ?? 0,
+        },
+        {
+            title: "Số lượng hoàn",
+            dataIndex: "returnedQuantity",
+            key: "returnedQuantity",
+            render: (value: number | undefined) => value ?? 0,
+        },
+    ];
+
     return (
         <div className="order-detail container">
             <Header
@@ -237,6 +293,38 @@ const UserOrderDetail: React.FC = () => {
             }
             <OrderInfo order={order} />
             <OrderProducts products={order.orderProducts || []} />
+            <div className="order-detail-card">
+                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                    Kết quả giao hàng
+                </Title>
+                <Descriptions column={2} size="small">
+                    <Descriptions.Item label="Trạng thái">
+                        {translateOrderStatus(order.status)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
+                        {summaryLoading ? "Đang tải..." : summary ? `${summary.deliveredItems} / ${summary.totalItems}` : "N/A"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Sản phẩm hoàn">
+                        {summaryLoading ? "Đang tải..." : (summary?.returnedItems ?? "N/A")}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="COD đã thu / COD dự kiến">
+                        {summaryLoading ? "Đang tải..." : summary ? `${summary.collectedCOD.toLocaleString()} / ${summary.expectedCOD.toLocaleString()} VNĐ` : "N/A"}
+                    </Descriptions.Item>
+                </Descriptions>
+            </div>
+
+            <div className="order-detail-card">
+                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                    Chi tiết giao sản phẩm
+                </Title>
+                <Table
+                    rowKey={(record) => record.id || record.productId}
+                    columns={productColumns}
+                    dataSource={order.orderProducts || []}
+                    pagination={false}
+                    size="small"
+                />
+            </div>
             <OrderHistoryCard histories={order.orderHistories} />
             <OrderPayment order={order} />
             <OrderActions

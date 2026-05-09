@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { message } from "antd";
+import { message, Descriptions, Typography } from "antd";
 
 import Header from "./components/Header";
 import OrderSenderRecipient from "./components/SenderRecipientInfo";
@@ -9,13 +9,16 @@ import OrderProducts from "./components/ProductsInfo";
 import OrderPayment from "./components/PaymentInfo";
 import OrderActions from "./components/Actions";
 import OrderHistoryCard from "./components/OrderHistoryCard";
-import type { Order } from "../../../../types/order";
+import type { Order, OrderFulfillmentSummary } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
+import { canAtOriginOfficeManagerOrder, translateOrderStatus, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
+
+
+const { Title } = Typography;
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber } = useParams();
@@ -23,12 +26,40 @@ const UserOrderDetail: React.FC = () => {
     const navigate = useNavigate();
 
     const [order, setOrder] = useState<Order | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [loadingView, setLoadingView] = useState(true);
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
+
+    const [summary, setSummary] = useState<OrderFulfillmentSummary | null>(null);
+    const [summaryLoading, setSummaryLoading] = useState(false);
+
+    const fetchSummary = async (orderId?: number) => {
+        if (!orderId) {
+            setSummary(null);
+            return;
+        }
+        setSummaryLoading(true);
+        try {
+            const res = await orderApi.getFulfillmentSummary(orderId);
+            if (res.success && res.data) {
+                setSummary(res.data);
+            } else {
+                setSummary(null);
+            }
+        } catch {
+            setSummary(null);
+        } finally {
+            setSummaryLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (order?.id) fetchSummary(order.id);
+    }, [order?.id]);
 
     const fetchOrder = async () => {
         setLoadingView(true);
@@ -186,6 +217,51 @@ const UserOrderDetail: React.FC = () => {
             <OrderHistoryCard histories={order.orderHistories} />
             {/* <FeedbackCard orderId={order.id} orderStatus={order.status} /> */}
             <OrderPayment order={order} />
+            <div className="order-detail-card">
+            <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                Kết quả giao hàng
+            </Title>
+
+            <Descriptions column={2} size="small">
+
+                <Descriptions.Item label="Trạng thái đơn hàng">
+                    {order.status
+                        ? translateOrderStatus(order.status)
+                        : "Không có dữ liệu"}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
+                    {summaryLoading
+                        ? "Đang tải..."
+                        : summary
+                            ? `${summary.deliveredItems} / ${summary.totalItems}`
+                            : "Không có dữ liệu"}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Sản phẩm hoàn trả">
+                    {summaryLoading
+                        ? "Đang tải..."
+                        : (summary?.returnedItems ?? "Không có dữ liệu")}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="COD đã thu / COD dự kiến">
+                    {summaryLoading
+                        ? "Đang tải..."
+                        : summary
+                            ? `${summary.collectedCOD.toLocaleString()} / ${summary.expectedCOD.toLocaleString()} VNĐ`
+                            : "Không có dữ liệu"}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Giá trị hoàn trả">
+                    {summaryLoading
+                        ? "Đang tải..."
+                        : summary
+                            ? `${summary.returnedValue.toLocaleString()} VNĐ`
+                            : "Không có dữ liệu"}
+                </Descriptions.Item>
+
+            </Descriptions>
+        </div>
             <OrderActions
                 canEdit={canEdit}
                 canCancel={canCancel}
