@@ -24,6 +24,15 @@ export interface AdminOrder {
   createdAt: string;
 }
 
+  export interface PickupAttempt {
+    attemptNumber: number;
+    status: string;
+    failReason?: string | null;
+    note?: string | null;
+    attemptedAt: string;
+    shipperName?: string | null;
+  }
+
 export interface Order {
   id: number;
   trackingNumber: string;
@@ -62,6 +71,8 @@ export interface Order {
   toOffice: Office;
   orderProducts: OrderProduct[];
   orderHistories: OrderHistory[];
+    pickupAttempts?: PickupAttempt[];
+    maxPickupAttempts?: number;
   employeeCode: string;
   userCode: string;
   codStatus: string;

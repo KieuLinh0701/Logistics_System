@@ -20,12 +20,6 @@ const orderApi = {
     return res;
   },
 
-  async updateAdminOrderStatus(id: number, statusOrPayload: string | { status: string; fromOfficeId?: number }) {
-    const payload = typeof statusOrPayload === "string" ? { status: statusOrPayload } : statusOrPayload;
-    const res = await axiosClient.put<ApiResponse<AdminOrder>>(`/admin/orders/${id}/status`, payload);
-    return res;
-  },
-
   async deleteAdminOrder(id: number) {
     const res = await axiosClient.delete<ApiResponse<null>>(`/admin/orders/${id}`);
     return res;
@@ -185,6 +179,11 @@ const orderApi = {
 
   async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string }) {
     await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
+  },
+
+  async recordPickupAttempt(orderId: number, payload: { status: string; failReason?: string; note?: string }) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/pickup-attempt`, payload);
+    return res.data;
   },
 
   async getShipperDeliveryHistory(params: { page?: number; limit?: number; status?: string }) {

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Dropdown, Modal, Table } from "antd";
-import { DeleteOutlined, DownOutlined, EditOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DownOutlined } from "@ant-design/icons";
 import type { AdminOrder } from "../../../../types/order";
 
 interface Option {
@@ -17,7 +17,6 @@ interface OrdersTableProps {
   statusOptions: Option[];
   onPageChange: (page: number, pageSize?: number) => void;
   onView: (record: AdminOrder) => void;
-  onUpdateStatus: (record: AdminOrder) => void;
   onDelete: (id: number) => void;
 }
 
@@ -30,7 +29,6 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
   statusOptions,
   onPageChange,
   onView,
-  onUpdateStatus,
   onDelete,
 }) => {
   const statusText = (status?: string) => {
@@ -68,11 +66,9 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
             <Dropdown
               menu={{
                 items: [
-                  { key: "update", icon: <EditOutlined />, label: "Cập nhật" },
                   { key: "delete", icon: <DeleteOutlined />, label: "Xóa" },
                 ],
                 onClick: ({ key }) => {
-                  if (key === "update") onUpdateStatus(record);
                   if (key === "delete") {
                     Modal.confirm({
                       title: "Xóa đơn hàng này?",
@@ -95,7 +91,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
         ),
       },
     ],
-    [onDelete, onUpdateStatus, onView]
+    [onDelete, onView]
   );
 
   return (

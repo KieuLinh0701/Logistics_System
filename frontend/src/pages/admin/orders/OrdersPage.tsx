@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Form, message } from "antd";
+import React, { useCallback, useEffect, useState } from "react";
+import { message } from "antd";
 import orderApi from "../../../api/orderApi";
-import officeApi from "../../../api/officeApi";
 import type { AdminOrder, Order } from "../../../types/order";
 import "../../hr/recruitment/components/RecruitmentShared.css";
 import "../../../styles/ListPage.css";
@@ -10,11 +9,8 @@ import "./OrdersPage.css";
 import OrdersToolbar from "./components/OrdersToolbar";
 import OrdersTable from "./components/OrdersTable";
 import OrderDetailsDrawer from "./components/OrderDetailsDrawer";
-import UpdateOrderStatusModal from "./components/UpdateOrderStatusModal";
 
 type QueryState = { page: number; limit: number; search: string; status?: string };
-
-type OfficeOption = { id: number; name: string; cityCode?: number; wardCode?: number };
 
 const statusOptions = [
   { label: "Bản nháp", value: "DRAFT" },
@@ -42,10 +38,6 @@ const OrdersPage: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | AdminOrder | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [offices, setOffices] = useState<OfficeOption[]>([]);
-  const [statusForm] = Form.useForm();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,18 +87,6 @@ const OrdersPage: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await officeApi.listAdminOffices({ page: 1, limit: 200 });
-        if (res?.data?.data && Array.isArray(res.data.data)) {
-          setOffices(res.data.data);
-        }
-      } catch {
-        setOffices([]);
-      }
-    })();
-  }, []);
 
   const statusText = (status?: string) => {
     if (!status) return "-";
@@ -151,46 +131,6 @@ const OrdersPage: React.FC = () => {
     })();
   };
 
-  const onUpdateStatus = useCallback(
-    async (record: AdminOrder) => {
-      setSelectedOrder(null);
-      setDetailLoading(true);
-
-      try {
-        const res = await orderApi.getAdminOrderById(record.id);
-        const full = res?.success && res.data ? res.data : record;
-        setSelectedOrder(full);
-
-        try {
-          const senderCity = (full as any).senderCityCode ?? (full as any).senderAddress?.cityCode;
-          const senderWard = (full as any).senderWardCode ?? (full as any).senderAddress?.wardCode;
-          if (senderCity) {
-            const offRes = await officeApi.listLocalOffices({ city: senderCity, ward: senderWard });
-            if (offRes?.success && Array.isArray(offRes.data) && offRes.data.length > 0) {
-              setOffices(offRes.data);
-            }
-          }
-        } catch {
-          // keep the preloaded office list if local filtering fails
-        }
-
-        statusForm.setFieldsValue({
-          status: (full as any).status,
-          fromOfficeId: (full as any).fromOffice?.id,
-        });
-
-        setStatusModalOpen(true);
-      } catch {
-        setSelectedOrder(record);
-        statusForm.setFieldsValue({ status: record.status, fromOfficeId: record.fromOffice?.id });
-        setStatusModalOpen(true);
-      } finally {
-        setDetailLoading(false);
-      }
-    },
-    [statusForm]
-  );
-
   const onDelete = async (id: number) => {
     try {
       await orderApi.deleteAdminOrder(id);
@@ -201,44 +141,12 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  const submitStatusUpdate = async () => {
-    try {
-      const values = await statusForm.validateFields();
-      if (selectedOrder) {
-        await orderApi.updateAdminOrderStatus(selectedOrder.id, values);
-        message.success("Cập nhật trạng thái thành công");
-        setStatusModalOpen(false);
-        fetchData();
-      }
-    } catch (error: any) {
-      if (!error?.errorFields) {
-        message.error(error?.response?.data?.message || "Cập nhật thất bại");
-      }
-    }
-  };
-
   const handleRefreshAll = () => {
     setSearchValue("");
     setFilterStatus(undefined);
     setQuery((prev) => ({ ...prev, page: 1, search: "", status: undefined }));
   };
 
-  const officeOptions = useMemo(() => {
-    if (!selectedOrder || !Array.isArray(offices)) return offices;
-
-    const senderCity = (selectedOrder as any).senderCityCode ?? (selectedOrder as any).senderAddress?.cityCode;
-    const senderWard = (selectedOrder as any).senderWardCode ?? (selectedOrder as any).senderAddress?.wardCode;
-
-    const scored = offices.map((office) => {
-      let score = 0;
-      if (senderCity && office.cityCode === senderCity) score += 2;
-      if (senderWard && office.wardCode === senderWard) score += 1;
-      return { office, score };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-    return scored.map((item) => item.office);
-  }, [offices, selectedOrder]);
 
   return (
     <div className="list-page-layout orders-page">
@@ -277,7 +185,6 @@ const OrdersPage: React.FC = () => {
               }))
             }
             onView={onViewDetails}
-            onUpdateStatus={onUpdateStatus}
             onDelete={onDelete}
           />
         </div>
@@ -289,15 +196,6 @@ const OrdersPage: React.FC = () => {
           statusText={statusText}
           paymentText={paymentText}
           onClose={() => setDrawerOpen(false)}
-        />
-
-        <UpdateOrderStatusModal
-          open={statusModalOpen}
-          form={statusForm}
-          statusOptions={statusOptions}
-          offices={officeOptions}
-          onCancel={() => setStatusModalOpen(false)}
-          onSubmit={submitStatusUpdate}
         />
       </div>
     </div>

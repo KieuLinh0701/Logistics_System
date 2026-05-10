@@ -25,6 +25,7 @@ import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.repository.OfficeRepository;
+import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
@@ -36,6 +37,7 @@ import com.logistics.response.NotificationResponse;
 import com.logistics.utils.SecurityUtils;
 import com.logistics.utils.LocationUtils;
 import com.logistics.service.common.NotificationService;
+import com.logistics.service.common.ConfigService;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.repository.OrderProductRepository;
@@ -86,6 +88,12 @@ public class OrderShipperService {
 
     @Autowired
     private OfficeRepository officeRepository;
+
+    @Autowired
+    private PickupAttemptRepository pickupAttemptRepository;
+
+    @Autowired
+    private ConfigService configService;
 
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
         OrderHistory history = new OrderHistory();
@@ -227,6 +235,9 @@ public class OrderShipperService {
                 predicates.add(root.get("status").in(
                     OrderStatus.PICKED_UP,
                     OrderStatus.READY_FOR_PICKUP,
+                    OrderStatus.PICKUP_PENDING,
+                    OrderStatus.PICKUP_RETRY,
+                    OrderStatus.PICKUP_SUCCESS,
                     OrderStatus.DELIVERING,
                     OrderStatus.DELIVERED,
                     OrderStatus.FAILED_DELIVERY,
@@ -333,7 +344,14 @@ public class OrderShipperService {
             // Điều kiện: (employee = currentEmployee && status IN (PICKING_UP, PICKED_UP) && pickupType = PICKUP_BY_COURIER)
             List<Predicate> assignedPreds = new ArrayList<>();
             assignedPreds.add(cb.equal(root.get("employee").get("id"), employee.getId()));
-            assignedPreds.add(root.get("status").in(OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKING_UP, OrderStatus.PICKED_UP));
+            assignedPreds.add(root.get("status").in(
+                OrderStatus.READY_FOR_PICKUP,
+                OrderStatus.PICKING_UP,
+                OrderStatus.PICKED_UP,
+                OrderStatus.PICKUP_PENDING,
+                OrderStatus.PICKUP_RETRY,
+                OrderStatus.PICKUP_SUCCESS
+            ));
             assignedPreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
 
             // Thu hẹp theo bưu cục của shipper: chỉ theo fromOffice nếu có
@@ -416,6 +434,10 @@ public class OrderShipperService {
         data.put("id", order.getId());
         data.put("trackingNumber", order.getTrackingNumber());
         return new ApiResponse<>(true, "Lấy đơn hàng theo mã vận đơn thành công", data);
+    }
+
+    public Map<String, Object> buildOrderDetail(Order order) {
+        return mapOrderDetail(order);
     }
     
     //Bắt đầu luồng giao 1 phần: trả về danh sách sản phẩm và số lượng còn lại/đã giao/đã trả
@@ -910,8 +932,10 @@ public class OrderShipperService {
         }
 
         // Kiểm tra trạng thái phù hợp (đang lấy hàng)
-        if (order.getStatus() != OrderStatus.PICKING_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy khi đơn ở trạng thái đang lấy hoặc sẵn sàng lấy", null);
+        if (order.getStatus() != OrderStatus.PICKING_UP
+                && order.getStatus() != OrderStatus.READY_FOR_PICKUP
+                && order.getStatus() != OrderStatus.PICKUP_SUCCESS) {
+            return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy khi đơn ở trạng thái đang lấy, sẵn sàng lấy hoặc đã ghi nhận lấy hàng", null);
         }
 
         order.setStatus(OrderStatus.PICKED_UP);
@@ -1308,6 +1332,29 @@ public class OrderShipperService {
             map.put("fromOffice", f);
         } else {
             map.put("fromOffice", null);
+        }
+        try {
+            List<Map<String, Object>> attempts = pickupAttemptRepository
+                .findByOrderIdOrderByAttemptedAtDesc(order.getId())
+                .stream()
+                .map(attempt -> {
+                    Map<String, Object> a = new HashMap<>();
+                    a.put("attemptNumber", attempt.getAttemptNumber());
+                    a.put("status", attempt.getStatus() != null ? attempt.getStatus().name() : null);
+                    a.put("failReason", attempt.getFailReason() != null ? attempt.getFailReason().name() : null);
+                    a.put("note", attempt.getNote());
+                    a.put("attemptedAt", attempt.getAttemptedAt());
+                    a.put("shipperName", attempt.getShipper() != null ? attempt.getShipper().getFullName() : null);
+                    return a;
+                }).toList();
+            map.put("pickupAttempts", attempts);
+        } catch (Exception e) {
+            map.put("pickupAttempts", Collections.emptyList());
+        }
+        try {
+            map.put("maxPickupAttempts", configService.getInt("MAX_PICKUP_ATTEMPTS"));
+        } catch (Exception e) {
+            map.put("maxPickupAttempts", null);
         }
         // Bao gồm danh sách sản phẩm kèm số lượng đã giao / trả
         try {

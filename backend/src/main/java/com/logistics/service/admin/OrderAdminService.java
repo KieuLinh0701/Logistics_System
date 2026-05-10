@@ -13,25 +13,18 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.logistics.request.admin.UpdateOrderStatusRequest;
-import com.logistics.entity.Office;
-import com.logistics.repository.OfficeRepository;
-import com.logistics.enums.OrderPickupType;
 import com.logistics.entity.Order;
 import com.logistics.enums.OrderStatus;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
+import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
-import com.logistics.service.common.OfficePublicService;
-import com.logistics.service.assignment.AutoAssignService;
-import com.logistics.request.common.office.PublicOfficeSearchRequest;
-import com.logistics.dto.common.PublicOfficeInformationDto;
 
 @Service
 public class OrderAdminService {
@@ -39,11 +32,6 @@ public class OrderAdminService {
     @Autowired
     private OrderRepository orderRepository;
 
-    @Autowired
-    private OfficeRepository officeRepository;
-
-    @Autowired
-    private OfficePublicService officePublicService;
 
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
@@ -52,7 +40,7 @@ public class OrderAdminService {
     private OrderProductRepository orderProductRepository;
 
     @Autowired
-    private AutoAssignService autoAssignService;
+    private PickupAttemptRepository pickupAttemptRepository;
 
     public ApiResponse<Map<String, Object>> listOrders(int page, int limit, String search, String status) {
         try {
@@ -92,72 +80,11 @@ public class OrderAdminService {
 
             List<OrderHistory> orderHistories = orderHistoryRepository.findByOrderIdOrderByActionTimeDesc(order.getId());
             List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+            var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-            ManagerOrderDetailDto dto = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts);
+            ManagerOrderDetailDto dto = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
 
             return new ApiResponse<>(true, "Lấy chi tiết đơn hàng thành công", dto);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
-    }
-
-    @Transactional
-    public ApiResponse<Map<String, Object>> updateOrderStatus(Integer orderId, UpdateOrderStatusRequest request) {
-        try {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
-
-            // Khi admin chuyển trạng thái sang CONFIRMED -> tự động gán fromOffice và toOffice
-            String newStatus = request.getStatus();
-            if (newStatus != null && newStatus.equalsIgnoreCase("CONFIRMED")) {
-                // gán fromOffice dựa trên địa chỉ người gửi (ưu tiên ward, fallback city)
-                try {
-                    Integer senderCity = order.getSenderCityCode();
-                    Integer senderWard = order.getSenderWardCode();
-                    if (senderCity != null) {
-                        PublicOfficeSearchRequest psr = new PublicOfficeSearchRequest(senderCity, senderWard, null, null, null);
-                        ApiResponse<List<PublicOfficeInformationDto>> offRes = officePublicService.listLocalOffices(psr);
-                        if (offRes != null && offRes.isSuccess() && offRes.getData() != null && !offRes.getData().isEmpty()) {
-                            Integer ofId = offRes.getData().get(0).getId();
-                            officeRepository.findById(ofId).ifPresent(order::setFromOffice);
-                        }
-                    }
-                } catch (Exception e) { throw new RuntimeException(e); }
-
-                // gán toOffice dựa trên địa chỉ người nhận (ưu tiên ward, fallback city)
-                try {
-                    Integer recipCity = null;
-                    Integer recipWard = null;
-                    if (order.getRecipientAddress() != null) {
-                        recipCity = order.getRecipientAddress().getCityCode();
-                        recipWard = order.getRecipientAddress().getWardCode();
-                    }
-
-                    if (recipCity != null) {
-                        PublicOfficeSearchRequest psrTo = new PublicOfficeSearchRequest(recipCity, recipWard, null, null, null);
-                        ApiResponse<List<PublicOfficeInformationDto>> offResTo = officePublicService.listLocalOffices(psrTo);
-                        if (offResTo != null && offResTo.isSuccess() && offResTo.getData() != null && !offResTo.getData().isEmpty()) {
-                            Integer toId = offResTo.getData().get(0).getId();
-                            officeRepository.findById(toId).ifPresent(order::setToOffice);
-                        }
-                    }
-                } catch (Exception e) { throw new RuntimeException(e); }
-            }
-
-            // Giữ trạng thái CONFIRMED do admin xác nhận
-            order.setStatus(OrderStatus.valueOf(request.getStatus()));
-            order = orderRepository.save(order);
-
-            // Gán shipper cho yêu cầu lấy hàng; nếu không có thì để nguyên không gán
-            if (newStatus != null && newStatus.equalsIgnoreCase("CONFIRMED")
-                    && order.getPickupType() != null
-                    && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
-                try {
-                    autoAssignService.autoAssignPickupRequest(order.getId());
-                } catch (Exception e) { throw new RuntimeException(e); }
-            }
-
-            return new ApiResponse<>(true, "Cập nhật trạng thái đơn hàng thành công", mapOrder(order));
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
         }

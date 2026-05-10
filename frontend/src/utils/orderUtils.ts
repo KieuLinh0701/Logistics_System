@@ -65,7 +65,7 @@ export const canConfirmManagerOrder = (
   status: OrderStatus,
   creatorType: OrderPickupType
 ): boolean => {
-  return MANAGER_CONFIRM_ORDER_STATUSES.includes(status) && creatorType === "AT_OFFICE";
+  return MANAGER_CONFIRM_ORDER_STATUSES.includes(status) && (creatorType === "AT_OFFICE" || creatorType === "PICKUP_BY_COURIER");
 };
 
 export const canAtOriginOfficeManagerOrder = (value: string) => {
@@ -125,6 +125,10 @@ export const ORDER_STATUS = [
   'PENDING',
   'CONFIRMED',
   'READY_FOR_PICKUP',
+  'PICKUP_PENDING',
+  'PICKUP_SUCCESS',
+  'PICKUP_RETRY',
+  'PICKUP_FAILED_FINAL',
   'PICKING_UP',
   'PICKED_UP',
   'AT_ORIGIN_OFFICE',
@@ -144,6 +148,10 @@ export const translateOrderStatus = (value: string): string => {
     case 'PENDING': return 'Chờ duyệt';
     case 'CONFIRMED': return 'Đã xác nhận';
     case 'READY_FOR_PICKUP': return 'Sẵn sàng để lấy';
+    case 'PICKUP_PENDING': return 'Chờ lấy hàng';
+    case 'PICKUP_SUCCESS': return 'Lấy hàng thành công';
+    case 'PICKUP_RETRY': return 'Lấy hàng thất bại - Thử lại';
+    case 'PICKUP_FAILED_FINAL': return 'Lấy hàng thất bại - Dừng';
     case 'PICKING_UP': return 'Đang lấy hàng';
     case 'PICKED_UP': return 'Đã lấy hàng';
     case 'AT_ORIGIN_OFFICE': return 'Tại bưu cục gốc';
@@ -157,6 +165,27 @@ export const translateOrderStatus = (value: string): string => {
     case 'CANCELLED': return 'Đã hủy';
     case 'RETURNING': return 'Đang hoàn trả';
     case 'RETURNED': return 'Đã hoàn trả';
+    default: return value;
+  }
+};
+
+export const PICKUP_FAIL_REASONS = ['SHOP_CLOSED', 'NOT_READY', 'CUSTOMER_CANCELLED', 'NO_RESPONSE', 'OTHER'] as const;
+export type PickupFailReason = typeof PICKUP_FAIL_REASONS[keyof typeof PICKUP_FAIL_REASONS];
+export const translatePickupFailReason = (value: string): string => {
+  switch (value) {
+    case 'SHOP_CLOSED': return 'Shop đóng cửa';
+    case 'NOT_READY': return 'Hàng chưa sẵn sàng';
+    case 'CUSTOMER_CANCELLED': return 'Khách hủy đơn';
+    case 'NO_RESPONSE': return 'Không liên hệ được';
+    case 'OTHER': return 'Khác';
+    default: return value;
+  }
+};
+
+export const translatePickupAttemptStatus = (value: string): string => {
+  switch (value) {
+    case 'SUCCESS': return 'Thành công';
+    case 'FAILED': return 'Thất bại';
     default: return value;
   }
 };

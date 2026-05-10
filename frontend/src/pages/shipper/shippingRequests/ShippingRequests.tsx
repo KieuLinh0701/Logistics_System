@@ -5,6 +5,7 @@ import { connectWebSocket, disconnectWebSocket } from "../../../socket/socket";
 import { getUserId, getCurrentUser } from "../../../utils/authUtils";
 import orderApi from "../../../api/orderApi";
 import SimpleMap from "../../../components/map/SimpleMap";
+import PickupAttemptModal from "../PickupAttemptModal";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";
 
@@ -13,6 +14,7 @@ export default function ShippingRequests() {
   const [loading, setLoading] = useState(false);
   const [mapVisible, setMapVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [pickupFailedModalOpen, setPickupFailedModalOpen] = useState(false);
   const [filters, setFilters] = useState<{ search?: string }>({});
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const paginationRef = useRef(pagination);
@@ -55,6 +57,23 @@ export default function ShippingRequests() {
       cancelled = true;
     };
   }, [pagination.current, pagination.pageSize, filters.search]);
+
+  const refreshList = async (page = pagination.current, pageSize = pagination.pageSize) => {
+    const res = await orderApi.getShipperPickupByCourierRequests({ page, limit: pageSize });
+    const shipperOrders = res.orders || [];
+    const q = filters.search?.trim().toLowerCase();
+    setList(
+      shipperOrders.filter((o) => {
+        if (!q) return true;
+        return (
+          (o.senderName || "").toLowerCase().includes(q) ||
+          (o.senderPhone || "").toLowerCase().includes(q) ||
+          (o.trackingNumber || "").toLowerCase().includes(q)
+        );
+      })
+    );
+    setPagination((p) => ({ ...p, total: res.pagination?.total || 0 }));
+  };
 
   useEffect(() => {
     const uid = getUserId();
@@ -102,23 +121,8 @@ export default function ShippingRequests() {
 
       await orderApi.claimShipperOrderRequest(rec.id);
       message.success("Đã nhận đơn");
-      const res = await orderApi.getShipperPickupByCourierRequests({
-        page: 1,
-        limit: pagination.pageSize,
-      });
-      const shipperOrders = res.orders || [];
-      const q = filters.search?.trim().toLowerCase();
-      setList(
-        shipperOrders.filter((o) => {
-          if (!q) return true;
-          return (
-            (o.senderName || "").toLowerCase().includes(q) ||
-            (o.senderPhone || "").toLowerCase().includes(q) ||
-            (o.trackingNumber || "").toLowerCase().includes(q)
-          );
-        })
-      );
-      setPagination((p) => ({ ...p, total: res.pagination?.total || 0, current: 1 }));
+      await refreshList(1, pagination.pageSize);
+      setPagination((p) => ({ ...p, current: 1 }));
     } catch (e) {
       console.error(e);
       message.error("Lỗi khi nhận yêu cầu");
@@ -158,10 +162,11 @@ export default function ShippingRequests() {
           );
         });
       } catch (e) {}
+      await orderApi.recordPickupAttempt(order.id, { status: "SUCCESS" });
       await orderApi.markShipperPickedUp(order.id, payload);
       message.success("Đã xác nhận đã lấy hàng");
       setMapVisible(false);
-      setPagination((p) => ({ ...p, current: p.current }));
+      await refreshList();
     } catch (e) {
       console.error(e);
       message.error("Lỗi khi xác nhận đã lấy");
@@ -173,15 +178,40 @@ export default function ShippingRequests() {
       await orderApi.deliverShipperToOrigin(order.id, {});
       message.success("Đã nộp hàng tại bưu cục");
       setMapVisible(false);
-      setPagination((p) => ({ ...p, current: p.current }));
+      await refreshList();
     } catch (e) {
       console.error(e);
       message.error("Lỗi khi nộp tại bưu cục");
     }
   }
 
+  async function submitPickupFailed(values: { failReason: string; note?: string }) {
+    if (!selectedOrder) return;
+    try {
+      setLoading(true);
+      await orderApi.recordPickupAttempt(selectedOrder.id, {
+        status: "FAILED",
+        failReason: values.failReason,
+        note: values.note,
+      });
+      message.success("Đã ghi nhận lấy hàng thất bại");
+      setPickupFailedModalOpen(false);
+      await refreshList();
+      const detail = await orderApi.getShipperOrderDetail(selectedOrder.id);
+      setSelectedOrder(detail || selectedOrder);
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi báo lấy hàng thất bại");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
     READY_FOR_PICKUP: { label: "Sẵn sàng lấy hàng", color: "blue" },
+    PICKUP_PENDING: { label: "Chờ lấy hàng", color: "orange" },
+    PICKUP_RETRY: { label: "Lấy hàng thất bại - Thử lại", color: "orange" },
+    PICKUP_SUCCESS: { label: "Lấy hàng thành công", color: "green" },
+    PICKUP_FAILED_FINAL: { label: "Lấy hàng thất bại - Dừng", color: "red" },
     PICKING_UP: { label: "Đang lấy", color: "orange" },
     PICKED_UP: { label: "Đã lấy", color: "orange" },
     AT_ORIGIN_OFFICE: { label: "Đã nộp tại bưu cục", color: "green" },
@@ -343,7 +373,10 @@ export default function ShippingRequests() {
                 ) : (
                   <Space>
                     <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                    <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)}>
+                    <Button danger onClick={() => setPickupFailedModalOpen(true)} disabled={selectedOrder.status === "PICKUP_FAILED_FINAL"}>
+                      Báo lấy hàng thất bại
+                    </Button>
+                    <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)} disabled={selectedOrder.status === "PICKUP_FAILED_FINAL"}>
                       Xác nhận đã lấy
                     </Button>
                   </Space>
@@ -366,35 +399,51 @@ export default function ShippingRequests() {
                     }
                   : null;
 
+                const attempts = selectedOrder.pickupAttempts || [];
+                const maxAttempts = selectedOrder.maxPickupAttempts || 0;
+                const failedAttempts = attempts.filter((a: any) => a.status === "FAILED").length;
+
                 if (selectedOrder.status === "PICKED_UP") {
                   return <SimpleMap deliveryStops={[]} deliverOffice={deliverOffice} />;
                 }
 
                 return (
-                  <SimpleMap
-                    title="Lộ trình nhận hàng"
-                    deliveryStops={[
-                      {
-                        id: selectedOrder.id,
-                        trackingNumber: selectedOrder.trackingNumber,
-                        recipientName: selectedOrder.senderName || selectedOrder.recipientName,
-                        recipientPhone: selectedOrder.senderPhone || selectedOrder.recipientPhone,
-                        recipientAddress: selectedOrder.senderAddress || selectedOrder.recipientAddress || "",
-                        codAmount: selectedOrder.cod || 0,
-                        priority: "normal",
-                        serviceType: selectedOrder.serviceType || "Tiêu chuẩn",
-                        estimatedTime: "",
-                        status: selectedOrder.status === "PICKED_UP" ? "completed" : "in_progress",
-                        coordinates: { lat: selectedOrder.latitude || 0, lng: selectedOrder.longitude || 0 },
-                        distance: 0,
-                        travelTime: 0,
-                      },
-                    ]}
-                    deliverOffice={null}
-                  />
+                  <div>
+                    <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+                      Lần thử {failedAttempts} / {maxAttempts || "-"}
+                    </Typography.Text>
+                    <SimpleMap
+                      title="Lộ trình nhận hàng"
+                      deliveryStops={[
+                        {
+                          id: selectedOrder.id,
+                          trackingNumber: selectedOrder.trackingNumber,
+                          recipientName: selectedOrder.senderName || selectedOrder.recipientName,
+                          recipientPhone: selectedOrder.senderPhone || selectedOrder.recipientPhone,
+                          recipientAddress: selectedOrder.senderAddress || selectedOrder.recipientAddress || "",
+                          codAmount: selectedOrder.cod || 0,
+                          priority: "normal",
+                          serviceType: selectedOrder.serviceType || "Tiêu chuẩn",
+                          estimatedTime: "",
+                          status: selectedOrder.status === "PICKED_UP" ? "completed" : "in_progress",
+                          coordinates: { lat: selectedOrder.latitude || 0, lng: selectedOrder.longitude || 0 },
+                          distance: 0,
+                          travelTime: 0,
+                        },
+                      ]}
+                      deliverOffice={null}
+                    />
+                  </div>
                 );
               })()}
           </Modal>
+
+          <PickupAttemptModal
+            open={pickupFailedModalOpen}
+            loading={loading}
+            onCancel={() => setPickupFailedModalOpen(false)}
+            onSubmit={submitPickupFailed}
+          />
         </div>
       </div>
     </div>

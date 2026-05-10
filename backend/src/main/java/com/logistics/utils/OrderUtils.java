@@ -105,7 +105,7 @@ public class OrderUtils {
 
     public static boolean canManagerConfirm(OrderStatus status, OrderPickupType pickupType) {
         return STATUSES_ALLOWED_TO_CONFIRMED_FOR_MANAGER.contains(status)
-                && pickupType == OrderPickupType.AT_OFFICE;
+                && (pickupType == OrderPickupType.AT_OFFICE || pickupType == OrderPickupType.PICKUP_BY_COURIER);
     }
 
     public static String translateOrderStatus(OrderStatus status) {
@@ -121,6 +121,14 @@ public class OrderUtils {
                 return "Đã xác nhận";
             case READY_FOR_PICKUP:
                 return "Sẵn sàng để lấy";
+            case PICKUP_PENDING:
+                return "Chờ lấy hàng";
+            case PICKUP_SUCCESS:
+                return "Lấy hàng thành công";
+            case PICKUP_RETRY:
+                return "Lấy hàng thất bại - Thử lại";
+            case PICKUP_FAILED_FINAL:
+                return "Lấy hàng thất bại - Dừng";
             case PICKING_UP:
                 return "Đang lấy hàng";
             case PICKED_UP:

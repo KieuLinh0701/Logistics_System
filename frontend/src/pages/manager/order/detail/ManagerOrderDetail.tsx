@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { message, Descriptions, Typography } from "antd";
+import { message, Descriptions, Typography, Timeline } from "antd";
 
 import Header from "./components/Header";
 import OrderSenderRecipient from "./components/SenderRecipientInfo";
@@ -13,7 +13,7 @@ import type { Order, OrderFulfillmentSummary } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canAtOriginOfficeManagerOrder, translateOrderStatus, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
+import { canAtOriginOfficeManagerOrder, translateOrderStatus, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, translatePickupAttemptStatus, translatePickupFailReason, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 
@@ -215,6 +215,31 @@ const UserOrderDetail: React.FC = () => {
                 toOffice={order.toOffice} />
             <OrderProducts products={order.orderProducts || []} />
             <OrderHistoryCard histories={order.orderHistories} />
+            <div className="order-detail-card">
+                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                    Lịch sử lấy hàng
+                </Title>
+                <Timeline
+                    items={(order.pickupAttempts || []).map((attempt) => ({
+                        color: attempt.status === "SUCCESS" ? "green" : "red",
+                        children: (
+                            <div>
+                                <div>
+                                    Lần thử #{attempt.attemptNumber} - {translatePickupAttemptStatus(attempt.status)}
+                                </div>
+                                <div>
+                                    {attempt.failReason ? translatePickupFailReason(attempt.failReason) : ""}
+                                    {attempt.note ? ` - ${attempt.note}` : ""}
+                                </div>
+                                <div>
+                                    {attempt.attemptedAt ? new Date(attempt.attemptedAt).toLocaleString("vi-VN") : ""}
+                                    {attempt.shipperName ? ` - ${attempt.shipperName}` : ""}
+                                </div>
+                            </div>
+                        ),
+                    }))}
+                />
+            </div>
             {/* <FeedbackCard orderId={order.id} orderStatus={order.status} /> */}
             <OrderPayment order={order} />
             <div className="order-detail-card">

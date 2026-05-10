@@ -45,6 +45,7 @@ import com.logistics.repository.BankAccountRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
+import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.repository.ProductRepository;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
@@ -52,6 +53,7 @@ import com.logistics.response.OrderCreateSuccess;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.FeePublicService;
 import com.logistics.service.common.OfficePublicService;
+import com.logistics.request.common.office.PublicOfficeSearchRequest;
 import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.UserOrderEditRuleUtils;
@@ -72,6 +74,9 @@ public class OrderUserService {
 
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
+
+    @Autowired
+    private PickupAttemptRepository pickupAttemptRepository;
 
     @Autowired
     private PromotionUserService promotionUserService;
@@ -293,6 +298,25 @@ public class OrderUserService {
             if (request.getFromOfficeId() != null) {
                 fromOffice = officePublicService.findById(request.getFromOfficeId())
                         .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
+            } else if (OrderPickupType.PICKUP_BY_COURIER.name().equals(request.getPickupType())) {
+                try {
+                    Integer senderCity = senderAddress.getCityCode();
+                    Integer senderWard = senderAddress.getWardCode();
+                    PublicOfficeSearchRequest officeReq = new PublicOfficeSearchRequest(senderCity, senderWard, null, null, null);
+                    ApiResponse<List<com.logistics.dto.common.PublicOfficeInformationDto>> res = officePublicService.listLocalOffices(officeReq);
+
+                    if (res == null || !res.isSuccess() || res.getData() == null || res.getData().isEmpty()) {
+                        PublicOfficeSearchRequest fallbackReq = new PublicOfficeSearchRequest(senderCity, null, null, null, null);
+                        res = officePublicService.listLocalOffices(fallbackReq);
+                    }
+
+                    if (res != null && res.isSuccess() && res.getData() != null && !res.getData().isEmpty()) {
+                        Integer officeId = res.getData().get(0).getId();
+                        fromOffice = officePublicService.findById(officeId).orElse(null);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Không thể tự động gán bưu cục xuất");
+                }
             }
 
             boolean existBankAcc = existBankAccount(userId);
@@ -394,8 +418,9 @@ public class OrderUserService {
                     .findByOrderIdOrderByActionTimeDesc(order.getId());
 
             List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+                var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-            UserOrderDetailDto data = OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts);
+                UserOrderDetailDto data = OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
 
             return new ApiResponse<>(true, "Lấy chi tiết đơn hàng theo mã đơn hàng thành công", data);
         } catch (Exception e) {
@@ -412,8 +437,9 @@ public class OrderUserService {
                     .findByOrderIdOrderByActionTimeDesc(order.getId());
 
             List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+                var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-            UserOrderDetailDto data = OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts);
+                UserOrderDetailDto data = OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
 
             return new ApiResponse<>(true, "Lấy chi tiết đơn hàng theo id đơn hàng thành công", data);
         } catch (Exception e) {

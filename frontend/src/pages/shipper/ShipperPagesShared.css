@@ -103,9 +103,51 @@
   margin-bottom: 12px;
 }
 
+.shipper-modal .modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c3d90;
+}
+
+.shipper-modal .modal-section {
+  width: 100%;
+}
+
+.shipper-modal .modal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.shipper-modal .modal-lable {
+  font-weight: 600;
+  color: #1c3d90;
+}
+
+.shipper-modal .modal-custom-select .ant-select-selector {
+  border-radius: 8px;
+}
+
+.shipper-modal .modal-ok-button {
+  background: #1c3d90;
+  border-color: #1c3d90;
+}
+
+.shipper-modal .modal-cancel-button {
+  border-radius: 8px;
+}
+
+.shipper-modal .shipper-modal-form .form-item {
+  margin-bottom: 0;
+}
+
 @media (max-width: 960px) {
   .shipper-page-root .shipper-filter-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .shipper-modal .modal-grid {
+    grid-template-columns: 1fr;
   }
 }
