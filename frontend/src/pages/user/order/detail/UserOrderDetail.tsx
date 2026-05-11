@@ -218,18 +218,14 @@ const UserOrderDetail: React.FC = () => {
             />
             <OrderSenderRecipient
                 sender={{
-                    name: order.senderName,
-                    phone: order.senderPhone,
-                    detail: order.senderDetail,
-                    wardCode: order.senderWardCode,
-                    cityCode: order.senderCityCode,
+                    name: order.senderAddress.name,
+                    phone: order.senderAddress.phoneNumber,
+                    fullAddress: order.senderAddress.fullAddress,
                 }}
                 recipient={{
                     name: order.recipientAddress.name,
                     phone: order.recipientAddress.phoneNumber,
-                    detail: order.recipientAddress.detail,
-                    wardCode: order.recipientAddress.wardCode,
-                    cityCode: order.recipientAddress.cityCode,
+                    fullAddress: order.recipientAddress.fullAddress,
                 }}
             />
             {order.pickupType === "AT_OFFICE" &&

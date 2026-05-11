@@ -1,7 +1,6 @@
 package com.logistics.service.user;
 
 import com.logistics.enums.AddressType;
-import com.logistics.service.common.ShippingRequestPublicService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -12,12 +11,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.logistics.utils.AddressUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -378,44 +377,138 @@ public class OrderUserService {
 
             Address recipientAddress = null;
             if (request.getRecipientAddressId() == null) {
-                Address address = Address.builder()
-                        .wardCode(request.getRecipientWardCode())
-                        .cityCode(request.getRecipientCityCode())
-                        .wardName(request.getRecipientWardName())
-                        .cityName(request.getRecipientCityName())
-                        .latitude(request.getRecipientLatitude())
-                        .longitude(request.getRecipientLongitude())
-                        .fullAddress(AddressUtils.buildFullAddress(
-                                request.getRecipientDetail(),
-                                request.getRecipientWardName(),
-                                request.getRecipientCityName()
-                        ))
-                        .detail(request.getRecipientDetail())
-                        .name(request.getRecipientName())
-                        .phoneNumber(request.getRecipientPhone())
-                        .isDefault(false)
-                        .user(user)
-                        .build();
 
-                if (request.getSaveRecipient()) {
-                    address.setIsSaved(true);
+                Optional<Address> existing = addressUserService
+                        .findByPhoneAndUserIdAndType(
+                                request.getRecipientPhone(),
+                                userId,
+                                AddressType.RECIPIENT
+                        );
+
+                if (existing.isPresent()) {
+                    if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                        Address addr = existing.get();
+
+                        addr.setName(request.getRecipientName());
+                        addr.setDetail(request.getRecipientDetail());
+                        addr.setWardCode(request.getRecipientWardCode());
+                        addr.setCityCode(request.getRecipientCityCode());
+                        addr.setWardName(request.getRecipientWardName());
+                        addr.setCityName(request.getRecipientCityName());
+                        addr.setLatitude(request.getRecipientLatitude());
+                        addr.setLongitude(request.getRecipientLongitude());
+
+                        addr.setFullAddress(
+                                AddressUtils.buildFullAddress(
+                                        request.getRecipientDetail(),
+                                        request.getRecipientWardName(),
+                                        request.getRecipientCityName()
+                                )
+                        );
+
+                        recipientAddress = addressUserService.save(addr);
+                    }
+                } else if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                    recipientAddress = addressUserService.save(
+                            Address.builder()
+                                    .name(request.getRecipientName())
+                                    .phoneNumber(request.getRecipientPhone())
+                                    .wardCode(request.getRecipientWardCode())
+                                    .cityCode(request.getRecipientCityCode())
+                                    .wardName(request.getRecipientWardName())
+                                    .cityName(request.getRecipientCityName())
+                                    .latitude(request.getRecipientLatitude())
+                                    .longitude(request.getRecipientLongitude())
+                                    .detail(request.getRecipientDetail())
+                                    .fullAddress(
+                                            AddressUtils.buildFullAddress(
+                                                    request.getRecipientDetail(),
+                                                    request.getRecipientWardName(),
+                                                    request.getRecipientCityName()
+                                            )
+                                    )
+                                    .isDefault(false)
+                                    .type(AddressType.RECIPIENT)
+                                    .user(user)
+                                    .build()
+                    );
                 }
-                recipientAddress = addressUserService.save(address);
             } else {
-                // điều chỉnh khi chỉnh lại cho lưu address của người nhận
+                recipientAddress = addressUserService.findByIdAndUserIdAndType(
+                                userId,
+                                request.getRecipientAddressId(),
+                                AddressType.RECIPIENT)
+                        .orElseThrow(() -> new RuntimeException("Địa chỉ người nhận không tồn tại"));
             }
 
-            order.setRecipientName(recipientAddress.getName());
-            order.setRecipientPhone(recipientAddress.getPhoneNumber());
-            order.setRecipientCityCode(recipientAddress.getCityCode());
-            order.setRecipientCityName(recipientAddress.getCityName());
-            order.setRecipientWardCode(recipientAddress.getWardCode());
-            order.setRecipientWardName(recipientAddress.getWardName());
-            order.setRecipientDetail(recipientAddress.getDetail());
-            order.setRecipientLatitude(recipientAddress.getLatitude());
-            order.setRecipientLongitude(recipientAddress.getLongitude());
-            order.setRecipientFullAddress(recipientAddress.getFullAddress());
+            order.setRecipientName(
+                    recipientAddress != null
+                            ? recipientAddress.getName()
+                            : request.getRecipientName()
+            );
+
+            order.setRecipientPhone(
+                    recipientAddress != null
+                            ? recipientAddress.getPhoneNumber()
+                            : request.getRecipientPhone()
+            );
+
+            order.setRecipientCityCode(
+                    recipientAddress != null
+                            ? recipientAddress.getCityCode()
+                            : request.getRecipientCityCode()
+            );
+
+            order.setRecipientCityName(
+                    recipientAddress != null
+                            ? recipientAddress.getCityName()
+                            : request.getRecipientCityName()
+            );
+
+            order.setRecipientWardCode(
+                    recipientAddress != null
+                            ? recipientAddress.getWardCode()
+                            : request.getRecipientWardCode()
+            );
+
+            order.setRecipientWardName(
+                    recipientAddress != null
+                            ? recipientAddress.getWardName()
+                            : request.getRecipientWardName()
+            );
+
+            order.setRecipientDetail(
+                    recipientAddress != null
+                            ? recipientAddress.getDetail()
+                            : request.getRecipientDetail()
+            );
+
+            order.setRecipientLatitude(
+                    recipientAddress != null
+                            ? recipientAddress.getLatitude()
+                            : request.getRecipientLatitude()
+            );
+
+            order.setRecipientLongitude(
+                    recipientAddress != null
+                            ? recipientAddress.getLongitude()
+                            : request.getRecipientLongitude()
+            );
+
+            order.setRecipientFullAddress(
+                    recipientAddress != null
+                            ? recipientAddress.getFullAddress()
+                            : AddressUtils.buildFullAddress(
+                                    request.getRecipientDetail(),
+                                    request.getRecipientWardName(),
+                                    request.getRecipientCityName()
+                            )
+            );
+
             order.setRecipientAddress(recipientAddress);
+
             Order newOrder = repository.save(order);
 
             saveOrderProducts(newOrder, request.getOrderProducts());
@@ -621,7 +714,7 @@ public class OrderUserService {
     @Transactional
     public ApiResponse<Boolean> deleteOrder(Integer userId, Integer orderId) {
         try {
-            // Lấy order
+            // Lấy recipientaddress
             Order order = repository.findByIdAndUserId(orderId, userId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
@@ -637,11 +730,6 @@ public class OrderUserService {
             List<OrderHistory> histories = orderHistoryRepository.findByOrderId(order.getId());
             if (!histories.isEmpty()) {
                 orderHistoryRepository.deleteAll(histories);
-            }
-
-            Address recipientAddress = order.getRecipientAddress();
-            if (recipientAddress != null) {
-                addressUserService.delete(recipientAddress);
             }
 
             repository.delete(order);
@@ -691,7 +779,7 @@ public class OrderUserService {
             // 1. Validate cơ bản
             validateCreate(request, true);
 
-            // 2. Lấy order
+            // 2. Lấy recipientaddress
             Order order = repository.findByIdAndUserId(orderId, userId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
@@ -775,11 +863,12 @@ public class OrderUserService {
             boolean hasRecipientAddressId =
                     request.getRecipientAddressId() != null;
 
-            Address oldRecipientAddress = order.getRecipientAddress();
-            Address newRecipientAddress;
+            Address newRecipientAddress = null;
 
             if (hasRecipientAddressId) {
 
+                // Có recipientAddressId
+                // -> chỉ gắn address, không update address và không update recipientaddress
                 newRecipientAddress = addressUserService
                         .findByIdAndUserIdAndType(
                                 request.getRecipientAddressId(),
@@ -788,65 +877,220 @@ public class OrderUserService {
                         .orElseThrow(() ->
                                 new RuntimeException("Không tìm thấy địa chỉ người nhận"));
 
-                if (!newRecipientAddress.getIsSaved()) {
-                    updateFieldIfEditable("recipientName", oldRecipientAddress.getName(),
-                            request.getRecipientName(), order, currentStatus, newRecipientAddress::setName);
-                    updateFieldIfEditable("recipientPhoneNumber", oldRecipientAddress.getPhoneNumber(),
-                            request.getRecipientPhone(), order, currentStatus, newRecipientAddress::setPhoneNumber);
-                    updateFieldIfEditable("recipientCityCode", oldRecipientAddress.getCityCode(),
-                            request.getRecipientCityCode(), order, currentStatus, newRecipientAddress::setCityCode);
-                    updateFieldIfEditable("recipientCityName", oldRecipientAddress.getCityName(),
-                            request.getRecipientCityName(), order, currentStatus, newRecipientAddress::setCityName);
-                    updateFieldIfEditable("recipientWardCode", oldRecipientAddress.getWardCode(),
-                            request.getRecipientWardCode(), order,currentStatus, newRecipientAddress::setWardCode);
-                    updateFieldIfEditable("recipientWardName", oldRecipientAddress.getWardName(),
-                            request.getRecipientWardName(), order, currentStatus, newRecipientAddress::setWardName);
-                    updateFieldIfEditable("recipientDetailAddress", oldRecipientAddress.getDetail(),
-                            request.getRecipientDetail(), order, currentStatus, newRecipientAddress::setDetail);
-                    updateFieldIfEditable("recipientLatitude", oldRecipientAddress.getLatitude(),
-                            request.getRecipientLatitude(), order, currentStatus, newRecipientAddress::setLatitude);
-                    updateFieldIfEditable("recipientLongitude", oldRecipientAddress.getLongitude(),
-                            request.getRecipientLongitude(), order, currentStatus, newRecipientAddress::setLongitude);
-
-                    order.setRecipientFullAddress(AddressUtils.buildFullAddress(
-                            newRecipientAddress.getDetail(),
-                            newRecipientAddress.getWardName(),
-                            newRecipientAddress.getCityName()
-                    ));
-                }
-
             } else {
 
-                newRecipientAddress = new Address();
+                Optional<Address> existing = addressUserService
+                        .findByPhoneAndUserIdAndType(
+                                request.getRecipientPhone(),
+                                userId,
+                                AddressType.RECIPIENT
+                        );
 
-                newRecipientAddress.setName(request.getRecipientName());
-                newRecipientAddress.setPhoneNumber(request.getRecipientPhone());
-                newRecipientAddress.setCityCode(request.getRecipientCityCode());
-                newRecipientAddress.setCityName(request.getRecipientCityName());
-                newRecipientAddress.setWardCode(request.getRecipientWardCode());
-                newRecipientAddress.setWardName(request.getRecipientWardName());
-                newRecipientAddress.setDetail(request.getRecipientDetail());
-                newRecipientAddress.setLatitude(request.getRecipientLatitude());
-                newRecipientAddress.setLongitude(request.getRecipientLongitude());
-                newRecipientAddress.setType(AddressType.RECIPIENT);
-                newRecipientAddress.setIsSaved(false);
+                if (existing.isPresent()) {
+
+                    // Tìm thấy address cũ
+                    if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                        newRecipientAddress = existing.get();
+
+                        updateFieldIfEditable("recipientName",
+                                newRecipientAddress.getName(),
+                                request.getRecipientName(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setName);
+
+                        updateFieldIfEditable("recipientPhoneNumber",
+                                newRecipientAddress.getPhoneNumber(),
+                                request.getRecipientPhone(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setPhoneNumber);
+
+                        updateFieldIfEditable("recipientCityCode",
+                                newRecipientAddress.getCityCode(),
+                                request.getRecipientCityCode(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setCityCode);
+
+                        updateFieldIfEditable("recipientCityName",
+                                newRecipientAddress.getCityName(),
+                                request.getRecipientCityName(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setCityName);
+
+                        updateFieldIfEditable("recipientWardCode",
+                                newRecipientAddress.getWardCode(),
+                                request.getRecipientWardCode(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setWardCode);
+
+                        updateFieldIfEditable("recipientWardName",
+                                newRecipientAddress.getWardName(),
+                                request.getRecipientWardName(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setWardName);
+
+                        updateFieldIfEditable("recipientDetailAddress",
+                                newRecipientAddress.getDetail(),
+                                request.getRecipientDetail(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setDetail);
+
+                        updateFieldIfEditable("recipientLatitude",
+                                newRecipientAddress.getLatitude(),
+                                request.getRecipientLatitude(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setLatitude);
+
+                        updateFieldIfEditable("recipientLongitude",
+                                newRecipientAddress.getLongitude(),
+                                request.getRecipientLongitude(),
+                                order,
+                                currentStatus,
+                                newRecipientAddress::setLongitude);
+
+                        newRecipientAddress.setFullAddress(
+                                AddressUtils.buildFullAddress(
+                                        newRecipientAddress.getDetail(),
+                                        newRecipientAddress.getWardName(),
+                                        newRecipientAddress.getCityName()
+                                )
+                        );
+
+                        newRecipientAddress = addressUserService.save(newRecipientAddress);
+                    }
+
+                } else {
+
+                    // Không tìm thấy -> tạo mới nếu muốn lưu
+                    if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                        User user = userUserService.findById(userId);
+
+                        newRecipientAddress = addressUserService.save(
+                                Address.builder()
+                                        .name(request.getRecipientName())
+                                        .phoneNumber(request.getRecipientPhone())
+                                        .cityCode(request.getRecipientCityCode())
+                                        .cityName(request.getRecipientCityName())
+                                        .wardCode(request.getRecipientWardCode())
+                                        .wardName(request.getRecipientWardName())
+                                        .detail(request.getRecipientDetail())
+                                        .latitude(request.getRecipientLatitude())
+                                        .longitude(request.getRecipientLongitude())
+                                        .fullAddress(
+                                                AddressUtils.buildFullAddress(
+                                                        request.getRecipientDetail(),
+                                                        request.getRecipientWardName(),
+                                                        request.getRecipientCityName()
+                                                )
+                                        )
+                                        .type(AddressType.RECIPIENT)
+                                        .user(user)
+                                        .build()
+                        );
+                    }
+                }
+
+                // Update recipientaddress
+                updateFieldIfEditable("recipientName",
+                        order.getRecipientName(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getName()
+                                : request.getRecipientName(),
+                        order,
+                        currentStatus,
+                        order::setRecipientName);
+
+                updateFieldIfEditable("recipientPhoneNumber",
+                        order.getRecipientPhone(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getPhoneNumber()
+                                : request.getRecipientPhone(),
+                        order,
+                        currentStatus,
+                        order::setRecipientPhone);
+
+                updateFieldIfEditable("recipientCityCode",
+                        order.getRecipientCityCode(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getCityCode()
+                                : request.getRecipientCityCode(),
+                        order,
+                        currentStatus,
+                        order::setRecipientCityCode);
+
+                updateFieldIfEditable("recipientCityName",
+                        order.getRecipientCityName(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getCityName()
+                                : request.getRecipientCityName(),
+                        order,
+                        currentStatus,
+                        order::setRecipientCityName);
+
+                updateFieldIfEditable("recipientWardCode",
+                        order.getRecipientWardCode(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getWardCode()
+                                : request.getRecipientWardCode(),
+                        order,
+                        currentStatus,
+                        order::setRecipientWardCode);
+
+                updateFieldIfEditable("recipientWardName",
+                        order.getRecipientWardName(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getWardName()
+                                : request.getRecipientWardName(),
+                        order,
+                        currentStatus,
+                        order::setRecipientWardName);
+
+                updateFieldIfEditable("recipientDetailAddress",
+                        order.getRecipientDetail(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getDetail()
+                                : request.getRecipientDetail(),
+                        order,
+                        currentStatus,
+                        order::setRecipientDetail);
+
+                updateFieldIfEditable("recipientLatitude",
+                        order.getRecipientLatitude(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getLatitude()
+                                : request.getRecipientLatitude(),
+                        order,
+                        currentStatus,
+                        order::setRecipientLatitude);
+
+                updateFieldIfEditable("recipientLongitude",
+                        order.getRecipientLongitude(),
+                        newRecipientAddress != null
+                                ? newRecipientAddress.getLongitude()
+                                : request.getRecipientLongitude(),
+                        order,
+                        currentStatus,
+                        order::setRecipientLongitude);
+
+                order.setRecipientFullAddress(
+                        AddressUtils.buildFullAddress(
+                                order.getRecipientDetail(),
+                                order.getRecipientWardName(),
+                                order.getRecipientCityName()
+                        )
+                );
             }
 
-            updateFieldIfEditable("recipientName", order.getRecipientName(), newRecipientAddress.getName(), order, currentStatus, order::setRecipientName);
-            updateFieldIfEditable("recipientPhoneNumber", order.getRecipientPhone(), newRecipientAddress.getPhoneNumber(), order, currentStatus, order::setRecipientPhone);
-            updateFieldIfEditable("recipientCityCode", order.getRecipientCityCode(), newRecipientAddress.getCityCode(), order, currentStatus, order::setRecipientCityCode);
-            updateFieldIfEditable("recipientCityName", order.getRecipientCityName(), newRecipientAddress.getCityName(), order, currentStatus, order::setRecipientCityName);
-            updateFieldIfEditable("recipientWardCode", order.getRecipientWardCode(), newRecipientAddress.getWardCode(), order,currentStatus, order::setRecipientWardCode);
-            updateFieldIfEditable("recipientWardName", order.getRecipientWardName(), newRecipientAddress.getWardName(), order, currentStatus, order::setRecipientWardName);
-            updateFieldIfEditable("recipientDetailAddress", order.getRecipientDetail(), newRecipientAddress.getDetail(), order, currentStatus, order::setRecipientDetail);
-            updateFieldIfEditable("recipientLatitude", order.getRecipientLatitude(), newRecipientAddress.getLatitude(), order, currentStatus, order::setRecipientLatitude);
-            updateFieldIfEditable("recipientLongitude", order.getRecipientLongitude(), newRecipientAddress.getLongitude(), order, currentStatus, order::setRecipientLongitude);
-
-            order.setRecipientFullAddress(AddressUtils.buildFullAddress(
-                    order.getRecipientDetail(),
-                    order.getRecipientWardName(),
-                    order.getRecipientCityName()
-            ));
+            order.setRecipientAddress(newRecipientAddress);
 
             updateFieldIfEditable("pickupType", order.getPickupType()
                             .name(), request.getPickupType(), order,

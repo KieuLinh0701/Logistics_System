@@ -22,7 +22,7 @@ public class AddressUserController {
     private AddressUserService service;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<com.logistics.dto.AddressDto>>> list(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<List<AddressDto>>> list(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         
         return ResponseEntity.ok(service.list(userId));

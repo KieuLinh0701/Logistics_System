@@ -308,7 +308,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng có mã vận đơn #%s của bạn đã bị hủy bởi nhân viên chúng tôi. Nếu bạn không yêu cầu hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
-                    "order",
+                    "recipientaddress",
                     order.getUser().getId(),
                     null,
                     "orders/list",
@@ -341,7 +341,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng #%s đã được xác nhận. Vui lòng chuẩn bị hàng hóa và mang đến bưu cục để hoàn tất việc gửi hàng.",
                             order.getTrackingNumber()),
-                    "order",
+                    "recipientaddress",
                     order.getUser().getId(),
                     null,
                     "orders/list",
@@ -645,7 +645,7 @@ public class OrderManagerService {
                                     order.getTrackingNumber(),
                                     oldWeight == null ? "0" : oldWeight.toPlainString(),
                                     request.getWeight().toPlainString()),
-                            "order",
+                            "recipientaddress",
                             order.getUser().getId(),
                             null,
                             "orders/tracking",
@@ -845,7 +845,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng có mã vận đơn #%s của bạn đã được mang đến và bàn giao cho đơn vị vận chuyển thành công tại bưu cục xuất phát. Nếu bạn không thực hiện hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
-                    "order",
+                    "recipientaddress",
                     order.getUser().getId(),
                     null,
                     "orders/tracking",

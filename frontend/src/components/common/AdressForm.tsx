@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Form, Input, Select } from "antd";
-import type { City, Ward } from "../../types/location";
+import React, {useEffect, useRef, useState} from "react";
+import {Form, Input, Select} from "antd";
+import type {City, Ward} from "../../types/location";
 import locationApi from "../../api/locationApi";
-import { getPlaceDetails } from "../../service/mapsService";
-import type { Prediction } from "../../service/mapsService";
+import {getPlaceDetails} from "../../service/mapsService";
+import type {Prediction} from "../../service/mapsService";
 
-const { Option } = Select;
+const {Option} = Select;
 
 interface AddressFormProps {
     form: any;
@@ -16,6 +16,7 @@ interface AddressFormProps {
     disableCity?: boolean;
     disableWard?: boolean;
     disableDetailAddress?: boolean;
+    onManualChange?: () => void;
 }
 
 const AddressForm: React.FC<AddressFormProps> = ({
@@ -27,6 +28,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
                                                      disableCity,
                                                      disableWard,
                                                      disableDetailAddress,
+                                                     onManualChange
                                                  }) => {
     const [cities, setCities] = useState<City[]>([]);
     const [wards, setWards] = useState<Ward[]>([]);
@@ -74,7 +76,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     useEffect(() => {
         if (initialDetail) {
             form.setFieldsValue({
-                [prefix]: { ...form.getFieldValue(prefix), detail: initialDetail },
+                [prefix]: {...form.getFieldValue(prefix), detail: initialDetail},
             });
         }
     }, [initialDetail, form, prefix]);
@@ -88,7 +90,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
             setWards(wardList);
             if (initialWard && isFirstLoad) {
                 form.setFieldsValue({
-                    [prefix]: { ...form.getFieldValue(prefix), wardCode: initialWard },
+                    [prefix]: {...form.getFieldValue(prefix), wardCode: initialWard},
                 });
                 setIsFirstLoad(false);
             }
@@ -121,7 +123,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 {
                     input: val,
                     language: "vi",
-                    componentRestrictions: { country: "vn" },
+                    componentRestrictions: {country: "vn"},
                 },
                 (predictions, status) => {
                     if (
@@ -174,7 +176,8 @@ const AddressForm: React.FC<AddressFormProps> = ({
             const components: {
                 long_name: string;
                 short_name: string;
-                types: string[] }[] = data?.result?.address_components || [];
+                types: string[]
+            }[] = data?.result?.address_components || [];
 
             const formattedAddress: string = data?.result?.formatted_address || "";
 
@@ -291,11 +294,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 wardCode: undefined,
                 wardName: "",
                 cityName,
+                latitude: 0,
+                longitude: 0,
             },
         });
         setWards([]);
         setIsFirstLoad(false);
         locationApi.getWardsByCity(newCity).then(setWards).catch(console.error);
+        onManualChange?.();
     };
 
     return (
@@ -303,8 +309,9 @@ const AddressForm: React.FC<AddressFormProps> = ({
             {/* Ô tìm địa chỉ nhanh - ẩn khi disableCity */}
             {!disableCity && (
                 <Form.Item label={<span className="modal-lable">Tìm địa chỉ nhanh</span>}>
-                    <div style={{ position: "relative" }}>
+                    <div style={{position: "relative"}}>
                         <Input
+                            className="modal-custom-input"
                             placeholder="Gõ địa chỉ để tự động điền..."
                             value={addressInput}
                             onChange={(e) => handleAddressInput(e.target.value)}
@@ -315,38 +322,12 @@ const AddressForm: React.FC<AddressFormProps> = ({
                             }}
                         />
                         {suggestions.length > 0 && (
-                            <ul
-                                style={{
-                                    position: "absolute",
-                                    zIndex: 1000,
-                                    background: "#fff",
-                                    border: "1px solid #d9d9d9",
-                                    borderRadius: 6,
-                                    padding: 0,
-                                    margin: "4px 0 0 0",
-                                    listStyle: "none",
-                                    width: "100%",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-                                    maxHeight: 240,
-                                    overflowY: "auto",
-                                }}
-                            >
+                            <ul className="dropdown-list">
                                 {suggestions.map((s) => (
                                     <li
                                         key={s.place_id}
+                                        className="dropdown-item"
                                         onClick={() => handleSelectSuggestion(s)}
-                                        style={{
-                                            padding: "8px 12px",
-                                            cursor: "pointer",
-                                            borderBottom: "1px solid #f0f0f0",
-                                            fontSize: 13,
-                                        }}
-                                        onMouseEnter={(e) =>
-                                            (e.currentTarget.style.background = "#f5f5f5")
-                                        }
-                                        onMouseLeave={(e) =>
-                                            (e.currentTarget.style.background = "#fff")
-                                        }
                                     >
                                         {s.description}
                                     </li>
@@ -361,7 +342,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
             <Form.Item
                 name={[prefix, "cityCode"]}
                 label={<span className="modal-lable">Tỉnh / Thành phố</span>}
-                rules={[{ required: true, message: "Vui lòng chọn tỉnh / thành phố!" }]}
+                rules={[{required: true, message: "Vui lòng chọn tỉnh / thành phố!"}]}
             >
                 <Select
                     className="modal-custom-select"
@@ -386,14 +367,20 @@ const AddressForm: React.FC<AddressFormProps> = ({
             <Form.Item
                 name={[prefix, "wardCode"]}
                 label={<span className="modal-lable">Phường / Xã</span>}
-                rules={[{ required: true, message: "Vui lòng chọn phường / xã!" }]}
+                rules={[{required: true, message: "Vui lòng chọn phường / xã!"}]}
             >
                 <Select
                     onChange={(value) => {
                         const wardName = wards.find(w => w.code === value)?.name ?? "";
                         form.setFieldsValue({
-                            [prefix]: { ...form.getFieldValue(prefix), wardName },
+                            [prefix]: {
+                                ...form.getFieldValue(prefix),
+                                wardName,
+                                latitude: 0,
+                                longitude: 0,
+                            },
                         });
+                        onManualChange?.();
                     }}
                     className="modal-custom-select"
                     showSearch
@@ -416,19 +403,75 @@ const AddressForm: React.FC<AddressFormProps> = ({
             <Form.Item
                 name={[prefix, "detail"]}
                 label={<span className="modal-lable">Chi tiết</span>}
-                rules={[{ required: true, message: "Vui lòng nhập số nhà, tên đường!" }]}
+                rules={[{required: true, message: "Vui lòng nhập số nhà, tên đường!"}]}
             >
                 <Input
                     className="modal-custom-input"
                     placeholder="Số nhà, tên đường..."
                     disabled={disableDetailAddress}
+                    onChange={onManualChange}
                 />
             </Form.Item>
 
-            <Form.Item name={[prefix, "latitude"]} hidden><Input /></Form.Item>
-            <Form.Item name={[prefix, "longitude"]} hidden><Input /></Form.Item>
-            <Form.Item name={[prefix, "cityName"]} hidden><Input /></Form.Item>
-            <Form.Item name={[prefix, "wardName"]} hidden><Input /></Form.Item>
+            <Form.Item
+                name={[prefix, "latitude"]}
+                hidden
+                rules={[
+                    {
+                        validator: (_, value) =>
+                            value && value !== 0
+                                ? Promise.resolve()
+                                : Promise.reject(new Error("Vui lòng chọn địa chỉ từ gợi ý để xác định tọa độ")),
+                    },
+                ]}
+            >
+                <Input/>
+            </Form.Item>
+
+            <Form.Item
+                name={[prefix, "longitude"]}
+                hidden
+                rules={[
+                    {
+                        validator: (_, value) =>
+                            value && value !== 0
+                                ? Promise.resolve()
+                                : Promise.reject(new Error("Vui lòng chọn địa chỉ từ gợi ý để xác định tọa độ")),
+                    },
+                ]}
+            >
+                <Input/>
+            </Form.Item>
+
+            <Form.Item
+                name={[prefix, "cityName"]}
+                hidden
+                rules={[
+                    {
+                        validator: (_, value) =>
+                            value && value.trim() !== ""
+                                ? Promise.resolve()
+                                : Promise.reject(new Error("Thiếu tên thành phố")),
+                    },
+                ]}
+            >
+                <Input/>
+            </Form.Item>
+
+            <Form.Item
+                name={[prefix, "wardName"]}
+                hidden
+                rules={[
+                    {
+                        validator: (_, value) =>
+                            value && value.trim() !== ""
+                                ? Promise.resolve()
+                                : Promise.reject(new Error("Thiếu tên phường/xã")),
+                    },
+                ]}
+            >
+                <Input/>
+            </Form.Item>
         </>
     );
 };

@@ -61,7 +61,7 @@ public class PaymentSubmissonSpecification {
             String likePattern = "%" + keyword.toLowerCase() + "%";
 
             Join<PaymentSubmission, User> userJoin = root.join("checkedBy", JoinType.LEFT);
-            Join<PaymentSubmission, Order> orderJoin = root.join("order", JoinType.LEFT);
+            Join<PaymentSubmission, Order> orderJoin = root.join("recipientaddress", JoinType.LEFT);
 
             return cb.or(
                     cb.like(cb.lower(root.get("code")), likePattern), // mã đối soát

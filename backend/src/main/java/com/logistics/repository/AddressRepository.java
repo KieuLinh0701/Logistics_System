@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Repository;
 import com.logistics.enums.AddressType;
 
 @Repository
-public interface AddressRepository extends JpaRepository<Address, Integer> {
+public interface AddressRepository
+        extends JpaRepository<Address, Integer>,
+        JpaSpecificationExecutor<Address> {
     List<Address> findByUserIdAndTypeOrderByCreatedAtDesc(int userId, AddressType type);
 
     Optional<Address> findByIdAndUserIdAndType(int id, int userId, AddressType type);
@@ -41,4 +44,23 @@ public interface AddressRepository extends JpaRepository<Address, Integer> {
 
     List<Address> findByUserIdInAndIsDefaultTrue(List<Integer> userIds);
 
+    Optional<Address> findFirstByUserIdAndPhoneNumberAndType(
+            Integer userId,
+            String phoneNumber,
+            AddressType type);
+
+    Optional<Address> findByPhoneNumberAndUserIdAndType(String phoneNumber, int userId, AddressType type);
+
+    boolean existsByUserIdAndPhoneNumberAndFullAddressAndType(
+            Integer userId,
+            String phoneNumber,
+            String fullAddress,
+            AddressType type);
+
+    boolean existsByUserIdAndPhoneNumberAndFullAddressAndTypeAndIdNot(
+            Integer userId,
+            String phoneNumber,
+            String fullAddress,
+            AddressType type,
+            Integer addressId);
 }

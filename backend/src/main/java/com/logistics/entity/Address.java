@@ -65,9 +65,6 @@ public class Address {
     @Builder.Default
     private AddressType type = AddressType.RECIPIENT;
 
-    @Builder.Default
-    private Boolean isSaved = false;
-
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
     private String fullAddress;
 

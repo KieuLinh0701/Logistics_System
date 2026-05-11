@@ -4,33 +4,14 @@ import { Button, Select, Card, Space, Row, Col, message } from "antd";
 import { PrinterOutlined, SettingOutlined } from "@ant-design/icons";
 import type { OrderPrint } from "../../../types/order";
 import orderApi from "../../../api/orderApi";
-import locationApi from "../../../api/locationApi";
 import "./UserWaybillPrint.css";
 
-const { Option } = Select;
-
-const getFullAddress = async (detail: string, cityCode: number | string, wardCode: number | string) => {
-  try {
-    const cityName = await locationApi.getCityNameByCode(Number(cityCode)) || "Unknown";
-    const wardName = await locationApi.getWardNameByCode(Number(cityCode), Number(wardCode)) || "Unknown";
-    return `${detail}, ${wardName}, ${cityName}`;
-  } catch {
-    return `${detail}, Unknown Ward, Unknown City`;
-  }
-};
 
 const ContactInfo: React.FC<{
   name: string;
-  detail: string;
-  wardCode: number;
-  cityCode: number;
   phone: string;
-}> = ({ name, detail, wardCode, cityCode, phone }) => {
-  const [fullAddress, setFullAddress] = useState("Đang tải...");
-
-  useEffect(() => {
-    getFullAddress(detail, cityCode, wardCode).then(setFullAddress);
-  }, [detail, cityCode, wardCode]);
+  fullAddress: string;
+}> = ({ name, phone, fullAddress }) => {
 
   return (
     <div className="waybill-print-section-content">
@@ -136,7 +117,8 @@ const UserWaybillPrint: React.FC = () => {
 
   const dimensions = getPaperDimensions();
 
-  return (
+  // @ts-ignore
+    return (
     <div className="waybill-print-container">
       <div className="waybill-print-control-panel">
         <Card className="waybill-print-control-card">
@@ -209,21 +191,17 @@ const UserWaybillPrint: React.FC = () => {
                 <div className="waybill-print-contact-column">
                   <div className="waybill-print-section-title">TỪ</div>
                   <ContactInfo
-                    name={order.senderName}
-                    detail={order.senderDetail}
-                    wardCode={order.senderWardCode}
-                    cityCode={order.senderCityCode}
-                    phone={order.senderPhone}
+                    name={order.senderAddress.name}
+                    phone={order.senderAddress.phoneNumber}
+                    fullAddress={order.senderAddress.fullAddress}
                   />
                 </div>
                 <div className="waybill-print-contact-column">
                   <div className="waybill-print-section-title">ĐẾN</div>
                   <ContactInfo
                     name={order.recipientAddress.name}
-                    detail={order.recipientAddress.detail}
-                    wardCode={order.recipientAddress.wardCode}
-                    cityCode={order.recipientAddress.cityCode}
                     phone={order.recipientAddress.phoneNumber}
+                    fullAddress={order.recipientAddress.fullAddress}
                   />
                 </div>
               </div>

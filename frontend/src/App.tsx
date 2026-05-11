@@ -32,6 +32,7 @@ import AdminFinancialIndex from "./pages/admin/financial/AdminFinancialIndex";
 import ReportsPage from "./pages/admin/reports/ReportsPage";
 
 import UserProducts from "./pages/user/product/UserProducts";
+import UserCustomers from "./pages/user/customer/UserCustomers.tsx";
 import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
 import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
 import ShippingRatesBody from "./pages/common/tracking/shippingRate/ShippingRatesBody";
@@ -57,8 +58,7 @@ import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
 import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
-import ManagerEmployeePerfomanceShipment
-    from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
+import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 
 // Shipper
 import ShipperOrders from "./pages/shipper/Orders";
@@ -194,6 +194,8 @@ const App: React.FC = () => {
                                element={<PrivateRoute allowedRoles={['user']}><UserOrderDetail/></PrivateRoute>}/>
                         <Route path="/products"
                                element={<PrivateRoute allowedRoles={['user']}><UserProducts/></PrivateRoute>}/>
+                        <Route path="/customers"
+                               element={<PrivateRoute allowedRoles={['user']}><UserCustomers/></PrivateRoute>}/>
                         <Route path="/bank-accounts"
                                element={<PrivateRoute allowedRoles={['user']}><UserBankAccounts/></PrivateRoute>}/>
                         <Route path="/shipping-fee"

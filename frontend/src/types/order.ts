@@ -191,11 +191,7 @@ export interface OrderPrint {
     barcodeTrackingNumber: string;
     fromOfficeCode: string;
     qrFromOfficeCode: string;
-    senderName: string;
-    senderPhone: string;
-    senderCityCode: number;
-    senderWardCode: number;
-    senderDetail: string;
+    senderAddress: Address;
     recipientAddress: Address;
     codAmount: number;
     weight: number;

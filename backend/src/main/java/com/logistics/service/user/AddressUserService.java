@@ -201,6 +201,13 @@ public class AddressUserService {
         return addressRepository.findByIdAndUserIdAndType(addressId, userId, type);
     }
 
+    public Optional<Address> findByPhoneAndUserIdAndType(
+            String phoneNumber,
+            Integer userId,
+            AddressType type) {
+        return addressRepository.findByPhoneNumberAndUserIdAndType(phoneNumber, userId, type);
+    }
+
     public Address save(Address address) {
         if (address == null) {
             return null;

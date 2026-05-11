@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.logistics.dto.AddressDto;
+import com.logistics.dto.AddressSummaryDto;
 import com.logistics.dto.OfficeDto;
 import com.logistics.dto.OrderHistoryDto;
 import com.logistics.dto.OrderProductDto;
@@ -24,28 +25,8 @@ public class UserOrderDetailDto {
     private String trackingNumber;
     private String status;
     private String createdByType;
-    private String senderName;
-    private String senderPhone;
-    private Integer senderCityCode;
-    private String senderCityName;
-    private Integer senderWardCode;
-    private String senderWardName;
-    private String senderFullAddress;
-    private Double senderLatitude;
-    private Double senderLongitude;
-    private String senderDetail;
-    private AddressDto senderAddress;
-    private AddressDto recipientAddress;
-    private String recipientName;
-    private String recipientPhone;
-    private Integer recipientCityCode;
-    private String recipientCityName;
-    private Integer recipientWardCode;
-    private String recipientWardName;
-    private String recipientFullAddress;
-    private Double recipientLatitude;
-    private Double recipientLongitude;
-    private String recipientDetail;
+    private AddressSummaryDto senderAddress;
+    private AddressSummaryDto recipientAddress;
 
     private BigDecimal weight;
     private String pickupType;

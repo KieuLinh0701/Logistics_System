@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
-import RecipientInfo from "./components/RecipientInfo";
+import RecipientInfo, {type RecipientInfoRef} from "./components/RecipientInfo";
 import NoteCard from "./components/NoteCard";
 import PaymentCard from "./components/PaymentCard";
 import OrderInfo from "./components/OrderInfo";
@@ -38,6 +38,7 @@ const UserOrderCreate: React.FC = () => {
     const [loadingOrder, setLoadingOrder] = useState(false);
 
     const [loadingOffice, setLoadingOffice] = useState(false);
+    const [saveRecipient, setSaveRecipient] = useState(false);
 
     // Thông tin cửa hàng
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -124,6 +125,10 @@ const UserOrderCreate: React.FC = () => {
     const [successOrderId, setSuccessOrderId] = useState<number | null>(null);
     const [successTrackingNumber, setSuccessTrackingNumber] = useState("");
     const [successStatus, setSuccessStatus] = useState<"DRAFT" | "PENDING">("DRAFT");
+
+    // Thông tin người nhận
+    const [savedRecipientAddressId, setSavedRecipientAddressId] = useState<number | null>(null);
+    const recipientInfoRef = useRef<RecipientInfoRef>(null);
 
     // Form instances
     const [senderInfo] = Form.useForm();
@@ -821,6 +826,7 @@ const UserOrderCreate: React.FC = () => {
             const orderData = {
                 status,
                 senderAddressId: selectedAddress?.id,
+                recipientAddressId: savedRecipientAddressId ?? undefined,
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
@@ -841,7 +847,7 @@ const UserOrderCreate: React.FC = () => {
                 orderValue: orderValue || 0,
                 payer: payer,
                 notes: notes || "",
-                saveRecipient: false, // tạm thời set false --> sửa sau nhé
+                saveRecipient: saveRecipient,
                 promotionId: selectedPromotion?.id,
                 fromOfficeId: selectedOffice?.id,
                 discountAmount: discountAmount,
@@ -974,6 +980,10 @@ const UserOrderCreate: React.FC = () => {
         setPickupType(undefined);
         setSelectedOffice(null);
         setSelectedPromotion(null);
+        setSaveRecipient(false);
+        setSavedRecipientAddressId(null);
+
+        recipientInfoRef.current?.resetSuggestion();
 
         setSelectedAddress(null);
         setSenderData(empty);
@@ -1164,6 +1174,8 @@ const UserOrderCreate: React.FC = () => {
                                 form={recipientInfo}
                                 recipient={recipientData}
                                 disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
+                                onSaveRecipientChange={(save) => setSaveRecipient(save)}
+                                onSavedAddressSelect={(id) => setSavedRecipientAddressId(id)}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({

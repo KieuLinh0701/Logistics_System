@@ -333,7 +333,7 @@ public class FinancialAdminService {
                                 financialValidationService.markOrderPaidIfEligible(o);
                             }
                         } catch (Exception ex) {
-                            System.err.println("Error while validating payment for order " + o.getId() + ": " + ex.getMessage());
+                            System.err.println("Error while validating payment for recipientaddress " + o.getId() + ": " + ex.getMessage());
                         }
                         orderRepository.save(o);
                     }

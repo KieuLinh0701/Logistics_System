@@ -349,7 +349,7 @@ public class ShipmentDriverService {
             Map<Integer, Map<String, Object>> officeGroups = new HashMap<>();
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                // Nếu order.toOffice là null thì dùng shipment.toOffice (một số chuyến có thể chỉ có 1 bưu cục đích)
+                // Nếu recipientaddress.toOffice là null thì dùng shipment.toOffice (một số chuyến có thể chỉ có 1 bưu cục đích)
                 Office targetOffice = order.getToOffice() != null ? order.getToOffice() : activeShipment.getToOffice();
                 if (targetOffice == null) continue;
 

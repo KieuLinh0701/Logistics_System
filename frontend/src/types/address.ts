@@ -11,6 +11,8 @@ export interface Address {
     name: string;
     phoneNumber: string;
     fullAddress: string;
+    isSaved: boolean;
+    type: AddressType;
 }
 
 export interface AddressRequest {
@@ -27,7 +29,4 @@ export interface AddressRequest {
     longitude?: number;
 }
 
-export interface GeoCoords {
-    lat: number;
-    lng: number;
-}
+export type AddressType = 'SENDER' | 'RECIPIENT';

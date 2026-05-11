@@ -18,12 +18,8 @@ public class OrderPrintDto {
     private String barcodeTrackingNumber;
     private String fromOfficeCode;
     private String qrFromOfficeCode;
-    private String senderName;
-    private String senderPhone;
-    private String senderCityCode;
-    private String senderWardCode;
-    private String senderDetail;
-    private AddressDto recipientAddress;
+    private AddressSummaryDto senderAddress;
+    private AddressSummaryDto recipientAddress;
     private Integer codAmount;
     private BigDecimal weight;
     private LocalDateTime createdAt;

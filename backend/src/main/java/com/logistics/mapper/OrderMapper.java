@@ -223,28 +223,15 @@ public class OrderMapper {
                         .name(),
                 entity.getCreatedByType()
                         .name(),
-                entity.getSenderName(),
-                entity.getSenderPhone(),
-                entity.getSenderCityCode(),
-                entity.getSenderCityName(),
-                entity.getSenderWardCode(),
-                entity.getSenderWardName(),
-                entity.getSenderFullAddress(),
-                entity.getSenderLatitude(),
-                entity.getSenderLongitude(),
-                entity.getSenderDetail(),
-                AddressMapper.toDto(entity.getSenderAddress()),
-                AddressMapper.toDto(entity.getRecipientAddress()),
-                entity.getRecipientName(),
-                entity.getRecipientPhone(),
-                entity.getRecipientCityCode(),
-                entity.getRecipientCityName(),
-                entity.getRecipientWardCode(),
-                entity.getRecipientWardName(),
-                entity.getRecipientFullAddress(),
-                entity.getRecipientLatitude(),
-                entity.getRecipientLongitude(),
-                entity.getRecipientDetail(),
+                AddressMapper.toSummaryDto(
+                        entity.getSenderFullAddress(),
+                        entity.getSenderName(),
+                        entity.getSenderPhone()),
+                AddressMapper.toSummaryDto(
+                        entity.getRecipientFullAddress(),
+                        entity.getRecipientName(),
+                        entity.getRecipientPhone()
+                ),
                 entity.getWeight(),
                 entity.getPickupType()
                         .name(),
@@ -301,7 +288,11 @@ public class OrderMapper {
                 entity.getTrackingNumber(),
                 entity.getStatus()
                         .name(),
-                AddressMapper.toDto(entity.getRecipientAddress()),
+                AddressMapper.toSummaryDto(
+                        entity.getRecipientFullAddress(),
+                        entity.getRecipientName(),
+                        entity.getRecipientPhone()
+                ),
                 entity.getPickupType()
                         .name(),
                 entity.getWeight(),

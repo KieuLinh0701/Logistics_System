@@ -731,7 +731,7 @@ public class OrderShipperService {
             }
 
             if (cashCollected > 0) {
-                // Create submission but DO NOT mark order as PAID here. Financial decision is centralized.
+                // Create submission but DO NOT mark recipientaddress as PAID here. Financial decision is centralized.
                 createPaymentSubmission(order, shipperUser, cashCollected,
                         "Đối soát sau khi giao thành công");
             }
@@ -853,7 +853,7 @@ public class OrderShipperService {
                 "order_status_changed",
                 shipperUser.getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
@@ -865,7 +865,7 @@ public class OrderShipperService {
                     "cod_reminder",
                     shipperUser.getId(),
                     null,
-                    "order",
+                    "recipientaddress",
                     order.getTrackingNumber()
             );
         }
@@ -942,7 +942,7 @@ public class OrderShipperService {
 
         // Gửi notification đơn giản
         try {
-            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "order", order.getTrackingNumber());
+            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
         } catch (Exception e) { throw e; }
 
         return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
@@ -980,7 +980,7 @@ public class OrderShipperService {
         try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception e) { throw e; }
 
         try {
-            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "order", order.getTrackingNumber());
+            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
         } catch (Exception e) { throw e; }
 
         return new ApiResponse<>(true, "Đã nộp hàng tại bưu cục", null);
@@ -1351,17 +1351,17 @@ public class OrderShipperService {
     private void createPaymentSubmission(Order order, User shipperUser, int amount, String note) {
         if (amount <= 0) return;
 
-        // Lock order to prevent duplicate COD across instances
+        // Lock recipientaddress to prevent duplicate COD across instances
         try {
             Optional<Order> locked = orderRepository.findByIdForUpdate(order.getId());
             if (locked.isPresent()) order = locked.get();
         } catch (Exception e) {
         }
 
-        // Prevent creating COD when order is already submitted/received
+        // Prevent creating COD when recipientaddress is already submitted/received
         if (order.getCod() != null && order.getCod() > 0
                 && (order.getCodStatus() == OrderCodStatus.SUBMITTED || order.getCodStatus() == OrderCodStatus.RECEIVED)) {
-            // Attempt to create COD submission but order codStatus prevents it
+            // Attempt to create COD submission but recipientaddress codStatus prevents it
             return;
         }
 
