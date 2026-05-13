@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.logistics.utils.AddressUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -66,6 +67,7 @@ import com.logistics.utils.UserOrderEditRuleUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderUserService {
@@ -248,8 +250,8 @@ public class OrderUserService {
             }
 
             Address senderAddress = addressUserService.findByIdAndUserIdAndType(
-                            userId,
                             request.getSenderAddressId(),
+                            userId,
                             AddressType.SENDER)
                     .orElseThrow(() -> new RuntimeException("Địa chỉ người gửi không tồn tại"));
 
@@ -379,8 +381,13 @@ public class OrderUserService {
             if (request.getRecipientAddressId() == null) {
 
                 Optional<Address> existing = addressUserService
-                        .findByPhoneAndUserIdAndType(
+                        .findByPhoneNumberAndFullAddressAndUserIdAndType(
                                 request.getRecipientPhone(),
+                                AddressUtils.buildFullAddress(
+                                        request.getRecipientDetail(),
+                                        request.getRecipientWardName(),
+                                        request.getRecipientCityName()
+                                ),
                                 userId,
                                 AddressType.RECIPIENT
                         );
@@ -437,8 +444,8 @@ public class OrderUserService {
                 }
             } else {
                 recipientAddress = addressUserService.findByIdAndUserIdAndType(
-                                userId,
                                 request.getRecipientAddressId(),
+                                userId,
                                 AddressType.RECIPIENT)
                         .orElseThrow(() -> new RuntimeException("Địa chỉ người nhận không tồn tại"));
             }
@@ -816,41 +823,41 @@ public class OrderUserService {
                 Address sender = order.getSenderAddress();
 
                 Address reqSenderAddress = addressUserService.findByIdAndUserIdAndType(
-                                userId,
                                 request.getSenderAddressId(),
+                                userId,
                                 AddressType.SENDER)
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ người gửi"));
 
                 // Cập nhật toàn bộ object senderAddress
-                updateFieldIfEditable("senderAddress", sender, reqSenderAddress, order,
+                updateFieldIfEditable("senderAddress", sender, reqSenderAddress,
                         currentStatus, order::setSenderAddress);
 
                 // Cập nhật từng field để giữ consistency
-                updateFieldIfEditable("senderName", sender.getName(), reqSenderAddress.getName(), order,
+                updateFieldIfEditable("senderName", sender.getName(), reqSenderAddress.getName(),
                         currentStatus, order::setSenderName);
                 updateFieldIfEditable("senderPhoneNumber", sender.getPhoneNumber(),
-                        reqSenderAddress.getPhoneNumber(), order,
+                        reqSenderAddress.getPhoneNumber(),
                         currentStatus, order::setSenderPhone);
                 updateFieldIfEditable("senderCityCode", sender.getCityCode(),
-                        reqSenderAddress.getCityCode(), order,
+                        reqSenderAddress.getCityCode(),
                         currentStatus, order::setSenderCityCode);
                 updateFieldIfEditable("senderCityName", sender.getCityName(),
-                        reqSenderAddress.getCityName(), order,
+                        reqSenderAddress.getCityName(),
                         currentStatus, order::setSenderCityName);
                 updateFieldIfEditable("senderWardCode", sender.getWardCode(),
-                        reqSenderAddress.getWardCode(), order,
+                        reqSenderAddress.getWardCode(),
                         currentStatus, order::setSenderWardCode);
                 updateFieldIfEditable("senderWardName", sender.getWardName(),
-                        reqSenderAddress.getWardName(), order,
+                        reqSenderAddress.getWardName(),
                         currentStatus, order::setSenderWardName);
                 updateFieldIfEditable("senderDetailAddress", sender.getDetail(),
-                        reqSenderAddress.getDetail(), order,
+                        reqSenderAddress.getDetail(),
                         currentStatus, order::setSenderDetail);
                 updateFieldIfEditable("senderLatitude", sender.getLatitude(),
-                        reqSenderAddress.getLatitude(), order,
+                        reqSenderAddress.getLatitude(),
                         currentStatus, order::setSenderLatitude);
                 updateFieldIfEditable("senderLongitude", sender.getLongitude(),
-                        reqSenderAddress.getLongitude(), order,
+                        reqSenderAddress.getLongitude(),
                         currentStatus, order::setSenderLongitude);
 
                 order.setSenderFullAddress(AddressUtils.buildFullAddress(
@@ -860,8 +867,7 @@ public class OrderUserService {
                 ));
             }
 
-            boolean hasRecipientAddressId =
-                    request.getRecipientAddressId() != null;
+            boolean hasRecipientAddressId = request.getRecipientAddressId() != null;
 
             Address newRecipientAddress = null;
 
@@ -880,8 +886,13 @@ public class OrderUserService {
             } else {
 
                 Optional<Address> existing = addressUserService
-                        .findByPhoneAndUserIdAndType(
+                        .findByPhoneNumberAndFullAddressAndUserIdAndType(
                                 request.getRecipientPhone(),
+                                AddressUtils.buildFullAddress(
+                                        request.getRecipientDetail(),
+                                        request.getRecipientWardName(),
+                                        request.getRecipientCityName()
+                                ),
                                 userId,
                                 AddressType.RECIPIENT
                         );
@@ -896,63 +907,57 @@ public class OrderUserService {
                         updateFieldIfEditable("recipientName",
                                 newRecipientAddress.getName(),
                                 request.getRecipientName(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setName);
 
                         updateFieldIfEditable("recipientPhoneNumber",
                                 newRecipientAddress.getPhoneNumber(),
                                 request.getRecipientPhone(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setPhoneNumber);
+
+                        System.out.println("hello");
+
 
                         updateFieldIfEditable("recipientCityCode",
                                 newRecipientAddress.getCityCode(),
                                 request.getRecipientCityCode(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setCityCode);
 
                         updateFieldIfEditable("recipientCityName",
                                 newRecipientAddress.getCityName(),
                                 request.getRecipientCityName(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setCityName);
 
                         updateFieldIfEditable("recipientWardCode",
                                 newRecipientAddress.getWardCode(),
                                 request.getRecipientWardCode(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setWardCode);
 
                         updateFieldIfEditable("recipientWardName",
                                 newRecipientAddress.getWardName(),
                                 request.getRecipientWardName(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setWardName);
 
                         updateFieldIfEditable("recipientDetailAddress",
                                 newRecipientAddress.getDetail(),
                                 request.getRecipientDetail(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setDetail);
 
                         updateFieldIfEditable("recipientLatitude",
                                 newRecipientAddress.getLatitude(),
                                 request.getRecipientLatitude(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setLatitude);
 
                         updateFieldIfEditable("recipientLongitude",
                                 newRecipientAddress.getLongitude(),
                                 request.getRecipientLongitude(),
-                                order,
                                 currentStatus,
                                 newRecipientAddress::setLongitude);
 
@@ -998,113 +1003,103 @@ public class OrderUserService {
                         );
                     }
                 }
-
-                // Update recipientaddress
-                updateFieldIfEditable("recipientName",
-                        order.getRecipientName(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getName()
-                                : request.getRecipientName(),
-                        order,
-                        currentStatus,
-                        order::setRecipientName);
-
-                updateFieldIfEditable("recipientPhoneNumber",
-                        order.getRecipientPhone(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getPhoneNumber()
-                                : request.getRecipientPhone(),
-                        order,
-                        currentStatus,
-                        order::setRecipientPhone);
-
-                updateFieldIfEditable("recipientCityCode",
-                        order.getRecipientCityCode(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getCityCode()
-                                : request.getRecipientCityCode(),
-                        order,
-                        currentStatus,
-                        order::setRecipientCityCode);
-
-                updateFieldIfEditable("recipientCityName",
-                        order.getRecipientCityName(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getCityName()
-                                : request.getRecipientCityName(),
-                        order,
-                        currentStatus,
-                        order::setRecipientCityName);
-
-                updateFieldIfEditable("recipientWardCode",
-                        order.getRecipientWardCode(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getWardCode()
-                                : request.getRecipientWardCode(),
-                        order,
-                        currentStatus,
-                        order::setRecipientWardCode);
-
-                updateFieldIfEditable("recipientWardName",
-                        order.getRecipientWardName(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getWardName()
-                                : request.getRecipientWardName(),
-                        order,
-                        currentStatus,
-                        order::setRecipientWardName);
-
-                updateFieldIfEditable("recipientDetailAddress",
-                        order.getRecipientDetail(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getDetail()
-                                : request.getRecipientDetail(),
-                        order,
-                        currentStatus,
-                        order::setRecipientDetail);
-
-                updateFieldIfEditable("recipientLatitude",
-                        order.getRecipientLatitude(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getLatitude()
-                                : request.getRecipientLatitude(),
-                        order,
-                        currentStatus,
-                        order::setRecipientLatitude);
-
-                updateFieldIfEditable("recipientLongitude",
-                        order.getRecipientLongitude(),
-                        newRecipientAddress != null
-                                ? newRecipientAddress.getLongitude()
-                                : request.getRecipientLongitude(),
-                        order,
-                        currentStatus,
-                        order::setRecipientLongitude);
-
-                order.setRecipientFullAddress(
-                        AddressUtils.buildFullAddress(
-                                order.getRecipientDetail(),
-                                order.getRecipientWardName(),
-                                order.getRecipientCityName()
-                        )
-                );
             }
 
+            // Update recipientaddress
+            updateFieldIfEditable("recipientName",
+                    order.getRecipientName(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getName()
+                            : request.getRecipientName(),
+                    currentStatus,
+                    order::setRecipientName);
+
+            updateFieldIfEditable("recipientPhoneNumber",
+                    order.getRecipientPhone(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getPhoneNumber()
+                            : request.getRecipientPhone(),
+                    currentStatus,
+                    order::setRecipientPhone);
+
+            updateFieldIfEditable("recipientCityCode",
+                    order.getRecipientCityCode(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getCityCode()
+                            : request.getRecipientCityCode(),
+                    currentStatus,
+                    order::setRecipientCityCode);
+
+            updateFieldIfEditable("recipientCityName",
+                    order.getRecipientCityName(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getCityName()
+                            : request.getRecipientCityName(),
+                    currentStatus,
+                    order::setRecipientCityName);
+
+            updateFieldIfEditable("recipientWardCode",
+                    order.getRecipientWardCode(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getWardCode()
+                            : request.getRecipientWardCode(),
+                    currentStatus,
+                    order::setRecipientWardCode);
+
+            updateFieldIfEditable("recipientWardName",
+                    order.getRecipientWardName(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getWardName()
+                            : request.getRecipientWardName(),
+                    currentStatus,
+                    order::setRecipientWardName);
+
+            updateFieldIfEditable("recipientDetailAddress",
+                    order.getRecipientDetail(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getDetail()
+                            : request.getRecipientDetail(),
+                    currentStatus,
+                    order::setRecipientDetail);
+
+            updateFieldIfEditable("recipientLatitude",
+                    order.getRecipientLatitude(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getLatitude()
+                            : request.getRecipientLatitude(),
+                    currentStatus,
+                    order::setRecipientLatitude);
+
+            updateFieldIfEditable("recipientLongitude",
+                    order.getRecipientLongitude(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getLongitude()
+                            : request.getRecipientLongitude(),
+                    currentStatus,
+                    order::setRecipientLongitude);
+
+            order.setRecipientFullAddress(
+                    AddressUtils.buildFullAddress(
+                            order.getRecipientDetail(),
+                            order.getRecipientWardName(),
+                            order.getRecipientCityName()
+                    )
+            );
             order.setRecipientAddress(newRecipientAddress);
 
             updateFieldIfEditable("pickupType", order.getPickupType()
-                            .name(), request.getPickupType(), order,
+                            .name(), request.getPickupType(),
                     currentStatus,
                     val -> order.setPickupType(OrderPickupType.valueOf(val)));
             updateFieldIfEditable("fromOffice", order.getFromOffice() != null ? order.getFromOffice()
                             .getId() : null,
-                    request.getFromOfficeId(), order, currentStatus,
+                    request.getFromOfficeId(), currentStatus,
                     val -> order.setFromOffice(val != null ? officePublicService.findById(val)
                             .orElseThrow() : null));
             updateFieldIfEditable("payer", order.getPayer()
-                            .name(), request.getPayer(), order, currentStatus,
+                            .name(), request.getPayer(), currentStatus,
                     val -> order.setPayer(OrderPayerType.valueOf(val)));
-            updateFieldIfEditable("notes", order.getNotes(), request.getNotes(), order, currentStatus,
+            updateFieldIfEditable("notes", order.getNotes(), request.getNotes(), currentStatus,
                     order::setNotes);
 
             // 5. Cập nhật products nếu có và được phép
@@ -1124,17 +1119,17 @@ public class OrderUserService {
                     request.getWidth());
             int calcOrderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
 
-            updateFieldIfEditable("weight", order.getWeight(), calcWeight, order, currentStatus, order::setWeight);
-            updateFieldIfEditable("originalWeight", order.getOriginalWeight(), request.getOriginalWeight(), order
+            updateFieldIfEditable("weight", order.getWeight(), calcWeight, currentStatus, order::setWeight);
+            updateFieldIfEditable("originalWeight", order.getOriginalWeight(), request.getOriginalWeight()
                     , currentStatus,
                     order::setOriginalWeight);
-            updateFieldIfEditable("height", order.getHeight(), request.getHeight(), order, currentStatus,
+            updateFieldIfEditable("height", order.getHeight(), request.getHeight(), currentStatus,
                     order::setHeight);
-            updateFieldIfEditable("length", order.getLength(), request.getLength(), order, currentStatus,
+            updateFieldIfEditable("length", order.getLength(), request.getLength(), currentStatus,
                     order::setLength);
-            updateFieldIfEditable("width", order.getWidth(), request.getWidth(), order, currentStatus,
+            updateFieldIfEditable("width", order.getWidth(), request.getWidth(), currentStatus,
                     order::setWidth);
-            updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, order, currentStatus,
+            updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, currentStatus,
                     order::setOrderValue);
 
             // 7. Áp dụng promotion nếu được phép
@@ -1173,21 +1168,17 @@ public class OrderUserService {
             }
 
             // 8. Cập nhật shippingFee dựa trên weight và serviceType
-            int calcShippingFee = feeService.calculateShippingFee(calcWeight, order.getServiceType()
-                            .getId(),
-                    order.getSenderCityCode(), order.getRecipientAddress()
-                            .getCityCode());
-            updateFieldIfEditable("shippingFee", order.getShippingFee(), calcShippingFee, order, currentStatus,
+            int calcShippingFee = feeService.calculateShippingFee(calcWeight, order.getServiceType().getId(),
+                    order.getSenderCityCode(), order.getRecipientCityCode());
+            updateFieldIfEditable("shippingFee", order.getShippingFee(), calcShippingFee, currentStatus,
                     order::setShippingFee);
 
             // 9. Cập nhật totalFee = shippingFee - discountAmount
             int calcServiceFee = feeService.calculateTotalFee(
                     calcWeight,
-                    order.getServiceType()
-                            .getId(),
+                    order.getServiceType().getId(),
                     order.getSenderCityCode(),
-                    order.getRecipientAddress()
-                            .getCityCode(),
+                    order.getRecipientCityCode(),
                     calcOrderValue,
                     order.getCod());
 
@@ -1208,7 +1199,6 @@ public class OrderUserService {
         }
     }
 
-    @Transactional
     private void updateOrderProductsWithValidation(Integer userId, Order order,
             List<UserOrderCreateRequest.OrderProduct> items, boolean movingDraftToPending) {
 
@@ -1284,8 +1274,12 @@ public class OrderUserService {
         }
     }
 
-    private <T> void updateFieldIfEditable(String fieldName, T oldValue, T newValue,
-            Order order, OrderStatus currentStatus, Consumer<T> setter) {
+    private <T> void updateFieldIfEditable(
+            String fieldName,
+            T oldValue,
+            T newValue
+            ,OrderStatus currentStatus,
+            Consumer<T> setter) {
 
         boolean changed;
 
@@ -1296,7 +1290,6 @@ public class OrderUserService {
         } else if (oldValue instanceof Map<?, ?> oldMap && newValue instanceof Map<?, ?> newMap) {
             changed = !mapsEqual(oldMap, newMap);
         } else if (oldValue instanceof BigDecimal oldBd && newValue instanceof BigDecimal newBd) {
-            // So sánh BigDecimal bằng compareTo để bỏ qua scale
             changed = oldBd.compareTo(newBd) != 0;
         } else {
             changed = !Objects.equals(oldValue, newValue);
@@ -1306,16 +1299,19 @@ public class OrderUserService {
             var rule = UserOrderEditRuleUtils.USER_ORDER_FIELD_EDIT_RULES.get(fieldName);
             if (rule != null) {
                 // Nếu nonEditableStatuses chứa currentStatus → không được sửa
-                if (rule.getNonEditableStatuses() != null && rule.getNonEditableStatuses()
-                        .contains(currentStatus)) {
-                    throw new RuntimeException(
-                            "Trường '" + fieldName + "' không thể thay đổi khi đơn ở trạng thái " + currentStatus);
+                if (rule.getNonEditableStatuses() != null && !rule.getNonEditableStatuses().isEmpty()) {
+                    if (rule.getNonEditableStatuses().contains(currentStatus)) {
+                        throw new RuntimeException("Trường '" + fieldName + "' không thể thay đổi khi ở trạng "
+                                + "thái " + currentStatus);
+                    }
                 }
+
                 // Nếu editableStatuses != null → chỉ cho phép những trạng thái đó
-                if (rule.getEditableStatuses() != null && !rule.getEditableStatuses()
-                        .contains(currentStatus)) {
-                    throw new RuntimeException(
-                            "Trường '" + fieldName + "' không thể thay đổi khi đơn ở trạng thái " + currentStatus);
+                if (rule.getEditableStatuses() != null && !rule.getEditableStatuses().isEmpty()) {
+                    if (!rule.getEditableStatuses().contains(currentStatus)) {
+                        throw new RuntimeException("Trường '" + fieldName + "' không thể thay đổi khi ở trạng "
+                                + "thái " + currentStatus);
+                    }
                 }
                 // Nếu editableStatuses = null → mặc định tất cả trạng thái OK trừ
                 // nonEditableStatuses
@@ -1389,57 +1385,57 @@ public class OrderUserService {
         }
     }
 
-    @Transactional
-    private void updateOrderProducts(Order order, List<UserOrderCreateRequest.OrderProduct> items) {
-        // Lấy danh sách product cũ
-        List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
-
-        // Tạo map để dễ lookup
-        Map<Integer, Integer> existingQuantityMap = new HashMap<>();
-        for (OrderProduct op : existingProducts) {
-            existingQuantityMap.put(op.getProduct()
-                    .getId(), op.getQuantity());
-        }
-
-        for (var item : items) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
-
-            // Kiểm tra trạng thái sản phẩm
-            if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new RuntimeException("Sản phẩm '" + product.getName()
-                        + "' hiện tại đã ngưng bán và không thể cập nhật số lượng. Vui lòng loại bỏ sản phẩm này khỏi đơn hàng.");
-            }
-
-            int oldQuantity = existingQuantityMap.getOrDefault(product.getId(), 0);
-            int stockAvailable = product.getStock() + oldQuantity;
-
-            if (item.getQuantity() > stockAvailable) {
-                throw new RuntimeException("Sản phẩm '" + product.getName() + "' vượt quá tồn kho hiện tại ("
-                        + stockAvailable + "). Vui lòng điều chỉnh số lượng.");
-            }
-
-            // Cập nhật stock và soldQuantity
-            int delta = item.getQuantity() - oldQuantity;
-            product.setStock(product.getStock() - delta);
-            product.setSoldQuantity(product.getSoldQuantity() + delta);
-            productRepository.save(product);
-
-            // Lưu orderProduct
-            OrderProduct orderProduct = existingProducts.stream()
-                    .filter(op -> op.getProduct()
-                            .getId()
-                            .equals(product.getId()))
-                    .findFirst()
-                    .orElse(new OrderProduct());
-
-            orderProduct.setOrder(order);
-            orderProduct.setProduct(product);
-            orderProduct.setQuantity(item.getQuantity());
-            orderProduct.setPrice(product.getPrice());
-            orderProductRepository.save(orderProduct);
-        }
-    }
+//    @Transactional
+//    private void updateOrderProducts(Order order, List<UserOrderCreateRequest.OrderProduct> items) {
+//        // Lấy danh sách product cũ
+//        List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
+//
+//        // Tạo map để dễ lookup
+//        Map<Integer, Integer> existingQuantityMap = new HashMap<>();
+//        for (OrderProduct op : existingProducts) {
+//            existingQuantityMap.put(op.getProduct()
+//                    .getId(), op.getQuantity());
+//        }
+//
+//        for (var item : items) {
+//            Product product = productRepository.findById(item.getProductId())
+//                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
+//
+//            // Kiểm tra trạng thái sản phẩm
+//            if (product.getStatus() != ProductStatus.ACTIVE) {
+//                throw new RuntimeException("Sản phẩm '" + product.getName()
+//                        + "' hiện tại đã ngưng bán và không thể cập nhật số lượng. Vui lòng loại bỏ sản phẩm này khỏi đơn hàng.");
+//            }
+//
+//            int oldQuantity = existingQuantityMap.getOrDefault(product.getId(), 0);
+//            int stockAvailable = product.getStock() + oldQuantity;
+//
+//            if (item.getQuantity() > stockAvailable) {
+//                throw new RuntimeException("Sản phẩm '" + product.getName() + "' vượt quá tồn kho hiện tại ("
+//                        + stockAvailable + "). Vui lòng điều chỉnh số lượng.");
+//            }
+//
+//            // Cập nhật stock và soldQuantity
+//            int delta = item.getQuantity() - oldQuantity;
+//            product.setStock(product.getStock() - delta);
+//            product.setSoldQuantity(product.getSoldQuantity() + delta);
+//            productRepository.save(product);
+//
+//            // Lưu orderProduct
+//            OrderProduct orderProduct = existingProducts.stream()
+//                    .filter(op -> op.getProduct()
+//                            .getId()
+//                            .equals(product.getId()))
+//                    .findFirst()
+//                    .orElse(new OrderProduct());
+//
+//            orderProduct.setOrder(order);
+//            orderProduct.setProduct(product);
+//            orderProduct.setQuantity(item.getQuantity());
+//            orderProduct.setPrice(product.getPrice());
+//            orderProductRepository.save(orderProduct);
+//        }
+//    }
 
     private boolean existBankAccount(Integer userId) {
         return bankAccountRepository.existsByUserId(userId);

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.logistics.dto.AddressDto;
 import com.logistics.dto.AddressSummaryDto;
 import com.logistics.dto.OfficeDto;
@@ -25,8 +26,30 @@ public class UserOrderDetailDto {
     private String trackingNumber;
     private String status;
     private String createdByType;
-    private AddressSummaryDto senderAddress;
-    private AddressSummaryDto recipientAddress;
+
+    private AddressDto senderAddress;
+    private int senderWardCode;
+    private int senderCityCode;
+    private String senderDetail;
+    private String senderName;
+    private String senderPhone;
+    private String senderFullAddress;
+    private String senderCityName;
+    private String senderWardName;
+    private Double senderLatitude;
+    private Double senderLongitude;
+
+    private AddressDto recipientAddress;
+    private int recipientWardCode;
+    private int recipientCityCode;
+    private String recipientDetail;
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientFullAddress;
+    private String recipientCityName;
+    private String recipientWardName;
+    private Double recipientLatitude;
+    private Double recipientLongitude;
 
     private BigDecimal weight;
     private String pickupType;

@@ -764,12 +764,13 @@
 }
 
 .modal-title {
-  color: #1C3D90;
-  font-weight: bold;
-  font-size: 18px;
-  display: flex;
-  justify-content: center;
-  gap: 6px;  
+    color: #1C3D90;
+    font-weight: 700;
+    font-size: 28px;
+    line-height: 1.2;
+    text-align: center;
+    margin-top: 8px;
+    margin-bottom: 4px;
 }
 
 /* Date Picker Modal */

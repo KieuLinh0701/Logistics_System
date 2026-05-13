@@ -35,6 +35,9 @@ export const USER_ORDER_FIELD_EDIT_RULES: Record<string, EditableRule> = {
     recipientDetailAddress: {
         nonEditableStatuses: USER_FINAL_STATUSES,
     },
+    recipientSavedAddress: {
+        nonEditableStatuses: USER_FINAL_STATUSES,
+    },
     recipientLatitude: {
         nonEditableStatuses: USER_FINAL_STATUSES,
     },

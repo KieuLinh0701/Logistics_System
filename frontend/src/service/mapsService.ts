@@ -39,11 +39,6 @@ export interface DirectionsResponse {
     status: string;
 }
 
-export const autocomplete = async (input: string): Promise<AutocompleteResponse> => {
-    const res = await fetch(`${BASE}/maps/autocomplete?input=${encodeURIComponent(input)}`);
-    return res.json();
-};
-
 export const geocodeAddress = async (address: string): Promise<GeocodeResponse> => {
     const res = await fetch(`${BASE}/maps/geocode?address=${encodeURIComponent(address)}`);
     return res.json();

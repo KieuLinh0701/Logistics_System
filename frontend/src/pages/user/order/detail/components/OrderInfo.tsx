@@ -89,7 +89,7 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
 
               {/* Khối lượng tính phí */}
               {renderField(
-                  "Khối lượng tính phí:",
+                  "Khối lượng quy đổi:",
                   <div>
                       {order.adjustedWeight != null &&
                       order.adjustedWeight != order.weight ? (

@@ -21,9 +21,9 @@ interface Props {
   form: FormInstance;
   codAmount?: number;
   originalWeight?: number;
-  height: number;
-  length: number;
-  width: number;
+  height?: number | null;
+  length?: number | null;
+  width?: number | null;
   weight?: number;
   adjustedWeight?: number;
   orderValue?: number;

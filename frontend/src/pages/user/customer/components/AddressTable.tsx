@@ -3,10 +3,10 @@ import { Table, Button, Dropdown } from "antd";
 import { EditOutlined, DeleteOutlined, DownOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { Address } from "../../../../types/address.ts";
-import type { RecipientAddress } from "../../../../types/recipientAddress.ts";
+import type { RecipientAddressWithStats } from "../../../../types/recipientAddress.ts";
 
 interface AddressTableProps {
-    data: RecipientAddress[];
+    data: RecipientAddressWithStats[];
     loading?: boolean;
     onEdit: (address: Address) => void;
     onDelete: (addressId: number) => void;
@@ -26,7 +26,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
                                                        total,
                                                        onPageChange,
                                                    }) => {
-    const columns: ColumnsType<RecipientAddress> = [
+    const columns: ColumnsType<RecipientAddressWithStats> = [
         {
             title: "Tên",
             key: "name",
@@ -88,7 +88,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
                         key: "delete",
                         icon: <DeleteOutlined />,
                         label: "Xóa",
-                        onClick: () => onDelete(addr.id),
+                        onClick: () => onDelete(addr.id!),
                     },
                 ];
 

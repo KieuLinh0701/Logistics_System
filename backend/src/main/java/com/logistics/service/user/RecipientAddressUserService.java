@@ -11,7 +11,6 @@ import com.logistics.mapper.AddressMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.UserRepository;
-import com.logistics.request.user.address.AddressUserRequest;
 import com.logistics.request.user.recipientaddress.RecipientAddressUserRequest;
 import com.logistics.request.user.recipientaddress.RecipientSuggestionRequest;
 import com.logistics.request.user.recipientaddress.UserRecipientAddressSearchRequest;
@@ -20,6 +19,7 @@ import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.response.user.recipientaddress.RecipientAddress;
 import com.logistics.response.user.recipientaddress.RecipientAddressResponse;
+import com.logistics.response.user.recipientaddress.RecipientAddressWithStats;
 import com.logistics.response.user.recipientaddress.RecipientStats;
 import com.logistics.response.user.recipientaddress.RecipientSuggestionAddressResponse;
 import com.logistics.specification.RecipientAddressSpecification;
@@ -165,6 +165,7 @@ public class RecipientAddressUserService {
 
             RecipientStats stats = buildStats(
                     request.getPhoneNumber(),
+                    fullAddress,
                     new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
 
             return new ApiResponse<>(true, "Thêm địa chỉ thành công", RecipientAddressResponse.builder()
@@ -215,6 +216,7 @@ public class RecipientAddressUserService {
 
             RecipientStats stats = buildStats(
                     request.getPhoneNumber(),
+                    fullAddress,
                     new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
 
 
@@ -250,13 +252,18 @@ public class RecipientAddressUserService {
         try {
             String phone = request.getPhone();
 
-            RecipientAddressResult addressResult = resolveAddress(userId, phone);
-            RecipientStats stats = buildStats(phone, addressResult);
+            List<RecipientAddressSuggestionItem> items = resolveAddressSuggestions(userId, phone);
+            RecipientAddressType type = items.isEmpty() ? RecipientAddressType.NONE
+                    : items.get(0).type();
 
             RecipientSuggestionAddressResponse data = RecipientSuggestionAddressResponse.builder()
-                    .address(addressResult.address())
-                    .recipientStats(stats)
-                    .type(addressResult.type())
+                    .addresses(items.stream()
+                            .map(i -> RecipientAddressWithStats.builder()
+                                    .address(i.address())
+                                    .recipientStats(i.stats())
+                                    .build())
+                            .toList())
+                    .type(type)
                     .build();
 
             return new ApiResponse<>(true, "Lấy địa chỉ gợi ý thành công", data);
@@ -265,33 +272,50 @@ public class RecipientAddressUserService {
         }
     }
 
-    private RecipientAddressResult resolveAddress(Integer userId, String phone) {
-        return findSavedAddress(userId, phone)
-                .orElseGet(() -> findAddressFromHistory(userId, phone));
-    }
+    private List<RecipientAddressSuggestionItem> resolveAddressSuggestions(Integer userId, String phone) {
+        List<Address> saved = addressRepository
+                .findByUserIdAndPhoneNumberAndType(userId, phone, AddressType.RECIPIENT);
 
-    private Optional<RecipientAddressResult> findSavedAddress(Integer userId, String phone) {
-        return addressRepository
-                .findFirstByUserIdAndPhoneNumberAndType(
-                        userId, phone, AddressType.RECIPIENT)
-                .map(addr -> new RecipientAddressResult(
-                        buildAddressFromSaved(addr),
-                        null,
-                        RecipientAddressType.SAVED));
-    }
+        if (!saved.isEmpty()) {
+            return saved.stream()
+                    .map(addr -> {
+                        LocalDateTime latestOrderDate = orderRepository
+                                .findFirstByUserIdAndRecipientPhoneAndRecipientFullAddressOrderByCreatedAtDesc(
+                                        userId, addr.getPhoneNumber(), addr.getFullAddress())
+                                .map(Order::getCreatedAt)
+                                .orElse(null);
 
-    private RecipientAddressResult findAddressFromHistory(Integer userId, String phone) {
+                        RecipientStats stats = buildStats(
+                                addr.getPhoneNumber(),
+                                addr.getFullAddress(),
+                                new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
+
+                        return new RecipientAddressSuggestionItem(
+                                buildAddressFromSaved(addr), stats, RecipientAddressType.SAVED);
+                    })
+                    // Địa chỉ nhiều đơn nhất lên đầu
+                    .sorted(Comparator.comparingLong(
+                            (RecipientAddressSuggestionItem i) -> i.stats().getTotalSystemOrders()
+                    ).reversed())
+                    .toList();
+        }
+
+        // Fallback: lịch sử đơn hàng — lấy fullAddress xuất hiện nhiều nhất
         return orderRepository
-                .findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(userId, phone)
-                .map(order -> new RecipientAddressResult(
-                        buildAddressFromOrder(order),
-                        order.getCreatedAt(),
-                        RecipientAddressType.HISTORY))
-                .orElse(new RecipientAddressResult(
-                        RecipientAddress.builder()
-                                .build(),
-                        null,
-                        RecipientAddressType.NONE));
+                .findMostUsedFullAddressByUserIdAndRecipientPhone(userId, phone)
+                .flatMap(fullAddr -> orderRepository
+                        .findFirstByUserIdAndRecipientPhoneAndRecipientFullAddressOrderByCreatedAtDesc(
+                                userId, phone, fullAddr))
+                .map(order -> {
+                    RecipientStats stats = buildStats(
+                            order.getRecipientPhone(),
+                            order.getRecipientFullAddress(),
+                            new RecipientAddressResult(null, order.getCreatedAt(), RecipientAddressType.NONE));
+
+                    return List.of(new RecipientAddressSuggestionItem(
+                            buildAddressFromOrder(order), stats, RecipientAddressType.HISTORY));
+                })
+                .orElse(List.of());
     }
 
     private RecipientAddress buildAddressFromSaved(Address addr) {
@@ -315,11 +339,12 @@ public class RecipientAddressUserService {
 
     private RecipientStats buildStats(
             String phone,
+            String fullAddress,
             RecipientAddressResult addressResult
     ) {
-        long total = orderRepository.countByRecipientPhone(phone);
-        long success = countByStatuses(phone, OrderStatus.DELIVERED, OrderStatus.PARTIAL_DELIVERY);
-        long returned = countByStatuses(phone, OrderStatus.RETURNED, OrderStatus.PARTIAL_RETURN);
+        long total = orderRepository.countByRecipientPhoneAndRecipientFullAddress(phone, fullAddress);
+        long success = countByStatuses(phone, fullAddress, OrderStatus.DELIVERED, OrderStatus.PARTIAL_DELIVERY);
+        long returned = countByStatuses(phone, fullAddress, OrderStatus.RETURNED, OrderStatus.PARTIAL_RETURN);
         double successRate = calculateRate(total, success);
         double returnedRate = calculateRate(total, returned);
 
@@ -331,8 +356,11 @@ public class RecipientAddressUserService {
                 .build();
     }
 
-    private long countByStatuses(String phone, OrderStatus... statuses) {
-        return orderRepository.countByRecipientPhoneAndStatusIn(phone, List.of(statuses));
+    private long countByStatuses(String phone, String fullAddress, OrderStatus... statuses) {
+        return orderRepository.countByRecipientPhoneAndRecipientFullAddressAndStatusIn(
+                phone,
+                fullAddress,
+                List.of(statuses));
     }
 
     private double calculateRate(long total, long count) {
@@ -369,12 +397,16 @@ public class RecipientAddressUserService {
 
     private RecipientAddressResponse buildResponse(int userId, Address address) {
         LocalDateTime latestOrderDate = orderRepository
-                .findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(userId, address.getPhoneNumber())
+                .findFirstByUserIdAndRecipientPhoneAndRecipientFullAddressOrderByCreatedAtDesc(
+                        userId,
+                        address.getPhoneNumber(),
+                        address.getFullAddress())
                 .map(Order::getCreatedAt)
                 .orElse(null);
 
         RecipientStats stats = buildStats(
                 address.getPhoneNumber(),
+                address.getFullAddress(),
                 new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
 
         return RecipientAddressResponse.builder()
@@ -415,4 +447,10 @@ public class RecipientAddressUserService {
             RecipientAddressType type
     ) {
     }
+
+    private record RecipientAddressSuggestionItem(
+            RecipientAddress address,
+            RecipientStats stats,
+            RecipientAddressType type
+    ) {}
 }

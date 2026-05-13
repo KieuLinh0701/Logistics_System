@@ -1,12 +1,11 @@
 import type {Address} from "./address.ts";
 
-export interface RecipientSuggestionResponse {
-    address: Address;
+export interface RecipientSuggestionAddressResponse {
+    addresses: RecipientAddressWithStats[];
     type: RecipientAddressType;
-    recipientStats: RecipientStats;
 }
 
-export interface RecipientAddress {
+export interface RecipientAddressWithStats {
     address: Address;
     recipientStats: RecipientStats;
 }

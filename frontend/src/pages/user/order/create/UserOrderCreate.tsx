@@ -97,8 +97,8 @@ const UserOrderCreate: React.FC = () => {
     const [width, setWidth] = useState<number | undefined>(undefined);
     const [height, setHeight] = useState<number | undefined>(undefined);
 
-    const [existBankAccount, setExistBankAccount] = useState<Boolean>(false);
-    const [userLocked, setUserLocked] = useState<Boolean>(false);
+    const [existBankAccount, setExistBankAccount] = useState<boolean>(false);
+    const [userLocked, setUserLocked] = useState<boolean>(false);
 
     // Người gửi và người nhận
     const [empty] = useState({
@@ -1172,6 +1172,7 @@ const UserOrderCreate: React.FC = () => {
 
                             <RecipientInfo
                                 form={recipientInfo}
+                                ref={recipientInfoRef}
                                 recipient={recipientData}
                                 disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onSaveRecipientChange={(save) => setSaveRecipient(save)}

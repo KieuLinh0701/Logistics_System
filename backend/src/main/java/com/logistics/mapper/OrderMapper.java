@@ -223,15 +223,30 @@ public class OrderMapper {
                         .name(),
                 entity.getCreatedByType()
                         .name(),
-                AddressMapper.toSummaryDto(
-                        entity.getSenderFullAddress(),
-                        entity.getSenderName(),
-                        entity.getSenderPhone()),
-                AddressMapper.toSummaryDto(
-                        entity.getRecipientFullAddress(),
-                        entity.getRecipientName(),
-                        entity.getRecipientPhone()
-                ),
+                AddressMapper.toDto(entity.getSenderAddress()),
+                entity.getSenderWardCode(),
+                entity.getSenderCityCode(),
+                entity.getSenderDetail(),
+                entity.getSenderName(),
+                entity.getSenderPhone(),
+                entity.getSenderFullAddress(),
+                entity.getSenderCityName(),
+                entity.getSenderWardName(),
+                entity.getSenderLatitude(),
+                entity.getSenderLongitude(),
+
+                AddressMapper.toDto(entity.getRecipientAddress()),
+                entity.getRecipientWardCode(),
+                entity.getRecipientCityCode(),
+                entity.getRecipientDetail(),
+                entity.getRecipientName(),
+                entity.getRecipientPhone(),
+                entity.getRecipientFullAddress(),
+                entity.getRecipientCityName(),
+                entity.getRecipientWardName(),
+                entity.getRecipientLatitude(),
+                entity.getRecipientLongitude(),
+
                 entity.getWeight(),
                 entity.getPickupType()
                         .name(),

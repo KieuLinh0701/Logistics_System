@@ -44,12 +44,11 @@ public interface AddressRepository
 
     List<Address> findByUserIdInAndIsDefaultTrue(List<Integer> userIds);
 
-    Optional<Address> findFirstByUserIdAndPhoneNumberAndType(
-            Integer userId,
+    Optional<Address> findByPhoneNumberAndFullAddressAndUserIdAndType(
             String phoneNumber,
+            String fullAddress,
+            int userId,
             AddressType type);
-
-    Optional<Address> findByPhoneNumberAndUserIdAndType(String phoneNumber, int userId, AddressType type);
 
     boolean existsByUserIdAndPhoneNumberAndFullAddressAndType(
             Integer userId,
@@ -63,4 +62,7 @@ public interface AddressRepository
             String fullAddress,
             AddressType type,
             Integer addressId);
+
+    List<Address> findByUserIdAndPhoneNumberAndType(
+            Integer userId, String phone, AddressType type);
 }

@@ -5,12 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
 public class RecipientSuggestionAddressResponse {
 
-    private RecipientAddress address;
-    private RecipientAddressType type;
-    private RecipientStats recipientStats;
-}
+    List<RecipientAddressWithStats> addresses;
+    RecipientAddressType type;}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
@@ -33,8 +33,8 @@ import { canEditUserOrderStatus, type OrderStatus } from "../../../../utils/orde
 import ConfirmModal from "../../../common/ConfirmModal";
 import { canEditUserOrderField } from "../../../../utils/userOrderEditRules";
 import userApi from "../../../../api/userApi";
-import HeaderHome from "../../../../components/common/HeaderHome";
 import {geocodeAddress} from "../../../../service/mapsService.ts";
+import type {RecipientInfoRef} from "../create/components/RecipientInfo.tsx";
 
 const UserOrderEdit: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -130,7 +130,7 @@ const UserOrderEdit: React.FC = () => {
     const [isHasOfficeSender, setIsHasOfficeSender] = useState(true);
     const [isHasOfficeRecipient, setIsHasOfficerRecipient] = useState(true);
 
-    const [userLocked, setUserLocked] = useState<Boolean>(false);
+    const [userLocked, setUserLocked] = useState<boolean>(false);
 
     // Form instances
     const [senderInfo] = Form.useForm();
@@ -138,6 +138,10 @@ const UserOrderEdit: React.FC = () => {
     const [paymentCard] = Form.useForm();
     const [fromOffice] = Form.useForm();
     const [orderInfo] = Form.useForm();
+
+    // Thông tin người nhận
+    const [savedRecipientAddressId, setSavedRecipientAddressId] = useState<number | null>(null);
+    const [saveRecipient, setSaveRecipient] = useState(false);
 
     // Đơn hàng để chỉnh sửa
     const fetchOrder = async () => {
@@ -234,16 +238,16 @@ const UserOrderEdit: React.FC = () => {
         });
 
         setRecipientData({
-            name: order.recipientAddress.name || '',
-            phoneNumber: order.recipientAddress.phoneNumber || '',
-            detail: order.recipientAddress.detail || '',
-            cityCode: order.recipientAddress.cityCode ?? 0,
-            cityName: order?.recipientCityName || '',
-            wardCode: order.recipientAddress.wardCode ?? 0,
-            wardName: order?.recipientWardName || '',
-            latitude: order?.recipientLatitude || 0,
-            longitude: order?.recipientLongitude || 0,
-            fullAddress: order?.recipientFullAddress || '',
+            name: order.recipientName || '',
+            phoneNumber: order.recipientPhone || '',
+            detail: order.recipientDetail || '',
+            cityCode: order.recipientCityCode ?? 0,
+            cityName: order.recipientCityName || '',
+            wardCode: order.recipientWardCode ?? 0,
+            wardName: order.recipientWardName || '',
+            latitude: order.recipientLatitude || 0,
+            longitude: order.recipientLongitude || 0,
+            fullAddress: order.recipientFullAddress || '',
         });
 
         setSelectedServiceType(order.serviceType);
@@ -263,6 +267,7 @@ const UserOrderEdit: React.FC = () => {
         setSelectedPromotion(order.promotion ?? null);
         setInitialOrderProducts(order.orderProducts);
         setNotes(order.notes);
+        setSavedRecipientAddressId(order.recipientAddress?.id ?? null);
 
         console.log("promotion", selectedPromotion);
 
@@ -923,7 +928,8 @@ const UserOrderEdit: React.FC = () => {
                 recipientLongitude: recipientData.longitude,
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
-                saveRecipient: false, // set mặc định false tạm nhen
+                recipientAddressId: savedRecipientAddressId ?? undefined,
+                saveRecipient: saveRecipient,
                 pickupType: pickupType,
                 weight,
                 originalWeight,
@@ -1269,8 +1275,15 @@ const UserOrderEdit: React.FC = () => {
                                         detail: values.recipient?.detail ?? prev.detail,
                                         wardCode: values.recipient?.wardCode ?? prev.wardCode,
                                         cityCode: values.recipient?.cityCode ?? prev.cityCode,
+                                        cityName: values.recipient?.cityName ?? prev.cityName,
+                                        wardName: values.recipient?.wardName ?? prev.wardName,
+                                        latitude: values.recipient?.latitude ?? prev.latitude,
+                                        longitude: values.recipient?.longitude ?? prev.longitude,
                                     }));
                                 }}
+                                recipientAddressId={savedRecipientAddressId}
+                                onSavedAddressSelect={(id) => setSavedRecipientAddressId(id)}
+                                onSaveRecipientChange={(save) => setSaveRecipient(save)}
                             />
 
                             <OrderInfo

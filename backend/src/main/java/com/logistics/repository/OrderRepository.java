@@ -173,11 +173,28 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     // Thống kê số đơn hàng theo số điện thoại người nhân và trạng thái đơn hàng trên toàn hệ thống
     // Mục đích: lây số đơn hàng thành công, hoàn hàng
-    long countByRecipientPhoneAndStatusIn(
+    long countByRecipientPhoneAndRecipientFullAddressAndStatusIn(
             String phone,
+            String fullAddress,
             List<OrderStatus> statuses);
 
 
-    long countByRecipientPhone(
-            String phone);
+    long countByRecipientPhoneAndRecipientFullAddress(
+            String phone,
+            String fullAddress);
+
+    @Query("""
+        SELECT o.recipientFullAddress
+        FROM Order o
+        WHERE o.user.id = :userId AND o.recipientPhone = :phone
+        GROUP BY o.recipientFullAddress
+        ORDER BY COUNT(o) DESC
+        LIMIT 1
+    """)
+    Optional<String> findMostUsedFullAddressByUserIdAndRecipientPhone(
+            @Param("userId") Integer userId,
+            @Param("phone") String phone);
+
+    Optional<Order> findFirstByUserIdAndRecipientPhoneAndRecipientFullAddressOrderByCreatedAtDesc(
+            Integer userId, String recipientPhone, String recipientFullAddress);
 }

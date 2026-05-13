@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import {Form, Input, Select} from "antd";
 import type {City, Ward} from "../../types/location";
 import locationApi from "../../api/locationApi";
-import {getPlaceDetails} from "../../service/mapsService";
+import {geocodeAddress, getPlaceDetails} from "../../service/mapsService";
 import type {Prediction} from "../../service/mapsService";
 
 const {Option} = Select;
@@ -35,13 +35,16 @@ const AddressForm: React.FC<AddressFormProps> = ({
     const [suggestions, setSuggestions] = useState<Prediction[]>([]);
     const [addressInput, setAddressInput] = useState("");
     const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const [wardsLoading, setWardsLoading] = useState(false);
 
     const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isUserChangingCity = useRef(false);
 
     const selectedCity = Form.useWatch([prefix, "cityCode"], form);
+    const [currentCityCode, setCurrentCityCode] = useState<number | undefined>(initialCity);
+    const skipNextWardSet = useRef(false);
 
-    // Load Google Maps + Places nếu chưa có
     useEffect(() => {
         const initAutocomplete = () => {
             if (window.google?.maps?.places) {
@@ -58,7 +61,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 existing.addEventListener("load", initAutocomplete);
                 return;
             }
-
             const script = document.createElement("script");
             script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=places`;
             script.async = true;
@@ -67,12 +69,10 @@ const AddressForm: React.FC<AddressFormProps> = ({
         }
     }, []);
 
-    // Load cities 1 lần
     useEffect(() => {
         locationApi.getCities().then(setCities).catch(console.error);
     }, []);
 
-    // Set initial detail
     useEffect(() => {
         if (initialDetail) {
             form.setFieldsValue({
@@ -81,14 +81,24 @@ const AddressForm: React.FC<AddressFormProps> = ({
         }
     }, [initialDetail, form, prefix]);
 
-    // Load wards khi city thay đổi
     useEffect(() => {
         const cityCode = selectedCity || initialCity;
+        console.log("=== useEffect fired ===", { cityCode, selectedCity, initialCity, skipNextWardSet: skipNextWardSet.current, isFirstLoad });
         if (!cityCode) return;
 
+        setWardsLoading(true);
         locationApi.getWardsByCity(Number(cityCode)).then((wardList) => {
+            console.log("=== wardList fetched ===", { skip: skipNextWardSet.current, isFirstLoad, initialWard, wardCount: wardList.length });
             setWards(wardList);
+            setWardsLoading(false);
+
+            if (skipNextWardSet.current) {
+                skipNextWardSet.current = false;
+                return;
+            }
+
             if (initialWard && isFirstLoad) {
+                console.log("=== SETTING initialWard ===", initialWard);
                 form.setFieldsValue({
                     [prefix]: {...form.getFieldValue(prefix), wardCode: initialWard},
                 });
@@ -97,20 +107,15 @@ const AddressForm: React.FC<AddressFormProps> = ({
         });
     }, [selectedCity, initialCity]);
 
-    // Chuẩn hóa string: bỏ dấu, lowercase, bỏ prefix hành chính
     const normalizeStr = (str: string) =>
         str
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase()
             .trim()
-            .replace(
-                /^(thanh pho |tinh |thi xa |quan |huyen |phuong |xa |thi tran |tp\.? ?)/,
-                ""
-            )
+            .replace(/^(thanh pho |tinh |thi xa |quan |huyen |phuong |xa |thi tran |tp\.? ?)/, "")
             .trim();
 
-    // Gợi ý địa chỉ từ Google
     const handleAddressInput = (val: string) => {
         setAddressInput(val);
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -118,24 +123,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
         debounceRef.current = setTimeout(() => {
             if (!autocompleteServiceRef.current) return;
-
             autocompleteServiceRef.current.getPlacePredictions(
-                {
-                    input: val,
-                    language: "vi",
-                    componentRestrictions: {country: "vn"},
-                },
+                {input: val, language: "vi", componentRestrictions: {country: "vn"}},
                 (predictions, status) => {
-                    if (
-                        status === window.google.maps.places.PlacesServiceStatus.OK &&
-                        predictions
-                    ) {
-                        setSuggestions(
-                            predictions.map((p) => ({
-                                place_id: p.place_id,
-                                description: p.description,
-                            }))
-                        );
+                    if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+                        setSuggestions(predictions.map((p) => ({
+                            place_id: p.place_id,
+                            description: p.description,
+                        })));
                     } else {
                         setSuggestions([]);
                     }
@@ -144,56 +139,87 @@ const AddressForm: React.FC<AddressFormProps> = ({
         }, 300);
     };
 
-    // Match ward theo thứ tự ưu tiên: exact > DB-in-query > query-in-DB (tránh false positive A/B)
     const matchWard = (wardList: Ward[], wardNameToMatch: string): Ward | undefined => {
         const normalizedQuery = normalizeStr(wardNameToMatch);
         if (!normalizedQuery) return undefined;
 
-        // 1. Exact match
         const exact = wardList.find((w) => normalizeStr(w.name) === normalizedQuery);
         if (exact) return exact;
 
-        // 2. Query chứa tên DB (vd: query="tang nhon phu a", DB="tang nhon phu a")
         const queryContainsDb = wardList.find(
             (w) => normalizedQuery.includes(normalizeStr(w.name)) && normalizeStr(w.name).length > 3
         );
         if (queryContainsDb) return queryContainsDb;
 
-        // 3. DB chứa query — chỉ dùng khi không có ward nào cùng prefix (tránh nhầm A/B)
         const siblings = wardList.filter((w) => normalizeStr(w.name).startsWith(normalizedQuery));
         if (siblings.length === 1) return siblings[0];
 
         return undefined;
     };
 
-    // Khi chọn gợi ý → parse address_components → map về cityCode/wardCode
+    const handleGeocode = async (cityName: string, wardName: string, detail: string) => {
+        if (!cityName || !wardName) return;
+
+        if (!detail || detail.trim() === "") {
+            form.setFieldsValue({
+                [prefix]: {
+                    ...form.getFieldValue(prefix),
+                    latitude: 0,
+                    longitude: 0,
+                },
+            });
+            return;
+        }
+
+        const attempts = [
+            [detail, wardName, cityName, "Việt Nam"].join(", "),
+            [wardName, cityName, "Việt Nam"].join(", "),
+        ];
+
+        for (const address of attempts) {
+            try {
+                const data = await geocodeAddress(address);
+                if (data?.results?.[0]?.geometry?.location) {
+                    const {lat, lng} = data.results[0].geometry.location;
+                    form.setFieldsValue({
+                        [prefix]: {
+                            ...form.getFieldValue(prefix),
+                            latitude: lat,
+                            longitude: lng,
+                        },
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.error("Geocode thất bại:", err);
+            }
+        }
+
+        form.setFieldsValue({
+            [prefix]: {
+                ...form.getFieldValue(prefix),
+                latitude: 0,
+                longitude: 0,
+            },
+        });
+    };
+
     const handleSelectSuggestion = async (prediction: Prediction) => {
         setAddressInput(prediction.description);
         setSuggestions([]);
 
         try {
             const data = await getPlaceDetails(prediction.place_id);
-            const components: {
-                long_name: string;
-                short_name: string;
-                types: string[]
-            }[] = data?.result?.address_components || [];
-
+            const components: {long_name: string; short_name: string; types: string[]}[] =
+                data?.result?.address_components || [];
             const formattedAddress: string = data?.result?.formatted_address || "";
 
-            // Lấy tên tỉnh/thành phố (level 1)
             const provinceName =
-                components.find((c) => c.types.includes("administrative_area_level_1"))
-                    ?.long_name || "";
-
-            // Lấy quận/huyện (level 2)
+                components.find((c) => c.types.includes("administrative_area_level_1"))?.long_name || "";
             const districtName =
-                components.find((c) => c.types.includes("administrative_area_level_2"))
-                    ?.long_name || "";
-
+                components.find((c) => c.types.includes("administrative_area_level_2"))?.long_name || "";
             const level3 =
-                components.find((c) => c.types.includes("administrative_area_level_3"))
-                    ?.long_name || "";
+                components.find((c) => c.types.includes("administrative_area_level_3"))?.long_name || "";
             const subLocality1 =
                 components.find((c) => c.types.includes("sublocality_level_1"))?.long_name || "";
             const subLocality2 =
@@ -201,37 +227,27 @@ const AddressForm: React.FC<AddressFormProps> = ({
             const locality =
                 components.find((c) => c.types.includes("locality"))?.long_name || "";
 
-            // Khi address_components không có phường (Google thiếu data),
-            // fallback parse từ formatted_address: "96a Đường 6, Tăng Nhơn Phú, Hồ Chí Minh"
-            // tách phần giữa dấu phẩy đầu và tỉnh/thành để lấy tên phường
             const wardFromFormatted = (() => {
                 if (!formattedAddress) return "";
-                // formatted_address thường có dạng: "số nhà đường, Phường, Quận, Thành phố"
-                // Bỏ phần tỉnh/thành (cuối) và lấy token thứ 2 từ phải (phường/xã)
                 const parts = formattedAddress.split(",").map((p) => p.trim());
-                // Loại bỏ phần cuối là tỉnh/thành và "Việt Nam"
                 const filtered = parts.filter(
                     (p) =>
                         !normalizeStr(p).includes(normalizeStr(provinceName)) &&
                         !normalizeStr(p).includes("viet nam") &&
                         !normalizeStr(p).includes("vietnam")
                 );
-                // Phần tử cuối của filtered thường là phường/quận
                 return filtered[filtered.length - 1] || "";
             })();
 
-            // Ưu tiên: level_3 > sublocality > wardFromFormatted > districtName > locality
             const wardNameToMatch =
                 level3 || subLocality1 || subLocality2 || wardFromFormatted || districtName || locality;
 
-            // Số nhà + tên đường cho field detail
             const streetNumber =
                 components.find((c) => c.types.includes("street_number"))?.long_name || "";
             const route =
                 components.find((c) => c.types.includes("route"))?.long_name || "";
             const detail = [streetNumber, route].filter(Boolean).join(" ");
 
-            // --- Match city ---
             const normalizedProvince = normalizeStr(provinceName);
             const matchedCity = cities.find((c) => {
                 const dbCity = normalizeStr(c.name);
@@ -252,12 +268,10 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 return;
             }
 
-            // --- Load wards của city match được ---
             const wardList = await locationApi.getWardsByCity(matchedCity.code);
             setWards(wardList);
 
             const matchedWard = matchWard(wardList, wardNameToMatch);
-
             const lat = data?.result?.geometry?.location?.lat;
             const lng = data?.result?.geometry?.location?.lng;
 
@@ -284,29 +298,42 @@ const AddressForm: React.FC<AddressFormProps> = ({
         }
     };
 
-    // Khi user tự đổi city thủ công
     const handleCityChange = (newCity: number) => {
+        setWards([]);
+        setCurrentCityCode(newCity);
+        skipNextWardSet.current = true;
+
         const cityName = cities.find(c => c.code === newCity)?.name ?? "";
 
+        const current = form.getFieldValue(prefix) ?? {};
         form.setFieldsValue({
             [prefix]: {
-                ...form.getFieldValue(prefix),
-                wardCode: undefined,
-                wardName: "",
+                ...current,
+                cityCode: newCity,
                 cityName,
+                wardCode: null,
+                wardName: "",
                 latitude: 0,
                 longitude: 0,
             },
         });
-        setWards([]);
+
         setIsFirstLoad(false);
-        locationApi.getWardsByCity(newCity).then(setWards).catch(console.error);
         onManualChange?.();
+    };
+
+    const handleDetailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onManualChange?.();
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            const current = form.getFieldValue(prefix);
+            const cityName = cities.find(c => c.code === current.cityCode)?.name ?? "";
+            handleGeocode(cityName, current.wardName ?? "", e.target.value);
+        }, 800);
     };
 
     return (
         <>
-            {/* Ô tìm địa chỉ nhanh - ẩn khi disableCity */}
             {!disableCity && (
                 <Form.Item label={<span className="modal-lable">Tìm địa chỉ nhanh</span>}>
                     <div style={{position: "relative"}}>
@@ -338,7 +365,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 </Form.Item>
             )}
 
-            {/* Tỉnh / Thành phố */}
             <Form.Item
                 name={[prefix, "cityCode"]}
                 label={<span className="modal-lable">Tỉnh / Thành phố</span>}
@@ -356,20 +382,20 @@ const AddressForm: React.FC<AddressFormProps> = ({
                     }
                 >
                     {cities.map((c) => (
-                        <Option key={c.code} value={c.code} label={c.name}>
-                            {c.name}
-                        </Option>
+                        <Option key={c.code} value={c.code} label={c.name}>{c.name}</Option>
                     ))}
                 </Select>
             </Form.Item>
 
-            {/* Phường / Xã */}
             <Form.Item
+                value={form.getFieldValue([prefix, "wardCode"]) || undefined}
+                key={`ward-${currentCityCode}`}   // ← dùng state thay vì useWatch
                 name={[prefix, "wardCode"]}
                 label={<span className="modal-lable">Phường / Xã</span>}
                 rules={[{required: true, message: "Vui lòng chọn phường / xã!"}]}
             >
                 <Select
+                    loading={wardsLoading}
                     onChange={(value) => {
                         const wardName = wards.find(w => w.code === value)?.name ?? "";
                         form.setFieldsValue({
@@ -380,6 +406,9 @@ const AddressForm: React.FC<AddressFormProps> = ({
                                 longitude: 0,
                             },
                         });
+                        const current = form.getFieldValue(prefix);
+                        const cityName = cities.find(c => c.code === current.cityCode)?.name ?? "";
+                        handleGeocode(cityName, wardName, current.detail ?? "");
                         onManualChange?.();
                     }}
                     className="modal-custom-select"
@@ -392,14 +421,11 @@ const AddressForm: React.FC<AddressFormProps> = ({
                     }
                 >
                     {wards.map((w) => (
-                        <Option key={w.code} value={w.code} label={w.name}>
-                            {w.name}
-                        </Option>
+                        <Option key={w.code} value={w.code} label={w.name}>{w.name}</Option>
                     ))}
                 </Select>
             </Form.Item>
 
-            {/* Chi tiết */}
             <Form.Item
                 name={[prefix, "detail"]}
                 label={<span className="modal-lable">Chi tiết</span>}
@@ -409,66 +435,50 @@ const AddressForm: React.FC<AddressFormProps> = ({
                     className="modal-custom-input"
                     placeholder="Số nhà, tên đường..."
                     disabled={disableDetailAddress}
-                    onChange={onManualChange}
+                    onChange={handleDetailChange}
                 />
             </Form.Item>
 
-            <Form.Item
-                name={[prefix, "latitude"]}
-                hidden
-                rules={[
-                    {
-                        validator: (_, value) =>
-                            value && value !== 0
-                                ? Promise.resolve()
-                                : Promise.reject(new Error("Vui lòng chọn địa chỉ từ gợi ý để xác định tọa độ")),
-                    },
-                ]}
+            <Form.Item name={[prefix, "latitude"]} hidden
+                       rules={[{
+                           validator: (_, value) =>
+                               value && value !== 0
+                                   ? Promise.resolve()
+                                   : Promise.reject(new Error("Vui lòng chọn địa chỉ từ gợi ý để xác định tọa độ")),
+                       }]}
             >
                 <Input/>
             </Form.Item>
 
-            <Form.Item
-                name={[prefix, "longitude"]}
-                hidden
-                rules={[
-                    {
-                        validator: (_, value) =>
-                            value && value !== 0
-                                ? Promise.resolve()
-                                : Promise.reject(new Error("Vui lòng chọn địa chỉ từ gợi ý để xác định tọa độ")),
-                    },
-                ]}
+            <Form.Item name={[prefix, "longitude"]} hidden
+                       rules={[{
+                           validator: (_, value) =>
+                               value && value !== 0
+                                   ? Promise.resolve()
+                                   : Promise.reject(new Error("Vui lòng chọn địa chỉ từ gợi ý để xác định tọa độ")),
+                       }]}
             >
                 <Input/>
             </Form.Item>
 
-            <Form.Item
-                name={[prefix, "cityName"]}
-                hidden
-                rules={[
-                    {
-                        validator: (_, value) =>
-                            value && value.trim() !== ""
-                                ? Promise.resolve()
-                                : Promise.reject(new Error("Thiếu tên thành phố")),
-                    },
-                ]}
+            <Form.Item name={[prefix, "cityName"]} hidden
+                       rules={[{
+                           validator: (_, value) =>
+                               value && value.trim() !== ""
+                                   ? Promise.resolve()
+                                   : Promise.reject(new Error("Thiếu tên thành phố")),
+                       }]}
             >
                 <Input/>
             </Form.Item>
 
-            <Form.Item
-                name={[prefix, "wardName"]}
-                hidden
-                rules={[
-                    {
-                        validator: (_, value) =>
-                            value && value.trim() !== ""
-                                ? Promise.resolve()
-                                : Promise.reject(new Error("Thiếu tên phường/xã")),
-                    },
-                ]}
+            <Form.Item name={[prefix, "wardName"]} hidden
+                       rules={[{
+                           validator: (_, value) =>
+                               value && value.trim() !== ""
+                                   ? Promise.resolve()
+                                   : Promise.reject(new Error("Thiếu tên phường/xã")),
+                       }]}
             >
                 <Input/>
             </Form.Item>

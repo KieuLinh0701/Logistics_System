@@ -2,22 +2,22 @@ import React, {useState, useEffect, useRef} from 'react';
 import {message, Col, Row, Tag} from 'antd';
 import {TeamOutlined} from '@ant-design/icons';
 import { Form } from 'antd';
-import type { Address } from './components/AddressTable';
 import AddressTable from './components/AddressTable';
 import AddressModal from './components/AddressModal';
 import recipientAddressApi from "../../../api/recipientAddressApi.ts";
-import type {RecipientAddress, RecipientAddressRequest} from "../../../types/recipientAddress.ts";
+import type {RecipientAddressWithStats, RecipientAddressRequest} from "../../../types/recipientAddress.ts";
 import dayjs from "dayjs";
 import {useSearchParams} from "react-router-dom";
 import type {UserOrderSearchRequest} from "../../../types/order.ts";
 import Title from "antd/es/typography/Title";
 import Actions from "./components/Actions.tsx";
 import SearchFilters from "./components/SearchFilters.tsx";
+import type {Address} from "../../../types/address.ts";
 
 const UserCustomers: React.FC = () => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-    const [addresses, setAddresses] = useState<RecipientAddress[]>([]);
+    const [addresses, setAddresses] = useState<RecipientAddressWithStats[]>([]);
     const [editingAddress, setEditingAddress] = useState<RecipientAddressRequest | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');

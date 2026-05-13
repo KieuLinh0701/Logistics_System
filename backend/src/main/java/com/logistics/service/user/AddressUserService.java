@@ -195,17 +195,18 @@ public class AddressUserService {
     }
 
     public Optional<Address> findByIdAndUserIdAndType(
-            Integer userId,
             Integer addressId,
+            Integer userId,
             AddressType type) {
         return addressRepository.findByIdAndUserIdAndType(addressId, userId, type);
     }
 
-    public Optional<Address> findByPhoneAndUserIdAndType(
+    public Optional<Address> findByPhoneNumberAndFullAddressAndUserIdAndType(
             String phoneNumber,
+            String fullAddress,
             Integer userId,
             AddressType type) {
-        return addressRepository.findByPhoneNumberAndUserIdAndType(phoneNumber, userId, type);
+        return addressRepository.findByPhoneNumberAndFullAddressAndUserIdAndType(phoneNumber, fullAddress, userId, type);
     }
 
     public Address save(Address address) {
