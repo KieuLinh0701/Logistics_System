@@ -26,6 +26,7 @@ import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.PickupAttemptRepository;
+import com.logistics.repository.AddressRepository;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
@@ -35,7 +36,6 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.response.NotificationResponse;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.utils.LocationUtils;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.ConfigService;
 import com.cloudinary.Cloudinary;
@@ -94,6 +94,9 @@ public class OrderShipperService {
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private AddressRepository addressRepository;
 
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
         OrderHistory history = new OrderHistory();
@@ -753,7 +756,7 @@ public class OrderShipperService {
             }
 
             if (cashCollected > 0) {
-                // Create submission but DO NOT mark order as PAID here. Financial decision is centralized.
+                // Create submission but DO NOT mark recipientaddress as PAID here. Financial decision is centralized.
                 createPaymentSubmission(order, shipperUser, cashCollected,
                         "Đối soát sau khi giao thành công");
             }
@@ -875,7 +878,7 @@ public class OrderShipperService {
                 "order_status_changed",
                 shipperUser.getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
@@ -887,7 +890,7 @@ public class OrderShipperService {
                     "cod_reminder",
                     shipperUser.getId(),
                     null,
-                    "order",
+                    "recipientaddress",
                     order.getTrackingNumber()
             );
         }
@@ -966,7 +969,7 @@ public class OrderShipperService {
 
         // Gửi notification đơn giản
         try {
-            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "order", order.getTrackingNumber());
+            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
         } catch (Exception e) { throw e; }
 
         return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
@@ -1004,7 +1007,7 @@ public class OrderShipperService {
         try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception e) { throw e; }
 
         try {
-            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "order", order.getTrackingNumber());
+            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
         } catch (Exception e) { throw e; }
 
         return new ApiResponse<>(true, "Đã nộp hàng tại bưu cục", null);
@@ -1100,6 +1103,12 @@ public class OrderShipperService {
         incident.setTitle(request.getTitle());
         incident.setDescription(request.getDescription());
 
+        if (request.getAddressId() != null) {
+            addressRepository.findById(request.getAddressId()).ifPresent(incident::setAddress);
+        } else if (order.getRecipientAddress() != null) {
+            incident.setAddress(order.getRecipientAddress());
+        }
+
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             incident.setImages(request.getImages());
         }
@@ -1137,7 +1146,7 @@ public class OrderShipperService {
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
+    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, Integer addressId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
@@ -1160,6 +1169,12 @@ public class OrderShipperService {
 
         incident.setTitle(title);
         incident.setDescription(description);
+
+        if (addressId != null) {
+            addressRepository.findById(addressId).ifPresent(incident::setAddress);
+        } else if (order.getRecipientAddress() != null) {
+            incident.setAddress(order.getRecipientAddress());
+        }
 
         if (priority != null) {
             try {
@@ -1252,12 +1267,16 @@ public class OrderShipperService {
     }
 
     private Map<String, Object> mapOrderSummary(Order order) {
+        String senderFullAddress = resolveSenderFullAddress(order);
+        String recipientFullAddress = resolveRecipientFullAddress(order);
+
         Map<String, Object> map = new HashMap<>();
         map.put("id", order.getId());
         map.put("trackingNumber", order.getTrackingNumber());
         map.put("senderName", order.getSenderName());
         map.put("senderPhone", order.getSenderPhone());
-        map.put("senderAddress", buildAddress(order.getSenderAddress()));
+        map.put("senderAddress", senderFullAddress);
+        map.put("senderFullAddress", senderFullAddress);
         if (order.getFromOffice() != null) {
             Map<String, Object> f = new HashMap<>();
             f.put("id", order.getFromOffice().getId());
@@ -1271,7 +1290,8 @@ public class OrderShipperService {
         }
         map.put("recipientName", order.getRecipientName());
         map.put("recipientPhone", order.getRecipientPhone());
-        map.put("recipientAddress", buildAddress(order.getRecipientAddress()));
+        map.put("recipientAddress", recipientFullAddress);
+        map.put("recipientFullAddress", recipientFullAddress);
         map.put("cod", order.getCod());
         map.put("codAmount", order.getCod()); 
         map.put("shippingFee", order.getShippingFee());
@@ -1282,15 +1302,20 @@ public class OrderShipperService {
     }
 
     private Map<String, Object> mapOrderDetail(Order order) {
+        String senderFullAddress = resolveSenderFullAddress(order);
+        String recipientFullAddress = resolveRecipientFullAddress(order);
+
         Map<String, Object> map = new HashMap<>();
         map.put("id", order.getId());
         map.put("trackingNumber", order.getTrackingNumber());
         map.put("senderName", order.getSenderName());
         map.put("senderPhone", order.getSenderPhone());
-        map.put("senderAddress", buildAddress(order.getSenderAddress()));
+        map.put("senderAddress", senderFullAddress);
+        map.put("senderFullAddress", senderFullAddress);
         map.put("recipientName", order.getRecipientName());
         map.put("recipientPhone", order.getRecipientPhone());
-        map.put("recipientAddress", buildAddress(order.getRecipientAddress()));
+        map.put("recipientAddress", recipientFullAddress);
+        map.put("recipientFullAddress", recipientFullAddress);
         map.put("weight", order.getWeight());
         map.put("cod", order.getCod());
         map.put("codStatus", order.getCodStatus() != null ? order.getCodStatus().name() : null);
@@ -1383,6 +1408,8 @@ public class OrderShipperService {
         map.put("id", incident.getId());
         map.put("orderId", incident.getOrder() != null ? incident.getOrder().getId() : null);
         map.put("trackingNumber", incident.getOrder() != null ? incident.getOrder().getTrackingNumber() : null);
+        map.put("shipperId", incident.getShipper() != null ? incident.getShipper().getId() : null);
+        map.put("handledBy", incident.getHandler() != null ? incident.getHandler().getId() : null);
         map.put("incidentType", incident.getIncidentType() != null ? incident.getIncidentType().name() : null);
         map.put("title", incident.getTitle());
         map.put("description", incident.getDescription());
@@ -1391,6 +1418,7 @@ public class OrderShipperService {
         map.put("createdAt", incident.getCreatedAt());
         map.put("handledAt", incident.getHandledAt());
         map.put("officeId", incident.getOffice() != null ? incident.getOffice().getId() : null);
+        map.put("addressId", incident.getAddress() != null ? incident.getAddress().getId() : null);
         return map;
     }
 
@@ -1398,17 +1426,17 @@ public class OrderShipperService {
     private void createPaymentSubmission(Order order, User shipperUser, int amount, String note) {
         if (amount <= 0) return;
 
-        // Lock order to prevent duplicate COD across instances
+        // Lock recipientaddress to prevent duplicate COD across instances
         try {
             Optional<Order> locked = orderRepository.findByIdForUpdate(order.getId());
             if (locked.isPresent()) order = locked.get();
         } catch (Exception e) {
         }
 
-        // Prevent creating COD when order is already submitted/received
+        // Prevent creating COD when recipientaddress is already submitted/received
         if (order.getCod() != null && order.getCod() > 0
                 && (order.getCodStatus() == OrderCodStatus.SUBMITTED || order.getCodStatus() == OrderCodStatus.RECEIVED)) {
-            // Attempt to create COD submission but order codStatus prevents it
+            // Attempt to create COD submission but recipientaddress codStatus prevents it
             return;
         }
 
@@ -1565,45 +1593,36 @@ public class OrderShipperService {
         }
     }
 
-    private String buildAddress(Address address) {
-        if (address == null) {
-            return null;
+    private String resolveSenderFullAddress(Order order) {
+        if (order == null) return null;
+        if (order.getSenderFullAddress() != null && !order.getSenderFullAddress().isBlank()) {
+            return order.getSenderFullAddress();
         }
-        StringBuilder builder = new StringBuilder();
-        if (address.getDetail() != null && !address.getDetail().isBlank()) {
-            builder.append(address.getDetail());
+        return resolveAddressFromEntity(order.getSenderAddress());
+    }
+
+    private String resolveRecipientFullAddress(Order order) {
+        if (order == null) return null;
+        if (order.getRecipientFullAddress() != null && !order.getRecipientFullAddress().isBlank()) {
+            return order.getRecipientFullAddress();
         }
-        if (address.getWardCode() != null) {
-            try {
-                String wardName = LocationUtils.getWardNameByCode(address.getCityCode(), address.getWardCode());
-                if (wardName != null && !wardName.isBlank()) {
-                    if (builder.length() > 0) builder.append(", ");
-                    builder.append(wardName);
-                } else {
-                    if (builder.length() > 0) builder.append(", ");
-                    builder.append("Phường ").append(address.getWardCode());
-                }
-            } catch (Exception e) {
-                if (builder.length() > 0) builder.append(", ");
-                builder.append("Phường ").append(address.getWardCode());
-            }
+        return resolveAddressFromEntity(order.getRecipientAddress());
+    }
+
+    private String resolveAddressFromEntity(Address address) {
+        if (address == null) return null;
+        if (address.getFullAddress() != null && !address.getFullAddress().isBlank()) {
+            return address.getFullAddress();
         }
-        if (address.getCityCode() != null) {
-            try {
-                String cityName = LocationUtils.getCityNameByCode(address.getCityCode());
-                if (cityName != null && !cityName.isBlank()) {
-                    if (builder.length() > 0) builder.append(", ");
-                    builder.append(cityName);
-                } else {
-                    if (builder.length() > 0) builder.append(", ");
-                    builder.append("TP ").append(address.getCityCode());
-                }
-            } catch (Exception e) {
-                if (builder.length() > 0) builder.append(", ");
-                builder.append("TP ").append(address.getCityCode());
-            }
-        }
-        return builder.toString();
+        return buildAddressFromParts(address.getDetail(), address.getWardName(), address.getCityName());
+    }
+
+    private String buildAddressFromParts(String detail, String wardName, String cityName) {
+        List<String> parts = new ArrayList<>();
+        if (detail != null && !detail.isBlank()) parts.add(detail);
+        if (wardName != null && !wardName.isBlank()) parts.add(wardName);
+        if (cityName != null && !cityName.isBlank()) parts.add(cityName);
+        return parts.isEmpty() ? null : String.join(", ", parts);
     }
 
     // Lộ trình giao hàng
@@ -1626,15 +1645,17 @@ public class OrderShipperService {
 
         List<Order> routeOrders = orderRepository.findAll(routeSpec, Sort.by(Sort.Direction.ASC, "createdAt"));
 
-        int totalCOD = routeOrders.stream().mapToInt(Order::getCod).sum();
+        int totalCOD = routeOrders.stream().mapToInt(o -> o.getCod() != null ? o.getCod() : 0).sum();
 
         List<Map<String, Object>> deliveryStops = routeOrders.stream().map(order -> {
+            String recipientFullAddress = resolveRecipientFullAddress(order);
             Map<String, Object> stop = new HashMap<>();
             stop.put("id", order.getId());
             stop.put("trackingNumber", order.getTrackingNumber());
             stop.put("recipientName", order.getRecipientName());
             stop.put("recipientPhone", order.getRecipientPhone());
-            stop.put("recipientAddress", buildAddress(order.getRecipientAddress()));
+            stop.put("recipientAddress", recipientFullAddress);
+            stop.put("recipientFullAddress", recipientFullAddress);
             stop.put("codAmount", order.getCod());
             stop.put("priority", order.getCod() > 1000000 ? "urgent" : "normal");
             stop.put("serviceType", order.getServiceType() != null ? order.getServiceType().getName() : "Tiêu chuẩn");

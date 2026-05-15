@@ -109,7 +109,7 @@ public class ShippingRequestShipperService {
                 "shipping_request_accepted",
                 shipperUserId,
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
@@ -121,7 +121,7 @@ public class ShippingRequestShipperService {
                 "shipping_request_accepted",
                 req.getUser().getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
             );
         }

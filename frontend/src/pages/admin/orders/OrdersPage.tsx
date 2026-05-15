@@ -9,6 +9,7 @@ import "./OrdersPage.css";
 import OrdersToolbar from "./components/OrdersToolbar";
 import OrdersTable from "./components/OrdersTable";
 import OrderDetailsDrawer from "./components/OrderDetailsDrawer";
+import { translateOrderStatus } from "../../../utils/orderUtils";
 
 type QueryState = { page: number; limit: number; search: string; status?: string };
 
@@ -17,7 +18,9 @@ const statusOptions = [
   { label: "Chờ xử lý", value: "PENDING" },
   { label: "Đã xác nhận", value: "CONFIRMED" },
   { label: "Đã lấy hàng", value: "PICKED_UP" },
+  { label: "Đang lấy hàng", value: "PICKING_UP" },
   { label: "Sẵn sàng lấy hàng", value: "READY_FOR_PICKUP" },
+  { label: "Tại bưu cục gốc", value: "AT_ORIGIN_OFFICE" },
   { label: "Đang giao", value: "DELIVERING" },
   { label: "Tại văn phòng đích", value: "AT_DEST_OFFICE" },
   { label: "Đang vận chuyển", value: "IN_TRANSIT" },
@@ -90,7 +93,7 @@ const OrdersPage: React.FC = () => {
 
   const statusText = (status?: string) => {
     if (!status) return "-";
-    return statusOptions.find((item) => item.value === status)?.label || status;
+    return statusOptions.find((item) => item.value === status)?.label || translateOrderStatus(status);
   };
 
   const paymentText = (paymentStatus?: string, payer?: string) => {

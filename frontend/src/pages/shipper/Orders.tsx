@@ -130,9 +130,10 @@ const ShipperOrders: React.FC = () => {
       key: "recipient",
       render: (record: ShipperOrder) => {
         const address =
-          typeof record.recipientAddress === "string"
+          record.recipientFullAddress ||
+          (typeof record.recipientAddress === "string"
             ? record.recipientAddress
-            : (record.recipientAddress as any)?.fullAddress ?? "";
+            : (record.recipientAddress as any)?.fullAddress) || "";
         return (
           <Space direction="vertical" size={2}>
             <Text strong className="shipper-table-strong">{record.recipientName}</Text>

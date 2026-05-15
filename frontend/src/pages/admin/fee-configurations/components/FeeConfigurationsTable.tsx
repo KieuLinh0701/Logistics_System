@@ -3,7 +3,7 @@ import { Dropdown, Modal, Space, Table } from "antd";
 import { DeleteOutlined, DownOutlined, EditOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { FeeConfiguration } from "../../../../types/feeConfiguration";
-import type { FeeConfigurationsTableProps } from "./types";
+import type { FeeConfigurationsTableProps } from "../../../../types/feeConfiguration";
 
 const FeeConfigurationsTable: React.FC<FeeConfigurationsTableProps> = ({
   loading,

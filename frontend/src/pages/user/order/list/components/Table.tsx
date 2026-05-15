@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Table, Button, Space, Tooltip, Dropdown } from "antd";
 import { EditOutlined, CloseCircleOutlined, DownOutlined, PrinterOutlined, DeleteOutlined, PlayCircleOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import type { ColumnsType } from "antd/es/table";
 import type { Order } from "../../../../../types/order";
-import locationApi from "../../../../../api/locationApi";
 import dayjs from 'dayjs';
 import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder, canReadyUserOrder, translateOrderCodStatus, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
 
@@ -43,21 +42,7 @@ const OrderTable: React.FC<Props> = ({
   setSelectedOrderIds,
   onSelectAllFiltered,
 }) => {
-  const [locationMap, setLocationMap] = useState<Record<number, { city: string, ward: string }>>({});
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const map: Record<number, { city: string; ward: string }> = {};
-      for (const order of orders) {
-        const cityName = (await locationApi.getCityNameByCode(order.recipientAddress.cityCode)) || "Unknown";
-        const wardName = (await locationApi.getWardNameByCode(order.recipientAddress.cityCode, order.recipientAddress.wardCode)) || "Unknown";
-        map[order.id!] = { city: cityName, ward: wardName };
-      }
-      setLocationMap(map);
-    };
-    fetchLocations();
-  }, [orders]);
 
   const tableData = orders.map((o) => ({ ...o, key: String(o.id) }));
 
@@ -99,16 +84,12 @@ const OrderTable: React.FC<Props> = ({
       key: "recipient",
       align: "left",
       render: (_, record) => {
-        const location = locationMap[record.id];
-        const cityName = location?.city || "";
-        const wardName = location?.ward || "";
-        const address = `${record.recipientAddress.detail || ""}, ${wardName}, ${cityName}`;
 
         return (
           <><span className="long-column">
             <span className="custom-table-content-strong">{record.recipientAddress.name}</span><br />
             {record.recipientAddress.phoneNumber}<br />
-            <span className="custom-table-content-limit">{address}</span>
+            <span className="custom-table-content-limit">{record.recipientAddress.fullAddress}</span>
           </span>
           </>
         );

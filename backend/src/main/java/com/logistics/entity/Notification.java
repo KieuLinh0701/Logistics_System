@@ -47,7 +47,7 @@ public class Notification {
     @Column(nullable = false)
     private Boolean isRead = false;
 
-    // Id liên quan (có thể là order, feedback,...)
+    // Id liên quan (có thể là recipientaddress, feedback,...)
     @Column(name = "related_id")
     private String relatedId; // Chuyển qua string cho trackingNumber
 

@@ -68,7 +68,7 @@ public class PaymentSubmissonBatchSpecification {
 
             // Đơn hàng
             Join<PaymentSubmissionBatch, PaymentSubmission> submissionJoin = root.join("submissions", JoinType.LEFT);
-            Join<PaymentSubmission, Order> orderJoin = submissionJoin.join("order", JoinType.LEFT);
+            Join<PaymentSubmission, Order> orderJoin = submissionJoin.join("recipientaddress", JoinType.LEFT);
 
             return cb.or(
                     // Mã đối soát batch

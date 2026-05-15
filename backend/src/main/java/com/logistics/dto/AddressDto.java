@@ -23,4 +23,10 @@ public class AddressDto {
     private String name;
 
     private String phoneNumber;
+
+    private String fullAddress;
+    private String cityName;
+    private String wardName;
+    private Double latitude;
+    private Double longitude;
 }

@@ -65,16 +65,31 @@ public class Order {
     private String senderPhone;
 
     @Column(nullable = false)
-    private Integer senderCityCode;
-
-    @Column(nullable = false)
     private Integer senderWardCode;
 
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String senderWardName;
+
     @Column(nullable = false)
+    private Integer senderCityCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String senderCityName;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
     private String senderDetail;
 
+    @Column(nullable = false)
+    private Double senderLatitude;
+
+    @Column(nullable = false)
+    private Double senderLongitude;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String senderFullAddress;
+
     @ManyToOne
-    @JoinColumn(name = "sender_address_id", nullable = true)
+    @JoinColumn(name = "sender_address_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Address senderAddress;
 
@@ -84,6 +99,30 @@ public class Order {
 
     @Column(nullable = false)
     private String recipientPhone;
+
+    @Column(nullable = false)
+    private Integer recipientWardCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String recipientWardName;
+
+    @Column(nullable = false)
+    private Integer recipientCityCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String recipientCityName;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String recipientDetail;
+
+    @Column(nullable = false)
+    private Double recipientLatitude;
+
+    @Column(nullable = false)
+    private Double recipientLongitude;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String recipientFullAddress;
 
     @ManyToOne
     @JoinColumn(name = "recipient_address_id", nullable = true)
@@ -98,6 +137,30 @@ public class Order {
     // ------------------- Thông tin đơn hàng -------------------
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal weight;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal length;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal width;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal height;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal originalWeight; 
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedOriginalWeight;
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedHeight;
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedLength;
+
+    @Column(precision = 10, scale = 2, nullable = true)
+    private BigDecimal adjustedWidth;
 
     @Column(precision = 10, scale = 2, nullable = true)
     private BigDecimal adjustedWeight;

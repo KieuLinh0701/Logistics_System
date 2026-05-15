@@ -81,7 +81,7 @@ public class AutoAssignService {
                     "assign_failure",
                     null,
                     null,
-                    "order",
+                    "recipientaddress",
                     order.getTrackingNumber()
             );
             return Optional.empty();
@@ -134,7 +134,7 @@ public class AutoAssignService {
                 "assignment",
                 chosen.getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
@@ -146,7 +146,7 @@ public class AutoAssignService {
                 "assignment",
                 order.getUser().getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
             );
         }
@@ -231,7 +231,7 @@ public class AutoAssignService {
                 "assignment",
                 chosen.getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
@@ -242,7 +242,7 @@ public class AutoAssignService {
                     "assignment",
                     order.getUser().getId(),
                     null,
-                    "order",
+                    "recipientaddress",
                     order.getTrackingNumber()
             );
         }

@@ -57,7 +57,15 @@ const ManagerOrderEdit: React.FC = () => {
     const [_, setShippingFee] = useState<number | undefined>(undefined);
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
-
+    const [originalWeight, setOriginalWeight] = useState<number | undefined>(undefined);
+    const [length, setLength] = useState<number | undefined>(undefined);
+    const [width, setWidth] = useState<number | undefined>(undefined);
+    const [height, setHeight] = useState<number | undefined>(undefined);
+    const [adjustedWeight, setAdjustedWeight] = useState<number | undefined>(undefined);
+    const [adjustedOriginalWeight, setAdjustedOriginalWeight] = useState<number | undefined>(undefined);
+    const [adjustedHeight, setAdjustedHeight] = useState<number | undefined>(undefined);
+    const [adjustedLength, setAdjustedLength] = useState<number | undefined>(undefined);
+    const [adjustedWidth, setAdjustedWidth] = useState<number | undefined>(undefined);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
     // Người gửi và người nhận
@@ -149,6 +157,15 @@ const ManagerOrderEdit: React.FC = () => {
 
         setSelectedServiceType(order.serviceType);
         setWeight(order.weight);
+        setOriginalWeight(order.originalWeight)
+        setLength(order.length)
+        setWidth(order.width)
+        setHeight(order.height)
+        setAdjustedWeight(order.adjustedWeight)
+        setAdjustedOriginalWeight(order.adjustedOriginalWeight)
+        setAdjustedLength(order.adjustedLength)
+        setAdjustedWidth(order.adjustedWidth)
+        setAdjustedHeight(order.adjustedHeight)
         setCodAmount(order.cod);
         setOrderValue(order.orderValue);
         setPickupType(order.pickupType);
@@ -163,15 +180,31 @@ const ManagerOrderEdit: React.FC = () => {
     }, [order]);
 
     const handleOrderInfoChange = (changedValues: any) => {
-        if (changedValues.weight !== undefined) {
-            setWeight(changedValues.weight);
+        if (changedValues.adjustedWeight !== undefined) {
+            setAdjustedWeight(changedValues.adjustedWeight);
             if (order?.createdByType === 'USER') {
                 setDiscountAmount(0);
             }
         }
 
-        if (changedValues.orderValue !== undefined) {
-            setOrderValue(changedValues.orderValue);
+        if (changedValues.adjustedWeightOriginalWeight !== undefined) {
+            setAdjustedOriginalWeight(changedValues.adjustedWeightOriginalWeight)
+        }
+
+        if (changedValues.adjustedHeight !== undefined) {
+            setAdjustedHeight(changedValues.adjustedHeight)
+        }
+
+        if (changedValues.adjustedWidth !== undefined) {
+            setAdjustedWidth(changedValues.adjustedWidth)
+        }
+
+        if (changedValues.adjustedOriginalWeight !== undefined) {
+            setAdjustedOriginalWeight(changedValues.adjustedOriginalWeight)
+        }
+
+        if (changedValues.adjustedLength !== undefined) {
+            setAdjustedLength(changedValues.adjustedLength);
         }
 
         if (changedValues.codAmount !== undefined) {
@@ -284,7 +317,11 @@ const ManagerOrderEdit: React.FC = () => {
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
                 pickupType: pickupType,
-                weight,
+                weight: adjustedWeight,
+                originalWeight: adjustedOriginalWeight,
+                length: adjustedLength,
+                width: adjustedWidth,
+                height: adjustedHeight,
                 serviceTypeId: selectedServiceType?.id,
                 cod: codAmount || 0,
                 orderValue: orderValue || 0,
@@ -363,6 +400,7 @@ const ManagerOrderEdit: React.FC = () => {
         senderData.cityCode,
         recipientData.cityCode,
         weight,
+        adjustedWeight,
         selectedServiceType,
         codAmount,
         orderValue,
@@ -382,6 +420,43 @@ const ManagerOrderEdit: React.FC = () => {
         setModalConfirmOpen(true);
     }
 
+    const handleCalculateWeight = async (
+        length: number,
+        width: number,
+        height: number,
+        originalWeight: number
+    ) => {
+        try {
+            const result = await shippingFeeApi.calculateWeight({
+                length,
+                width,
+                height,
+                originalWeight,
+            });
+
+            if (result.success && result.data !== undefined) {
+                const calculated = result.data;
+                setAdjustedWeight(calculated || undefined);
+                orderInfo.setFieldValue("adjustedWeight", calculated);
+            } else {
+                message.error(result.message || "Không thể tính khối lượng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tính khối lượng");
+        }
+    };
+
+    useEffect(() => {
+        const effectiveOriginalWeight = adjustedOriginalWeight ?? originalWeight;
+        const effectiveHeight = adjustedHeight ?? height;
+        const effectiveLength = adjustedLength ?? length;
+        const effectiveWidth = adjustedWidth ?? width;
+
+        if (effectiveOriginalWeight && effectiveWidth && effectiveLength && effectiveHeight) {
+            handleCalculateWeight(effectiveLength, effectiveWidth, effectiveHeight, effectiveOriginalWeight);
+        }
+    }, [adjustedOriginalWeight, adjustedHeight, adjustedLength, adjustedWidth, originalWeight, length, width, height]);
+
     const orderColumns = [
         {
             title: "Mã SP",
@@ -396,7 +471,7 @@ const ManagerOrderEdit: React.FC = () => {
             align: "left",
         },
         {
-            title: "Khối lượng quy đổi (Kg)",
+            title: "Khối lượng (Kg)",
             dataIndex: "productWeight",
             key: "productWeight",
             align: "center",
@@ -474,7 +549,15 @@ const ManagerOrderEdit: React.FC = () => {
                                 form={orderInfo}
                                 codAmount={codAmount}
                                 weight={weight}
-                                adjustedWeight={order.adjustedWeight}
+                                originalWeight={originalWeight}
+                                length={length}
+                                width={width}
+                                height={height}
+                                adjustedWeight={adjustedWeight ?? weight ?? undefined}
+                                adjustedLength={adjustedLength ?? length ?? undefined}
+                                adjustedOriginalWeight={adjustedOriginalWeight ?? originalWeight ?? undefined}
+                                adjustedHeight={adjustedHeight ?? height ?? undefined}
+                                adjustedWidth={adjustedWidth ?? width ?? undefined}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}

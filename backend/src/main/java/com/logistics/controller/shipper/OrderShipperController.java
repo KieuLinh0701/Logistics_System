@@ -139,6 +139,7 @@ public class OrderShipperController {
         @PostMapping(value = "/incident", consumes = {"multipart/form-data"})
         public ResponseEntity<ApiResponse<Map<String, Object>>> createIncident(
             @RequestParam Integer orderId,
+            @RequestParam(required = false) Integer addressId,
             @RequestParam(required = false) String incidentType,
             @RequestParam String title,
             @RequestParam(required = false) String description,
@@ -149,7 +150,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.createIncidentReport(orderId, incidentType, title, description, priority, images));
+        return ResponseEntity.ok(shipperService.createIncidentReport(orderId, addressId, incidentType, title, description, priority, images));
     }
 
     @PostMapping("/orders/{id}/picked-up")

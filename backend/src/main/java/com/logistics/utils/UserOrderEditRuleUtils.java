@@ -12,6 +12,7 @@ public class UserOrderEditRuleUtils {
 
     // Các trường được thay đổi của user theo các trạng thái
     public static class EditableRule {
+
         private Set<OrderStatus> editableStatuses;
         private Set<OrderStatus> nonEditableStatuses;
 
@@ -44,6 +45,7 @@ public class UserOrderEditRuleUtils {
             OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE);
 
     public static final Map<String, EditableRule> USER_ORDER_FIELD_EDIT_RULES;
+
     static {
         Map<String, EditableRule> map = new HashMap<>();
 
@@ -51,18 +53,48 @@ public class UserOrderEditRuleUtils {
         map.put("senderName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("senderPhoneNumber", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("senderCityCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderCityName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("senderWardCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderWardName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("senderDetailAddress", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderLatitude", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("senderLongitude", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
 
         // Thông tin recipient dùng chung
         map.put("recipientName", new EditableRule(null, USER_FINAL_STATUSES));
         map.put("recipientPhoneNumber", new EditableRule(null, USER_FINAL_STATUSES));
-        map.put("recipientCityCode", new EditableRule(null, USER_FINAL_STATUSES));
-        map.put("recipientWardCode", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientCityCode", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("recipientCityName", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("recipientWardCode",
+                new EditableRule(EnumSet.of(
+                        OrderStatus.DRAFT,
+                        OrderStatus.PENDING,
+                        OrderStatus.CONFIRMED,
+                        OrderStatus.READY_FOR_PICKUP,
+                        OrderStatus.PICKING_UP,
+                        OrderStatus.PICKED_UP,
+                        OrderStatus.AT_ORIGIN_OFFICE),
+                        null));
+        map.put("recipientWardName",
+                new EditableRule(EnumSet.of(
+                        OrderStatus.DRAFT,
+                        OrderStatus.PENDING,
+                        OrderStatus.CONFIRMED,
+                        OrderStatus.READY_FOR_PICKUP,
+                        OrderStatus.PICKING_UP,
+                        OrderStatus.PICKED_UP,
+                        OrderStatus.AT_ORIGIN_OFFICE),
+                        null));
         map.put("recipientDetailAddress", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientLatitude", new EditableRule(null, USER_FINAL_STATUSES));
+        map.put("recipientLongitude", new EditableRule(null, USER_FINAL_STATUSES));
 
         // Các field khác
         map.put("weight", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("originalWeight", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("height", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("length", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
+        map.put("width", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("serviceType", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
         map.put("cod", new EditableRule(null, USER_FINAL_STATUSES));
         map.put("orderValue", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
@@ -82,11 +114,15 @@ public class UserOrderEditRuleUtils {
         EditableRule rule = USER_ORDER_FIELD_EDIT_RULES.get(field);
         if (rule == null)
             return false;
-        if (!rule.getNonEditableStatuses().isEmpty()) {
-            return !rule.getNonEditableStatuses().contains(status);
+        if (!rule.getNonEditableStatuses()
+                .isEmpty()) {
+            return !rule.getNonEditableStatuses()
+                    .contains(status);
         }
-        if (!rule.getEditableStatuses().isEmpty()) {
-            return rule.getEditableStatuses().contains(status);
+        if (!rule.getEditableStatuses()
+                .isEmpty()) {
+            return rule.getEditableStatuses()
+                    .contains(status);
         }
         return false;
     }
@@ -96,5 +132,4 @@ public class UserOrderEditRuleUtils {
     public static boolean canEditUserOrderStatus(String status) {
         return USER_EDITABLE_ORDER_STATUSES.contains(status);
     }
-
 }

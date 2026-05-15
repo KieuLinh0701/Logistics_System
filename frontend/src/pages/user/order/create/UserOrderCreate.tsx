@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
-import RecipientInfo from "./components/RecipientInfo";
+import RecipientInfo, {type RecipientInfoRef} from "./components/RecipientInfo";
 import NoteCard from "./components/NoteCard";
 import PaymentCard from "./components/PaymentCard";
 import OrderInfo from "./components/OrderInfo";
@@ -31,12 +31,14 @@ import SuccessOrderModal from "./components/SuccessOrderModal";
 import orderApi from "../../../../api/orderApi";
 import bankAccountApi from "../../../../api/bankAccountApi";
 import userApi from "../../../../api/userApi";
+import {geocodeAddress} from "../../../../service/mapsService.ts";
 
 const UserOrderCreate: React.FC = () => {
     const [form] = Form.useForm();
     const [loadingOrder, setLoadingOrder] = useState(false);
 
     const [loadingOffice, setLoadingOffice] = useState(false);
+    const [saveRecipient, setSaveRecipient] = useState(false);
 
     // Thông tin cửa hàng
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -58,7 +60,7 @@ const UserOrderCreate: React.FC = () => {
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [promotionSearch, setPromotionSearch] = useState("");
     const [loadingPromotion, setLoadingPromotion] = useState(false);
-    const [loadingBank, setLoadingBank] = useState(false);
+    const [_, setLoadingBank] = useState(false);
 
     // Sản phẩm
     const [loadingProduct, setLoadingProduct] = useState(false);
@@ -90,9 +92,13 @@ const UserOrderCreate: React.FC = () => {
     const [shippingFee, setShippingFee] = useState<number | undefined>(undefined);
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
+    const [originalWeight, setOriginalWeight] = useState<number | undefined>(undefined);
+    const [length, setLength] = useState<number | undefined>(undefined);
+    const [width, setWidth] = useState<number | undefined>(undefined);
+    const [height, setHeight] = useState<number | undefined>(undefined);
 
-    const [existBankAccount, setExistBankAccount] = useState<Boolean>(false);
-    const [userLocked, setUserLocked] = useState<Boolean>(false);
+    const [existBankAccount, setExistBankAccount] = useState<boolean>(false);
+    const [userLocked, setUserLocked] = useState<boolean>(false);
 
     // Người gửi và người nhận
     const [empty] = useState({
@@ -100,7 +106,12 @@ const UserOrderCreate: React.FC = () => {
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: "",
         cityCode: 0,
+        cityName: "",
+        latitude: 0,
+        longitude: 0,
+        fullAddress: ""
     });
     const [senderData, setSenderData] = useState(empty);
     const [recipientData, setRecipientData] = useState(empty);
@@ -114,6 +125,10 @@ const UserOrderCreate: React.FC = () => {
     const [successOrderId, setSuccessOrderId] = useState<number | null>(null);
     const [successTrackingNumber, setSuccessTrackingNumber] = useState("");
     const [successStatus, setSuccessStatus] = useState<"DRAFT" | "PENDING">("DRAFT");
+
+    // Thông tin người nhận
+    const [savedRecipientAddressId, setSavedRecipientAddressId] = useState<number | null>(null);
+    const recipientInfoRef = useRef<RecipientInfoRef>(null);
 
     // Form instances
     const [senderInfo] = Form.useForm();
@@ -315,7 +330,12 @@ const UserOrderCreate: React.FC = () => {
                 phoneNumber: selectedAddress?.phoneNumber || '',
                 detail: selectedAddress?.detail || '',
                 cityCode: selectedAddress?.cityCode ?? 0,
-                wardCode: selectedAddress?.wardCode ?? 0
+                wardCode: selectedAddress?.wardCode ?? 0,
+                cityName: selectedAddress?.cityName || '',
+                wardName: selectedAddress?.wardName || '',
+                latitude: selectedAddress?.latitude ?? 0,
+                longitude: selectedAddress?.longitude ?? 0,
+                fullAddress: selectedAddress?.fullAddress || '',
             });
         }
 
@@ -344,7 +364,7 @@ const UserOrderCreate: React.FC = () => {
 
         hasLocalOffices();
 
-    }, [selectedAddress?.cityCode, selectedAddress?.wardCode]);
+    }, [selectedAddress]);
 
     const showModal = (mode: 'create' | 'edit', address?: Address) => {
         setModalModeAddress(mode);
@@ -357,7 +377,11 @@ const UserOrderCreate: React.FC = () => {
                 address: {
                     cityCode: address.cityCode || undefined,
                     wardCode: address.wardCode || undefined,
-                    detail: address.detail || ''
+                    detail: address.detail || '',
+                    cityName: address.cityName || '',
+                    wardName: address.wardName || '',
+                    latitude: address.latitude || undefined,
+                    longitude: address.longitude || undefined
                 }
             });
         } else {
@@ -367,7 +391,11 @@ const UserOrderCreate: React.FC = () => {
                 detail: '',
                 wardCode: 0,
                 cityCode: 0,
-                isDefault: addresses.length === 0
+                isDefault: addresses.length === 0,
+                wardName: '',
+                cityName: '',
+                longitude: 0,
+                latitude: 0
             };
             setEditingAddress(emptyAddress);
             form.resetFields();
@@ -403,6 +431,10 @@ const UserOrderCreate: React.FC = () => {
                 wardCode: values.address.wardCode,
                 detail: values.address.detail,
                 isDefault: values.isDefault,
+                cityName: values.address.cityName,
+                wardName: values.address.wardName,
+                longitude: values.address.longitude,
+                latitude: values.address.latitude
             };
 
             if (modalModeAddress === 'edit' && editingAddress?.id) {
@@ -478,6 +510,11 @@ const UserOrderCreate: React.FC = () => {
             detail: address.detail,
             wardCode: address.wardCode,
             cityCode: address.cityCode,
+            cityName:address.cityName,
+            wardName: address.wardName,
+            latitude: address.latitude,
+            longitude: address.longitude,
+            fullAddress: address.fullAddress
         });
 
         setSelectedAddress(address);
@@ -567,7 +604,7 @@ const UserOrderCreate: React.FC = () => {
         );
 
         setOrderValue(totalValue);
-        setWeight(totalWeight);
+        setOriginalWeight(totalWeight);
         setShowProductModal(false);
     };
 
@@ -601,13 +638,29 @@ const UserOrderCreate: React.FC = () => {
                 0
             );
             setOrderValue(totalValue);
-            setWeight(Number(totalWeight.toFixed(2)));
+            setOriginalWeight(Number(totalWeight.toFixed(2)));
         }
     };
 
     const handleOrderInfoChange = (changedValues: any) => {
         if (changedValues.weight !== undefined) {
             setWeight(changedValues.weight);
+        }
+
+        if (changedValues.originalWeight !== undefined) {
+            setOriginalWeight(changedValues.originalWeight);
+        }
+
+        if (changedValues.length !== undefined) {
+            setLength(changedValues.length);
+        }
+
+        if (changedValues.height !== undefined) {
+            setHeight(changedValues.height);
+        }
+
+        if (changedValues.width !== undefined) {
+            setWidth(changedValues.width);
         }
 
         if (changedValues.orderValue !== undefined) {
@@ -623,6 +676,38 @@ const UserOrderCreate: React.FC = () => {
             setSelectedServiceType(selected || null);
         }
     };
+
+    const handleCalculateWeight = async (
+        length: number,
+        width: number,
+        height: number,
+        originalWeight: number
+    ) => {
+        try {
+            const result = await shippingFeeApi.calculateWeight({
+                length,
+                width,
+                height,
+                originalWeight,
+            });
+
+            if (result.success && result.data !== undefined) {
+                const calculated = result.data;
+                setWeight(calculated || undefined);
+                orderInfo.setFieldValue("weight", calculated);
+            } else {
+                message.error(result.message || "Không thể tính khối lượng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tính khối lượng");
+        }
+    };
+
+    useEffect(() => {
+        if (length && width && originalWeight && height) {
+            handleCalculateWeight(length, width, height, originalWeight);
+        }
+    }, [originalWeight, height, length, width]);
 
     useEffect(() => {
         if (!(pickupType === "AT_OFFICE")) return;
@@ -683,7 +768,7 @@ const UserOrderCreate: React.FC = () => {
                     message.error(result.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn")
                 }
             } catch (error: any) {
-                  message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
+                message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
                 setLoadingOffice(false);
             }
@@ -741,18 +826,28 @@ const UserOrderCreate: React.FC = () => {
             const orderData = {
                 status,
                 senderAddressId: selectedAddress?.id,
+                recipientAddressId: savedRecipientAddressId ?? undefined,
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
+                recipientWardName: recipientData.wardName,
+                recipientCityName: recipientData.cityName,
                 pickupType: pickupType,
                 weight,
+                length,
+                width,
+                height,
+                originalWeight,
                 serviceTypeId: selectedServiceType?.id,
                 cod: codAmount || 0,
                 orderValue: orderValue || 0,
                 payer: payer,
                 notes: notes || "",
+                saveRecipient: saveRecipient,
                 promotionId: selectedPromotion?.id,
                 fromOfficeId: selectedOffice?.id,
                 discountAmount: discountAmount,
@@ -829,6 +924,34 @@ const UserOrderCreate: React.FC = () => {
         setTotalFee(Math.max(serviceFee - discountAmount, 0))
     }, [discountAmount, serviceFee]);
 
+    useEffect(() => {
+        const shouldGeocode =
+            recipientData.cityCode &&
+            recipientData.wardCode &&
+            recipientData.detail &&
+            (!recipientData.latitude || !recipientData.longitude);
+
+        if (!shouldGeocode) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                const fullAddr = `${recipientData.detail}, ${recipientData.wardName}, ${recipientData.cityName}, Việt Nam`;
+                const geo = await geocodeAddress(fullAddr);
+                if (geo.results[0]) {
+                    setRecipientData(prev => ({
+                        ...prev,
+                        latitude: geo.results[0].geometry.location.lat,
+                        longitude: geo.results[0].geometry.location.lng,
+                    }));
+                }
+            } catch (err) {
+                console.error("Geocode recipient thất bại:", err);
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [recipientData.cityCode, recipientData.wardCode, recipientData.detail]);
+
     // Tạo đơn mới sau khi tạo thành công 
     const handleResetForm = async () => {
         // Reset tất cả form
@@ -844,6 +967,10 @@ const UserOrderCreate: React.FC = () => {
         setQuantityValues({});
         setOrderValue(undefined);
         setWeight(undefined);
+        setLength(undefined);
+        setWidth(undefined);
+        setHeight(undefined);
+        setOriginalWeight(undefined);
         setCodAmount(undefined);
         setTotalFee(undefined);
         setPayer("CUSTOMER");
@@ -853,6 +980,10 @@ const UserOrderCreate: React.FC = () => {
         setPickupType(undefined);
         setSelectedOffice(null);
         setSelectedPromotion(null);
+        setSaveRecipient(false);
+        setSavedRecipientAddressId(null);
+
+        recipientInfoRef.current?.resetSuggestion();
 
         setSelectedAddress(null);
         setSenderData(empty);
@@ -1005,7 +1136,7 @@ const UserOrderCreate: React.FC = () => {
                                     0
                                 );
                                 setOrderValue(totalValue);
-                                setWeight(totalWeight);
+                                setOriginalWeight(totalWeight);
 
                                 return updated;
                             });
@@ -1041,8 +1172,11 @@ const UserOrderCreate: React.FC = () => {
 
                             <RecipientInfo
                                 form={recipientInfo}
+                                ref={recipientInfoRef}
                                 recipient={recipientData}
                                 disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
+                                onSaveRecipientChange={(save) => setSaveRecipient(save)}
+                                onSavedAddressSelect={(id) => setSavedRecipientAddressId(id)}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({
@@ -1052,13 +1186,17 @@ const UserOrderCreate: React.FC = () => {
                                         detail: values.recipient?.detail ?? prev.detail,
                                         wardCode: values.recipient?.wardCode ?? prev.wardCode,
                                         cityCode: values.recipient?.cityCode ?? prev.cityCode,
+                                        cityName: values.recipient?.cityName ?? prev.cityName,
+                                        wardName: values.recipient?.wardName ?? prev.wardName,
+                                        latitude: values.recipient?.latitude ?? prev.latitude,
+                                        longitude: values.recipient?.longitude ?? prev.longitude,
                                     }));
                                 }}
                             />
 
                             <OrderInfo
                                 form={orderInfo}
-                                weight={weight}
+                                originalWeight={originalWeight}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}
@@ -1096,7 +1234,7 @@ const UserOrderCreate: React.FC = () => {
                             <PaymentCard
                                 form={paymentCard}
                                 payer={payer}
-                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onChangePayment={(changedValues) => {
                                     if (selectedAddress === null) return;
                                     setPayer(changedValues.payer);
@@ -1105,7 +1243,7 @@ const UserOrderCreate: React.FC = () => {
 
                             <NoteCard
                                 notes={notes}
-                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onChange={(newNotes) => {
                                     if (selectedAddress === null) return;
                                     setNotes(newNotes);
@@ -1126,7 +1264,7 @@ const UserOrderCreate: React.FC = () => {
                                 selectedPromotion={selectedPromotion}
                                 setSelectedPromotion={setSelectedPromotion}
                                 setShowPromoModal={handleOpenPromoModal}
-                                disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                                disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                             />
                         }
                     </div>
@@ -1134,7 +1272,7 @@ const UserOrderCreate: React.FC = () => {
                     <Actions
                         onCreate={handleCreateOrder}
                         loading={loadingOrder}
-                        disabled={!selectedAddress || !existBankAccount  || userLocked as boolean}
+                        disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                     />
                 </Col>
             </Row>

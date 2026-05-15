@@ -94,6 +94,10 @@ const AddressSettingsUser: React.FC = () => {
                 wardCode: values.address.wardCode,
                 detail: values.address.detail,
                 isDefault: values.isDefault,
+                latitude: values.address.latitude,
+                longitude: values.address.longitude,
+                cityName: values.address.cityName,
+                wardName: values.address.wardName,
             };
 
             console.log("Payload to save:", payload);

@@ -122,7 +122,7 @@ public class SupportMessageService {
                 return true;
             }
 
-            // Hoặc nếu ticket liên quan tới order mà bưu cục (office) thuộc quyền quản lý của manager
+            // Hoặc nếu ticket liên quan tới recipientaddress mà bưu cục (office) thuộc quyền quản lý của manager
             if (ticket.getRelatedType() != null && "ORDER".equalsIgnoreCase(ticket.getRelatedType()) && ticket.getRelatedId() != null) {
                 try {
                     var ordOpt = orderRepository.findById(ticket.getRelatedId());

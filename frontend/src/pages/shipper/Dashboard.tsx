@@ -182,9 +182,9 @@ const ShipperDashboard: React.FC = () => {
       key: "recipientAddress",
       ellipsis: true,
       render: (record: ShipperOrder) =>
-        typeof record.recipientAddress === "string"
-          ? record.recipientAddress
-          : (record.recipientAddress as any)?.fullAddress ?? "",
+        record.recipientFullAddress ||
+        record.recipientAddress?.fullAddress ||
+        "-",
     },
     {
       title: "COD",

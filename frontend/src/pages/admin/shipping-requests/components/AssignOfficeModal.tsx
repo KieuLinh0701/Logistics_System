@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, Select, Button, Space } from "antd";
-import type { OfficeOption } from "./types";
+import type { OfficeOption } from "../../../../types/shippingRequest";
 
 import "../../../hr/recruitment/job-posting/components/JobPostingComponents.css";
 

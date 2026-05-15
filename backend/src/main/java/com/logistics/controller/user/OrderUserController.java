@@ -127,5 +127,4 @@ public class OrderUserController {
 
         return ResponseEntity.ok(service.setOrderReadyForPickup(userId, id));
     }
-
 }

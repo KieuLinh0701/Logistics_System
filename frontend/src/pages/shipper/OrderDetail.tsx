@@ -253,17 +253,19 @@ const fetchOrderDetail = async () => {
     }
   };
 
-  const buildAddress = (address: any): string => {
+  const buildAddress = (address: any, fallback?: string): string => {
+    if (fallback) return fallback;
     if (typeof address === "string") return address;
+    if (address?.fullAddress) return address.fullAddress;
     if (!address) return "";
-    const parts = [
-      address.detailAddress,
-      address.ward?.name,
-      address.district?.name,
-      address.province?.name,
-    ].filter(Boolean);
+    const parts = [address.detail, address.wardName, address.cityName].filter(Boolean);
     return parts.join(", ");
   };
+
+  const recipientAddressText = buildAddress(
+    order?.recipientAddress,
+    order?.recipientFullAddress
+  );
 
   if (loading && !order) {
     return (
@@ -452,7 +454,7 @@ const fetchOrderDetail = async () => {
               <Descriptions.Item label="Địa chỉ">
                 <Space>
                   <EnvironmentOutlined />
-                  <Text>{buildAddress(order.recipientAddress)}</Text>
+                  <Text>{recipientAddressText}</Text>
                 </Space>
               </Descriptions.Item>
             </Descriptions>

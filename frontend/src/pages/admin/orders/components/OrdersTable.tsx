@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Dropdown, Modal, Table } from "antd";
 import { DeleteOutlined, DownOutlined } from "@ant-design/icons";
 import type { AdminOrder } from "../../../../types/order";
+import { translateOrderStatus } from "../../../../utils/orderUtils";
 
 interface Option {
   label: string;
@@ -33,7 +34,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
 }) => {
   const statusText = (status?: string) => {
     if (!status) return "-";
-    return statusOptions.find((item) => item.value === status)?.label || status;
+    return statusOptions.find((item) => item.value === status)?.label || translateOrderStatus(status);
   };
 
   const columns = useMemo(

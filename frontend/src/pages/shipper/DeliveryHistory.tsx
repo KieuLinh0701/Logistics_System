@@ -181,9 +181,11 @@ const ShipperDeliveryHistory: React.FC = () => {
             </Text>
           </Space>
           <Text className="shipper-table-muted" style={{ fontSize: "11px" }} ellipsis>
-            {typeof record.recipientAddress === "string"
-              ? record.recipientAddress
-              : (record.recipientAddress as any)?.fullAddress ?? ""}
+            {record.recipientFullAddress ||
+              (typeof record.recipientAddress === "string"
+                ? record.recipientAddress
+                : (record.recipientAddress as any)?.fullAddress) ||
+              ""}
           </Text>
         </Space>
       ),

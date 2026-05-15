@@ -47,7 +47,7 @@ public class ShippingRequestSpecification {
             }
             String likePattern = "%" + keyword.toLowerCase() + "%";
 
-            var orderJoin = root.join("order", JoinType.LEFT);
+            var orderJoin = root.join("recipientaddress", JoinType.LEFT);
 
             return cb.or(
                     cb.like(cb.lower(orderJoin.get("trackingNumber")), likePattern),
@@ -64,7 +64,7 @@ public class ShippingRequestSpecification {
             }
             String likePattern = "%" + keyword.toLowerCase() + "%";
 
-            var orderJoin = root.join("order", JoinType.LEFT);
+            var orderJoin = root.join("recipientaddress", JoinType.LEFT);
             var userJoin = root.join("user", JoinType.LEFT);
             var accountJoin = userJoin.join("account", JoinType.LEFT);
 

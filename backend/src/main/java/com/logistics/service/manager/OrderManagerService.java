@@ -312,7 +312,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng có mã vận đơn #%s của bạn đã bị hủy bởi nhân viên chúng tôi. Nếu bạn không yêu cầu hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
-                    "order",
+                    "recipientaddress",
                     order.getUser().getId(),
                     null,
                     "orders/list",
@@ -345,7 +345,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng #%s đã được xác nhận. Vui lòng chuẩn bị hàng hóa và mang đến bưu cục để hoàn tất việc gửi hàng.",
                             order.getTrackingNumber()),
-                    "order",
+                    "recipientaddress",
                     order.getUser().getId(),
                     null,
                     "orders/list",
@@ -358,6 +358,13 @@ public class OrderManagerService {
     public ApiResponse<String> create(Integer userId, ManagerOrderCreateRequest request) {
         try {
             validateCreate(request);
+
+            validateWeight(
+                    request.getWeight(),
+                    request.getOriginalWeight(),
+                    request.getHeight(),
+                    request.getLength(),
+                    request.getWidth());
 
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
@@ -401,6 +408,10 @@ public class OrderManagerService {
             order.setRecipientAddress(recipientAddress);
             order.setPickupType(OrderPickupType.AT_OFFICE);
             order.setWeight(request.getWeight());
+            order.setOriginalWeight(request.getWeight());
+            order.setHeight(request.getHeight());
+            order.setWidth(request.getWidth());
+            order.setLength(request.getLength());
             order.setServiceType(serviceType);
             order.setShippingFee(shippingFee);
             order.setCod(0);
@@ -433,6 +444,13 @@ public class OrderManagerService {
     public ApiResponse<Boolean> update(Integer userId, Integer orderId, ManagerOrderCreateRequest request) {
         try {
             validateCreate(request);
+
+            validateWeight(
+                    request.getWeight(),
+                    request.getOriginalWeight(),
+                    request.getHeight(),
+                    request.getLength(),
+                    request.getWidth());
 
             Order order = repository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
@@ -521,6 +539,34 @@ public class OrderManagerService {
 
                 if (order.getUser() != null) {
                     updateManagerField(
+                            "originalWeight",
+                            order.getOriginalWeight(),
+                            request.getOriginalWeight(),
+                            currentStatus,
+                            creatorType,
+                            order::setAdjustedOriginalWeight);
+                    updateManagerField(
+                            "height",
+                            order.getHeight(),
+                            request.getHeight(),
+                            currentStatus,
+                            creatorType,
+                            order::setAdjustedHeight);
+                    updateManagerField(
+                            "length",
+                            order.getLength(),
+                            request.getLength(),
+                            currentStatus,
+                            creatorType,
+                            order::setAdjustedLength);
+                    updateManagerField(
+                            "width",
+                            order.getWidth(),
+                            request.getWidth(),
+                            currentStatus,
+                            creatorType,
+                            order::setAdjustedWidth);
+                    updateManagerField(
                             "weight",
                             order.getWeight(),
                             request.getWeight(),
@@ -529,14 +575,41 @@ public class OrderManagerService {
                             order::setAdjustedWeight);
                 } else {
                     updateManagerField(
+                            "originalWeight",
+                            order.getOriginalWeight(),
+                            request.getOriginalWeight(),
+                            currentStatus,
+                            creatorType,
+                            order::setOriginalWeight);
+                    updateManagerField(
                             "weight",
                             order.getWeight(),
                             request.getWeight(),
                             currentStatus,
                             creatorType,
                             order::setWeight);
+                    updateManagerField(
+                            "height",
+                            order.getHeight(),
+                            request.getHeight(),
+                            currentStatus,
+                            creatorType,
+                            order::setHeight);
+                    updateManagerField(
+                            "length",
+                            order.getLength(),
+                            request.getLength(),
+                            currentStatus,
+                            creatorType,
+                            order::setLength);
+                    updateManagerField(
+                            "width",
+                            order.getWidth(),
+                            request.getWidth(),
+                            currentStatus,
+                            creatorType,
+                            order::setWidth);
                 }
-
             }
 
             if (order.getUser() != null && request.getWeight() != null) {
@@ -576,7 +649,7 @@ public class OrderManagerService {
                                     order.getTrackingNumber(),
                                     oldWeight == null ? "0" : oldWeight.toPlainString(),
                                     request.getWeight().toPlainString()),
-                            "order",
+                            "recipientaddress",
                             order.getUser().getId(),
                             null,
                             "orders/tracking",
@@ -643,7 +716,15 @@ public class OrderManagerService {
         if (isBlank(request.getRecipientPhone()))
             missing.add("Số điện thoại người nhận");
         if (request.getWeight() == null)
-            missing.add("Khối lượng");
+            missing.add("Khối lượng quy đổi");
+        if (request.getHeight() == null)
+            missing.add("Chiều cao");
+        if (request.getOriginalWeight() == null)
+            missing.add("Khối lượng thực tế");
+        if (request.getLength() == null)
+            missing.add("Chiều dài");
+        if (request.getWidth() == null)
+            missing.add("Chiều rộng");
         if (request.getServiceTypeId() == null)
             missing.add("Loại dịch vụ");
         if (request.getOrderValue() == null)
@@ -678,7 +759,19 @@ public class OrderManagerService {
             throw new RuntimeException("Mã Phường/Xã người nhận không hợp lệ");
 
         if (request.getWeight().doubleValue() <= 0)
-            throw new RuntimeException("Khối lượng phải lớn hơn 0");
+            throw new RuntimeException("Khối lượng quy đổi phải lớn hơn 0");
+
+        if (request.getOriginalWeight().doubleValue() <= 0)
+            throw new RuntimeException("Khối lượng thực tế phải lớn hơn 0");
+
+        if (request.getLength().doubleValue() <= 0)
+            throw new RuntimeException("Chiều dài phải lớn hơn 0");
+
+        if (request.getWidth().doubleValue() <= 0)
+            throw new RuntimeException("Chiều rộng phải lớn hơn 0");
+
+        if (request.getHeight().doubleValue() <= 0)
+            throw new RuntimeException("Chiều cao phải lớn hơn 0");
 
         if (request.getServiceTypeId() <= 0)
             throw new RuntimeException("Mã dịch vụ không hợp lệ");
@@ -756,7 +849,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng có mã vận đơn #%s của bạn đã được mang đến và bàn giao cho đơn vị vận chuyển thành công tại bưu cục xuất phát. Nếu bạn không thực hiện hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
-                    "order",
+                    "recipientaddress",
                     order.getUser().getId(),
                     null,
                     "orders/tracking",
@@ -764,5 +857,31 @@ public class OrderManagerService {
         }
 
         return new ApiResponse<>(true, "Bàn giao đơn hàng cho đơn vị vận chuyển thành công", true);
+    }
+
+    private void validateWeight(
+            BigDecimal weight,
+            BigDecimal originalWeight,
+            BigDecimal height,
+            BigDecimal length,
+            BigDecimal width) {
+
+        if (weight == null) {
+            throw new IllegalArgumentException("Khối lượng không được để trống");
+        }
+
+        BigDecimal calWeight = feeService.calculateWeight(
+                originalWeight, height, length, width
+        );
+
+        if (calWeight == null) {
+            throw new IllegalArgumentException("Khối lượng quy đổi không hợp lệ.");
+        }
+
+        if (weight.compareTo(calWeight) != 0) {
+            throw new IllegalArgumentException(
+                    "Khối lượng không khớp với khối lượng đã tính trước đó"
+            );
+        }
     }
 }

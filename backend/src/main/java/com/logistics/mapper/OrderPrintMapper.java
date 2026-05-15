@@ -29,12 +29,16 @@ public class OrderPrintMapper {
                 barcodeTrackingNumber,
                 entity.getFromOffice() != null ? entity.getFromOffice().getPostalCode() : null,
                 qrcodeFromOffice,
-                entity.getSenderName(),
-                entity.getSenderPhone(),
-                entity.getSenderCityCode() != null ? String.valueOf(entity.getSenderCityCode()) : null,
-                entity.getSenderWardCode() != null ? String.valueOf(entity.getSenderWardCode()) : null,
-                entity.getSenderDetail(),
-                entity.getRecipientAddress() != null ? AddressMapper.toDto(entity.getRecipientAddress()) : null,
+                AddressMapper.toSummaryDto(
+                        entity.getSenderFullAddress(),
+                        entity.getSenderName(),
+                        entity.getSenderPhone()
+                ),
+                AddressMapper.toSummaryDto(
+                        entity.getRecipientFullAddress(),
+                        entity.getRecipientName(),
+                        entity.getRecipientPhone()
+                ),
                 Integer.valueOf((entity.getTotalFee() != null ? entity.getTotalFee() : 0)
                         + (entity.getCod() != null ? entity.getCod() : 0)),
                 entity.getWeight(),
