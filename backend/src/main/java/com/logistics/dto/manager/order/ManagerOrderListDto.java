@@ -20,10 +20,10 @@ public class ManagerOrderListDto {
     private String status;
     private String senderName;
     private String senderPhone;
-    private Integer senderCityCode;
-    private Integer senderWardCode;
-    private String senderDetail;
-    private AddressDto recipientAddress;
+    private String senderFullAddress;
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientFullAddress;
     private String pickupType;
     private BigDecimal weight;
     private BigDecimal adjustedWeight;

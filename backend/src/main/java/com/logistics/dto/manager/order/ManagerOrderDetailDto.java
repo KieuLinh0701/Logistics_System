@@ -24,12 +24,31 @@ public class ManagerOrderDetailDto {
     private String trackingNumber;
     private String status;
     private String createdByType;
+
+    private AddressDto senderAddress;
+    private int senderWardCode;
+    private int senderCityCode;
+    private String senderDetail;
     private String senderName;
     private String senderPhone;
-    private Integer senderCityCode;
-    private Integer senderWardCode;
-    private String senderDetail;
+    private String senderFullAddress;
+    private String senderCityName;
+    private String senderWardName;
+    private Double senderLatitude;
+    private Double senderLongitude;
+
     private AddressDto recipientAddress;
+    private int recipientWardCode;
+    private int recipientCityCode;
+    private String recipientDetail;
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientFullAddress;
+    private String recipientCityName;
+    private String recipientWardName;
+    private Double recipientLatitude;
+    private Double recipientLongitude;
+
     private String pickupType;
     private BigDecimal originalWeight;
     private BigDecimal height;

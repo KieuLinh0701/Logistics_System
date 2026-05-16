@@ -69,15 +69,20 @@ const ManagerOrderEdit: React.FC = () => {
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
     // Người gửi và người nhận
-    const [empty] = useState({
+    const createEmptyAddress = () => ({
         name: "",
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: "",
         cityCode: 0,
+        cityName: "",
+        latitude: 0,
+        longitude: 0,
     });
-    const [senderData, setSenderData] = useState(empty);
-    const [recipientData, setRecipientData] = useState(empty);
+
+    const [senderData, setSenderData] = useState(createEmptyAddress());
+    const [recipientData, setRecipientData] = useState(createEmptyAddress());
 
     // Biến kiểm tra xem địa chỉ người nhận có tỉnh thành nằm trong khu vực hoạt động không
     const [isHasOfficeRecipient, setIsHasOfficerRecipient] = useState(true);
@@ -144,15 +149,23 @@ const ManagerOrderEdit: React.FC = () => {
             phoneNumber: order.senderPhone || '',
             detail: order?.senderDetail || '',
             cityCode: order?.senderCityCode ?? 0,
-            wardCode: order?.senderWardCode ?? 0
+            cityName: order?.senderCityName || '',
+            wardCode: order?.senderWardCode ?? 0,
+            wardName: order?.senderWardName || '',
+            latitude: order?.senderLatitude || 0,
+            longitude: order?.senderLongitude || 0,
         });
 
         setRecipientData({
-            name: order.recipientAddress.name || '',
-            phoneNumber: order.recipientAddress.phoneNumber || '',
-            detail: order.recipientAddress.detail || '',
-            cityCode: order.recipientAddress.cityCode ?? 0,
-            wardCode: order.recipientAddress.wardCode ?? 0
+            name: order.recipientName || '',
+            phoneNumber: order.recipientPhone || '',
+            detail: order.recipientDetail || '',
+            cityCode: order.recipientCityCode ?? 0,
+            cityName: order?.recipientCityName || '',
+            wardCode: order?.recipientWardCode ?? 0,
+            wardName: order?.recipientWardName || '',
+            latitude: order?.recipientLatitude || 0,
+            longitude: order?.recipientLongitude || 0,
         });
 
         setSelectedServiceType(order.serviceType);
@@ -187,8 +200,8 @@ const ManagerOrderEdit: React.FC = () => {
             }
         }
 
-        if (changedValues.adjustedWeightOriginalWeight !== undefined) {
-            setAdjustedOriginalWeight(changedValues.adjustedWeightOriginalWeight)
+        if (changedValues.adjustedOriginalWeight !== undefined) {
+            setAdjustedOriginalWeight(changedValues.adjustedOriginalWeight)
         }
 
         if (changedValues.adjustedHeight !== undefined) {
@@ -309,19 +322,27 @@ const ManagerOrderEdit: React.FC = () => {
                 senderName: senderData.name,
                 senderPhone: senderData.phoneNumber,
                 senderCityCode: senderData.cityCode,
+                senderCityName: senderData.cityName,
                 senderDetail: senderData.detail,
                 senderWardCode: senderData.wardCode,
+                senderWardName: senderData.wardName,
+                senderLatitude: senderData.latitude,
+                senderLongitude: senderData.longitude,
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
-                recipientWardCode: recipientData.wardCode,
+                recipientCityName: recipientData.cityName,
                 recipientDetail: recipientData.detail,
+                recipientWardCode: recipientData.wardCode,
+                recipientWardName: recipientData.wardName,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
                 pickupType: pickupType,
-                weight: adjustedWeight,
-                originalWeight: adjustedOriginalWeight,
-                length: adjustedLength,
-                width: adjustedWidth,
-                height: adjustedHeight,
+                weight: adjustedWeight ?? weight,
+                originalWeight: adjustedOriginalWeight ?? originalWeight,
+                length: adjustedLength ?? length,
+                width: adjustedWidth ?? width,
+                height: adjustedHeight ?? height,
                 serviceTypeId: selectedServiceType?.id,
                 cod: codAmount || 0,
                 orderValue: orderValue || 0,
@@ -350,7 +371,7 @@ const ManagerOrderEdit: React.FC = () => {
 
     useEffect(() => {
         // chọn weight dùng để tính phí
-        const effectiveWeight = order?.adjustedWeight != null ? order?.adjustedWeight : weight;
+        const effectiveWeight = adjustedWeight != null ? order?.adjustedWeight : weight;
 
         const fetchShippingFee = async () => {
             const hasEnoughData =
@@ -517,14 +538,23 @@ const ManagerOrderEdit: React.FC = () => {
                                 status={order.status as OrderStatus}
                                 creator={order.createdByType as OrderCreatorType}
                                 onChange={(values) => {
-                                    setSenderData(prev => ({
-                                        ...prev,
-                                        name: values.name ?? prev.name,
-                                        phoneNumber: values.phoneNumber ?? prev.phoneNumber,
-                                        detail: values.sender?.detail ?? prev.detail,
-                                        wardCode: values.sender?.wardCode ?? prev.wardCode,
-                                        cityCode: values.sender?.cityCode ?? prev.cityCode,
-                                    }));
+                                    console.log("SenderInfo onChange values:", values);
+                                    setSenderData(prev => {
+                                        const next = {
+                                            ...prev,
+                                            name: values.name ?? prev.name,
+                                            phoneNumber: values.phoneNumber ?? prev.phoneNumber,
+                                            detail: values.sender?.detail ?? prev.detail,
+                                            wardCode: values.sender?.wardCode ?? prev.wardCode,
+                                            cityCode: values.sender?.cityCode ?? prev.cityCode,
+                                            cityName: values.sender?.cityName ?? prev.cityName,
+                                            wardName: values.sender?.wardName ?? prev.wardName,
+                                            latitude: values.sender?.latitude ?? prev.latitude,
+                                            longitude: values.sender?.longitude ?? prev.longitude,
+                                        };
+                                        if (JSON.stringify(next) === JSON.stringify(prev)) return prev;
+                                        return next;
+                                    });
                                 }}
                             />
 
@@ -534,14 +564,22 @@ const ManagerOrderEdit: React.FC = () => {
                                 status={order.status as OrderStatus}
                                 creator={order.createdByType as OrderCreatorType}
                                 onChange={(values) => {
-                                    setRecipientData(prev => ({
-                                        ...prev,
-                                        name: values.name ?? prev.name,
-                                        phoneNumber: values.phoneNumber ?? prev.phoneNumber,
-                                        detail: values.recipient?.detail ?? prev.detail,
-                                        wardCode: values.recipient?.wardCode ?? prev.wardCode,
-                                        cityCode: values.recipient?.cityCode ?? prev.cityCode,
-                                    }));
+                                    setRecipientData(prev => {
+                                        const next = {
+                                            ...prev,
+                                            name: values.name ?? prev.name,
+                                            phoneNumber: values.phoneNumber ?? prev.phoneNumber,
+                                            detail: values.recipient?.detail ?? prev.detail,
+                                            wardCode: values.recipient?.wardCode ?? prev.wardCode,
+                                            cityCode: values.recipient?.cityCode ?? prev.cityCode,
+                                            cityName: values.recipient?.cityName ?? prev.cityName,
+                                            wardName: values.recipient?.wardName ?? prev.wardName,
+                                            latitude: values.recipient?.latitude ?? prev.latitude,
+                                            longitude: values.recipient?.longitude ?? prev.longitude,
+                                        };
+                                        if (JSON.stringify(next) === JSON.stringify(prev)) return prev;
+                                        return next;
+                                    });
                                 }}
                             />
 
@@ -553,11 +591,11 @@ const ManagerOrderEdit: React.FC = () => {
                                 length={length}
                                 width={width}
                                 height={height}
-                                adjustedWeight={adjustedWeight ?? weight ?? undefined}
-                                adjustedLength={adjustedLength ?? length ?? undefined}
-                                adjustedOriginalWeight={adjustedOriginalWeight ?? originalWeight ?? undefined}
-                                adjustedHeight={adjustedHeight ?? height ?? undefined}
-                                adjustedWidth={adjustedWidth ?? width ?? undefined}
+                                adjustedWeight={adjustedWeight ?? undefined}
+                                adjustedLength={adjustedLength ?? undefined}
+                                adjustedWidth={adjustedWidth ?? undefined}
+                                adjustedHeight={adjustedHeight ?? undefined}
+                                adjustedOriginalWeight={adjustedOriginalWeight ?? undefined}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}

@@ -3,6 +3,7 @@ package com.logistics.controller.user;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
+import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -36,6 +37,13 @@ public class OrderUserController {
         return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
     }
 
+    @GetMapping("/status-counts")
+    public ResponseEntity<ApiResponse<List<UserOrderStatusCountResponse>>> getStatusCounts(
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.getStatusCounts(userId));
+    }
+
     @GetMapping("/all-ids")
     public ResponseEntity<ApiResponse<List<Integer>>> getAllOrderIds(
             @Valid UserOrderSearchRequest userOrderSearchRequest,
@@ -64,8 +72,9 @@ public class OrderUserController {
         return ResponseEntity.ok(service.updateOrder(userId, id, userOrderCreateRequest));
     }
 
-    @GetMapping("/{trackingNumber}")
-    public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderByTrackingNumber(@PathVariable String trackingNumber,
+    @GetMapping("/tracking/{trackingNumber}")
+    public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderByTrackingNumber(
+            @PathVariable String trackingNumber,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 

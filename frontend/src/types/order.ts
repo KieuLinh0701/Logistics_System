@@ -5,6 +5,7 @@ import type {PaymentSubmission} from "./paymentSubmission";
 import type {OrderProduct, OrderProductPrint, OrderProductRequest} from "./orderProduct";
 import type {Promotion} from "./promotion";
 import type {ServiceType} from "./serviceType";
+import type {ListResponse} from "./response.ts";
 
 export interface AdminOrder {
     id: number;
@@ -89,6 +90,12 @@ export interface Order {
     paymentSubmissions?: PaymentSubmission[];
 }
 
+export interface StatusCount {
+    status: string;
+    count: number;
+}
+
+
 export interface UserOrderSearchRequest {
     page: number;
     limit: number;
@@ -159,15 +166,23 @@ export interface ManagerOrderRequest {
     id?: number;
     code?: string;
     senderName: string;
+    senderPhone: string;
     senderDetail: string;
     senderWardCode: number;
+    senderWardName: string;
     senderCityCode: number;
-    senderPhone: string;
+    senderCityName: string;
+    senderLatitude: number;
+    senderLongitude: number;
     recipientName: string;
     recipientPhone: string;
     recipientCityCode: number;
+    recipientCityName: string;
     recipientWardCode: number;
+    recipientWardName: string;
     recipientDetail: string;
+    recipientLatitude: number;
+    recipientLongitude:number;
     weight: number;
     originalWeight: number;
     length: number;

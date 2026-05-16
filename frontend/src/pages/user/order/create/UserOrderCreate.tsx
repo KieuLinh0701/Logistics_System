@@ -137,6 +137,8 @@ const UserOrderCreate: React.FC = () => {
     const [fromOffice] = Form.useForm();
     const [orderInfo] = Form.useForm();
 
+    const [resetTrigger, setResetTrigger] = useState(0);
+
     // Khuyến mãi
     const fetchPromotions = async () => {
         setLoadingPromotion(true);
@@ -996,10 +998,16 @@ const UserOrderCreate: React.FC = () => {
             phoneNumber: "",
             recipient: {
                 cityCode: undefined,
+                cityName: '',
                 wardCode: undefined,
-                detail: ""
+                wardName: '',
+                detail: "",
+                latitude: undefined,
+                longitude: undefined,
             }
         });
+
+        setResetTrigger(prev => prev + 1);
     };
 
     const orderColumns = [
@@ -1177,6 +1185,7 @@ const UserOrderCreate: React.FC = () => {
                                 disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onSaveRecipientChange={(save) => setSaveRecipient(save)}
                                 onSavedAddressSelect={(id) => setSavedRecipientAddressId(id)}
+                                resetTrigger={resetTrigger}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({

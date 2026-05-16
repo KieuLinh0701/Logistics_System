@@ -1,5 +1,6 @@
 package com.logistics.service.user;
 
+import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.enums.AddressType;
 
 import java.math.BigDecimal;
@@ -15,8 +16,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.logistics.utils.AddressUtils;
+import com.logistics.utils.OrderFieldUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -175,6 +178,23 @@ public class OrderUserService {
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
         }
+    }
+
+    public ApiResponse<List<UserOrderStatusCountResponse>> getStatusCounts(Integer userId) {
+        List<Object[]> raw = repository.countByStatusForUser(userId);
+
+        List<UserOrderStatusCountResponse> counts = raw.stream()
+                .map(row -> new UserOrderStatusCountResponse(
+                        ((OrderStatus) row[0]).name(),
+                        (long) row[1]
+                ))
+                .collect(Collectors.toList());
+
+        long total = counts.stream().mapToLong(UserOrderStatusCountResponse::getCount).sum();
+        counts.add(0, new UserOrderStatusCountResponse("ALL", total));
+
+        return new ApiResponse<>(true, "Lấy số lượng theo trạng thái thành công", counts);
+
     }
 
     public ApiResponse<List<Integer>> getAllOrderIds(int userId, UserOrderSearchRequest request) {
@@ -1281,22 +1301,7 @@ public class OrderUserService {
             ,OrderStatus currentStatus,
             Consumer<T> setter) {
 
-        boolean changed;
-
-        if (oldValue instanceof List<?> oldList && newValue instanceof List<?> newList) {
-            changed = !listsEqual(oldList, newList);
-        } else if (oldValue instanceof Set<?> oldSet && newValue instanceof Set<?> newSet) {
-            changed = !setsEqual(oldSet, newSet);
-        } else if (oldValue instanceof Map<?, ?> oldMap && newValue instanceof Map<?, ?> newMap) {
-            changed = !mapsEqual(oldMap, newMap);
-        } else if (oldValue instanceof BigDecimal oldBd && newValue instanceof BigDecimal newBd) {
-            changed = oldBd.compareTo(newBd) != 0;
-        } else {
-            changed = !Objects.equals(oldValue, newValue);
-        }
-
-        if (changed) {
-            var rule = UserOrderEditRuleUtils.USER_ORDER_FIELD_EDIT_RULES.get(fieldName);
+        if (OrderFieldUtils.isChanged(oldValue, newValue)) {            var rule = UserOrderEditRuleUtils.USER_ORDER_FIELD_EDIT_RULES.get(fieldName);
             if (rule != null) {
                 // Nếu nonEditableStatuses chứa currentStatus → không được sửa
                 if (rule.getNonEditableStatuses() != null && !rule.getNonEditableStatuses().isEmpty()) {
@@ -1319,31 +1324,6 @@ public class OrderUserService {
 
             setter.accept(newValue);
         }
-    }
-
-    // Hàm so sánh List
-    private boolean listsEqual(List<?> a, List<?> b) {
-        if (a == null)
-            a = List.of();
-        if (b == null)
-            b = List.of();
-        return a.equals(b);
-    }
-
-    private boolean setsEqual(Set<?> oldSet, Set<?> newSet) {
-        if (oldSet == null && newSet == null)
-            return true;
-        if (oldSet == null || newSet == null)
-            return false;
-        return oldSet.equals(newSet);
-    }
-
-    private boolean mapsEqual(Map<?, ?> oldMap, Map<?, ?> newMap) {
-        if (oldMap == null && newMap == null)
-            return true;
-        if (oldMap == null || newMap == null)
-            return false;
-        return oldMap.equals(newMap);
     }
 
     // --- Hàm validate trước khi publish DRAFT sang PENDING ---

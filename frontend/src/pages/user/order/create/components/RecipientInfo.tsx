@@ -21,6 +21,7 @@ interface Props {
         longitude: number;
         fullAddress: string;
     };
+    resetTrigger?: number;
     disabled: boolean;
     onChange?: (values: any) => void;
     onSaveRecipientChange?: (save: boolean) => void;
@@ -50,7 +51,7 @@ function snapshotFields(values: {
 }
 
 const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
-                                                               form, recipient, disabled, onChange, onSaveRecipientChange, onSavedAddressSelect,
+                                                               form, recipient, disabled, onChange, onSaveRecipientChange, onSavedAddressSelect, resetTrigger,
                                                            }, ref) => {
     const watchedName        = Form.useWatch("name", form);
     const watchedPhone       = Form.useWatch("phoneNumber", form);
@@ -383,6 +384,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                                     prefix="recipient"
                                     disableCity={disabled}
                                     disableDetailAddress={disabled}
+                                    resetTrigger={resetTrigger}
                                 />
                             </Col>
                         </Row>

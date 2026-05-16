@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, Col, Form, Input, Row } from "antd";
 import type { FormInstance } from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
@@ -10,38 +10,48 @@ interface Props {
         phoneNumber: string;
         detail: string;
         wardCode: number;
+        wardName: string;
         cityCode: number;
+        cityName: string;
+        latitude: number;
+        longitude: number;
     };
+    resetTrigger?: number;
     onChange?: (values: any) => void;
 }
 
-const RecipientInfo: React.FC<Props> = ({
-    form,
-    recipient,
-    onChange
-}) => {
+const RecipientInfo: React.FC<Props> = ({ form, recipient, onChange, resetTrigger }) => {
+    const watchedName      = Form.useWatch("name", form);
+    const watchedPhone     = Form.useWatch("phoneNumber", form);
+    const watchedRecipient = Form.useWatch("recipient", form);
+
+    useEffect(() => {
+        onChange?.(form.getFieldsValue(true));
+    }, [watchedName, watchedPhone, watchedRecipient]);
+
     return (
         <div className="create-order-card-container">
             <Form
                 form={form}
                 layout="vertical"
                 initialValues={{
-                    recipientName: recipient.name,
-                    recipientPhone: recipient.phoneNumber,
+                    name: recipient.name,
+                    phoneNumber: recipient.phoneNumber,
                     recipient: {
                         cityCode: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
+                        cityName: recipient.cityName !== "" ? recipient.cityName : undefined,
                         wardCode: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
+                        wardName: recipient.wardName !== "" ? recipient.wardName : undefined,
+                        latitude: recipient.latitude !== 0 ? recipient.latitude : undefined,
+                        longitude: recipient.longitude !== 0 ? recipient.longitude : undefined,
                         detail: recipient.detail,
-                    }
-                }}
-                onValuesChange={(_, allValues) => {
-                    onChange?.(allValues);
+                    },
                 }}
             >
                 <Card className="create-order-custom-card">
                     <div className="create-order-custom-card-title">Thông tin người nhận</div>
                     <div className="create-order-content">
-                        <Row gutter={16} >
+                        <Row gutter={16}>
                             <Col span={12}>
                                 <Form.Item
                                     name="name"
@@ -50,7 +60,8 @@ const RecipientInfo: React.FC<Props> = ({
                                 >
                                     <Input
                                         className="modal-custom-input"
-                                        placeholder="Nhập tên người nhận" />
+                                        placeholder="Nhập tên người nhận"
+                                    />
                                 </Form.Item>
 
                                 <Form.Item
@@ -66,7 +77,8 @@ const RecipientInfo: React.FC<Props> = ({
                                 >
                                     <Input
                                         className="modal-custom-input"
-                                        placeholder="Ví dụ: 0901234567" />
+                                        placeholder="Ví dụ: 0901234567"
+                                    />
                                 </Form.Item>
                             </Col>
 
@@ -74,6 +86,7 @@ const RecipientInfo: React.FC<Props> = ({
                                 <AddressForm
                                     form={form}
                                     prefix="recipient"
+                                    resetTrigger={resetTrigger}
                                 />
                             </Col>
                         </Row>
