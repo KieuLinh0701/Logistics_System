@@ -7,6 +7,7 @@ export interface SettlementTransaction {
     type: string;
     status: string;
     paidAt: string;
+    createdAt: string;
 
     bankName: string;
     accountNumber: string;

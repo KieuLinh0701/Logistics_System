@@ -2,16 +2,16 @@ package com.logistics.controller.user;
 
 import java.util.List;
 
+import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.logistics.dto.user.UserSettlementBatchListDto;
-import com.logistics.dto.user.UserSettlementOrderDto;
-import com.logistics.dto.user.UserSettlementTransactionDto;
+import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
+import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
 import com.logistics.request.SearchRequest;
-import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.SettlementBatchUserService;
@@ -26,88 +26,85 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/api/user/settlement-batchs")
 public class SettlementBatchUserController {
 
-        @Autowired
-        private SettlementBatchUserService service;
+    @Autowired
+    private SettlementBatchUserService service;
 
-        @GetMapping()
-        public ResponseEntity<ApiResponse<ListResponse<UserSettlementBatchListDto>>> list(
-                        @Valid SearchRequest searchRequest,
-                        HttpServletRequest request) {
-                Integer userId = (Integer) request.getAttribute("currentUserId");
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<UserSettlementSummaryResponse>> getSummary(HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.getSummary(userId));
+    }
 
-                ApiResponse<ListResponse<UserSettlementBatchListDto>> result = service.list(userId,
-                                searchRequest);
-                return ResponseEntity.ok(result);
-        }
+    @GetMapping()
+    public ResponseEntity<ApiResponse<ListResponse<UserSettlementBatchListDto>>> list(
+            @Valid SearchRequest searchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        @GetMapping("/all-ids")
-        public ResponseEntity<ApiResponse<List<Integer>>> getAllIds(
-                        @Valid SearchRequest searchRequest,
-                        HttpServletRequest request) {
-                Integer userId = (Integer) request.getAttribute("currentUserId");
+        ApiResponse<ListResponse<UserSettlementBatchListDto>> result = service.list(userId,
+                searchRequest);
+        return ResponseEntity.ok(result);
+    }
 
-                return ResponseEntity.ok(service.getAllIds(userId, searchRequest));
-        }
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserSettlementBatchListDto>> getBySettlementBatchId(
+            @PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        @GetMapping("/{id}")
-        public ResponseEntity<ApiResponse<UserSettlementBatchListDto>> getBySettlementBatchId(
-                        @PathVariable Integer id,
-                        HttpServletRequest request) {
-                Integer userId = (Integer) request.getAttribute("currentUserId");
+        ApiResponse<UserSettlementBatchListDto> result = service.getBySettlementBatchId(
+                userId,
+                id);
+        return ResponseEntity.ok(result);
+    }
 
-                ApiResponse<UserSettlementBatchListDto> result = service.getBySettlementBatchId(
-                                userId,
-                                id);
-                return ResponseEntity.ok(result);
-        }
+    @GetMapping("/{id}/orders")
+    public ResponseEntity<ApiResponse<ListResponse<UserSettlementOrderDto>>> getOrdersBySettlementBatchId(
+            @PathVariable Integer id,
+            @Valid SearchRequest searchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        @GetMapping("/{id}/orders")
-        public ResponseEntity<ApiResponse<ListResponse<UserSettlementOrderDto>>> getOrdersBySettlementBatchId(
-                        @PathVariable Integer id,
-                        @Valid SearchRequest searchRequest,
-                        HttpServletRequest request) {
-                Integer userId = (Integer) request.getAttribute("currentUserId");
+        ApiResponse<ListResponse<UserSettlementOrderDto>> result = service.getOrdersBySettlementBatchId(
+                userId,
+                id,
+                searchRequest);
+        return ResponseEntity.ok(result);
+    }
 
-                ApiResponse<ListResponse<UserSettlementOrderDto>> result = service.getOrdersBySettlementBatchId(
-                                userId,
-                                id,
-                                searchRequest);
-                return ResponseEntity.ok(result);
-        }
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<ApiResponse<List<UserSettlementTransactionDto>>> getSettlementTransactionsBySettlementBatchId(
+            @PathVariable Integer id,
+            @Valid SearchRequest searchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        @GetMapping("/{id}/transactions")
-        public ResponseEntity<ApiResponse<List<UserSettlementTransactionDto>>> getSettlementTransactionsBySettlementBatchId(
-                        @PathVariable Integer id,
-                        @Valid SearchRequest searchRequest,
-                        HttpServletRequest request) {
-                Integer userId = (Integer) request.getAttribute("currentUserId");
+        ApiResponse<List<UserSettlementTransactionDto>> result = service
+                .getSettlementTransactionsBySettlementBatchId(
+                        userId,
+                        id);
+        return ResponseEntity.ok(result);
+    }
 
-                ApiResponse<List<UserSettlementTransactionDto>> result = service
-                                .getSettlementTransactionsBySettlementBatchId(
-                                                userId,
-                                                id);
-                return ResponseEntity.ok(result);
-        }
+    // @GetMapping("/export")
+    // public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
+    // SearchRequest searchRequest) throws Exception {
 
-        // @GetMapping("/export")
-        // public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
-        // SearchRequest searchRequest) throws Exception {
+    // Integer userId = (Integer) request.getAttribute("currentUserId");
+    // byte[] data = service.export(userId, searchRequest);
 
-        // Integer userId = (Integer) request.getAttribute("currentUserId");
-        // byte[] data = service.export(userId, searchRequest);
+    // String fileName = "UTE Logistics_Báo cáo phiên đối soát.xlsx";
+    // String encodedFileName = URLEncoder.encode(fileName,
+    // StandardCharsets.UTF_8.toString())
+    // .replaceAll("\\+", "%20");
 
-        // String fileName = "UTE Logistics_Báo cáo phiên đối soát.xlsx";
-        // String encodedFileName = URLEncoder.encode(fileName,
-        // StandardCharsets.UTF_8.toString())
-        // .replaceAll("\\+", "%20");
+    // HttpHeaders headers = new HttpHeaders();
+    // headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+    // headers.add(HttpHeaders.CONTENT_DISPOSITION,
+    // "attachment; filename*=UTF-8''" + encodedFileName);
 
-        // HttpHeaders headers = new HttpHeaders();
-        // headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        // headers.add(HttpHeaders.CONTENT_DISPOSITION,
-        // "attachment; filename*=UTF-8''" + encodedFileName);
-
-        // return ResponseEntity.ok()
-        // .headers(headers)
-        // .body(data);
-        // }
+    // return ResponseEntity.ok()
+    // .headers(headers)
+    // .body(data);
+    // }
 }

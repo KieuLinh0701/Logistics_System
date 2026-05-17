@@ -1,4 +1,4 @@
-package com.logistics.dto.user;
+package com.logistics.dto.user.settlement;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,4 +22,5 @@ public class UserSettlementTransactionDto {
     private String accountName;
     private String accountNumber;
     private LocalDateTime paidAt;
+    private LocalDateTime createdAt;
 }

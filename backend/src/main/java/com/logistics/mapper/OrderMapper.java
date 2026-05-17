@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
-import com.logistics.dto.user.UserSettlementOrderDto;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.entity.Order;

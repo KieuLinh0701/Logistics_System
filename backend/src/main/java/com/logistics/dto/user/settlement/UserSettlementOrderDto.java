@@ -1,4 +1,4 @@
-package com.logistics.dto.user;
+package com.logistics.dto.user.settlement;
 
 import java.time.LocalDateTime;
 

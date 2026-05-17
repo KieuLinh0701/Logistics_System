@@ -4,22 +4,19 @@ export const canPayUserSettlementBatch = (
   batch: SettlementBatch
 ): boolean => {
   return (
-    ['PENDING', 'PARTIAL', 'FAILED'].includes(batch.status) &&
+    ['PENDING', 'FAILED'].includes(batch.status) &&
     batch.remainAmount > 0 && batch.balanceAmount < 0
   );
 };
 
 export const SETTLEMENT_BATCH_STATUSES = [
   'PENDING',
-  'PARTIAL',
   'COMPLETED',
   'FAILED'] as const;
 export const translateSettlementBatchStatus = (value: string): string => {
   switch (value) {
     case 'PENDING':
       return 'Chờ chuyển tiền';
-    case 'PARTIAL':
-      return 'Chuyển tiền một phần';
     case 'COMPLETED':
       return 'Đã chuyển tiền';
     case 'FAILED':

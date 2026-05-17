@@ -1,14 +1,11 @@
 package com.logistics.mapper;
 
-import java.math.BigDecimal;
-
-import com.logistics.dto.user.UserSettlementBatchListDto;
+import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
 import com.logistics.entity.SettlementBatch;
 
 public class SettlementBatchMapper {
 
-    public static UserSettlementBatchListDto toListDtos(SettlementBatch entity,
-    BigDecimal remainAmount) {
+    public static UserSettlementBatchListDto toListDtos(SettlementBatch entity) {
         if (entity == null)
             return null;
 
@@ -20,7 +17,6 @@ public class SettlementBatchMapper {
         dto.setStatus(entity.getStatus().name());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
-        dto.setRemainAmount(remainAmount);
 
         return dto;
     }

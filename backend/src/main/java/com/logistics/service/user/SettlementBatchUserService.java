@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,16 +12,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import com.logistics.dto.user.UserSettlementBatchListDto;
-import com.logistics.dto.user.UserSettlementOrderDto;
-import com.logistics.dto.user.UserSettlementTransactionDto;
+import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
+import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
 import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
 import com.logistics.entity.Order;
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.SettlementStatus;
-import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.SettlementBatchMapper;
 import com.logistics.mapper.SettlementTransactionMapper;
@@ -48,6 +48,37 @@ public class SettlementBatchUserService {
 
     private final UserSettlementScheduleUserService scheduleUserService;
 
+    public ApiResponse<UserSettlementSummaryResponse> getSummary(Integer userId) {
+        try {
+            List<SettlementBatch> batches = batchRepository.findByShop_Id(userId);
+
+            BigDecimal received = batches.stream()
+                    .filter(b -> b.getStatus() == SettlementStatus.COMPLETED
+                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
+                    .map(SettlementBatch::getBalanceAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal pending = batches.stream()
+                    .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
+                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
+                    .map(SettlementBatch::getBalanceAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal debt = batches.stream()
+                    .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
+                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) < 0)
+                    .map(b -> b.getBalanceAmount().abs().subtract(b.getPaidAmount()))
+                    .filter(r -> r.compareTo(BigDecimal.ZERO) > 0)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            return new ApiResponse<>(true, "Lấy tổng quan đối soát thành công",
+                    new UserSettlementSummaryResponse(received, pending, debt));
+
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
     public ApiResponse<ListResponse<UserSettlementBatchListDto>> list(
             Integer userId, SearchRequest request) {
         try {
@@ -57,10 +88,7 @@ public class SettlementBatchUserService {
 
             List<UserSettlementBatchListDto> list = pageData.getContent()
                     .stream()
-                    .map(batch -> {
-                        BigDecimal remainAmount = calculateRemainAmount(batch);
-                        return SettlementBatchMapper.toListDtos(batch, remainAmount);
-                    })
+                    .map(SettlementBatchMapper::toListDtos)
                     .toList();
 
             Pagination pagination = new Pagination(
@@ -74,29 +102,6 @@ public class SettlementBatchUserService {
             data.setPagination(pagination);
 
             return new ApiResponse<>(true, "Lấy danh sách phiên đối soát thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
-    }
-
-    public ApiResponse<List<Integer>> getAllIds(int userId, SearchRequest request) {
-        try {
-            Specification<SettlementBatch> spec = SettlementBatchSpecification.unrestricted()
-                    .and(SettlementBatchSpecification.userId(userId))
-                    .and(SettlementBatchSpecification.search(request.getSearch()))
-                    .and(SettlementBatchSpecification.createdAtBetween(
-                            parseDate(request.getStartDate()),
-                            parseDate(request.getEndDate())))
-                    .and((root, query, cb) -> cb.notEqual(root.get("status"), "COMPLETED"))
-                    .and((root, query, cb) -> cb.lessThan(root.get("balanceAmount"), 0));
-
-            List<SettlementBatch> batches = batchRepository.findAll(spec);
-
-            List<Integer> batchIds = batches.stream()
-                    .map(SettlementBatch::getId)
-                    .toList();
-
-            return new ApiResponse<>(true, "Lấy toàn bộ ID phiên đối soát thành công", batchIds);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
@@ -117,24 +122,6 @@ public class SettlementBatchUserService {
                         parseDate(request.getEndDate())));
 
         return batchRepository.findAll(spec, pageable);
-    }
-
-    private BigDecimal calculateRemainAmount(SettlementBatch batch) {
-
-        BigDecimal balance = batch.getBalanceAmount();
-        if (balance == null) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal paidAmount = transactionRepository.sumAmountByBatchAndStatus(
-                batch.getId(),
-                SettlementTransactionStatus.SUCCESS);
-
-        if (paidAmount == null) {
-            paidAmount = BigDecimal.ZERO;
-        }
-
-        return balance.abs().subtract(paidAmount);
     }
 
     private Sort buildSort(String sort) {
@@ -244,8 +231,7 @@ public class SettlementBatchUserService {
             if (batch == null) {
                 return new ApiResponse<>(false, "Không tìm thấy phiên đối soát của bạn", null);
             }
-            BigDecimal remainAmount = calculateRemainAmount(batch);
-            UserSettlementBatchListDto dto = SettlementBatchMapper.toListDtos(batch, remainAmount);
+            UserSettlementBatchListDto dto = SettlementBatchMapper.toListDtos(batch);
 
             return new ApiResponse<>(true, "Lấy thông tin phiên đối soát thành công", dto);
 
@@ -284,15 +270,6 @@ public class SettlementBatchUserService {
                     || b.getStatus() == SettlementStatus.FAILED) {
 
                 totalDebt = totalDebt.add(originalDebt);
-            }
-
-            else if (b.getStatus() == SettlementStatus.PARTIAL) {
-                BigDecimal paid = transactionRepository
-                        .sumPaidDebtByBatch(b.getId());
-
-                BigDecimal remaining = originalDebt.subtract(paid).max(BigDecimal.ZERO);
-
-                totalDebt = totalDebt.add(remaining);
             }
         }
 

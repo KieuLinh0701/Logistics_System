@@ -1,4 +1,4 @@
-package com.logistics.service.settlement;
+package com.logistics.scheduler.settlement;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -28,7 +28,7 @@ public class SettlementBatchSchedulerService {
     private final UserSettlementScheduleRepository scheduleRepository;
     private final NotificationService notificationService;
 
-    // @Scheduled(cron = "0 * * * * ?") 
+    // @Scheduled(cron = "0 * * * * ?")
     @Scheduled(cron = "0 0 20 * * ?") // 20:00 mỗi ngày
     @Transactional
     public void createDailySettlementBatch() {
@@ -45,7 +45,10 @@ public class SettlementBatchSchedulerService {
             // Lấy các đơn hàng DELIVERED / RETURNED mà chưa có settlementBatch
             List<Order> orders = orderRepository.findByUserAndSettlementBatchIsNullAndStatusIn(
                     shop,
-                    List.of(OrderStatus.DELIVERED, OrderStatus.RETURNED));
+                    List.of(
+                            OrderStatus.DELIVERED,
+                            OrderStatus.RETURNED
+                    ));
 
             if (orders.isEmpty())
                 continue;
@@ -85,7 +88,7 @@ public class SettlementBatchSchedulerService {
                 if (!validCOD)
                     continue;
 
-                BigDecimal codAmount = BigDecimal.valueOf(order.getCod());
+                BigDecimal codAmount;
                 if (order.getStatus() == OrderStatus.RETURNED &&
                         order.getPaymentStatus() == OrderPaymentStatus.UNPAID) {
                     codAmount = BigDecimal.valueOf(-order.getTotalFee());
@@ -110,9 +113,26 @@ public class SettlementBatchSchedulerService {
             batch.setBalanceAmount(totalCOD);
             batchRepository.save(batch);
 
+            // Lấy tất cả batch PENDING/FAILED cũ của shop
+            List<SettlementBatch> oldDebtBatches = batchRepository.findByShopAndStatusInOrderByCreatedAtAsc(
+                    shop,
+                    List.of(
+                            SettlementStatus.PENDING,
+                            SettlementStatus.FAILED
+                    ));
+
+            // Tính tổng nợ cũ còn lại (đã trừ paidAmount)
+            BigDecimal totalOldDebt = oldDebtBatches.stream()
+                    .map(b -> b.getBalanceAmount().abs().subtract(b.getPaidAmount()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Net = batch mới + khấu trừ nợ cũ
+            BigDecimal net = totalCOD.subtract(totalOldDebt);
+
             // Nếu tổng COD > 0 thì tạo transaction giả lập SYSTEM -> SHOP
             SettlementTransaction transaction = null;
-            if (totalCOD.compareTo(BigDecimal.ZERO) > 0) {
+            if (net.compareTo(BigDecimal.ZERO) > 0) {
+                // Hệ thống chuyển tiền cho shop phần chênh lệch
                 BankAccount defaultBank = bankAccountRepository.findDefaultByUser(shop);
 
                 transaction = new SettlementTransaction();
@@ -124,40 +144,87 @@ public class SettlementBatchSchedulerService {
                 transaction.setAccountNumber(defaultBank.getAccountNumber());
                 transaction.setAccountName(defaultBank.getAccountName());
                 transaction.setPaidAt(LocalDateTime.now());
-
                 transactionRepository.save(transaction);
-            }
 
-            if (totalCOD.compareTo(BigDecimal.ZERO) > 0) {
-                if (transaction != null
-                        && transaction.getStatus() == SettlementTransactionStatus.SUCCESS) {
-                    batch.setStatus(SettlementStatus.COMPLETED);
-                } else {
-                    batch.setStatus(SettlementStatus.FAILED);
+                // Batch mới COMPLETED
+                batch.setPaidAmount(totalCOD);
+                batch.setStatus(SettlementStatus.COMPLETED);
+                batchRepository.save(batch);
+
+                // Mark tất cả batch nợ cũ COMPLETED vì đã khấu trừ hết
+                for (SettlementBatch old : oldDebtBatches) {
+                    old.setPaidAmount(old.getBalanceAmount().abs());
+                    old.setStatus(SettlementStatus.COMPLETED); // ------ CHỖ NÀY SAO K PHỈ LÀ KHẤU TRỪ NHỈ
+                    batchRepository.save(old);
+
+                    // Cập nhật order của batch cũ → PAID
+                    updateOrdersCompleted(old.getOrders());
                 }
-            }
 
-            for (Order order : orders) {
-                if (order.getSettlementBatch() != null && order.getSettlementBatch().getId().equals(batch.getId())) {
+                // Cập nhật order của batch mới → PAID
+                updateOrdersCompleted(orders);
+            } else if (net.compareTo(BigDecimal.ZERO) < 0) {
+                // Shop vẫn còn nợ sau khi khấu trừ
+                // Batch mới dùng để khấu trừ nợ cũ trước
+                BigDecimal remaining = totalCOD; // phần batch mới dùng để khấu trừ
+                for (SettlementBatch old : oldDebtBatches) {
+                    if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
 
-                    order.setCodStatus(OrderCodStatus.TRANSFERRED);
+                    BigDecimal oldRemain = old.getBalanceAmount().abs().subtract(old.getPaidAmount());
+                    if (oldRemain.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-                    if (order.getPaymentStatus() != OrderPaymentStatus.PAID &&
-                            ((transaction != null && transaction.getStatus() == SettlementTransactionStatus.SUCCESS)
-                                    || totalCOD.compareTo(BigDecimal.ZERO) >= 0)) {
-                        order.setPaymentStatus(OrderPaymentStatus.PAID);
-                        order.setPaidAt(LocalDateTime.now());
+                    if (remaining.compareTo(oldRemain) >= 0) {
+                        // Khấu trừ hết batch này
+                        old.setPaidAmount(old.getBalanceAmount().abs());
+                        old.setStatus(SettlementStatus.COMPLETED);
+                        remaining = remaining.subtract(oldRemain);
+
+                        // Cập nhật order của batch cũ → PAID
+                        updateOrdersCompleted(old.getOrders());
+                    } else {
+                        // Khấu trừ 1 phần
+                        old.setPaidAmount(old.getPaidAmount()
+                                .add(remaining));
+                        remaining = BigDecimal.ZERO;
                     }
-
-                    orderRepository.save(order);
+                    batchRepository.save(old);
                 }
+                // Batch mới PENDING — shop còn nợ |net|
+                batch.setPaidAmount(BigDecimal.ZERO);
+                batch.setStatus(SettlementStatus.PENDING);
+                batchRepository.save(batch);
+            } else {
+                batch.setPaidAmount(totalCOD);
+                batch.setStatus(SettlementStatus.COMPLETED);
+                batchRepository.save(batch);
+
+                for (SettlementBatch old : oldDebtBatches) {
+                    old.setPaidAmount(old.getBalanceAmount().abs());
+                    old.setStatus(SettlementStatus.COMPLETED);
+                    batchRepository.save(old);
+                    updateOrdersCompleted(old.getOrders());
+                }
+
+                updateOrdersCompleted(orders);
             }
+
+            String notifMessage = net.compareTo(BigDecimal.ZERO) > 0
+                    ? String.format(
+                            "Phiên đối soát #%s đã hoàn thành. Hệ thống đã chuyển %s₫ vào tài khoản của bạn.",
+                            batch.getCode(),
+                            net.toPlainString())
+                    : net.compareTo(BigDecimal.ZERO) < 0
+                            ? String.format(
+                                    "Phiên đối soát #%s đã được tạo. Bạn còn nợ %s₫ sau khi khấu trừ. Vui lòng thanh toán sớm.",
+                                    batch.getCode(),
+                                    net.abs().toPlainString())
+                            : String.format(
+                                    "Phiên đối soát #%s đã được bù trừ hoàn toàn.",
+                                    batch.getCode());
 
             notificationService.create(
                     "Phiên đối soát theo lịch đã được tạo",
-                    String.format(
-                            "Phiên đối soát #%s của bạn đã được tạo. Tổng COD và phí dịch vụ đã được ghi nhận. Vui lòng xem chi tiết trong hệ thống.",
-                            batch.getCode()),
+                    notifMessage,
                     "settlement_batch",
                     shop.getId(),
                     null,
@@ -168,5 +235,18 @@ public class SettlementBatchSchedulerService {
         }
 
         System.out.println("Finished creating automatic settlement batch.");
+    }
+
+    private void updateOrdersCompleted(List<Order> orders) {
+        if (orders == null) return;
+        LocalDateTime now = LocalDateTime.now();
+        for (Order order : orders) {
+            order.setCodStatus(OrderCodStatus.TRANSFERRED);
+            if (order.getPaymentStatus() != OrderPaymentStatus.PAID) {
+                order.setPaymentStatus(OrderPaymentStatus.PAID);
+                order.setPaidAt(now);
+            }
+            orderRepository.save(order);
+        }
     }
 }

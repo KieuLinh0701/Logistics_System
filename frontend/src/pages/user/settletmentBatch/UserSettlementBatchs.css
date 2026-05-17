@@ -15,3 +15,85 @@
 .manager-batchs-payment-modal-amount-text {
     font-size: 18px;
 }
+
+.settlement-summary-wrap {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 0 30px 30px 30px;
+    margin-top: 20px;
+    margin-bottom: 4px;
+}
+
+.settlement-summary-cards {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.settlement-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 160px;
+}
+
+.ss-divider {
+    width: 1px;
+    height: 40px;
+    background: #f0f0f0;
+    flex-shrink: 0;
+}
+
+.ss-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.ss-icon.blue  { background: #e6f4ff; color: #1677ff; }
+.ss-icon.amber { background: #fff7e6; color: #fa8c16; }
+.ss-icon.red   { background: #fff2f0; color: #ff4d4f; }
+.ss-icon.green { background: #f6ffed; color: #52c41a; }
+
+.ss-amount {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 2px;
+    color: #1C3D90;
+}
+
+.ss-amount.amber { color: #fa8c16; }
+.ss-amount.red   { color: #ff4d4f; }
+.ss-amount.green { color: #52c41a; }
+
+.ss-label {
+    font-size: 11px;
+    color: #aaa;
+    margin: 0;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ss-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    font-size: 10px;
+    color: #aaa;
+    cursor: pointer;
+    line-height: 1;
+}

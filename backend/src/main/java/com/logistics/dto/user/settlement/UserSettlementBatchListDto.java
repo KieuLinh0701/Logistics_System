@@ -1,4 +1,4 @@
-package com.logistics.dto.user;
+package com.logistics.dto.user.settlement;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,7 +16,6 @@ public class UserSettlementBatchListDto {
     private Integer id;
     private String code;
     private BigDecimal balanceAmount;
-    private BigDecimal remainAmount;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
