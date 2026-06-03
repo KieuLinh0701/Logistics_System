@@ -411,6 +411,82 @@
   display: none !important;
 }
 
+/* Vehicle Settings Tab */
+.vehicle-settings-tab {
+  padding-top: 10px;
+}
+
+.vehicle-settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.vehicle-settings-title {
+  color: #1c3d90 !important;
+  margin-bottom: 6px !important;
+}
+
+.vehicle-settings-summary {
+  background: #f5f7fb;
+  border: 1px solid #eef1f5;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.vehicle-settings-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.vehicle-settings-summary-item {
+  background: #ffffff;
+  border: 1px solid #eef1f5;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.vehicle-settings-summary-value {
+  margin-top: 6px;
+  font-weight: 600;
+  color: #1c3d90;
+}
+
+.vehicle-settings-progress-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.vehicle-settings-progress-item {
+  background: #ffffff;
+  border: 1px solid #eef1f5;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.vehicle-settings-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.vehicle-settings-alert {
+  margin: 12px 0;
+}
+
+.vehicle-settings-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .profile-settings-container {
@@ -499,6 +575,11 @@
   .btn-primary {
     min-width: 160px;
     padding: 10px 24px;
+  }
+
+  .vehicle-settings-header {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 

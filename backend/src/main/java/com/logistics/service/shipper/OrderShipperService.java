@@ -8,6 +8,7 @@ import com.logistics.entity.PaymentSubmission;
 import com.logistics.entity.PaymentSubmissionItem;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.User;
+import com.logistics.entity.ShipperVehicle;
 import com.logistics.enums.IncidentPriority;
 import com.logistics.enums.IncidentStatus;
 import com.logistics.enums.IncidentType;
@@ -41,8 +42,13 @@ import com.logistics.service.common.ConfigService;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.repository.OrderProductRepository;
+import com.logistics.repository.AiRoutePlanRouteRepository;
+import com.logistics.repository.ShipperVehicleRepository;
 import com.logistics.service.assignment.AutoAssignService;
 import com.logistics.entity.OrderProduct;
+import com.logistics.entity.AiRoutePlanRoute;
+import com.logistics.entity.AiRoutePlanStop;
+import com.logistics.enums.AiRoutePlanStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -51,6 +57,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -98,6 +105,12 @@ public class OrderShipperService {
     @Autowired
     private AddressRepository addressRepository;
 
+    @Autowired
+    private AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
+
+    @Autowired
+    private ShipperVehicleRepository shipperVehicleRepository;
+
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
         OrderHistory history = new OrderHistory();
         history.setOrder(order);
@@ -116,6 +129,83 @@ public class OrderShipperService {
             throw new RuntimeException("Không tìm thấy thông tin nhân viên (shipper)");
         }
         return employees.get(0);
+    }
+
+    private ShipperVehicle getOrCreateVehicle(Employee employee) {
+        return shipperVehicleRepository.findByShipperId(employee.getId())
+                .orElseGet(() -> {
+                    ShipperVehicle vehicle = new ShipperVehicle();
+                    vehicle.setShipper(employee);
+                    vehicle.setVehicleType(com.logistics.enums.ShipperVehicleType.MOTORBIKE);
+                    vehicle.setMaxOrders(20);
+                    vehicle.setMaxWeightKg(35);
+                    vehicle.setCurrentOrders(0);
+                    vehicle.setCurrentWeightKg(BigDecimal.ZERO);
+                    vehicle.setBatteryLevel(null);
+                    vehicle.setStatus(com.logistics.enums.ShipperVehicleStatus.ACTIVE);
+                    vehicle.setNotes("Auto-created default vehicle");
+                    return shipperVehicleRepository.save(vehicle);
+                });
+    }
+
+    private BigDecimal normalizeWeight(BigDecimal value) {
+        if (value == null || value.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO;
+        }
+        return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calculateReturnedWeightKg(Order order) {
+        List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(order.getId());
+        BigDecimal returnedWeight = BigDecimal.ZERO;
+        for (OrderProduct op : products) {
+            if (op.getReturnedQuantity() == null || op.getReturnedQuantity() <= 0) {
+                continue;
+            }
+            BigDecimal unitWeight = op.getProduct() != null && op.getProduct().getWeight() != null
+                    ? op.getProduct().getWeight()
+                    : BigDecimal.ZERO;
+            returnedWeight = returnedWeight.add(unitWeight.multiply(BigDecimal.valueOf(op.getReturnedQuantity())));
+        }
+        return normalizeWeight(returnedWeight);
+    }
+
+    private void applyVehicleWorkloadByStatus(Order order, Employee employee, OrderStatus newStatus) {
+        if (order == null || employee == null || newStatus == null) {
+            return;
+        }
+        ShipperVehicle vehicle = getOrCreateVehicle(employee);
+        int currentOrders = vehicle.getCurrentOrders() != null ? vehicle.getCurrentOrders() : 0;
+        BigDecimal currentWeightKg = normalizeWeight(vehicle.getCurrentWeightKg());
+        BigDecimal orderWeightKg = normalizeWeight(order.getWeight());
+
+        switch (newStatus) {
+            case PICKED_UP -> {
+                currentOrders += 1;
+                currentWeightKg = currentWeightKg.add(orderWeightKg);
+            }
+            case DELIVERED -> {
+                currentOrders = Math.max(0, currentOrders - 1);
+                currentWeightKg = currentWeightKg.subtract(orderWeightKg);
+            }
+            case PARTIAL_DELIVERY, PARTIAL_RETURN -> {
+                currentOrders = Math.max(0, currentOrders);
+                currentWeightKg = calculateReturnedWeightKg(order);
+            }
+            case FAILED_DELIVERY -> {
+                // Keep workload unchanged because package is still on vehicle.
+            }
+            default -> {
+                return;
+            }
+        }
+
+        if (currentWeightKg.compareTo(BigDecimal.ZERO) < 0) {
+            currentWeightKg = BigDecimal.ZERO;
+        }
+        vehicle.setCurrentOrders(Math.max(0, currentOrders));
+        vehicle.setCurrentWeightKg(normalizeWeight(currentWeightKg));
+        shipperVehicleRepository.save(vehicle);
     }
 
     public ApiResponse<Map<String, Object>> getDashboard() {
@@ -560,6 +650,7 @@ public class OrderShipperService {
         if (totalDelivered >= totalQty && totalReturned == 0) {
             order.setStatus(OrderStatus.DELIVERED);
             orderRepository.save(order);
+            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
             saveHistory(order, OrderHistoryActionType.DELIVERED, "Đã giao toàn bộ đơn hàng");
             // Nếu có COD, tạo submission COD (tính toán từ delivered products)
             try {
@@ -584,6 +675,7 @@ public class OrderShipperService {
         }
 
         orderRepository.save(order);
+        applyVehicleWorkloadByStatus(order, employee, order.getStatus());
 
         if (totalDelivered > 0) {
             saveHistory(order, OrderHistoryActionType.PARTIAL_DELIVERY, "Giao 1 phần: đã giao " + totalDelivered + " / " + totalQty);
@@ -734,7 +826,11 @@ public class OrderShipperService {
 
         OrderStatus newStatus;
         try {
-            newStatus = OrderStatus.valueOf(request.getStatus().toUpperCase());
+            String rawStatus = request.getStatus().trim().toUpperCase();
+            if ("DELIVERY_FAILED".equals(rawStatus) || "FAILED".equals(rawStatus)) {
+                rawStatus = "FAILED_DELIVERY";
+            }
+            newStatus = OrderStatus.valueOf(rawStatus);
         } catch (IllegalArgumentException e) {
             return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
         }
@@ -863,6 +959,7 @@ public class OrderShipperService {
         }
 
         orderRepository.save(order);
+        applyVehicleWorkloadByStatus(order, employee, newStatus);
 
         // Gửi thông báo khi cập nhật trạng thái
         String statusMessage = switch (newStatus) {
@@ -965,6 +1062,7 @@ public class OrderShipperService {
         }
 
         orderRepository.save(order);
+        applyVehicleWorkloadByStatus(order, employee, OrderStatus.PICKED_UP);
         saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper xác nhận đã lấy hàng");
 
         // Gửi notification đơn giản
@@ -1468,6 +1566,11 @@ public class OrderShipperService {
                                     items.add(it);
                                 }
                             }
+                            // Fallback: nếu chưa có deliveredQuantity thì vẫn lấy COD theo đơn để không ra 0.
+                            if (codSum.compareTo(BigDecimal.ZERO) <= 0 && order.getCod() != null && order.getCod() > 0) {
+                                codSum = BigDecimal.valueOf(order.getCod());
+                            }
+
                             if (!items.isEmpty()) {
                                 // Idempotency: if existing submission already matches computed items, avoid replacing
                                 boolean same = ex.getSystemAmount() != null && ex.getSystemAmount().compareTo(codSum) == 0
@@ -1503,6 +1606,16 @@ public class OrderShipperService {
                                     order.setCodStatus(OrderCodStatus.PENDING);
                                     orderRepository.save(order);
                                 }
+                            } else if (codSum.compareTo(BigDecimal.ZERO) > 0) {
+                                // Không có item chi tiết nhưng vẫn phải cập nhật số tiền COD đúng theo đơn.
+                                ex.setSystemAmount(codSum);
+                                ex.setActualAmount(codSum);
+                                ex.setShipper(shipperUser);
+                                ex.setNotes(note);
+                                ex.setStatus(PaymentSubmissionStatus.PENDING);
+                                paymentSubmissionRepository.save(ex);
+                                order.setCodStatus(OrderCodStatus.PENDING);
+                                orderRepository.save(order);
                             }
                         } catch (Exception e) {
                         }
@@ -1539,6 +1652,11 @@ public class OrderShipperService {
                     it.setPaymentSubmission(submission);
                     items.add(it);
                 }
+            }
+            // Fallback: nếu chưa có luồng cập nhật deliveredQuantity (giao thành công nhanh từ màn chi tiết)
+            // thì vẫn phải ghi nhận COD theo giá trị đơn hàng để tránh phát sinh COD = 0.
+            if (codSum.compareTo(BigDecimal.ZERO) <= 0 && order.getCod() != null && order.getCod() > 0) {
+                codSum = BigDecimal.valueOf(order.getCod());
             }
             submission.setSystemAmount(codSum);
             submission.setActualAmount(codSum);
@@ -1625,9 +1743,16 @@ public class OrderShipperService {
         return parts.isEmpty() ? null : String.join(", ", parts);
     }
 
-    // Lộ trình giao hàng
+    // Lộ trình giao hàng (ưu tiên tuyến AI đã xác nhận)
     public ApiResponse<Map<String, Object>> getDeliveryRoute() {
         Employee employee = getCurrentEmployee();
+
+        List<AiRoutePlanRoute> aiRoutes = aiRoutePlanRouteRepository.findConfirmedRoutesForShipper(
+                employee.getId(), AiRoutePlanStatus.CONFIRMED);
+        if (!aiRoutes.isEmpty()) {
+            return buildAiDeliveryRouteResponse(employee, aiRoutes.get(0));
+        }
+
         Integer officeId = employee.getOffice().getId();
 
         Specification<Order> routeSpec = (root, query, cb) -> {
@@ -1680,6 +1805,75 @@ public class OrderShipperService {
         result.put("deliveryStops", deliveryStops);
 
         return new ApiResponse<>(true, "Lấy lộ trình giao hàng thành công", result);
+    }
+
+    private ApiResponse<Map<String, Object>> buildAiDeliveryRouteResponse(Employee employee, AiRoutePlanRoute aiRoute) {
+        List<AiRoutePlanStop> stops = aiRoute.getStops();
+        if (stops != null) {
+            stops.sort(Comparator.comparing(AiRoutePlanStop::getStopSequence));
+        } else {
+            stops = List.of();
+        }
+
+        int totalCOD = stops.stream().mapToInt(s -> s.getCodAmount() != null ? s.getCodAmount() : 0).sum();
+
+        List<Map<String, Object>> deliveryStops = stops.stream().map(stop -> {
+            Order order = stop.getOrder();
+            String recipientFullAddress = stop.getRecipientAddress() != null
+                    ? stop.getRecipientAddress()
+                    : (order != null ? resolveRecipientFullAddress(order) : "");
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", order != null ? order.getId() : stop.getOrder().getId());
+            m.put("trackingNumber", stop.getTrackingNumber());
+            m.put("recipientName", stop.getRecipientName());
+            m.put("recipientPhone", stop.getRecipientPhone());
+            m.put("recipientAddress", recipientFullAddress);
+            m.put("recipientFullAddress", recipientFullAddress);
+            m.put("latitude", stop.getRecipientLatitude());
+            m.put("longitude", stop.getRecipientLongitude());
+            m.put("codAmount", stop.getCodAmount());
+            m.put("priority", "HIGH".equalsIgnoreCase(stop.getPriority()) ? "urgent" : "normal");
+            m.put("serviceType", order != null && order.getServiceType() != null
+                    ? order.getServiceType().getName() : "Tiêu chuẩn");
+            m.put("stopSequence", stop.getStopSequence());
+            m.put("etaTime", stop.getEtaTime());
+            m.put("etaMinutesFromStart", stop.getEtaMinutesFromStart());
+            m.put("status", order != null && order.getStatus() == OrderStatus.DELIVERED ? "completed" : "pending");
+            return m;
+        }).toList();
+
+        Map<String, Object> routeInfo = new HashMap<>();
+        routeInfo.put("id", aiRoute.getId());
+        routeInfo.put("planId", aiRoute.getPlan().getId());
+        routeInfo.put("planCode", aiRoute.getPlan().getPlanCode());
+        routeInfo.put("name", "Tuyến AI - " + aiRoute.getShipperName());
+        routeInfo.put("startLocation", employee.getOffice().getName());
+        routeInfo.put("totalStops", stops.size());
+        routeInfo.put("completedStops", (int) stops.stream()
+                .filter(s -> s.getOrder() != null && s.getOrder().getStatus() == OrderStatus.DELIVERED)
+                .count());
+        routeInfo.put("totalDistance", aiRoute.getEstimatedDistanceKm() != null
+                ? aiRoute.getEstimatedDistanceKm().doubleValue() : 0);
+        routeInfo.put("estimatedDuration", aiRoute.getEstimatedDurationMinutes() != null
+                ? aiRoute.getEstimatedDurationMinutes().doubleValue() : 0);
+        routeInfo.put("fuelCost", aiRoute.getFuelCost() != null ? aiRoute.getFuelCost().doubleValue() : 0);
+        routeInfo.put("totalCOD", totalCOD);
+        routeInfo.put("encodedPolyline", aiRoute.getEncodedPolyline());
+        routeInfo.put("startTime", aiRoute.getStartTime());
+        routeInfo.put("status", "ai_optimized");
+        routeInfo.put("source", "AI");
+
+        Map<String, Object> officeMap = new HashMap<>();
+        officeMap.put("name", employee.getOffice().getName());
+        officeMap.put("latitude", employee.getOffice().getLatitude());
+        officeMap.put("longitude", employee.getOffice().getLongitude());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("routeInfo", routeInfo);
+        result.put("deliveryStops", deliveryStops);
+        result.put("office", officeMap);
+
+        return new ApiResponse<>(true, "Lấy lộ trình AI đã tối ưu thành công", result);
     }
 
     public ApiResponse<String> startRoute(Integer routeId) {

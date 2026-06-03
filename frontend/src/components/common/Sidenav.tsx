@@ -19,7 +19,6 @@ import {
     GiftOutlined,
     BarChartOutlined,
     ProfileOutlined,
-    InboxOutlined,
     ClockCircleOutlined,
     ExclamationCircleOutlined,
     TruckOutlined,
@@ -27,6 +26,7 @@ import {
     BankOutlined,
     CheckCircleOutlined,
     ScanOutlined,
+    NodeIndexOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
 import {useMemo} from "react";
@@ -171,6 +171,12 @@ const Sidenav: React.FC = () => {
                 label: "Quản lý chuyến hàng",
                 path: "/shipments",
                 icon: <TruckOutlined/>,
+            },
+            {
+                key: "/manager/ai-routes",
+                label: "Tối ưu tuyến giao hàng",
+                path: "/manager/ai-routes",
+                icon: <NodeIndexOutlined/>,
             },
             {
                 key: "/supports",

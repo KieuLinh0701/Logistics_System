@@ -59,6 +59,7 @@ import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
 import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
 import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
+import ManagerAiRouteOptimization from "./pages/manager/ai-route/ManagerAiRouteOptimization";
 
 // Shipper
 import ShipperOrders from "./pages/shipper/Orders";
@@ -221,6 +222,8 @@ const App: React.FC = () => {
                                    allowedRoles={['manager']}><ManagerShipmentOrders/></PrivateRoute>}/>
                         <Route path="/shipments"
                                element={<PrivateRoute allowedRoles={['manager']}><ManagerShipments/></PrivateRoute>}/>
+                        <Route path="/manager/ai-routes"
+                               element={<PrivateRoute allowedRoles={['manager']}><ManagerAiRouteOptimization/></PrivateRoute>}/>
                         <Route path="/shipments/:shipmentId/orders" element={<PrivateRoute
                             allowedRoles={['manager']}><ManagerShipmentOrders/></PrivateRoute>}/>
                         <Route path="/employees/assign-area" element={<PrivateRoute
@@ -252,6 +255,8 @@ const App: React.FC = () => {
                         <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport/></PrivateRoute>}/>
                         <Route path="/employee/leaves" element={<PrivateRoute
                             allowedRoles={['shipper', 'driver']}><MyLeavePage/></PrivateRoute>}/>
+                        <Route path="/shipper/settings/vehicle" element={<PrivateRoute
+                            allowedRoles={['shipper']}><Navigate to="/account/settings?tab=vehicle" replace /></PrivateRoute>}/>
 
                         {/* Driver routes */}
                         <Route path="/driver/shipments"

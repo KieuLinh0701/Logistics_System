@@ -33,6 +33,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import orderApi from "../../api/orderApi";
 import { getUserRole } from "../../utils/authUtils";
+import { dispatchShipperRouteRefresh } from "./deliveryRouteEvents";
 import type { ShipperOrder } from "../../api/orderApi";
 import { translateOrderCodStatus, translatePaymentSubmissionStatus } from "../../utils/orderUtils";
 
@@ -60,7 +61,8 @@ const ShipperOrderDetail: React.FC = () => {
 
   const getCodPreviewItems = () => {
     if (!order || !order.orderProducts) return [];
-    return (order.orderProducts as any[]).map((p: any) => {
+
+    const baseItems = (order.orderProducts as any[]).map((p: any) => {
       const delivered = p.deliveredQuantity ?? 0;
       const price = p.price ?? p.productPrice ?? 0;
       const amount = delivered * price;
@@ -71,10 +73,39 @@ const ShipperOrderDetail: React.FC = () => {
         amount,
       };
     });
+
+    const totalByDelivered = baseItems.reduce((s, it) => s + (it.amount || 0), 0);
+    const orderCod = Number(order?.codAmount ?? order?.cod ?? 0);
+
+    // Fallback cho luồng giao thành công nhanh: chưa cập nhật deliveredQuantity nhưng vẫn cần hiển thị COD phải thu
+    if (totalByDelivered <= 0 && orderCod > 0) {
+      const first = baseItems[0];
+      if (first) {
+        return [
+          {
+            ...first,
+            deliveredQuantity: first.deliveredQuantity > 0 ? first.deliveredQuantity : 1,
+            amount: orderCod,
+          },
+        ];
+      }
+      return [
+        {
+          productName: "COD",
+          deliveredQuantity: 1,
+          price: orderCod,
+          amount: orderCod,
+        },
+      ];
+    }
+
+    return baseItems;
   };
 
   const getTotalCodPreview = () => {
-    return getCodPreviewItems().reduce((s, it) => s + (it.amount || 0), 0);
+    const sum = getCodPreviewItems().reduce((s, it) => s + (it.amount || 0), 0);
+    if (sum > 0) return sum;
+    return Number(order?.codAmount ?? order?.cod ?? 0);
   };
 
   useEffect(() => {
@@ -186,6 +217,10 @@ const fetchOrderDetail = async () => {
       });
       message.success("Đã cập nhật trạng thái giao hàng");
       fetchOrderDetail();
+      const finalStatus = status.toUpperCase();
+      if (finalStatus === "DELIVERED" || finalStatus === "FAILED_DELIVERY") {
+        dispatchShipperRouteRefresh();
+      }
     } catch (error) {
       message.error("Lỗi khi cập nhật trạng thái");
     } finally {

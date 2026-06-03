@@ -197,4 +197,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     Optional<Order> findFirstByUserIdAndRecipientPhoneAndRecipientFullAddressOrderByCreatedAtDesc(
             Integer userId, String recipientPhone, String recipientFullAddress);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.employee.id = :employeeId AND o.status IN :statuses")
+    long countByEmployeeIdAndStatusIn(
+            @Param("employeeId") Integer employeeId,
+            @Param("statuses") List<OrderStatus> statuses);
+
+    @Query("SELECT COALESCE(SUM(o.weight), 0) FROM Order o WHERE o.employee.id = :employeeId AND o.status IN :statuses")
+    Double sumWeightByEmployeeIdAndStatusIn(
+            @Param("employeeId") Integer employeeId,
+            @Param("statuses") List<OrderStatus> statuses);
 }

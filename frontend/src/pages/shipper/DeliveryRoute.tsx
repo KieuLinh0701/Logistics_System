@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Card,
   Row,
@@ -27,10 +27,33 @@ import {
   NodeIndexOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
+import { GoogleMap, LoadScript, MarkerF, PolylineF } from "@react-google-maps/api";
+import polyline from "@mapbox/polyline";
 import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
+import { SHIPPER_ROUTE_REFRESH_EVENT } from "./deliveryRouteEvents";
 
-const { Title, Text} = Typography;
+const { Title, Text } = Typography;
+
+const MAP_CONTAINER_STYLE = {
+  width: "100%",
+  height: "650px",
+};
+
+const decodeEncodedPolyline = (encoded?: string): google.maps.LatLngLiteral[] => {
+  if (!encoded) return [];
+  try {
+    return polyline.decode(encoded).map(([lat, lng]) => ({ lat, lng }));
+  } catch {
+    return [];
+  }
+};
+
+const DEFAULT_CENTER = {
+  lat: 10.9804,
+  lng: 106.6519,
+};
+
 
 interface RouteInfo {
   id: number;
@@ -42,6 +65,10 @@ interface RouteInfo {
   estimatedDuration: number;
   totalCOD: number;
   status: string;
+  source?: string;
+  encodedPolyline?: string;
+  planCode?: string;
+  fuelCost?: number;
 }
 
 interface DeliveryStop {
@@ -54,70 +81,107 @@ interface DeliveryStop {
   priority: string;
   serviceType: string;
   status: string;
+  stopSequence?: number;
+  etaTime?: string;
+  latitude?: number;
+  longitude?: number;
 }
+
+
+const isFinalDeliveryStatus = (status?: string) => {
+  const st = (status || "").toString().toUpperCase();
+  return st === "DELIVERED" || st === "FAILED_DELIVERY" || st === "COMPLETED" || st === "FAILED";
+};
+
+const sortByStopSequence = <T extends { stopSequence?: number }>(stops: T[]): T[] => {
+  if (!stops.some((s) => s.stopSequence != null)) return stops;
+  return [...stops].sort((a, b) => (a.stopSequence || 0) - (b.stopSequence || 0));
+};
+
+const hasValidCoords = (stop: DeliveryStop) =>
+  stop.latitude != null &&
+  stop.longitude != null &&
+  !Number.isNaN(Number(stop.latitude)) &&
+  !Number.isNaN(Number(stop.longitude));
 
 const ShipperDeliveryRoute: React.FC = () => {
   const navigate = useNavigate();
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [deliveryStops, setDeliveryStops] = useState<DeliveryStop[]>([]);
-  const [shipperOrdersList, setShipperOrdersList] = useState<DeliveryStop[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedStop, setSelectedStop] = useState<DeliveryStop | null>(null);
   const [detailModal, setDetailModal] = useState(false);
-  const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [mapModalAddress, setMapModalAddress] = useState<string | null>(null);
+  const [currentPosition, setCurrentPosition] = useState<google.maps.LatLngLiteral | null>(null);
+  const [realtimeDirections, setRealtimeDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [directionsLoading, setDirectionsLoading] = useState(false);
+  const [directionsRenderKey, setDirectionsRenderKey] = useState(0);
 
-  useEffect(() => {
-    fetchRouteData();
-  }, []);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const mapCardRef = useRef<HTMLDivElement | null>(null);
+  const lastNextStopIdRef = useRef<number | null>(null);
+  const directionsRequestSeqRef = useRef(0);
+  const lastDirectionsQueryRef = useRef<{ stopId: number; origin: google.maps.LatLngLiteral } | null>(null);
+  const directionsCacheRef = useRef<Map<string, google.maps.DirectionsResult>>(new Map());
 
-  const fetchRouteData = async () => {
+  const nextStop = useMemo(() => {
+    for (const stop of deliveryStops) {
+      if (hasValidCoords(stop)) return stop;
+    }
+    return null;
+  }, [deliveryStops]);
+
+  const aiBaselinePath = useMemo(() => {
+    if (routeInfo?.source !== "AI") return [] as google.maps.LatLngLiteral[];
+    return decodeEncodedPolyline(routeInfo?.encodedPolyline);
+  }, [routeInfo?.source, routeInfo?.encodedPolyline]);
+
+  const fetchRouteData = useCallback(async () => {
     try {
       setLoading(true);
       const routeData = await orderApi.getShipperRoute();
-      console.log("API DATA:", routeData);
       setRouteInfo(routeData.routeInfo);
-      const routeStops = (routeData.deliveryStops || []) as any[];
-      const isFinalStatus = (s: any) => {
-        const st = (s?.status || "").toString().toUpperCase();
-        return st === "DELIVERED" || st === "FAILED_DELIVERY" || st === "COMPLETED" || st === "FAILED";
-      };
-      const filteredRouteStops = routeStops.filter((s) => !isFinalStatus(s));
+      const routeStops = (routeData.deliveryStops || []) as DeliveryStop[];
+      const filteredRouteStops = routeStops.filter((s) => !isFinalDeliveryStatus(s.status));
+
       try {
         const ordersRes = await orderApi.getShipperOrders({ page: 1, limit: 200 });
         const shipperOrders = (ordersRes.orders || []) as any[];
-        setShipperOrdersList(shipperOrders as any);
 
-        const visibleOrders = (shipperOrders || []).filter((o: any) => {
-          const st = (o?.status || "").toString().toUpperCase();
-          return st !== "DELIVERED" && st !== "FAILED_DELIVERY";
-        });
+        const visibleOrders = (shipperOrders || []).filter((o: any) => !isFinalDeliveryStatus(o?.status));
 
-        if (visibleOrders && visibleOrders.length > 0) {
-          const routeByTracking = new Map(filteredRouteStops.map((s: any) => [s.trackingNumber, s]));
-          const synced = visibleOrders.map((o: any) => {
-            const tracking = o.trackingNumber;
-            if (routeByTracking.has(tracking)) return routeByTracking.get(tracking);
-            return {
-              id: o.id,
-              trackingNumber: o.trackingNumber,
-              recipientName: o.recipientName,
-              recipientPhone: o.recipientPhone,
-              recipientAddress: typeof o.recipientAddress === 'string' ? o.recipientAddress : (o.recipientAddress?.fullAddress ?? ''),
-              codAmount: o.cod || 0,
-              priority: o.priority || 'normal',
-              serviceType: o.serviceType?.name || o.serviceType || '',
-              status: o.status || 'READY_FOR_PICKUP',
-            } as any;
-          });
-          setDeliveryStops(synced as any);
+        if (visibleOrders.length > 0) {
+          const routeByTracking = new Map(filteredRouteStops.map((s) => [s.trackingNumber, s]));
+          const synced = visibleOrders
+            .map((o: any) => {
+              const tracking = o.trackingNumber;
+              if (routeByTracking.has(tracking)) return routeByTracking.get(tracking);
+              return {
+                id: o.id,
+                trackingNumber: o.trackingNumber,
+                recipientName: o.recipientName,
+                recipientPhone: o.recipientPhone,
+                recipientAddress:
+                  typeof o.recipientAddress === "string"
+                    ? o.recipientAddress
+                    : (o.recipientAddress?.fullAddress ?? ""),
+                codAmount: o.cod || 0,
+                priority: o.priority || "normal",
+                serviceType: o.serviceType?.name || o.serviceType || "",
+                status: o.status || "READY_FOR_PICKUP",
+                latitude: o.latitude ?? o.recipientLatitude,
+                longitude: o.longitude ?? o.recipientLongitude,
+              } as DeliveryStop;
+            })
+            .filter((s): s is DeliveryStop => !!s && !isFinalDeliveryStatus(s.status));
+
+          setDeliveryStops(sortByStopSequence(synced));
         } else {
-          setDeliveryStops(filteredRouteStops as any);
+          setDeliveryStops(sortByStopSequence(filteredRouteStops));
         }
       } catch (err) {
         console.warn("Could not fetch shipper orders for comparison", err);
-        setShipperOrdersList(null);
-        setDeliveryStops(routeStops as any);
+        setDeliveryStops(sortByStopSequence(filteredRouteStops));
       }
     } catch (error) {
       console.error("Error fetching route data:", error);
@@ -125,29 +189,154 @@ const ShipperDeliveryRoute: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleStartRoute = async () => {
-    if (!routeInfo) return;
+  useEffect(() => {
+    fetchRouteData();
+  }, [fetchRouteData]);
 
-    const openDirections = () => {
-      if (!deliveryStops || deliveryStops.length === 0) {
-        message.warning("Không có điểm dừng nào trong tuyến");
+  useEffect(() => {
+    const onRefresh = () => {
+      fetchRouteData();
+    };
+    window.addEventListener(SHIPPER_ROUTE_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(SHIPPER_ROUTE_REFRESH_EVENT, onRefresh);
+  }, [fetchRouteData]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      console.warn("Geolocation không được hỗ trợ");
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setCurrentPosition({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.error("Không lấy được GPS shipper", error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  useEffect(() => {
+    if (!nextStop) return;
+
+    if (lastNextStopIdRef.current !== nextStop.id) {
+      lastNextStopIdRef.current = nextStop.id;
+      setRealtimeDirections(null);
+      setDirectionsRenderKey((k) => k + 1);
+    }
+  }, [nextStop?.id]);
+
+  const requestDirectionsToStop = useCallback(
+    (stop: DeliveryStop) => {
+      if (!isMapLoaded || typeof google === "undefined") {
+        message.warning("Bản đồ chưa sẵn sàng");
         return;
       }
 
-      const stops = deliveryStops.map((s) => s.recipientAddress);
-      let destination = encodeURIComponent(stops[stops.length - 1]);
-      let waypoints = "";
-
-      if (stops.length > 1) {
-        const mid = stops.slice(0, -1).map((a) => encodeURIComponent(a)).join("|");
-        waypoints = `&waypoints=${mid}`;
+      if (!currentPosition) {
+        message.warning("Chưa có vị trí hiện tại của shipper");
+        return;
       }
 
-      const url = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${destination}${waypoints}&travelmode=driving`;
-      window.open(url, "_blank");
-    };
+      if (!hasValidCoords(stop)) {
+        message.warning("Điểm giao chưa có tọa độ GPS trên bản đồ");
+        return;
+      }
+
+      if (directionsLoading) {
+        return;
+      }
+
+      const origin = {
+        lat: Number(currentPosition.lat),
+        lng: Number(currentPosition.lng),
+      };
+      const destination = {
+        lat: Number(stop.latitude),
+        lng: Number(stop.longitude),
+      };
+
+      const roundedOrigin = {
+        lat: Number(origin.lat.toFixed(5)),
+        lng: Number(origin.lng.toFixed(5)),
+      };
+      const roundedDestination = {
+        lat: Number(destination.lat.toFixed(5)),
+        lng: Number(destination.lng.toFixed(5)),
+      };
+
+      const lastQuery = lastDirectionsQueryRef.current;
+      if (
+        lastQuery &&
+        lastQuery.stopId === stop.id &&
+        Math.abs(lastQuery.origin.lat - roundedOrigin.lat) < 0.0002 &&
+        Math.abs(lastQuery.origin.lng - roundedOrigin.lng) < 0.0002
+      ) {
+        return;
+      }
+
+      const cacheKey = `${stop.id}:${roundedOrigin.lat},${roundedOrigin.lng}->${roundedDestination.lat},${roundedDestination.lng}`;
+      const cached = directionsCacheRef.current.get(cacheKey);
+      if (cached) {
+        setRealtimeDirections(cached);
+        lastDirectionsQueryRef.current = { stopId: stop.id, origin: roundedOrigin };
+        return;
+      }
+
+      const service = new google.maps.DirectionsService();
+      const requestSeq = ++directionsRequestSeqRef.current;
+      setDirectionsLoading(true);
+      setRealtimeDirections(null);
+      setDirectionsRenderKey((k) => k + 1);
+
+      service.route(
+        {
+          origin,
+          destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (requestSeq !== directionsRequestSeqRef.current) {
+            return;
+          }
+
+          setDirectionsLoading(false);
+
+          if (status === google.maps.DirectionsStatus.OK && result) {
+            directionsCacheRef.current.set(cacheKey, result);
+            if (directionsCacheRef.current.size > 20) {
+              const firstKey = directionsCacheRef.current.keys().next().value;
+              if (firstKey) directionsCacheRef.current.delete(firstKey);
+            }
+            lastDirectionsQueryRef.current = { stopId: stop.id, origin: roundedOrigin };
+
+            setRealtimeDirections(result);
+            setDirectionsRenderKey((k) => k + 1);
+            return;
+          }
+
+          message.warning("Không thể lấy chỉ đường, vui lòng thử lại");
+        }
+      );
+    },
+    [currentPosition, directionsLoading, isMapLoaded]
+  );
+
+  const handleStartRoute = async () => {
+    if (!routeInfo) return;
 
     Modal.confirm({
       title: "Bắt đầu tuyến giao hàng",
@@ -157,24 +346,24 @@ const ShipperDeliveryRoute: React.FC = () => {
           await orderApi.startShipperRoute(routeInfo.id);
           setRouteInfo((prev) => (prev ? { ...prev, status: "in_progress" } : null));
           message.success("Đã bắt đầu tuyến giao hàng");
-          openDirections();
-        } catch (error) {
-          openDirections();
+          mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch {
+          message.error("Không thể bắt đầu tuyến giao hàng");
         }
       },
     });
   };
 
-  const openMapModal = (address: string) => {
-    setMapModalAddress(address);
-    setMapModalOpen(true);
-  };
-
-  const handleNavigateToStop = (stop: DeliveryStop) => {
-    const address = encodeURIComponent(stop.recipientAddress);
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${address}`;
-    window.open(mapsUrl, "_blank");
-    message.success(`Đã mở bản đồ đến ${stop.recipientName}`);
+  const handleFocusStopOnMap = (stop: DeliveryStop) => {
+    if (!hasValidCoords(stop)) {
+      message.warning("Điểm giao chưa có tọa độ GPS trên bản đồ");
+      return;
+    }
+    const pos = { lat: Number(stop.latitude), lng: Number(stop.longitude) };
+    mapRef.current?.panTo(pos);
+    mapRef.current?.setZoom(16);
+    mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    message.info(`Đã đưa bản đồ đến ${stop.recipientName}`);
   };
 
   const handleViewStopDetail = (stop: DeliveryStop) => {
@@ -235,7 +424,6 @@ const ShipperDeliveryRoute: React.FC = () => {
       case "CANCELLED":
         return "Đã hủy";
       default:
-        // Nếu không khớp, cố gắng chuyển từ snake/upper case sang readable
         return status.replaceAll("_", " ");
     }
   };
@@ -265,17 +453,18 @@ const ShipperDeliveryRoute: React.FC = () => {
     );
   }
 
-  const completionRate = routeInfo.totalStops > 0 ? (routeInfo.completedStops / routeInfo.totalStops) * 100 : 0;
+  const completionRate =
+    routeInfo.totalStops > 0 ? (routeInfo.completedStops / routeInfo.totalStops) * 100 : 0;
 
   return (
     <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
       <Title level={2} style={{ color: "#1C3D90", marginBottom: 24 }}>
-        Lộ trình giao hàng
+        Lộ trình giao hàng {routeInfo.source === "AI" && <Tag color="blue">Đã tối ưu</Tag>}
       </Title>
 
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={16}>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={6}>AI đã tối ưu
             <Statistic title="Tổng điểm dừng" value={routeInfo.totalStops} prefix={<NodeIndexOutlined />} />
           </Col>
           <Col xs={24} sm={12} lg={6}>
@@ -298,6 +487,20 @@ const ShipperDeliveryRoute: React.FC = () => {
 
         <Progress percent={Math.round(completionRate)} status="active" />
 
+        {nextStop && (
+          <Alert
+            style={{ marginTop: 16 }}
+            type="info"
+            showIcon
+            message={
+              <span>
+                Điểm giao tiếp theo #{nextStop.stopSequence}:{" "}
+                <strong>{nextStop.trackingNumber}</strong> — {nextStop.recipientName}
+              </span>
+            }
+          />
+        )}
+
         <Space style={{ marginTop: 16 }}>
           {routeInfo.status === "not_started" && (
             <Button type="primary" icon={<PlayCircleOutlined />} onClick={handleStartRoute}>
@@ -310,13 +513,10 @@ const ShipperDeliveryRoute: React.FC = () => {
               <Button type="primary" icon={<CompassOutlined />} onClick={() => navigate("/shipper/orders")}>
                 Xem đơn hàng
               </Button>
-              <Button onClick={() => {
-                if (deliveryStops && deliveryStops.length > 0) {
-                  openMapModal(deliveryStops[0].recipientAddress);
-                } else {
-                  message.warning("Không có điểm dừng để hiển thị");
-                }
-              }}>
+              <Button
+                icon={<EnvironmentOutlined />}
+                onClick={() => mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              >
                 Xem bản đồ tuyến
               </Button>
             </>
@@ -324,98 +524,224 @@ const ShipperDeliveryRoute: React.FC = () => {
         </Space>
       </Card>
 
-      <Card title="Bản đồ tuyến" style={{ marginBottom: 24 }}>
-        <div style={{ width: "100%", height: 360 }}>
-          {(() => {
-            const first = deliveryStops && deliveryStops.length > 0 ? deliveryStops[0] : null;
-            let src = `https://www.google.com/maps?q=Vietnam&output=embed`;
-            if (first) {
-              const anyFirst = first as any;
-              const lat = anyFirst.latitude ?? anyFirst.lat ?? anyFirst.recipientLatitude ?? null;
-              const lng = anyFirst.longitude ?? anyFirst.lng ?? anyFirst.recipientLongitude ?? null;
-              if (lat != null && lng != null) {
-                src = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
-              } else if (first.recipientAddress) {
-                src = `https://www.google.com/maps?q=${encodeURIComponent(first.recipientAddress)}&z=15&output=embed`;
-              }
-            }
+      <Card
+        title="Bản đồ điều hướng realtime"
+        style={{ marginBottom: 24 }}
+        ref={mapCardRef}
+        extra={
+          <Space>
+            {nextStop && <Tag color="orange">Điểm tiếp theo: #{nextStop.stopSequence}</Tag>}
+            <Button
+              size="small"
+              type="primary"
+              disabled={!isMapLoaded || !currentPosition || !nextStop || !hasValidCoords(nextStop)}
+              onClick={() => {
+                if (!nextStop) return;
+                requestDirectionsToStop(nextStop);
+              }}
+            >
+              Chỉ đường tới điểm tiếp theo
+            </Button>
+            <Button
+              size="small"
+              icon={<EnvironmentOutlined />}
+              onClick={() => {
+                if (!currentPosition) {
+                  message.warning("Chưa có vị trí hiện tại của shipper");
+                  return;
+                }
 
-            return (
-              <iframe
-                title="route-inline-map"
-                src={src}
-                style={{ width: "100%", height: "100%", border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            );
-          })()}
+                mapRef.current?.panTo(currentPosition);
+                mapRef.current?.setZoom(15);
+              }}
+            >
+              Theo dõi vị trí
+            </Button>
+          </Space>
+        }
+      >
+        <div style={{ width: "100%", position: "relative" }}>
+          {!isMapLoaded && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(255,255,255,0.75)",
+                zIndex: 2,
+                minHeight: MAP_CONTAINER_STYLE.height,
+              }}
+            >
+              <Spin tip="Đang tải bản đồ..." />
+            </div>
+          )}
+          <LoadScript
+            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY as string}
+            onLoad={() => setIsMapLoaded(true)}
+          >
+            <GoogleMap
+              mapContainerStyle={MAP_CONTAINER_STYLE}
+              center={DEFAULT_CENTER}
+              zoom={13}
+              options={{
+                gestureHandling: "greedy",
+                scrollwheel: true,
+              }}
+              onLoad={(map) => {
+                mapRef.current = map;
+              }}
+            >
+              {isMapLoaded && (
+                <>
+                  {currentPosition && (
+                    <MarkerF
+                      position={currentPosition}
+                      icon={{
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: "#1890ff",
+                        fillOpacity: 1,
+                        strokeColor: "#ffffff",
+                        strokeWeight: 3,
+                      }}
+                      title="Vị trí hiện tại"
+                      zIndex={10000}
+                    />
+                  )}
+
+
+                  {aiBaselinePath.length > 0 && (
+                    <PolylineF
+                      key={`ai-baseline-${routeInfo?.id ?? "route"}`}
+                      path={aiBaselinePath}
+                      options={{
+                        strokeColor: "#8c8c8c",
+                        strokeOpacity: 0.45,
+                        strokeWeight: 5,
+                        zIndex: 3000,
+                      }}
+                    />
+                  )}
+
+                  {realtimeDirections?.routes?.[0]?.overview_path && (
+                    <PolylineF
+                      key={`route-polyline-${directionsRenderKey}`}
+                      path={realtimeDirections.routes[0].overview_path}
+                      options={{
+                        strokeColor: "#1890ff",
+                        strokeOpacity: 0.95,
+                        strokeWeight: 6,
+                        zIndex: 6000,
+                      }}
+                    />
+                  )}
+
+                  {deliveryStops.map((stop) => {
+                    if (!hasValidCoords(stop)) return null;
+
+                    const isNext = nextStop?.id === stop.id;
+
+                    return (
+                      <MarkerF
+                        key={stop.id}
+                        position={{
+                          lat: Number(stop.latitude),
+                          lng: Number(stop.longitude),
+                        }}
+                        label={
+                          stop.stopSequence != null
+                            ? {
+                                text: String(stop.stopSequence),
+                                color: "#fff",
+                                fontWeight: "bold",
+                              }
+                            : undefined
+                        }
+                        title={isNext ? `Điểm tiếp theo: ${stop.recipientName}` : stop.recipientName}
+                        zIndex={isNext ? 9999 : 1000}
+                      />
+                    );
+                  })}
+                </>
+              )}
+            </GoogleMap>
+          </LoadScript>
         </div>
       </Card>
 
-      
-
-      <Card title="Danh sách điểm giao hàng">
+      <Card title="Danh sách điểm giao hàng (theo thứ tự AI)">
         <List
           dataSource={deliveryStops}
-          renderItem={(stop, index) => (
-            <List.Item
-              actions={[
-                <Button icon={<EnvironmentOutlined />} onClick={() => handleNavigateToStop(stop)}>
-                  Chỉ đường
-                </Button>,
-                <Button icon={<EyeOutlined />} onClick={() => handleViewStopDetail(stop)}>
-                  Chi tiết
-                </Button>,
-                <Button type="link" onClick={() => navigate(`/orders/${stop.id}`)}>
-                  Xem đơn
-                </Button>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={
-                  <div
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: stop.status === "completed" ? "#52c41a" : "#1890ff",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "bold",
+          renderItem={(stop) => {
+            const isNext = nextStop?.id === stop.id;
+            return (
+              <List.Item
+                actions={[
+                  <Button
+                    icon={<EnvironmentOutlined />}
+                    onClick={() => {
+                      requestDirectionsToStop(stop);
+                      handleFocusStopOnMap(stop);
                     }}
                   >
-                    {index + 1}
-                  </div>
-                }
-                title={
-                  <Space>
-                    <Text strong>{stop.trackingNumber}</Text>
-                    <Tag color={getPriorityColor(stop.priority)}>{getPriorityText(stop.priority)}</Tag>
-                    <Tag color={getStatusColor(stop.status)}>{getStatusText(stop.status)}</Tag>
-                  </Space>
-                }
-                description={
-                  <Space direction="vertical" size={4}>
-                    <Text>
-                      <PhoneOutlined /> {stop.recipientPhone} - {stop.recipientName}
-                    </Text>
-                    <Text type="secondary">
-                      <EnvironmentOutlined /> {stop.recipientAddress}
-                    </Text>
-                    {stop.codAmount > 0 && (
+                    Chỉ đường
+                  </Button>,
+                  <Button icon={<EyeOutlined />} onClick={() => handleViewStopDetail(stop)}>
+                    Chi tiết
+                  </Button>,
+                  <Button type="link" onClick={() => navigate(`/orders/${stop.id}`)}>
+                    Xem đơn
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "#1890ff",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {stop.stopSequence ?? "—"}
+                    </div>
+                  }
+                  title={
+                    <Space>
+                      {isNext && <Tag color="orange">Tiếp theo</Tag>}
+                      <Text strong>{stop.trackingNumber}</Text>
+                      <Tag color={getPriorityColor(stop.priority)}>{getPriorityText(stop.priority)}</Tag>
+                      <Tag color={getStatusColor(stop.status)}>{getStatusText(stop.status)}</Tag>
+                    </Space>
+                  }
+                  description={
+                    <Space direction="vertical" size={4}>
                       <Text>
-                        <DollarOutlined /> COD: {stop.codAmount.toLocaleString()}đ
+                        <PhoneOutlined /> {stop.recipientPhone} - {stop.recipientName}
                       </Text>
-                    )}
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
+                      <Text type="secondary">
+                        <EnvironmentOutlined /> {stop.recipientAddress}
+                      </Text>
+                      {stop.etaTime && <Text type="secondary">ETA: {stop.etaTime}</Text>}
+                      {stop.codAmount > 0 && (
+                        <Text>
+                          <DollarOutlined /> COD: {stop.codAmount.toLocaleString()}đ
+                        </Text>
+                      )}
+                    </Space>
+                  }
+                />
+              </List.Item>
+            );
+          }}
         />
       </Card>
 
@@ -459,34 +785,15 @@ const ShipperDeliveryRoute: React.FC = () => {
               <Text strong>Trạng thái: </Text>
               <Tag color={getStatusColor(selectedStop.status)}>{getStatusText(selectedStop.status)}</Tag>
             </div>
-            <Button type="primary" block icon={<EnvironmentOutlined />} onClick={() => handleNavigateToStop(selectedStop)}>
-              Mở Google Maps
+            <Button
+              type="primary"
+              block
+              icon={<EnvironmentOutlined />}
+              onClick={() => handleFocusStopOnMap(selectedStop)}
+            >
+              Xem trên bản đồ
             </Button>
           </Space>
-        )}
-      </Modal>
-
-      <Modal
-        title={mapModalAddress ? "Bản đồ điểm dừng" : "Bản đồ"}
-        open={mapModalOpen}
-        onCancel={() => {
-          setMapModalOpen(false);
-          setMapModalAddress(null);
-        }}
-        footer={null}
-        width={800}
-      >
-        {mapModalAddress && (
-          <div style={{ width: "100%", height: 500 }}>
-            <iframe
-              title="office-map"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(mapModalAddress)}&z=15&output=embed`}
-              style={{ width: "100%", height: "100%", border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
         )}
       </Modal>
     </div>
