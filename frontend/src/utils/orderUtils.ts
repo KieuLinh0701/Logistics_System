@@ -160,6 +160,8 @@ export const translateOrderStatus = (value: string): string => {
     case 'DELIVERING': return 'Đang giao';
     case 'DELIVERED': return 'Đã giao hàng';
     case 'FAILED_DELIVERY': return 'Giao thất bại';
+    case 'DELIVERY_RETRY': return 'Chờ giao lại';
+    case 'DELIVERY_FAILED_FINAL': return 'Giao thất bại';
     case 'PARTIAL_DELIVERY': return 'Giao 1 phần';
     case 'PARTIAL_RETURN': return 'Trả 1 phần';
     case 'CANCELLED': return 'Đã hủy';

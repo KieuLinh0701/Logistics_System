@@ -75,7 +75,7 @@ const ShipperOrderDetail: React.FC = () => {
     });
 
     const totalByDelivered = baseItems.reduce((s, it) => s + (it.amount || 0), 0);
-    const orderCod = Number(order?.codAmount ?? order?.cod ?? 0);
+    const orderCod = Number(order?.cod ?? 0);
 
     // Fallback cho luồng giao thành công nhanh: chưa cập nhật deliveredQuantity nhưng vẫn cần hiển thị COD phải thu
     if (totalByDelivered <= 0 && orderCod > 0) {
@@ -147,14 +147,7 @@ const fetchOrderDetail = async () => {
 
   const handleFinishDelivery = () => {
     if (!order) return;
-    // Nếu đơn có COD, mở modal thu COD để shipper nhập ghi chú; việc thu tiền do backend xử lý (không gửi số tiền)
-    if (order.cod && order.cod > 0) {
-      setCodAfterFinish(true);
-      codForm.resetFields();
-      setCodModal(true);
-      return;
-    }
-    updateDeliveryStatus("DELIVERED", "");
+    updateDeliveryAttempt({ status: "SUCCESS", note: "Đã giao thành công" });
   };
 
   const handleSubmitDelivery = async (values: any) => {
@@ -190,17 +183,8 @@ const fetchOrderDetail = async () => {
 
       message.success("Đã thu COD thành công");
       setCodModal(false);
-
-      // Nếu modal mở trong quá trình hoàn tất giao hàng, thực hiện cập nhật trạng thái giao ngay
-      if (codAfterFinish) {
-        try {
-          await updateDeliveryStatus("DELIVERED", values.notes || "");
-        } finally {
-          setCodAfterFinish(false);
-        }
-      } else {
-        fetchOrderDetail();
-      }
+      fetchOrderDetail();
+      setCodAfterFinish(false);
     } catch (error: any) {
       message.error(error?.response?.data?.message || "Lỗi khi thu COD");
     } finally {
@@ -208,19 +192,13 @@ const fetchOrderDetail = async () => {
     }
   };
 
-  const updateDeliveryStatus = async (status: string, notes?: string) => {
+  const updateDeliveryAttempt = async (payload: { status: string; note?: string; failReason?: string }) => {
     try {
       setLoading(true);
-      await orderApi.updateShipperDeliveryStatus(Number(id), {
-        status,
-        notes,
-      });
+      await orderApi.createDeliveryAttempt(Number(id), payload);
       message.success("Đã cập nhật trạng thái giao hàng");
       fetchOrderDetail();
-      const finalStatus = status.toUpperCase();
-      if (finalStatus === "DELIVERED" || finalStatus === "FAILED_DELIVERY") {
-        dispatchShipperRouteRefresh();
-      }
+      dispatchShipperRouteRefresh();
     } catch (error) {
       message.error("Lỗi khi cập nhật trạng thái");
     } finally {
@@ -231,6 +209,23 @@ const fetchOrderDetail = async () => {
   const handleFailedDelivery = () => {
     failedForm.resetFields();
     setFailedModal(true);
+  };
+
+  const mapFailReason = (label: string): string => {
+    switch (label) {
+      case "Khách không có mặt":
+        return "RECIPIENT_NOT_AVAILABLE";
+      case "Không liên lạc được":
+        return "NO_RESPONSE";
+      case "Sai địa chỉ":
+        return "WRONG_ADDRESS";
+      case "Khách từ chối nhận":
+        return "RECIPIENT_REFUSED";
+      case "Khách hẹn giao lại":
+        return "RESCHEDULE_REQUESTED";
+      default:
+        return "OTHER";
+    }
   };
 
   const handleNavigateToRoute = () => {
@@ -251,6 +246,8 @@ const fetchOrderDetail = async () => {
       case "DELIVERED":
         return "success";
       case "FAILED_DELIVERY":
+      case "DELIVERY_RETRY":
+      case "DELIVERY_FAILED_FINAL":
       case "RETURNED":
         return "error";
       default:
@@ -277,6 +274,10 @@ const fetchOrderDetail = async () => {
         return "Đã giao";
       case "FAILED_DELIVERY":
         return "Giao thất bại";
+      case "DELIVERY_RETRY":
+        return "Chờ nộp về bưu cục";
+      case "DELIVERY_FAILED_FINAL":
+        return "Giao thất bại cuối cùng";
       case "PARTIAL_DELIVERY":
         return "Giao 1 phần";
       case "PARTIAL_RETURN":
@@ -641,8 +642,11 @@ const fetchOrderDetail = async () => {
           form={failedForm}
           layout="vertical"
           onFinish={(values: any) => {
-            const note = (values?.reason || "") + (values?.detail ? `: ${values.detail}` : "");
-            updateDeliveryStatus("FAILED_DELIVERY", note);
+            updateDeliveryAttempt({
+              status: "FAILED",
+              failReason: mapFailReason(values?.reason),
+              note: values?.detail || "",
+            });
             setFailedModal(false);
           }}
         >
@@ -652,10 +656,11 @@ const fetchOrderDetail = async () => {
             rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
           >
             <Select placeholder="Chọn lý do thất bại">
-              <Select.Option value="Người nhận không có mặt">Người nhận không có mặt</Select.Option>
-              <Select.Option value="Người nhận từ chối">Người nhận từ chối</Select.Option>
+              <Select.Option value="Khách không có mặt">Khách không có mặt</Select.Option>
+              <Select.Option value="Không liên lạc được">Không liên lạc được</Select.Option>
               <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
-              <Select.Option value="Hàng hư hỏng">Hàng hư hỏng</Select.Option>
+              <Select.Option value="Khách từ chối nhận">Khách từ chối nhận</Select.Option>
+              <Select.Option value="Khách hẹn giao lại">Khách hẹn giao lại</Select.Option>
               <Select.Option value="Khác">Khác</Select.Option>
             </Select>
           </Form.Item>

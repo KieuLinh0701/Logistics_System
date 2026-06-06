@@ -177,8 +177,18 @@ const orderApi = {
     return res.data;
   },
 
-  async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string }) {
+  async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string; failReason?: string }) {
     await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
+  },
+
+  async createDeliveryAttempt(id: number, payload: { status: string; failReason?: string; note?: string; notes?: string }) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${id}/delivery-attempt`, payload);
+    return res.data;
+  },
+
+  async returnFailedToOffice(orderId: number) {
+    const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/return-failed-to-office`);
+    return res.data;
   },
 
   async recordPickupAttempt(orderId: number, payload: { status: string; failReason?: string; note?: string }) {

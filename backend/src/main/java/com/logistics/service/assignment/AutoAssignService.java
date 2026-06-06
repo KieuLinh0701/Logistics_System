@@ -14,6 +14,7 @@ import com.logistics.repository.EmployeeRepository;
 import com.logistics.entity.Employee;
 import com.logistics.service.common.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,8 +45,12 @@ public class AutoAssignService {
     @Autowired
     private NotificationService notificationService;
 
+    @Value("${logistics.auto-assign.enabled:true}")
+    private boolean autoAssignEnabled;
+
     @Transactional
     public Optional<User> autoAssignOnArrival(Integer orderId) {
+        if (!autoAssignEnabled) return Optional.empty();
         Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 

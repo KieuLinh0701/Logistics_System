@@ -123,6 +123,27 @@ public class OrderShipperController {
         return ResponseEntity.ok(shipperService.updateDeliveryStatus(id, request));
     }
 
+    @PostMapping("/orders/{id}/delivery-attempt")
+    public ResponseEntity<ApiResponse<String>> createDeliveryAttempt(
+            @PathVariable Integer id,
+            @RequestBody UpdateDeliveryStatusRequest request) {
+
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+
+        return ResponseEntity.ok(shipperService.recordDeliveryAttempt(id, request));
+    }
+
+    @PostMapping("/orders/{id}/return-failed-to-office")
+    public ResponseEntity<ApiResponse<String>> returnFailedToOffice(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+
+        return ResponseEntity.ok(shipperService.returnFailedToOffice(id));
+    }
+
     @GetMapping("/history")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDeliveryHistory(
             @RequestParam(defaultValue = "1") int page,

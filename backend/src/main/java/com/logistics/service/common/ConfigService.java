@@ -22,4 +22,10 @@ public class ConfigService {
             throw new RuntimeException("Giá trị cấu hình không hợp lệ: " + key);
         }
     }
+
+    public boolean getBoolean(String key, boolean defaultValue) {
+        return repository.findById(key)
+            .map(cfg -> Boolean.parseBoolean(cfg.getValue()))
+            .orElse(defaultValue);
+    }
 }

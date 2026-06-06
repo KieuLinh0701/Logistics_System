@@ -27,6 +27,7 @@ import {
     CheckCircleOutlined,
     ScanOutlined,
     NodeIndexOutlined,
+    WarningOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
 import {useMemo} from "react";
@@ -383,6 +384,12 @@ const Sidenav: React.FC = () => {
                 label: "Yêu cầu lấy hàng",
                 path: "/shipper/shipping-requests",
                 icon: <ExclamationCircleOutlined/>,
+            },
+            {
+                key: "/shipper/failed-deliveries",
+                label: "Hàng giao thất bại",
+                path: "/shipper/failed-deliveries",
+                icon: <WarningOutlined/>,
             },
             {
                 key: "/cod",

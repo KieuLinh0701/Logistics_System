@@ -1,6 +1,7 @@
 package com.logistics.service.shipper;
 
 import com.logistics.entity.Address;
+import com.logistics.entity.DeliveryAttempt;
 import com.logistics.entity.Employee;
 import com.logistics.entity.IncidentReport;
 import com.logistics.entity.Order;
@@ -20,6 +21,7 @@ import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderPickupType;
+import com.logistics.repository.DeliveryAttemptRepository;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.IncidentReportRepository;
 import com.logistics.repository.OrderHistoryRepository;
@@ -62,6 +64,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderShipperService {
@@ -98,6 +101,9 @@ public class OrderShipperService {
 
     @Autowired
     private PickupAttemptRepository pickupAttemptRepository;
+
+    @Autowired
+    private DeliveryAttemptRepository deliveryAttemptRepository;
 
     @Autowired
     private ConfigService configService;
@@ -184,7 +190,7 @@ public class OrderShipperService {
                 currentOrders += 1;
                 currentWeightKg = currentWeightKg.add(orderWeightKg);
             }
-            case DELIVERED -> {
+            case DELIVERED, DELIVERY_RETRY -> {
                 currentOrders = Math.max(0, currentOrders - 1);
                 currentWeightKg = currentWeightKg.subtract(orderWeightKg);
             }
@@ -333,6 +339,7 @@ public class OrderShipperService {
                     OrderStatus.PICKUP_SUCCESS,
                     OrderStatus.DELIVERING,
                     OrderStatus.DELIVERED,
+                    OrderStatus.DELIVERY_RETRY,
                     OrderStatus.FAILED_DELIVERY,
                     OrderStatus.RETURNED
                 ));
@@ -809,6 +816,48 @@ public class OrderShipperService {
     }
 
     @Transactional
+    public ApiResponse<String> recordDeliveryAttempt(Integer id, UpdateDeliveryStatusRequest request) {
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice().getId();
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
+            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+        }
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+        }
+        if (order.getStatus() == OrderStatus.PARTIAL_DELIVERY || order.getStatus() == OrderStatus.PARTIAL_RETURN) {
+            return new ApiResponse<>(false, "Đơn đang giao 1 phần, không đi qua luồng delivery retry", null);
+        }
+        if (order.getStatus() != OrderStatus.DELIVERING) {
+            return new ApiResponse<>(false, "Chỉ có thể báo khi đơn đang giao", null);
+        }
+        if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.RETURNING || order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.DELIVERY_FAILED_FINAL) {
+            return new ApiResponse<>(false, "Trạng thái đơn hàng không hợp lệ", null);
+        }
+
+        String status = request != null && request.getStatus() != null ? request.getStatus().trim().toUpperCase() : null;
+        if (status == null || status.isBlank()) {
+            return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
+        }
+
+        if ("SUCCESS".equals(status)) {
+            return handleDeliverySuccess(order, employee, employee.getUser(), request);
+        }
+        if (!"FAILED".equals(status)) {
+            return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
+        }
+        if (request.getFailReason() == null || request.getFailReason().isBlank()) {
+            return new ApiResponse<>(false, "failReason là bắt buộc", null);
+        }
+
+        return handleDeliveryFailure(order, employee, employee.getUser(), request);
+    }
+
+    @Transactional
     public ApiResponse<String> updateDeliveryStatus(Integer id, UpdateDeliveryStatusRequest request) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
@@ -836,132 +885,28 @@ public class OrderShipperService {
         }
 
         User shipperUser = employee.getUser();
-        
-        // Luồng cơ bản: PICKED_UP -> DELIVERING -> DELIVERED / FAILED_DELIVERY / RETURNED
-        order.setStatus(newStatus);
 
-        // Tiền mặt thu được trong chuyến giao/hoàn
-        int cashCollected = 0;
+        if (request.getStatus() != null && request.getStatus().equalsIgnoreCase("DELIVERY_FAILED_FINAL")) {
+            return handleDeliveryFailedFinal(order, employee, shipperUser, request);
+        }
 
+        // Luồng cơ bản: PICKED_UP -> DELIVERING -> DELIVERED / DELIVERY_RETRY
         if (newStatus == OrderStatus.DELIVERED) {
-            order.setDeliveredAt(LocalDateTime.now());
-
-            // Chỉ tạo payment submission cho phí ship khi payer là CUSTOMER.
-            if (order.getPayer() == OrderPayerType.CUSTOMER) {
-                cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
-            }
-
-            if (cashCollected > 0) {
-                // Create submission but DO NOT mark recipientaddress as PAID here. Financial decision is centralized.
-                createPaymentSubmission(order, shipperUser, cashCollected,
-                        "Đối soát sau khi giao thành công");
-            }
-
-            // Nếu đơn có COD và chưa có bản ghi thu tiền COD, tạo bản ghi PENDING cho COD
-            try {
-                if (order.getCod() != null && order.getCod() > 0) {
-                    List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
-                    boolean hasPositive = existing.stream()
-                            .anyMatch(ps -> ps.getActualAmount() != null && ps.getActualAmount().compareTo(BigDecimal.ZERO) > 0);
-                    if (!hasPositive) {
-                        createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
-                        try {
-                            order.setCodStatus(OrderCodStatus.PENDING);
-                        } catch (Exception e) {
-                            throw e;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                throw e;
-            }
+            return handleDeliverySuccess(order, employee, shipperUser, request);
         }
 
-        // Nếu giao thất bại và có báo cáo Khách từ chối, đảm bảo trạng thái COD được đặt NONE
-        if (newStatus == OrderStatus.FAILED_DELIVERY) {
-            try {
-                boolean recipientRefused = incidentReportRepository.findAll().stream()
-                        .anyMatch(ir -> ir.getOrder() != null
-                                && Objects.equals(ir.getOrder().getId(), order.getId())
-                                && ir.getIncidentType() != null
-                                && ir.getIncidentType() == IncidentType.RECIPIENT_REFUSED);
-                if (recipientRefused) {
-                    order.setCodStatus(OrderCodStatus.NONE);
-                }
-            } catch (Exception e) {
-                throw e;
-            }
+        if (newStatus == OrderStatus.DELIVERY_RETRY) {
+            return handleDeliveryFailure(order, employee, shipperUser, request);
         }
 
-        // Khi hoàn trả: chỉ thu phí dịch vụ (không thu COD)
-        if (newStatus == OrderStatus.RETURNED) {
-            // Quyết định ai chịu phí hoàn dựa trên incident nếu có
-            try {
-                boolean recipientNotAvailable = incidentReportRepository.findAll().stream()
-                        .anyMatch(ir -> ir.getOrder() != null
-                                && Objects.equals(ir.getOrder().getId(), order.getId())
-                                && ir.getIncidentType() != null
-                                && ir.getIncidentType() == IncidentType.RECIPIENT_NOT_AVAILABLE);
-
-                boolean recipientRefused = incidentReportRepository.findAll().stream()
-                        .anyMatch(ir -> ir.getOrder() != null
-                                && Objects.equals(ir.getOrder().getId(), order.getId())
-                                && ir.getIncidentType() != null
-                                && ir.getIncidentType() == IncidentType.RECIPIENT_REFUSED);
-
-                if (recipientNotAvailable) {
-                    order.setPayer(OrderPayerType.SHOP);
-                }
-
-                // Nếu người nhận từ chối (khách từ chối lấy hàng) thì đảm bảo COD không còn được kỳ vọng
-                if (recipientRefused) {
-                    order.setCodStatus(OrderCodStatus.NONE);
-                }
-            } catch (Exception e) {
-                throw e;
-            }
-
-            // Kiểm tra đã có thu COD trước đó hay chưa
-            int collectedTotal = 0;
-            try {
-                List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
-                collectedTotal = existing.stream().mapToInt(ps -> ps.getActualAmount() != null ? ps.getActualAmount().intValue() : 0).sum();
-            } catch (Exception e) {
-                throw e;
-            }
-
-            // Nếu chưa thu COD mà payer trước đó là CUSTOMER, chuyển sang thu từ SHOP (người gửi)
-            if (collectedTotal == 0 && order.getPayer() == OrderPayerType.CUSTOMER) {
-                order.setPayer(OrderPayerType.SHOP);
-            }
-
-            // Nếu có phí giao/hoàn thì thu theo payer hiện tại
-            cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
-
-            if (cashCollected > 0) {
-                createPaymentSubmission(order, shipperUser, cashCollected,
-                        "Đối soát phí hoàn hàng");
-                order.setPaymentStatus(OrderPaymentStatus.UNPAID);
-            }
-
-            // Nếu trước đó đã có PaymentSubmission thu COD, tạo bản ghi return để không làm mất dấu tiền
-            if (collectedTotal > 0) {
-                try {
-                    createReturnPaymentSubmission(order, shipperUser, BigDecimal.valueOf(collectedTotal), "COD_RETURN: Hoàn tiền do trả hàng");
-                } catch (Exception e) {
-                    throw e;
-                }
-            }
-        }
-
+        // Các trạng thái còn lại giữ hành vi cũ
+        order.setStatus(newStatus);
         if (request.getNotes() != null) {
             order.setNotes(request.getNotes());
         }
-
         orderRepository.save(order);
         applyVehicleWorkloadByStatus(order, employee, newStatus);
 
-        // Gửi thông báo khi cập nhật trạng thái
         String statusMessage = switch (newStatus) {
             case DELIVERING -> "Đã bắt đầu giao hàng";
             case DELIVERED -> "Đã giao hàng thành công";
@@ -979,39 +924,11 @@ public class OrderShipperService {
                 order.getTrackingNumber()
         );
 
-        // Nhắc nộp COD nếu đã giao thành công và có COD
-        if (newStatus == OrderStatus.DELIVERED && order.getCod() != null && order.getCod() > 0) {
-            notificationService.create(
-                    "Nhắc nhở nộp COD",
-                    "Đơn hàng " + order.getTrackingNumber() + " có COD " + order.getCod() + "đ cần nộp",
-                    "cod_reminder",
-                    shipperUser.getId(),
-                    null,
-                    "recipientaddress",
-                    order.getTrackingNumber()
-            );
-        }
-
-        // Ghi OrderHistory cho các trạng thái shipper cập nhật
         switch (newStatus) {
-            case DELIVERING -> saveHistory(order, OrderHistoryActionType.DELIVERING,
-                    "Shipper bắt đầu giao hàng");
-            case DELIVERED -> saveHistory(order, OrderHistoryActionType.DELIVERED,
-                    "Shipper đã giao hàng thành công");
-            case FAILED_DELIVERY -> {
-                String note = "Shipper đã trả đơn về bưu cục";
-                if (request.getNotes() != null && !request.getNotes().isBlank()) {
-                    note += ": " + request.getNotes();
-                }
-                saveHistory(order, OrderHistoryActionType.FAILED_DELIVERY, note);
-            }
-            case RETURNED -> {
-                String note = "Shipper đã trả đơn về bưu cục";
-                if (request.getNotes() != null && !request.getNotes().isBlank()) {
-                    note += ": " + request.getNotes();
-                }
-                saveHistory(order, OrderHistoryActionType.RETURNED, note);
-            }
+            case DELIVERING -> saveHistory(order, OrderHistoryActionType.DELIVERING, "Shipper bắt đầu giao hàng");
+            case DELIVERED -> saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
+            case FAILED_DELIVERY -> saveHistory(order, OrderHistoryActionType.FAILED_DELIVERY, "Shipper đã trả đơn về bưu cục");
+            case RETURNED -> saveHistory(order, OrderHistoryActionType.RETURNED, "Shipper đã trả đơn về bưu cục");
             default -> {
             }
         }
@@ -1114,6 +1031,7 @@ public class OrderShipperService {
     public ApiResponse<Map<String, Object>> getDeliveryHistory(int page, int limit, String status) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
+        Integer shipperUserId = employee.getUser().getId();
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "deliveredAt"));
 
@@ -1121,15 +1039,14 @@ public class OrderShipperService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
-                predicates.add(root.get("status").in(
+            predicates.add(root.get("status").in(
                     OrderStatus.DELIVERED,
-                    OrderStatus.FAILED_DELIVERY,
-                    OrderStatus.RETURNED,
-                    OrderStatus.PARTIAL_DELIVERY,
-                    OrderStatus.PARTIAL_RETURN
-                ));
-
-            // Chỉ bao gồm các đơn đã được gán cho nhân viên này
+                    OrderStatus.DELIVERY_RETRY,
+                    OrderStatus.AT_DEST_OFFICE,
+                    OrderStatus.DELIVERY_FAILED_FINAL,
+                    OrderStatus.RETURNING,
+                    OrderStatus.RETURNED
+            ));
             predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
 
             if (status != null && !status.isBlank()) {
@@ -1144,32 +1061,84 @@ public class OrderShipperService {
         };
 
         Page<Order> orderPage = orderRepository.findAll(spec, pageable);
-        List<Map<String, Object>> orders = orderPage.getContent()
-                .stream()
-                .map(this::mapOrderDetail)
+        List<Order> orderRows = new ArrayList<>(orderPage.getContent());
+        Set<Integer> existingOrderIds = orderRows.stream().map(Order::getId).collect(Collectors.toSet());
+
+        List<DeliveryAttempt> failedAttempts = deliveryAttemptRepository.findAll().stream()
+                .filter(attempt -> attempt.getShipper() != null
+                        && attempt.getShipper().getId() != null
+                        && attempt.getShipper().getId().equals(shipperUserId)
+                        && attempt.getStatus() == com.logistics.enums.DeliveryAttemptStatus.FAILED)
+                .filter(attempt -> attempt.getOrder() != null)
+                .filter(attempt -> attempt.getOrder().getToOffice() != null
+                        && attempt.getOrder().getToOffice().getId() != null
+                        && attempt.getOrder().getToOffice().getId().equals(officeId))
+                .filter(attempt -> {
+                    if (status == null || status.isBlank()) {
+                        return true;
+                    }
+                    try {
+                        OrderStatus os = OrderStatus.valueOf(status.toUpperCase());
+                        return os == OrderStatus.DELIVERY_FAILED_FINAL || os == OrderStatus.FAILED_DELIVERY;
+                    } catch (IllegalArgumentException ignored) {
+                        return false;
+                    }
+                })
+                .sorted((a, b) -> {
+                    if (a.getAttemptedAt() == null && b.getAttemptedAt() == null) return 0;
+                    if (a.getAttemptedAt() == null) return 1;
+                    if (b.getAttemptedAt() == null) return -1;
+                    return b.getAttemptedAt().compareTo(a.getAttemptedAt());
+                })
                 .toList();
 
+        Map<Integer, DeliveryAttempt> firstFailedAttemptByOrderId = new LinkedHashMap<>();
+        for (DeliveryAttempt attempt : failedAttempts) {
+            Integer orderId = attempt.getOrder().getId();
+            if (orderId != null && !firstFailedAttemptByOrderId.containsKey(orderId)) {
+                firstFailedAttemptByOrderId.put(orderId, attempt);
+                if (!existingOrderIds.contains(orderId)) {
+                    orderRows.add(attempt.getOrder());
+                    existingOrderIds.add(orderId);
+                }
+            }
+        }
+
+        List<Map<String, Object>> orders = orderRows.stream()
+                .map(order -> {
+                    Map<String, Object> mapped = mapOrderDetail(order);
+                    if (firstFailedAttemptByOrderId.containsKey(order.getId()) && order.getStatus() != OrderStatus.DELIVERED) {
+                        DeliveryAttempt attempt = firstFailedAttemptByOrderId.get(order.getId());
+                        mapped.put("status", OrderStatus.DELIVERY_FAILED_FINAL.name());
+                        mapped.put("displayDate", attempt.getAttemptedAt());
+                    } else {
+                        mapped.put("displayDate", order.getDeliveredAt());
+                    }
+                    return mapped;
+                })
+                .toList();
+
+        long deliveredCount = orderRows.stream().filter(o -> o.getStatus() == OrderStatus.DELIVERED).count();
+        long failedCount = firstFailedAttemptByOrderId.size();
+
         Pagination pagination = new Pagination(
-                (int) orderPage.getTotalElements(),
+                orders.size(),
                 page,
                 limit,
-                orderPage.getTotalPages()
+                Math.max(1, (int) Math.ceil((double) orders.size() / limit))
         );
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalAssigned", orderPage.getTotalElements());
+        stats.put("totalAssigned", orders.size());
         stats.put("inProgress", 0);
-        stats.put("delivered", orderPage.getContent().stream().filter(o -> o.getStatus() == OrderStatus.DELIVERED).count());
-        stats.put("failed", orderPage.getContent().stream()
-                .filter(o -> o.getStatus() == OrderStatus.FAILED_DELIVERY || o.getStatus() == OrderStatus.RETURNED)
-                .count());
-        // COD đã thu: tổng các submission PENDING / IN_BATCH của shipper
+        stats.put("delivered", deliveredCount);
+        stats.put("failed", failedCount);
         int codCollectedHistory = paymentSubmissionRepository
-            .findByShipperIdAndStatusIn(employee.getUser().getId(),
-                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
-            .stream()
-            .mapToInt(ps -> ps.getActualAmount().intValue())
-            .sum();
+                .findByShipperIdAndStatusIn(shipperUserId,
+                        Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+                .stream()
+                .mapToInt(ps -> ps.getActualAmount().intValue())
+                .sum();
         stats.put("codCollected", codCollectedHistory);
 
         Map<String, Object> result = new HashMap<>();
@@ -1709,6 +1678,138 @@ public class OrderShipperService {
         } catch (Exception e) {
             throw e;
         }
+    }
+
+    private int getMaxDeliveryAttempts() {
+        try {
+            return configService.getInt("MAX_DELIVERY_ATTEMPTS");
+        } catch (Exception e) {
+            return 3;
+        }
+    }
+
+    private long countFailedDeliveryAttempts(Integer orderId) {
+        return deliveryAttemptRepository.countByOrderIdAndStatus(orderId, com.logistics.enums.DeliveryAttemptStatus.FAILED);
+    }
+
+    private String buildDeliveryAttemptNote(String reason, String note, int attemptNumber, int maxAttempts) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Giao thất bại lần ").append(attemptNumber).append("/").append(maxAttempts);
+        if (reason != null && !reason.isBlank()) {
+            sb.append(": ").append(reason);
+        }
+        if (note != null && !note.isBlank()) {
+            sb.append(" - ").append(note);
+        }
+        return sb.toString();
+    }
+
+    private ApiResponse<String> handleDeliverySuccess(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setDeliveredAt(LocalDateTime.now());
+        orderRepository.save(order);
+        applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
+
+        int cashCollected = 0;
+        if (order.getPayer() == OrderPayerType.CUSTOMER) {
+            cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
+        }
+        if (cashCollected > 0) {
+            createPaymentSubmission(order, shipperUser, cashCollected, "Đối soát sau khi giao thành công");
+        }
+        if (order.getCod() != null && order.getCod() > 0) {
+            List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+            boolean hasPositive = existing.stream().anyMatch(ps -> ps.getActualAmount() != null && ps.getActualAmount().compareTo(BigDecimal.ZERO) > 0);
+            if (!hasPositive) {
+                createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
+                order.setCodStatus(OrderCodStatus.PENDING);
+                orderRepository.save(order);
+            }
+        }
+
+        notificationService.create(
+                "Đã giao hàng thành công",
+                "Đơn hàng " + order.getTrackingNumber() + " - Đã giao hàng thành công",
+                "order_status_changed",
+                shipperUser.getId(),
+                null,
+                "recipientaddress",
+                order.getTrackingNumber()
+        );
+        saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
+        return new ApiResponse<>(true, "Cập nhật trạng thái giao hàng thành công", null);
+    }
+
+    private ApiResponse<String> handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
+        if (order.getStatus() != OrderStatus.DELIVERING) {
+            return new ApiResponse<>(false, "Chỉ có thể báo giao thất bại khi đơn đang giao", null);
+        }
+        int maxAttempts = getMaxDeliveryAttempts();
+        long failedCountBefore = countFailedDeliveryAttempts(order.getId());
+        int attemptNumber = (int) failedCountBefore + 1;
+        boolean finalFail = attemptNumber >= maxAttempts;
+
+        String reason = request.getFailReason();
+        String note = request.getNotes();
+        if (reason == null || reason.isBlank()) {
+            return new ApiResponse<>(false, "failReason là bắt buộc", null);
+        }
+
+        DeliveryAttempt attempt = new DeliveryAttempt();
+        attempt.setOrder(order);
+        attempt.setShipper(shipperUser);
+        attempt.setAttemptNumber(attemptNumber);
+        attempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.FAILED);
+        attempt.setFailReason(com.logistics.enums.DeliveryFailReason.valueOf(reason.trim().toUpperCase()));
+        attempt.setNote(note);
+        deliveryAttemptRepository.save(attempt);
+
+        if (finalFail) {
+            order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
+            orderRepository.save(order);
+            saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
+            return new ApiResponse<>(true, "Đã ghi nhận giao thất bại cuối cùng", null);
+        }
+
+        order.setStatus(OrderStatus.DELIVERY_RETRY);
+        orderRepository.save(order);
+        saveHistory(order, OrderHistoryActionType.DELIVERY_RETRY, buildDeliveryAttemptNote(reason, note, attemptNumber, maxAttempts));
+        return new ApiResponse<>(true, "Đã ghi nhận giao thất bại", null);
+    }
+
+    @Transactional
+    public ApiResponse<String> returnFailedToOffice(Integer id) {
+        Employee employee = getCurrentEmployee();
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+        }
+        if (order.getStatus() != OrderStatus.DELIVERY_RETRY) {
+            return new ApiResponse<>(false, "Chỉ có thể nộp hàng về bưu cục khi đơn ở trạng thái chờ giao lại", null);
+        }
+
+        applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_RETRY);
+        order.setStatus(OrderStatus.AT_DEST_OFFICE);
+        order.setEmployee(null);
+        orderRepository.save(order);
+        saveHistory(order, OrderHistoryActionType.AT_DEST_OFFICE, "Shipper đã nộp hàng giao thất bại về bưu cục đích");
+
+        return new ApiResponse<>(true, "Đã nộp hàng thất bại về bưu cục", null);
+    }
+
+    private ApiResponse<String> handleDeliveryFailedFinal(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+        }
+        if (order.getStatus() != OrderStatus.DELIVERING && order.getStatus() != OrderStatus.DELIVERY_FAILED_FINAL) {
+            return new ApiResponse<>(false, "Chỉ có thể báo giao thất bại cuối cùng khi đơn đang giao", null);
+        }
+        order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
+        orderRepository.save(order);
+        saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
+        return new ApiResponse<>(true, "Đã ghi nhận giao thất bại cuối cùng", null);
     }
 
     private String resolveSenderFullAddress(Order order) {

@@ -27,7 +27,7 @@ import {
 import orderApi from "../../api/orderApi";
 import type { ShipperOrder, ShipperStats } from "../../api/orderApi";
 import dayjs from "dayjs";
-import { translateOrderCodStatus } from "../../utils/orderUtils";
+import { translateOrderCodStatus, translateOrderStatus } from "../../utils/orderUtils";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 
@@ -114,44 +114,21 @@ const ShipperDeliveryHistory: React.FC = () => {
         return "processing";
       case "DELIVERED":
         return "success";
+      case "DELIVERY_RETRY":
+      case "DELIVERY_FAILED_FINAL":
       case "FAILED_DELIVERY":
       case "CANCELLED":
         return "error";
-      case "RETURNED":
+      case "RETURNING":
         return "warning";
+      case "RETURNED":
+        return "gold";
       default:
         return "default";
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "PENDING":
-        return "Chờ xử lý";
-      case "CONFIRMED":
-        return "Đã xác nhận";
-      case "AT_DEST_OFFICE":
-        return "Đã đến bưu cục";
-      case "PICKED_UP":
-        return "Đã lấy hàng";
-      case "DELIVERING":
-        return "Đang giao hàng";
-      case "DELIVERED":
-        return "Đã giao";
-      case "PARTIAL_DELIVERY":
-        return "Giao 1 phần";
-      case "PARTIAL_RETURN":
-        return "Trả 1 phần";
-      case "FAILED_DELIVERY":
-        return "Giao thất bại";
-      case "CANCELLED":
-        return "Đã hủy";
-      case "RETURNED":
-        return "Đã hoàn";
-      default:
-        return status;
-    }
-  };
+  const getStatusText = (status: string) => translateOrderStatus(status);
 
   const columns = [
     {
@@ -233,10 +210,13 @@ const ShipperDeliveryHistory: React.FC = () => {
     },
     {
       title: "Ngày giao",
-      dataIndex: "deliveredAt",
-      key: "deliveredAt",
+      dataIndex: "displayDate",
+      key: "displayDate",
       width: 150,
-      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—"),
+      render: (_: string, record: ShipperOrder & { historyDate?: string; displayDate?: string; deliveredAt?: string }) => {
+        const date = record.historyDate || record.displayDate || record.deliveredAt;
+        return date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—";
+      },
     },
     {
       title: "Thao tác",
@@ -274,10 +254,11 @@ const ShipperDeliveryHistory: React.FC = () => {
               onChange={(value) => handleFilterChange("status", value || undefined)}
             >
               <Option value="DELIVERED">Đã giao</Option>
-              <Option value="PARTIAL_DELIVERY">Giao 1 phần</Option>
-              <Option value="PARTIAL_RETURN">Trả 1 phần</Option>
-              <Option value="FAILED_DELIVERY">Giao thất bại</Option>
-              <Option value="RETURNED">Đã hoàn</Option>
+              <Option value="DELIVERY_RETRY">Chờ giao lại</Option>
+              <Option value="AT_DEST_OFFICE">Đã nộp về bưu cục</Option>
+              <Option value="DELIVERY_FAILED_FINAL">Giao thất bại</Option>
+              <Option value="RETURNING">Đang hoàn hàng</Option>
+              <Option value="RETURNED">Đã hoàn hàng</Option>
             </Select>
             <RangePicker
               value={filters.dateRange ?? null}

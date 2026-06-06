@@ -20,5 +20,8 @@ public class SystemConfigInitializer implements ApplicationRunner {
         if (!systemConfigRepository.existsById("MAX_PICKUP_ATTEMPTS")) {
             systemConfigRepository.save(new SystemConfig("MAX_PICKUP_ATTEMPTS", "3"));
         }
+        if (!systemConfigRepository.existsById("MAX_DELIVERY_ATTEMPTS")) {
+            systemConfigRepository.save(new SystemConfig("MAX_DELIVERY_ATTEMPTS", "3"));
+        }
     }
 }
