@@ -2,20 +2,22 @@ package com.logistics.service.chat;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.logistics.repository.AccountRepository;
-import com.logistics.enums.SupportMessageType;
-import com.logistics.response.ApiResponse;
-import com.logistics.request.chat.SendSupportMessageRequest;
 import com.logistics.dto.chat.SupportMessageDto;
 import com.logistics.entity.SupportMessage;
 import com.logistics.entity.SupportTicket;
+import com.logistics.enums.SupportMessageSenderType;
+import com.logistics.enums.SupportMessageType;
 import com.logistics.repository.SupportMessageRepository;
 import com.logistics.repository.SupportTicketRepository;
+import com.logistics.request.chat.SendSupportMessageRequest;
+import com.logistics.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +31,8 @@ public class SupportMessageService {
     private final AccountRepository accountRepository;
     private final com.logistics.repository.OrderRepository orderRepository;
     private final com.logistics.repository.EmployeeRepository employeeRepository;
+    private final SupportAssistantService supportAssistantService;
+    private final SupportBotMessageService supportBotMessageService;
 
     @Transactional
     public ApiResponse<SupportMessageDto> sendMessage(Integer ticketId, Integer senderId, String roleName,
@@ -54,6 +58,10 @@ public class SupportMessageService {
             SupportMessageDto dto = toMessageDto(saved);
             messagingTemplate.convertAndSend("/topic/support/" + ticketId, dto);
 
+            if (shouldTriggerAssistant(roleName, saved)) {
+                supportAssistantService.handleAfterUserMessage(ticket, saved);
+            }
+
             return new ApiResponse<>(true, "Gửi tin nhắn thành công", dto);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Gửi tin nhắn thất bại: " + e.getMessage(), null);
@@ -78,7 +86,9 @@ public class SupportMessageService {
 
             List<SupportMessageDto> data = supportMessageRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
                     .stream()
-                    .filter(msg -> isManagerOrAdmin(roleName) || msg.getMessageType() != SupportMessageType.SYSTEM)
+                    .filter(msg -> isManagerOrAdmin(roleName)
+                            || msg.getMessageType() != SupportMessageType.SYSTEM
+                            || msg.getSenderType() == SupportMessageSenderType.BOT)
                     .filter(msg -> !Boolean.TRUE.equals(msg.getIsInternalNote()) || isManagerOrAdmin(roleName))
                     .map(this::toMessageDto)
                     .toList();
@@ -96,8 +106,20 @@ public class SupportMessageService {
 
     @Transactional
     public void createSystemMessage(Integer ticketId, String message) {
-        // senderAccountId = 0 đại diện cho hệ thống
         saveMessage(ticketId, 0, message, SupportMessageType.SYSTEM, false);
+    }
+
+    @Transactional
+    public SupportMessage createBotMessage(Integer ticketId, String message) {
+        return supportBotMessageService.createBotMessage(ticketId, message);
+    }
+
+    @Transactional
+    public void sendSystemBotMessage(Integer ticketId, SendSupportMessageRequest request, SupportMessageSenderType senderType) {
+        if (request == null) {
+            return;
+        }
+        supportBotMessageService.sendSystemBotMessage(ticketId, request.getMessage(), senderType);
     }
 
     private SupportMessage saveMessage(Integer ticketId, Integer senderId, String message,
@@ -105,6 +127,7 @@ public class SupportMessageService {
         SupportMessage entity = new SupportMessage();
         entity.setTicketId(ticketId);
         entity.setSenderAccountId(senderId);
+        entity.setSenderType(resolveSenderType(senderId));
         entity.setMessage(message == null ? "" : message.trim());
         entity.setMessageType(messageType == null ? SupportMessageType.TEXT : messageType);
         entity.setIsInternalNote(isInternalNote);
@@ -118,7 +141,7 @@ public class SupportMessageService {
             if ("Admin".equalsIgnoreCase(roleName)) return true;
 
             // Manager: cho phép nếu ticket được gán cho họ
-            if (ticket.getAssignedToAccountId() != null && ticket.getAssignedToAccountId().equals(accountId)) {
+            if (Objects.equals(ticket.getAssignedToAccountId(), accountId)) {
                 return true;
             }
 
@@ -147,13 +170,46 @@ public class SupportMessageService {
             return false;
         }
 
-        return ticket.getCreatedByAccountId().equals(accountId);
+        return Objects.equals(ticket.getCreatedByAccountId(), accountId);
     }
 
     private boolean isManagerOrAdmin(String roleName) {
         return "Manager".equalsIgnoreCase(roleName) || "Admin".equalsIgnoreCase(roleName);
     }
 
+    private boolean shouldTriggerAssistant(String roleName, SupportMessage saved) {
+        if (saved == null) {
+            return false;
+        }
+        if (saved.getSenderType() == SupportMessageSenderType.BOT || saved.getSenderType() == SupportMessageSenderType.SYSTEM) {
+            return false;
+        }
+        return !isManagerOrAdmin(roleName) && saved.getSenderType() == SupportMessageSenderType.USER;
+    }
+
+    private SupportMessageSenderType resolveSenderType(Integer senderId) {
+        if (senderId == null) {
+            return SupportMessageSenderType.SYSTEM;
+        }
+        if (senderId == 0) {
+            return SupportMessageSenderType.SYSTEM;
+        }
+        return accountRepository.findById(senderId)
+                .map(account -> {
+                    var activeRoles = account.getAccountRoles() == null ? List.<String>of() : account.getAccountRoles().stream()
+                            .filter(ar -> Boolean.TRUE.equals(ar.getIsActive()) && ar.getRole() != null)
+                            .map(ar -> ar.getRole().getName())
+                            .toList();
+                    if (activeRoles.stream().anyMatch(r -> "Admin".equalsIgnoreCase(r))) {
+                        return SupportMessageSenderType.ADMIN;
+                    }
+                    if (activeRoles.stream().anyMatch(r -> "Manager".equalsIgnoreCase(r))) {
+                        return SupportMessageSenderType.MANAGER;
+                    }
+                    return SupportMessageSenderType.USER;
+                })
+                .orElse(SupportMessageSenderType.USER);
+    }
 
     private String resolveRoleNameByAccountId(Integer accountId) {
         return accountRepository.findById(accountId)
@@ -195,10 +251,27 @@ public class SupportMessageService {
             senderName = "System";
         }
 
+        boolean isBotMessage = entity.getSenderType() == SupportMessageSenderType.BOT;
+        String senderLabel;
+        if (isBotMessage) {
+            senderLabel = "Trợ lý logistics";
+        } else if (entity.getSenderType() == SupportMessageSenderType.SYSTEM) {
+            senderLabel = "System";
+        } else if (entity.getSenderType() == SupportMessageSenderType.MANAGER) {
+            senderLabel = "Manager";
+        } else if (entity.getSenderType() == SupportMessageSenderType.ADMIN) {
+            senderLabel = "Admin";
+        } else {
+            senderLabel = senderName;
+        }
+
         return new SupportMessageDto(
                 entity.getId(),
                 entity.getTicketId(),
                 entity.getSenderAccountId(),
+                entity.getSenderType(),
+                senderLabel,
+                isBotMessage,
                 entity.getMessage(),
                 entity.getMessageType(),
                 entity.getIsInternalNote(),
