@@ -67,15 +67,13 @@ public interface SettlementBatchRepository
             List<SettlementStatus> statuses,
             LocalDateTime time);
 
-    boolean existsByShopAndStatusIn(User shop, List<SettlementStatus> statuses);
-
     List<SettlementBatch> findByShopIdAndStatusIn(
             int shopId,
             List<SettlementStatus> statuses);
 
-    List<SettlementBatch> findAllByIdInAndShop_Id(List<Integer> ids, Integer shopId);
-
     List<SettlementBatch> findByShopAndStatusInOrderByCreatedAtAsc(User shop, List<SettlementStatus> statuses);
 
     List<SettlementBatch> findByShop_Id(Integer id);
+
+    List<SettlementBatch> findByShopAndLockedSentTrue(User shop);
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Col, Form, Row, Tag, message } from "antd";
+import { Col, Row, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import SubmissionTable from "./components/Table";
@@ -18,7 +18,6 @@ import AddBatchModal from "./components/AddBatchModal";
 const ManagerPaymentSubmissionBatchs = () => {
   const latestRequestRef = useRef(0);
   const navigate = useNavigate();
-  const [form] = Form.useForm();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(false);
@@ -163,11 +162,6 @@ const ManagerPaymentSubmissionBatchs = () => {
     }
   };
 
-  const handleAddPaymentSubmissionBatch = async () => {
-    setIsModalOpen(true);
-    form.resetFields();
-  }
-
   const handleAddSuccessPaymentSubmissionBatch = async () => {
     setIsModalOpen(false);
     setCurrentPage(1);
@@ -220,7 +214,6 @@ const ManagerPaymentSubmissionBatchs = () => {
           <Col>
             <div className="list-page-actions">
               <Actions
-                onAdd={handleAddPaymentSubmissionBatch}
                 onExport={handleExportPaymentSubmissionBatchs}
               />
             </div>

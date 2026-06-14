@@ -11,7 +11,6 @@ import {
     TeamOutlined,
     DollarOutlined,
     DropboxOutlined,
-    SearchOutlined,
     UserOutlined,
     ShopOutlined,
     SettingOutlined,
@@ -19,18 +18,17 @@ import {
     GiftOutlined,
     BarChartOutlined,
     ProfileOutlined,
-    InboxOutlined,
     ClockCircleOutlined,
     ExclamationCircleOutlined,
     TruckOutlined,
     EnvironmentOutlined,
     BankOutlined,
     CheckCircleOutlined,
-    ScanOutlined,
+    ScanOutlined, UserSwitchOutlined, ContactsOutlined,
 } from "@ant-design/icons";
 import "./Sidenav.css";
 import {useMemo} from "react";
-import {getUserRole} from "../../utils/authUtils";
+import {getUserRole, hasPermissionGroup} from "../../utils/authUtils";
 
 type MenuItemType = {
     key: string;
@@ -38,6 +36,24 @@ type MenuItemType = {
     path?: string;
     icon?: React.ReactNode;
     children?: MenuItemType[];
+    permissionGroups?: string[];
+};
+
+const canViewMenuItem = (item: MenuItemType): boolean => {
+    if (!item.permissionGroups || item.permissionGroups.length === 0) return true;
+    return hasPermissionGroup(item.permissionGroups);
+};
+
+const filterMenuByPermissionGroup = (items: MenuItemType[]): MenuItemType[] => {
+    return items
+        .filter(canViewMenuItem)
+        .map((item) => {
+            if (item.children) {
+                return { ...item, children: filterMenuByPermissionGroup(item.children) };
+            }
+            return item;
+        })
+        .filter((item) => !item.children || item.children.length > 0);
 };
 
 const Sidenav: React.FC = () => {
@@ -51,6 +67,7 @@ const Sidenav: React.FC = () => {
                 label: "Tổng quan",
                 path: "/dashboard",
                 icon: <DashboardOutlined/>,
+                // permissionGroups: ["ORDER_VIEW", "ORDER_MANAGE"],
             },
             {
                 key: "/users",
@@ -270,16 +287,19 @@ const Sidenav: React.FC = () => {
                 key: "orders",
                 label: "Quản lý đơn hàng",
                 icon: <ShoppingOutlined/>,
+                permissionGroups: ['GROUP_USER', 'USER_ORDER_VIEW', 'USER_SUPPORT_VIEW'],
                 children: [
                     {
                         key: "/orders/list",
                         label: "Danh sách đơn hàng",
                         path: "/orders/list",
+                        permissionGroups: ['GROUP_USER', 'USER_ORDER_VIEW'],
                     },
                     {
                         key: "/orders/request",
                         label: "Hỗ trợ & Khiếu nại",
                         path: "/orders/requests",
+                        permissionGroups: ['GROUP_USER', 'USER_SUPPORT_VIEW'],
                     },
                 ],
             },
@@ -290,10 +310,22 @@ const Sidenav: React.FC = () => {
                 icon: <DropboxOutlined/>,
             },
             {
+                key: "/roles",
+                label: "Phân quyền",
+                path: "/roles",
+                icon: <UserSwitchOutlined />,
+            },
+            {
+                key: "/employees",
+                label: "Quản lý nhân viên",
+                path: "/employees",
+                icon: <TeamOutlined />,
+            },
+            {
                 key: "/customers",
                 label: "Quản lý khách hàng",
                 path: "/customers",
-                icon: <TeamOutlined />,
+                icon: <ContactsOutlined />,
             },
             {
                 key: "/settlements",
@@ -306,28 +338,6 @@ const Sidenav: React.FC = () => {
                 label: "Tài khoản ngân hàng",
                 icon: <BankOutlined/>,
                 path: "/bank-accounts",
-            },
-            {
-                key: "tracking",
-                label: "Tra cứu thông tin",
-                icon: <SearchOutlined/>,
-                children: [
-                    {
-                        key: "/tracking/shipping-fee",
-                        label: "Tra cứu cước vận chuyển",
-                        path: "shipping-fee",
-                    },
-                    {
-                        key: "/tracking/office-search",
-                        label: "Tra cứu bưu cục",
-                        path: "office-search",
-                    },
-                    {
-                        key: "/tracking/shipping-rates",
-                        label: "Bảng giá",
-                        path: "shipping-rates",
-                    },
-                ],
             },
             {
                 key: "/account/settings",
@@ -449,7 +459,10 @@ const Sidenav: React.FC = () => {
         ],
     };
 
-    const menuItems = useMemo(() => menuConfig[role!] || menuConfig.user, [role]);
+    const menuItems = useMemo(() => {
+        const baseItems = menuConfig[role!] || menuConfig.user;
+        return filterMenuByPermissionGroup(baseItems);
+    }, [role]);
 
     const generateMenuItems = (items: MenuItemType[]): any[] => {
         return items.map((item) => {

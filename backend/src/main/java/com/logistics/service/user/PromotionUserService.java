@@ -43,10 +43,13 @@ public class PromotionUserService {
     private final UserPromotionRepository userPromotionRepo;
     private final OrderRepository orderRepo;
     private final UserRepository userRepo;
+    private final UserUserService userService;
 
     public ApiResponse<ListResponse<UserPromotionDto>> getActiveUserPromotions(@NonNull Integer userId,
             PromotionUserRequest req) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             int page = req.getPage() != null ? req.getPage() - 1 : 0;
             int limit = req.getLimit() != null ? req.getLimit() : 10;
 
@@ -56,11 +59,10 @@ public class PromotionUserService {
             Page<Promotion> promotionsPage = promotionRepo.findAll(
                     PromotionSpecification.activeAndUsable(), pageable);
 
-            User user = userRepo.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+            User user = userService.getUser(shopId);
 
             // Đếm tất cả các đơn đã tạo của user, trừ đơn bị hủy
-            long nonCanceledOrders = orderRepo.countByUserIdAndStatusNot(userId, OrderStatus.CANCELLED);
+            long nonCanceledOrders = orderRepo.countByUserIdAndStatusNot(shopId, OrderStatus.CANCELLED);
 
             List<UserPromotionDto> result = promotionsPage.getContent().stream()
                     .filter(p -> isPromotionValidForUser(p, user, nonCanceledOrders, req))

@@ -1,19 +1,23 @@
-import { getUserRole } from "../../utils/authUtils";
+import { getUserPermissionGroups } from "../../utils/authUtils";
 import Forbidden from "../common/Forbidden";
 import ManagerOrderList from "../manager/order/list/ManagerOrderList";
 import UserOrderList from "../user/order/list/UserOrderList";
 
 const OrderListRouter = () => {
-  const role = getUserRole();
+    const userPermissions = getUserPermissionGroups();
 
-  switch (role) {
-    case "user":
-      return <UserOrderList />;
-    case "manager":
-      return <ManagerOrderList />;
-    default:
-      return <Forbidden />;
-  }
+    const isUser = ["group_user", "user_order_view"].some(p => userPermissions.includes(p));
+    const isManager = ["group_manager"].some(p => userPermissions.includes(p));
+
+    if (isUser) {
+        return <UserOrderList />;
+    }
+
+    if (isManager) {
+        return <ManagerOrderList />;
+    }
+
+    return <Forbidden />;
 };
 
 export default OrderListRouter;

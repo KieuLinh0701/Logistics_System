@@ -212,4 +212,10 @@ public interface OrderRepository
             + "GROUP BY o.status",
             nativeQuery = true)
     List<Object[]> countByStatusForOffice(@Param("officeId") Integer officeId);
+
+    long countByUserIdAndRecipientPhoneAndRecipientFullAddress(
+            int userId, String phone, String fullAddress);
+
+    long countByUserIdAndRecipientPhoneAndRecipientFullAddressAndStatusIn(
+            int userId, String phone, String fullAddress, List<OrderStatus> statuses);
 }

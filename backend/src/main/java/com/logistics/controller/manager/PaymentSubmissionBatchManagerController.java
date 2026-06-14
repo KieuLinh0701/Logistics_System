@@ -54,15 +54,6 @@ public class PaymentSubmissionBatchManagerController {
                 return ResponseEntity.ok(service.processing(userId, id, form));
         }
 
-        @PostMapping
-        public ResponseEntity<ApiResponse<Boolean>> create(
-                        @RequestBody @Valid ManagerPaymentSubmissionBatchCreateForm form,
-                        HttpServletRequest request) {
-                Integer userId = (Integer) request.getAttribute("currentUserId");
-
-                return ResponseEntity.ok(service.create(userId, form));
-        }
-
         @GetMapping("/export")
         public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
                         SearchRequest searchRequest) throws Exception {

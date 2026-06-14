@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Tooltip } from "antd";
+import {Button, Tooltip} from "antd";
 import {
     CreditCardOutlined,
     WalletOutlined,
@@ -8,7 +8,7 @@ import {
     CalendarOutlined,
     QuestionCircleOutlined,
 } from "@ant-design/icons";
-import Title from "antd/es/typography/Title";
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface Props {
     received: number;
@@ -18,91 +18,104 @@ interface Props {
     onPayment: () => void;
 }
 
-const SettlementSummary: React.FC<Props> = ({ received, pending, debt, nextSettlementDate, onPayment }) => {
+const showStats = hasPermissionGroup(['GROUP_USER', 'USER_COD_STATISTICS']);
+const showPayment = hasPermissionGroup(['GROUP_USER', 'USER_COD_PAYMENT']);
+
+const getTitle = () => {
+    if (!showStats) return "Thanh toán công nợ";
+    return "Thống kê đối soát";
+};
+
+const SettlementSummary: React.FC<Props> = ({received, pending, debt, nextSettlementDate, onPayment}) => {
     const stats = [
         {
             key: "received",
-            icon: <WalletOutlined />,
+            icon: <WalletOutlined/>,
             color: "#1C3D90",
-            amount: received.toLocaleString(),
+            value: received.toLocaleString(),
             suffix: "₫",
-            label: "ĐÃ NHẬN",
+            label: "Đã nhận",
             tooltip: "Tổng tiền hệ thống đã chuyển cho bạn",
         },
         {
             key: "pending",
-            icon: <ClockCircleOutlined />,
+            icon: <ClockCircleOutlined/>,
             color: "#fa8c16",
-            amount: pending.toLocaleString(),
+            value: pending.toLocaleString(),
             suffix: "₫",
-            label: "SẮP NHẬN",
+            label: "Sắp nhận",
             tooltip: "Tiền đang trong quá trình xử lý",
         },
         {
             key: "debt",
-            icon: <PayCircleOutlined />,
+            icon: <PayCircleOutlined/>,
             color: "#f5222d",
-            amount: debt.toLocaleString(),
+            value: debt.toLocaleString(),
             suffix: "₫",
-            label: "CÒN NỢ",
+            label: "Còn nợ",
             tooltip: "Số tiền bạn cần thanh toán cho hệ thống",
         },
         ...(nextSettlementDate
             ? [{
                 key: "nextDate",
-                icon: <CalendarOutlined />,
+                icon: <CalendarOutlined/>,
                 color: "#52c41a",
-                amount: nextSettlementDate,
+                value: nextSettlementDate,
                 suffix: "",
-                label: "NGÀY ĐỐI SOÁT TIẾP THEO",
+                label: "Ngày đối soát tiếp theo",
                 tooltip: "Ngày hệ thống sẽ tự động đối soát tiếp theo",
             }]
             : []),
     ];
 
     return (
-        <div className="settlement-summary-wrap">
-            <div className="list-page-header">
-                <Title level={3} className="list-page-title-main">Thống kê đối soát</Title>
-                {debt > 0 && (
+        <div className="settlement-summary-overview">
+            <div className="settlement-summary-header">
+                <h3 className="settlement-summary-title">{getTitle()}</h3>
+                {showPayment && (
                     <Button
                         className="primary-button"
-                        icon={<CreditCardOutlined />}
+                        icon={<CreditCardOutlined/>}
                         onClick={onPayment}
+                        disabled={debt <= 0}
                     >
                         Thanh toán {debt.toLocaleString()} đ
                     </Button>
                 )}
             </div>
 
-            <div className="settlement-summary-cards">
-                {stats.map((stat, idx) => (
-                    <React.Fragment key={stat.key}>
-                        {idx > 0 && <div className="ss-divider" />}
-                        <Tooltip title={stat.tooltip} placement="top" color="#1C3D90">
-                            <div className="settlement-summary-card">
-                                <div className="ss-icon" style={{ color: stat.color }}>
+            {showStats && (
+                <div className={`settlement-summary-stats${nextSettlementDate ? " has-date" : ""}`}>
+                    {stats.map((stat) => (
+                        <Tooltip
+                            key={stat.key}
+                            title={stat.tooltip}
+                            placement="top"
+                            color="#1C3D90"
+                        >
+                            <div className="settlement-summary-stat">
+                                <div className="settlement-summary-stat-icon">
                                     {stat.icon}
                                 </div>
-                                <div>
-                                    <p className="ss-amount" style={{ color: stat.color }}>
-                                        {stat.amount}
+                                <div className="settlement-summary-stat-content">
+                                    <div className="settlement-summary-stat-value">
+                                        {stat.value}
                                         {stat.suffix && (
-                                            <span className="ss-suffix">{stat.suffix}</span>
+                                            <span className="settlement-summary-stat-suffix">{stat.suffix}</span>
                                         )}
-                                    </p>
-                                    <p className="ss-label">
+                                    </div>
+                                    <div className="settlement-summary-stat-label">
                                         {stat.label}
-                                        <QuestionCircleOutlined className="ss-help" />
-                                    </p>
+                                        <QuestionCircleOutlined className="settlement-summary-stat-tooltip-icon"/>
+                                    </div>
                                 </div>
                             </div>
                         </Tooltip>
-                    </React.Fragment>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
-};
+}
 
 export default SettlementSummary;

@@ -151,45 +151,6 @@ public class FinancialAdminService {
         }
     }
 
-    @Transactional
-    public ApiResponse<PaymentSubmissionBatch> createBatch(Integer adminId, CreateBatchRequest req) {
-        try {
-            // Khóa các bản ghi nộp tiền để tránh tạo batch đồng thời
-            List<PaymentSubmission> subs = submissionRepository.findByIdInForUpdate(req.getSubmissionIds());
-
-            if (subs.isEmpty()) {
-                return new ApiResponse<>(false, "Không có nộp tiền hợp lệ để tạo batch", null);
-            }
-
-            PaymentSubmissionBatch batch = new PaymentSubmissionBatch();
-            userRepository.findById(req.getShipperId()).ifPresent(batch::setShipper);
-            batch.setOffice(null);
-            batch.setStatus(PaymentSubmissionBatchStatus.PENDING);
-
-                BigDecimal totalSystem = subs.stream()
-                    .map(PaymentSubmission::getSystemAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                BigDecimal totalActual = subs.stream()
-                    .map(PaymentSubmission::getActualAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            batch.setTotalSystemAmount(totalSystem);
-            batch.setTotalActualAmount(totalActual);
-            batch = batchRepository.save(batch);
-
-            for (PaymentSubmission s : subs) {
-                s.setBatch(batch);
-                s.setStatus(PaymentSubmissionStatus.IN_BATCH);
-            }
-            submissionRepository.saveAll(subs);
-
-            return new ApiResponse<>(true, "Tạo phiên đối soát thành công", batch);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
-    }
-
     public ApiResponse<PaymentSubmissionBatch> getBatchById(Integer id) {
         try {
             PaymentSubmissionBatch batch = batchRepository.findById(id).orElse(null);

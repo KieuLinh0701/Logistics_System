@@ -61,14 +61,6 @@ public class IncidentReportMapper {
         dto.setIncidentType(entity.getIncidentType() != null ? entity.getIncidentType().name() : null);
         dto.setDescription(entity.getDescription());
 
-        if (entity.getAddress() != null) {
-            dto.setAddress(new ManagerIncidentReportDetailDto.Address(
-                    entity.getAddress().getDetail(),
-                    entity.getAddress().getCityCode(),
-                    entity.getAddress().getWardCode()
-            ));
-        }
-
         dto.setImages(entity.getImages());
         dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
         dto.setPriority(entity.getPriority() != null ? entity.getPriority().name() : null);

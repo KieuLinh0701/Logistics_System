@@ -1,9 +1,10 @@
 import React from "react";
 import dayjs from 'dayjs';
-import {Table, Button, Tooltip} from "antd";
+import {Table, Button, Tooltip, message} from "antd";
 import type {ColumnsType} from "antd/es/table";
 import type {SettlementBatch} from "../../../../types/settlementBatch";
 import {translateSettlementBatchStatus} from "../../../../utils/settlementBatchUtils";
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface Props {
     data: SettlementBatch[];
@@ -28,7 +29,15 @@ const DataTable: React.FC<Props> = ({
                                         loading,
                                     }) => {
     const tableData = data.map((o) => ({...o, key: String(o.id)}));
+    const canViewAction = hasPermissionGroup(['GROUP_USER', 'USER_COD_DETAIL']);
 
+    const handleViewDetail = (id: number) => {
+        if (canViewAction) {
+            onDetail(id)
+        } else {
+            message.error("Bạn không có quyền xem chi tiết đối soát này.");
+        }
+    };
 
     const columns: ColumnsType<SettlementBatch> = [
         {
@@ -40,8 +49,7 @@ const DataTable: React.FC<Props> = ({
                     <Tooltip title="Click để xem chi tiết các đối soát trong phiên">
             <span
                 className="navigate-link"
-                onClick={() => onDetail(record.id)}
-            >
+                onClick={() => handleViewDetail(record.id!)}>
               {record.code}
             </span>
                     </Tooltip>
@@ -74,7 +82,8 @@ const DataTable: React.FC<Props> = ({
             key: "balanceAmount",
             align: "center",
             render: (_, record) => (
-                <span className={record.balanceAmount >= 0 ? "custom-table-content-strong" : "custom-table-content-error"}>
+                <span
+                    className={record.balanceAmount >= 0 ? "custom-table-content-strong" : "custom-table-content-error"}>
             {record.balanceAmount.toLocaleString()}
         </span>
             )
@@ -111,8 +120,9 @@ const DataTable: React.FC<Props> = ({
                 );
             }
         },
-        {
+        ...(canViewAction ? ([{
             key: "action",
+            title: "Thao tác",
             align: "left",
             render: (_, record: SettlementBatch) => (
                 <Button
@@ -123,7 +133,7 @@ const DataTable: React.FC<Props> = ({
                     Xem
                 </Button>
             )
-        },
+        }] as ColumnsType<SettlementBatch>) : []),
     ];
 
     return (

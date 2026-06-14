@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {message, Col, Row, Tag} from 'antd';
-import {TeamOutlined} from '@ant-design/icons';
+import {ContactsOutlined} from '@ant-design/icons';
 import { Form } from 'antd';
 import AddressTable from './components/AddressTable';
 import AddressModal from './components/AddressModal';
@@ -267,7 +267,7 @@ const UserCustomers: React.FC = () => {
                 <Row className="list-page-header" justify="space-between" align="middle">
                     <Col>
                         <Title level={3} className="list-page-title-main">
-                            <TeamOutlined className="title-icon" />
+                            <ContactsOutlined className="title-icon" />
                             Danh sách khách hàng
                         </Title>
                     </Col>

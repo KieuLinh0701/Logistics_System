@@ -52,6 +52,8 @@ public class PaymentUserService {
 
     private final VNPayUtils vnPayUtils;
 
+    private final UserUserService userService;
+
     @Value("${settlement.lock-over-hours}")
     private long lockOverHours;
 
@@ -59,9 +61,10 @@ public class PaymentUserService {
             Integer userId,
             HttpServletRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
 
             List<SettlementBatch> debtBatches = batchRepository.findByShopIdAndStatusIn(
-                    userId,
+                    shopId,
                     List.of(SettlementStatus.PENDING, SettlementStatus.FAILED));
 
             String vnp_IpAddr = VNPayUtils.getClientIp(request);

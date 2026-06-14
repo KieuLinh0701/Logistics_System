@@ -1,11 +1,13 @@
 package com.logistics.service.user;
 
+import com.beust.ah.A;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestEditDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
+import com.logistics.entity.Address;
 import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.ShippingRequest;
@@ -15,6 +17,7 @@ import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
 import com.logistics.mapper.ShippingRequestMapper;
+import com.logistics.repository.AddressRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShippingRequestAttachmentRepository;
 import com.logistics.repository.ShippingRequestRepository;
@@ -62,9 +65,14 @@ public class ShippingRequestUserService {
 
     private final NotificationService notificationService;
 
+    private final AddressRepository addressRepository;
+    private final UserUserService userService;
+
     public ApiResponse<ListResponse<UserShippingRequestListDto>> list(int userId,
             UserShippingRequestSearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -80,7 +88,7 @@ public class ShippingRequestUserService {
                     : null;
 
             Specification<ShippingRequest> spec = ShippingRequestSpecification.unrestrictedShippingRequest()
-                    .and(ShippingRequestSpecification.userId(userId))
+                    .and(ShippingRequestSpecification.userId(shopId))
                     .and(ShippingRequestSpecification.search(search))
                     .and(ShippingRequestSpecification.status(status))
                     .and(ShippingRequestSpecification.requestType(type))
@@ -117,7 +125,9 @@ public class ShippingRequestUserService {
 
     public ApiResponse<UserShippingRequestDetailDto> getShippingRequestById(int userId, int id) {
         try {
-            ShippingRequest request = repository.findByIdAndUserId(id, userId)
+            Integer shopId = userService.getShopId(userId);
+
+            ShippingRequest request = repository.findByIdAndUserId(id, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
 
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
@@ -139,7 +149,9 @@ public class ShippingRequestUserService {
 
     public ApiResponse<UserShippingRequestEditDto> getShippingRequestByIdForEdit(int userId, int id) {
         try {
-            ShippingRequest request = repository.findByIdAndUserId(id, userId)
+            Integer shopId = userService.getShopId(userId);
+
+            ShippingRequest request = repository.findByIdAndUserId(id, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
 
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
@@ -159,8 +171,9 @@ public class ShippingRequestUserService {
 
         validateForm(request);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        Integer shopId = userService.getShopId(userId);
+
+        User user = userService.getUser(shopId);
 
         Order order = getOrderByTrackingNumber(user.getId(), request.getTrackingNumber());
 
@@ -177,7 +190,7 @@ public class ShippingRequestUserService {
             }
         }
 
-        if (hasActiveRequest(userId, type, request.getRequestContent(), order)) {
+        if (hasActiveRequest(shopId, type, request.getRequestContent(), order)) {
             return new ApiResponse<>(false, "Đã có yêu cầu tương tự cho đơn hàng này đang được xử lý", false);
         }
 
@@ -187,8 +200,23 @@ public class ShippingRequestUserService {
                     order.getToOffice());
         }
 
+        Address address = addressRepository
+                    .findByUserIdAndIsDefaultTrue(shopId)
+                    .orElse(null);
+
         ShippingRequest shippingRequest = new ShippingRequest();
+
         shippingRequest.setUser(user);
+        shippingRequest.setContactName(user.getFullName());
+        shippingRequest.setContactEmail(user.getAccount().getEmail());
+        shippingRequest.setContactPhoneNumber(user.getPhoneNumber());
+        shippingRequest.setContactCityCode(address != null ? address.getCityCode() : null);
+        shippingRequest.setContactCityName(address != null ? address.getCityName() : null);
+        shippingRequest.setContactWardCode(address != null ? address.getWardCode() : null);
+        shippingRequest.setContactWardName(address != null ? address.getWardName() : null);
+        shippingRequest.setContactDetail(address != null ? address.getDetail() : null);
+        shippingRequest.setContactFullAddress(address != null ? address.getFullAddress() : null);
+
         shippingRequest.setOrder(order);
         shippingRequest.setOffice(office);
         shippingRequest.setRequestType(type);
@@ -218,7 +246,9 @@ public class ShippingRequestUserService {
 
     public ApiResponse<Boolean> update(int userId, int id, UserShippingRequestForm request) {
 
-        ShippingRequest shippingRequest = repository.findByIdAndUserId(id, userId)
+        Integer shopId = userService.getShopId(userId);
+
+        ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
                 .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
 
         validateForm(request);
@@ -255,7 +285,9 @@ public class ShippingRequestUserService {
 
     public ApiResponse<Boolean> cancel(int userId, int id) {
 
-        ShippingRequest shippingRequest = repository.findByIdAndUserId(id, userId)
+        Integer shopId = userService.getShopId(userId);
+
+        ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
                 .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
 
         if (!ShippingRequestUtils.canUserCancel(shippingRequest.getStatus())) {

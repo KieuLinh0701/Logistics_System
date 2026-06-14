@@ -21,7 +21,6 @@ public class ManagerIncidentReportDetailDto {
     private String title;
     private String incidentType;
     private String description;
-    private Address address;
     private List<String> images;
     private String status;
     private String priority;
@@ -45,15 +44,5 @@ public class ManagerIncidentReportDetailDto {
     public static class User {
         private String fullName;
         private String phoneNumber;
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Address {
-        private String detail;
-        private Integer cityCode;
-        private Integer wardCode;
     }
 }

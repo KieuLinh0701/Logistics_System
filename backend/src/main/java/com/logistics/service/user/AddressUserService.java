@@ -22,12 +22,14 @@ import java.util.Optional;
 public class AddressUserService {
 
     private final AddressRepository addressRepository;
-    private final UserRepository userRepository;
+    private final UserUserService userService;
 
     public ApiResponse<List<AddressDto>> list(int userId) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             List<Address> addresses = addressRepository.findByUserIdAndTypeOrderByCreatedAtDesc(
-                    userId,
+                    shopId,
                     AddressType.SENDER);
             List<AddressDto> data = addresses.stream()
                     .map(AddressMapper::toDto)
@@ -43,11 +45,11 @@ public class AddressUserService {
         try {
             validateForm(request);
 
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+            Integer shopId = userService.getShopId(userId);
+            User user = userService.getUser(shopId);
 
             long count = addressRepository.countByUserIdAndType(
-                    userId,
+                    shopId,
                     AddressType.SENDER);
             if (count >= 10) {
                 return new ApiResponse<>(false, "Chỉ được tạo tối đa 10 địa chỉ", null);
@@ -75,7 +77,7 @@ public class AddressUserService {
 
             if (request.isDefault() || count == 0) {
                 addressRepository.clearAllDefaultForUser(
-                        userId,
+                        shopId,
                         AddressType.SENDER);
                 address.setIsDefault(true);
             } else {
@@ -94,7 +96,9 @@ public class AddressUserService {
         try {
             validateForm(request);
 
-            Address address = addressRepository.findByIdAndUserIdAndType(id, userId, AddressType.SENDER)
+            Integer shopId = userService.getShopId(userId);
+
+            Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
 
             String fullAddress = AddressUtils.buildFullAddress(
@@ -114,7 +118,7 @@ public class AddressUserService {
             address.setPhoneNumber(request.getPhoneNumber());
 
             if (request.isDefault()) {
-                addressRepository.clearDefaultExcept(userId, id, AddressType.SENDER);
+                addressRepository.clearDefaultExcept(shopId, id, AddressType.SENDER);
                 address.setIsDefault(true);
             } else {
                 address.setIsDefault(false);
@@ -129,7 +133,9 @@ public class AddressUserService {
 
     public ApiResponse<Boolean> delete(int userId, int id) {
         try {
-            Address address = addressRepository.findByIdAndUserIdAndType(id, userId, AddressType.SENDER)
+            Integer shopId = userService.getShopId(userId);
+
+            Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
 
             if (Boolean.TRUE.equals(address.getIsDefault())) {
@@ -146,10 +152,12 @@ public class AddressUserService {
     @Transactional
     public ApiResponse<Boolean> setDefault(int userId, int id) {
         try {
-            Address address = addressRepository.findByIdAndUserIdAndType(id, userId, AddressType.SENDER)
+            Integer shopId = userService.getShopId(userId);
+
+            Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
 
-            addressRepository.clearDefaultExcept(userId, id, AddressType.SENDER);
+            addressRepository.clearDefaultExcept(shopId, id, AddressType.SENDER);
             address.setIsDefault(true);
             save(address);
 

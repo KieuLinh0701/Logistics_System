@@ -1,22 +1,14 @@
 import React from "react";
 import { Button, Space } from "antd";
-import { FileExcelOutlined, PlusOutlined } from "@ant-design/icons";
+import { FileExcelOutlined } from "@ant-design/icons";
 
 interface Props {
   onExport: () => void;
-  onAdd: () => void;
 }
 
-const Actions: React.FC<Props> = ({ onExport, onAdd }) => {
+const Actions: React.FC<Props> = ({ onExport }) => {
   return (
     <Space align="center">
-      <Button
-        className="primary-button"
-        icon={<PlusOutlined />}
-        onClick={onAdd}
-      >
-        Tạo phiên đối soát
-      </Button>
       <Button
         className="success-button"
         icon={<FileExcelOutlined />}

@@ -52,17 +52,6 @@ public class FinancialAdminController {
         return ResponseEntity.ok(resp);
     }
 
-    @PostMapping("/batches")
-    public ResponseEntity<ApiResponse<PaymentSubmissionBatch>> createBatch(@RequestBody CreateBatchRequest req) {
-        if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
-        }
-        Integer adminId = SecurityUtils.getAuthenticatedUserId();
-        ApiResponse<PaymentSubmissionBatch> resp = service.createBatch(adminId, req);
-        if (!resp.isSuccess()) return ResponseEntity.status(400).body(resp);
-        return ResponseEntity.ok(resp);
-    }
-
     @PostMapping("/batches/{id}/complete")
     public ResponseEntity<ApiResponse<Boolean>> completeBatch(@PathVariable Integer id) {
         if (isNotAdmin()) {

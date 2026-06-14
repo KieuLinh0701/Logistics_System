@@ -1,19 +1,23 @@
-import { getUserRole } from "../../utils/authUtils";
+import { getUserPermissionGroups } from "../../utils/authUtils";
 import Forbidden from "../common/Forbidden";
 import ManagerOrderCreate from "../manager/order/create/ManagerOrderCreate";
 import UserOrderCreate from "../user/order/create/UserOrderCreate";
 
 const OrderCreateRouter = () => {
-  const role = getUserRole();
+    const userPermissions = getUserPermissionGroups();
 
-  switch (role) {
-    case "user":
-      return <UserOrderCreate />;
-    case "manager":
-      return <ManagerOrderCreate />;
-    default:
-      return <Forbidden />;
-  }
+    const isUser = ["group_user", "user_order_create"].some(p => userPermissions.includes(p));
+    const isManager = ["group_manager"].some(p => userPermissions.includes(p));
+
+    if (isUser) {
+        return <UserOrderCreate />;
+    }
+
+    if (isManager) {
+        return <ManagerOrderCreate />;
+    }
+
+    return <Forbidden />;
 };
 
 export default OrderCreateRouter;

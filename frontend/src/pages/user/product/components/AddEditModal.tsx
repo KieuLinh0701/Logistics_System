@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, InputNumber, Select, Upload, type UploadProps, type UploadFile, Tooltip } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Upload, type UploadProps, type UploadFile } from 'antd';
 import type { UserProductForm } from '../../../../types/product';
 import { PRODUCT_STATUS, PRODUCT_TYPES, translateProductStatus, translateProductType } from '../../../../utils/productUtils';
-import { InfoCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 
 interface AddEditModalProps {
   open: boolean;
@@ -174,14 +174,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         <Form.Item
           label={
             <span className="modal-label">
-              Khối lượng quy đổi{" "}
-              <Tooltip
-                title={
-                  "Khối lượng quy đổi = (Dài × Rộng × Cao) / 5000. So sánh với khối lượng thực tế và lấy giá trị lớn hơn để tính phí vận chuyển."
-                }
-              >
-                <InfoCircleOutlined />
-              </Tooltip>
+              Khối lượng (kg)
             </span>
           }
           name="weight"

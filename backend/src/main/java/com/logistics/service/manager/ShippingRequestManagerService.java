@@ -167,17 +167,6 @@ public class ShippingRequestManagerService {
                 return new ApiResponse<>(false, "Không có quyền xem yêu cầu này", null);
             }
 
-            Address address = null;
-
-            if (request.getUser() != null) {
-                Integer uid = request.getUser().getId();
-                address = addressRepository
-                        .findByUserIdAndIsDefaultTrue(uid)
-                        .orElse(null);
-            } else {
-                address = request.getAddress();
-            }
-
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.REQUEST);
 
@@ -186,7 +175,6 @@ public class ShippingRequestManagerService {
 
             ManagerShippingRequestDetailDto data = ShippingRequestMapper.toManagerShippingRequestDetailDto(
                     request,
-                    address,
                     requestAttachments,
                     responseAttachments);
 
@@ -236,7 +224,14 @@ public class ShippingRequestManagerService {
         shippingRequest.setStatus(newStatus);
         shippingRequest.setResponse(request.getResponse());
         shippingRequest.setResponseAt(LocalDateTime.now());
+
         shippingRequest.setHandler(user);
+        shippingRequest.setHandlerName(user != null ? user.getFullName() : null);
+        shippingRequest.setHandlerEmail((user != null && user.getAccount() != null)
+                ? user.getAccount().getEmail()
+                : null);
+        shippingRequest.setHandlerPhoneNumber(user != null ? user.getPhoneNumber() : null);
+
         shippingRequest = repository.save(shippingRequest);
 
         saveAttachments(shippingRequest, request.getAttachments(), oldAttachmentIds);

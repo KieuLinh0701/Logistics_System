@@ -21,8 +21,3 @@ export interface ManagerPaymentSubmissionBatchEditRequest {
   status: string;
   notes: string;
 }
-
-export interface ManagerPaymentSubmissionBatchCreateRequest {
-  shipperId: number;
-  totalActualAmount: number;
-}

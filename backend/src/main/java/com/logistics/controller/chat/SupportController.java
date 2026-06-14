@@ -1,6 +1,7 @@
 package com.logistics.controller.chat;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -36,28 +37,32 @@ public class SupportController {
     @PostMapping("/tickets")
     public ResponseEntity<ApiResponse<SupportTicketDto>> createTicket(@Valid @RequestBody CreateSupportTicketRequest request) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = SecurityUtils.getAuthenticatedUserRole();
+        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         return ResponseEntity.ok(supportTicketService.createTicket(accountId, roleName, request));
     }
 
     @GetMapping("/tickets/my")
     public ResponseEntity<ApiResponse<List<SupportTicketDto>>> getMyTickets() {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = SecurityUtils.getAuthenticatedUserRole();
+        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         return ResponseEntity.ok(supportTicketService.getMyTickets(accountId, roleName));
     }
 
     @GetMapping("/tickets/{id}")
     public ResponseEntity<ApiResponse<SupportTicketDetailDto>> getTicketDetail(@PathVariable Integer id) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = SecurityUtils.getAuthenticatedUserRole();
+        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         return ResponseEntity.ok(supportTicketService.getTicketDetail(id, accountId, roleName));
     }
 
     @GetMapping("/tickets/{id}/messages")
     public ResponseEntity<ApiResponse<List<SupportMessageDto>>> getMessages(@PathVariable Integer id) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = SecurityUtils.getAuthenticatedUserRole();
+        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         return ResponseEntity.ok(supportMessageService.getMessages(id, accountId, roleName));
     }
 

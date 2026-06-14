@@ -44,17 +44,14 @@ export interface UserOrderTimeLineItem {
   deliveredCount: number;
 }
 
-export interface UserDashboardOverviewResponse {
-  orders: UserOrderStats;
+export interface UserDashboardOverviewProductsResponse {
   products: UserProductStats;
-  revenue: UserRevenueStats;
   productCounts: UserProductCounts;
 }
 
-export interface UserDashboardChartResponse {
+export interface UserDashboardChartProductsResponse {
   topSelling: UserTopProductItem[];
   topReturned: UserTopProductItem[];
-  orderTimelines: UserOrderTimeLineItem[];
 }
 
 // Manager
@@ -105,11 +102,9 @@ export interface ManagerShippingRequestStats {
 }
 export interface ManagerPaymentSubmissionBatchStats {
   total: number;
-  pending: number;
-  checking: number;
+  open: number;
+  processing: number;
   completed: number;
-  partial: number;
-  cancelled: number;
 }
 export interface ManagerVehicleStats {
   total: number;

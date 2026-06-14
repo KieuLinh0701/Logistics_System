@@ -42,20 +42,21 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @Service
-
 @RequiredArgsConstructor
 public class ProductUserService {
 
     private final Cloudinary cloudinary;
 
-    @Autowired
-    private ProductRepository repository;
+    private final ProductRepository repository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+
+    private final UserUserService userService;
 
     public ApiResponse<ListResponse<ProductDto>> list(int userId, UserProductSearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -72,7 +73,7 @@ public class ProductUserService {
                     : null;
 
             Specification<Product> spec = ProductSpecification.unrestrictedProduct()
-                    .and(ProductSpecification.userId(userId))
+                    .and(ProductSpecification.userId(shopId))
                     .and(ProductSpecification.search(search))
                     .and(ProductSpecification.type(type))
                     .and(ProductSpecification.status(status))
@@ -179,7 +180,9 @@ public class ProductUserService {
 
     public ApiResponse<ProductDto> create(int userId, UserProductForm request) {
         try {
-            ProductDto dto = createProduct(userId, request);
+            Integer shopId = userService.getShopId(userId);
+
+            ProductDto dto = createProduct(shopId, request);
             return new ApiResponse<>(true, "Thêm sản phẩm thành công", dto);
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
@@ -188,13 +191,15 @@ public class ProductUserService {
 
     public ApiResponse<ProductDto> update(int userId, UserProductForm request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             Product product = repository.findById(request.getId())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
-            checkUserPermission(userId, product);
+            checkUserPermission(shopId, product);
 
             if (request.getName() != null && !request.getName().equals(product.getName())) {
-                checkDuplicateName(userId, request.getName());
+                checkDuplicateName(shopId, request.getName());
                 product.setName(request.getName());
             }
 
@@ -219,10 +224,12 @@ public class ProductUserService {
 
     public ApiResponse<ProductDto> delete(int userId, @NonNull Integer productId) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             Product product = repository.findById(productId)
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
-            checkUserPermission(userId, product);
+            checkUserPermission(shopId, product);
 
             if (product.getSoldQuantity() > 0
                     || (product.getOrderProducts() != null && !product.getOrderProducts().isEmpty())) {
@@ -239,6 +246,8 @@ public class ProductUserService {
 
     @Transactional
     public BulkResponse<ProductDto> createBulk(Integer userId, UserBulkProductForm request) {
+
+        Integer shopId = userService.getShopId(userId);
 
         List<BulkResponse.BulkResult<ProductDto>> results = new ArrayList<>();
         Set<String> namesInFile = new HashSet<>();
@@ -274,7 +283,7 @@ public class ProductUserService {
                 continue;
             }
 
-            if (repository.existsByUserIdAndName(userId, trimmedName)) {
+            if (repository.existsByUserIdAndName(shopId, trimmedName)) {
                 result.setSuccess(false);
                 result.setMessage("Tên sản phẩm đã tồn tại");
                 results.add(result);
@@ -282,7 +291,7 @@ public class ProductUserService {
             }
 
             try {
-                ProductDto created = createProduct(userId, form);
+                ProductDto created = createProduct(shopId, form);
                 result.setSuccess(true);
                 result.setMessage("Thêm sản phẩm thành công");
                 result.setResult(created);
@@ -312,6 +321,8 @@ public class ProductUserService {
     public ApiResponse<ListResponse<ProductDto>> getActiveAndInstockUserProducts(int userId,
             UserProductSearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -320,7 +331,7 @@ public class ProductUserService {
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
             Specification<Product> spec = ProductSpecification.unrestrictedProduct()
-                    .and(ProductSpecification.userId(userId))
+                    .and(ProductSpecification.userId(shopId))
                     .and(ProductSpecification.search(search))
                     .and(ProductSpecification.type(type))
                     .and(ProductSpecification.status(ProductStatus.ACTIVE.name()))

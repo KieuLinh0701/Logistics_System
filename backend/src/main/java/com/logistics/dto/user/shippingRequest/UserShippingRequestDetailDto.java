@@ -19,7 +19,7 @@ public class UserShippingRequestDetailDto {
     private String code;
     private String orderTrackingNumber;
     private String handlerName;
-    private String handlerPhone;
+    private String handlerPhoneNumber;
     private String handlerEmail;
     private String requestType;
     private String requestContent;

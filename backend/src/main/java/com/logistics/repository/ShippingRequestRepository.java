@@ -34,7 +34,7 @@ public interface ShippingRequestRepository
                         @Param("userId") Integer userId,
                         @Param("type") ShippingRequestType type,
                         @Param("activeStatuses") Set<ShippingRequestStatus> activeStatuses,
-                        @Param("recipientaddress") Order order,
+                        @Param("order") Order order,
                         @Param("requestContent") String requestContent);
 
         // Thống kê tổng quan theo officeId

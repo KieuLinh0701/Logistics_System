@@ -48,9 +48,13 @@ public class SettlementBatchUserService {
 
     private final UserSettlementScheduleUserService scheduleUserService;
 
+    private final UserUserService userService;
+
     public ApiResponse<UserSettlementSummaryResponse> getSummary(Integer userId) {
         try {
-            List<SettlementBatch> batches = batchRepository.findByShop_Id(userId);
+            Integer shopId = userService.getShopId(userId);
+
+            List<SettlementBatch> batches = batchRepository.findByShop_Id(shopId);
 
             BigDecimal received = batches.stream()
                     .filter(b -> b.getStatus() == SettlementStatus.COMPLETED
@@ -82,9 +86,11 @@ public class SettlementBatchUserService {
     public ApiResponse<ListResponse<UserSettlementBatchListDto>> list(
             Integer userId, SearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             Sort sort = buildSort(request.getSort());
             Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
-            Page<SettlementBatch> pageData = getSettlementBatchs(userId, request, pageable);
+            Page<SettlementBatch> pageData = getSettlementBatchs(shopId, request, pageable);
 
             List<UserSettlementBatchListDto> list = pageData.getContent()
                     .stream()
@@ -143,6 +149,8 @@ public class SettlementBatchUserService {
     public ApiResponse<ListResponse<UserSettlementOrderDto>> getOrdersBySettlementBatchId(int userId, Integer batchId,
             SearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -160,7 +168,7 @@ public class SettlementBatchUserService {
 
             Specification<Order> spec = OrderSpecification.unrestrictedOrder()
                     .and(OrderSpecification.settlementBatchId(batchId))
-                    .and(OrderSpecification.userId(userId))
+                    .and(OrderSpecification.userId(shopId))
                     .and(OrderSpecification.settlementSearch(search))
                     .and(OrderSpecification.payer(payer))
                     .and(OrderSpecification.status(status))
@@ -202,10 +210,12 @@ public class SettlementBatchUserService {
     public ApiResponse<List<UserSettlementTransactionDto>> getSettlementTransactionsBySettlementBatchId(
             Integer userId, Integer batchId) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             Sort sort = Sort.by(Sort.Direction.DESC, "paidAt");
 
             SettlementBatch batch = batchRepository
-                    .findByIdAndShop_Id(batchId, userId)
+                    .findByIdAndShop_Id(batchId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
 
             List<SettlementTransaction> transactions = transactionRepository.findBySettlementBatchId(batchId, sort);
@@ -225,7 +235,9 @@ public class SettlementBatchUserService {
 
     public ApiResponse<UserSettlementBatchListDto> getBySettlementBatchId(Integer userId, Integer batchId) {
         try {
-            SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, userId)
+            Integer shopId = userService.getShopId(userId);
+
+            SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, shopId)
                     .orElse(null);
 
             if (batch == null) {

@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -314,7 +315,7 @@ public class RecruitmentService {
         Office office = posting.getOffice();
         String targetRoleName = mapRecruitmentRoleToRoleName(posting.getRoleType());
 
-        Role role = roleRepository.findByNameAndIsSystemRole(targetRoleName, true)
+        Role role = roleRepository.findByNameAndUserOwnerIsNull(targetRoleName)
                 .or(() -> roleRepository.findByName(targetRoleName))
                 .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy role hệ thống: " + targetRoleName));
@@ -438,7 +439,8 @@ public class RecruitmentService {
     }
 
     private String getCurrentRoleOrThrow() {
-        String role = SecurityUtils.getAuthenticatedUserRole();
+        String role = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         if (role == null || role.isBlank()) {
             throw new RecruitmentException(HttpStatus.UNAUTHORIZED, "Không xác định được role hiện tại");
         }

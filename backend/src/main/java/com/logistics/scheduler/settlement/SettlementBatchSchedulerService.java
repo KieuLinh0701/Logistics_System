@@ -27,6 +27,7 @@ public class SettlementBatchSchedulerService {
     private final BankAccountRepository bankAccountRepository;
     private final UserSettlementScheduleRepository scheduleRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     // @Scheduled(cron = "0 * * * * ?")
     @Scheduled(cron = "0 0 20 * * ?") // 20:00 mỗi ngày
@@ -231,6 +232,8 @@ public class SettlementBatchSchedulerService {
                     "settlements",
                     batch.getId().toString());
 
+            tryUnlockShop(shop);
+
             System.out.println("Settlement batch for shop " + shop.getId());
         }
 
@@ -247,6 +250,31 @@ public class SettlementBatchSchedulerService {
                 order.setPaidAt(now);
             }
             orderRepository.save(order);
+        }
+    }
+
+    private void tryUnlockShop(User shop) {
+        if (!shop.getLocked()) return;
+
+        // Chỉ xét các batch đã từng trigger lock
+        List<SettlementBatch> lockedBatches = batchRepository.findByShopAndLockedSentTrue(shop);
+        if (lockedBatches.isEmpty()) return;
+
+        boolean allResolved = lockedBatches.stream()
+                .allMatch(b -> b.getStatus() == SettlementStatus.COMPLETED);
+
+        if (allResolved) {
+            shop.setLocked(false);
+            userRepository.save(shop);
+
+            notificationService.create(
+                    "Tài khoản đã được mở khóa",
+                    "Các khoản nợ gây khóa tài khoản đã được xử lý. Tài khoản của bạn đã được mở khóa.",
+                    "settlement_unlocked",
+                    shop.getId(),
+                    null,
+                    "settlements",
+                    null);
         }
     }
 }

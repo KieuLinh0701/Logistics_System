@@ -6,6 +6,7 @@ import AddressForm from "../../../../../components/common/AdressForm";
 import RecipientAddressPickerModal from "../../../../common/order/RecipientAddressPickerModal.tsx";
 import recipientAddressApi from "../../../../../api/recipientAddressApi.ts";
 import type { RecipientAddressType, RecipientAddressWithStats } from "../../../../../types/recipientAddress.ts";
+import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 interface Props {
     form: FormInstance;
@@ -389,6 +390,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                             </Col>
                         </Row>
 
+                        {hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_CREATE']) && (
                         <Row style={{ marginTop: 8 }}>
                             <Col span={24}>
                                 <Checkbox
@@ -405,6 +407,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                                 </Checkbox>
                             </Col>
                         </Row>
+                        )}
                     </div>
                 </Card>
             </Form>

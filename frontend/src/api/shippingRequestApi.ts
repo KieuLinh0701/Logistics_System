@@ -30,7 +30,7 @@ const shippingRequestApi = {
   },
 
   async cancelUserShippingRequest(id: number) {
-    const res = await axiosClient.patch<ApiResponse<Boolean>>(`/user/shipping-requests/${id}/cancel`);
+    const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/shipping-requests/${id}/cancel`);
     return res;
   },
 
@@ -59,7 +59,7 @@ async listManagerShippingRequests(
   },
 
   async getManagerShippingRequestById(id: number) {
-    return axiosClient.get<ShippingRequest>(
+    return axiosClient.get<ApiResponse<ShippingRequest>>(
       `/manager/shipping-requests/${id}`
     );
   },

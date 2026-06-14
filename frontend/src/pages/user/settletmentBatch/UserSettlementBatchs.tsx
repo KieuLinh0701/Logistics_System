@@ -17,6 +17,7 @@ import type {PaymentCheck} from "../../../types/payment";
 import paymentApi from "../../../api/paymentApi";
 import {weekdayOrder} from "../../../utils/userSettlementScheduleUtils";
 import SettlementSummary from "./components/SettlementSummary.tsx";
+import {hasPermissionGroup} from "../../../utils/authUtils.ts";
 
 const UserSettlementBatchs = () => {
     const navigate = useNavigate();
@@ -138,7 +139,7 @@ const UserSettlementBatchs = () => {
         fetchSummary();
     }, []);
 
-        const handleExport = async () => {
+    const handleExport = async () => {
         try {
             setLoading(true);
             const param: SearchRequest = {
@@ -300,55 +301,56 @@ const UserSettlementBatchs = () => {
                     onPayment={handlePaymentSettlements}
                 />
 
-                <SearchFilters
-                    searchText={searchText}
-                    setSearchText={setSearchText}
-                    dateRange={dateRange}
-                    setDateRange={setDateRange}
-                    filters={{
-                        sort: filterSort,
-                        status: filterStatus,
-                        type: filterType,
-                    }}
-                    setFilters={(key, val) => {
-                        if (key === "sort") setFilterSort(val as string);
-                        if (key === "status") setFilterStatus(val as string);
-                        if (key === "type") setFilterType(val as string);
-                    }}
-                    onReset={() => {
-                        setSearchText("");
-                        setFilterStatus("ALL");
-                        setFilterSort("NEWEST");
-                        setFilterType("ALL");
-                        setDateRange(null);
-                        setCurrentPage(1);
-                    }}
-                />
+                {hasPermissionGroup(['GROUP_USER', 'USER_COD_SESSION_VIEW']) && (
+                    <><SearchFilters
+                        searchText={searchText}
+                        setSearchText={setSearchText}
+                        dateRange={dateRange}
+                        setDateRange={setDateRange}
+                        filters={{
+                            sort: filterSort,
+                            status: filterStatus,
+                            type: filterType,
+                        }}
+                        setFilters={(key, val) => {
+                            if (key === "sort") setFilterSort(val as string);
+                            if (key === "status") setFilterStatus(val as string);
+                            if (key === "type") setFilterType(val as string);
+                        }}
+                        onReset={() => {
+                            setSearchText("");
+                            setFilterStatus("ALL");
+                            setFilterSort("NEWEST");
+                            setFilterType("ALL");
+                            setDateRange(null);
+                            setCurrentPage(1);
+                        }}/><Row className="list-page-header" justify="space-between" align="middle">
+                        <Col>
+                            <Title level={3} className="list-page-title-main">
+                                <CheckCircleOutlined className="title-icon"/>
+                                Lịch sử đối soát
+                            </Title>
+                        </Col>
 
-                <Row className="list-page-header" justify="space-between" align="middle">
-                    <Col>
-                        <Title level={3} className="list-page-title-main">
-                            <CheckCircleOutlined className="title-icon"/>
-                            Lịch sử đối soát
-                        </Title>
-                    </Col>
-
-                    <Col>
-                        <div className="list-page-actions">
-                            <Actions
-                                onExport={handleExport}
-                            />
-                        </div>
-                    </Col>
-                </Row>
+                        <Col>
+                            <div className="list-page-actions">
+                                <Actions
+                                    onExport={handleExport}/>
+                            </div>
+                        </Col>
+                    </Row></>
+                )}
 
                 <Row justify="space-between" align="middle">
+
                     <Col>
-                        <Tag className="list-page-tag">Kết quả trả về: {total} phiên đối soát</Tag>
+                        {hasPermissionGroup(['GROUP_USER', 'USER_COD_SESSION_VIEW']) && (
+                            <Tag className="list-page-tag">Kết quả trả về: {total} phiên đối soát</Tag>
+                        )}
                     </Col>
                     <Col>
                         <Space align="center">
-                            {userWeekdays.length > 0 && (
+                            {userWeekdays.length > 0 && hasPermissionGroup(['GROUP_USER', 'USER_COD_SCHEDULE_VIEW']) && (
                                 <div className="text-muted">
                                     COD của bạn sẽ được chuyển vào thứ{" "}
                                     {userWeekdays
@@ -363,29 +365,33 @@ const UserSettlementBatchs = () => {
                                     {" "}lúc 20:00 hàng tuần
                                 </div>
                             )}
-                            <Button
-                                className="primary-button"
-                                icon={<ScheduleOutlined/>}
-                                onClick={handleOpenModalSetSchedule}
-                            >
-                                Đổi lịch đối soát
-                            </Button>
+                            {hasPermissionGroup(['GROUP_USER', 'USER_COD_SCHEDULE_EDIT']) && (
+                                <Button
+                                    className="primary-button"
+                                    icon={<ScheduleOutlined/>}
+                                    onClick={handleOpenModalSetSchedule}
+                                >
+                                    Đổi lịch đối soát
+                                </Button>
+                            )}
                         </Space>
                     </Col>
                 </Row>
 
-                <SubmissionTable
-                    data={settlementBatchs}
-                    onDetail={handleDetail}
-                    currentPage={currentPage}
-                    pageSize={pageSize}
-                    total={total}
-                    loading={loading}
-                    onPageChange={(page, size) => {
-                        setCurrentPage(page);
-                        if (size) setPageSize(size);
-                    }}
-                />
+                {hasPermissionGroup(['GROUP_USER', 'USER_COD_SESSION_VIEW']) && (
+                    <SubmissionTable
+                        data={settlementBatchs}
+                        onDetail={handleDetail}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        total={total}
+                        loading={loading}
+                        onPageChange={(page, size) => {
+                            setCurrentPage(page);
+                            if (size) setPageSize(size);
+                        }}
+                    />
+                )}
 
                 <UserScheduleModal
                     visible={modalSettlementScheduleVisible}

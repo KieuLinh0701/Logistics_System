@@ -23,7 +23,6 @@ public class PaymentUserController {
 
         @PostMapping("/vnpay/check")
         public ResponseEntity<ApiResponse<Boolean>> vnPayReturn(
-                        HttpServletRequest request,
                         @RequestBody UserPaymentCheck paymentCheck) {
 
                 return ResponseEntity.ok(

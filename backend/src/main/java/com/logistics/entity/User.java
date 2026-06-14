@@ -53,7 +53,7 @@ public class User {
     private String phoneNumber;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Address> addresses;
+    private List<Address> addresses = new ArrayList<>();;
 
     @Column(length = 255)
     private String images; // Lưu đường dẫn ảnh
@@ -64,7 +64,7 @@ public class User {
 
     // Quan hệ với Product
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Product> products;
+    private List<Product> products = new ArrayList<>();;
 
     @OneToMany(mappedBy = "shipper", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ShipperAssignment> shipperAssignments = new ArrayList<>();
@@ -75,6 +75,17 @@ public class User {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_shop_id")
+    private User currentShop;
+
+    @OneToMany(mappedBy = "user")
+    private List<ShopWorkHistory> shopWorkHistories = new ArrayList<>();
 
     @Column(nullable = false)
     private Boolean locked = false;

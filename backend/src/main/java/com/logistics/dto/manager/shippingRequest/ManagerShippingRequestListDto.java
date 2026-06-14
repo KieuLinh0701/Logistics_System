@@ -19,9 +19,7 @@ public class ManagerShippingRequestListDto {
     private String contactName;
     private String contactEmail;
     private String contactPhoneNumber;
-    private Integer contactCityCode;
-    private Integer contactWardCode;
-    private String contactDetail;
+    private String contactFullAddress;
     private String requestType;
     private String requestContent;
     private String status;

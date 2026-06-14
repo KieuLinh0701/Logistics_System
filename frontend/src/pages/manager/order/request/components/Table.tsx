@@ -30,36 +30,6 @@ const RequestTable: React.FC<TableProps> = ({
   onPageChange,
 }) => {
   const navigate = useNavigate();
-  const [addressMap, setAddressMap] = React.useState<Record<number, string>>({});
-
-  const loadAddresses = async (list: ShippingRequest[]) => {
-    const result: Record<number, string> = {};
-
-    await Promise.all(
-      list.map(async (item) => {
-        try {
-          const address = await formatAddress(
-            item.contactDetail,
-            item.contactWardCode,
-            item.contactCityCode
-          );
-
-          result[item.id] = address;
-        } catch {
-          result[item.id] = item.contactDetail || '';
-        }
-      })
-    );
-
-    setAddressMap(result);
-  };
-
-  useEffect(() => {
-    if (data?.length) {
-      loadAddresses(data);
-    }
-  }, [data]);
-
 
   const columns: ColumnsType<ShippingRequest> = [
     {
@@ -104,8 +74,7 @@ const RequestTable: React.FC<TableProps> = ({
         const userCode = record.userCode || 'Khách vãng lai';
         const email = record.contactEmail || 'N/A';
         const phone = record.contactPhoneNumber || 'N/A';
-
-        const address = addressMap[record.id] || 'N/A';
+        const address = record.contactFullAddress || 'N/A';
 
         return (
           <div>

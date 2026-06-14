@@ -32,6 +32,8 @@ public class SettlementBatchWarningScheduler {
     @Transactional
     public void scanUnpaidSettlementBatches() {
 
+        tryUnlockShops();
+
         LocalDateTime now = LocalDateTime.now();
 
         // 48h: CẢNH BÁO
@@ -149,5 +151,31 @@ public class SettlementBatchWarningScheduler {
                         .subtract(b.getPaidAmount()))
                 .filter(r -> r.compareTo(BigDecimal.ZERO) > 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void tryUnlockShops() {
+        List<User> lockedShops = userRepository.findByLockedTrue();
+
+        for (User shop : lockedShops) {
+            List<SettlementBatch> lockedBatches = batchRepository.findByShopAndLockedSentTrue(shop);
+            if (lockedBatches.isEmpty()) continue;
+
+            boolean allResolved = lockedBatches.stream()
+                    .allMatch(b -> b.getStatus() == SettlementStatus.COMPLETED);
+
+            if (allResolved) {
+                shop.setLocked(false);
+                userRepository.save(shop);
+
+                notificationService.create(
+                        "Tài khoản đã được mở khóa",
+                        "Các khoản nợ gây khóa tài khoản đã được xử lý. Tài khoản của bạn đã được mở khóa.",
+                        "settlement_unlocked",
+                        shop.getId(),
+                        null,
+                        "settlements",
+                        null);
+            }
+        }
     }
 }

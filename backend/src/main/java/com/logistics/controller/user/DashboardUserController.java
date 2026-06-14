@@ -1,7 +1,10 @@
 package com.logistics.controller.user;
 
-import com.logistics.dto.user.dashboard.UserDashboardChartResponseDTO;
-import com.logistics.dto.user.dashboard.UserDashboardOverviewResponseDTO;
+import com.logistics.dto.user.dashboard.UserDashboardChartProductResponseDTO;
+import com.logistics.dto.user.dashboard.UserDashboardOverviewProductsResponseDTO;
+import com.logistics.dto.user.dashboard.UserOrderStatsDTO;
+import com.logistics.dto.user.dashboard.UserOrderTimelineDTO;
+import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
 import com.logistics.request.SearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.DashboardUserService;
@@ -12,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/user/dashboard")
 public class DashboardUserController {
@@ -19,20 +24,45 @@ public class DashboardUserController {
     @Autowired
     private DashboardUserService service;
 
-    @GetMapping("/overview")
-    public ResponseEntity<ApiResponse<UserDashboardOverviewResponseDTO>> getOverview(
+    @GetMapping("/overview/products")
+    public ResponseEntity<ApiResponse<UserDashboardOverviewProductsResponseDTO>> getOverviewProducts(
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getOverview(userId));
+        return ResponseEntity.ok(service.getOverviewProducts(userId));
     }
 
-    @GetMapping("/chart")
-    public ResponseEntity<ApiResponse<UserDashboardChartResponseDTO>> getChart(
+    @GetMapping("/overview/orders")
+    public ResponseEntity<ApiResponse<UserOrderStatsDTO>> getOverviewOrders(
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.getOverviewOrders(userId));
+    }
+
+    @GetMapping("/overview/revenue")
+    public ResponseEntity<ApiResponse<UserRevenueStatsDTO>> getOverviewRevenue(
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.getOverviewRevenue(userId));
+    }
+
+    @GetMapping("/chart/products")
+    public ResponseEntity<ApiResponse<UserDashboardChartProductResponseDTO>> getChartProducts(
             SearchRequest searchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getChart(userId, searchRequest));
+        return ResponseEntity.ok(service.getChartProducts(userId, searchRequest));
+    }
+
+    @GetMapping("/chart/orders")
+    public ResponseEntity<ApiResponse<List<UserOrderTimelineDTO>>> getChartOrders(
+            SearchRequest searchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.getChartOrders(userId, searchRequest));
     }
 }

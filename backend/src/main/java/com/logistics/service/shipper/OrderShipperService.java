@@ -168,7 +168,7 @@ public class OrderShipperService {
         // COD shipper đã thu (PENDING / IN_BATCH)
         int codCollected = paymentSubmissionRepository
             .findByShipperIdAndStatusIn(employee.getUser().getId(),
-                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+                Arrays.asList(PaymentSubmissionStatus.PENDING))
             .stream()
             .mapToInt(ps -> ps.getActualAmount().intValue())
             .sum();
@@ -1041,7 +1041,7 @@ public class OrderShipperService {
         // COD đã thu: tổng các submission PENDING / IN_BATCH của shipper
         int codCollectedHistory = paymentSubmissionRepository
             .findByShipperIdAndStatusIn(employee.getUser().getId(),
-                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+                    List.of(PaymentSubmissionStatus.PENDING))
             .stream()
             .mapToInt(ps -> ps.getActualAmount().intValue())
             .sum();
@@ -1371,7 +1371,7 @@ public class OrderShipperService {
         List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
         if (existing != null) {
             for (PaymentSubmission ex : existing) {
-                if (ex.getStatus() == PaymentSubmissionStatus.PENDING || ex.getStatus() == PaymentSubmissionStatus.IN_BATCH) {
+                if (ex.getStatus() == PaymentSubmissionStatus.PENDING) {
                     if (isCod) {
                         try {
                             List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(order.getId());

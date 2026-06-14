@@ -19,7 +19,7 @@ export const translateIncidentStatus = (value: string): string => {
     case 'PENDING': return 'Chờ xử lý';
     case 'PROCESSING': return 'Đang xử lý';
     case 'RESOLVED': return 'Đã giải quyết';
-    case 'REJECTED': return 'Bị từ chối';
+    case 'REJECTED': return 'Từ chối';
     default: return value;
   }
 };

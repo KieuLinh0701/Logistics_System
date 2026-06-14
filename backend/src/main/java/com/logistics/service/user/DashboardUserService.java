@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.logistics.dto.user.dashboard.UserDashboardChartProductResponseDTO;
+import com.logistics.dto.user.dashboard.UserDashboardOverviewProductsResponseDTO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.logistics.dto.user.dashboard.UserCreatedOrderCountDTO;
-import com.logistics.dto.user.dashboard.UserDashboardChartResponseDTO;
-import com.logistics.dto.user.dashboard.UserDashboardOverviewResponseDTO;
 import com.logistics.dto.user.dashboard.UserDeliveredOrderCountDTO;
 import com.logistics.dto.user.dashboard.UserOrderStatsDTO;
 import com.logistics.dto.user.dashboard.UserOrderTimelineDTO;
@@ -41,10 +41,13 @@ public class DashboardUserService {
     private final ProductRepository productRepository;
     private final SettlementBatchUserService settlementBatchUserService;
     private final OrderProductRepository orderProductRepository;
+    private final UserUserService userService;
 
-    public ApiResponse<UserDashboardOverviewResponseDTO> getOverview(Integer userId) {
+    public ApiResponse<UserDashboardOverviewProductsResponseDTO> getOverviewProducts(Integer userId) {
         try {
-            List<Object[]> rows = productRepository.countProductsByTypeForUser(userId);
+            Integer shopId = userService.getShopId(userId);
+
+            List<Object[]> rows = productRepository.countProductsByTypeForUser(shopId);
             Map<ProductType, Long> productCounts = new EnumMap<>(ProductType.class);
 
             for (ProductType type : ProductType.values()) {
@@ -68,7 +71,7 @@ public class DashboardUserService {
             }
 
             // Tổng quan sản phẩm
-            UserProductStatsDTO products = productRepository.getUserProductStats(userId);
+            UserProductStatsDTO products = productRepository.getUserProductStats(shopId);
             if (products == null) {
                 products = new UserProductStatsDTO();
                 products.setTotal(0L);
@@ -77,7 +80,21 @@ public class DashboardUserService {
                 products.setActive(0L);
             }
 
-            UserOrderStatsDTO orders = orderRepository.getUserOrderStats(userId);
+            UserDashboardOverviewProductsResponseDTO data = new UserDashboardOverviewProductsResponseDTO();
+            data.setProducts(products);
+            data.setProductCounts(productCounts);
+
+            return new ApiResponse<>(true, "Lấy thông tin tổng quan sản pẩm thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi khi lấy tổng quan sản phẩm: " + e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<UserOrderStatsDTO> getOverviewOrders(Integer userId) {
+        try {
+            Integer shopId = userService.getShopId(userId);
+
+            UserOrderStatsDTO orders = orderRepository.getUserOrderStats(shopId);
             if (orders == null) {
                 orders = new UserOrderStatsDTO();
                 orders.setTotal(0L);
@@ -94,7 +111,17 @@ public class DashboardUserService {
                 orders.setReturnedCancelled(0L);
             }
 
-            UserRevenueStatsDTO revenue = settlementBatchUserService.getUserRevenueStats(userId);
+            return new ApiResponse<>(true, "Lấy thông tin tổng quan đơn hàng thành công", orders);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi khi lấy tổng quan đơn hàng: " + e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<UserRevenueStatsDTO> getOverviewRevenue(Integer userId) {
+        try {
+            Integer shopId = userService.getShopId(userId);
+
+            UserRevenueStatsDTO revenue = settlementBatchUserService.getUserRevenueStats(shopId);
             if (revenue == null) {
                 revenue = new UserRevenueStatsDTO();
                 revenue.setReceived(BigDecimal.ZERO);
@@ -103,20 +130,18 @@ public class DashboardUserService {
                 revenue.setNextSettlementDate("");
             }
 
-            UserDashboardOverviewResponseDTO data = new UserDashboardOverviewResponseDTO();
-            data.setOrders(orders);
-            data.setProducts(products);
-            data.setRevenue(revenue);
-            data.setProductCounts(productCounts);
-
-            return new ApiResponse<>(true, "Lấy thông tin tổng quan thành công", data);
+            return new ApiResponse<>(true, "Lấy thông tin tổng quan thành công", revenue);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi khi lấy tổng quan: " + e.getMessage(), null);
         }
     }
 
-    public ApiResponse<UserDashboardChartResponseDTO> getChart(Integer userId, SearchRequest request) {
+    public ApiResponse<UserDashboardChartProductResponseDTO> getChartProducts(
+            Integer userId,
+            SearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
                     ? LocalDateTime.parse(request.getStartDate())
                     : null;
@@ -126,28 +151,60 @@ public class DashboardUserService {
                     : null;
 
             List<UserTopProductItemDto> topSelling = orderProductRepository.findTopSellingProducts(
-                    userId,
+                    shopId,
                     OrderStatus.DELIVERED,
                     startDate,
                     endDate,
                     PageRequest.of(0, 5));
 
             List<UserTopProductItemDto> topReturned = orderProductRepository.findTopReturnedProducts(
-                    userId,
+                    shopId,
                     List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
                     startDate,
                     endDate,
                     PageRequest.of(0, 5));
 
-            List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(userId, startDate,
-                    endDate);
-
-            UserDashboardChartResponseDTO data = new UserDashboardChartResponseDTO();
+            UserDashboardChartProductResponseDTO data = new UserDashboardChartProductResponseDTO();
             data.setTopSelling(topSelling);
             data.setTopReturned(topReturned);
-            data.setOrderTimelines(orderTimelineDTOs);
 
             return new ApiResponse<>(true, "Lấy thông tin biểu đồ thành công", data);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi khi lấy biểu đồ: " + e.getMessage(), null);
+        }
+    }
+
+    public ApiResponse<List<UserOrderTimelineDTO>> getChartOrders(Integer userId,
+            SearchRequest request) {
+        try {
+            Integer shopId = userService.getShopId(userId);
+
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                    ? LocalDateTime.parse(request.getStartDate())
+                    : null;
+
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                    ? LocalDateTime.parse(request.getEndDate())
+                    : null;
+
+            List<UserTopProductItemDto> topSelling = orderProductRepository.findTopSellingProducts(
+                    shopId,
+                    OrderStatus.DELIVERED,
+                    startDate,
+                    endDate,
+                    PageRequest.of(0, 5));
+
+            List<UserTopProductItemDto> topReturned = orderProductRepository.findTopReturnedProducts(
+                    shopId,
+                    List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
+                    startDate,
+                    endDate,
+                    PageRequest.of(0, 5));
+
+            List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(shopId, startDate,
+                    endDate);
+
+            return new ApiResponse<>(true, "Lấy thông tin biểu đồ thành công", orderTimelineDTOs);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi khi lấy biểu đồ: " + e.getMessage(), null);
         }
