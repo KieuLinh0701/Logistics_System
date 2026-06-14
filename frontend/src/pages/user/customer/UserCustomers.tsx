@@ -13,6 +13,8 @@ import Title from "antd/es/typography/Title";
 import Actions from "./components/Actions.tsx";
 import SearchFilters from "./components/SearchFilters.tsx";
 import type {Address} from "../../../types/address.ts";
+import orderApi from "../../../api/orderApi.ts";
+import type {SearchRequest} from "../../../types/request.ts";
 
 const UserCustomers: React.FC = () => {
     const [form] = Form.useForm();
@@ -72,7 +74,7 @@ const UserCustomers: React.FC = () => {
             const requestId = ++latestRequestRef.current;
             setLoading(true);
 
-            const param: UserOrderSearchRequest = {
+            const param: SearchRequest = {
                 page: currentPage,
                 limit: limit,
                 search: search,
@@ -97,6 +99,31 @@ const UserCustomers: React.FC = () => {
             console.error("Error fetching Addresses:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const param: SearchRequest = {
+                page: page,
+                limit: limit,
+                search: search,
+                sort: filterSort,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await recipientAddressApi.exportUserAddresses(param);
+
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+            }
+
+        } catch (error: any) {
+            message.error(error.message || "Xuất Excel thất bại!");
         }
     };
 
@@ -275,6 +302,7 @@ const UserCustomers: React.FC = () => {
                         <div className="list-page-actions">
                             <Actions
                                 onAdd={handleShowModal}
+                                onExport={handleExport}
                             />
                         </div>
                     </Col>

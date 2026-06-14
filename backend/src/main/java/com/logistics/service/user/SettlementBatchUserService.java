@@ -1,10 +1,25 @@
 package com.logistics.service.user;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
+import com.logistics.entity.ShippingRequest;
+import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
+import com.logistics.specification.ShippingRequestSpecification;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +50,15 @@ import com.logistics.specification.OrderSpecification;
 import com.logistics.specification.SettlementBatchSpecification;
 
 import lombok.RequiredArgsConstructor;
+
+import static com.logistics.utils.OrderUtils.translateOrderPayerType;
+import static com.logistics.utils.OrderUtils.translateOrderPaymentStatus;
+import static com.logistics.utils.OrderUtils.translateOrderStatus;
+import static com.logistics.utils.SettlementBatchUtils.translateSettlementBatchStatus;
+import static com.logistics.utils.SettlementTransactionUtils.translateSettlementTransactionStatus;
+import static com.logistics.utils.SettlementTransactionUtils.translateSettlementTransactionType;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -288,4 +312,192 @@ public class SettlementBatchUserService {
         return totalDebt;
     }
 
+    public byte[] export(Integer userId, SearchRequest request) {
+        Integer shopId = userService.getShopId(userId);
+
+        Sort sort = buildSort(request.getSort());
+        List<SettlementBatch> batches = getSettlementBatchs(shopId, request, Pageable.unpaged(sort))
+                .getContent();
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("SettlementBatches");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã phiên",
+                    "Trạng thái",
+                    "Hình thức",
+                    "Số tiền",
+                    "Thời gian đối soát",
+                    "Thời gian cập nhật"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (SettlementBatch b : batches) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(b.getCode() != null ? b.getCode() : "");
+                row.createCell(1).setCellValue(translateSettlementBatchStatus(b.getStatus()));
+
+                String type = (b.getBalanceAmount().compareTo(BigDecimal.ZERO) == 0) ? "Hòa"
+                        : (b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0) ? "Shop trả hệ thống"
+                                : "Hệ thống trả shop";
+                row.createCell(2).setCellValue(type);
+
+                row.createCell(3).setCellValue(b.getBalanceAmount().doubleValue());
+                row.createCell(4).setCellValue(b.getCreatedAt() != null ? b.getCreatedAt().format(dtf) : "N/A");
+                row.createCell(5).setCellValue(b.getUpdatedAt() != null ? b.getUpdatedAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
+    public byte[] exportById(Integer userId, Integer settlementBatchId) {
+        Integer shopId = userService.getShopId(userId);
+
+        // Lấy thông tin batch
+        SettlementBatch batch = batchRepository
+                .findByIdAndShop_Id(settlementBatchId, shopId)
+                .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
+
+        // Lấy toàn bộ đơn hàng của batch (không filter)
+        Specification<Order> orderSpec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.settlementBatchId(settlementBatchId))
+                .and(OrderSpecification.userId(shopId));
+
+        List<Order> orders = orderRepository.findAll(orderSpec, Sort.by("createdAt").descending());
+
+        // Lấy toàn bộ giao dịch thanh toán
+        List<SettlementTransaction> transactions = transactionRepository
+                .findBySettlementBatchId(settlementBatchId, Sort.by(Sort.Direction.DESC, "paidAt"));
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+            DateTimeFormatter dtfDate = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            // ── Sheet 1: Danh sách đơn hàng ──
+            Sheet orderSheet = workbook.createSheet("Orders");
+
+            String[] orderHeaders = {
+                    "Mã đơn hàng",
+                    "Trạng thái",
+                    "Ngày giao / hoàn",
+                    "Người thanh toán",
+                    "COD (chưa phí)",
+                    "Phí dịch vụ",
+                    "Trạng thái thanh toán"
+            };
+
+            Row orderHeaderRow = orderSheet.createRow(0);
+            for (int i = 0; i < orderHeaders.length; i++) {
+                Cell cell = orderHeaderRow.createCell(i);
+                cell.setCellValue(orderHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int orderRowIdx = 1;
+            for (Order o : orders) {
+                Row row = orderSheet.createRow(orderRowIdx++);
+
+                row.createCell(0).setCellValue(o.getTrackingNumber() != null ? o.getTrackingNumber() : "");
+                row.createCell(1).setCellValue(translateOrderStatus(o.getStatus()));
+                row.createCell(2).setCellValue(o.getDeliveredAt() != null ? o.getDeliveredAt().format(dtfDate) : "N/A");
+                row.createCell(3).setCellValue(translateOrderPayerType(o.getPayer()));
+                row.createCell(4).setCellValue(o.getCod() != null ? o.getCod().doubleValue() : 0);
+                row.createCell(5).setCellValue(o.getTotalFee() != null ? o.getTotalFee().doubleValue() : 0);
+                row.createCell(6).setCellValue(translateOrderPaymentStatus(o.getPaymentStatus()));
+            }
+
+            for (int i = 0; i < orderHeaders.length; i++) {
+                orderSheet.autoSizeColumn(i);
+            }
+
+            // ── Sheet 2: Hóa đơn thanh toán ──
+            Sheet txSheet = workbook.createSheet("Transactions");
+
+            String[] txHeaders = {
+                    "Mã giao dịch",
+                    "Loại",
+                    "Số tiền",
+                    "Trạng thái",
+                    "Ngân hàng",
+                    "Tên tài khoản",
+                    "Số tài khoản",
+                    "Thời gian tạo",
+                    "Thời gian thanh toán"
+            };
+
+            Row txHeaderRow = txSheet.createRow(0);
+            for (int i = 0; i < txHeaders.length; i++) {
+                Cell cell = txHeaderRow.createCell(i);
+                cell.setCellValue(txHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int txRowIdx = 1;
+            for (SettlementTransaction tx : transactions) {
+                Row row = txSheet.createRow(txRowIdx++);
+
+                row.createCell(0).setCellValue(tx.getCode() != null ? tx.getCode() : "");
+                row.createCell(1).setCellValue(translateSettlementTransactionType(tx.getType()));
+                row.createCell(2).setCellValue(tx.getAmount() != null ? tx.getAmount().doubleValue() : 0);
+                row.createCell(3).setCellValue(translateSettlementTransactionStatus(tx.getStatus()));
+                row.createCell(4).setCellValue(tx.getBankName() != null ? tx.getBankName() : "N/A");
+                row.createCell(5).setCellValue(tx.getAccountName() != null ? tx.getAccountName() : "N/A");
+                row.createCell(6).setCellValue(tx.getAccountNumber() != null ? tx.getAccountNumber() : "N/A");
+                row.createCell(7).setCellValue(tx.getCreatedAt() != null ? tx.getCreatedAt().format(dtf) : "N/A");
+                row.createCell(8).setCellValue(tx.getPaidAt() != null ? tx.getPaidAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < txHeaders.length; i++) {
+                txSheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
 }

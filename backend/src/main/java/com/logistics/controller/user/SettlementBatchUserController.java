@@ -1,9 +1,14 @@
 package com.logistics.controller.user;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
+import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -75,7 +80,6 @@ public class SettlementBatchUserController {
     @GetMapping("/{id}/transactions")
     public ResponseEntity<ApiResponse<List<UserSettlementTransactionDto>>> getSettlementTransactionsBySettlementBatchId(
             @PathVariable Integer id,
-            @Valid SearchRequest searchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
@@ -86,25 +90,48 @@ public class SettlementBatchUserController {
         return ResponseEntity.ok(result);
     }
 
-    // @GetMapping("/export")
-    // public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
-    // SearchRequest searchRequest) throws Exception {
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            SearchRequest searchRequest) throws Exception {
 
-    // Integer userId = (Integer) request.getAttribute("currentUserId");
-    // byte[] data = service.export(userId, searchRequest);
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, searchRequest);
 
-    // String fileName = "UTE Logistics_Báo cáo phiên đối soát.xlsx";
-    // String encodedFileName = URLEncoder.encode(fileName,
-    // StandardCharsets.UTF_8.toString())
-    // .replaceAll("\\+", "%20");
+        String fileName = "UTE Logistics_Báo cáo lịch sử đối soát.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
 
-    // HttpHeaders headers = new HttpHeaders();
-    // headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-    // headers.add(HttpHeaders.CONTENT_DISPOSITION,
-    // "attachment; filename*=UTF-8''" + encodedFileName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
 
-    // return ResponseEntity.ok()
-    // .headers(headers)
-    // .body(data);
-    // }
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
+
+    @GetMapping("/export/{id}")
+    public ResponseEntity<byte[]> exportById(
+            HttpServletRequest request,
+            @PathVariable Integer id,
+            UserShippingRequestSearchRequest userShippingRequestSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.exportById(userId, id);
+
+        String fileName = "UTE Logistics_Báo cáo chi tiêt phiên đối soát.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
 }

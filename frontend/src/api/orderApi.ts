@@ -11,6 +11,7 @@ import type {
 } from "../types/order";
 import axiosClient from "./axiosClient";
 import type {OrderHistory} from "../types/orderHistory";
+import {axiosExport} from "./exportClient.ts";
 
 export interface ShipperStats {
     totalAssigned: number;
@@ -40,6 +41,11 @@ const orderApi = {
         return res;
     },
 
+    async getAdminOrderById(id: number) {
+        const res = await axiosClient.get<ApiResponse<Order>>(`/admin/orders/${id}`);
+        return res;
+    },
+
     // User
     async listUserOrders(params: UserOrderSearchRequest) {
         const res = await axiosClient.get<ApiResponse<ListResponse<Order>>>("/user/orders", {params});
@@ -61,7 +67,7 @@ const orderApi = {
     },
 
     async updateUserOrder(id: number, params: UserOrderRequest) {
-        const res = await axiosClient.put<ApiResponse<Boolean>>(`/user/orders/${id}`, params);
+        const res = await axiosClient.put<ApiResponse<boolean>>(`/user/orders/${id}`, params);
         return res;
     },
 
@@ -75,23 +81,18 @@ const orderApi = {
         return res;
     },
 
-    async getAdminOrderById(id: number) {
-        const res = await axiosClient.get<ApiResponse<Order>>(`/admin/orders/${id}`);
-        return res;
-    },
-
     async publicUserOrder(id: number) {
         const res = await axiosClient.patch<ApiResponse<string>>(`/user/orders/${id}/public`);
         return res;
     },
 
     async cancelUserOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<Boolean>>(`/user/orders/${id}/cancel`);
+        const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/orders/${id}/cancel`);
         return res;
     },
 
     async deleteUserOrder(id: number) {
-        const res = await axiosClient.delete<ApiResponse<Boolean>>(`/user/orders/${id}`);
+        const res = await axiosClient.delete<ApiResponse<boolean>>(`/user/orders/${id}`);
         return res;
     },
 
@@ -102,8 +103,47 @@ const orderApi = {
     },
 
     async setUserOrderReadyForPickup(id: number) {
-        const res = await axiosClient.patch<ApiResponse<Boolean>>(`/user/orders/${id}/ready`);
+        const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/orders/${id}/ready`);
         return res;
+    },
+
+    async exportUserOrders(params: UserOrderSearchRequest) {
+        try {
+            const res = await axiosExport.get("/user/orders/export", {
+                params,
+                responseType: "blob",
+            });
+
+            const blob = res.data;
+            const contentDisposition = res.headers['content-disposition'];
+
+            let fileName = "BaoCao.xlsx";
+
+            if (contentDisposition) {
+                let fileNameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    fileName = decodeURIComponent(fileNameMatch[1].trim());
+                } else {
+                    fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+                    if (fileNameMatch && fileNameMatch[1]) {
+                        fileName = fileNameMatch[1].trim();
+                    }
+                }
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            return { success: true, fileName };
+        } catch (error) {
+            return { success: false, error };
+        }
     },
 
     // Shipper
@@ -333,7 +373,7 @@ const orderApi = {
     },
 
     async updateManagerOrder(id: number, params: ManagerOrderRequest) {
-        const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/orders/${id}`, params);
+        const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/orders/${id}`, params);
         return res;
     },
 
@@ -349,17 +389,17 @@ const orderApi = {
     },
 
     async cancelManagerOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/cancel`);
+        const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/cancel`);
         return res;
     },
 
     async setManagerOrderAtOriginOffice(id: number) {
-        const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/at-origin-office`);
+        const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/at-origin-office`);
         return res;
     },
 
     async confirmManagerOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<Boolean>>(`/manager/orders/${id}/confirm`);
+        const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/confirm`);
         return res;
     },
 

@@ -259,6 +259,37 @@ const UserOrderList = () => {
         navigate(`/orders/print?orderIds=${selectedOrderIds.join(",")}`);
     };
 
+    const handleExport = async () => {
+        try {
+            const param: UserOrderSearchRequest = {
+                page: page,
+                limit: limit,
+                search: search,
+                payer: filterPayer !== "ALL" ? filterPayer : undefined,
+                status: filterStatus !== "ALL" ? filterStatus : undefined,
+                serviceTypeId: filterServiceType !== null ? filterServiceType : undefined,
+                paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
+                cod: filterCOD !== "ALL" ? filterCOD : undefined,
+                sort: filterSort,
+                pickupType: filterPickupType !== "ALL" ? filterPickupType : undefined,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await orderApi.exportUserOrders(param);
+
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+            }
+
+        } catch (error: any) {
+            message.error(error.message || "Xuất Excel thất bại!");
+        }
+    };
+
     const handleSelectAllFiltered = async (select: boolean) => {
         if (select) {
             try {
@@ -469,6 +500,7 @@ const UserOrderList = () => {
                             <OrderActions
                                 onAdd={handleAdd}
                                 onPrint={handlePrintSelectedOrders}
+                                onExport={handleExport}
                                 disabled={selectedOrderIds.length !== 0}
                                 recordNumber={selectedOrderIds.length}
                             />

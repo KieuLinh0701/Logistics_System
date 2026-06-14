@@ -1,14 +1,27 @@
 package com.logistics.service.user;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.logistics.entity.ShippingRequest;
+import com.logistics.specification.ShippingRequestSpecification;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +53,11 @@ import com.logistics.specification.ProductSpecification;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+
+import static com.logistics.utils.ProductUtils.translateProductStatus;
+import static com.logistics.utils.ProductUtils.translateProductType;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -367,6 +385,104 @@ public class ProductUserService {
             product.setStock(product.getStock() + op.getQuantity());
             product.setSoldQuantity(product.getSoldQuantity() - op.getQuantity());
             repository.save(product);
+        }
+    }
+
+    public byte[] export(Integer userId, UserProductSearchRequest request) {
+        Integer shopId = userService.getShopId(userId);
+
+        String search = request.getSearch();
+        String type = request.getType();
+        String status = request.getStatus();
+        String stock = request.getStock();
+        String sort = request.getSort();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Specification<Product> spec = ProductSpecification.unrestrictedProduct()
+                .and(ProductSpecification.userId(shopId))
+                .and(ProductSpecification.search(search))
+                .and(ProductSpecification.type(type))
+                .and(ProductSpecification.status(status))
+                .and(ProductSpecification.stock(stock))
+                .and(ProductSpecification.createdAtBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            case "best_selling" -> Sort.by("soldQuantity").descending();
+            case "least_selling" -> Sort.by("soldQuantity").ascending();
+            case "highest_price" -> Sort.by("price").descending();
+            case "lowest_price" -> Sort.by("price").ascending();
+            case "highest_stock" -> Sort.by("stock").descending();
+            case "lowest_stock" -> Sort.by("stock").ascending();
+            default -> Sort.by("createdAt").descending();
+        } : Sort.by("createdAt").descending();
+
+        List<Product> products = repository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Products");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã SP",
+                    "Tên",
+                    "Loại",
+                    "Trạng thái",
+                    "Khối lượng (Kg)",
+                    "Giá SP (VNĐ)",
+                    "Tồn kho",
+                    "Tổng bán",
+                    "Ngày tạo"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (Product p : products) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(p.getCode() != null ? p.getCode() : "");
+                row.createCell(1).setCellValue(p.getName() != null ? p.getName() : "");
+                row.createCell(2).setCellValue(translateProductType(p.getType()));
+                row.createCell(3).setCellValue(translateProductStatus(p.getStatus()));
+                row.createCell(4).setCellValue(p.getWeight() != null ? p.getWeight().doubleValue() : 0);
+                row.createCell(5).setCellValue(p.getPrice() != null ? p.getPrice() : 0);
+                row.createCell(6).setCellValue(p.getStock() != null ? p.getStock() : 0);
+                row.createCell(7).setCellValue(p.getSoldQuantity() != null ? p.getSoldQuantity() : 0);
+                row.createCell(8).setCellValue(p.getCreatedAt() != null ? p.getCreatedAt().format(dtf) : "");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
         }
     }
 }

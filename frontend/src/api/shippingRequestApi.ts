@@ -1,81 +1,127 @@
-import type { ApiResponse, ListResponse } from "../types/response";
-import type { ManagerShippingRequestSearchRequest, PublicShippingRequestCreate, ShippingRequest, UserShippingRequestSearchRequest } from "../types/shippingRequest";
+import type {ApiResponse, ListResponse} from "../types/response";
+import type {
+    ManagerShippingRequestSearchRequest,
+    PublicShippingRequestCreate,
+    ShippingRequest,
+    UserShippingRequestSearchRequest
+} from "../types/shippingRequest";
 import axiosClient from "./axiosClient";
+import type {UserOrderSearchRequest} from "../types/order.ts";
+import {axiosExport} from "./exportClient.ts";
 
 const shippingRequestApi = {
-  // User
-  async listUserShippingRequests(params: UserShippingRequestSearchRequest) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>("/user/shipping-requests", { params });
-    return res;
-  },
+    // User
+    async listUserShippingRequests(params: UserShippingRequestSearchRequest) {
+        const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>("/user/shipping-requests", {params});
+        return res;
+    },
 
-  async createUserShippingRequest(data: FormData) {
-    const res = await axiosClient.post<ApiResponse<boolean>>("/user/shipping-requests", data);
-    return res;
-  },
+    async createUserShippingRequest(data: FormData) {
+        const res = await axiosClient.post<ApiResponse<boolean>>("/user/shipping-requests", data);
+        return res;
+    },
 
-  async updateUserShippingRequest(id: number, data: FormData) {
-    const res = await axiosClient.put<ApiResponse<boolean>>(`/user/shipping-requests/${id}`, data);
-    return res;
-  },
+    async updateUserShippingRequest(id: number, data: FormData) {
+        const res = await axiosClient.put<ApiResponse<boolean>>(`/user/shipping-requests/${id}`, data);
+        return res;
+    },
 
-  async getUserShippingRequestById(id: number) {
-    const res = await axiosClient.get<ApiResponse<ShippingRequest>>(`/user/shipping-requests/${id}`);
-    return res;
-  },
+    async getUserShippingRequestById(id: number) {
+        const res = await axiosClient.get<ApiResponse<ShippingRequest>>(`/user/shipping-requests/${id}`);
+        return res;
+    },
 
-  async getUserShippingRequestByIdForEdit(id: number) {
-    const res = await axiosClient.get<ApiResponse<ShippingRequest>>(`/user/shipping-requests/${id}/edit`);
-    return res;
-  },
+    async getUserShippingRequestByIdForEdit(id: number) {
+        const res = await axiosClient.get<ApiResponse<ShippingRequest>>(`/user/shipping-requests/${id}/edit`);
+        return res;
+    },
 
-  async cancelUserShippingRequest(id: number) {
-    const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/shipping-requests/${id}/cancel`);
-    return res;
-  },
+    async cancelUserShippingRequest(id: number) {
+        const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/shipping-requests/${id}/cancel`);
+        return res;
+    },
 
-  // Manager
-async listManagerShippingRequests(
-    params: ManagerShippingRequestSearchRequest
-  ) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>(
-      "/manager/shipping-requests",
-      { params }
-    );
-    return res;
-  },
+    async exportUserShippingRequests(params: UserShippingRequestSearchRequest) {
+        try {
+            const res = await axiosExport.get("/user/shipping-requests/export", {
+                params,
+                responseType: "blob",
+            });
 
-  // Shipper
-  async listShipperShippingRequests() {
-    const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>(
-      "/shipper/shipping-requests"
-    );
-    return res;
-  },
+            const blob = res.data;
+            const contentDisposition = res.headers['content-disposition'];
 
-  async acceptShipperShippingRequest(id: number) {
-    const res = await axiosClient.post<ApiResponse<boolean>>(`/shipper/shipping-requests/${id}/accept`);
-    return res;
-  },
+            let fileName = "BaoCao.xlsx";
 
-  async getManagerShippingRequestById(id: number) {
-    return axiosClient.get<ApiResponse<ShippingRequest>>(
-      `/manager/shipping-requests/${id}`
-    );
-  },
+            if (contentDisposition) {
+                let fileNameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    fileName = decodeURIComponent(fileNameMatch[1].trim());
+                } else {
+                    fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+                    if (fileNameMatch && fileNameMatch[1]) {
+                        fileName = fileNameMatch[1].trim();
+                    }
+                }
+            }
 
-  async processingManagerShippingRequest(id: number, data: FormData) {
-    return axiosClient.put<boolean>(
-      `/manager/shipping-requests/${id}`,
-      data
-    );
-  },
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
 
-  // Public
-  async createPublicShippingRequest(data: PublicShippingRequestCreate) {
-    const res = await axiosClient.post<ApiResponse<boolean>>("/public/shipping-requests", data);
-    return res;
-  },
+            return {success: true, fileName};
+        } catch (error) {
+            return {success: false, error};
+        }
+    },
+
+    // Manager
+    async listManagerShippingRequests(
+        params: ManagerShippingRequestSearchRequest
+    ) {
+        const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>(
+            "/manager/shipping-requests",
+            {params}
+        );
+        return res;
+    },
+
+    // Shipper
+    async listShipperShippingRequests() {
+        const res = await axiosClient.get<ApiResponse<ListResponse<ShippingRequest>>>(
+            "/shipper/shipping-requests"
+        );
+        return res;
+    },
+
+    async acceptShipperShippingRequest(id: number) {
+        const res = await axiosClient.post<ApiResponse<boolean>>(`/shipper/shipping-requests/${id}/accept`);
+        return res;
+    },
+
+    async getManagerShippingRequestById(id: number) {
+        return axiosClient.get<ApiResponse<ShippingRequest>>(
+            `/manager/shipping-requests/${id}`
+        );
+    },
+
+    async processingManagerShippingRequest(id: number, data: FormData) {
+        return axiosClient.put<boolean>(
+            `/manager/shipping-requests/${id}`,
+            data
+        );
+    },
+
+    // Public
+    async createPublicShippingRequest(data: PublicShippingRequestCreate) {
+        const res = await axiosClient.post<ApiResponse<boolean>>("/public/shipping-requests", data);
+        return res;
+    },
 };
 
 

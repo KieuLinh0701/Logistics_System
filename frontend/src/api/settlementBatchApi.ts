@@ -1,7 +1,7 @@
 import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 import type {SearchRequest} from "../types/request";
-import type {SettlementBatch, SettlementBatchSelectedAllResponse} from "../types/settlementBatch";
+import type {SettlementBatch} from "../types/settlementBatch";
 import type {Order} from "../types/order";
 import type {SettlementTransaction} from "../types/settlementTransaction";
 import {axiosExport} from "./exportClient";
@@ -76,10 +76,9 @@ const settlementBatchApi = {
         }
     },
 
-    async exportUserSettlementBatchDetail(id: number, params: SearchRequest) {
+    async exportUserSettlementBatchDetail(id: number) {
         try {
             const res = await axiosExport.get(`/user/settlement-batchs/export/${id}`, {
-                params,
                 responseType: "blob",
             });
 

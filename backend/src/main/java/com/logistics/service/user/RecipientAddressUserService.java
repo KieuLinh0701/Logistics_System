@@ -2,6 +2,7 @@ package com.logistics.service.user;
 
 import com.logistics.entity.Address;
 import com.logistics.entity.Order;
+import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.enums.AddressType;
 import com.logistics.enums.OrderStatus;
@@ -13,6 +14,7 @@ import com.logistics.repository.UserRepository;
 import com.logistics.request.user.recipientaddress.RecipientAddressUserRequest;
 import com.logistics.request.user.recipientaddress.RecipientSuggestionRequest;
 import com.logistics.request.user.recipientaddress.UserRecipientAddressSearchRequest;
+import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
@@ -22,8 +24,19 @@ import com.logistics.response.user.recipientaddress.RecipientAddressWithStats;
 import com.logistics.response.user.recipientaddress.RecipientStats;
 import com.logistics.response.user.recipientaddress.RecipientSuggestionAddressResponse;
 import com.logistics.specification.RecipientAddressSpecification;
+import com.logistics.specification.ShippingRequestSpecification;
 import com.logistics.utils.AddressUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,10 +45,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -279,6 +297,102 @@ public class RecipientAddressUserService {
             return new ApiResponse<>(true, "Lấy địa chỉ gợi ý thành công", data);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    public byte[] export(Integer userId, UserRecipientAddressSearchRequest request) {
+        Integer shopId = userService.getShopId(userId);
+
+        String keyword = request.getSearch();
+        String sort = request.getSort() != null ? request.getSort().toLowerCase() : "newest";
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        boolean isStatSort = List.of(
+                "total_orders_high", "total_orders_low",
+                "success_rate_high", "success_rate_low",
+                "return_rate_high", "return_rate_low"
+        ).contains(sort);
+
+        Specification<Address> spec = Specification
+                .where(RecipientAddressSpecification.userId(shopId))
+                .and(RecipientAddressSpecification.type(AddressType.RECIPIENT))
+                .and(RecipientAddressSpecification.keyword(keyword))
+                .and(RecipientAddressSpecification.createdAtBetween(startDate, endDate));
+
+        List<RecipientAddressResponse> list;
+
+        if (isStatSort) {
+            list = addressRepository.findAll(spec)
+                    .stream()
+                    .map(address -> buildResponse(shopId, address))
+                    .sorted(statComparator(sort))
+                    .toList();
+        } else {
+            Sort sortOpt = "oldest".equals(sort)
+                    ? Sort.by("createdAt").ascending()
+                    : Sort.by("createdAt").descending();
+
+            list = addressRepository.findAll(spec, sortOpt)
+                    .stream()
+                    .map(address -> buildResponse(shopId, address))
+                    .toList();
+        }
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("RecipientAddresses");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Tên",
+                    "Số điện thoại",
+                    "Địa chỉ",
+                    "Tổng đơn",
+                    "Tỉ lệ thành công",
+                    "Tỉ lệ hoàn hàng"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowIdx = 1;
+            for (RecipientAddressResponse r : list) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(r.getAddress().getName() != null ? r.getAddress().getName() : "");
+                row.createCell(1).setCellValue(r.getAddress().getPhoneNumber() != null ? r.getAddress().getPhoneNumber() : "");
+                row.createCell(2).setCellValue(r.getAddress().getFullAddress() != null ? r.getAddress().getFullAddress() : "");
+                row.createCell(3).setCellValue(r.getRecipientStats().getTotalSystemOrders());
+                row.createCell(4).setCellValue(r.getRecipientStats().getSuccessRate() + "%");
+                row.createCell(5).setCellValue(r.getRecipientStats().getReturnedRate() + "%");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
         }
     }
 

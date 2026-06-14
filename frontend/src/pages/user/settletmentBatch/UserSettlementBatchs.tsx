@@ -18,6 +18,8 @@ import paymentApi from "../../../api/paymentApi";
 import {weekdayOrder} from "../../../utils/userSettlementScheduleUtils";
 import SettlementSummary from "./components/SettlementSummary.tsx";
 import {hasPermissionGroup} from "../../../utils/authUtils.ts";
+import type {UserOrderSearchRequest} from "../../../types/order.ts";
+import orderApi from "../../../api/orderApi.ts";
 
 const UserSettlementBatchs = () => {
     const navigate = useNavigate();
@@ -124,6 +126,33 @@ const UserSettlementBatchs = () => {
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const param: SearchRequest = {
+                page: currentPage,
+                limit: pageSize,
+                status: filterStatus !== "ALL" ? filterStatus : undefined,
+                search: searchText,
+                sort: filterSort,
+                type: filterType,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await settlementBatchApi.exportUserSettlementBatchs(param);
+
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+            }
+
+        } catch (error: any) {
+            message.error(error.message || "Xuất Excel thất bại!");
+        }
+    };
+
     const fetchSummary = async () => {
         try {
             const result = await settlementBatchApi.getUserSettlementSummary();
@@ -138,35 +167,6 @@ const UserSettlementBatchs = () => {
     useEffect(() => {
         fetchSummary();
     }, []);
-
-    const handleExport = async () => {
-        try {
-            setLoading(true);
-            const param: SearchRequest = {
-                status: filterStatus !== "ALL" ? filterStatus : undefined,
-                search: searchText,
-                sort: filterSort,
-                type: filterType,
-            };
-
-            if (dateRange) {
-                param.startDate = dateRange[0].startOf("day").toISOString();
-                param.endDate = dateRange[1].endOf("day").toISOString();
-            }
-
-            const result = await settlementBatchApi.exportUserSettlementBatchs(param);
-
-            if (!result.success) {
-                message.error("Xuất báo cáo thất bại");
-                console.error("Export thất bại:", result.error);
-            }
-
-        } catch (error: any) {
-            message.error(error.message || "Xuất báo cáo thất bại")
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handlePaymentSettlements = async () => {
 

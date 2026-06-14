@@ -164,31 +164,14 @@ const UserSettlementBatchDetail = () => {
 
     const handleExport = async () => {
         try {
-            setLoading(true);
-            const param: SearchRequest = {
-                status: filterStatus !== "ALL" ? filterStatus : undefined,
-                search: searchText,
-                sort: filterSort,
-                payer: filterPayer !== "ALL" ? filterPayer : undefined,
-                cod: filterCod !== "ALL" ? filterCod : undefined,
-            };
-
-            if (dateRange) {
-                param.startDate = dateRange[0].startOf("day").toISOString();
-                param.endDate = dateRange[1].endOf("day").toISOString();
-            }
-
-            const result = await settlementBatchApi.exportUserSettlementBatchDetail(settlementId, param);
+            const result = await settlementBatchApi.exportUserSettlementBatchDetail(settlementId);
 
             if (!result.success) {
                 message.error("Xuất báo cáo thất bại");
-                console.error("Export thất bại:", result.error);
             }
 
         } catch (error: any) {
             message.error(error.message || "Xuất báo cáo thất bại")
-        } finally {
-            setLoading(false);
         }
     };
 

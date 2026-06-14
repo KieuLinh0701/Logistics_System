@@ -1,14 +1,3 @@
-import type { SettlementBatch } from "../types/settlementBatch";
-
-export const canPayUserSettlementBatch = (
-  batch: SettlementBatch
-): boolean => {
-  return (
-    ['PENDING', 'FAILED'].includes(batch.status) &&
-    batch.remainAmount > 0 && batch.balanceAmount < 0
-  );
-};
-
 export const SETTLEMENT_BATCH_STATUSES = [
   'PENDING',
   'COMPLETED',

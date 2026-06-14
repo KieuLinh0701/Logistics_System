@@ -14,6 +14,8 @@ import shippingRequestApi from '../../../../api/shippingRequestApi';
 import "./UserShippingRequest.css"
 import ConfirmModal from '../../../common/ConfirmModal';
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
+import type {UserOrderSearchRequest} from "../../../../types/order.ts";
+import orderApi from "../../../../api/orderApi.ts";
 
 const UserShippingRequests: React.FC = () => {
     const navigate = useNavigate();
@@ -265,6 +267,33 @@ const UserShippingRequests: React.FC = () => {
         setSelectedRequest(null);
     };
 
+    const handleExport = async () => {
+        try {
+            const param: UserShippingRequestSearchRequest = {
+                page: page,
+                limit: limit,
+                search: searchText,
+                type: filterRrequestType !== "ALL" ? filterRrequestType : undefined,
+                status: filterStatus !== "ALL" ? filterStatus : undefined,
+                sort: filterSort,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await shippingRequestApi.exportUserShippingRequests(param);
+
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+            }
+
+        } catch (error: any) {
+            message.error(error.message || "Xuất Excel thất bại!");
+        }
+    };
+
     useEffect(() => {
         updateURL();
         fetchRequests(page);
@@ -310,6 +339,7 @@ const UserShippingRequests: React.FC = () => {
                                         setNewRequest({});
                                         form.resetFields();
                                     }}
+                                    onExport={handleExport}
                                 />
                             </div>
                         </Col>

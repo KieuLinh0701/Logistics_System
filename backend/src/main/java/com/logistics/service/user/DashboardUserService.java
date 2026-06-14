@@ -187,21 +187,9 @@ public class DashboardUserService {
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
-            List<UserTopProductItemDto> topSelling = orderProductRepository.findTopSellingProducts(
+            List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(
                     shopId,
-                    OrderStatus.DELIVERED,
                     startDate,
-                    endDate,
-                    PageRequest.of(0, 5));
-
-            List<UserTopProductItemDto> topReturned = orderProductRepository.findTopReturnedProducts(
-                    shopId,
-                    List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
-                    startDate,
-                    endDate,
-                    PageRequest.of(0, 5));
-
-            List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(shopId, startDate,
                     endDate);
 
             return new ApiResponse<>(true, "Lấy thông tin biểu đồ thành công", orderTimelineDTOs);

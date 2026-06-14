@@ -4,6 +4,7 @@ import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
+import com.logistics.request.SearchRequest;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -14,10 +15,14 @@ import com.logistics.service.user.OrderUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -135,5 +140,27 @@ public class OrderUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.setOrderReadyForPickup(userId, id));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            UserOrderSearchRequest userOrderSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, userOrderSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo đơn hàng.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }
