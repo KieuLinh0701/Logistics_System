@@ -26,7 +26,7 @@ import {
     CheckCircleOutlined,
     ScanOutlined, UserSwitchOutlined, ContactsOutlined,
 } from "@ant-design/icons";
-import "./Sidenav.css";
+import "./SideNav.css";
 import {useMemo} from "react";
 import {getUserRole, hasPermissionGroup} from "../../utils/authUtils";
 
@@ -56,7 +56,7 @@ const filterMenuByPermissionGroup = (items: MenuItemType[]): MenuItemType[] => {
         .filter((item) => !item.children || item.children.length > 0);
 };
 
-const Sidenav: React.FC = () => {
+const SideNav: React.FC = () => {
     const {pathname} = useLocation();
     const role = getUserRole();
 
@@ -515,4 +515,4 @@ const Sidenav: React.FC = () => {
     );
 };
 
-export default Sidenav;
+export default SideNav;
