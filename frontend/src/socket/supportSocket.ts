@@ -17,7 +17,7 @@ export type SupportSocketClient = {
 
 export const connectSupportSocket = ({ accountId, ticketId, onMessage, onError }: ConnectOptions): SupportSocketClient => {
   void accountId;
-  const wsBaseUrl = (import.meta.env.VITE_API_URL || "http://localhost:8080/api").replace(/\/api$/, "");
+  const wsBaseUrl = (import.meta.env.VITE_API_BASE || "http://localhost:8080/api").replace(/\/api$/, "");
   const socket = new SockJS(`${wsBaseUrl}/ws?userId=${accountId}`);
 
   const stompClient = new Client({

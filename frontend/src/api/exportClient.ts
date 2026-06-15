@@ -2,7 +2,7 @@
 import axios from "axios";
 
 export const axiosExport = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8080/api",
   timeout: 10000,
   withCredentials: false,
 });
