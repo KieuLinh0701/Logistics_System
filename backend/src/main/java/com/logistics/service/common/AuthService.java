@@ -66,10 +66,11 @@ public class AuthService {
             if (existingAccountOpt.isPresent()) {
                 Account existingAccount = existingAccountOpt.get();
 
-                boolean hasUserRole = existingAccount.getAccountRoles()
-                        .stream()
-                        .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole()
-                                .getName()));
+                boolean hasUserRole = existingAccount.getAccountRoles() != null &&
+                        existingAccount.getAccountRoles().stream()
+                                .anyMatch(ar -> ar.getRole() != null
+                                        && "User".equalsIgnoreCase(ar.getRole().getName())
+                                        && ar.getRole().getUserOwner() != null);
 
                 if (hasUserRole) {
                     return new ApiResponse<>(false, "Email đã được sử dụng", null);
