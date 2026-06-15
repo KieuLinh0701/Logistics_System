@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, Form, Input, Select} from 'antd';
+import {Form, Input, Modal, Select} from 'antd';
 import type {Role} from "../../../../../types/role.ts";
 
 interface AddEditModalProps {

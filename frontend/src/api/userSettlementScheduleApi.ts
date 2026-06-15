@@ -1,6 +1,6 @@
-import type { ApiResponse } from "../types/response";
+import type {ApiResponse} from "../types/response";
 import axiosClient from "./axiosClient";
-import type { UserSettlementSchedule } from "../types/UserSettlementBatch";
+import type {UserSettlementSchedule} from "../types/UserSettlementBatch";
 
 const userSettlementScheduleApi = {
   // User

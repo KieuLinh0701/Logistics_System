@@ -1,6 +1,6 @@
 import React from "react";
-import { Descriptions, Drawer } from "antd";
-import type { JobApplication } from "../../../../../types/recruitment";
+import {Descriptions, Drawer} from "antd";
+import type {JobApplication} from "../../../../../types/recruitment";
 import StatusBadge from "./StatusBadge";
 import "./ApplicationComponents.css";
 

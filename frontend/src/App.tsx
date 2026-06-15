@@ -1,5 +1,5 @@
 import React from "react";
-import {BrowserRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+import {BrowserRouter as Router, Navigate, Route, Routes} from "react-router-dom";
 import {ConfigProvider} from "antd";
 import viVN from "antd/locale/vi_VN";
 
@@ -21,9 +21,6 @@ import ShippingRates from "./pages/common/tracking/shippingRate/ShippingRates";
 import "./styles/theme.css";
 import CompanyInfo from "./pages/common/info/CompanyInfo";
 import ContactForm from "./pages/common/info/ContactForm";
-import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
-import ShippingRatesBody from "./pages/common/tracking/shippingRate/ShippingRatesBody";
-import OfficeSearchBody from "./pages/common/tracking/officeSearch/OfficeSearchBody";
 import OrderTracking from "./pages/common/tracking/OrderTracking";
 
 import AdminUsers from "./pages/admin/Users";
@@ -40,7 +37,8 @@ import ManagerShippingRequests from "./pages/manager/order/request/ManagerShippi
 import ManagerEmployeeList from "./pages/manager/employee/list/ManagerEmployeeList";
 import ManagerEmployeePerformance from "./pages/manager/employee/perfomance/ManagerEmployeePerformance";
 import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
-import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
+import ManagerEmployeePerfomanceShipment
+    from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 import ManagerShipperAssign from "./pages/manager/employee/assign/ManagerShipperAssigns";
 import ManagerShipments from "./pages/manager/shipment/ManagerShipments";
 import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-assign/ManagerShipperAssignmentHistories";

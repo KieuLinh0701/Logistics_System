@@ -1,8 +1,8 @@
-import type { UploadFile } from 'antd/es/upload/interface';
-import {Modal, Descriptions, Button, Typography, Space, Tooltip, Upload, message} from 'antd';
-import { CloseCircleOutlined, EditOutlined } from '@ant-design/icons';
-import type { ShippingRequest } from '../../../../../types/shippingRequest';
-import { translateShippingRequestStatus, translateShippingRequestType } from '../../../../../utils/shippingRequestUtils';
+import type {UploadFile} from 'antd/es/upload/interface';
+import {Button, Descriptions, message, Modal, Space, Tooltip, Typography, Upload} from 'antd';
+import {CloseCircleOutlined, EditOutlined} from '@ant-design/icons';
+import type {ShippingRequest} from '../../../../../types/shippingRequest';
+import {translateShippingRequestStatus, translateShippingRequestType} from '../../../../../utils/shippingRequestUtils';
 import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 const { Text } = Typography;

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
-import {Modal, Card, Switch, message} from "antd";
-import {EditOutlined, DeleteOutlined} from "@ant-design/icons";
+import {Card, message, Modal, Switch} from "antd";
+import {DeleteOutlined, EditOutlined} from "@ant-design/icons";
 import type {Address} from "../../../../../types/address";
 import locationApi from "../../../../../api/locationApi";
 import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";

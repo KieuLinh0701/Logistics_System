@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Form, Input } from "antd";
+import {Card, Form, Input} from "antd";
 
 interface Props {
   notes?: string;

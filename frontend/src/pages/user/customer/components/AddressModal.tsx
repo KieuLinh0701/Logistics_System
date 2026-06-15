@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Form, Input } from 'antd';
+import {Form, Input, Modal} from 'antd';
 import type {RecipientAddressRequest} from "../../../../types/recipientAddress.ts";
 import AddressForm from "../../../../components/common/AdressForm.tsx";
 

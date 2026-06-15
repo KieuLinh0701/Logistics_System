@@ -1,9 +1,9 @@
 import React from "react";
-import { Table, Button, Dropdown } from "antd";
-import { EditOutlined, DeleteOutlined, DownOutlined } from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
-import type { Address } from "../../../../types/address.ts";
-import type { RecipientAddressWithStats } from "../../../../types/recipientAddress.ts";
+import {Button, Dropdown, Table} from "antd";
+import {DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
+import type {ColumnsType} from "antd/es/table";
+import type {Address} from "../../../../types/address.ts";
+import type {RecipientAddressWithStats} from "../../../../types/recipientAddress.ts";
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface AddressTableProps {

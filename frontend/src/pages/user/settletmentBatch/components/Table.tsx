@@ -1,6 +1,6 @@
 import React from "react";
 import dayjs from 'dayjs';
-import {Table, Button, Tooltip, message} from "antd";
+import {Button, message, Table, Tooltip} from "antd";
 import type {ColumnsType} from "antd/es/table";
 import type {SettlementBatch} from "../../../../types/settlementBatch";
 import {translateSettlementBatchStatus} from "../../../../utils/settlementBatchUtils";

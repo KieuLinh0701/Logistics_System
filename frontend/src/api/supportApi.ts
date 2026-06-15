@@ -1,11 +1,11 @@
 import axiosClient from "./axiosClient";
-import type { ApiResponse } from "../types/response";
+import type {ApiResponse} from "../types/response";
 import type {
-  CreateSupportTicketPayload,
-  SendSupportMessagePayload,
-  SupportMessage,
-  SupportTicket,
-  SupportTicketDetail,
+    CreateSupportTicketPayload,
+    SendSupportMessagePayload,
+    SupportMessage,
+    SupportTicket,
+    SupportTicketDetail,
 } from "../types/support";
 
 const supportApi = {

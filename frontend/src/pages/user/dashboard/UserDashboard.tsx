@@ -1,4 +1,4 @@
-import {Row, Col, message} from "antd";
+import {Col, message, Row} from "antd";
 import {useEffect, useState} from "react";
 import dayjs, {Dayjs} from "dayjs";
 import dashboardApi from "../../../api/dashboardApi";
@@ -15,7 +15,8 @@ import {hasPermissionGroup} from "../../../utils/authUtils.ts";
 import type {
     UserDashboardChartProductsResponse,
     UserDashboardOverviewProductsResponse,
-    UserOrderStats, UserOrderTimeLineItem,
+    UserOrderStats,
+    UserOrderTimeLineItem,
     UserRevenueStats
 } from "../../../types/dashboard.ts";
 
@@ -51,10 +52,10 @@ const UserDashboard: React.FC = () => {
             ]);
 
             if (productsRes.success) {
-                setProductsChart(productsRes.data);
+                setProductsChart(productsRes.data as any);
             }
             if (ordersRes.success) {
-                setOrdersChart(ordersRes.data);
+                setOrdersChart(ordersRes.data as any);
             }
 
         } catch (error: any) {
@@ -77,9 +78,9 @@ const UserDashboard: React.FC = () => {
                 hasRevenue ? dashboardApi.getUserOverviewRevenue() : Promise.resolve({success: false, data: undefined}),
             ]);
 
-            if (productsRes.success) setProductsOverview(productsRes.data);
-            if (ordersRes.success) setOrdersOverview(ordersRes.data);
-            if (revenueRes.success) setRevenueOverview(revenueRes.data);
+            if (productsRes.success) setProductsOverview(productsRes.data as any);
+            if (ordersRes.success) setOrdersOverview(ordersRes.data as any);
+            if (revenueRes.success) setRevenueOverview(revenueRes.data as any);
 
         } catch (error: any) {
             message.error("Không thể tải dữ liệu tổng quan.");

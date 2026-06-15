@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, Alert, Upload, message } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
-import type { RcFile, UploadFile } from 'antd/es/upload/interface';
-import type { ShippingRequest } from '../../../../../types/shippingRequest';
+import React, {useEffect, useState} from 'react';
+import {Alert, Form, Input, message, Modal, Select, Upload} from 'antd';
+import {UploadOutlined} from '@ant-design/icons';
+import type {RcFile, UploadFile} from 'antd/es/upload/interface';
+import type {ShippingRequest} from '../../../../../types/shippingRequest';
 import {
-  canEmptyRequestContentShippingRequest,
-  canEmptyTrackingNumberShippingRequest,
-  getShippingRequestMessage,
-  SHIPPING_REQUEST_TYPES,
-  translateShippingRequestType
+    canEmptyRequestContentShippingRequest,
+    canEmptyTrackingNumberShippingRequest,
+    getShippingRequestMessage,
+    SHIPPING_REQUEST_TYPES,
+    translateShippingRequestType
 } from '../../../../../utils/shippingRequestUtils';
 import shippingRequestApi from '../../../../../api/shippingRequestApi';
 

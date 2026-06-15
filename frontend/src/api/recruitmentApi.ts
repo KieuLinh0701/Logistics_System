@@ -1,14 +1,14 @@
 import axiosClient from "./axiosClient";
-import type { ApiResponse, ListResponse } from "../types/response";
+import type {ApiResponse, ListResponse} from "../types/response";
 import type {
-  JobPosting,
-  JobApplication,
-  CreateApplicationRequest,
-  CreateJobRequest,
-  GetApplicationsRequest,
-  GetJobsRequest,
-  UpdateApplicationStatusRequest,
-  UpdateJobRequest,
+    CreateApplicationRequest,
+    CreateJobRequest,
+    GetApplicationsRequest,
+    GetJobsRequest,
+    JobApplication,
+    JobPosting,
+    UpdateApplicationStatusRequest,
+    UpdateJobRequest,
 } from "../types/recruitment";
 
 const recruitmentApi = {

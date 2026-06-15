@@ -1,5 +1,5 @@
-import type { NotificationResponse, NotificationSearchRequest } from "../types/notification";
-import type { ApiResponse } from "../types/response";
+import type {NotificationResponse, NotificationSearchRequest} from "../types/notification";
+import type {ApiResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const notificationApi = {

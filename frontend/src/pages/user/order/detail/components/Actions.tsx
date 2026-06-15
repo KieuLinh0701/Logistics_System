@@ -1,5 +1,11 @@
 import React from "react";
-import { CloseCircleOutlined, EditOutlined, PlayCircleOutlined, PrinterOutlined, CustomerServiceOutlined } from "@ant-design/icons";
+import {
+    CloseCircleOutlined,
+    CustomerServiceOutlined,
+    EditOutlined,
+    PlayCircleOutlined,
+    PrinterOutlined
+} from "@ant-design/icons";
 
 interface Props {
   canPublic: boolean;

@@ -1,5 +1,5 @@
 import React from 'react';
-import {Table, Switch} from 'antd';
+import {Switch, Table} from 'antd';
 import {CheckOutlined, CloseOutlined} from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import type {User} from "../../../../../types/user.ts";

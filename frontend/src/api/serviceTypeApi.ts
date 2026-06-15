@@ -1,5 +1,11 @@
-import type { ApiResponse, ListResponse } from "../types/response";
-import type { ServiceType, ServiceTypeWithShippingRatesResponse, AdminServiceType, CreateServiceTypePayload, UpdateServiceTypePayload } from "../types/serviceType";
+import type {ApiResponse} from "../types/response";
+import type {
+    AdminServiceType,
+    CreateServiceTypePayload,
+    ServiceType,
+    ServiceTypeWithShippingRatesResponse,
+    UpdateServiceTypePayload
+} from "../types/serviceType";
 import axiosClient from "./axiosClient";
 
 const serviceTypeApi = {

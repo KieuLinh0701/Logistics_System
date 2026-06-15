@@ -24,7 +24,7 @@ const AddressSettingsUser: React.FC = () => {
             setLoading(true);
             const response = await addressApi.getUserAddresses();
             if (response.success && response.data) {
-                setAddresses(response.data);
+                setAddresses(response.data as any);
                 setTotal(response.data.length);
             }
         } catch (error) {
@@ -42,7 +42,7 @@ const AddressSettingsUser: React.FC = () => {
         setModalMode(mode);
 
         if (mode === 'edit' && address) {
-            setEditingAddress(address);
+            setEditingAddress(address as any);
             form.resetFields();
             form.setFieldsValue({
                 ...address,
@@ -61,7 +61,7 @@ const AddressSettingsUser: React.FC = () => {
                 cityCode: 0,
                 isDefault: addresses.length === 0
             };
-            setEditingAddress(emptyAddress);
+            setEditingAddress(emptyAddress as any);
             form.resetFields();
             form.setFieldsValue({
                 ...emptyAddress,
@@ -204,7 +204,9 @@ const AddressSettingsUser: React.FC = () => {
                         phoneNumber: '',
                         detail: '',
                         wardCode: 0,
+                        wardName: '',
                         cityCode: 0,
+                        cityName: '',
                         isDefault: addresses.length === 0
                     }}
                     onOk={handleSaveAddress}

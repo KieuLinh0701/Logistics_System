@@ -1,14 +1,14 @@
 import React from "react";
-import type { UserRevenueStats } from "../../../../types/dashboard";
+import type {UserRevenueStats} from "../../../../types/dashboard";
 import {
-  WalletOutlined,
-  ClockCircleOutlined,
-  MoneyCollectOutlined,
-  CalendarOutlined,
-  QuestionCircleOutlined
+    CalendarOutlined,
+    ClockCircleOutlined,
+    MoneyCollectOutlined,
+    QuestionCircleOutlined,
+    WalletOutlined
 } from '@ant-design/icons';
-import { Tooltip } from 'antd';
-import { Link } from "react-router-dom";
+import {Tooltip} from 'antd';
+import {Link} from "react-router-dom";
 
 interface Props {
   data: UserRevenueStats;

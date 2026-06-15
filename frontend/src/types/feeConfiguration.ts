@@ -1,5 +1,3 @@
-import type { ListResponse } from "./response";
-
 export interface FeeConfiguration {
   id: number;
   serviceTypeId?: number;

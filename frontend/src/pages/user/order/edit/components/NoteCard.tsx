@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, Input } from "antd";
-import { type OrderStatus } from "../../../../../utils/orderUtils";
-import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
+import {Card, Input} from "antd";
+import {type OrderStatus} from "../../../../../utils/orderUtils";
+import {canEditUserOrderField} from "../../../../../utils/userOrderEditRules";
 
 interface Props {
   notes: string;

@@ -1,9 +1,9 @@
 import React from "react";
 import dayjs from 'dayjs';
 import {message, Table, Tooltip} from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { Order } from "../../../../types/order";
-import { translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus } from "../../../../utils/orderUtils";
+import type {ColumnsType} from "antd/es/table";
+import type {Order} from "../../../../types/order";
+import {translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus} from "../../../../utils/orderUtils";
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface Props {

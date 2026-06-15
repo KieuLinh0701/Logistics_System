@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
-import type { ApiResponse } from "../types/response";
-import type { ApproveLeavePayload, CreateLeavePayload, LeaveItem } from "../types/leave";
+import type {ApiResponse} from "../types/response";
+import type {ApproveLeavePayload, CreateLeavePayload, LeaveItem} from "../types/leave";
 
 const leaveApi = {
   async createLeave(payload: CreateLeavePayload) {

@@ -86,7 +86,6 @@ const RecipientInfo: React.FC<Props> = ({ form, recipient, onChange, resetTrigge
                                 <AddressForm
                                     form={form}
                                     prefix="recipient"
-                                    resetTrigger={resetTrigger}
                                 />
                             </Col>
                         </Row>

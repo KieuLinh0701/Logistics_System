@@ -6,7 +6,6 @@ import type {
     UserShippingRequestSearchRequest
 } from "../types/shippingRequest";
 import axiosClient from "./axiosClient";
-import type {UserOrderSearchRequest} from "../types/order.ts";
 import {axiosExport} from "./exportClient.ts";
 
 const shippingRequestApi = {
@@ -111,7 +110,7 @@ const shippingRequestApi = {
     },
 
     async processingManagerShippingRequest(id: number, data: FormData) {
-        return axiosClient.put<boolean>(
+        return axiosClient.put<ApiResponse<boolean>>(
             `/manager/shipping-requests/${id}`,
             data
         );

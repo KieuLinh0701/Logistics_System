@@ -1,9 +1,9 @@
-import React, { useEffect } from "react";
-import { Button, Divider, Tooltip, Typography } from "antd";
-import { GiftOutlined, TagOutlined, DeleteOutlined, InfoCircleOutlined } from "@ant-design/icons";
-import type { Promotion } from "../../../../../types/promotion";
-import { type OrderStatus } from "../../../../../utils/orderUtils";
-import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
+import React, {useEffect} from "react";
+import {Button, Divider, Tooltip, Typography} from "antd";
+import {DeleteOutlined, GiftOutlined, InfoCircleOutlined, TagOutlined} from "@ant-design/icons";
+import type {Promotion} from "../../../../../types/promotion";
+import {type OrderStatus} from "../../../../../utils/orderUtils";
+import {canEditUserOrderField} from "../../../../../utils/userOrderEditRules";
 
 const { Text } = Typography;
 

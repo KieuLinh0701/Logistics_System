@@ -1,6 +1,6 @@
 import React from "react";
-import type { UserOrderStats } from "../../../../types/dashboard";
-import { Link } from "react-router-dom"; 
+import type {UserOrderStats} from "../../../../types/dashboard";
+import {Link} from "react-router-dom";
 
 interface Props {
   data: UserOrderStats;

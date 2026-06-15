@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { connectSupportSocket, type SupportSocketClient } from "../socket/supportSocket";
-import type { SupportChatSendPayload, SupportMessage } from "../types/support";
+import {useEffect, useRef, useState} from "react";
+import {connectSupportSocket, type SupportSocketClient} from "../socket/supportSocket";
+import type {SupportChatSendPayload, SupportMessage} from "../types/support";
 
 type UseChatSocketParams = {
   ticketId: number | null;

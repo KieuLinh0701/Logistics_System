@@ -15,8 +15,6 @@ import {PRODUCT_STATUS, PRODUCT_TYPES, translateProductStatus, translateProductT
 import type {BulkResponse} from '../../../types/response';
 import BulkResult from './components/BulkResult';
 import {useSearchParams} from 'react-router-dom';
-import type {UserOrderSearchRequest} from "../../../types/order.ts";
-import orderApi from "../../../api/orderApi.ts";
 
 const UserProducts: React.FC = () => {
     const latestRequestRef = useRef(0);

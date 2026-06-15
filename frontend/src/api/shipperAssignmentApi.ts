@@ -1,7 +1,11 @@
-import type { ApiResponse, ListResponse } from "../types/response";
+import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
-import type { ManagerShipperAssignment, ManagerShipperAssignmentEditRequest, ManagerShipperAssignmentSearchRequest } from "../types/shipperAssignment";
-import { axiosExport } from "./exportClient";
+import type {
+    ManagerShipperAssignment,
+    ManagerShipperAssignmentEditRequest,
+    ManagerShipperAssignmentSearchRequest
+} from "../types/shipperAssignment";
+import {axiosExport} from "./exportClient";
 
 const shipperAssignmentApi = {
   // Manager

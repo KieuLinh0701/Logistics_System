@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, Table, Tag, Row, Col, Statistic, Card } from 'antd';
-import type { BulkResponse } from '../../../../types/response';
-import type { Product } from '../../../../types/product';
+import {Card, Col, Modal, Row, Statistic, Table, Tag} from 'antd';
+import type {BulkResponse} from '../../../../types/response';
+import type {Product} from '../../../../types/product';
 
 interface BulkResultProps {
   open: boolean;

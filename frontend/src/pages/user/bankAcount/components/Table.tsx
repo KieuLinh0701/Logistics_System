@@ -1,6 +1,6 @@
 import React from 'react';
-import {Table, Button, Tag, Switch, Dropdown} from 'antd';
-import {CheckOutlined, CloseOutlined, EditOutlined, DeleteOutlined, DownOutlined} from '@ant-design/icons';
+import {Button, Dropdown, Switch, Table} from 'antd';
+import {CheckOutlined, CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined} from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import type {BankAccount} from '../../../../types/bankAccount';
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";

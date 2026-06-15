@@ -1,7 +1,7 @@
 import React from "react";
-import { Modal, Button } from "antd";
-import { useNavigate } from "react-router-dom";
-import { CheckCircleFilled, FileTextOutlined, OrderedListOutlined, EyeOutlined } from "@ant-design/icons";
+import {Button, Modal} from "antd";
+import {useNavigate} from "react-router-dom";
+import {CheckCircleFilled, EyeOutlined, FileTextOutlined, OrderedListOutlined} from "@ant-design/icons";
 
 interface Props {
     open: boolean;

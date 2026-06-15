@@ -12,8 +12,6 @@ import paymentSubmissionBatchApi from "../../../api/paymentSubmissionBatchApi";
 import type { SearchRequest } from "../../../types/request";
 import "./ManagerPaymentSubmissionBatchs.css";
 import type { ManagerPaymentSubmissionBatch, ManagerPaymentSubmissionBatchEditRequest } from "../../../types/paymentSubmissionBatch";
-import AddBatchModal from "./components/AddBatchModal";
-
 
 const ManagerPaymentSubmissionBatchs = () => {
   const latestRequestRef = useRef(0);
@@ -34,8 +32,6 @@ const ManagerPaymentSubmissionBatchs = () => {
 
   const [processModalVisible, setProcessModalVisible] = useState(false);
   const [selectedSubmissionBatch, setSelectedSubmissionBatch] = useState<ManagerPaymentSubmissionBatch | null>(null);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const updateURL = () => {
     const params: any = {};
@@ -162,12 +158,6 @@ const ManagerPaymentSubmissionBatchs = () => {
     }
   };
 
-  const handleAddSuccessPaymentSubmissionBatch = async () => {
-    setIsModalOpen(false);
-    setCurrentPage(1);
-    fetchPaymentSubmissionBatchs(1);
-  };
-
   const handleDetailPaymentSubmissionBatch = (id: number) => {
     navigate(`/settlements/${id}`);
   };
@@ -242,12 +232,6 @@ const ManagerPaymentSubmissionBatchs = () => {
           onClose={() => setProcessModalVisible(false)}
           onSubmit={handleSubmitProcess}
           loading={loading}
-        />
-
-        <AddBatchModal
-          open={isModalOpen}
-          onSuccess={handleAddSuccessPaymentSubmissionBatch}
-          onCancel={() => setIsModalOpen(false)}
         />
       </div>
     </div>

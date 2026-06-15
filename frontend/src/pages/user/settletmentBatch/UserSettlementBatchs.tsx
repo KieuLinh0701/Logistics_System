@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from "react";
-import {Button, Col, Row, Space, Tag, message} from "antd";
+import {Button, Col, message, Row, Space, Tag} from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import SubmissionTable from "./components/Table";
@@ -18,8 +18,6 @@ import paymentApi from "../../../api/paymentApi";
 import {weekdayOrder} from "../../../utils/userSettlementScheduleUtils";
 import SettlementSummary from "./components/SettlementSummary.tsx";
 import {hasPermissionGroup} from "../../../utils/authUtils.ts";
-import type {UserOrderSearchRequest} from "../../../types/order.ts";
-import orderApi from "../../../api/orderApi.ts";
 
 const UserSettlementBatchs = () => {
     const navigate = useNavigate();

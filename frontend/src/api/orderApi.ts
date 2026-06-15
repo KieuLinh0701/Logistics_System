@@ -5,7 +5,8 @@ import type {
     ManagerOrderRequest,
     ManagerOrderSearchRequest,
     Order,
-    OrderPrint, StatusCount,
+    OrderPrint,
+    StatusCount,
     UserOrderRequest,
     UserOrderSearchRequest
 } from "../types/order";

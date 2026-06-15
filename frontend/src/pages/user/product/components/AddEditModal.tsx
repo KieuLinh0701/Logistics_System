@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, InputNumber, Select, Upload, type UploadProps, type UploadFile } from 'antd';
-import type { UserProductForm } from '../../../../types/product';
-import { PRODUCT_STATUS, PRODUCT_TYPES, translateProductStatus, translateProductType } from '../../../../utils/productUtils';
-import { UploadOutlined } from '@ant-design/icons';
+import React, {useEffect, useState} from 'react';
+import {Form, Input, InputNumber, Modal, Select, Upload, type UploadFile, type UploadProps} from 'antd';
+import type {UserProductForm} from '../../../../types/product';
+import {
+    PRODUCT_STATUS,
+    PRODUCT_TYPES,
+    translateProductStatus,
+    translateProductType
+} from '../../../../utils/productUtils';
+import {UploadOutlined} from '@ant-design/icons';
 
 interface AddEditModalProps {
   open: boolean;

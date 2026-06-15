@@ -1,8 +1,8 @@
 import React from "react";
-import { Button, Select, Input } from "antd";
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
-import type { JobPostingStatus } from "../../../../../types/recruitment";
-import { jobStatusOptions } from "../../../../common/recruitment/recruitmentHelpers";
+import {Button, Input, Select} from "antd";
+import {PlusOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
+import type {JobPostingStatus} from "../../../../../types/recruitment";
+import {jobStatusOptions} from "../../../../common/recruitment/recruitmentHelpers";
 import RecruitmentFilterPanel from "../../components/RecruitmentFilterPanel";
 import "../../components/RecruitmentShared.css";
 import "./JobPostingComponents.css";

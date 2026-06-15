@@ -5,9 +5,12 @@ import type {AdminUser} from "../types/user";
 import type {AdminVehicle} from "../types/vehicle";
 import type {AdminOffice} from "../types/office";
 import type {
-    ManagerDashboardOverviewResponse, UserDashboardChartProductsResponse,
-    UserDashboardOverviewProductsResponse, UserOrderStats,
-    UserOrderTimeLineItem, UserRevenueStats
+    ManagerDashboardOverviewResponse,
+    UserDashboardChartProductsResponse,
+    UserDashboardOverviewProductsResponse,
+    UserOrderStats,
+    UserOrderTimeLineItem,
+    UserRevenueStats
 } from "../types/dashboard";
 import type {SearchRequest} from "../types/request";
 

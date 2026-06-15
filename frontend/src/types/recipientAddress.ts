@@ -11,7 +11,7 @@ export interface RecipientAddressWithStats {
 }
 
 export interface RecipientAddressSuggestionRequest {
-    phone: number;
+    phone: string;
 }
 
 export interface RecipientAddressRequest {

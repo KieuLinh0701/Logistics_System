@@ -1,12 +1,12 @@
 import React from "react";
-import {Table, Button, Space, Tooltip, Dropdown, message} from "antd";
+import {Button, Dropdown, message, Space, Table, Tooltip} from "antd";
 import {
-    EditOutlined,
     CloseCircleOutlined,
-    DownOutlined,
-    PrinterOutlined,
     DeleteOutlined,
-    PlayCircleOutlined
+    DownOutlined,
+    EditOutlined,
+    PlayCircleOutlined,
+    PrinterOutlined
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ColumnsType} from "antd/es/table";

@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, Form, Radio } from "antd";
-import type { FormInstance } from "antd/lib";
-import { ORDER_PAYER_TYPES, translateOrderPayerType } from "../../../../../utils/orderUtils";
+import {Card, Form, Radio} from "antd";
+import type {FormInstance} from "antd/lib";
+import {ORDER_PAYER_TYPES, translateOrderPayerType} from "../../../../../utils/orderUtils";
 
 interface Props {
   form: FormInstance;

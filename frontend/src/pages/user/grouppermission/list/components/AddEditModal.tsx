@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { Modal, Form, Input, Checkbox } from 'antd';
-import type { Role } from "../../../../../types/role.ts";
-import type { PermissionModule } from "../../../../../types/permissionModule.ts";
-import type { PermissionGroup } from "../../../../../types/permissionGroup.ts";
+import React, {useEffect} from 'react';
+import {Checkbox, Form, Input, Modal} from 'antd';
+import type {Role} from "../../../../../types/role.ts";
+import type {PermissionModule} from "../../../../../types/permissionModule.ts";
+import type {PermissionGroup} from "../../../../../types/permissionGroup.ts";
 
 interface AddEditModalProps {
     open: boolean;

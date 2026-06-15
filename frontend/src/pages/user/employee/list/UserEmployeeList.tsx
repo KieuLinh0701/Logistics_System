@@ -120,6 +120,7 @@ const UserEmployeeList: React.FC = () => {
     };
 
     const handleEditRole = async () => {
+        if (!user) return;
         setLoadingModal(true);
         try {
             const values = await form.validateFields();

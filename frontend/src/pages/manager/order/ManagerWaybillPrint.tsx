@@ -192,7 +192,7 @@ const ManagerWaybillPrint: React.FC = () => {
                   <div className="waybill-print-section-title">TỪ</div>
                   <ContactInfo
                     name={order.senderAddress.name}
-                    detail={order.senderAddress.detail}
+                    phone={order.senderAddress.phoneNumber}
                     fullAddress={order.senderAddress.fullAddress}
                   />
                 </div>
@@ -200,7 +200,7 @@ const ManagerWaybillPrint: React.FC = () => {
                   <div className="waybill-print-section-title">ĐẾN</div>
                   <ContactInfo
                     name={order.recipientAddress.name}
-                    detail={order.recipientAddress.detail}
+                    phone={order.recipientAddress.phoneNumber}
                     fullAddress={order.recipientAddress.fullAddress}
                   />
                 </div>

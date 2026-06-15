@@ -38,7 +38,10 @@ const CODPending: React.FC = () => {
                   default: return v;
                 }
               }} />
-              <Table.Column title="Hành động" key="action" render={(text: any, record: any) => (
+              <Table.Column
+                  title="Hành động"
+                  key="action"
+                  render={(_: any, _record: any) => (
                 <Button type="link" href={`/financial/submissions`}>Xử lý</Button>
               )} />
             </Table>

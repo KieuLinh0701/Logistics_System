@@ -1,19 +1,16 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {message, Col, Row, Tag} from 'antd';
+import React, {useEffect, useRef, useState} from 'react';
+import {Col, Form, message, Row, Tag} from 'antd';
 import {ContactsOutlined} from '@ant-design/icons';
-import { Form } from 'antd';
 import AddressTable from './components/AddressTable';
 import AddressModal from './components/AddressModal';
 import recipientAddressApi from "../../../api/recipientAddressApi.ts";
-import type {RecipientAddressWithStats, RecipientAddressRequest} from "../../../types/recipientAddress.ts";
+import type {RecipientAddressRequest, RecipientAddressWithStats} from "../../../types/recipientAddress.ts";
 import dayjs from "dayjs";
 import {useSearchParams} from "react-router-dom";
-import type {UserOrderSearchRequest} from "../../../types/order.ts";
 import Title from "antd/es/typography/Title";
 import Actions from "./components/Actions.tsx";
 import SearchFilters from "./components/SearchFilters.tsx";
 import type {Address} from "../../../types/address.ts";
-import orderApi from "../../../api/orderApi.ts";
 import type {SearchRequest} from "../../../types/request.ts";
 
 const UserCustomers: React.FC = () => {

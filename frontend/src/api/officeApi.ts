@@ -1,5 +1,13 @@
-import type { Office, OfficeSearchRequest, AdminOffice, CreateOfficePayload, UpdateOfficePayload, LocalOfficeRequest, OfficeEditRequest } from "../types/office";
-import type { ApiResponse, ListResponse } from "../types/response";
+import type {
+    AdminOffice,
+    CreateOfficePayload,
+    LocalOfficeRequest,
+    Office,
+    OfficeEditRequest,
+    OfficeSearchRequest,
+    UpdateOfficePayload
+} from "../types/office";
+import type {ApiResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const officeApi = {

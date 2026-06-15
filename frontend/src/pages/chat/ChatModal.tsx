@@ -1,8 +1,8 @@
-import { CloseOutlined, CustomerServiceOutlined } from "@ant-design/icons";
-import { Button, Typography } from "antd";
+import {CloseOutlined, CustomerServiceOutlined} from "@ant-design/icons";
+import {Button, Typography} from "antd";
 import MessageInput from "./MessageInput";
 import MessageList from "./MessageList";
-import type { SupportMessage } from "../../types/support";
+import type {SupportMessage} from "../../types/support";
 
 const { Text } = Typography;
 

@@ -1,5 +1,5 @@
 import React from "react";
-import {Space, Button} from "antd";
+import {Button, Space} from "antd";
 import {FileExcelOutlined, PlusOutlined, PrinterOutlined} from "@ant-design/icons";
 import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 

@@ -1,4 +1,4 @@
-import type { SupportMessage } from "../types/support";
+import type {SupportMessage} from "../types/support";
 
 export type ChatState = "MINIMIZED" | "OPEN";
 

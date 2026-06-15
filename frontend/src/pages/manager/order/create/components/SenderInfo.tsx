@@ -86,7 +86,6 @@ const SenderInfo: React.FC<Props> = ({ form, sender, onChange, resetTrigger }) =
                                 <AddressForm
                                     form={form}
                                     prefix="sender"
-                                    resetTrigger={resetTrigger}
                                 />
                             </Col>
                         </Row>

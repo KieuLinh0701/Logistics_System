@@ -2,11 +2,11 @@ import axiosClient from "./axiosClient";
 import type {ApiResponse, ListResponse} from "../types/response";
 import type {
     RecipientAddressRequest,
-    RecipientAddressSuggestionRequest, RecipientAddressWithStats,
+    RecipientAddressSuggestionRequest,
+    RecipientAddressWithStats,
     RecipientSuggestionAddressResponse,
 } from "../types/recipientAddress.ts";
 import type {SearchRequest} from "../types/request.ts";
-import type {UserOrderSearchRequest} from "../types/order.ts";
 import {axiosExport} from "./exportClient.ts";
 
 const recipientAddressApi = {

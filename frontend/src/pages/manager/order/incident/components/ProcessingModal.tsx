@@ -49,24 +49,6 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
     console.log("open", open);
     if (!data || !open) return;
 
-    const loadAddress = async () => {
-      if (data.address) {
-        try {
-          const full = await formatAddress(
-            data.address.detail || '',
-            data.address.wardCode || 0,
-            data.address.cityCode || 0
-          );
-          setAddress(full);
-        } catch {
-          setAddress(data.address.detail || '');
-        }
-      } else {
-        setAddress('N/A');
-      }
-    };
-    loadAddress();
-
     const imgs = (data.images || []).map((url: any, idx: number) => ({
       uid: idx.toString(),
       name: `image-${idx + 1}`,

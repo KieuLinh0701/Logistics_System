@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Card, Form, Select, Radio } from "antd";
-import type { FormInstance } from "antd/lib";
-import type { Office } from "../../../../../types/office";
-import { ORDER_PICKUP_TYPES, translateOrderPickupType } from "../../../../../utils/orderUtils";
+import React, {useEffect, useState} from "react";
+import {Card, Form, Radio, Select} from "antd";
+import type {FormInstance} from "antd/lib";
+import type {Office} from "../../../../../types/office";
+import {ORDER_PICKUP_TYPES, translateOrderPickupType} from "../../../../../utils/orderUtils";
 import locationApi from "../../../../../api/locationApi";
 
 interface Props {

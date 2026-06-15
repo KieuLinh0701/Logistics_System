@@ -1,6 +1,6 @@
-import type { Incident, ManagerIncidentUpdateRequest } from "../types/incidentReport";
-import type { SearchRequest } from "../types/request";
-import type { ApiResponse, ListResponse } from "../types/response";
+import type {Incident, ManagerIncidentUpdateRequest} from "../types/incidentReport";
+import type {SearchRequest} from "../types/request";
+import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const incidentReportApi = {

@@ -1,7 +1,6 @@
 import type {ApiResponse, BulkResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 import type {Product, UserProductActiveAndInstockRequest, UserProductSearchRequest} from "../types/product";
-import type {UserOrderSearchRequest} from "../types/order.ts";
 import {axiosExport} from "./exportClient.ts";
 
 const productApi = {

@@ -1,11 +1,15 @@
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
-import { Card, Col, Checkbox, Form, Input, Row, Button } from "antd";
-import { UnorderedListOutlined } from "@ant-design/icons";
-import type { FormInstance } from "antd/lib";
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from "react";
+import {Button, Card, Checkbox, Col, Form, Input, Row} from "antd";
+import {UnorderedListOutlined} from "@ant-design/icons";
+import type {FormInstance} from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
 import RecipientAddressPickerModal from "../../../../common/order/RecipientAddressPickerModal.tsx";
 import recipientAddressApi from "../../../../../api/recipientAddressApi.ts";
-import type { RecipientAddressType, RecipientAddressWithStats } from "../../../../../types/recipientAddress.ts";
+import type {
+    RecipientAddressSuggestionRequest,
+    RecipientAddressType,
+    RecipientAddressWithStats
+} from "../../../../../types/recipientAddress.ts";
 import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 interface Props {
@@ -141,7 +145,10 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
 
     const fetchSuggestion = useCallback(async (phone: string) => {
         try {
-            const result = await recipientAddressApi.getUserSuggestion({ phone });
+            const params: RecipientAddressSuggestionRequest = {
+                phone
+            }
+            const result = await recipientAddressApi.getUserSuggestion(params);
             if (result.success && result.data) {
                 setSuggestionList(result.data.addresses ?? []);
                 setSuggestionType(result.data.type);
@@ -385,7 +392,6 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                                     prefix="recipient"
                                     disableCity={disabled}
                                     disableDetailAddress={disabled}
-                                    resetTrigger={resetTrigger}
                                 />
                             </Col>
                         </Row>

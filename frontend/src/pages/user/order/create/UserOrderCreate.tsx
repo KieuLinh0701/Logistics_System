@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
+import {Button, Col, Form, InputNumber, message, Row, Tooltip} from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
 import RecipientInfo, {type RecipientInfoRef} from "./components/RecipientInfo";
@@ -8,20 +8,20 @@ import PaymentCard from "./components/PaymentCard";
 import OrderInfo from "./components/OrderInfo";
 import SenderInfo from "./components/SenderInfo";
 import SelectProductModal from "./components/SelectProductModal";
-import { DeleteOutlined } from "@ant-design/icons";
+import {DeleteOutlined} from "@ant-design/icons";
 import PickupType from "./components/PickupType";
 import SelectedPromoModal from "./components/SelectPromoModal";
 import PromotionCard from "./components/PromotionCard";
-import type { UserOrderRequest } from "../../../../types/order";
-import type { Product } from "../../../../types/product";
-import type { OrderProduct } from "../../../../types/orderProduct";
-import type { Office } from "../../../../types/office";
-import type { Promotion } from "../../../../types/promotion";
-import type { ServiceType } from "../../../../types/serviceType";
+import type {UserOrderRequest} from "../../../../types/order";
+import type {Product} from "../../../../types/product";
+import type {OrderProduct} from "../../../../types/orderProduct";
+import type {Office} from "../../../../types/office";
+import type {Promotion} from "../../../../types/promotion";
+import type {ServiceType} from "../../../../types/serviceType";
 import "./UserOrderCreate.css"
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import promotionApi from "../../../../api/promotionApi";
-import type { Address, AddressRequest } from "../../../../types/address";
+import type {Address, AddressRequest} from "../../../../types/address";
 import addressApi from "../../../../api/addressApi";
 import AddressModal from "../../../common/profile/components/userAddress/components/AddressModal";
 import productApi from "../../../../api/productApi";
@@ -251,7 +251,7 @@ const UserOrderCreate: React.FC = () => {
             setLoadingBank(true);
             const response = await bankAccountApi.existUserBankAccounts();
             if (response.success && response.data) {
-                setExistBankAccount(response.data);
+                setExistBankAccount(response.data as any);
             }
         } catch (error: any) {
             message.error(error.message || "Error fetching Addresses:", error);
@@ -1329,7 +1329,9 @@ const UserOrderCreate: React.FC = () => {
                     phoneNumber: '',
                     detail: '',
                     wardCode: 0,
+                    wardName: '',
                     cityCode: 0,
+                    cityName: '',
                     isDefault: addresses.length === 0
                 }}
                 onOk={handleSaveAddress}

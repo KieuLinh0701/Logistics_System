@@ -14,8 +14,6 @@ import shippingRequestApi from '../../../../api/shippingRequestApi';
 import "./UserShippingRequest.css"
 import ConfirmModal from '../../../common/ConfirmModal';
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
-import type {UserOrderSearchRequest} from "../../../../types/order.ts";
-import orderApi from "../../../../api/orderApi.ts";
 
 const UserShippingRequests: React.FC = () => {
     const navigate = useNavigate();

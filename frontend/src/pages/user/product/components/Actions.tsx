@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Space, Upload} from 'antd';
-import {PlusOutlined, UploadOutlined, DownloadOutlined, FileExcelOutlined} from '@ant-design/icons';
+import {DownloadOutlined, FileExcelOutlined, PlusOutlined, UploadOutlined} from '@ant-design/icons';
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface ActionsProps {

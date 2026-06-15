@@ -1,8 +1,8 @@
-import { CustomerServiceOutlined } from "@ant-design/icons";
-import { Badge } from "antd";
-import Draggable, { type DraggableData, type DraggableEvent } from "react-draggable";
-import { useMemo, useRef, useState } from "react";
-import type { ChatPosition } from "../../hooks/chatStore";
+import {CustomerServiceOutlined} from "@ant-design/icons";
+import {Badge} from "antd";
+import Draggable, {type DraggableData, type DraggableEvent} from "react-draggable";
+import {useMemo, useState} from "react";
+import type {ChatPosition} from "../../hooks/chatStore";
 
 type Props = {
   unreadCount: number;

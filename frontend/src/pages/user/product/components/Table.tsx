@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Table, Button, Dropdown, Modal } from 'antd';
-import { DeleteOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import React, {useState} from 'react';
+import {Button, Dropdown, Modal, Table} from 'antd';
+import {DeleteOutlined, DownOutlined, EditOutlined} from '@ant-design/icons';
+import type {ColumnsType} from 'antd/es/table';
 import dayjs from 'dayjs';
-import type { Product } from '../../../../types/product';
+import type {Product} from '../../../../types/product';
 import defaultImage from "../../../../assets/images/imageDefault.jpg";
-import { translateProductStatus, translateProductType } from '../../../../utils/productUtils';
+import {translateProductStatus, translateProductType} from '../../../../utils/productUtils';
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface ProductTableProps {

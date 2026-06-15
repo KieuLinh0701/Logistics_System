@@ -1,10 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import {
-  PieChart, Pie, Cell, ResponsiveContainer,
-  Tooltip
-} from "recharts";
-import { translateProductType } from "../../../../utils/productUtils";
+import {Cell, Pie, PieChart, ResponsiveContainer, Tooltip} from "recharts";
+import {translateProductType} from "../../../../utils/productUtils";
 
 interface Props {
   data?: Record<string, number>;

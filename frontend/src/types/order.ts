@@ -5,7 +5,6 @@ import type {PaymentSubmission} from "./paymentSubmission";
 import type {OrderProduct, OrderProductPrint, OrderProductRequest} from "./orderProduct";
 import type {Promotion} from "./promotion";
 import type {ServiceType} from "./serviceType";
-import type {ListResponse} from "./response.ts";
 
 export interface AdminOrder {
     id: number;

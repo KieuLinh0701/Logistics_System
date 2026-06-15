@@ -1,7 +1,7 @@
 import React from "react";
-import { Button, Divider, Tooltip, Typography } from "antd";
-import { GiftOutlined, TagOutlined, DeleteOutlined, InfoCircleOutlined } from "@ant-design/icons";
-import type { Promotion } from "../../../../../types/promotion";
+import {Button, Divider, Tooltip, Typography} from "antd";
+import {DeleteOutlined, GiftOutlined, InfoCircleOutlined, TagOutlined} from "@ant-design/icons";
+import type {Promotion} from "../../../../../types/promotion";
 
 const { Text } = Typography;
 

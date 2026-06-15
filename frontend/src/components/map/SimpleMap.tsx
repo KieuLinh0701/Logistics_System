@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, List, Tag, Space, Typography } from 'antd';
-import { EnvironmentOutlined, PhoneOutlined, DollarOutlined } from '@ant-design/icons';
+import {Card, List, Space, Typography} from 'antd';
+import {EnvironmentOutlined, PhoneOutlined} from '@ant-design/icons';
 
 interface DeliveryStop {
   id: number;
@@ -30,33 +30,33 @@ interface SimpleMapProps {
 const { Text } = Typography;
 
 const SimpleMap: React.FC<SimpleMapProps> = ({ deliveryStops, title, deliverOffice = null, }: SimpleMapProps & { showReceive?: boolean }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'default';
-      case 'in_progress': return 'processing';
-      case 'completed': return 'success';
-      case 'failed': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Chờ giao';
-      case 'in_progress': return 'Đang giao';
-      case 'completed': return 'Hoàn thành';
-      case 'failed': return 'Thất bại';
-      default: return status;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    return priority === 'urgent' ? 'red' : 'default';
-  };
-
-  const getPriorityText = (priority: string) => {
-    return priority === 'urgent' ? 'Ưu tiên' : 'Bình thường';
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'pending': return 'default';
+  //     case 'in_progress': return 'processing';
+  //     case 'completed': return 'success';
+  //     case 'failed': return 'error';
+  //     default: return 'default';
+  //   }
+  // };
+  //
+  // const getStatusText = (status: string) => {
+  //   switch (status) {
+  //     case 'pending': return 'Chờ giao';
+  //     case 'in_progress': return 'Đang giao';
+  //     case 'completed': return 'Hoàn thành';
+  //     case 'failed': return 'Thất bại';
+  //     default: return status;
+  //   }
+  // };
+  //
+  // const getPriorityColor = (priority: string) => {
+  //   return priority === 'urgent' ? 'red' : 'default';
+  // };
+  //
+  // const getPriorityText = (priority: string) => {
+  //   return priority === 'urgent' ? 'Ưu tiên' : 'Bình thường';
+  // };
 
   const openInGoogleMaps = (address: string) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
