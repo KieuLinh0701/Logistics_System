@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 public class UserSettlementScheduleUserService {
 
     private final UserSettlementScheduleRepository scheduleRepository;
-    private final UserRepository userRepository;
     private final UserUserService userService;
 
     public ApiResponse<UserSettlementScheduleDto> getUserSchedule(Integer userId) {
