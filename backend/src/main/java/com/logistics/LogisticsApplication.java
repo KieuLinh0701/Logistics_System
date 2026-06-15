@@ -1,5 +1,6 @@
 package com.logistics;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -11,12 +12,17 @@ import com.logistics.config.JwtConfig;
 
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableConfigurationProperties(JwtConfig.class) 
+@EnableConfigurationProperties(JwtConfig.class)
 @EnableScheduling
 @EnableCaching
 public class LogisticsApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(LogisticsApplication.class, args);
-	}
+    public static void main(String[] args) {
+        Dotenv dotenv = Dotenv.load();
+        dotenv.entries().forEach(entry ->
+                System.setProperty(entry.getKey(), entry.getValue())
+        );
+
+        SpringApplication.run(LogisticsApplication.class, args);
+    }
 }
