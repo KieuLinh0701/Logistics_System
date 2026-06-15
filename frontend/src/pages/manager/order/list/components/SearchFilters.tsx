@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import type { ServiceType } from "../../../../../types/serviceType";
 import { ORDER_FILTER_COD, ORDER_FILTER_SORT, ORDER_PAYER_TYPES, ORDER_PAYMENT_STATUS, ORDER_PICKUP_TYPES, ORDER_STATUS, translateOrderFilterCod, translateOrderFilterSort, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
 
-type FilterKeys = "status" | "payer" | "paymentStatus" | "serviceType" | "cod" | "sort" | "pickupType";
+type FilterKeys = "payer" | "paymentStatus" | "serviceType" | "cod" | "sort" | "pickupType";
 
 interface Props {
   search: string;
@@ -59,15 +59,6 @@ const SearchFilters: React.FC<Props> = ({
               listHeight={400}
             >
               {ORDER_FILTER_SORT.map((s) => <Select.Option key={s} value={s}>{translateOrderFilterSort(s)}</Select.Option>)}
-            </Select>
-            <Select
-              value={filters.status}
-              onChange={(val) => setFilters("status", val)}
-              className="advanced-filter-select"
-              listHeight={ORDER_STATUS.length * 40 + 50}
-            >
-              <Select.Option value="ALL">Tất cả trạng thái</Select.Option>
-              {ORDER_STATUS.map((s) => <Select.Option key={s} value={s}>{translateOrderStatus(s)}</Select.Option>)}
             </Select>
             <DatePicker.RangePicker
               className="date-picker"

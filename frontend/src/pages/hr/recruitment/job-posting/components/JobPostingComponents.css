@@ -1,0 +1,120 @@
+.hr-job-posting-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hr-job-posting-status-filter {
+  width: 220px;
+}
+
+.hr-job-posting-form .ant-form-item-label > label {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.hr-job-posting-form .modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 20px;
+  row-gap: 16px;
+  align-items: start;
+  grid-auto-rows: minmax(40px, auto);
+}
+
+.hr-job-posting-form .modal-textarea {
+  min-height: 120px;
+}
+
+.hr-job-posting-form .modal-grid .modal-input,
+.hr-job-posting-form .modal-grid .modal-input textarea,
+.hr-job-posting-form .modal-grid .ant-input,
+.hr-job-posting-form .modal-grid .ant-input-number,
+.hr-job-posting-form .modal-grid .ant-input-number .ant-input-number-input {
+  box-sizing: border-box;
+}
+
+.hr-job-posting-form .modal-grid .modal-input {
+  padding: 10px 14px;
+  height: 36px;
+  border: 2px solid #e8edff;
+  border-radius: 8px;
+  background-color: #f8faff;
+}
+
+.hr-job-posting-form .modal-grid .modal-textarea {
+  padding: 12px 14px;
+  min-height: 160px;
+  border: 2px solid #e8edff;
+  border-radius: 8px;
+  background-color: #fff;
+  resize: vertical;
+}
+
+.hr-job-posting-form .modal-grid .modal-custom-select .ant-select-selector {
+  height: 36px;
+  padding: 10px 14px;
+  border: 2px solid #e8edff;
+  border-radius: 8px;
+  background-color: #f8faff;
+}
+
+@media (max-width: 1000px) {
+  .hr-job-posting-form .modal-grid {
+    grid-template-columns: 1fr 260px;
+  }
+}
+
+.hr-job-posting-form .modal-grid .form-item {
+  margin: 0;
+}
+
+.hr-job-posting-form .modal-grid .form-item .ant-form-item-control {
+  margin-top: 4px;
+}
+
+.hr-job-posting-form .modal-grid .ant-input,
+.hr-job-posting-form .modal-grid .ant-select-selector,
+.hr-job-posting-form .modal-grid .ant-input-number {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hr-job-posting-form .modal-grid .title-item .ant-input {
+  max-width: 100%;
+}
+
+.hr-job-posting-form .modal-grid .right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hr-job-posting-form .modal-grid .right-stack .form-item {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .hr-job-posting-status-filter {
+    width: 100%;
+  }
+}
+
+.ant-input-number {
+  height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.hr-job-posting-form 
+.modal-grid 
+.ant-input-number {
+  padding: 0;
+}
+
+.hr-job-posting-form 
+.modal-grid 
+.ant-input-number-input {
+  height: 36px;
+  padding: 10px 14px;
+}

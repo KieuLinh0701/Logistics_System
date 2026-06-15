@@ -182,6 +182,33 @@ public class FeePublicService {
         return totalFee.setScale(0, RoundingMode.HALF_UP).intValue();
     }
 
+    public BigDecimal calculateWeight(
+        BigDecimal originalWeight,
+        BigDecimal height,
+        BigDecimal length,
+        BigDecimal width) {
+
+        if (originalWeight == null) originalWeight = BigDecimal.ZERO;
+        if (height == null) height = BigDecimal.ZERO;
+        if (length == null) length = BigDecimal.ZERO;
+        if (width == null) width = BigDecimal.ZERO;
+
+        BigDecimal volumetricDivisor = feeConfigRepository
+                .findActiveByServiceTypeIdIncludingNull(null)
+                .stream()
+                .filter(f -> f.getFeeType() == FeeType.VOLUMETRIC_DIVISOR)
+                .map(FeeConfiguration::getFeeValue)
+                .findFirst()
+                .orElse(BigDecimal.valueOf(5000));
+
+        BigDecimal volumetricWeight = length
+                .multiply(width)
+                .multiply(height)
+                .divide(volumetricDivisor, 2, RoundingMode.HALF_UP);
+
+        return originalWeight.max(volumetricWeight);
+    }
+
     private BigDecimal calculateFee(FeeConfiguration f, BigDecimal base) {
         BigDecimal result;
         if (f.getCalculationType() == CodFeeType.FIXED) {

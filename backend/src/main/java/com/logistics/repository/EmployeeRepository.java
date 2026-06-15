@@ -19,13 +19,9 @@ import java.util.Optional;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Integer>, JpaSpecificationExecutor<Employee> {
-    Optional<Employee> findByCode(String code);
-
     List<Employee> findByOfficeId(Integer officeId);
 
     List<Employee> findByUserId(Integer userId);
-
-    boolean existsByCode(String code);
 
     List<Employee> findAllByAccountRoleId(Integer accountRoleId);
 
@@ -72,7 +68,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
                         WHEN COUNT(so.id) = 0 THEN 0
                         ELSE
                             SUM(
-                                FUNCTION('TIMESTAMPDIFF', MINUTE, s.startTime, s.endTime)
+                                duration(MINUTE, s.startTime, s.endTime)
                             ) * 1.0 / COUNT(so.id)
                     END
                 )
@@ -97,7 +93,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
                   AND (:roleName IS NULL OR r.name = :roleName)
                   AND (:shift IS NULL OR e.shift = :shift)
                   AND (:status IS NULL OR e.status = :status)
-                  AND r.isSystemRole = true
+                  AND r.userOwner IS NULL
                   AND r.name <> 'Manager'
 
                 GROUP BY
@@ -130,7 +126,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
                           AND (:roleName IS NULL OR r.name = :roleName)
                           AND (:shift IS NULL OR e.shift = :shift)
                           AND (:status IS NULL OR e.status = :status)
-                          AND r.isSystemRole = true
+                          AND r.userOwner IS NULL
                           AND r.name <> 'Manager'
                     """)
     Page<ManagerEmployeePerformanceDto> getEmployeePerformance(
@@ -163,7 +159,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
                         WHEN COUNT(so.id) = 0 THEN 0
                         ELSE
                             SUM(
-                                FUNCTION('TIMESTAMPDIFF', MINUTE, s.startTime, s.endTime)
+                                duration(MINUTE, s.startTime, s.endTime)
                             ) * 1.0 / COUNT(so.id)
                     END
                 )
@@ -188,7 +184,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
                   AND (:roleName IS NULL OR r.name = :roleName)
                   AND (:shift IS NULL OR e.shift = :shift)
                   AND (:status IS NULL OR e.status = :status)
-                  AND r.isSystemRole = true
+                  AND r.userOwner IS NULL
                   AND r.name <> 'Manager'
 
                 GROUP BY

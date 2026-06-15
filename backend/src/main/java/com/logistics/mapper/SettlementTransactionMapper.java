@@ -3,7 +3,7 @@ package com.logistics.mapper;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.logistics.dto.user.UserSettlementTransactionDto;
+import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
 import com.logistics.entity.SettlementTransaction;
 
 public class SettlementTransactionMapper {
@@ -22,6 +22,7 @@ public class SettlementTransactionMapper {
         dto.setAccountName(entity.getAccountName());
         dto.setAccountNumber(entity.getAccountNumber());
         dto.setPaidAt(entity.getPaidAt());
+        dto.setCreatedAt(entity.getCreatedAt());
 
         return dto;
     }

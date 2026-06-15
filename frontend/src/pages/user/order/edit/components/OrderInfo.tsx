@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   Row,
@@ -20,7 +20,12 @@ import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
 interface Props {
   form: FormInstance;
   codAmount?: number;
+  originalWeight?: number;
+  height?: number | null;
+  length?: number | null;
+  width?: number | null;
   weight?: number;
+  adjustedWeight?: number;
   orderValue?: number;
   orderProducts: OrderProduct[];
   orderColumns: any[];
@@ -36,7 +41,12 @@ interface Props {
 const OrderInfo: React.FC<Props> = ({
   form,
   codAmount,
+  originalWeight,
+  height,
+  length,
+  width,
   weight,
+  adjustedWeight,
   orderValue,
   orderProducts,
   orderColumns,
@@ -51,15 +61,22 @@ const OrderInfo: React.FC<Props> = ({
   const isOrderValueDisabled = !(orderProducts.length === 0);
   const isWeightDisabled = !(orderProducts.length === 0);
 
+  const isAdjusted = useMemo(() => {
+    return adjustedWeight != null;
+  }, [adjustedWeight]);
+
   useEffect(() => {
     form.setFieldsValue({
+      height: height ?? undefined,
+      width: width ?? undefined,
+      length: length ?? undefined,
+      originalWeight: originalWeight ?? undefined,
       weight: weight ?? undefined,
       orderValue: orderValue ?? undefined,
       codAmount: codAmount ?? undefined,
       serviceType: selectedServiceType?.id ?? undefined,
     });
   }, [weight, orderValue, codAmount, selectedServiceType]);
-
 
   useEffect(() => {
     if (orderProducts.length === 0) return;
@@ -75,20 +92,15 @@ const OrderInfo: React.FC<Props> = ({
     );
 
     form.setFieldsValue({
-      weight: totalWeight,
+      originalWeight: totalWeight,
       orderValue: totalValue,
     });
 
     onChangeOrderInfo?.({
-      weight: totalWeight,
+      originalWeight: totalWeight,
       orderValue: totalValue,
     });
   }, [orderProducts]);
-
-  const handleWeightChange = (value: number | null) => {
-    const newValue = value ?? 0;
-    onChangeOrderInfo?.({ weight: newValue });
-  };
 
   const handleOrderValueChange = (value: number | null) => {
     const newValue = value ?? 0;
@@ -105,9 +117,7 @@ const OrderInfo: React.FC<Props> = ({
       <Form
         form={form}
         layout="vertical"
-        onValuesChange={(changedValues) => {
-          onChangeOrderInfo?.(changedValues);
-        }}
+        onValuesChange={onChangeOrderInfo}
       >
         <Card className="create-order-custom-card">
           <div className="create-order-custom-card-title">Thông tin đơn hàng</div>
@@ -134,6 +144,112 @@ const OrderInfo: React.FC<Props> = ({
             )}
 
             <Row gutter={16} className="create-order-order-info">
+              <Col span={6}>
+                <Form.Item
+                  label={<span className="modal-label">Dài (cm)</span>}
+                  name="length"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập chiều dài" },
+                    {
+                      validator: (_, value) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                          if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                        }
+                        return Promise.resolve();
+                      }
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 30"
+                    disabled={!canEditUserOrderField('length', status)}
+                    min={0.1}
+                    step={0.1}
+                    />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item
+                  label={<span className="modal-label">Rộng (cm)</span>}
+                  name="width"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập chiều rộng" },
+                    {
+                      validator: (_, value) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                          if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                        }
+                        return Promise.resolve();
+                      }
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 20"
+                    disabled={!canEditUserOrderField('width', status)}
+                    min={0.1}
+                    step={0.1}
+                    />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item
+                  label={<span className="modal-label">Cao (cm)</span>}
+                  name="height"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập chiều cao" },
+                    {
+                      validator: (_, value) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                          if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                        }
+                        return Promise.resolve();
+                      }
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 15"
+                    disabled={!canEditUserOrderField('height', status)}
+                    min={0.1}
+                    step={0.1}
+                    />
+                </Form.Item>
+              </Col>
+
+              <Col span={6}>
+                <Form.Item
+                  label={<span className="modal-label">Khối lượng (kg)</span>}
+                  name="originalWeight"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập khối lượng" },
+                    {
+                      validator: (_, value) => {
+                        if (value !== undefined && value !== null && value !== '') {
+                          if (isNaN(value) || value <= 0) return Promise.reject(new Error("Khối lượng phải là số lớn hơn 0"));
+                        }
+                        return Promise.resolve();
+                      }
+                    },
+                  ]}
+                >
+                  <InputNumber
+                    className="modal-custom-input-number"
+                    placeholder="Ví dụ: 1.5"
+                    disabled={isWeightDisabled || !canEditUserOrderField('originalWeight', status)}
+                    min={0.01}
+                    step={0.01}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   label={
@@ -145,28 +261,26 @@ const OrderInfo: React.FC<Props> = ({
                     </span>
                   }
                   name="weight"
-                  rules={[
-                    { required: true, message: "Vui lòng nhập khối lượng" },
-                    {
-                      validator: (_, value) => {
-                        if (value !== undefined && value <= 0) {
-                          return Promise.reject(
-                            new Error("Khối lượng phải lớn hơn 0")
-                          );
-                        }
-                        return Promise.resolve();
-                      },
-                    },
-                  ]}
+                  extra={
+                    isAdjusted && (
+                      <div className="text-muted text-extra-time">
+                        Đã khai báo:{" "}
+                        <span className="custom-text-removed">
+                          {weight?.toFixed(2)} kg
+                        </span>
+                        {"  "}–{"  "}
+                        Đã điều chỉnh:{" "}
+                        <b className="custom-table-content-error">
+                          {adjustedWeight?.toFixed(2)} kg
+                        </b>
+                      </div>
+                    )
+                  }
                 >
                   <InputNumber
                     className="modal-custom-input-number"
-                    placeholder="Ví dụ: 1.5"
-                    disabled={isWeightDisabled || !canEditUserOrderField('weight', status)}
-                    onChange={handleWeightChange}
-                    min={0.01}
-                    step={0.01}
-                    precision={2}
+                    placeholder={"Tự động tính..."}
+                    disabled={true}
                   />
                 </Form.Item>
               </Col>

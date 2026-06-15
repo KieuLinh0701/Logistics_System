@@ -72,4 +72,22 @@ public class FeePublicController {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
     }
+
+    @GetMapping("/weight")
+    public ResponseEntity<ApiResponse<BigDecimal>> calculateWeight(
+            @RequestParam BigDecimal originalWeight,
+            @RequestParam BigDecimal height,
+            @RequestParam BigDecimal length,
+            @RequestParam BigDecimal width) {
+
+        BigDecimal weight = feeService.calculateWeight(
+                originalWeight,
+                height,
+                length,
+                width
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Tính khối lượng thành công", weight));
+    }
 }

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Descriptions, Typography, Upload, Tooltip, Space, Button } from "antd";
 import type { Incident } from "../../../../../types/incidentReport";
-import { formatAddress } from "../../../../../utils/locationUtils";
 import { canEditManagerIncident, translateIncidentPriority, translateIncidentStatus, translateIncidentType } from "../../../../../utils/incidentUtils";
 import type { UploadFile } from 'antd/es/upload/interface';
 import { EditOutlined } from "@ant-design/icons";
@@ -18,29 +17,10 @@ interface Props {
 }
 
 const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, loading, onViewOrderDetail, onEdit }) => {
-  const [address, setAddress] = useState<string>('');
   const [files, setFiles] = useState<UploadFile[]>([]);
 
   useEffect(() => {
     if (!incident) return;
-
-    const loadAddress = async () => {
-      if (incident.address) {
-        try {
-          const full = await formatAddress(
-            incident.address.detail || '',
-            incident.address.wardCode || 0,
-            incident.address.cityCode || 0
-          );
-          setAddress(full);
-        } catch {
-          setAddress(incident.address.detail || '');
-        }
-      } else {
-        setAddress('N/A');
-      }
-    };
-    loadAddress();
 
     const imgs = (incident.images || []).map((url, idx) => ({
       uid: idx.toString(),
@@ -127,10 +107,6 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
           <div className='incident-report-detail-modal-desc-background'>
             <Text>{incident.description || <span className="text-muted">'N/A'</span>}</Text>
           </div>
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Địa chỉ">
-          <Text>{address}</Text>
         </Descriptions.Item>
 
         {files.length > 0 && (

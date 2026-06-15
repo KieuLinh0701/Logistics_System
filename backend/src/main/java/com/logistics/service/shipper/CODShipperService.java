@@ -3,11 +3,16 @@ package com.logistics.service.shipper;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Order;
 import com.logistics.entity.PaymentSubmission;
+import com.logistics.entity.PaymentSubmissionBatch;
+import com.logistics.entity.PaymentSubmissionItem;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderCodStatus;
+import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
+import com.logistics.repository.PaymentSubmissionBatchRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.request.shipper.CollectCODRequest;
 import com.logistics.request.shipper.SubmitCODRequest;
@@ -26,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.logistics.entity.OrderProduct;
 
 @Service
 public class CODShipperService {
@@ -38,6 +44,12 @@ public class CODShipperService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderProductRepository orderProductRepository;
+
+    @Autowired
+    private PaymentSubmissionBatchRepository paymentSubmissionBatchRepository;
 
     private User getCurrentShipperUser() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
@@ -79,13 +91,13 @@ public class CODShipperService {
 
             int totalCollected = paymentSubmissionRepository.findAll(spec)
                     .stream()
-                    .filter(ps -> ps.getStatus() == PaymentSubmissionStatus.PENDING || ps.getStatus() == PaymentSubmissionStatus.IN_BATCH)
+                    .filter(ps -> ps.getStatus() == PaymentSubmissionStatus.PENDING)
                     .mapToInt(ps -> ps.getActualAmount().intValue())
                     .sum();
 
             int totalSubmitted = paymentSubmissionRepository.findAll(spec)
                     .stream()
-                    .filter(ps -> ps.getStatus() != PaymentSubmissionStatus.PENDING && ps.getStatus() != PaymentSubmissionStatus.IN_BATCH)
+                    .filter(ps -> ps.getStatus() != PaymentSubmissionStatus.PENDING)
                     .mapToInt(ps -> ps.getActualAmount().intValue())
                     .sum();
 
@@ -125,33 +137,69 @@ public class CODShipperService {
     public ApiResponse<Map<String, Object>> collectCOD(CollectCODRequest request) {
         try {
             User shipperUser = getCurrentShipperUser();
-            
-            Order order = orderRepository.findById(request.getOrderId())
+
+            // Khóa đơn để tránh tạo submission đồng thời
+            Order order = orderRepository.findByIdForUpdate(request.getOrderId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-            // Kiểm tra đã có PaymentSubmission COD đang chờ cho đơn này chưa
-            boolean alreadyExists = paymentSubmissionRepository.findByOrderId(order.getId())
-                    .stream()
-                    .anyMatch(ps -> ps.getStatus() == PaymentSubmissionStatus.PENDING || ps.getStatus() == PaymentSubmissionStatus.IN_BATCH);
-
-            if (alreadyExists) {
-                return new ApiResponse<>(false, "Đã thu hoặc đang đối soát COD cho đơn hàng này", null);
+            // Kiểm tra đã có PaymentSubmission COD đang chờ cho đơn này chưa (idempotency)
+            List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+            for (PaymentSubmission ex : existing) {
+                if (ex.getStatus() == PaymentSubmissionStatus.PENDING) {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("submissionId", ex.getId());
+                    result.put("amount", ex.getActualAmount() != null ? ex.getActualAmount().intValue() : (ex.getSystemAmount() != null ? ex.getSystemAmount().intValue() : 0));
+                    return new ApiResponse<>(true, "Submission đã tồn tại, trả về bản ghi hiện có", result);
+                }
             }
 
-            int codAmount = (request.getActualAmount() != null && request.getActualAmount() > 0)
-                    ? request.getActualAmount()
-                    : order.getCod();
+            // Tính COD dựa trên số lượng đã giao và giá đơn vị (tính toán hệ thống)
+            List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(order.getId());
+            if (products == null) products = new ArrayList<>();
+
+            BigDecimal codSum = BigDecimal.ZERO;
+            List<PaymentSubmissionItem> items = new ArrayList<>();
+
+            for (OrderProduct p : products) {
+                int delivered = p.getDeliveredQuantity() == null ? 0 : p.getDeliveredQuantity();
+                if (delivered <= 0) continue;
+
+                BigDecimal unit = BigDecimal.valueOf(p.getPrice() == null ? 0 : p.getPrice());
+                BigDecimal total = unit.multiply(BigDecimal.valueOf(delivered));
+                codSum = codSum.add(total);
+
+                PaymentSubmissionItem item = new PaymentSubmissionItem();
+                item.setOrderProduct(p);
+                item.setQuantity(delivered);
+                item.setUnitAmount(unit);
+                item.setTotalAmount(total);
+                items.add(item);
+            }
+
+            int codAmount = codSum.intValue();
+
+            if (codAmount <= 0) {
+                return new ApiResponse<>(false, "Không có COD hợp lệ để thu (không có sản phẩm đã giao)", null);
+            }
 
             PaymentSubmission submission = new PaymentSubmission();
             submission.setOrder(order);
-            submission.setSystemAmount(BigDecimal.valueOf(codAmount));
-            submission.setActualAmount(BigDecimal.valueOf(codAmount));
+            submission.setSystemAmount(codSum);
+            submission.setActualAmount(codSum);
             submission.setStatus(PaymentSubmissionStatus.PENDING);
             submission.setShipper(shipperUser);
             submission.setNotes(request.getNotes());
-            submission.setPaidAt(LocalDateTime.now());
 
+            // Lưu bản ghi đối soát trước để có được id
             submission = paymentSubmissionRepository.save(submission);
+
+            // Gắn các mục (items) vào và lưu lại
+            for (com.logistics.entity.PaymentSubmissionItem it : items) {
+                it.setPaymentSubmission(submission);
+            }
+            submission.setItems(items);
+            submission = paymentSubmissionRepository.save(submission);
+
             String code = "COD_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
             submission.setCode(code);
             paymentSubmissionRepository.save(submission);
@@ -164,9 +212,9 @@ public class CODShipperService {
             result.put("submissionId", submission.getId());
             result.put("amount", codAmount);
 
-            return new ApiResponse<>(true, "Thu tiền COD thành công", result);
+            return new ApiResponse<>(true, "Thu tiền COD thành công (hệ thống tính tự động)", result);
         } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+            throw e;
         }
     }
 
@@ -176,56 +224,48 @@ public class CODShipperService {
         try {
             User shipperUser = getCurrentShipperUser();
 
-            if (request.getTransactionIds() == null || request.getTransactionIds().isEmpty()) {
-                return new ApiResponse<>(false, "Thiếu danh sách đối soát COD", null);
-            }
-
             if (request.getTotalAmount() == null || request.getTotalAmount() <= 0) {
-                return new ApiResponse<>(false, "Số tiền nộp không hợp lệ", null);
+                throw new RuntimeException("Số tiền nộp không hợp lệ");
             }
 
-            // Lấy các submission theo ids
-            List<PaymentSubmission> submissions = new ArrayList<>();
-            int systemTotalAmount = 0;
-            for (Integer submissionId : request.getTransactionIds()) {
-                PaymentSubmission submission = paymentSubmissionRepository.findById(submissionId).orElse(null);
-                if (submission == null) continue;
-                if (submission.getShipper() == null || !Objects.equals(submission.getShipper().getId(), shipperUser.getId())) continue;
-                if (submission.getStatus() != PaymentSubmissionStatus.PENDING && submission.getStatus() != PaymentSubmissionStatus.IN_BATCH) continue;
-                submissions.add(submission);
-                systemTotalAmount += submission.getActualAmount().intValue();
+            PaymentSubmissionBatch batch =
+                    paymentSubmissionBatchRepository.findByShipperIdAndStatus(
+                            shipperUser.getId(),
+                            PaymentSubmissionBatchStatus.OPEN)
+                    .orElseThrow(() -> new RuntimeException("Không có batch đối soát COD nào đang mở để nộp"));
+
+            if (batch.getSubmissions() == null || batch.getSubmissions().isEmpty()) {
+                throw new RuntimeException("Không có đơn hàng nào đã thu COD để nộp");
             }
 
-            if (submissions.isEmpty()) {
-                return new ApiResponse<>(false, "Không có đối soát COD hợp lệ để nộp", null);
+            BigDecimal provided = BigDecimal.valueOf(request.getTotalAmount());
+            BigDecimal expected = batch.getTotalSystemAmount();
+
+            if (provided.compareTo(expected) > 0) {
+                String msg = String.format(
+                        "Số tiền nộp không được lớn hơn số tiền cần nộp: actual=%s, expected=%s",
+                        provided.toPlainString(),
+                        expected.toPlainString()
+                );
+
+                throw new RuntimeException(msg);
             }
 
-            BigDecimal remainingAmount = BigDecimal.valueOf(request.getTotalAmount());
-            for (int i = 0; i < submissions.size(); i++) {
-                PaymentSubmission submission = submissions.get(i);
-
-                BigDecimal actualAmount;
-                if (i == submissions.size() - 1) {
-                    actualAmount = remainingAmount;
-                } else {
-                    actualAmount = BigDecimal.valueOf(request.getTotalAmount())
-                            .multiply(submission.getActualAmount())
-                            .divide(BigDecimal.valueOf(systemTotalAmount), 2, BigDecimal.ROUND_HALF_UP);
-                    remainingAmount = remainingAmount.subtract(actualAmount);
-                }
-
-                submission.setActualAmount(actualAmount);
-                submission.setStatus(PaymentSubmissionStatus.IN_BATCH);
-                submission.setNotes(request.getNotes());
+            for (PaymentSubmission submission : batch.getSubmissions()) {
+                submission.setStatus(PaymentSubmissionStatus.PROCESSING);
                 submission.setPaidAt(LocalDateTime.now());
                 paymentSubmissionRepository.save(submission);
             }
 
+            batch.setNotes(request.getNotes());
+            batch.setTotalActualAmount(provided);
+            batch.setStatus(PaymentSubmissionBatchStatus.PROCESSING);
+
             Map<String, Object> result = new HashMap<>();
-            result.put("submissionCount", submissions.size());
-            result.put("systemAmount", systemTotalAmount);
-            result.put("actualAmount", request.getTotalAmount());
-            result.put("discrepancy", request.getTotalAmount() - systemTotalAmount);
+            result.put("submissionCount", batch.getSubmissions().size());
+            result.put("systemAmount", batch.getTotalSystemAmount());
+            result.put("actualAmount", batch.getTotalActualAmount());
+            result.put("discrepancy", provided.subtract(expected).intValue());
 
             return new ApiResponse<>(true, "Nộp tiền COD thành công", result);
         } catch (Exception e) {

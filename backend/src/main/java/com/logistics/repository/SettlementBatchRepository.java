@@ -17,61 +17,63 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SettlementBatchRepository
-    extends JpaRepository<SettlementBatch, Integer>, JpaSpecificationExecutor<SettlementBatch> {
-  Optional<SettlementBatch> findByIdAndShop_Id(Integer id, Integer shopId);
+        extends JpaRepository<SettlementBatch, Integer>, JpaSpecificationExecutor<SettlementBatch> {
 
-  // Tổng tiền đã nhận: batch đã COMPLETED theo type SYSTEM_TO_SHOP
-  @Query("""
-          SELECT COALESCE(SUM(t.amount), 0)
-          FROM SettlementTransaction t
-          WHERE t.settlementBatch.shop.id = :userId
-            AND t.status = com.logistics.enums.SettlementTransactionStatus.SUCCESS
-            AND t.type = com.logistics.enums.SettlementTransactionType.SYSTEM_TO_SHOP
-      """)
-  BigDecimal sumReceivedByUser(@Param("userId") Integer userId);
+    Optional<SettlementBatch> findByIdAndShop_Id(Integer id, Integer shopId);
 
-  // Lấy các batch PENDING sắp tới
-  @Query("""
-          SELECT b
-          FROM SettlementBatch b
-          WHERE b.shop.id = :userId
-            AND b.status = com.logistics.enums.SettlementStatus.PENDING
-          ORDER BY b.createdAt ASC
-      """)
-  List<SettlementBatch> findNextPendingByUser(@Param("userId") Integer userId);
+    // Tổng tiền đã nhận: batch đã COMPLETED theo type SYSTEM_TO_SHOP
+    @Query("""
+                SELECT COALESCE(SUM(t.amount), 0)
+                FROM SettlementTransaction t
+                WHERE t.settlementBatch.shop.id = :userId
+                  AND t.status = com.logistics.enums.SettlementTransactionStatus.SUCCESS
+                  AND t.type = com.logistics.enums.SettlementTransactionType.SYSTEM_TO_SHOP
+            """)
+    BigDecimal sumReceivedByUser(@Param("userId") Integer userId);
 
-  // Tính nợ còn lại theo type SYSTEM_TO_SHOP chưa completed
-  @Query("""
-          SELECT COALESCE(SUM(b.balanceAmount), 0)
-          FROM SettlementBatch b
-          WHERE b.shop.id = :userId
-            AND b.status IN (com.logistics.enums.SettlementStatus.PENDING, com.logistics.enums.SettlementStatus.PARTIAL)
-      """)
-  BigDecimal sumPendingDebtByUser(@Param("userId") Integer userId);
+    // Lấy các batch PENDING sắp tới
+    @Query("""
+                SELECT b
+                FROM SettlementBatch b
+                WHERE b.shop.id = :userId
+                  AND b.status = com.logistics.enums.SettlementStatus.PENDING
+                ORDER BY b.createdAt ASC
+            """)
+    List<SettlementBatch> findNextPendingByUser(@Param("userId") Integer userId);
 
-  // Lấy các đối soát cần xét nợ
-  @Query("""
-          SELECT b
-          FROM SettlementBatch b
-          WHERE b.shop.id = :userId
-            AND b.balanceAmount < 0
-            AND b.status IN (
-              com.logistics.enums.SettlementStatus.PENDING,
-              com.logistics.enums.SettlementStatus.PARTIAL,
-              com.logistics.enums.SettlementStatus.FAILED
-            )
-      """)
-  List<SettlementBatch> findDebtBatchesByUser(Integer userId);
+    // Tính nợ còn lại theo type SYSTEM_TO_SHOP chưa completed
+    @Query("""
+                SELECT COALESCE(SUM(b.balanceAmount), 0)
+                FROM SettlementBatch b
+                WHERE b.shop.id = :userId
+                  AND b.status IN (com.logistics.enums.SettlementStatus.PENDING)
+            """)
+    BigDecimal sumPendingDebtByUser(@Param("userId") Integer userId);
 
-  List<SettlementBatch> findByStatusInAndCreatedAtBefore(
-      List<SettlementStatus> statuses,
-      LocalDateTime time);
+    // Lấy các đối soát cần xét nợ
+    @Query("""
+                SELECT b
+                FROM SettlementBatch b
+                WHERE b.shop.id = :userId
+                  AND b.balanceAmount < 0
+                  AND b.status IN (
+                    com.logistics.enums.SettlementStatus.PENDING,
+                    com.logistics.enums.SettlementStatus.FAILED
+                  )
+            """)
+    List<SettlementBatch> findDebtBatchesByUser(Integer userId);
 
-  boolean existsByShopAndStatusIn(User shop, List<SettlementStatus> statuses);
+    List<SettlementBatch> findByStatusInAndCreatedAtBefore(
+            List<SettlementStatus> statuses,
+            LocalDateTime time);
 
-  List<SettlementBatch> findByStatusIn(List<SettlementStatus> statuses);
+    List<SettlementBatch> findByShopIdAndStatusIn(
+            int shopId,
+            List<SettlementStatus> statuses);
 
-  List<SettlementBatch> findAllByIdInAndShop_Id(List<Integer> ids, Integer shopId);
+    List<SettlementBatch> findByShopAndStatusInOrderByCreatedAtAsc(User shop, List<SettlementStatus> statuses);
 
-  List<SettlementBatch> findByShopAndStatusIn(User shop, List<SettlementStatus> statuses);
+    List<SettlementBatch> findByShop_Id(Integer id);
+
+    List<SettlementBatch> findByShopAndLockedSentTrue(User shop);
 }

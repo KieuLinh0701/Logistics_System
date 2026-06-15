@@ -6,6 +6,7 @@ import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.logistics.enums.AddressType;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -19,8 +20,6 @@ import lombok.Setter;
 @Entity
 @Audited
 @Data
-@Getter
-@Setter
 @Table(name = "addresses")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,8 +34,14 @@ public class Address {
     @Column(nullable = false)
     private Integer wardCode;
 
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String wardName;
+
     @Column(nullable = false)
     private Integer cityCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String cityName;
 
     @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
     private String detail;
@@ -47,10 +52,24 @@ public class Address {
     @Column(columnDefinition = "NVARCHAR(11)")
     private String phoneNumber;
 
+    @Column(nullable = false)
+    private Double latitude;
+
+    @Column(nullable = false)
+    private Double longitude;
+
     private Boolean isDefault;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AddressType type = AddressType.RECIPIENT;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    private String fullAddress;
+
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = true)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @CreatedDate

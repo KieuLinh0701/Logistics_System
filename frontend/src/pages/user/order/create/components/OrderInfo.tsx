@@ -20,7 +20,7 @@ import type { ServiceType } from "../../../../../types/serviceType";
 
 interface Props {
   form: FormInstance;
-  weight: number | undefined;
+  originalWeight: number | undefined;
   orderValue: number | undefined;
   orderProducts: OrderProduct[];
   orderColumns: any[];
@@ -34,7 +34,7 @@ interface Props {
 
 const OrderInfo: React.FC<Props> = ({
   form,
-  weight,
+  originalWeight,
   orderValue,
   orderProducts,
   orderColumns,
@@ -53,32 +53,25 @@ const OrderInfo: React.FC<Props> = ({
     if (orderProducts.length > 0) {
       form.setFieldsValue({
         orderValue: orderValue,
-        weight: weight,
+        originalWeight: originalWeight,
       });
       onChangeOrderInfo?.({
         orderValue: orderValue,
-        weight: weight,
+        originalWeight: originalWeight,
       });
     } else {
       form.setFieldsValue({
         orderValue: undefined,
         weight: undefined,
+        originalWeight: undefined,
       });
       onChangeOrderInfo?.({
-        orderValue: 0,
-        weight: 0,
+        orderValue: undefined,
+        originalWeight: undefined,
+        weight: undefined
       });
     }
-  }, [orderProducts, form]);
-
-  const handleWeightChange = (value: number | null) => {
-    if (value !== null) {
-      onChangeOrderInfo?.({ weight: value });
-    } else {
-      form.setFieldValue('weight', undefined);
-      onChangeOrderInfo?.({ weight: 0 });
-    }
-  };
+  }, [orderProducts]);
 
   const handleOrderValueChange = (value: number | null) => {
     if (value !== null) {
@@ -103,10 +96,12 @@ const OrderInfo: React.FC<Props> = ({
       <Form
         form={form}
         layout="vertical"
-        onValuesChange={(changedValues) => {
-          onChangeOrderInfo?.(changedValues);
-        }}
+        onValuesChange={onChangeOrderInfo}
         initialValues={{
+          originalWeight: undefined,
+          height: undefined,
+          length: undefined,
+          width: undefined,
           weight: undefined,
           orderValue: undefined,
           codAmount: undefined,
@@ -139,94 +134,156 @@ const OrderInfo: React.FC<Props> = ({
               />
             )}
 
-            <Row gutter={16}
-              className="create-order-order-info">
-              <Col span={12}>
-                <Form.Item
-                  label={
-                    <span className="modal-label">
-                      Khối lượng quy đổi (kg){" "}
-                      <Tooltip
-                        title={
-                          "Khối lượng quy đổi = (Dài × Rộng × Cao) / 5000. So sánh với khối lượng thực tế và lấy giá trị lớn hơn để tính phí vận chuyển."
-                        }
-                      >
-                        <InfoCircleOutlined />
-                      </Tooltip>
-                    </span>
-                  }
-                  name="weight"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Vui lòng nhập khối lượng",
-                    },
-                    {
-                      validator: (_, value) => {
-                        // Chỉ kiểm tra khi có giá trị
-                        if (value !== undefined && value !== null && value !== '') {
-                          if (isNaN(value) || value <= 0) {
-                            return Promise.reject(new Error("Khối lượng phải là số lớn hơn 0"));
-                          }
-                        }
-                        return Promise.resolve();
-                      },
-                    },
-                  ]}
-                  validateTrigger={['onChange', 'onBlur']}
-                >
-                  <InputNumber
-                    className="modal-custom-input-number"
-                    placeholder="Ví dụ: 1.5"
-                    disabled={isWeightDisabled || disabled}
-                    onChange={handleWeightChange}
-                    min={0.01}
-                    step={0.01}
-                  />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  name="serviceType"
-                  label={<span className="modal-lable">Loại dịch vụ giao hàng</span>}
-                  rules={[{ required: true, message: "Chọn loại dịch vụ" }]}
-                >
-                  <Select
-                    className="modal-custom-select"
-                    placeholder="Chọn dịch vụ..."
-                    disabled={disabled}
-                    showSearch
-                    optionLabelProp="label"
-                    filterOption={(input, option) =>
-                      (option?.label as string)
-                        ?.toLowerCase()
-                        .includes(input.toLowerCase())
+         <Row gutter={16} className="create-order-order-info">
+            <Col span={6}>
+              <Form.Item
+                label={<span className="modal-label">Dài (cm)</span>}
+                name="length"
+                rules={[
+                  { required: true, message: "Vui lòng nhập chiều dài" },
+                  { validator: (_, value) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                      if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
                     }
-                    loading={loading}
-                    allowClear
-                    onChange={(value) => {
-                      const selected = serviceTypes?.find((s) => s.id === value);
-                      setSelectedServiceType(selected || null);
-                      form.setFieldValue("serviceType", value);
-                    }}
-                  >
-                    {serviceTypes?.map((s) => (
-                      <Select.Option key={s.id} value={s.id} label={s.name}>
-                        <div className="create-order-pickup-type office-contain">
-                          <span className="create-order-pickup-type office-name">
-                            {s.name}
-                          </span>
-                          <span className="create-order-pickup-type office-address">
-                            ( {s.deliveryTime} )
-                          </span>
-                        </div>
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+                    return Promise.resolve();
+                  }},
+                ]}
+              >
+                <InputNumber 
+                  className="modal-custom-input-number" 
+                  placeholder="Ví dụ: 30"
+                  disabled={disabled} 
+                  min={0.1} 
+                  step={0.1} 
+                  />
+              </Form.Item>
+            </Col>
+
+            <Col span={6}>
+              <Form.Item
+                label={<span className="modal-label">Rộng (cm)</span>}
+                name="width"
+                rules={[
+                  { required: true, message: "Vui lòng nhập chiều rộng" },
+                  { validator: (_, value) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                      if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                    }
+                    return Promise.resolve();
+                  }},
+                ]}
+              >
+                <InputNumber 
+                  className="modal-custom-input-number" 
+                  placeholder="Ví dụ: 20"
+                  disabled={disabled} 
+                  min={0.1} 
+                  step={0.1} 
+                  />
+              </Form.Item>
+            </Col>
+
+            <Col span={6}>
+              <Form.Item
+                label={<span className="modal-label">Cao (cm)</span>}
+                name="height"
+                rules={[
+                  { required: true, message: "Vui lòng nhập chiều cao" },
+                  { validator: (_, value) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                      if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                    }
+                    return Promise.resolve();
+                  }},
+                ]}
+              >
+                <InputNumber 
+                  className="modal-custom-input-number" 
+                  placeholder="Ví dụ: 15"
+                  disabled={disabled} 
+                  min={0.1} 
+                  step={0.1} 
+                   />
+              </Form.Item>
+            </Col>
+
+            <Col span={6}>
+              <Form.Item
+                label={<span className="modal-label">Khối lượng (kg)</span>}
+                name="originalWeight" 
+                rules={[
+                  { required: true, message: "Vui lòng nhập khối lượng" },
+                  { validator: (_, value) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                      if (isNaN(value) || value <= 0) return Promise.reject(new Error("Khối lượng phải là số lớn hơn 0"));
+                    }
+                    return Promise.resolve();
+                  }},
+                ]}
+              >
+              <InputNumber 
+                className="modal-custom-input-number" 
+                placeholder="Ví dụ: 1.5"
+                disabled={isWeightDisabled || disabled} 
+                min={0.01} 
+                step={0.01}
+              />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span className="modal-label">
+                    Khối lượng điều chỉnh (kg){" "}
+                    <Tooltip title="= max(Dài × Rộng × Cao / 5000, khối lượng gốc). Dùng để tính phí vận chuyển.">
+                      <InfoCircleOutlined />
+                    </Tooltip>
+                  </span>
+                }
+                name="weight"
+              >
+                <InputNumber
+                  className="modal-custom-input-number"
+                  placeholder={"Tự động tính..."}
+                  disabled={true}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col span={12}>
+              <Form.Item
+                name="serviceType"
+                label={<span className="modal-lable">Loại dịch vụ giao hàng</span>}
+                rules={[{ required: true, message: "Chọn loại dịch vụ" }]}
+              >
+                <Select
+                  className="modal-custom-select" placeholder="Chọn dịch vụ..."
+                  disabled={disabled} showSearch optionLabelProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
+                  loading={loading} allowClear
+                  onChange={(value) => {
+                    const selected = serviceTypes?.find((s) => s.id === value);
+                    setSelectedServiceType(selected || null);
+                    form.setFieldValue("serviceType", value);
+                  }}
+                >
+                  {serviceTypes?.map((s) => (
+                    <Select.Option key={s.id} value={s.id} label={s.name}>
+                      <div className="create-order-pickup-type office-contain">
+                        <span className="create-order-pickup-type office-name">{s.name}</span>
+                        <span className="create-order-pickup-type office-address">( {s.deliveryTime} )</span>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
             <Row gutter={16}>
               <Col span={12}>

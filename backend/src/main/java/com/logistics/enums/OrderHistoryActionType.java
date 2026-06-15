@@ -9,6 +9,8 @@ public enum OrderHistoryActionType {
     EXPORTED,
     DELIVERING,
     DELIVERED,
+    PARTIAL_DELIVERY,
+    PARTIAL_RETURN,
     FAILED_DELIVERY,
     RETURNING,
     RETURNED,

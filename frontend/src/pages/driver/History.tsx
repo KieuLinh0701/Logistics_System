@@ -165,7 +165,7 @@ const DriverHistory: React.FC = () => {
                 )}
               </div>
             ),
-            rowExpandable: (record: DriverShipment) => !!(record.orders && record.orders.length > 0),
+            rowExpandable: (record: DriverShipment) => !!((record.orders && record.orders.length > 0) || (record.orderCount && record.orderCount > 0)),
           }}
         />
       </Card>

@@ -5,6 +5,7 @@ import com.logistics.entity.Employee;
 import com.logistics.entity.IncidentReport;
 import com.logistics.entity.Order;
 import com.logistics.entity.PaymentSubmission;
+import com.logistics.entity.PaymentSubmissionItem;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.User;
 import com.logistics.enums.IncidentPriority;
@@ -27,10 +28,19 @@ import com.logistics.repository.OfficeRepository;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
+import com.logistics.request.shipper.PickedUpRequest;
+import com.logistics.request.shipper.DeliverOriginRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
+import com.logistics.response.NotificationResponse;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.utils.LocationUtils;
 import com.logistics.service.common.NotificationService;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.logistics.repository.OrderProductRepository;
+import com.logistics.service.assignment.AutoAssignService;
+import com.logistics.entity.OrderProduct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -41,6 +51,7 @@ import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -56,13 +67,19 @@ public class OrderShipperService {
     private IncidentReportRepository incidentReportRepository;
 
     @Autowired
+    private Cloudinary cloudinary;
+
+    @Autowired
     private OrderHistoryRepository orderHistoryRepository;
+
+    @Autowired
+    private OrderProductRepository orderProductRepository;
 
     @Autowired
     private PaymentSubmissionRepository paymentSubmissionRepository;
 
     @Autowired
-    private com.logistics.service.assignment.AutoAssignService autoAssignService;
+    private AutoAssignService autoAssignService;
 
     @Autowired
     private NotificationService notificationService;
@@ -151,7 +168,7 @@ public class OrderShipperService {
         // COD shipper đã thu (PENDING / IN_BATCH)
         int codCollected = paymentSubmissionRepository
             .findByShipperIdAndStatusIn(employee.getUser().getId(),
-                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+                Arrays.asList(PaymentSubmissionStatus.PENDING))
             .stream()
             .mapToInt(ps -> ps.getActualAmount().intValue())
             .sum();
@@ -162,7 +179,7 @@ public class OrderShipperService {
         List<Map<String, Object>> notificationMaps = Collections.emptyList();
         try {
             NotificationSearchRequest nreq = new NotificationSearchRequest(1, 5, null, null);
-            ApiResponse<com.logistics.response.NotificationResponse> nres = notificationService.getNotifications(employee.getUser().getId(), nreq);
+            ApiResponse<NotificationResponse> nres = notificationService.getNotifications(employee.getUser().getId(), nreq);
             if (nres != null && nres.isSuccess() && nres.getData() != null) {
                 notificationMaps = nres.getData().getNotifications().stream().map(dto -> {
                     Map<String, Object> m = new HashMap<>();
@@ -176,7 +193,7 @@ public class OrderShipperService {
                     return m;
                 }).toList();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) { throw new RuntimeException(e); }
 
         Map<String, Object> data = new HashMap<>();
         Map<String, Object> stats = new HashMap<>();
@@ -324,9 +341,10 @@ public class OrderShipperService {
                 Predicate fromOfficeMatch = cb.equal(root.get("fromOffice").get("id"), officeId);
                 availablePreds.add(fromOfficeMatch);
                 assignedPreds.add(fromOfficeMatch);
-            } catch (Exception ignored) {
-                // nếu không có fromOffice, bỏ qua điều kiện
+            } catch (Exception e) { 
+                throw new RuntimeException(e); 
             }
+            // nếu không có fromOffice, bỏ qua điều kiện
 
             Predicate available = cb.and(availablePreds.toArray(new Predicate[0]));
             Predicate assignedToMe = cb.and(assignedPreds.toArray(new Predicate[0]));
@@ -374,6 +392,204 @@ public class OrderShipperService {
         }
 
         return new ApiResponse<>(true, "Lấy thông tin đơn hàng thành công", mapOrderDetail(order));
+    }
+
+    public ApiResponse<Map<String, Object>> getOrderByTrackingNumber(String trackingNumber) {
+        Order order = orderRepository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+
+        boolean allowed = false;
+        if (order.getEmployee() != null && order.getEmployee().getId() != null) {
+            allowed = Objects.equals(order.getEmployee().getId(), employee.getId());
+        } else if (order.getToOffice() != null && officeId != null) {
+            allowed = Objects.equals(order.getToOffice().getId(), officeId);
+        }
+
+        if (!allowed) {
+            return new ApiResponse<>(false, "Không có quyền xem đơn hàng này", null);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", order.getId());
+        data.put("trackingNumber", order.getTrackingNumber());
+        return new ApiResponse<>(true, "Lấy đơn hàng theo mã vận đơn thành công", data);
+    }
+    
+    //Bắt đầu luồng giao 1 phần: trả về danh sách sản phẩm và số lượng còn lại/đã giao/đã trả
+    @Transactional
+    public ApiResponse<Map<String, Object>> startPartialDelivery(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Employee employee = getCurrentEmployee();
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác giao 1 phần", null);
+        }
+
+        List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(orderId);
+
+        List<Map<String, Object>> items = products.stream().map(p -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", p.getId());
+            m.put("productId", p.getProduct().getId());
+            m.put("productName", p.getProduct().getName());
+            m.put("quantity", p.getQuantity());
+            m.put("deliveredQuantity", p.getDeliveredQuantity() == null ? 0 : p.getDeliveredQuantity());
+            m.put("returnedQuantity", p.getReturnedQuantity() == null ? 0 : p.getReturnedQuantity());
+            int remaining = p.getQuantity() - (p.getDeliveredQuantity() == null ? 0 : p.getDeliveredQuantity()) - (p.getReturnedQuantity() == null ? 0 : p.getReturnedQuantity());
+            m.put("remaining", remaining);
+            return m;
+        }).toList();
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("orderId", orderId);
+        data.put("products", items);
+        return new ApiResponse<>(true, "Bắt đầu giao 1 phần", data);
+    }
+
+    @Transactional
+    public ApiResponse<String> markProductDelivered(Integer orderProductId, Integer deliveredQuantity) {
+        throw new UnsupportedOperationException("markProductDelivered is not supported. Use markProductDeliveredAtomic(...) which is atomic and concurrency-safe.");
+    }
+
+    @Transactional
+    public ApiResponse<String> markProductDeliveredAtomic(Integer orderProductId, Integer deliveredQuantity) {
+        if (deliveredQuantity == null || deliveredQuantity <= 0) {
+            return new ApiResponse<>(false, "Số lượng giao không hợp lệ", null);
+        }
+
+        OrderProduct op = orderProductRepository.findById(orderProductId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm đơn hàng"));
+
+        Order order = op.getOrder();
+        Employee employee = getCurrentEmployee();
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+        }
+
+        int affected = orderProductRepository.incrementDelivered(orderProductId, deliveredQuantity);
+        if (affected == 0) {
+            return new ApiResponse<>(false, "Số lượng giao vượt quá số lượng còn lại hoặc đã có thay đổi", null);
+        }
+
+        // reload to get updated quantities for history
+        OrderProduct updated = orderProductRepository.findById(orderProductId).orElse(op);
+        saveHistory(order, OrderHistoryActionType.PARTIAL_DELIVERY,
+                "Giao " + deliveredQuantity + " x " + (updated.getProduct() != null ? updated.getProduct().getName() : "sản phẩm"));
+
+        return new ApiResponse<>(true, "Cập nhật số lượng đã giao cho sản phẩm thành công", null);
+    }
+
+    @Transactional
+    public ApiResponse<String> markProductReturned(Integer orderProductId, Integer returnedQuantity, String reason) {
+        throw new UnsupportedOperationException("markProductReturned is not supported. Use markProductReturnedAtomic(...) which is atomic and concurrency-safe.");
+    }
+
+    @Transactional
+    public ApiResponse<String> markProductReturnedAtomic(Integer orderProductId, Integer returnedQuantity, String reason) {
+        if (returnedQuantity == null || returnedQuantity <= 0) {
+            return new ApiResponse<>(false, "Số lượng trả lại không hợp lệ", null);
+        }
+        OrderProduct op = orderProductRepository.findById(orderProductId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm đơn hàng"));
+
+        Order order = op.getOrder();
+        Employee employee = getCurrentEmployee();
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+        }
+
+        int affected = orderProductRepository.incrementReturned(orderProductId, returnedQuantity);
+        if (affected == 0) {
+            return new ApiResponse<>(false, "Số lượng trả vượt quá số lượng còn lại hoặc đã có thay đổi", null);
+        }
+
+        OrderProduct updated = orderProductRepository.findById(orderProductId).orElse(op);
+
+        String note = "Trả lại " + returnedQuantity + " x " + (updated.getProduct() != null ? updated.getProduct().getName() : "sản phẩm");
+        if (reason != null && !reason.isBlank()) note += ": " + reason;
+        saveHistory(order, OrderHistoryActionType.PARTIAL_RETURN, note);
+
+        return new ApiResponse<>(true, "Cập nhật số lượng trả lại cho sản phẩm thành công", null);
+    }
+
+    @Transactional
+    public ApiResponse<String> finishPartialDelivery(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        Employee employee = getCurrentEmployee();
+        // logging removed
+        if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+        }
+
+        List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(orderId);
+        int totalQty = products.stream().mapToInt(p -> p.getQuantity() == null ? 0 : p.getQuantity()).sum();
+        int totalDelivered = products.stream().mapToInt(p -> p.getDeliveredQuantity() == null ? 0 : p.getDeliveredQuantity()).sum();
+        int totalReturned = products.stream().mapToInt(p -> p.getReturnedQuantity() == null ? 0 : p.getReturnedQuantity()).sum();
+
+        if (totalDelivered >= totalQty && totalReturned == 0) {
+            order.setStatus(OrderStatus.DELIVERED);
+            orderRepository.save(order);
+            saveHistory(order, OrderHistoryActionType.DELIVERED, "Đã giao toàn bộ đơn hàng");
+            // Nếu có COD, tạo submission COD (tính toán từ delivered products)
+            try {
+                User shipperUser = employee.getUser();
+                if (order.getCod() != null && order.getCod() > 0) {
+                    // avoid creating when already submitted/received
+                    if (order.getCodStatus() != OrderCodStatus.SUBMITTED && order.getCodStatus() != OrderCodStatus.RECEIVED) {
+                        createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
+                    }
+                }
+            } catch (Exception e) { throw new RuntimeException(e); }
+            return new ApiResponse<>(true, "Đơn hàng đã được giao hoàn tất", null);
+        }
+
+        // Determine final status for partial delivery/return
+        if (totalDelivered > 0) {
+            order.setStatus(OrderStatus.PARTIAL_DELIVERY);
+        } else if (totalReturned > 0) {
+            order.setStatus(OrderStatus.PARTIAL_RETURN);
+        } else {
+            order.setStatus(OrderStatus.DELIVERING);
+        }
+
+        orderRepository.save(order);
+
+        if (totalDelivered > 0) {
+            saveHistory(order, OrderHistoryActionType.PARTIAL_DELIVERY, "Giao 1 phần: đã giao " + totalDelivered + " / " + totalQty);
+        }
+        if (totalReturned > 0 && totalDelivered == 0) {
+            // only log PARTIAL_RETURN when no delivered items in this session
+            saveHistory(order, OrderHistoryActionType.PARTIAL_RETURN, "Trả 1 phần: trả " + totalReturned + " / " + totalQty);
+        }
+
+        // Trigger COD submission when there is delivered quantity (partial financial event)
+        if (totalDelivered > 0) {
+            try {
+                User shipperUser = employee.getUser();
+                if (order.getCod() != null && order.getCod() > 0) {
+                    List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+                    boolean hasPositive = existing.stream()
+                            .anyMatch(ps -> ps.getActualAmount() != null && ps.getActualAmount().compareTo(BigDecimal.ZERO) > 0);
+                    if (!hasPositive) {
+                        createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
+                        try { order.setCodStatus(OrderCodStatus.PENDING); } catch (Exception e) {}
+                        orderRepository.save(order);
+                    } else {
+                        // existing submission found
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return new ApiResponse<>(true, "Hoàn tất xử lý giao 1 phần (cập nhật trạng thái và lịch sử)", null);
     }
 
         @Transactional
@@ -515,10 +731,9 @@ public class OrderShipperService {
             }
 
             if (cashCollected > 0) {
+                // Create submission but DO NOT mark recipientaddress as PAID here. Financial decision is centralized.
                 createPaymentSubmission(order, shipperUser, cashCollected,
                         "Đối soát sau khi giao thành công");
-                order.setPaymentStatus(OrderPaymentStatus.PAID);
-                order.setPaidAt(LocalDateTime.now());
             }
 
             // Nếu đơn có COD và chưa có bản ghi thu tiền COD, tạo bản ghi PENDING cho COD
@@ -531,11 +746,13 @@ public class OrderShipperService {
                         createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
                         try {
                             order.setCodStatus(OrderCodStatus.PENDING);
-                        } catch (Exception ignored) {
+                        } catch (Exception e) {
+                            throw e;
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                throw e;
             }
         }
 
@@ -550,7 +767,8 @@ public class OrderShipperService {
                 if (recipientRefused) {
                     order.setCodStatus(OrderCodStatus.NONE);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                throw e;
             }
         }
 
@@ -578,7 +796,8 @@ public class OrderShipperService {
                 if (recipientRefused) {
                     order.setCodStatus(OrderCodStatus.NONE);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                throw e;
             }
 
             // Kiểm tra đã có thu COD trước đó hay chưa
@@ -586,7 +805,8 @@ public class OrderShipperService {
             try {
                 List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
                 collectedTotal = existing.stream().mapToInt(ps -> ps.getActualAmount() != null ? ps.getActualAmount().intValue() : 0).sum();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                throw e;
             }
 
             // Nếu chưa thu COD mà payer trước đó là CUSTOMER, chuyển sang thu từ SHOP (người gửi)
@@ -607,7 +827,8 @@ public class OrderShipperService {
             if (collectedTotal > 0) {
                 try {
                     createReturnPaymentSubmission(order, shipperUser, BigDecimal.valueOf(collectedTotal), "COD_RETURN: Hoàn tiền do trả hàng");
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    throw e;
                 }
             }
         }
@@ -632,19 +853,19 @@ public class OrderShipperService {
                 "order_status_changed",
                 shipperUser.getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
         // Nhắc nộp COD nếu đã giao thành công và có COD
-        if (newStatus == OrderStatus.DELIVERED && order.getCod() > 0) {
+        if (newStatus == OrderStatus.DELIVERED && order.getCod() != null && order.getCod() > 0) {
             notificationService.create(
                     "Nhắc nhở nộp COD",
                     "Đơn hàng " + order.getTrackingNumber() + " có COD " + order.getCod() + "đ cần nộp",
                     "cod_reminder",
                     shipperUser.getId(),
                     null,
-                    "order",
+                    "recipientaddress",
                     order.getTrackingNumber()
             );
         }
@@ -677,7 +898,7 @@ public class OrderShipperService {
     }
 
     @Transactional
-    public ApiResponse<String> markPickedUp(Integer id, com.logistics.request.shipper.PickedUpRequest request) {
+    public ApiResponse<String> markPickedUp(Integer id, PickedUpRequest request) {
         Employee employee = getCurrentEmployee();
 
         Order order = orderRepository.findById(id)
@@ -695,8 +916,8 @@ public class OrderShipperService {
 
         order.setStatus(OrderStatus.PICKED_UP);
         try {
-            order.setDeliveredAt(java.time.LocalDateTime.now());
-        } catch (Exception ignored) {}
+            order.setDeliveredAt(LocalDateTime.now());
+        } catch (Exception e) { throw e; }
 
         // Ghi lại notes / ảnh / vị trí nếu có (lưu tạm vào notes để không thay đổi schema)
         if (request != null) {
@@ -721,14 +942,14 @@ public class OrderShipperService {
 
         // Gửi notification đơn giản
         try {
-            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "order", order.getTrackingNumber());
-        } catch (Exception ignored) {}
+            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
+        } catch (Exception e) { throw e; }
 
         return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> deliverToOrigin(Integer id, com.logistics.request.shipper.DeliverOriginRequest request) {
+    public ApiResponse<String> deliverToOrigin(Integer id, DeliverOriginRequest request) {
         Employee employee = getCurrentEmployee();
 
         Order order = orderRepository.findById(id)
@@ -744,25 +965,23 @@ public class OrderShipperService {
             return new ApiResponse<>(false, "Chỉ có thể nộp hàng vào bưu cục khi trạng thái là ĐÃ LẤY hoặc ĐANG LẤY", null);
         }
 
-        // Nếu request chỉ định officeId thì dùng office đó, ngược lại dùng office của shipper
+        // Nếu request chỉ định officeId thì dùng office đó
         try {
             if (request != null && request.getOfficeId() != null) {
                 officeRepository.findById(request.getOfficeId()).ifPresent(order::setToOffice);
-            } else {
-                order.setToOffice(employee.getOffice());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) { throw e; }
 
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
         orderRepository.save(order);
 
         saveHistory(order, OrderHistoryActionType.IMPORTED, "Shipper nộp hàng tại bưu cục nguồn");
 
-        try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception ignored) {}
+        try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception e) { throw e; }
 
         try {
-            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "order", order.getTrackingNumber());
-        } catch (Exception ignored) {}
+            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
+        } catch (Exception e) { throw e; }
 
         return new ApiResponse<>(true, "Đã nộp hàng tại bưu cục", null);
     }
@@ -777,11 +996,13 @@ public class OrderShipperService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
-            predicates.add(root.get("status").in(
+                predicates.add(root.get("status").in(
                     OrderStatus.DELIVERED,
                     OrderStatus.FAILED_DELIVERY,
-                    OrderStatus.RETURNED
-            ));
+                    OrderStatus.RETURNED,
+                    OrderStatus.PARTIAL_DELIVERY,
+                    OrderStatus.PARTIAL_RETURN
+                ));
 
             // Chỉ bao gồm các đơn đã được gán cho nhân viên này
             predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
@@ -820,7 +1041,7 @@ public class OrderShipperService {
         // COD đã thu: tổng các submission PENDING / IN_BATCH của shipper
         int codCollectedHistory = paymentSubmissionRepository
             .findByShipperIdAndStatusIn(employee.getUser().getId(),
-                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+                    List.of(PaymentSubmissionStatus.PENDING))
             .stream()
             .mapToInt(ps -> ps.getActualAmount().intValue())
             .sum();
@@ -866,6 +1087,91 @@ public class OrderShipperService {
         }
 
         incident.setStatus(IncidentStatus.PENDING);
+
+        // Gán office dựa trên bản ghi employee hiện tại của shipper (role SHIPPER)
+        try {
+            List<Employee> employees = employeeRepository.findByUserId(shipperUser.getId());
+            Employee matched = employees.stream()
+                    .filter(e -> e.getAccountRole() != null && e.getAccountRole().getRole() != null
+                            && e.getAccountRole().getRole().getName() != null
+                            && e.getAccountRole().getRole().getName().equalsIgnoreCase("SHIPPER")
+                            && (e.getStatus() != null && (e.getStatus().name().equals("ACTIVE") || e.getStatus().name().equals("INACTIVE"))))
+                    .max((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                    .orElse(null);
+            if (matched != null) {
+                incident.setOffice(matched.getOffice());
+            }
+        } catch (Exception ex) {
+            System.err.println("Cảnh báo: không thể tra cứu văn phòng (office) của nhân viên shipper: " + ex.getMessage());
+        }
+
+        IncidentReport saved = incidentReportRepository.save(incident);
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", saved.getId());
+
+        return new ApiResponse<>(true, "Tạo báo cáo sự cố thành công", data);
+    }
+
+    @Transactional
+    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
+        Employee employee = getCurrentEmployee();
+        User shipperUser = employee.getUser();
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        IncidentReport incident = new IncidentReport();
+        incident.setOrder(order);
+        incident.setShipper(shipperUser);
+
+        if (incidentType != null) {
+            try {
+                incident.setIncidentType(IncidentType.valueOf(incidentType.toUpperCase()));
+            } catch (Exception e) {
+                incident.setIncidentType(IncidentType.OTHER);
+            }
+        } else {
+            incident.setIncidentType(IncidentType.OTHER);
+        }
+
+        incident.setTitle(title);
+        incident.setDescription(description);
+
+        if (priority != null) {
+            try {
+                incident.setPriority(IncidentPriority.valueOf(priority.toUpperCase()));
+            } catch (Exception e) {
+                incident.setPriority(IncidentPriority.MEDIUM);
+            }
+        } else {
+            incident.setPriority(IncidentPriority.MEDIUM);
+        }
+
+        incident.setStatus(IncidentStatus.PENDING);
+
+        // upload images to Cloudinary
+        if (images != null && images.length > 0) {
+            List<String> urls = new ArrayList<>();
+            try {
+                for (org.springframework.web.multipart.MultipartFile f : images) {
+                    if (f != null && !f.isEmpty()) {
+                        try {
+                            ObjectUtils a = null;
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> uploadResult = (Map<String, Object>) this.cloudinary.uploader().upload(f.getBytes(), ObjectUtils.asMap("folder", "incident_reports", "resource_type", "image"));
+                            if (uploadResult != null && uploadResult.get("secure_url") != null) {
+                                urls.add(uploadResult.get("secure_url").toString());
+                            }
+                        } catch (Exception ex) {
+                        }
+                    }
+                }
+            } catch (Exception e) { }
+
+            if (!urls.isEmpty()) {
+                incident.setImages(urls);
+            }
+        }
 
         // Gán office dựa trên bản ghi employee hiện tại của shipper (role SHIPPER)
         try {
@@ -966,7 +1272,7 @@ public class OrderShipperService {
         map.put("codStatus", order.getCodStatus() != null ? order.getCodStatus().name() : null);
         // Bao gồm các bản ghi PaymentSubmission liên quan đến đơn hàng này
         try {
-            List<PaymentSubmission> submissions = paymentSubmissionRepository.findByOrderId(order.getId());
+            List<PaymentSubmission> submissions = paymentSubmissionRepository.findByOrderIdWithItems(order.getId());
             List<Map<String, Object>> subs = submissions.stream().map(ps -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id", ps.getId());
@@ -979,7 +1285,7 @@ public class OrderShipperService {
                 return m;
             }).toList();
             map.put("paymentSubmissions", subs);
-        } catch (Exception ignored) {
+            } catch (Exception e) {
             map.put("paymentSubmissions", Collections.emptyList());
         }
         map.put("codAmount", order.getCod());
@@ -1003,6 +1309,25 @@ public class OrderShipperService {
         } else {
             map.put("fromOffice", null);
         }
+        // Bao gồm danh sách sản phẩm kèm số lượng đã giao / trả
+        try {
+            List<OrderProduct> ops = orderProductRepository.findByOrderIdWithProduct(order.getId());
+            List<Map<String, Object>> prodMaps = ops.stream().map(op -> {
+                Map<String, Object> pm = new HashMap<>();
+                pm.put("id", op.getId());
+                pm.put("productId", op.getProduct() != null ? op.getProduct().getId() : null);
+                pm.put("productName", op.getProduct() != null ? op.getProduct().getName() : null);
+                pm.put("quantity", op.getQuantity());
+                pm.put("price", op.getPrice());
+                pm.put("deliveredQuantity", op.getDeliveredQuantity() == null ? 0 : op.getDeliveredQuantity());
+                pm.put("returnedQuantity", op.getReturnedQuantity() == null ? 0 : op.getReturnedQuantity());
+                pm.put("remaining", (op.getQuantity() == null ? 0 : op.getQuantity()) - (op.getDeliveredQuantity() == null ? 0 : op.getDeliveredQuantity()) - (op.getReturnedQuantity() == null ? 0 : op.getReturnedQuantity()));
+                return pm;
+            }).toList();
+            map.put("orderProducts", prodMaps);
+        } catch (Exception e) {
+            map.put("orderProducts", Collections.emptyList());
+        }
         return map;
     }
 
@@ -1024,63 +1349,143 @@ public class OrderShipperService {
 
     // Tạo bản ghi đối soát tiền mặt (COD + phí dịch vụ) sau khi giao/hoàn
     private void createPaymentSubmission(Order order, User shipperUser, int amount, String note) {
-        if (amount <= 0) {
+        if (amount <= 0) return;
+
+        // Lock recipientaddress to prevent duplicate COD across instances
+        try {
+            Optional<Order> locked = orderRepository.findByIdForUpdate(order.getId());
+            if (locked.isPresent()) order = locked.get();
+        } catch (Exception e) {
+        }
+
+        // Prevent creating COD when recipientaddress is already submitted/received
+        if (order.getCod() != null && order.getCod() > 0
+                && (order.getCodStatus() == OrderCodStatus.SUBMITTED || order.getCodStatus() == OrderCodStatus.RECEIVED)) {
+            // Attempt to create COD submission but recipientaddress codStatus prevents it
             return;
         }
 
-        try {
-            // Nếu đã có submission cho order (vì mapping 1-1), cập nhật bản ghi hiện có thay vì tạo mới
-            List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
-            if (existing != null && !existing.isEmpty()) {
-                PaymentSubmission ex = existing.get(0);
-                boolean changed = false;
+        boolean isCod = order.getCod() != null && amount == order.getCod();
 
-                if (ex.getSystemAmount() == null || ex.getSystemAmount().intValue() == 0) {
-                    ex.setSystemAmount(BigDecimal.valueOf(amount));
-                    changed = true;
+        // If there's already a pending/in-batch submission, try to reuse it
+        List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+        if (existing != null) {
+            for (PaymentSubmission ex : existing) {
+                if (ex.getStatus() == PaymentSubmissionStatus.PENDING) {
+                    if (isCod) {
+                        try {
+                            List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(order.getId());
+                            List<PaymentSubmissionItem> items = new ArrayList<>();
+                            BigDecimal codSum = BigDecimal.ZERO;
+                            if (products != null) {
+                                for (OrderProduct p : products) {
+                                    int delivered = p.getDeliveredQuantity() == null ? 0 : p.getDeliveredQuantity();
+                                    if (delivered <= 0) continue;
+                                    BigDecimal unit = BigDecimal.valueOf(p.getPrice() == null ? 0 : p.getPrice());
+                                    BigDecimal total = unit.multiply(BigDecimal.valueOf(delivered));
+                                    codSum = codSum.add(total);
+                                    PaymentSubmissionItem it = new PaymentSubmissionItem();
+                                    it.setOrderProduct(p);
+                                    it.setQuantity(delivered);
+                                    it.setUnitAmount(unit);
+                                    it.setTotalAmount(total);
+                                    it.setPaymentSubmission(ex);
+                                    items.add(it);
+                                }
+                            }
+                            if (!items.isEmpty()) {
+                                // Idempotency: if existing submission already matches computed items, avoid replacing
+                                boolean same = ex.getSystemAmount() != null && ex.getSystemAmount().compareTo(codSum) == 0
+                                        && ex.getItems() != null && ex.getItems().size() == items.size();
+                                if (same) {
+                                    for (PaymentSubmissionItem ei : ex.getItems()) {
+                                        boolean match = items.stream().anyMatch(it -> it.getOrderProduct() != null && ei.getOrderProduct() != null
+                                                && ei.getOrderProduct().getId() != null && ei.getOrderProduct().getId().equals(it.getOrderProduct().getId())
+                                                && ei.getQuantity() != null && ei.getQuantity().equals(it.getQuantity()));
+                                        if (!match) { same = false; break; }
+                                    }
+                                }
+                                if (same) {
+                                    ex.setShipper(shipperUser);
+                                    ex.setNotes(note);
+                                    ex.setStatus(PaymentSubmissionStatus.PENDING);
+                                    paymentSubmissionRepository.save(ex);
+                                    order.setCodStatus(OrderCodStatus.PENDING);
+                                    orderRepository.save(order);
+                                } else {
+                                    // replace items atomically
+                                    ex.getItems().clear();
+                                    for (PaymentSubmissionItem it : items) {
+                                        it.setPaymentSubmission(ex);
+                                        ex.getItems().add(it);
+                                    }
+                                    ex.setSystemAmount(codSum);
+                                    ex.setActualAmount(codSum);
+                                    ex.setShipper(shipperUser);
+                                    ex.setNotes(note);
+                                    ex.setStatus(PaymentSubmissionStatus.PENDING);
+                                    paymentSubmissionRepository.save(ex);
+                                    order.setCodStatus(OrderCodStatus.PENDING);
+                                    orderRepository.save(order);
+                                }
+                            }
+                        } catch (Exception e) {
+                        }
+                    }
+                    return;
                 }
-                if (ex.getActualAmount() == null || ex.getActualAmount().intValue() == 0) {
-                    ex.setActualAmount(BigDecimal.valueOf(amount));
-                    changed = true;
-                }
-                if (ex.getStatus() == null || ex.getStatus() != PaymentSubmissionStatus.PENDING) {
-                    ex.setStatus(PaymentSubmissionStatus.PENDING);
-                    changed = true;
-                }
-
-                ex.setShipper(shipperUser);
-                ex.setNotes(note);
-                ex.setPaidAt(LocalDateTime.now());
-
-                if (changed || ex.getCode() == null) {
-                    ex = paymentSubmissionRepository.save(ex);
-                }
-
-                if (ex.getCode() == null) {
-                    String submissionCode = "SUB_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + ex.getId();
-                    ex.setCode(submissionCode);
-                    paymentSubmissionRepository.save(ex);
-                }
-
-                return;
             }
-        } catch (Exception ignored) {
         }
 
+        // Create a new submission
         PaymentSubmission submission = new PaymentSubmission();
         submission.setOrder(order);
-        submission.setSystemAmount(BigDecimal.valueOf(amount));
-        submission.setActualAmount(BigDecimal.valueOf(amount));
-        submission.setStatus(PaymentSubmissionStatus.PENDING);
         submission.setShipper(shipperUser);
         submission.setNotes(note);
-        submission.setPaidAt(LocalDateTime.now());
+        submission.setStatus(PaymentSubmissionStatus.PENDING);
 
+        List<PaymentSubmissionItem> items = new ArrayList<>();
+
+        if (isCod) {
+                            List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(order.getId());
+            BigDecimal codSum = BigDecimal.ZERO;
+            if (products != null) {
+                for (OrderProduct p : products) {
+                    int delivered = p.getDeliveredQuantity() == null ? 0 : p.getDeliveredQuantity();
+                    if (delivered <= 0) continue;
+                    BigDecimal unit = BigDecimal.valueOf(p.getPrice() == null ? 0 : p.getPrice());
+                    BigDecimal total = unit.multiply(BigDecimal.valueOf(delivered));
+                    codSum = codSum.add(total);
+                    PaymentSubmissionItem it = new PaymentSubmissionItem();
+                    it.setOrderProduct(p);
+                    it.setQuantity(delivered);
+                    it.setUnitAmount(unit);
+                    it.setTotalAmount(total);
+                    it.setPaymentSubmission(submission);
+                    items.add(it);
+                }
+            }
+            submission.setSystemAmount(codSum);
+            submission.setActualAmount(codSum);
+        } else {
+            submission.setSystemAmount(BigDecimal.valueOf(amount));
+            submission.setActualAmount(BigDecimal.valueOf(amount));
+        }
+
+        submission.setItems(items);
         submission = paymentSubmissionRepository.save(submission);
 
-        String submissionCode = "SUB_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
+        String submissionCode = "SUB_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
         submission.setCode(submissionCode);
         paymentSubmissionRepository.save(submission);
+
+        if (isCod) {
+            try {
+                order.setCodStatus(OrderCodStatus.PENDING);
+                orderRepository.save(order);
+            } catch (Exception e) {
+            }
+        }
     }
 
     // Tạo bản ghi ghi nhận hoàn tiền COD khi trả hàng (giữ dấu vết giao dịch)
@@ -1097,10 +1502,9 @@ public class OrderShipperService {
         submission.setStatus(PaymentSubmissionStatus.ADJUSTED);
         submission.setShipper(shipperUser);
         submission.setNotes(note);
-        submission.setPaidAt(LocalDateTime.now());
 
         submission = paymentSubmissionRepository.save(submission);
-        String submissionCode = "RET_" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
+        String submissionCode = "RET_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + submission.getId();
         submission.setCode(submissionCode);
         paymentSubmissionRepository.save(submission);
 
@@ -1108,7 +1512,9 @@ public class OrderShipperService {
         try {
             order.setCodStatus(OrderCodStatus.NONE);
             order.setPaymentStatus(OrderPaymentStatus.REFUNDED);
-        } catch (Exception ignored) {
+            orderRepository.save(order);
+        } catch (Exception e) {
+            throw e;
         }
     }
 
@@ -1122,7 +1528,7 @@ public class OrderShipperService {
         }
         if (address.getWardCode() != null) {
             try {
-                String wardName = com.logistics.utils.LocationUtils.getWardNameByCode(address.getCityCode(), address.getWardCode());
+                String wardName = LocationUtils.getWardNameByCode(address.getCityCode(), address.getWardCode());
                 if (wardName != null && !wardName.isBlank()) {
                     if (builder.length() > 0) builder.append(", ");
                     builder.append(wardName);
@@ -1130,14 +1536,14 @@ public class OrderShipperService {
                     if (builder.length() > 0) builder.append(", ");
                     builder.append("Phường ").append(address.getWardCode());
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 if (builder.length() > 0) builder.append(", ");
                 builder.append("Phường ").append(address.getWardCode());
             }
         }
         if (address.getCityCode() != null) {
             try {
-                String cityName = com.logistics.utils.LocationUtils.getCityNameByCode(address.getCityCode());
+                String cityName = LocationUtils.getCityNameByCode(address.getCityCode());
                 if (cityName != null && !cityName.isBlank()) {
                     if (builder.length() > 0) builder.append(", ");
                     builder.append(cityName);
@@ -1145,7 +1551,7 @@ public class OrderShipperService {
                     if (builder.length() > 0) builder.append(", ");
                     builder.append("TP ").append(address.getCityCode());
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 if (builder.length() > 0) builder.append(", ");
                 builder.append("TP ").append(address.getCityCode());
             }

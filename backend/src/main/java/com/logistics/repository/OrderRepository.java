@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpecificationExecutor<Order> {
+public interface OrderRepository
+        extends JpaRepository<Order, Integer>, JpaSpecificationExecutor<Order> {
+
     Optional<Order> findByTrackingNumber(String trackingNumber);
 
     List<Order> findByStatus(OrderStatus status);
@@ -52,9 +54,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     List<Order> findByIdIn(List<Integer> orderIds);
 
+    Optional<Order> findTopByUserIdOrderByCreatedAtDesc(Integer userId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findByIdForUpdate(@Param("id") Integer id);
+
     List<Order> findByUserAndSettlementBatchIsNullAndStatusIn(User user, List<OrderStatus> statuses);
 
     // Dashboard của user
@@ -138,7 +143,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             LocalDateTime startDate,
             LocalDateTime endDate);
 
-    // Kiểm tta order có thuộc shipment nào ở các trạng thái
+    // Kiểm tta recipientaddress có thuộc shipment nào ở các trạng thái
     @Query("SELECT CASE WHEN COUNT(so) > 0 THEN true ELSE false END " +
             "FROM ShipmentOrder so " +
             "WHERE so.order.id = :orderId AND so.shipment.status IN :statuses")
@@ -164,4 +169,53 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                 WHERE o.fromOffice.id = :officeId OR o.toOffice.id = :officeId
             """)
     ManagerOrderStatsDTO getOrderStatsByOfficeId(@Param("officeId") Integer officeId);
+
+    // Tìm đơn hàng gần nhất của số điện thoại của recipient mà chủ cửa hàng đã gửi
+    // Mục đích: Lấy thông tin Tên/Địa chỉ để auto-fill
+    Optional<Order> findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(Integer userId, String phone);
+
+    // Thống kê số đơn hàng theo số điện thoại người nhân và trạng thái đơn hàng trên toàn hệ thống
+    // Mục đích: lây số đơn hàng thành công, hoàn hàng
+    long countByRecipientPhoneAndRecipientFullAddressAndStatusIn(
+            String phone,
+            String fullAddress,
+            List<OrderStatus> statuses);
+
+    long countByRecipientPhoneAndRecipientFullAddress(
+            String phone,
+            String fullAddress);
+
+    @Query("""
+                SELECT o.recipientFullAddress
+                FROM Order o
+                WHERE o.user.id = :userId AND o.recipientPhone = :phone
+                GROUP BY o.recipientFullAddress
+                ORDER BY COUNT(o) DESC
+                LIMIT 1
+            """)
+    Optional<String> findMostUsedFullAddressByUserIdAndRecipientPhone(
+            @Param("userId") Integer userId,
+            @Param("phone") String phone);
+
+    Optional<Order> findFirstByUserIdAndRecipientPhoneAndRecipientFullAddressOrderByCreatedAtDesc(
+            Integer userId, String recipientPhone, String recipientFullAddress);
+
+    @Query("""
+            SELECT o.status, COUNT(o) FROM Order o WHERE o.user.id = :userId GROUP BY o.status
+            """)
+    List<Object[]> countByStatusForUser(@Param("userId") Integer userId);
+
+    @Query(value = "SELECT o.status, COUNT(o.id) "
+            + "FROM orders o "
+            + "WHERE (o.from_office_id = :officeId OR o.to_office_id = :officeId) "
+            + "AND o.status != 'DRAFT'"
+            + "GROUP BY o.status",
+            nativeQuery = true)
+    List<Object[]> countByStatusForOffice(@Param("officeId") Integer officeId);
+
+    long countByUserIdAndRecipientPhoneAndRecipientFullAddress(
+            int userId, String phone, String fullAddress);
+
+    long countByUserIdAndRecipientPhoneAndRecipientFullAddressAndStatusIn(
+            int userId, String phone, String fullAddress, List<OrderStatus> statuses);
 }

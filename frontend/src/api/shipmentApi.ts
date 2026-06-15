@@ -8,7 +8,8 @@ import { axiosExport } from "./exportClient";
 const shipmentApi = {
   // DRIVER
   async startShipment(shipmentId: number) {
-    await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/start`);
+    const res = await axiosClient.post<ApiResponse<string>>(`/driver/shipments/${shipmentId}/start`);
+    return res;
   },
 
   async finishShipment(payload: { shipmentId: number; status: "COMPLETED" | "CANCELLED" }) {
@@ -31,6 +32,15 @@ const shipmentApi = {
       routeInfo: (data.routeInfo || null) as DriverRouteInfo | null,
       deliveryStops: (data.deliveryStops || []) as DriverDeliveryStop[],
       debug: data.debug || null,
+    };
+  },
+
+  async getDriverContext() {
+    const res = await axiosClient.get<ApiResponse<any>>("/driver/context");
+    const data = res.data || {};
+    return {
+      office: data.office || null,
+      vehicles: data.vehicles || [],
     };
   },
 

@@ -136,6 +136,10 @@ const ShipperDeliveryHistory: React.FC = () => {
         return "Đang giao hàng";
       case "DELIVERED":
         return "Đã giao";
+      case "PARTIAL_DELIVERY":
+        return "Giao 1 phần";
+      case "PARTIAL_RETURN":
+        return "Trả 1 phần";
       case "FAILED_DELIVERY":
         return "Giao thất bại";
       case "CANCELLED":
@@ -271,6 +275,8 @@ const ShipperDeliveryHistory: React.FC = () => {
             onChange={(value) => handleFilterChange("status", value || undefined)}
           >
             <Option value="DELIVERED">Đã giao</Option>
+            <Option value="PARTIAL_DELIVERY">Giao 1 phần</Option>
+            <Option value="PARTIAL_RETURN">Trả 1 phần</Option>
             <Option value="FAILED_DELIVERY">Giao thất bại</Option>
             <Option value="RETURNED">Đã hoàn</Option>
           </Select>

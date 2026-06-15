@@ -1,0 +1,99 @@
+:root {
+  --primary: #1e3a8a;
+  --bg-color-input: #ffffff;
+  --bg-color-input-hover: #f8fafc;
+  --bg-color-input-focus: #ffffff;
+  --text-color-subtitle: #6b7280;
+  --box-shadow-input: rgba(30,58,138,0.12);
+  --border-color-card: #e8eefc;
+  --box-shadow-card: rgba(30,58,138,0.08);
+}
+
+.apply-job-page {
+  width: 100%;
+  background: transparent;
+}
+
+.apply-job-page .public-hero-subtitle {
+  color: #f3f4f6;
+}
+
+.apply-job-container .ant-card {
+  border-radius: 18px !important;
+  box-shadow: 0 8px 40px var(--box-shadow-card) !important;
+  border: 1px solid var(--border-color-card) !important;
+}
+
+.apply-job-page .ant-form-item-label > label {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+  font-size: 15px !important; 
+}
+
+.apply-job-page .ant-input,
+.apply-job-page .ant-select-selector,
+.apply-job-page .ant-input-textarea {
+  background-color: var(--bg-color-input) !important;
+  border-radius: 8px !important;
+  border: 1px solid #e6eefc !important;
+  transition: all 0.2s ease !important;
+  font-size: 16px !important;
+  padding: 10px 14px !important;
+  height: auto !important;
+  color: #111827 !important;
+}
+
+.apply-job-page .ant-input:focus,
+.apply-job-page .ant-select-focused .ant-select-selector,
+.apply-job-page .ant-input-textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--box-shadow-input) !important;
+}
+
+.apply-job-page .ant-input::placeholder,
+.apply-job-page .ant-select-selection-placeholder {
+  color: var(--text-color-subtitle) !important;
+  font-size: 15px !important;
+}
+
+.apply-job-page .ant-upload {
+  border-radius: 8px !important;
+  border: 1px dashed #e6eefc !important;
+  padding: 16px !important;
+  background: #ffffff !important;
+}
+
+.apply-job-page .ant-btn-primary {
+  background: var(--primary) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  padding: 10px 16px !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+}
+
+.apply-job-page .ant-btn-primary:hover {
+  background: #2563eb !important;
+}
+
+.apply-job-page .ant-typography-secondary {
+  color: var(--text-color-subtitle) !important;
+}
+
+@media (max-width: 768px) {
+  .apply-job-container .ant-card { padding: 16px !important; }
+  .apply-job-page .ant-form-item-label > label { font-size: 14px !important; }
+}
+
+@media (max-width: 480px) {
+  .apply-job-container .ant-card { padding: 20px !important; }
+}
+
+.apply-job-container .apply-page-title {
+  text-align: center;
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+}

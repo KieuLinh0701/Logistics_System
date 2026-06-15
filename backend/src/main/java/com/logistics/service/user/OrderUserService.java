@@ -1,15 +1,41 @@
 package com.logistics.service.user;
 
+import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
+import com.logistics.dto.user.order.UserOrderStatusCountResponse;
+import com.logistics.enums.AddressType;
+
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.logistics.request.SearchRequest;
+import com.logistics.utils.AddressUtils;
+import com.logistics.utils.OrderFieldUtils;
+import com.logistics.utils.PaymentSubmissionBatchUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -57,51 +83,49 @@ import com.logistics.utils.OrderUtils;
 import com.logistics.utils.UserOrderEditRuleUtils;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
+import static com.logistics.utils.OrderUtils.translateOrderCodStatus;
+import static com.logistics.utils.OrderUtils.translateOrderPayerType;
+import static com.logistics.utils.OrderUtils.translateOrderPaymentStatus;
+import static com.logistics.utils.OrderUtils.translateOrderPickupType;
+import static com.logistics.utils.OrderUtils.translateOrderStatus;
+
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class OrderUserService {
 
-    @Autowired
-    private OrderRepository repository;
+    private final OrderRepository repository;
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
-    @Autowired
-    private OrderProductRepository orderProductRepository;
+    private final OrderProductRepository orderProductRepository;
 
-    @Autowired
-    private OrderHistoryRepository orderHistoryRepository;
+    private final OrderHistoryRepository orderHistoryRepository;
 
-    @Autowired
-    private PromotionUserService promotionUserService;
+    private final PromotionUserService promotionUserService;
 
-    @Autowired
-    private AddressUserService addressUserService;
+    private final AddressUserService addressUserService;
 
-    @Autowired
-    private ServiceTypeUserService serviceTypeUserService;
+    private final ServiceTypeUserService serviceTypeUserService;
 
-    @Autowired
-    private OfficePublicService officePublicService;
+    private final OfficePublicService officePublicService;
 
-    @Autowired
-    private FeePublicService feeService;
+    private final FeePublicService feeService;
 
-    @Autowired
-    private UserUserService userUserService;
+    private final UserUserService userUserService;
 
-    @Autowired
-    private ProductUserService productUserService;
+    private final ProductUserService productUserService;
 
-    @Autowired
-    private OrderHistoryUserService orderHistoryUserService;
+    private final OrderHistoryUserService orderHistoryUserService;
 
-    @Autowired
-    private BankAccountRepository bankAccountRepository;
+    private final BankAccountRepository bankAccountRepository;
 
     public ApiResponse<ListResponse<UserOrderListDto>> list(int userId, UserOrderSearchRequest request) {
         try {
+            Integer shopId = userUserService.getShopId(userId);
+
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -112,16 +136,18 @@ public class OrderUserService {
             String paymentStatus = request.getPaymentStatus();
             String cod = request.getCod();
             String sort = request.getSort();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getStartDate())
                     : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
             Specification<Order> spec = OrderSpecification.unrestrictedOrder()
-                    .and(OrderSpecification.userId(userId))
+                    .and(OrderSpecification.userId(shopId))
                     .and(OrderSpecification.search(search))
                     .and(OrderSpecification.payer(payer))
                     .and(OrderSpecification.status(status))
@@ -132,16 +158,26 @@ public class OrderUserService {
                     .and(OrderSpecification.createdAtBetween(startDate, endDate));
 
             Sort sortOpt = switch (sort.toLowerCase()) {
-                case "newest" -> Sort.by("createdAt").descending();
-                case "oldest" -> Sort.by("createdAt").ascending();
-                case "cod_high" -> Sort.by("cod").descending();
-                case "cod_low" -> Sort.by("cod").ascending();
-                case "order_value_high" -> Sort.by("orderValue").descending();
-                case "order_value_low" -> Sort.by("orderValue").ascending();
-                case "fee_high" -> Sort.by("totalFee").descending();
-                case "fee_low" -> Sort.by("totalFee").ascending();
-                case "weight_high" -> Sort.by("weight").descending();
-                case "weight_low" -> Sort.by("weight").ascending();
+                case "newest" -> Sort.by("createdAt")
+                        .descending();
+                case "oldest" -> Sort.by("createdAt")
+                        .ascending();
+                case "cod_high" -> Sort.by("cod")
+                        .descending();
+                case "cod_low" -> Sort.by("cod")
+                        .ascending();
+                case "order_value_high" -> Sort.by("orderValue")
+                        .descending();
+                case "order_value_low" -> Sort.by("orderValue")
+                        .ascending();
+                case "fee_high" -> Sort.by("totalFee")
+                        .descending();
+                case "fee_low" -> Sort.by("totalFee")
+                        .ascending();
+                case "weight_high" -> Sort.by("weight")
+                        .descending();
+                case "weight_low" -> Sort.by("weight")
+                        .ascending();
                 default -> Sort.unsorted();
             };
 
@@ -167,8 +203,29 @@ public class OrderUserService {
         }
     }
 
+    public ApiResponse<List<UserOrderStatusCountResponse>> getStatusCounts(Integer userId) {
+        Integer shopId = userUserService.getShopId(userId);
+
+        List<Object[]> raw = repository.countByStatusForUser(shopId);
+
+        List<UserOrderStatusCountResponse> counts = raw.stream()
+                .map(row -> new UserOrderStatusCountResponse(
+                        ((OrderStatus) row[0]).name(),
+                        (long) row[1]
+                ))
+                .collect(Collectors.toList());
+
+        long total = counts.stream().mapToLong(UserOrderStatusCountResponse::getCount).sum();
+        counts.add(0, new UserOrderStatusCountResponse("ALL", total));
+
+        return new ApiResponse<>(true, "Lấy số lượng theo trạng thái thành công", counts);
+
+    }
+
     public ApiResponse<List<Integer>> getAllOrderIds(int userId, UserOrderSearchRequest request) {
         try {
+            Integer shopId = userUserService.getShopId(userId);
+
             String search = request.getSearch();
             String payer = request.getPayer();
             String status = request.getStatus();
@@ -176,15 +233,17 @@ public class OrderUserService {
             Integer serviceTypeId = request.getServiceTypeId();
             String paymentStatus = request.getPaymentStatus();
             String cod = request.getCod();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getStartDate())
                     : null;
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
             Specification<Order> spec = OrderSpecification.unrestrictedOrder()
-                    .and(OrderSpecification.userId(userId))
+                    .and(OrderSpecification.userId(shopId))
                     .and(OrderSpecification.search(search))
                     .and(OrderSpecification.payer(payer))
                     .and(OrderSpecification.status(status))
@@ -211,14 +270,16 @@ public class OrderUserService {
         try {
             validateCreate(request, false);
 
-            User user = userUserService.findById(userId);
+            Integer shopId = userUserService.getShopId(userId);
+
+            User user = userUserService.getUser(shopId);
             if (user.getLocked()) {
                 return new ApiResponse<>(false,
                         "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi tạo đơn hàng mới.",
                         null);
             }
 
-            if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), userId)) {
+            if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), shopId)) {
                 return new ApiResponse<>(false, "Địa chỉ người gửi không thuộc người dùng", null);
             }
 
@@ -232,14 +293,23 @@ public class OrderUserService {
                 return new ApiResponse<>(false, "Dịch vụ vận chuyển không tồn tại", null);
             }
 
-            if (request.getOrderProducts() != null && !request.getOrderProducts().isEmpty()) {
-                validateProductWithDB(userId, request.getOrderProducts());
+            if (request.getOrderProducts() != null && !request.getOrderProducts()
+                    .isEmpty()) {
+                validateProductWithDB(shopId, request.getOrderProducts());
             }
 
-            Address senderAddress = addressUserService.findById(request.getSenderAddressId())
+            Address senderAddress = addressUserService.findByIdAndUserIdAndType(
+                            request.getSenderAddressId(),
+                            shopId,
+                            AddressType.SENDER)
                     .orElseThrow(() -> new RuntimeException("Địa chỉ người gửi không tồn tại"));
 
-            BigDecimal weight = calculateWeight(request.getOrderProducts(), request.getWeight());
+            BigDecimal weight = calculateWeight(
+                    request.getOrderProducts(),
+                    request.getOriginalWeight(),
+                    request.getHeight(),
+                    request.getLength(),
+                    request.getWidth());
 
             if (weight.compareTo(request.getWeight()) != 0 && request.getWeight() != null) {
                 return new ApiResponse<>(
@@ -268,7 +338,7 @@ public class OrderUserService {
                         .orElseThrow(() -> new RuntimeException("Khuyến mãi không tồn tại"));
 
                 if (!promotionUserService.canUsePromotion(
-                        userId,
+                        shopId,
                         request.getPromotionId(),
                         request.getServiceTypeId(),
                         serviceFee,
@@ -295,7 +365,7 @@ public class OrderUserService {
                         .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
             }
 
-            boolean existBankAcc = existBankAccount(userId);
+            boolean existBankAcc = existBankAccount(shopId);
             if (!existBankAcc) {
                 return new ApiResponse<>(false,
                         "Bạn cần thêm tài khoản ngân hàng trong hồ sơ cá nhân để nhận tiền COD hoặc thanh toán khi tạo đơn hàng. Vui lòng cập nhật trước khi tiếp tục.",
@@ -318,16 +388,6 @@ public class OrderUserService {
 
             Integer totalFee = serviceFee - discountAmount;
 
-            Address address = Address.builder()
-                    .wardCode(request.getRecipientWardCode())
-                    .cityCode(request.getRecipientCityCode())
-                    .detail(request.getRecipientDetail())
-                    .name(request.getRecipientName())
-                    .phoneNumber(request.getRecipientPhone())
-                    .isDefault(false)
-                    .build();
-            Address recipientAddress = addressUserService.save(address);
-
             Order order = new Order();
             order.setStatus(OrderStatus.valueOf(request.getStatus()));
             order.setTrackingNumber(generateUniqueTrackingNumber(order.getStatus()));
@@ -336,14 +396,20 @@ public class OrderUserService {
             order.setSenderName(senderAddress.getName());
             order.setSenderPhone(senderAddress.getPhoneNumber());
             order.setSenderCityCode(senderAddress.getCityCode());
+            order.setSenderCityName(senderAddress.getCityName());
+            order.setSenderWardName(senderAddress.getWardName());
             order.setSenderWardCode(senderAddress.getWardCode());
             order.setSenderDetail(senderAddress.getDetail());
+            order.setSenderFullAddress(senderAddress.getFullAddress());
+            order.setSenderLatitude(senderAddress.getLatitude());
+            order.setSenderLongitude(senderAddress.getLongitude());
             order.setSenderAddress(senderAddress);
-            order.setRecipientName(request.getRecipientName());
-            order.setRecipientPhone(request.getRecipientPhone());
-            order.setRecipientAddress(recipientAddress);
             order.setPickupType(OrderPickupType.valueOf(request.getPickupType()));
             order.setWeight(request.getWeight());
+            order.setOriginalWeight(request.getOriginalWeight());
+            order.setHeight(request.getHeight());
+            order.setWidth(request.getWidth());
+            order.setLength(request.getLength());
             order.setServiceType(serviceType);
             order.setPromotion(promotion);
             order.setDiscountAmount(discountAmount);
@@ -360,18 +426,158 @@ public class OrderUserService {
                             ? OrderCodStatus.EXPECTED
                             : OrderCodStatus.NONE);
 
+            Address recipientAddress = null;
+            if (request.getRecipientAddressId() == null) {
+
+                Optional<Address> existing = addressUserService
+                        .findByPhoneNumberAndFullAddressAndUserIdAndType(
+                                request.getRecipientPhone(),
+                                AddressUtils.buildFullAddress(
+                                        request.getRecipientDetail(),
+                                        request.getRecipientWardName(),
+                                        request.getRecipientCityName()
+                                ),
+                                shopId,
+                                AddressType.RECIPIENT
+                        );
+
+                if (existing.isPresent()) {
+                    if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                        Address addr = existing.get();
+
+                        addr.setName(request.getRecipientName());
+                        addr.setDetail(request.getRecipientDetail());
+                        addr.setWardCode(request.getRecipientWardCode());
+                        addr.setCityCode(request.getRecipientCityCode());
+                        addr.setWardName(request.getRecipientWardName());
+                        addr.setCityName(request.getRecipientCityName());
+                        addr.setLatitude(request.getRecipientLatitude());
+                        addr.setLongitude(request.getRecipientLongitude());
+
+                        addr.setFullAddress(
+                                AddressUtils.buildFullAddress(
+                                        request.getRecipientDetail(),
+                                        request.getRecipientWardName(),
+                                        request.getRecipientCityName()
+                                )
+                        );
+
+                        recipientAddress = addressUserService.save(addr);
+                    }
+                } else if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                    recipientAddress = addressUserService.save(
+                            Address.builder()
+                                    .name(request.getRecipientName())
+                                    .phoneNumber(request.getRecipientPhone())
+                                    .wardCode(request.getRecipientWardCode())
+                                    .cityCode(request.getRecipientCityCode())
+                                    .wardName(request.getRecipientWardName())
+                                    .cityName(request.getRecipientCityName())
+                                    .latitude(request.getRecipientLatitude())
+                                    .longitude(request.getRecipientLongitude())
+                                    .detail(request.getRecipientDetail())
+                                    .fullAddress(
+                                            AddressUtils.buildFullAddress(
+                                                    request.getRecipientDetail(),
+                                                    request.getRecipientWardName(),
+                                                    request.getRecipientCityName()
+                                            )
+                                    )
+                                    .isDefault(false)
+                                    .type(AddressType.RECIPIENT)
+                                    .user(user)
+                                    .build()
+                    );
+                }
+            } else {
+                recipientAddress = addressUserService.findByIdAndUserIdAndType(
+                                request.getRecipientAddressId(),
+                                shopId,
+                                AddressType.RECIPIENT)
+                        .orElseThrow(() -> new RuntimeException("Địa chỉ người nhận không tồn tại"));
+            }
+
+            order.setRecipientName(
+                    recipientAddress != null
+                            ? recipientAddress.getName()
+                            : request.getRecipientName()
+            );
+
+            order.setRecipientPhone(
+                    recipientAddress != null
+                            ? recipientAddress.getPhoneNumber()
+                            : request.getRecipientPhone()
+            );
+
+            order.setRecipientCityCode(
+                    recipientAddress != null
+                            ? recipientAddress.getCityCode()
+                            : request.getRecipientCityCode()
+            );
+
+            order.setRecipientCityName(
+                    recipientAddress != null
+                            ? recipientAddress.getCityName()
+                            : request.getRecipientCityName()
+            );
+
+            order.setRecipientWardCode(
+                    recipientAddress != null
+                            ? recipientAddress.getWardCode()
+                            : request.getRecipientWardCode()
+            );
+
+            order.setRecipientWardName(
+                    recipientAddress != null
+                            ? recipientAddress.getWardName()
+                            : request.getRecipientWardName()
+            );
+
+            order.setRecipientDetail(
+                    recipientAddress != null
+                            ? recipientAddress.getDetail()
+                            : request.getRecipientDetail()
+            );
+
+            order.setRecipientLatitude(
+                    recipientAddress != null
+                            ? recipientAddress.getLatitude()
+                            : request.getRecipientLatitude()
+            );
+
+            order.setRecipientLongitude(
+                    recipientAddress != null
+                            ? recipientAddress.getLongitude()
+                            : request.getRecipientLongitude()
+            );
+
+            order.setRecipientFullAddress(
+                    recipientAddress != null
+                            ? recipientAddress.getFullAddress()
+                            : AddressUtils.buildFullAddress(
+                                    request.getRecipientDetail(),
+                                    request.getRecipientWardName(),
+                                    request.getRecipientCityName()
+                            )
+            );
+
+            order.setRecipientAddress(recipientAddress);
+
             Order newOrder = repository.save(order);
 
             saveOrderProducts(newOrder, request.getOrderProducts());
 
-            boolean isDraft = OrderStatus.DRAFT.name().equals(request.getStatus());
+            boolean isDraft = OrderStatus.DRAFT.name()
+                    .equals(request.getStatus());
 
             if (!isDraft) {
                 orderHistoryUserService.save(newOrder, null, null,
                         null, OrderHistoryActionType.PENDING, null);
 
                 if (promotion != null) {
-                    promotionUserService.increaseUsage(request.getPromotionId(), userId);
+                    promotionUserService.increaseUsage(request.getPromotionId(), shopId);
                 }
             }
 
@@ -387,7 +593,8 @@ public class OrderUserService {
 
     public ApiResponse<UserOrderDetailDto> getOrderByTrackingNumber(int userId, String trackingNumber) {
         try {
-            Order order = repository.findByTrackingNumberAndUserId(trackingNumber, userId)
+            Integer shopId = userUserService.getShopId(userId);
+            Order order = repository.findByTrackingNumberAndUserId(trackingNumber, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             List<OrderHistory> orderHistories = orderHistoryRepository
@@ -405,7 +612,9 @@ public class OrderUserService {
 
     public ApiResponse<UserOrderDetailDto> getOrderById(int userId, int id) {
         try {
-            Order order = repository.findByIdAndUserId(id, userId)
+            Integer shopId = userUserService.getShopId(userId);
+
+            Order order = repository.findByIdAndUserId(id, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             List<OrderHistory> orderHistories = orderHistoryRepository
@@ -423,15 +632,16 @@ public class OrderUserService {
 
     public ApiResponse<String> publicOrder(Integer userId, Integer orderId) {
         try {
+            Integer shopId = userUserService.getShopId(userId);
 
-            User user = userUserService.findById(userId);
+            User user = userUserService.getUser(shopId);
             if (user.getLocked()) {
                 return new ApiResponse<>(false,
                         "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.",
                         null);
             }
 
-            Order order = repository.findByIdAndUserId(orderId, userId)
+            Order order = repository.findByIdAndUserId(orderId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             if (!OrderUtils.canMoveToPending(order.getStatus())) {
@@ -442,7 +652,8 @@ public class OrderUserService {
             for (OrderProduct op : orderProducts) {
                 Product product = op.getProduct();
                 if (product.getStatus() != ProductStatus.ACTIVE) {
-                    throw new RuntimeException("Sản phẩm '" + product.getName() + "' đã ngưng bán, không thể tạo đơn");
+                    throw new RuntimeException(
+                            "Sản phẩm '" + product.getName() + "' đã ngưng bán, không thể tạo đơn");
                 }
                 if (product.getStock() < op.getQuantity()) {
                     throw new RuntimeException(
@@ -454,13 +665,15 @@ public class OrderUserService {
             Promotion promotion = order.getPromotion();
             if (promotion != null) {
                 boolean canUse = promotionUserService.canUsePromotion(
-                        userId,
+                        shopId,
                         promotion.getId(),
-                        order.getServiceType().getId(),
+                        order.getServiceType()
+                                .getId(),
                         order.getShippingFee(),
                         order.getWeight());
                 if (!canUse) {
-                    throw new RuntimeException("Khuyến mãi không còn hiệu lực hoặc bạn không đủ điều kiện sử dụng");
+                    throw new RuntimeException(
+                            "Khuyến mãi không còn hiệu lực hoặc bạn không đủ điều kiện sử dụng");
                 }
             }
 
@@ -473,7 +686,7 @@ public class OrderUserService {
             }
 
             if (promotion != null) {
-                promotionUserService.increaseUsage(promotion.getId(), userId);
+                promotionUserService.increaseUsage(promotion.getId(), shopId);
             }
 
             order.setStatus(OrderStatus.PENDING);
@@ -494,7 +707,8 @@ public class OrderUserService {
     public ApiResponse<Boolean> cancelOrder(Integer userId, Integer orderId) {
         try {
 
-            Order order = repository.findByIdAndUserId(orderId, userId)
+            Integer shopId = userUserService.getShopId(userId);
+            Order order = repository.findByIdAndUserId(orderId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             if (!OrderUtils.canUserCancel(order.getStatus())) {
@@ -508,7 +722,8 @@ public class OrderUserService {
             productUserService.restoreStockFromOrder(orderProducts);
 
             if (order.getPromotion() != null) {
-                promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+                promotionUserService.decreaseUsage(order.getPromotion()
+                        .getId(), shopId);
             }
 
             orderHistoryUserService.save(
@@ -528,14 +743,17 @@ public class OrderUserService {
     public ApiResponse<Boolean> setOrderReadyForPickup(Integer userId, Integer orderId) {
         try {
 
-            Order order = repository.findByIdAndUserId(orderId, userId)
+            Integer shopId = userUserService.getShopId(userId);
+
+            Order order = repository.findByIdAndUserId(orderId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             if (!OrderUtils.canUserSetReady(order.getStatus())) {
                 throw new RuntimeException("Trạng thái đơn hàng hiện tại không hợp lệ để chuyển");
             }
 
-            if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
+            if (!order.getPickupType()
+                    .equals(OrderPickupType.PICKUP_BY_COURIER)) {
                 throw new RuntimeException("Hình thức lấy hàng của bạn không hợp lệ để chuyển");
             }
 
@@ -559,8 +777,9 @@ public class OrderUserService {
     @Transactional
     public ApiResponse<Boolean> deleteOrder(Integer userId, Integer orderId) {
         try {
-            // Lấy order
-            Order order = repository.findByIdAndUserId(orderId, userId)
+            Integer shopId = userUserService.getShopId(userId);
+            // Lấy recipientaddress
+            Order order = repository.findByIdAndUserId(orderId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             if (!OrderUtils.canUserDelete(order.getStatus())) {
@@ -577,11 +796,6 @@ public class OrderUserService {
                 orderHistoryRepository.deleteAll(histories);
             }
 
-            Address recipientAddress = order.getRecipientAddress();
-            if (recipientAddress != null) {
-                addressUserService.delete(recipientAddress);
-            }
-
             repository.delete(order);
 
             return new ApiResponse<>(true, "Xóa đơn hàng thành công", true);
@@ -593,8 +807,9 @@ public class OrderUserService {
     @Transactional
     public ApiResponse<List<OrderPrintDto>> getOrdersForPrint(Integer userId, List<Integer> orderIds) {
         try {
+            Integer shopId = userUserService.getShopId(userId);
             // Lấy danh sách đơn hàng theo userId và orderIds
-            List<Order> orders = repository.findByUserIdAndIdIn(userId, orderIds);
+            List<Order> orders = repository.findByUserIdAndIdIn(shopId, orderIds);
 
             if (orders.isEmpty()) {
                 return new ApiResponse<>(false, "Không tìm thấy đơn hàng nào để in", null);
@@ -618,7 +833,6 @@ public class OrderUserService {
                     .toList();
 
             return new ApiResponse<>(true, "Lấy phiếu vận đơn thành công", printDtos);
-
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
         }
@@ -630,8 +844,10 @@ public class OrderUserService {
             // 1. Validate cơ bản
             validateCreate(request, true);
 
-            // 2. Lấy order
-            Order order = repository.findByIdAndUserId(orderId, userId)
+            Integer shopId = userUserService.getShopId(userId);
+
+            // 2. Lấy recipientaddress
+            Order order = repository.findByIdAndUserId(orderId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
             if (!UserOrderEditRuleUtils.canEditUserOrder(order.getStatus())) {
@@ -644,7 +860,7 @@ public class OrderUserService {
 
             // 3. Chuyển trạng thái nếu từ DRAFT sang PENDING
             if (movingDraftToPending) {
-                validateBeforePublish(userId, request);
+                validateBeforePublish(shopId, request);
                 order.setStatus(OrderStatus.PENDING);
                 order.setTrackingNumber(generateUniqueTrackingNumber(order.getStatus()));
                 orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.PENDING, null);
@@ -658,109 +874,352 @@ public class OrderUserService {
                     productRepository.save(product);
                 }
             } else if (currentStatus != newStatus) {
-                throw new RuntimeException("Không thể chuyển trạng thái từ " + currentStatus + " sang " + newStatus);
+                throw new RuntimeException(
+                        "Không thể chuyển trạng thái từ " + currentStatus + " sang " + newStatus);
             }
 
             // 4. Cập nhật các field theo rule
             if (request.getSenderAddressId() != null) {
                 Address sender = order.getSenderAddress();
 
-                if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), userId)) {
-                    return new ApiResponse<>(false, "Địa chỉ người gửi không thuộc người dùng", null);
-                }
-
-                Address reqSenderAddress = addressUserService.findById(request.getSenderAddressId())
-                        .orElseThrow(() -> new RuntimeException("Địa chỉ người gửi không tồn tại"));
+                Address reqSenderAddress = addressUserService.findByIdAndUserIdAndType(
+                                request.getSenderAddressId(),
+                                shopId,
+                                AddressType.SENDER)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ người gửi"));
 
                 // Cập nhật toàn bộ object senderAddress
-                updateFieldIfEditable("senderAddress", sender, reqSenderAddress, order,
+                updateFieldIfEditable("senderAddress", sender, reqSenderAddress,
                         currentStatus, order::setSenderAddress);
 
-                // Cập nhật từng field để giữ consistency nếu cần
-                updateFieldIfEditable("senderName", sender.getName(), reqSenderAddress.getName(), order,
+                // Cập nhật từng field để giữ consistency
+                updateFieldIfEditable("senderName", sender.getName(), reqSenderAddress.getName(),
                         currentStatus, order::setSenderName);
                 updateFieldIfEditable("senderPhoneNumber", sender.getPhoneNumber(),
-                        reqSenderAddress.getPhoneNumber(), order,
+                        reqSenderAddress.getPhoneNumber(),
                         currentStatus, order::setSenderPhone);
                 updateFieldIfEditable("senderCityCode", sender.getCityCode(),
-                        reqSenderAddress.getCityCode(), order,
+                        reqSenderAddress.getCityCode(),
                         currentStatus, order::setSenderCityCode);
+                updateFieldIfEditable("senderCityName", sender.getCityName(),
+                        reqSenderAddress.getCityName(),
+                        currentStatus, order::setSenderCityName);
                 updateFieldIfEditable("senderWardCode", sender.getWardCode(),
-                        reqSenderAddress.getWardCode(), order,
+                        reqSenderAddress.getWardCode(),
                         currentStatus, order::setSenderWardCode);
+                updateFieldIfEditable("senderWardName", sender.getWardName(),
+                        reqSenderAddress.getWardName(),
+                        currentStatus, order::setSenderWardName);
                 updateFieldIfEditable("senderDetailAddress", sender.getDetail(),
-                        reqSenderAddress.getDetail(), order,
+                        reqSenderAddress.getDetail(),
                         currentStatus, order::setSenderDetail);
+                updateFieldIfEditable("senderLatitude", sender.getLatitude(),
+                        reqSenderAddress.getLatitude(),
+                        currentStatus, order::setSenderLatitude);
+                updateFieldIfEditable("senderLongitude", sender.getLongitude(),
+                        reqSenderAddress.getLongitude(),
+                        currentStatus, order::setSenderLongitude);
+
+                order.setSenderFullAddress(AddressUtils.buildFullAddress(
+                        order.getSenderDetail(),
+                        order.getSenderWardName(),
+                        order.getSenderCityName()
+                ));
             }
-            Address recipient = order.getRecipientAddress();
-            updateFieldIfEditable("recipientName", order.getRecipientName(), request.getRecipientName(), order,
-                    currentStatus, order::setRecipientName);
-            updateFieldIfEditable("recipientName", recipient.getName(), request.getRecipientName(), order,
-                    currentStatus, recipient::setName);
-            updateFieldIfEditable("recipientPhoneNumber", order.getRecipientPhone(), request.getRecipientPhone(), order,
-                    currentStatus, order::setRecipientPhone);
-            updateFieldIfEditable("recipientPhoneNumber", recipient.getPhoneNumber(), request.getRecipientPhone(),
-                    order,
-                    currentStatus, recipient::setPhoneNumber);
-            updateFieldIfEditable("recipientCityCode", recipient.getCityCode(), request.getRecipientCityCode(), order,
-                    currentStatus, recipient::setCityCode);
-            updateFieldIfEditable("recipientWardCode", recipient.getWardCode(), request.getRecipientWardCode(), order,
-                    currentStatus, recipient::setWardCode);
-            updateFieldIfEditable("recipientDetailAddress", recipient.getDetail(), request.getRecipientDetail(), order,
-                    currentStatus, recipient::setDetail);
-            updateFieldIfEditable("pickupType", order.getPickupType().name(), request.getPickupType(), order,
+
+            boolean hasRecipientAddressId = request.getRecipientAddressId() != null;
+
+            Address newRecipientAddress = null;
+
+            if (hasRecipientAddressId) {
+
+                // Có recipientAddressId
+                // -> chỉ gắn address, không update address và không update recipientaddress
+                newRecipientAddress = addressUserService
+                        .findByIdAndUserIdAndType(
+                                request.getRecipientAddressId(),
+                                shopId,
+                                AddressType.RECIPIENT)
+                        .orElseThrow(() ->
+                                new RuntimeException("Không tìm thấy địa chỉ người nhận"));
+
+            } else {
+
+                Optional<Address> existing = addressUserService
+                        .findByPhoneNumberAndFullAddressAndUserIdAndType(
+                                request.getRecipientPhone(),
+                                AddressUtils.buildFullAddress(
+                                        request.getRecipientDetail(),
+                                        request.getRecipientWardName(),
+                                        request.getRecipientCityName()
+                                ),
+                                shopId,
+                                AddressType.RECIPIENT
+                        );
+
+                if (existing.isPresent()) {
+
+                    // Tìm thấy address cũ
+                    if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                        newRecipientAddress = existing.get();
+
+                        updateFieldIfEditable("recipientName",
+                                newRecipientAddress.getName(),
+                                request.getRecipientName(),
+                                currentStatus,
+                                newRecipientAddress::setName);
+
+                        updateFieldIfEditable("recipientPhoneNumber",
+                                newRecipientAddress.getPhoneNumber(),
+                                request.getRecipientPhone(),
+                                currentStatus,
+                                newRecipientAddress::setPhoneNumber);
+
+                        System.out.println("hello");
+
+
+                        updateFieldIfEditable("recipientCityCode",
+                                newRecipientAddress.getCityCode(),
+                                request.getRecipientCityCode(),
+                                currentStatus,
+                                newRecipientAddress::setCityCode);
+
+                        updateFieldIfEditable("recipientCityName",
+                                newRecipientAddress.getCityName(),
+                                request.getRecipientCityName(),
+                                currentStatus,
+                                newRecipientAddress::setCityName);
+
+                        updateFieldIfEditable("recipientWardCode",
+                                newRecipientAddress.getWardCode(),
+                                request.getRecipientWardCode(),
+                                currentStatus,
+                                newRecipientAddress::setWardCode);
+
+                        updateFieldIfEditable("recipientWardName",
+                                newRecipientAddress.getWardName(),
+                                request.getRecipientWardName(),
+                                currentStatus,
+                                newRecipientAddress::setWardName);
+
+                        updateFieldIfEditable("recipientDetailAddress",
+                                newRecipientAddress.getDetail(),
+                                request.getRecipientDetail(),
+                                currentStatus,
+                                newRecipientAddress::setDetail);
+
+                        updateFieldIfEditable("recipientLatitude",
+                                newRecipientAddress.getLatitude(),
+                                request.getRecipientLatitude(),
+                                currentStatus,
+                                newRecipientAddress::setLatitude);
+
+                        updateFieldIfEditable("recipientLongitude",
+                                newRecipientAddress.getLongitude(),
+                                request.getRecipientLongitude(),
+                                currentStatus,
+                                newRecipientAddress::setLongitude);
+
+                        newRecipientAddress.setFullAddress(
+                                AddressUtils.buildFullAddress(
+                                        newRecipientAddress.getDetail(),
+                                        newRecipientAddress.getWardName(),
+                                        newRecipientAddress.getCityName()
+                                )
+                        );
+
+                        newRecipientAddress = addressUserService.save(newRecipientAddress);
+                    }
+
+                } else {
+
+                    // Không tìm thấy -> tạo mới nếu muốn lưu
+                    if (Boolean.TRUE.equals(request.getSaveRecipient())) {
+
+                        User user = userUserService.getUser(shopId);
+
+                        newRecipientAddress = addressUserService.save(
+                                Address.builder()
+                                        .name(request.getRecipientName())
+                                        .phoneNumber(request.getRecipientPhone())
+                                        .cityCode(request.getRecipientCityCode())
+                                        .cityName(request.getRecipientCityName())
+                                        .wardCode(request.getRecipientWardCode())
+                                        .wardName(request.getRecipientWardName())
+                                        .detail(request.getRecipientDetail())
+                                        .latitude(request.getRecipientLatitude())
+                                        .longitude(request.getRecipientLongitude())
+                                        .fullAddress(
+                                                AddressUtils.buildFullAddress(
+                                                        request.getRecipientDetail(),
+                                                        request.getRecipientWardName(),
+                                                        request.getRecipientCityName()
+                                                )
+                                        )
+                                        .type(AddressType.RECIPIENT)
+                                        .user(user)
+                                        .build()
+                        );
+                    }
+                }
+            }
+
+            // Update recipientaddress
+            updateFieldIfEditable("recipientName",
+                    order.getRecipientName(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getName()
+                            : request.getRecipientName(),
+                    currentStatus,
+                    order::setRecipientName);
+
+            updateFieldIfEditable("recipientPhoneNumber",
+                    order.getRecipientPhone(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getPhoneNumber()
+                            : request.getRecipientPhone(),
+                    currentStatus,
+                    order::setRecipientPhone);
+
+            updateFieldIfEditable("recipientCityCode",
+                    order.getRecipientCityCode(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getCityCode()
+                            : request.getRecipientCityCode(),
+                    currentStatus,
+                    order::setRecipientCityCode);
+
+            updateFieldIfEditable("recipientCityName",
+                    order.getRecipientCityName(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getCityName()
+                            : request.getRecipientCityName(),
+                    currentStatus,
+                    order::setRecipientCityName);
+
+            updateFieldIfEditable("recipientWardCode",
+                    order.getRecipientWardCode(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getWardCode()
+                            : request.getRecipientWardCode(),
+                    currentStatus,
+                    order::setRecipientWardCode);
+
+            updateFieldIfEditable("recipientWardName",
+                    order.getRecipientWardName(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getWardName()
+                            : request.getRecipientWardName(),
+                    currentStatus,
+                    order::setRecipientWardName);
+
+            updateFieldIfEditable("recipientDetailAddress",
+                    order.getRecipientDetail(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getDetail()
+                            : request.getRecipientDetail(),
+                    currentStatus,
+                    order::setRecipientDetail);
+
+            updateFieldIfEditable("recipientLatitude",
+                    order.getRecipientLatitude(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getLatitude()
+                            : request.getRecipientLatitude(),
+                    currentStatus,
+                    order::setRecipientLatitude);
+
+            updateFieldIfEditable("recipientLongitude",
+                    order.getRecipientLongitude(),
+                    newRecipientAddress != null
+                            ? newRecipientAddress.getLongitude()
+                            : request.getRecipientLongitude(),
+                    currentStatus,
+                    order::setRecipientLongitude);
+
+            order.setRecipientFullAddress(
+                    AddressUtils.buildFullAddress(
+                            order.getRecipientDetail(),
+                            order.getRecipientWardName(),
+                            order.getRecipientCityName()
+                    )
+            );
+            order.setRecipientAddress(newRecipientAddress);
+
+            updateFieldIfEditable("pickupType", order.getPickupType()
+                            .name(), request.getPickupType(),
                     currentStatus,
                     val -> order.setPickupType(OrderPickupType.valueOf(val)));
-            updateFieldIfEditable("fromOffice", order.getFromOffice() != null ? order.getFromOffice().getId() : null,
-                    request.getFromOfficeId(), order, currentStatus,
-                    val -> order.setFromOffice(val != null ? officePublicService.findById(val).orElseThrow() : null));
-            updateFieldIfEditable("payer", order.getPayer().name(), request.getPayer(), order, currentStatus,
+            updateFieldIfEditable("fromOffice", order.getFromOffice() != null ? order.getFromOffice()
+                            .getId() : null,
+                    request.getFromOfficeId(), currentStatus,
+                    val -> order.setFromOffice(val != null ? officePublicService.findById(val)
+                            .orElseThrow() : null));
+            updateFieldIfEditable("payer", order.getPayer()
+                            .name(), request.getPayer(), currentStatus,
                     val -> order.setPayer(OrderPayerType.valueOf(val)));
-            updateFieldIfEditable("notes", order.getNotes(), request.getNotes(), order, currentStatus, order::setNotes);
+            updateFieldIfEditable("notes", order.getNotes(), request.getNotes(), currentStatus,
+                    order::setNotes);
 
             // 5. Cập nhật products nếu có và được phép
             if (request.getOrderProducts() != null) {
                 if (UserOrderEditRuleUtils.canEditUserOrderField("products", currentStatus)) {
-                    updateOrderProductsWithValidation(userId, order, request.getOrderProducts(), movingDraftToPending);
+                    updateOrderProductsWithValidation(shopId, order, request.getOrderProducts(),
+                            movingDraftToPending);
                 }
             }
 
             // 6. Cập nhật weight và orderValue chỉ khi được phép
-            BigDecimal calcWeight = calculateWeight(request.getOrderProducts(), request.getWeight());
+            BigDecimal calcWeight = calculateWeight(
+                    request.getOrderProducts(),
+                    request.getOriginalWeight(),
+                    request.getHeight(),
+                    request.getLength(),
+                    request.getWidth());
             int calcOrderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
 
-            System.out.println("weightRe" + calcWeight);
-            System.out.println("weightsYS" + order.getWeight());
-
-            updateFieldIfEditable("weight", order.getWeight(), calcWeight, order, currentStatus, order::setWeight);
-            updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, order, currentStatus,
+            updateFieldIfEditable("weight", order.getWeight(), calcWeight, currentStatus, order::setWeight);
+            updateFieldIfEditable("originalWeight", order.getOriginalWeight(), request.getOriginalWeight()
+                    , currentStatus,
+                    order::setOriginalWeight);
+            updateFieldIfEditable("height", order.getHeight(), request.getHeight(), currentStatus,
+                    order::setHeight);
+            updateFieldIfEditable("length", order.getLength(), request.getLength(), currentStatus,
+                    order::setLength);
+            updateFieldIfEditable("width", order.getWidth(), request.getWidth(), currentStatus,
+                    order::setWidth);
+            updateFieldIfEditable("orderValue", order.getOrderValue(), calcOrderValue, currentStatus,
                     order::setOrderValue);
 
             // 7. Áp dụng promotion nếu được phép
             if (UserOrderEditRuleUtils.canEditUserOrderField("promotion", currentStatus)) {
-                Integer oldPromotionId = order.getPromotion() != null ? order.getPromotion().getId() : null;
+                Integer oldPromotionId = order.getPromotion() != null ? order.getPromotion()
+                        .getId() : null;
                 Integer newPromotionId = request.getPromotionId();
 
                 boolean adjustPromotion = movingDraftToPending || order.getStatus() != OrderStatus.DRAFT;
 
                 if (oldPromotionId != null && !Objects.equals(oldPromotionId, newPromotionId) && adjustPromotion) {
-                    promotionUserService.decreaseUsage(oldPromotionId, userId);
+                    promotionUserService.decreaseUsage(oldPromotionId, shopId);
                 }
 
                 if (newPromotionId != null) {
                     Promotion promotion = promotionUserService.findById(newPromotionId)
                             .orElseThrow(() -> new RuntimeException("Khuyến mãi không tồn tại"));
 
-                    if (!promotionUserService.canUsePromotion(userId, promotion.getId(), order.getServiceType().getId(),
+                    if (!promotionUserService.canUsePromotion(shopId, promotion.getId(), order.getServiceType()
+                                    .getId(),
                             order.getShippingFee(), order.getWeight())) {
                         throw new RuntimeException("Bạn không đủ điều kiện để dùng mã giảm giá");
                     }
 
                     order.setPromotion(promotion);
-                    order.setDiscountAmount(promotionUserService.calculateDiscount(promotion, order.getShippingFee()));
+                    order.setDiscountAmount(
+                            promotionUserService.calculateDiscount(promotion, order.getShippingFee()));
 
                     if (adjustPromotion) {
-                        promotionUserService.increaseUsage(promotion.getId(), userId);
+                        promotionUserService.increaseUsage(promotion.getId(), shopId);
                     }
                 } else {
                     order.setPromotion(null);
@@ -770,8 +1229,8 @@ public class OrderUserService {
 
             // 8. Cập nhật shippingFee dựa trên weight và serviceType
             int calcShippingFee = feeService.calculateShippingFee(calcWeight, order.getServiceType().getId(),
-                    order.getSenderCityCode(), order.getRecipientAddress().getCityCode());
-            updateFieldIfEditable("shippingFee", order.getShippingFee(), calcShippingFee, order, currentStatus,
+                    order.getSenderCityCode(), order.getRecipientCityCode());
+            updateFieldIfEditable("shippingFee", order.getShippingFee(), calcShippingFee, currentStatus,
                     order::setShippingFee);
 
             // 9. Cập nhật totalFee = shippingFee - discountAmount
@@ -779,7 +1238,7 @@ public class OrderUserService {
                     calcWeight,
                     order.getServiceType().getId(),
                     order.getSenderCityCode(),
-                    order.getRecipientAddress().getCityCode(),
+                    order.getRecipientCityCode(),
                     calcOrderValue,
                     order.getCod());
 
@@ -795,19 +1254,180 @@ public class OrderUserService {
             return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
         } catch (
 
-        Exception e) {
+                Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
-    @Transactional
+    public byte[] export(Integer userId, UserOrderSearchRequest request) {
+        Integer shopId = userUserService.getShopId(userId);
+
+        String search = request.getSearch();
+        String payer = request.getPayer();
+        String status = request.getStatus();
+        String pickupType = request.getPickupType();
+        Integer serviceTypeId = request.getServiceTypeId();
+        String paymentStatus = request.getPaymentStatus();
+        String cod = request.getCod();
+        String sort = request.getSort();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.userId(shopId))
+                .and(OrderSpecification.search(search))
+                .and(OrderSpecification.payer(payer))
+                .and(OrderSpecification.status(status))
+                .and(OrderSpecification.pickupType(pickupType))
+                .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                .and(OrderSpecification.paymentStatus(paymentStatus))
+                .and(OrderSpecification.cod(cod))
+                .and(OrderSpecification.createdAtBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            case "cod_high" -> Sort.by("cod").descending();
+            case "cod_low" -> Sort.by("cod").ascending();
+            case "order_value_high" -> Sort.by("orderValue").descending();
+            case "order_value_low" -> Sort.by("orderValue").ascending();
+            case "fee_high" -> Sort.by("totalFee").descending();
+            case "fee_low" -> Sort.by("totalFee").ascending();
+            case "weight_high" -> Sort.by("weight").descending();
+            case "weight_low" -> Sort.by("weight").ascending();
+            default -> Sort.by("createdAt").descending();
+        } : Sort.by("createdAt").descending();
+
+        List<Order> orders = repository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Orders");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã đơn",
+                    "Trạng thái",
+                    "Tên người nhận", "SĐT người nhận", "Địa chỉ người nhận",
+                    "Khối lượng (Kg)", "Khối lượng điều chỉnh (Kg)",
+                    "Hình thức lấy hàng", "Dịch vụ giao hàng",
+                    "Thời gian tạo đơn", "Thời gian giao hàng", "Thời gian thanh toán",
+                    "Người thanh toán", "Trạng thái thanh toán",
+                    "Giá trị đơn", "COD (chưa phí)", "Phí dịch vụ",
+                    "Người nhận trả",
+                    "Người gửi trả",
+                    "Còn nợ",
+                    "COD thu về",
+                    "Trạng thái COD"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (Order o : orders) {
+                Row row = sheet.createRow(rowIdx++);
+
+                // Mã đơn
+                row.createCell(0).setCellValue(o.getTrackingNumber() != null ? o.getTrackingNumber() : "Chưa có mã");
+
+                // Trạng thái
+                row.createCell(1).setCellValue(translateOrderStatus(o.getStatus()));
+
+                // Người nhận
+                row.createCell(2).setCellValue(o.getRecipientAddress() != null ? o.getRecipientAddress().getName() : "");
+                row.createCell(3).setCellValue(o.getRecipientAddress() != null ? o.getRecipientAddress().getPhoneNumber() : "");
+                row.createCell(4).setCellValue(o.getRecipientAddress() != null ? o.getRecipientAddress().getFullAddress() : "");
+
+                // Khối lượng
+                row.createCell(5).setCellValue(o.getWeight() != null ? o.getWeight().doubleValue() : 0.0);
+                row.createCell(6).setCellValue(o.getAdjustedWeight() != null ? o.getAdjustedWeight().doubleValue() : 0.0);
+
+                // Thông tin giao hàng
+                row.createCell(7).setCellValue(translateOrderPickupType(o.getPickupType()));
+                row.createCell(8).setCellValue(o.getServiceType().getName() != null ? o.getServiceType().getName() : "");
+
+                // Thời gian
+                row.createCell(9).setCellValue(o.getCreatedAt() != null ? o.getCreatedAt().format(dtf) : "");
+                row.createCell(10).setCellValue(o.getDeliveredAt() != null ? o.getDeliveredAt().format(dtf) : "");
+                row.createCell(11).setCellValue(o.getPaidAt() != null ? o.getPaidAt().format(dtf) : "");
+
+                // Thanh toán
+                row.createCell(12).setCellValue(translateOrderPayerType(o.getPayer()));
+                row.createCell(13).setCellValue(translateOrderPaymentStatus(o.getPaymentStatus()));
+
+                // Tổng quan tiền
+                double orderValue = o.getOrderValue() != null ? o.getOrderValue() : 0;
+                double codVal = o.getCod() != null ? o.getCod() : 0;
+                double totalFee = o.getTotalFee() != null ? o.getTotalFee() : 0;
+
+                row.createCell(14).setCellValue(orderValue);
+                row.createCell(15).setCellValue(codVal);
+                row.createCell(16).setCellValue(totalFee);
+
+                // Người nhận trả
+                double recipientPay = (o.getPayer() == OrderPayerType.CUSTOMER)
+                        ? codVal + totalFee
+                        : codVal;
+                row.createCell(17).setCellValue(recipientPay);
+
+                // Người gửi trả
+                double senderPay = (o.getPayer() == OrderPayerType.SHOP) ? totalFee : 0;
+                row.createCell(18).setCellValue(senderPay);
+
+                // Còn nợ
+                double debt = 0;
+                if (o.getPayer() == OrderPayerType.SHOP) {
+                    double diff = codVal - totalFee;
+                    debt = diff > 0 ? 0 : Math.abs(diff);
+                }
+                row.createCell(19).setCellValue(debt);
+
+                // COD thu về
+                double codCollected = !(o.getPayer() == OrderPayerType.SHOP) ? codVal : Math.max(0, codVal - totalFee);
+                row.createCell(20).setCellValue(codCollected);
+
+                // Trạng thái COD
+                row.createCell(21).setCellValue(translateOrderCodStatus(o.getCodStatus()));
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
     private void updateOrderProductsWithValidation(Integer userId, Order order,
             List<UserOrderCreateRequest.OrderProduct> items, boolean movingDraftToPending) {
+
+        Integer shopId = userUserService.getShopId(userId);
 
         List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
         boolean adjustStock = movingDraftToPending || order.getStatus() != OrderStatus.DRAFT;
 
-        // --- XỬ LÝ TRƯỜNG HỢP LIST RỖNG ---
         if (items.isEmpty()) {
             for (OrderProduct oldOp : existingProducts) {
                 Product product = oldOp.getProduct();
@@ -818,19 +1438,21 @@ public class OrderUserService {
                 }
                 orderProductRepository.delete(oldOp);
             }
-            return; // Xóa xong thì thoát hàm
+            return;
         }
 
-        // --- Phần update bình thường ---
         Map<Integer, OrderProduct> existingMap = new HashMap<>();
         for (OrderProduct op : existingProducts)
-            existingMap.put(op.getProduct().getId(), op);
+            existingMap.put(op.getProduct()
+                    .getId(), op);
 
         for (var item : items) {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
 
-            if (!product.getUser().getId().equals(userId))
+            if (!product.getUser()
+                    .getId()
+                    .equals(shopId))
                 throw new RuntimeException("Sản phẩm " + product.getName() + " không thuộc về bạn");
 
             if (product.getStatus() != ProductStatus.ACTIVE)
@@ -860,7 +1482,10 @@ public class OrderUserService {
         }
 
         for (OrderProduct oldOp : existingProducts) {
-            if (items.stream().noneMatch(i -> i.getProductId().equals(oldOp.getProduct().getId()))) {
+            if (items.stream()
+                    .noneMatch(i -> i.getProductId()
+                            .equals(oldOp.getProduct()
+                                    .getId()))) {
                 Product product = oldOp.getProduct();
                 if (adjustStock) {
                     product.setStock(product.getStock() + oldOp.getQuantity());
@@ -872,36 +1497,30 @@ public class OrderUserService {
         }
     }
 
-    private <T> void updateFieldIfEditable(String fieldName, T oldValue, T newValue,
-            Order order, OrderStatus currentStatus, java.util.function.Consumer<T> setter) {
+    private <T> void updateFieldIfEditable(
+            String fieldName,
+            T oldValue,
+            T newValue
+            ,OrderStatus currentStatus,
+            Consumer<T> setter) {
 
-        boolean changed;
-
-        if (oldValue instanceof List<?> oldList && newValue instanceof List<?> newList) {
-            changed = !listsEqual(oldList, newList);
-        } else if (oldValue instanceof Set<?> oldSet && newValue instanceof Set<?> newSet) {
-            changed = !setsEqual(oldSet, newSet);
-        } else if (oldValue instanceof Map<?, ?> oldMap && newValue instanceof Map<?, ?> newMap) {
-            changed = !mapsEqual(oldMap, newMap);
-        } else if (oldValue instanceof BigDecimal oldBd && newValue instanceof BigDecimal newBd) {
-            // So sánh BigDecimal bằng compareTo để bỏ qua scale
-            changed = oldBd.compareTo(newBd) != 0;
-        } else {
-            changed = !Objects.equals(oldValue, newValue);
-        }
-
-        if (changed) {
+        if (OrderFieldUtils.isChanged(oldValue, newValue)) {
             var rule = UserOrderEditRuleUtils.USER_ORDER_FIELD_EDIT_RULES.get(fieldName);
             if (rule != null) {
                 // Nếu nonEditableStatuses chứa currentStatus → không được sửa
-                if (rule.getNonEditableStatuses() != null && rule.getNonEditableStatuses().contains(currentStatus)) {
-                    throw new RuntimeException(
-                            "Trường '" + fieldName + "' không thể thay đổi khi đơn ở trạng thái " + currentStatus);
+                if (rule.getNonEditableStatuses() != null && !rule.getNonEditableStatuses().isEmpty()) {
+                    if (rule.getNonEditableStatuses().contains(currentStatus)) {
+                        throw new RuntimeException("Trường '" + fieldName + "' không thể thay đổi khi ở trạng "
+                                + "thái " + currentStatus);
+                    }
                 }
+
                 // Nếu editableStatuses != null → chỉ cho phép những trạng thái đó
-                if (rule.getEditableStatuses() != null && !rule.getEditableStatuses().contains(currentStatus)) {
-                    throw new RuntimeException(
-                            "Trường '" + fieldName + "' không thể thay đổi khi đơn ở trạng thái " + currentStatus);
+                if (rule.getEditableStatuses() != null && !rule.getEditableStatuses().isEmpty()) {
+                    if (!rule.getEditableStatuses().contains(currentStatus)) {
+                        throw new RuntimeException("Trường '" + fieldName + "' không thể thay đổi khi ở trạng "
+                                + "thái " + currentStatus);
+                    }
                 }
                 // Nếu editableStatuses = null → mặc định tất cả trạng thái OK trừ
                 // nonEditableStatuses
@@ -911,35 +1530,9 @@ public class OrderUserService {
         }
     }
 
-    // Hàm so sánh List
-    private boolean listsEqual(List<?> a, List<?> b) {
-        if (a == null)
-            a = List.of();
-        if (b == null)
-            b = List.of();
-        return a.equals(b);
-    }
-
-    private boolean setsEqual(Set<?> oldSet, Set<?> newSet) {
-        if (oldSet == null && newSet == null)
-            return true;
-        if (oldSet == null || newSet == null)
-            return false;
-        return oldSet.equals(newSet);
-    }
-
-    private boolean mapsEqual(Map<?, ?> oldMap, Map<?, ?> newMap) {
-        if (oldMap == null && newMap == null)
-            return true;
-        if (oldMap == null || newMap == null)
-            return false;
-        return oldMap.equals(newMap);
-    }
-
-    // --- Hàm validate trước khi publish DRAFT sang PENDING ---
     private void validateBeforePublish(Integer userId, UserOrderCreateRequest request) {
 
-        User user = userUserService.findById(userId);
+        User user = userUserService.getUser(userId);
         if (user.getLocked()) {
             throw new RuntimeException(
                     "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi chuyển đơn hàng sang xử lý.");
@@ -949,7 +1542,8 @@ public class OrderUserService {
         validateCreate(request, true);
 
         // Kiểm tra sản phẩm
-        if (request.getOrderProducts() != null && !request.getOrderProducts().isEmpty()) {
+        if (request.getOrderProducts() != null && !request.getOrderProducts()
+                .isEmpty()) {
             validateProductWithDB(userId, request.getOrderProducts());
         }
 
@@ -958,60 +1552,19 @@ public class OrderUserService {
             Promotion promotion = promotionUserService.findById(request.getPromotionId())
                     .orElseThrow(() -> new RuntimeException("Khuyến mãi không tồn tại"));
 
-            if (!promotionUserService.canUsePromotion(userId, promotion.getId(),
-                    request.getServiceTypeId(), request.getShippingFee(),
-                    calculateWeight(request.getOrderProducts(), null))) {
+            if (!promotionUserService.canUsePromotion(
+                    userId,
+                    promotion.getId(),
+                    request.getServiceTypeId(),
+                    request.getShippingFee(),
+                    calculateWeight(
+                            request.getOrderProducts(),
+                            request.getOriginalWeight(),
+                            request.getHeight(),
+                            request.getLength(),
+                            request.getWidth()))) {
                 throw new RuntimeException("Bạn không đủ điều kiện để dùng mã giảm giá");
             }
-        }
-    }
-
-    @Transactional
-    private void updateOrderProducts(Order order, List<UserOrderCreateRequest.OrderProduct> items) {
-        // Lấy danh sách product cũ
-        List<OrderProduct> existingProducts = orderProductRepository.findByOrderId(order.getId());
-
-        // Tạo map để dễ lookup
-        Map<Integer, Integer> existingQuantityMap = new HashMap<>();
-        for (OrderProduct op : existingProducts) {
-            existingQuantityMap.put(op.getProduct().getId(), op.getQuantity());
-        }
-
-        for (var item : items) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
-
-            // Kiểm tra trạng thái sản phẩm
-            if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new RuntimeException("Sản phẩm '" + product.getName()
-                        + "' hiện tại đã ngưng bán và không thể cập nhật số lượng. Vui lòng loại bỏ sản phẩm này khỏi đơn hàng.");
-            }
-
-            int oldQuantity = existingQuantityMap.getOrDefault(product.getId(), 0);
-            int stockAvailable = product.getStock() + oldQuantity;
-
-            if (item.getQuantity() > stockAvailable) {
-                throw new RuntimeException("Sản phẩm '" + product.getName() + "' vượt quá tồn kho hiện tại ("
-                        + stockAvailable + "). Vui lòng điều chỉnh số lượng.");
-            }
-
-            // Cập nhật stock và soldQuantity
-            int delta = item.getQuantity() - oldQuantity;
-            product.setStock(product.getStock() - delta);
-            product.setSoldQuantity(product.getSoldQuantity() + delta);
-            productRepository.save(product);
-
-            // Lưu orderProduct
-            OrderProduct orderProduct = existingProducts.stream()
-                    .filter(op -> op.getProduct().getId().equals(product.getId()))
-                    .findFirst()
-                    .orElse(new OrderProduct());
-
-            orderProduct.setOrder(order);
-            orderProduct.setProduct(product);
-            orderProduct.setQuantity(item.getQuantity());
-            orderProduct.setPrice(product.getPrice());
-            orderProductRepository.save(orderProduct);
         }
     }
 
@@ -1027,26 +1580,25 @@ public class OrderUserService {
             missing.add("Trạng thái đơn hàng");
         if (request.getSenderAddressId() == null && !isEdit)
             missing.add("Địa chỉ người gửi");
-        if (isBlank(request.getRecipientName()))
-            missing.add("Tên người nhận");
-        if (isBlank(request.getRecipientPhone()))
-            missing.add("Số điện thoại người nhận");
-        if (request.getRecipientCityCode() == null)
-            missing.add("Tỉnh/Thành người nhận");
-        if (request.getRecipientWardCode() == null)
-            missing.add("Phường/Xã người nhận");
-        if (isBlank(request.getRecipientDetail()))
-            missing.add("Địa chỉ chi tiết người nhận");
         if (isBlank(request.getPickupType()))
             missing.add("Hình thức giao hàng");
         if (request.getWeight() == null)
-            missing.add("Khối lượng");
+            missing.add("Khối lượng quy đổi");
+        if (request.getOriginalWeight() == null)
+            missing.add("Khối lượng thực tế");
+        if (request.getHeight() == null)
+            missing.add("Chiều cao");
+        if (request.getLength() == null)
+            missing.add("Chiều dài");
+        if (request.getWidth() == null)
+            missing.add("Chiều rộng");
         if (request.getServiceTypeId() == null)
             missing.add("Loại dịch vụ");
         if (request.getCod() == null)
             missing.add("Phí thu hộ");
 
-        if ((request.getOrderProducts() == null || request.getOrderProducts().isEmpty())
+        if ((request.getOrderProducts() == null || request.getOrderProducts()
+                .isEmpty())
                 && request.getOrderValue() == null)
             missing.add("Giá trị đơn hàng");
 
@@ -1055,6 +1607,23 @@ public class OrderUserService {
 
         if (!missing.isEmpty()) {
             throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+        }
+
+        boolean isNewRecipient = request.getRecipientAddressId() == null;
+
+        boolean missingRecipientInfo =
+                isBlank(request.getRecipientName())
+                        || isBlank(request.getRecipientPhone())
+                        || request.getRecipientCityCode() == null
+                        || request.getRecipientWardCode() == null
+                        || isBlank(request.getRecipientDetail())
+                        || isBlank(request.getRecipientCityName())
+                        || isBlank(request.getRecipientWardName())
+                        || request.getRecipientLongitude() == null
+                        || request.getRecipientLatitude() == null;
+
+        if (isNewRecipient && missingRecipientInfo) {
+            missing.add("Địa chỉ người nhận");
         }
 
         try {
@@ -1078,16 +1647,48 @@ public class OrderUserService {
         if (request.getSenderAddressId() != null && request.getSenderAddressId() <= 0)
             throw new RuntimeException("Mã địa chỉ người gửi không hợp lệ");
 
-        if (!request.getRecipientPhone().matches("\\d{10}"))
+        if (!isNewRecipient && request.getRecipientAddressId() != null && request.getRecipientAddressId() <= 0)
+            throw new RuntimeException("Mã địa chỉ người nhận không hợp lệ");
+
+        if (!request.getRecipientPhone()
+                .matches("\\d{10}"))
             throw new RuntimeException("Số điện thoại người nhận phải gồm đúng 10 chữ số");
 
-        if (request.getRecipientCityCode() <= 0)
+        if (isNewRecipient && request.getRecipientCityCode() <= 0)
             throw new RuntimeException("Mã Thành phố không hợp lệ");
-        if (request.getRecipientWardCode() <= 0)
+        if (isNewRecipient && request.getRecipientWardCode() <= 0)
             throw new RuntimeException("Mã Phường/Xã không hợp lệ");
 
-        if (request.getWeight().doubleValue() <= 0)
-            throw new RuntimeException("Khối lượng phải lớn hơn 0");
+        if (isNewRecipient) {
+            Double lat = request.getRecipientLatitude();
+            Double lng = request.getRecipientLongitude();
+
+            if (lat == null || lng == null
+                    || lat < -90 || lat > 90
+                    || lng < -180 || lng > 180) {
+                throw new RuntimeException("Tọa độ không hợp lệ");
+            }
+        }
+
+        if (request.getWeight()
+                .doubleValue() <= 0)
+            throw new RuntimeException("Khối lượng quy đổi phải lớn hơn 0");
+
+        if (request.getOriginalWeight()
+                .doubleValue() <= 0)
+            throw new RuntimeException("Khối lượng thực tế phải lớn hơn 0");
+
+        if (request.getHeight()
+                .doubleValue() <= 0)
+            throw new RuntimeException("Chiều cao phải lớn hơn 0");
+
+        if (request.getLength()
+                .doubleValue() <= 0)
+            throw new RuntimeException("Chiều dài phải lớn hơn 0");
+
+        if (request.getWidth()
+                .doubleValue() <= 0)
+            throw new RuntimeException("Chiều rộng phải lớn hơn 0");
 
         if (request.getServiceTypeId() <= 0)
             throw new RuntimeException("Mã dịch vụ không hợp lệ");
@@ -1098,13 +1699,15 @@ public class OrderUserService {
         if (request.getOrderValue() != null && request.getOrderValue() < 0)
             throw new RuntimeException("Giá trị đơn hàng phải lớn hơn hoặc bằng 0");
 
-        if (request.getNotes() != null && request.getNotes().length() > 1000)
+        if (request.getNotes() != null && request.getNotes()
+                .length() > 1000)
             throw new RuntimeException("Ghi chú tối đa 1000 ký tự");
 
         if (request.getPromotionId() != null && request.getPromotionId() <= 0)
             throw new RuntimeException("Mã khuyến mãi không hợp lệ");
 
-        if (OrderPickupType.AT_OFFICE.name().equals(request.getPickupType())) {
+        if (OrderPickupType.AT_OFFICE.name()
+                .equals(request.getPickupType())) {
             if (request.getFromOfficeId() == null)
                 throw new RuntimeException("Bưu cục nhận hàng không được để trống");
         }
@@ -1131,7 +1734,9 @@ public class OrderUserService {
             Product product = productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + item.getProductId()));
 
-            if (!product.getUser().getId().equals(userId)) {
+            if (!product.getUser()
+                    .getId()
+                    .equals(userId)) {
                 throw new RuntimeException("Sản phẩm không thuộc user: " + product.getName());
             }
 
@@ -1153,9 +1758,10 @@ public class OrderUserService {
     private String generateTrackingNumber() {
         String prefix = "UTE";
 
-        String date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+        String date = LocalDate.now()
+                .format(DateTimeFormatter.ofPattern("yyMMdd"));
 
-        String random = java.util.UUID.randomUUID()
+        String random = UUID.randomUUID()
                 .toString()
                 .replace("-", "")
                 .substring(0, 6)
@@ -1177,19 +1783,26 @@ public class OrderUserService {
         return tracking;
     }
 
-    public BigDecimal calculateWeight(List<UserOrderCreateRequest.OrderProduct> items, BigDecimal weight) {
+    public BigDecimal calculateWeight(
+            List<UserOrderCreateRequest.OrderProduct> items,
+            BigDecimal originalWeight,
+            BigDecimal height,
+            BigDecimal length,
+            BigDecimal width) {
         if (items == null || items.isEmpty()) {
-            return weight != null ? weight : BigDecimal.ZERO;
+            return feeService.calculateWeight(originalWeight, height, length, width);
         }
 
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal totalOriginalWeight = BigDecimal.ZERO;
         for (var item : items) {
-            Product product = productRepository.findById(item.getProductId()).orElseThrow();
-            BigDecimal itemWeight = product.getWeight().multiply(BigDecimal.valueOf(item.getQuantity()));
-            total = total.add(itemWeight);
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow();
+            BigDecimal itemWeight = product.getWeight()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+            totalOriginalWeight = totalOriginalWeight.add(itemWeight);
         }
 
-        return total;
+        return feeService.calculateWeight(totalOriginalWeight, height, length, width);
     }
 
     public int calculateOrderValue(List<UserOrderCreateRequest.OrderProduct> items, Integer orderValue) {
@@ -1199,7 +1812,8 @@ public class OrderUserService {
 
         int total = 0;
         for (var item : items) {
-            Product product = productRepository.findById(item.getProductId()).orElseThrow();
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow();
             total += product.getPrice() * item.getQuantity();
         }
 

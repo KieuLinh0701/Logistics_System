@@ -9,8 +9,16 @@ public class PaymentSubmissionUtils {
 
     private static final Map<PaymentSubmissionStatus, Set<PaymentSubmissionStatus>> MANAGER_ALLOWED_STATUS_TRANSITIONS = Map
             .of(
+                    PaymentSubmissionStatus.PENDING, Set.of(
+                            PaymentSubmissionStatus.PROCESSING),
+                    PaymentSubmissionStatus.PROCESSING, Set.of(
+                            PaymentSubmissionStatus.MATCHED,
+                            PaymentSubmissionStatus.MISMATCHED),
+                    PaymentSubmissionStatus.MATCHED, Set.of(),
                     PaymentSubmissionStatus.MISMATCHED, Set.of(
-                            PaymentSubmissionStatus.ADJUSTED));
+                            PaymentSubmissionStatus.ADJUSTED),
+                    PaymentSubmissionStatus.ADJUSTED, Set.of()
+            );
 
     public static boolean canManagerChangeStatus(PaymentSubmissionStatus currentStatus,
             PaymentSubmissionStatus targetStatus) {
@@ -21,11 +29,11 @@ public class PaymentSubmissionUtils {
 
     // Chuyển trạng thái sang tiếng việt
     private static final Map<String, String> STATUS_MAP = Map.of(
-            "PENDING", "Đã nộp tiền",
-            "CHECKING", "Đang đối soát",
-            "COMPLETED", "Đã đối soát",
-            "PARTIAL", "Lệch tiền",
-            "CANCELLED", "Đã huỷ");
+            "PENDING",    "Chờ nộp",
+            "PROCESSING", "Đang xem xét",
+            "MATCHED",    "Khớp tiền",
+            "MISMATCHED", "Lệch tiền",
+            "ADJUSTED",   "Đã điều chỉnh");
 
     public static String translateStatus(String status) {
         if (status == null)

@@ -36,6 +36,15 @@ public class OrderProduct {
     @Column(nullable = false)
     private Integer price;
 
+    @Column(nullable = false)
+    private Integer deliveredQuantity = 0;
+
+    @Column(nullable = false)
+    private Integer returnedQuantity = 0;
+
+    @Version
+    private Long version;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

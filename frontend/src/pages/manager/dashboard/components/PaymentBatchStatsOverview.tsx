@@ -10,28 +10,26 @@ interface Props {
 export const PaymentBatchStatsOverview: React.FC<Props> = ({ data }) => {
   const stats = [
     { label: "Tổng số", value: data.total, key: "total" },
-    { label: "Chờ xử lý", value: data.pending, key: "pending" },
-    { label: "Đang kiểm tra", value: data.checking, key: "checking" },
-    { label: "Hoàn thành", value: data.completed, key: "completed" },
-    { label: "Một phần", value: data.partial, key: "partial" },
-    { label: "Đã hủy", value: data.cancelled, key: "cancelled" },
+    { label: "Đang mở", value: data.open, key: "open" },
+    { label: "Đang đối soát", value: data.processing, key: "processing" },
+    { label: "Đã đối soát", value: data.completed, key: "completed" },
   ];
 
   return (
-    <div className="manager-dashboard-six-overview">
-      <div className="manager-dashboard-six-header">
-        <h3 className="manager-dashboard-six-title">
-          <CheckCircleOutlined className="manager-dashboard-six-icon"/>
+    <div className="manager-dashboard-four-overview">
+      <div className="manager-dashboard-four-header">
+        <h3 className="manager-dashboard-four-title">
+          <CheckCircleOutlined className="manager-dashboard-four-icon"/>
           Thống kê phiên đối soát</h3>
-        <Link to="/settlements" className="manager-dashboard-six-view-detail">
+        <Link to="/settlements" className="manager-dashboard-four-view-detail">
           Xem chi tiết
         </Link>
       </div>
-      <div className="manager-dashboard-six-grid">
+      <div className="manager-dashboard-four-grid">
         {stats.map((stat) => (
-          <div key={stat.key} className="manager-dashboard-six-item">
-            <div className="manager-dashboard-six-value">{stat.value}</div>
-            <div className="manager-dashboard-six-label">{stat.label}</div>
+          <div key={stat.key} className="manager-dashboard-four-item">
+            <div className="manager-dashboard-four-value">{stat.value}</div>
+            <div className="manager-dashboard-four-label">{stat.label}</div>
           </div>
         ))}
       </div>

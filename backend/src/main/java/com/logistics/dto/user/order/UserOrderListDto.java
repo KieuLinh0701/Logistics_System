@@ -3,8 +3,10 @@ package com.logistics.dto.user.order;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.logistics.dto.AddressDto;
 
+import com.logistics.dto.AddressSummaryDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,9 +20,10 @@ public class UserOrderListDto {
     private Integer id;
     private String trackingNumber;
     private String status;
-    private AddressDto recipientAddress;
+    private AddressSummaryDto recipientAddress;
     private String pickupType;
     private BigDecimal weight;
+    private BigDecimal adjustedWeight;
     private String serviceTypeName;
     private Integer cod;
     private Integer orderValue;

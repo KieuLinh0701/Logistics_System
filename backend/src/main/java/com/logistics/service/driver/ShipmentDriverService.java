@@ -1,6 +1,13 @@
 package com.logistics.service.driver;
 
-import com.logistics.entity.*;
+import com.logistics.entity.Shipment;
+import com.logistics.entity.ShipmentOrder;
+import com.logistics.entity.Order;
+import com.logistics.entity.OrderHistory;
+import com.logistics.entity.Vehicle;
+import com.logistics.entity.VehicleTracking;
+import com.logistics.entity.Employee;
+import com.logistics.entity.Office;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.ShipmentStatus;
@@ -10,6 +17,9 @@ import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.utils.LocationUtils;
+import com.logistics.service.common.NotificationService;
+import com.logistics.service.assignment.AutoAssignService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,7 +48,7 @@ public class ShipmentDriverService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private com.logistics.service.assignment.AutoAssignService autoAssignService;
+    private AutoAssignService autoAssignService;
 
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
@@ -51,6 +61,9 @@ public class ShipmentDriverService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private OfficeRepository officeRepository;
@@ -80,20 +93,16 @@ public class ShipmentDriverService {
                 return new ApiResponse<>(false, "Chuyến hàng không ở trạng thái PENDING", null);
             }
 
+            // Lấy danh sách orders cho shipment và cập nhật shipment -> IN_TRANSIT
+            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
+
             shipment.setStatus(ShipmentStatus.IN_TRANSIT);
             shipment.setStartTime(LocalDateTime.now());
             shipmentRepository.save(shipment);
 
-            // Cập nhật trạng thái đơn hàng từ PICKED_UP -> IN_TRANSIT
-            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
+            // Cập nhật trạng thái tất cả đơn trong shipment -> IN_TRANSIT
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                
-                // Kiểm tra đơn hàng phải ở trạng thái PICKED_UP
-                if (order.getStatus() != OrderStatus.PICKED_UP) {
-                    return new ApiResponse<>(false, "Đơn hàng " + order.getTrackingNumber() + " không ở trạng thái PICKED_UP", null);
-                }
-                
                 order.setStatus(OrderStatus.IN_TRANSIT);
                 orderRepository.save(order);
 
@@ -115,7 +124,7 @@ public class ShipmentDriverService {
         }
     }
 
-    @Transactional
+    
     public ApiResponse<String> finishShipment(FinishShipmentRequest request) {
         try {
             Employee employee = getCurrentEmployee();
@@ -187,10 +196,25 @@ public class ShipmentDriverService {
         try {
             Employee employee = getCurrentEmployee();
 
+            Office employeeOffice = employee.getOffice();
+
             Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
             Specification<Shipment> spec = (root, query, cb) -> {
-                return cb.equal(root.get("employee").get("id"), employee.getId());
+                // Hiển thị các chuyến đã gán cho driver hoặc chưa gán nhưng thuộc bưu cục của driver
+                var predicates = new ArrayList<Predicate>();
+                Predicate assignedToMe = cb.equal(root.get("employee").get("id"), employee.getId());
+                predicates.add(assignedToMe);
+
+                if (employeeOffice != null) {
+                    Predicate unassignedAndSameOffice = cb.and(
+                            cb.isNull(root.get("employee")),
+                            cb.equal(root.get("fromOffice").get("id"), employeeOffice.getId())
+                    );
+                    predicates.add(unassignedAndSameOffice);
+                }
+
+                return cb.or(predicates.toArray(new Predicate[0]));
             };
 
             Page<Shipment> shipmentPage = shipmentRepository.findAll(spec, pageable);
@@ -213,6 +237,13 @@ public class ShipmentDriverService {
                             ));
                         }
 
+                        if (shipment.getEmployee() != null) {
+                            map.put("employee", Map.of(
+                                    "id", shipment.getEmployee().getId(),
+                                    "userId", shipment.getEmployee().getUser() != null ? shipment.getEmployee().getUser().getId() : null
+                            ));
+                        }
+
                         if (shipment.getFromOffice() != null) {
                             map.put("fromOffice", Map.of(
                                     "id", shipment.getFromOffice().getId(),
@@ -228,22 +259,22 @@ public class ShipmentDriverService {
                         }
 
                         // Lấy danh sách đơn hàng
-                        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
-                        List<Map<String, Object>> orders = shipmentOrders.stream()
-                                .map(so -> {
-                                    Order order = so.getOrder();
-                                    Map<String, Object> orderMap = new HashMap<>();
-                                    orderMap.put("id", order.getId());
-                                    orderMap.put("trackingNumber", order.getTrackingNumber());
-                                    if (order.getToOffice() != null) {
-                                        orderMap.put("toOffice", Map.of(
-                                                "id", order.getToOffice().getId(),
-                                                "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
-                                        ));
-                                    }
-                                    return orderMap;
-                                })
-                                .collect(Collectors.toList());
+                        List<ShipmentOrder> soList = shipmentOrderRepository.findByShipmentId(shipment.getId());
+                        List<Map<String, Object>> orders = soList.stream().map(so -> {
+                            Order order = so.getOrder();
+                            Map<String, Object> om = new HashMap<>();
+                            om.put("id", order.getId());
+                            om.put("trackingNumber", order.getTrackingNumber());
+                            om.put("status", order.getStatus() != null ? order.getStatus().name() : null);
+                            if (order.getToOffice() != null) {
+                                om.put("toOffice", Map.of(
+                                        "id", order.getToOffice().getId(),
+                                        "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
+                                ));
+                            }
+                            return om;
+                        }).collect(Collectors.toList());
+
                         map.put("orders", orders);
                         map.put("orderCount", orders.size());
 
@@ -318,15 +349,17 @@ public class ShipmentDriverService {
             Map<Integer, Map<String, Object>> officeGroups = new HashMap<>();
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                if (order.getToOffice() == null) continue;
+                // Nếu recipientaddress.toOffice là null thì dùng shipment.toOffice (một số chuyến có thể chỉ có 1 bưu cục đích)
+                Office targetOffice = order.getToOffice() != null ? order.getToOffice() : activeShipment.getToOffice();
+                if (targetOffice == null) continue;
 
-                Integer officeId = order.getToOffice().getId();
+                Integer officeId = targetOffice.getId();
                 officeGroups.computeIfAbsent(officeId, k -> {
                     Map<String, Object> group = new HashMap<>();
                     group.put("office", Map.of(
-                            "id", order.getToOffice().getId(),
-                            "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : "",
-                            "address", buildOfficeAddress(order.getToOffice())
+                            "id", targetOffice.getId(),
+                            "name", targetOffice.getName() != null ? targetOffice.getName() : "",
+                            "address", buildOfficeAddress(targetOffice)
                     ));
                     group.put("orders", new ArrayList<>());
                     return group;
@@ -435,25 +468,25 @@ public class ShipmentDriverService {
                             ));
                         }
 
-                        // Lấy danh sách đơn hàng
-                        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
-                        List<Map<String, Object>> orders = shipmentOrders.stream()
-                                .map(so -> {
-                                    Order order = so.getOrder();
-                                    Map<String, Object> orderMap = new HashMap<>();
-                                    orderMap.put("id", order.getId());
-                                    orderMap.put("trackingNumber", order.getTrackingNumber());
-                                    if (order.getToOffice() != null) {
-                                        orderMap.put("toOffice", Map.of(
-                                                "id", order.getToOffice().getId(),
-                                                "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
-                                        ));
-                                    }
-                                    return orderMap;
-                                })
-                                .collect(Collectors.toList());
-                        map.put("orders", orders);
-                        map.put("orderCount", orders.size());
+                        // Trả chi tiết đơn ở dạng read-only cho driver trong lịch sử
+                        List<ShipmentOrder> soListHist = shipmentOrderRepository.findByShipmentId(shipment.getId());
+                        List<Map<String, Object>> ordersHist = soListHist.stream().map(so -> {
+                            Order order = so.getOrder();
+                            Map<String, Object> om = new HashMap<>();
+                            om.put("id", order.getId());
+                            om.put("trackingNumber", order.getTrackingNumber());
+                            om.put("status", order.getStatus() != null ? order.getStatus().name() : null);
+                            if (order.getToOffice() != null) {
+                                om.put("toOffice", Map.of(
+                                        "id", order.getToOffice().getId(),
+                                        "name", order.getToOffice().getName() != null ? order.getToOffice().getName() : ""
+                                ));
+                            }
+                            return om;
+                        }).collect(Collectors.toList());
+
+                        map.put("orders", ordersHist);
+                        map.put("orderCount", ordersHist.size());
 
                         return map;
                     })
@@ -491,8 +524,7 @@ public class ShipmentDriverService {
                 return new ApiResponse<>(false, "Chuyến hàng không có phương tiện", null);
             }
 
-            // Thay vì tạo nhiều bản ghi, cập nhật bản ghi tracking gần nhất cho shipment này (nếu có),
-            // mục tiêu: chỉ giữ 1 bản ghi đang được cập nhật liên tục
+            // Cập nhật bản ghi tracking gần nhất cho shipment này (nếu có)
             List<VehicleTracking> existing = vehicleTrackingRepository.findByShipmentIdOrderByRecordedAtDesc(shipment.getId());
             if (existing != null && !existing.isEmpty()) {
                 VehicleTracking t = existing.get(0);
@@ -569,17 +601,43 @@ public class ShipmentDriverService {
         if (office.getDetail() != null && !office.getDetail().isBlank()) {
             builder.append(office.getDetail());
         }
-        if (office.getWardCode() != null) {
+        if (office.getWardCode() != null && office.getCityCode() != null) {
+            String wardName = null;
+            try {
+                wardName = LocationUtils.getWardNameByCode(office.getCityCode(), office.getWardCode());
+            } catch (Exception e) {
+                // Sẽ dùng phương án thay thế bên dưới
+            }
+            
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            builder.append("Phường ").append(office.getWardCode());
+            
+            // Dùng tên phường nếu có; nếu không thì hiển thị "Phường {code}"
+            if (wardName != null && !wardName.isEmpty()) {
+                builder.append(wardName);
+            } else {
+                builder.append("Phường ").append(office.getWardCode());
+            }
         }
         if (office.getCityCode() != null) {
+            String cityName = null;
+            try {
+                cityName = LocationUtils.getCityNameByCode(office.getCityCode());
+            } catch (Exception e) {
+                // Sẽ dùng phương án thay thế bên dưới
+            }
+            
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            builder.append("TP ").append(office.getCityCode());
+            
+            // Dùng tên thành phố nếu có; nếu không thì hiển thị "TP {code}"
+            if (cityName != null && !cityName.isEmpty()) {
+                builder.append(cityName);
+            } else {
+                builder.append("TP ").append(office.getCityCode());
+            }
         }
         return builder.toString();
     }

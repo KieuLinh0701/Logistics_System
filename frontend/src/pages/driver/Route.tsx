@@ -16,9 +16,7 @@ import {
 } from "antd";
 import {
   EnvironmentOutlined,
-  TruckOutlined,
   PlayCircleOutlined,
-  CheckCircleOutlined,
 } from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
 import type { DriverRouteInfo, DriverDeliveryStop } from "../../types/shipment";
@@ -39,9 +37,7 @@ const DriverRoute: React.FC = () => {
     fetchRouteData();
   }, []);
 
-  // Start periodic tracking when routeInfo (active shipment) exists
   useEffect(() => {
-    // clear any previous interval
     if (trackingIntervalRef.current) {
       window.clearInterval(trackingIntervalRef.current);
       trackingIntervalRef.current = null;
@@ -74,7 +70,7 @@ const DriverRoute: React.FC = () => {
       );
     };
 
-    // send immediately, then every 5 seconds
+    // gửi vị trí mỗi 5s
     sendPosition();
     const id = window.setInterval(sendPosition, 5000);
     trackingIntervalRef.current = id;
@@ -101,30 +97,57 @@ const DriverRoute: React.FC = () => {
     }
   };
 
+  const handleStartRoute = async () => {
+    if (!routeInfo) return;
+
+    const openDirections = () => {
+      if (!deliveryStops || deliveryStops.length === 0) {
+        message.warning("Không có điểm dừng nào trong tuyến");
+        return;
+      }
+
+      const stops = deliveryStops
+        .map((s) => s.officeAddress)
+        .filter((addr): addr is string => !!addr);
+      if (stops.length === 0) {
+        message.warning("Không có địa chỉ điểm dừng nào");
+        return;
+      }
+
+      const destination = encodeURIComponent(stops[stops.length - 1]);
+      let waypoints = "";
+
+      if (stops.length > 1) {
+        const mid = stops.slice(0, -1).map((a) => encodeURIComponent(a)).join("|");
+        waypoints = `&waypoints=${mid}`;
+      }
+
+      const url = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${destination}${waypoints}&travelmode=driving`;
+      window.open(url, "_blank");
+    };
+
+    Modal.confirm({
+      title: "Bắt đầu chuyến vận chuyển",
+      content: "Bạn có chắc chắn muốn bắt đầu chuyến vận chuyển này?",
+      onOk: async () => {
+        try {
+          await shipmentApi.startShipment(routeInfo.id);
+          setRouteInfo((prev) => (prev ? { ...prev, status: "IN_TRANSIT" } : null));
+          message.success("Đã bắt đầu chuyến vận chuyển");
+          openDirections();
+        } catch (error) {
+          openDirections();
+        }
+      },
+    });
+  };
+
   const handleNavigateToStop = (stop: DriverDeliveryStop) => {
     if (stop.officeAddress) {
       const address = encodeURIComponent(stop.officeAddress);
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${address}`;
       window.open(mapsUrl, "_blank");
       message.success(`Đã mở bản đồ đến ${stop.officeName}`);
-    }
-  };
-
-  const openMapModal = (address: string) => {
-    setMapModalAddress(address);
-    setMapModalOpen(true);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
-        return "default";
-      case "in_progress":
-        return "processing";
-      case "completed":
-        return "success";
-      default:
-        return "default";
     }
   };
 
@@ -208,6 +231,56 @@ const DriverRoute: React.FC = () => {
             )}
           </Col>
         </Row>
+
+        {/* Nút bắt đầu chuyến */}
+        <div style={{ marginTop: 16 }}>
+          {routeInfo.status === "PENDING" && (
+            <Button 
+              type="primary" 
+              icon={<PlayCircleOutlined />} 
+              onClick={handleStartRoute}
+              size="large"
+            >
+              Bắt đầu chuyến
+            </Button>
+          )}
+          {routeInfo.status === "IN_TRANSIT" && (
+            <Button 
+              type="primary" 
+              icon={<EnvironmentOutlined />} 
+              onClick={() => {
+                if (!deliveryStops || deliveryStops.length === 0) {
+                  message.warning("Không có điểm dừng nào trong tuyến");
+                  return;
+                }
+
+                const stops = deliveryStops
+                  .map((s) => s.officeAddress)
+                  .filter((addr): addr is string => !!addr);
+                
+                if (stops.length === 0) {
+                  message.warning("Không có địa chỉ điểm dừng nào");
+                  return;
+                }
+
+                const destination = encodeURIComponent(stops[stops.length - 1]);
+                let waypoints = "";
+
+                if (stops.length > 1) {
+                  const mid = stops.slice(0, -1).map((a) => encodeURIComponent(a)).join("|");
+                  waypoints = `&waypoints=${mid}`;
+                }
+
+                const url = `https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${destination}${waypoints}&travelmode=driving`;
+                window.open(url, "_blank");
+              }}
+              size="large"
+            >
+              Bắt đầu chuyến
+            </Button>
+          )}
+        </div>
+
         <div style={{ marginTop: 12 }}>
           <div style={{ width: "100%", height: 360 }}>
             {(() => {
@@ -215,8 +288,28 @@ const DriverRoute: React.FC = () => {
               let src = `https://www.google.com/maps?q=Vietnam&output=embed`;
               if (first) {
                 const anyFirst = first as any;
-                const lat = anyFirst.latitude ?? anyFirst.lat ?? anyFirst.officeLatitude ?? null;
-                const lng = anyFirst.longitude ?? anyFirst.lng ?? anyFirst.officeLongitude ?? null;
+                const latRaw =
+                  anyFirst.latitude ??
+                  anyFirst.lat ??
+                  anyFirst.officeLatitude ??
+                  null;
+
+                const lngRaw =
+                  anyFirst.longitude ??
+                  anyFirst.lng ??
+                  anyFirst.officeLongitude ??
+                  null;
+
+                const toNumber = (v: unknown): number | null => {
+                  if (typeof v === "number") return v;
+                  if (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))) {
+                    return Number(v);
+                  }
+                  return null;
+                };
+
+                const lat = toNumber(latRaw);
+                const lng = toNumber(lngRaw);
                 if (lat != null && lng != null) {
                   src = `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
                 } else if (first.officeAddress) {

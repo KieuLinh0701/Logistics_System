@@ -53,7 +53,7 @@ public class ShippingRequestShipperService {
                 String st = r.getStatus() == null ? "null" : r.getStatus().name();
                 Integer oid = r.getOrder() == null ? null : r.getOrder().getId();
                 String ostatus = "null";
-                try { if (r.getOrder() != null && r.getOrder().getStatus() != null) ostatus = r.getOrder().getStatus().name(); } catch (Exception ignored) {}
+                try { if (r.getOrder() != null && r.getOrder().getStatus() != null) ostatus = r.getOrder().getStatus().name(); } catch (Exception e) { throw new RuntimeException(e); }
             }
         }
 
@@ -109,7 +109,7 @@ public class ShippingRequestShipperService {
                 "shipping_request_accepted",
                 shipperUserId,
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
         );
 
@@ -121,7 +121,7 @@ public class ShippingRequestShipperService {
                 "shipping_request_accepted",
                 req.getUser().getId(),
                 null,
-                "order",
+                "recipientaddress",
                 order.getTrackingNumber()
             );
         }

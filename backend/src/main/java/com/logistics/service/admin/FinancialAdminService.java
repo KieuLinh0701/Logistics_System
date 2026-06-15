@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -37,6 +38,7 @@ import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.repository.UserRepository;
+import com.logistics.service.financial.FinancialValidationService;
 import com.logistics.request.admin.CreateBatchRequest;
 import com.logistics.request.admin.CreatePaymentSubmissionRequest;
 import com.logistics.response.ApiResponse;
@@ -52,6 +54,7 @@ public class FinancialAdminService {
     private final PaymentSubmissionBatchRepository batchRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final FinancialValidationService financialValidationService;
 
     public ApiResponse<ListResponse<AdminPaymentSubmissionListDto>> listSubmissions(String status) {
         try {
@@ -143,45 +146,6 @@ public class FinancialAdminService {
 
             submissionRepository.save(submission);
             return new ApiResponse<>(true, "Xử lý nộp tiền thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
-    }
-
-    @Transactional
-    public ApiResponse<PaymentSubmissionBatch> createBatch(Integer adminId, CreateBatchRequest req) {
-        try {
-            // Khóa các bản ghi nộp tiền để tránh tạo batch đồng thời
-            List<PaymentSubmission> subs = submissionRepository.findByIdInForUpdate(req.getSubmissionIds());
-
-            if (subs.isEmpty()) {
-                return new ApiResponse<>(false, "Không có nộp tiền hợp lệ để tạo batch", null);
-            }
-
-            PaymentSubmissionBatch batch = new PaymentSubmissionBatch();
-            userRepository.findById(req.getShipperId()).ifPresent(batch::setShipper);
-            batch.setOffice(null);
-            batch.setStatus(PaymentSubmissionBatchStatus.PENDING);
-
-                BigDecimal totalSystem = subs.stream()
-                    .map(PaymentSubmission::getSystemAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                BigDecimal totalActual = subs.stream()
-                    .map(PaymentSubmission::getActualAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            batch.setTotalSystemAmount(totalSystem);
-            batch.setTotalActualAmount(totalActual);
-            batch = batchRepository.save(batch);
-
-            for (PaymentSubmission s : subs) {
-                s.setBatch(batch);
-                s.setStatus(PaymentSubmissionStatus.IN_BATCH);
-            }
-            submissionRepository.saveAll(subs);
-
-            return new ApiResponse<>(true, "Tạo phiên đối soát thành công", batch);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
@@ -318,8 +282,20 @@ public class FinancialAdminService {
                     Order o = s.getOrder();
                     if (o != null) {
                         o.setCodStatus(OrderCodStatus.TRANSFERRED);
-                        o.setPaymentStatus(OrderPaymentStatus.PAID);
-                        o.setPaidAt(LocalDateTime.now());
+                        try {
+                            try {
+                                Optional<Order> locked = orderRepository.findByIdForUpdate(o.getId());
+                                if (locked.isPresent()) {
+                                    financialValidationService.markOrderPaidIfEligible(locked.get());
+                                } else {
+                                    financialValidationService.markOrderPaidIfEligible(o);
+                                }
+                            } catch (Exception lockEx) {
+                                financialValidationService.markOrderPaidIfEligible(o);
+                            }
+                        } catch (Exception ex) {
+                            System.err.println("Error while validating payment for recipientaddress " + o.getId() + ": " + ex.getMessage());
+                        }
                         orderRepository.save(o);
                     }
                 }

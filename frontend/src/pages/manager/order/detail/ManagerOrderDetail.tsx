@@ -13,7 +13,16 @@ import type { Order } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
+import {
+    canAtOriginOfficeManagerOrder,
+    canCancelManagerOrder,
+    canConfirmManagerOrder,
+    canEditManagerOrder,
+    canPrintManagerOrder,
+    type OrderCreatorType,
+    type OrderPickupType,
+    type OrderStatus
+} from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 
@@ -23,7 +32,7 @@ const UserOrderDetail: React.FC = () => {
     const navigate = useNavigate();
 
     const [order, setOrder] = useState<Order | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [loadingView, setLoadingView] = useState(true);
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -166,16 +175,12 @@ const UserOrderDetail: React.FC = () => {
                 sender={{
                     name: order.senderName,
                     phone: order.senderPhone,
-                    detail: order.senderDetail,
-                    wardCode: order.senderWardCode,
-                    cityCode: order.senderCityCode,
+                    fullAddress: order.senderFullAddress,
                 }}
                 recipient={{
-                    name: order.recipientAddress.name,
-                    phone: order.recipientAddress.phoneNumber,
-                    detail: order.recipientAddress.detail,
-                    wardCode: order.recipientAddress.wardCode,
-                    cityCode: order.recipientAddress.cityCode,
+                    name: order.recipientName,
+                    phone: order.recipientPhone,
+                    fullAddress: order.recipientFullAddress,
                 }}
             />
             <OrderInfo order={order} />
@@ -184,7 +189,6 @@ const UserOrderDetail: React.FC = () => {
                 toOffice={order.toOffice} />
             <OrderProducts products={order.orderProducts || []} />
             <OrderHistoryCard histories={order.orderHistories} />
-            {/* <FeedbackCard orderId={order.id} orderStatus={order.status} /> */}
             <OrderPayment order={order} />
             <OrderActions
                 canEdit={canEdit}

@@ -1205,6 +1205,34 @@
   stroke-width: 1;
 }
 
+.dashboard-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    gap: 12px;
+}
+
+.dashboard-welcome-icon {
+    font-size: 56px;
+}
+
+.dashboard-welcome-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    color: #1a1a1a;
+}
+
+.dashboard-welcome-desc {
+    font-size: 14px;
+    color: #8c8c8c;
+    line-height: 1.8;
+    margin: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .dashboard-order-timeline {

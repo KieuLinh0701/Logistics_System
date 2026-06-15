@@ -24,14 +24,42 @@ public class ManagerOrderDetailDto {
     private String trackingNumber;
     private String status;
     private String createdByType;
+
+    private AddressDto senderAddress;
+    private int senderWardCode;
+    private int senderCityCode;
+    private String senderDetail;
     private String senderName;
     private String senderPhone;
-    private Integer senderCityCode;
-    private Integer senderWardCode;
-    private String senderDetail;
+    private String senderFullAddress;
+    private String senderCityName;
+    private String senderWardName;
+    private Double senderLatitude;
+    private Double senderLongitude;
+
     private AddressDto recipientAddress;
+    private int recipientWardCode;
+    private int recipientCityCode;
+    private String recipientDetail;
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientFullAddress;
+    private String recipientCityName;
+    private String recipientWardName;
+    private Double recipientLatitude;
+    private Double recipientLongitude;
+
     private String pickupType;
+    private BigDecimal originalWeight;
+    private BigDecimal height;
+    private BigDecimal length;
+    private BigDecimal width;
     private BigDecimal weight;
+    private BigDecimal adjustedWeight;
+    private BigDecimal adjustedOriginalWeight;
+    private BigDecimal adjustedHeight;
+    private BigDecimal adjustedWidth;
+    private BigDecimal adjustedLength;
     private ServiceTypeDto serviceType;
     private Integer discountAmount;
     private Integer cod;
@@ -51,4 +79,6 @@ public class ManagerOrderDetailDto {
     private String employeeCode;
     private String userCode;
     private String codStatus;
+    private BigDecimal actualCollected;
+    private BigDecimal returnedAmount;
 }

@@ -28,10 +28,6 @@ const OrderInfo: React.FC<Props> = ({
   onChangeOrderInfo,
 }) => {
 
-  const handleWeightChange = (value: number | null) => {
-    onChangeOrderInfo?.({ weight: value ?? 0 });
-  };
-
   const handleOrderValueChange = (value: number | null) => {
     onChangeOrderInfo?.({ orderValue: value ?? 0 });
   };
@@ -41,14 +37,113 @@ const OrderInfo: React.FC<Props> = ({
       <Form
         form={form}
         layout="vertical"
-        onValuesChange={(changedValues) => {
-          onChangeOrderInfo?.(changedValues);
-        }}
+        onValuesChange={onChangeOrderInfo}
       >
         <Card className="create-order-custom-card">
           <div className="create-order-custom-card-title">Thông tin đơn hàng</div>
+            <Row gutter={16} className="create-order-order-info">
+                <Col span={6}>
+                    <Form.Item
+                        label={<span className="modal-label">Dài (cm)</span>}
+                        name="length"
+                        rules={[
+                            {required: true, message: "Vui lòng nhập chiều dài"},
+                            {
+                                validator: (_, value) => {
+                                    if (value !== undefined && value !== null && value !== '') {
+                                        if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                                    }
+                                    return Promise.resolve();
+                                }
+                            },
+                        ]}
+                    >
+                        <InputNumber
+                            className="modal-custom-input-number"
+                            placeholder="Ví dụ: 30"
+                            min={0.1}
+                            step={0.1}
+                        />
+                    </Form.Item>
+                </Col>
 
-          <Row gutter={16} className="create-order-order-info">
+                <Col span={6}>
+                    <Form.Item
+                        label={<span className="modal-label">Rộng (cm)</span>}
+                        name="width"
+                        rules={[
+                            {required: true, message: "Vui lòng nhập chiều rộng"},
+                            {
+                                validator: (_, value) => {
+                                    if (value !== undefined && value !== null && value !== '') {
+                                        if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                                    }
+                                    return Promise.resolve();
+                                }
+                            },
+                        ]}
+                    >
+                        <InputNumber
+                            className="modal-custom-input-number"
+                            placeholder="Ví dụ: 20"
+                            min={0.1}
+                            step={0.1}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col span={6}>
+                    <Form.Item
+                        label={<span className="modal-label">Cao (cm)</span>}
+                        name="height"
+                        rules={[
+                            {required: true, message: "Vui lòng nhập chiều cao"},
+                            {
+                                validator: (_, value) => {
+                                    if (value !== undefined && value !== null && value !== '') {
+                                        if (isNaN(value) || value <= 0) return Promise.reject(new Error("Phải lớn hơn 0"));
+                                    }
+                                    return Promise.resolve();
+                                }
+                            },
+                        ]}
+                    >
+                        <InputNumber
+                            className="modal-custom-input-number"
+                            placeholder="Ví dụ: 15"
+                            min={0.1}
+                            step={0.1}
+                        />
+                    </Form.Item>
+                </Col>
+
+                <Col span={6}>
+                    <Form.Item
+                        label={<span className="modal-label">Khối lượng (kg)</span>}
+                        name="originalWeight"
+                        rules={[
+                            {required: true, message: "Vui lòng nhập khối lượng"},
+                            {
+                                validator: (_, value) => {
+                                    if (value !== undefined && value !== null && value !== '') {
+                                        if (isNaN(value) || value <= 0) return Promise.reject(new Error("Khối lượng phải là số lớn hơn 0"));
+                                    }
+                                    return Promise.resolve();
+                                }
+                            },
+                        ]}
+                    >
+                        <InputNumber
+                            className="modal-custom-input-number"
+                            placeholder="Ví dụ: 1.5"
+                            min={0.01}
+                            step={0.01}
+                        />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 label={
@@ -64,25 +159,11 @@ const OrderInfo: React.FC<Props> = ({
                   </span>
                 }
                 name="weight"
-                rules={[
-                  { required: true, message: "Vui lòng nhập khối lượng" },
-                  {
-                    validator: (_, value) => {
-                      if (value !== undefined && value !== null && value <= 0) {
-                        return Promise.reject(new Error("Khối lượng phải lớn hơn 0"));
-                      }
-                      return Promise.resolve();
-                    },
-                  },
-                ]}
-                validateTrigger={['onChange', 'onBlur']}
               >
                 <InputNumber
                   className="modal-custom-input-number"
-                  placeholder="Ví dụ: 1.5"
-                  onChange={handleWeightChange}
-                  min={0.01}
-                  step={0.01}
+                  placeholder={"Tự động tính..."}
+                  disabled={true}
                 />
               </Form.Item>
             </Col>

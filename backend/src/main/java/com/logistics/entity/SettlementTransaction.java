@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.hibernate.envers.Audited;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.logistics.enums.SettlementTransactionStatus;
@@ -73,6 +74,10 @@ public class SettlementTransaction {
     private String referenceCode; // Mã giao dịch
 
     private LocalDateTime paidAt;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @PostPersist
     private void generateCode() {

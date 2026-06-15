@@ -49,44 +49,44 @@ public class ManagerOrderEditRuleUtils {
         map.put("senderName", new EditableRule(null, null));
         map.put("senderPhoneNumber", new EditableRule(null, null));
         map.put("senderCityCode", new EditableRule(null, null));
+        map.put("senderCityName", new EditableRule(null, null));
         map.put("senderWardCode", new EditableRule(null, null));
+        map.put("senderWardName", new EditableRule(null, null));
         map.put("senderDetailAddress", new EditableRule(null, null));
+        map.put("senderLatitude", new EditableRule(null, null));
+        map.put("senderLongitude", new EditableRule(null, null));
 
         // Người nhận
-        map.put("recipientName", new EditableRule(null, MANAGER_FINAL_STATUSES));
-        map.put("recipientPhoneNumber", new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("recipientName", new EditableRule(null, null));
+        map.put("recipientPhoneNumber", new EditableRule(null, null));
         map.put("recipientCityCode", new EditableRule(null, null));
-        map.put("recipientWardCode",
-                new EditableRule(
-                        EnumSet.of(
-                                OrderStatus.PENDING,
-                                OrderStatus.CONFIRMED,
-                                OrderStatus.READY_FOR_PICKUP
-                        ),
-                        null
-                )
-        );
-        map.put("recipientDetailAddress", new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("recipientCityName", new EditableRule(null, null));
+        map.put("recipientWardCode", new EditableRule(null, null));
+        map.put("recipientWardName", new EditableRule(null, null));
+        map.put("recipientDetailAddress", new EditableRule(null, null));
+        map.put("recipientLatitude", new EditableRule(null, null));
+        map.put("recipientLongitude", new EditableRule(null, null));
 
         // Thông tin đơn hàng 
-        map.put("weight", new EditableRule(null, null));
+        map.put("weight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("originalWeight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("height", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("length", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("width", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
         map.put("serviceType", new EditableRule(null, null));
         map.put("cod", new EditableRule(null, null));
         map.put("orderValue", new EditableRule(null, null));
         map.put("products", new EditableRule(null, null));
 
         // Lấy hàng
-        map.put("pickupType",
-                new EditableRule(EnumSet.of(OrderStatus.PENDING), null));
-        map.put("fromOffice",
-                new EditableRule(EnumSet.of(OrderStatus.PENDING), null));
+        map.put("pickupType", new EditableRule(null, null));
+        map.put("fromOffice", new EditableRule(null, null));
 
         // Người trả phí
         map.put("payer", new EditableRule(null, null));
 
         // Ghi chú
-        map.put("notes",
-                new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("notes", new EditableRule(null, null));
 
         // Khuyến mãi
         map.put("promotion", new EditableRule(null, null));
@@ -105,15 +105,23 @@ public class ManagerOrderEditRuleUtils {
         map.put("senderPhoneNumber",
                 new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
         map.put("senderCityCode", new EditableRule(null, null));
+        map.put("senderCityName", new EditableRule(null, null));
         map.put("senderWardCode",
                 new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("senderWardName",
+                new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
         map.put("senderDetailAddress",
+                new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("senderLongitude",
+                new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("senderLatitude",
                 new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
 
         // Người nhận
         map.put("recipientName", new EditableRule(null, MANAGER_FINAL_STATUSES));
         map.put("recipientPhoneNumber", new EditableRule(null, MANAGER_FINAL_STATUSES));
         map.put("recipientCityCode", new EditableRule(null, null));
+        map.put("recipientCityName", new EditableRule(null, null));
         map.put("recipientWardCode",
                 new EditableRule(
                         EnumSet.of(
@@ -127,10 +135,29 @@ public class ManagerOrderEditRuleUtils {
                         null
                 )
         );
+        map.put("recipientWardName",
+                new EditableRule(
+                        EnumSet.of(
+                                OrderStatus.PENDING,
+                                OrderStatus.CONFIRMED,
+                                OrderStatus.READY_FOR_PICKUP,
+                                OrderStatus.PICKING_UP,
+                                OrderStatus.PICKED_UP,
+                                OrderStatus.AT_ORIGIN_OFFICE
+                        ),
+                        null
+                )
+        );
         map.put("recipientDetailAddress", new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("recipientLatitude", new EditableRule(null, MANAGER_FINAL_STATUSES));
+        map.put("recipientLongitude", new EditableRule(null, MANAGER_FINAL_STATUSES));
 
         // Thông tin đơn hàng
         map.put("weight", new EditableRule(null, null));
+        map.put("originalWeight", new EditableRule(null, null));
+        map.put("height", new EditableRule(null, null));
+        map.put("length", new EditableRule(null, null));
+        map.put("width", new EditableRule(null, null));
         map.put("serviceType", new EditableRule(null, null));
         map.put("cod", new EditableRule(null, null));
         map.put("orderValue", new EditableRule(null, null));

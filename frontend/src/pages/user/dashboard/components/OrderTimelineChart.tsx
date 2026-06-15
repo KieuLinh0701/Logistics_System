@@ -27,7 +27,7 @@ export const OrderTimelineChart: React.FC<Props> = ({ data }) => {
       map.set(key, item);
     });
 
-    const days = data && data.length > 0 ? 7 : 1;
+    const days = data && data.length > 0 ? 30 : 1;
 
     const result: UserOrderTimeLineItem[] = [];
 

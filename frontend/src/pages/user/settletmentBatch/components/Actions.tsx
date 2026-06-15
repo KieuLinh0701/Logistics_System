@@ -1,35 +1,27 @@
 import React from "react";
-import { Button, Space } from "antd";
-import { FileExcelOutlined, PayCircleOutlined } from "@ant-design/icons";
+import {Button, Space} from "antd";
+import {FileExcelOutlined} from "@ant-design/icons";
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface Props {
-  onExport: () => void;
-  onPayment: () => void;
-  countIds: number;
-  totalAmount: number;
+    onExport: () => void;
 }
 
-const Actions: React.FC<Props> = ({ onExport, onPayment, countIds, totalAmount }) => {
-  const formattedAmount = totalAmount.toLocaleString("vi-VN") + "₫";
+const Actions: React.FC<Props> = ({onExport}) => {
 
-  return (
-    <Space align="center">
-      <Button
-        className="warning-button"
-        icon={<PayCircleOutlined />}
-        onClick={onPayment}
-      >
-        Thanh toán {countIds ? `(${countIds})` : ""} {totalAmount > 0 ? `~ ${formattedAmount}` : ""}
-      </Button>
-      <Button
-        className="success-button"
-        icon={<FileExcelOutlined />}
-        onClick={onExport}
-      >
-        Xuất Excel
-      </Button>
-    </Space>
-  );
+    return (
+        <Space align="center">
+            {hasPermissionGroup(['GROUP_USER', 'USER_COD_EXPORT_HISTORY']) && (
+                <Button
+                    className="success-button"
+                    icon={<FileExcelOutlined/>}
+                    onClick={onExport}
+                >
+                    Xuất Excel
+                </Button>
+            )}
+        </Space>
+    );
 };
 
 export default Actions;

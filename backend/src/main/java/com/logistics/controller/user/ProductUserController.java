@@ -13,9 +13,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/user/products")
@@ -73,5 +77,27 @@ public class ProductUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.getActiveAndInstockUserProducts(userId, userProductSearchRequest));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            UserProductSearchRequest userProductSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, userProductSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo sản phẩm.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

@@ -18,4 +18,9 @@ public class AddressUserRequest {
     
     private String name;
     private String phoneNumber;
+
+    private Double latitude;
+    private Double longitude;
+    private String cityName;
+    private String wardName;
 }

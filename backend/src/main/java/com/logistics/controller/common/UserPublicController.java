@@ -73,14 +73,14 @@ public class UserPublicController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(new ApiResponse<>(false, e.getMessage(), null));
         }
-        String role = (String) request.getAttribute("currentRoleName");
+        Integer roleId = (Integer) request.getAttribute("currentRoleId");
 
         if (verifyEmailUpdateOTPRequest.getOtp() == null || verifyEmailUpdateOTPRequest.getNewEmail() == null) {
             return ResponseEntity.badRequest()
                     .body(new ApiResponse<>(false, "Vui lòng nhập đầy đủ thông tin", null));
         }
 
-        return ResponseEntity.ok(userService.verifyEmailUpdateOTP(accountId, verifyEmailUpdateOTPRequest, role));
+        return ResponseEntity.ok(userService.verifyEmailUpdateOTP(accountId, verifyEmailUpdateOTPRequest, roleId));
     }
 
     @PutMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

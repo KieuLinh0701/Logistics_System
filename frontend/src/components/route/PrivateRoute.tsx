@@ -1,26 +1,29 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { getUserRole, getCurrentUser } from "../../utils/authUtils";
+import {Navigate, useLocation} from "react-router-dom";
+import {getCurrentUser, getUserPermissionGroups} from "../../utils/authUtils";
 import Forbidden from "../../pages/common/Forbidden";
 
 type PrivateRouteProps = {
-  children: React.ReactNode;
-  allowedRoles?: string[];
+    children: React.ReactNode;
+    allowedPermissionGroups?: string[];
 };
 
-export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles }) => {
-  const user = getCurrentUser();
-  const role = getUserRole();
-  const location = useLocation();
+export const PrivateRoute: React.FC<PrivateRouteProps> = ({children, allowedPermissionGroups}) => {
+    const user = getCurrentUser();
+    const permissionGroups = getUserPermissionGroups();
+    const location = useLocation();
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+    if (!user) {
+        return <Navigate to="/login" state={{from: location}} replace/>;
+    }
 
-  // Nếu route có giới hạn role
-  if (allowedRoles && !allowedRoles.includes(role!)) {
-    return <Forbidden />
-  }
+    if (allowedPermissionGroups && allowedPermissionGroups.length > 0) {
 
-  return <>{children}</>;
+        const hasPermission = permissionGroups.some(permissionGroup => allowedPermissionGroups.includes(permissionGroup));
+        if (!hasPermission) {
+            return <Forbidden/>
+        }
+    }
+
+    return <>{children}</>;
 };

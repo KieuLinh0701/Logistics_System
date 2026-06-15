@@ -1,22 +1,15 @@
 package com.logistics.controller.user;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.view.RedirectView;
 
 import com.logistics.request.user.payment.UserPaymentCheck;
-import com.logistics.request.user.payment.UserPaymentRequest;
-import com.logistics.request.user.payment.UserPaymentsRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.PaymentUserService;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,43 +21,20 @@ public class PaymentUserController {
         @Autowired
         private PaymentUserService service;
 
-        @PostMapping("/vnpay/get-url-list")
-        public ResponseEntity<ApiResponse<String>> createVNPayURLFromList(
-                        @Valid @RequestBody UserPaymentRequest paymentRequest,
-                        HttpServletRequest request) {
-
-                Integer userId = (Integer) request.getAttribute("currentUserId");
-                return ResponseEntity.ok(service.createVNPayURL(userId, paymentRequest, request, false));
-        }
-
-        @PostMapping("/vnpay/get-url-detail")
-        public ResponseEntity<ApiResponse<String>> createVNPayURLFromDetail(
-                        @Valid @RequestBody UserPaymentRequest paymentRequest,
-                        HttpServletRequest request) {
-
-                Integer userId = (Integer) request.getAttribute("currentUserId");
-                return ResponseEntity.ok(service.createVNPayURL(userId, paymentRequest, request, true));
-        }
-
         @PostMapping("/vnpay/check")
         public ResponseEntity<ApiResponse<Boolean>> vnPayReturn(
-                        HttpServletRequest request,
                         @RequestBody UserPaymentCheck paymentCheck) {
 
-                Integer userId = (Integer) request.getAttribute("currentUserId");
-
-                // Gọi service truyền toàn bộ PaymentCheck
                 return ResponseEntity.ok(
-                                service.handleVNPayReturn(userId, paymentCheck));
+                                service.handleVNPayReturn(paymentCheck));
         }
 
          @PostMapping("/vnpay/settlements")
         public ResponseEntity<ApiResponse<String>> createVNPayURLForSettlements(
-                        @Valid @RequestBody UserPaymentsRequest paymentRequest,
                         HttpServletRequest request) {
 
                 Integer userId = (Integer) request.getAttribute("currentUserId");
-                return ResponseEntity.ok(service.createVNPayURLForSettlements(userId, paymentRequest, request));
+                return ResponseEntity.ok(service.createVNPayURLForSettlements(userId, request));
         }
 
 }

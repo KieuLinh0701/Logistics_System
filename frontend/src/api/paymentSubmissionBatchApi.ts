@@ -2,7 +2,7 @@ import type { ApiResponse, ListResponse } from "../types/response";
 import axiosClient from "./axiosClient";
 import type { SearchRequest } from "../types/request";
 import { axiosExport } from "./exportClient";
-import type { ManagerPaymentSubmissionBatch, ManagerPaymentSubmissionBatchCreateRequest, ManagerPaymentSubmissionBatchEditRequest } from "../types/paymentSubmissionBatch";
+import type { ManagerPaymentSubmissionBatch, ManagerPaymentSubmissionBatchEditRequest } from "../types/paymentSubmissionBatch";
 
 const paymentSubmissionBatchApi = {
   // Manager
@@ -11,13 +11,8 @@ const paymentSubmissionBatchApi = {
     return res;
   },
 
-  async createManagerPaymentSubmissionBatch(data: ManagerPaymentSubmissionBatchCreateRequest) {
-    const res = await axiosClient.post<ApiResponse<Boolean>>(`/manager/payment-submission-batchs`, data);
-    return res;
-  },
-
   async updateManagerPaymentSubmissionBatch(id: number, data: ManagerPaymentSubmissionBatchEditRequest) {
-    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/payment-submission-batchs/${id}`, data);
+    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/payment-submission-batchs/${id}`, data);
     return res;
   },
 

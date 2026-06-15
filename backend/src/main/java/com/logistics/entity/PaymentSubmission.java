@@ -4,6 +4,8 @@ package com.logistics.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,7 +24,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import lombok.*;
@@ -45,9 +48,12 @@ public class PaymentSubmission {
     @Column(length = 50, nullable = true, unique = true)
     private String code; // Thêm này cho mã đối soát (COD_NGÀY THÁNG NĂM TẠO_ID)
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
+    
+    @OneToMany(mappedBy = "paymentSubmission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentSubmissionItem> items = new ArrayList<>();
 
     @Column(nullable = false)
     private BigDecimal systemAmount;

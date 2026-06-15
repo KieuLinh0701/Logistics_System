@@ -13,3 +13,10 @@ export interface CalculateTotalFeeUserRequest {
   cod: number;
   orderValue: number;
 }
+
+export interface CalculateWeightRequest {
+  height: number;
+  width: number;
+  length: number;
+  originalWeight: number;
+}

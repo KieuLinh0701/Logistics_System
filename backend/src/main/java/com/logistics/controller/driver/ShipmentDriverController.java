@@ -29,7 +29,6 @@ public class ShipmentDriverController {
         }
         return ResponseEntity.ok(shipmentDriverService.startShipment(id));
     }
-
     @PostMapping("/finish")
     public ResponseEntity<ApiResponse<String>> finishShipment(@RequestBody FinishShipmentRequest request) {
         if (isNotDriver()) {

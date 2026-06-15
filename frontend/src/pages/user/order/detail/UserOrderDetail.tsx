@@ -21,6 +21,7 @@ import FromOfficeInfo from "./components/FromOfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 import { canCreateUserShippingRequestFromOrderDetail } from "../../../../utils/shippingRequestUtils";
 import userApi from "../../../../api/userApi";
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 const UserOrderDetail: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -203,13 +204,13 @@ const UserOrderDetail: React.FC = () => {
         return <div>Đang tải chi tiết đơn hàng...</div>;
     }
 
-    const canEdit = canEditUserOrder(order.status);
-    const canPublic = canPublicUserOrder(order.status);
-    const canCancel = canCancelUserOrder(order.status);
-    const canPrint = canPrintUserOrder(order.status);
-    const canDelete = canDeleteUserOrder(order.status);
-    const canReady = canReadyUserOrder(order.status);
-    const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status);
+    const canEdit = canEditUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_EDIT']);
+    const canPublic = canPublicUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PROCESS']);
+    const canCancel = canCancelUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_CANCEL']);
+    const canPrint = canPrintUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PRINT_SINGLE']);
+    const canDelete = canDeleteUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_DELETE_DRAFT']);
+    const canReady = canReadyUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
+    const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_SUPPORT_CREATE']);
 
     return (
         <div className="order-detail container">
@@ -220,16 +221,12 @@ const UserOrderDetail: React.FC = () => {
                 sender={{
                     name: order.senderName,
                     phone: order.senderPhone,
-                    detail: order.senderDetail,
-                    wardCode: order.senderWardCode,
-                    cityCode: order.senderCityCode,
+                    fullAddress: order.senderFullAddress,
                 }}
                 recipient={{
-                    name: order.recipientAddress.name,
-                    phone: order.recipientAddress.phoneNumber,
-                    detail: order.recipientAddress.detail,
-                    wardCode: order.recipientAddress.wardCode,
-                    cityCode: order.recipientAddress.cityCode,
+                    name: order.recipientName,
+                    phone: order.recipientPhone,
+                    fullAddress: order.recipientFullAddress,
                 }}
             />
             {order.pickupType === "AT_OFFICE" &&

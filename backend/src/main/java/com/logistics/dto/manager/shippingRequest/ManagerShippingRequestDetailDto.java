@@ -22,9 +22,7 @@ public class ManagerShippingRequestDetailDto {
     private String contactName;
     private String contactEmail;
     private String contactPhoneNumber;
-    private Integer contactCityCode;
-    private Integer contactWardCode;
-    private String contactDetail;
+    private String contactFullAddress;
     private String handlerName;
     private String handlerPhone;
     private String handlerEmail;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, Col, Form, Input, Row } from "antd";
 import type { FormInstance } from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
@@ -10,32 +10,42 @@ interface Props {
         phoneNumber: string;
         detail: string;
         wardCode: number;
+        wardName: string;
         cityCode: number;
+        cityName: string;
+        latitude: number;
+        longitude: number;
     };
+    resetTrigger?: number;
     onChange?: (values: any) => void;
 }
 
-const SenderInfo: React.FC<Props> = ({
-    form,
-    sender,
-    onChange
-}) => {
+const SenderInfo: React.FC<Props> = ({ form, sender, onChange, resetTrigger }) => {
+    const watchedName   = Form.useWatch("name", form);
+    const watchedPhone  = Form.useWatch("phoneNumber", form);
+    const watchedSender = Form.useWatch("sender", form);
+
+    useEffect(() => {
+        onChange?.(form.getFieldsValue(true));
+    }, [watchedName, watchedPhone, watchedSender]);
+
     return (
         <div className="create-order-card-container">
             <Form
                 form={form}
                 layout="vertical"
                 initialValues={{
-                    senderName: sender.name,
-                    senderPhone: sender.phoneNumber,
+                    name: sender.name,
+                    phoneNumber: sender.phoneNumber,
                     sender: {
                         cityCode: sender.cityCode !== 0 ? sender.cityCode : undefined,
+                        cityName: sender.cityName !== "" ? sender.cityName : undefined,
                         wardCode: sender.wardCode !== 0 ? sender.wardCode : undefined,
+                        wardName: sender.wardName !== "" ? sender.wardName : undefined,
+                        latitude: sender.latitude !== 0 ? sender.latitude : undefined,
+                        longitude: sender.longitude !== 0 ? sender.longitude : undefined,
                         detail: sender.detail,
-                    }
-                }}
-                onValuesChange={(_, allValues) => {
-                    onChange?.(allValues);
+                    },
                 }}
             >
                 <Card className="create-order-custom-card">
@@ -50,7 +60,8 @@ const SenderInfo: React.FC<Props> = ({
                                 >
                                     <Input
                                         className="modal-custom-input"
-                                        placeholder="Nhập tên người gửi" />
+                                        placeholder="Nhập tên người gửi"
+                                    />
                                 </Form.Item>
 
                                 <Form.Item
@@ -66,7 +77,8 @@ const SenderInfo: React.FC<Props> = ({
                                 >
                                     <Input
                                         className="modal-custom-input"
-                                        placeholder="Ví dụ: 0901234567" />
+                                        placeholder="Ví dụ: 0901234567"
+                                    />
                                 </Form.Item>
                             </Col>
 
@@ -74,6 +86,7 @@ const SenderInfo: React.FC<Props> = ({
                                 <AddressForm
                                     form={form}
                                     prefix="sender"
+                                    resetTrigger={resetTrigger}
                                 />
                             </Col>
                         </Row>

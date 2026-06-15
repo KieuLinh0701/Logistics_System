@@ -35,17 +35,78 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
 
         <div className="order-detail-card-inner">
           <div className="order-detail-card-column">
-            {renderField("Trạng thái:", translateOrderStatus(order.status))}
-            {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
-            {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
-            {order.deliveredAt && renderField(timeLabel, new Date(order.deliveredAt).toLocaleString())}
-            {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
+              {renderField("Trạng thái:", translateOrderStatus(order.status))}
+              {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
+              {renderField("Dịch vụ:", order.serviceType?.name)}
+              {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
+              {order.deliveredAt && renderField(timeLabel, new Date(order.deliveredAt).toLocaleString())}
+              {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
           </div>
 
           <div className="order-detail-card-column">
-            {renderField("Dịch vụ:", order.serviceType?.name)}
-            {renderField("Trọng lượng:", `${order.weight} kg`)}
-            {renderField("Giá trị:", `${order.orderValue.toLocaleString()} VNĐ`)}
+              {renderField(
+                  "Khối lượng thực tế:",
+                  <div>
+                      {order.adjustedOriginalWeight != null &&
+                          order.adjustedOriginalWeight != order.originalWeight ? (
+                          <>
+                            <span className="custom-table-content-error">
+                              {order.adjustedOriginalWeight} kg
+                            </span>{" "}
+                              <span className="text-muted">
+                              (từ {order.originalWeight} kg)
+                            </span>
+                          </>
+                      ) : (
+                          <span>{order.originalWeight} kg</span>
+                      )}
+                  </div>
+              )}
+
+              {renderField(
+                  "Kích thước (D × R × C):",
+                  <div>
+                      {(order.adjustedLength != null && order.adjustedLength != order.length) ||
+                      (order.adjustedWidth != null && order.adjustedWidth != order.width) ||
+                      (order.adjustedHeight != null && order.adjustedHeight != order.height) ? (
+                          <>
+                              <div className="custom-table-content-error">
+                                  {order.adjustedLength ?? order.length} ×{" "}
+                                  {order.adjustedWidth ?? order.width} ×{" "}
+                                  {order.adjustedHeight ?? order.height} cm
+                              </div>
+                              <div className="text-muted small">
+                                  (từ {order.length} × {order.width} × {order.height} cm)
+                              </div>
+                          </>
+                      ) : (
+                          <span>
+                            {order.length} × {order.width} × {order.height} cm
+                          </span>
+                      )}
+                  </div>
+              )}
+
+              {/* Khối lượng tính phí */}
+              {renderField(
+                  "Khối lượng quy đổi:",
+                  <div>
+                      {order.adjustedWeight != null &&
+                      order.adjustedWeight != order.weight ? (
+                          <>
+                            <span className="custom-table-content-error">
+                              {order.adjustedWeight} kg
+                            </span>{" "}
+                              <span className="text-muted">
+                                (từ {order.weight} kg)
+                              </span>
+                          </>
+                      ) : (
+                          <span>{order.weight} kg</span>
+                      )}
+                  </div>
+              )}
+            {renderField("Giá trị ĐH:", `${order.orderValue.toLocaleString()} VNĐ`)}
             {renderField("COD:", `${(order.cod || 0).toLocaleString()} VNĐ`)}
           </div>
 

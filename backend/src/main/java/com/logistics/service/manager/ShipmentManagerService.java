@@ -415,14 +415,14 @@ public class ShipmentManagerService {
                     .map(so -> so.getOrder().getWeight())
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // Kiểm tra xe có đủ sức chứa với các order hiện tại
+            // Kiểm tra xe có đủ sức chứa với các recipientaddress hiện tại
             if (vehicle != null && totalWeight.compareTo(vehicle.getCapacity()) > 0) {
                 return new ApiResponse<>(false,
                         "Tổng trọng lượng các đơn hiện tại vượt quá sức chứa của xe. Vui lòng chọn xe khác.",
                         false);
             }
 
-            // Kiểm tra các order có phân công khu vực hợp lệ (nếu có employee)
+            // Kiểm tra các recipientaddress có phân công khu vực hợp lệ (nếu có employee)
             if (employee != null && type.equals(ShipmentType.DELIVERY)) {
                 LocalDateTime now = LocalDateTime.now();
                 boolean allOrdersValid = true;

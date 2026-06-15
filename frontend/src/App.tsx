@@ -1,13 +1,13 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { ConfigProvider } from "antd";
+import {BrowserRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+import {ConfigProvider} from "antd";
 import viVN from "antd/locale/vi_VN";
 
 import LoginForm from "./pages/common/Login";
 import RegisterForm from "./pages/common/Register";
 import Home from "./pages/common/Home/Home";
-import { AuthRoute } from "./components/route/AuthRoute";
-import { PrivateRoute } from "./components/route/PrivateRoute";
+import {AuthRoute} from "./components/route/AuthRoute";
+import {PrivateRoute} from "./components/route/PrivateRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ForgotPassword from "./pages/common/ForgotPassword";
 import AccountSettings from "./pages/common/profile/AccountSettings";
@@ -21,7 +21,10 @@ import ShippingRates from "./pages/common/tracking/shippingRate/ShippingRates";
 import "./styles/theme.css";
 import CompanyInfo from "./pages/common/info/CompanyInfo";
 import ContactForm from "./pages/common/info/ContactForm";
-
+import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
+import ShippingRatesBody from "./pages/common/tracking/shippingRate/ShippingRatesBody";
+import OfficeSearchBody from "./pages/common/tracking/officeSearch/OfficeSearchBody";
+import OrderTracking from "./pages/common/tracking/OrderTracking";
 
 import AdminUsers from "./pages/admin/Users";
 import AdminOrders from "./pages/admin/Orders";
@@ -31,36 +34,39 @@ import AdminFeeConfigurations from "./pages/admin/FeeConfigurations";
 import AdminFinancialIndex from "./pages/admin/financial/AdminFinancialIndex";
 import ReportsPage from "./pages/admin/reports/ReportsPage";
 
-import UserProducts from "./pages/user/product/UserProducts";
-import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
-import ShippingFeeBody from "./pages/common/tracking/shippingFee/ShippingFeeBody";
-import ShippingRatesBody from "./pages/common/tracking/shippingRate/ShippingRatesBody";
-import OfficeSearchBody from "./pages/common/tracking/officeSearch/OfficeSearchBody";
-import UserOrderEdit from "./pages/user/order/edit/UserOrderEdit";
-import UserShippingRequests from "./pages/user/order/request/UserShippingRequests";
-import OrderListRouter from "./pages/router/OrderListRouter";
-import VehiclesRouter from "./pages/router/VehiclesRouter";
+// Manager
 import ManagerOffice from "./pages/manager/office/ManagerOffice";
 import ManagerShippingRequests from "./pages/manager/order/request/ManagerShippingRequest";
 import ManagerEmployeeList from "./pages/manager/employee/list/ManagerEmployeeList";
 import ManagerEmployeePerformance from "./pages/manager/employee/perfomance/ManagerEmployeePerformance";
-import OrderCreateRouter from "./pages/router/OrderCreateRouter";
-import OrderDetailRouter from "./pages/router/OrderDetailRouter";
-import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
-import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
+import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
+import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
 import ManagerShipperAssign from "./pages/manager/employee/assign/ManagerShipperAssigns";
 import ManagerShipments from "./pages/manager/shipment/ManagerShipments";
 import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-assign/ManagerShipperAssignmentHistories";
 import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncidentReports";
-import OrderTracking from "./pages/common/tracking/OrderTracking";
+import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
+
+import OrderListRouter from "./pages/router/OrderListRouter";
+import VehiclesRouter from "./pages/router/VehiclesRouter";
+import OrderCreateRouter from "./pages/router/OrderCreateRouter";
+import OrderDetailRouter from "./pages/router/OrderDetailRouter";
+import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
 import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
-import ManagerShipmentOrders from "./pages/manager/shipment/ManagerShipmentOrders";
-import ManagerEmployeePerfomanceShipment from "./pages/manager/employee/perfomance-shipment/ManagerEmployeePerfomanceShipment";
+
+// User
+import UserRoleList from "./pages/user/grouppermission/list/UserRoleList.tsx";
+import UserEmployeeByRoleIdList from "./pages/user/grouppermission/employee/UserEmployeeByRoleIdList.tsx";
+import UserProducts from "./pages/user/product/UserProducts";
+import UserCustomers from "./pages/user/customer/UserCustomers.tsx";
+import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
+import UserOrderEdit from "./pages/user/order/edit/UserOrderEdit";
+import UserShippingRequests from "./pages/user/order/request/UserShippingRequests";
+import UserEmployeeList from "./pages/user/employee/list/UserEmployeeList.tsx";
 
 // Shipper
-import ShipperDashboard from "./pages/shipper/Dashboard";
 import ShipperOrders from "./pages/shipper/Orders";
 import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
 import ShipperOrderDetail from "./pages/shipper/OrderDetail";
@@ -72,116 +78,203 @@ import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests"
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 
 // Driver
-import DriverDashboard from "./pages/driver/Dashboard";
-import DriverOrders from "./pages/driver/Orders";
 import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
 import PromotionList from "./pages/common/info/PromotionList";
 import AdminPromotions from "./pages/admin/Promotions";
 import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
+import MyLeavePage from "./pages/leave/MyLeavePage";
+import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
+import SupportChatPage from "./pages/chat/SupportChatPage";
+import ChatWidget from "./pages/chat/ChatWidget";
+
+// Recruitment
+import RecruitmentPage from "./pages/common/recruitment/RecruitmentPage";
+import JobDetailPage from "./pages/common/recruitment/JobDetailPage";
+import ApplyJobPage from "./pages/common/recruitment/ApplyJobPage";
+import JobPostingManagementPage from "./pages/hr/recruitment/job-posting/JobPostingManagementPage";
+import ApplicationReviewPage from "./pages/hr/recruitment/application/ApplicationReviewPage";
+import UserEmployeeHistory from "./pages/user/employee/history/UserEmployeeHistory.tsx";
 
 const App: React.FC = () => {
-  return (
-    <ConfigProvider locale={viVN}>
-      <Router>
-        <Routes>
-          {/* Redirect root */}
-          <Route path="/" element={<Navigate to="/home" replace />} />
+    return (
+        <ConfigProvider locale={viVN}>
+            <Router>
+                <Routes>
+                    {/* Redirect root */}
+                    <Route path="/" element={<Navigate to="/home" replace/>}/>
 
-          {/* Public pages */}
-          <Route path="/home" element={<Home />} />
-          {/* Dịch vụ */}
-          <Route path="/info/services" element={<ServiceTypes />} />
-          <Route path="/info/company" element={<CompanyInfo />} />
-          <Route path="/info/contact" element={<ContactForm />} />
-          <Route path="/info/promotions" element={<PromotionList />} />
+                    {/* Public pages */}
+                    <Route path="/home" element={<Home/>}/>
+                    {/* Dịch vụ */}
+                    <Route path="/info/services" element={<ServiceTypes/>}/>
+                    <Route path="/info/company" element={<CompanyInfo/>}/>
+                    <Route path="/info/contact" element={<ContactForm/>}/>
+                    <Route path="/info/promotions" element={<PromotionList/>}/>
 
-          {/* Tra cứu */}
-          <Route path="/tracking/shipping-fee" element={<ShippingFee />} />
-          <Route path="/tracking/office-search" element={<OfficeSearch />} />
-          <Route path="/tracking/shipping-rates" element={<ShippingRates />} />
-          <Route path="/tracking/order-tracking" element={<OrderTracking />} />
-          <Route path="/tracking/order-tracking/:trackingNumber" element={<OrderTracking />} />
+                    {/* Tra cứu */}
+                    <Route path="/tracking/shipping-fee" element={<ShippingFee/>}/>
+                    <Route path="/tracking/office-search" element={<OfficeSearch/>}/>
+                    <Route path="/tracking/shipping-rates" element={<ShippingRates/>}/>
+                    <Route path="/tracking/order-tracking" element={<OrderTracking/>}/>
+                    <Route path="/tracking/order-tracking/:trackingNumber" element={<OrderTracking/>}/>
 
-          <Route path="/login" element={<AuthRoute type="public"><LoginForm /></AuthRoute>} />
-          <Route path="/register" element={<AuthRoute type="public"><RegisterForm /></AuthRoute>} />
-          <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword /></AuthRoute>} />
+                    {/* Recruitment public routes */}
+                    <Route path="/jobs" element={<RecruitmentPage/>}/>
+                    <Route path="/jobs/:id" element={<JobDetailPage/>}/>
+                    <Route path="/jobs/:id/apply" element={<ApplyJobPage/>}/>
 
-          {/* Dynamic role routes */}
-          <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-            <Route path="/account/settings" element={<PrivateRoute><AccountSettings /></PrivateRoute>} />
-            <Route path="/dashboard" element={<PrivateRoute><DashboardRouter /></PrivateRoute>} />
-            <Route path="/notifications" element={<PrivateRoute><NotificationList /></PrivateRoute>} />
-            <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail /></PrivateRoute>} />
+                    <Route path="/login" element={<AuthRoute type="public"><LoginForm/></AuthRoute>}/>
+                    <Route path="/register" element={<AuthRoute type="public"><RegisterForm/></AuthRoute>}/>
+                    <Route path="/forgot-password" element={<AuthRoute type="public"><ForgotPassword/></AuthRoute>}/>
 
-            {/* Admin routes */}
-            <Route path="/users" element={<PrivateRoute allowedRoles={['admin']}><AdminUsers /></PrivateRoute>} />
-            <Route path="/postoffices" element={<PrivateRoute allowedRoles={['admin']}><AdminPostOffices /></PrivateRoute>} />
-            <Route path="/service-types" element={<PrivateRoute allowedRoles={['admin']}><AdminServiceTypes /></PrivateRoute>} />
-            <Route path="/orders" element={<PrivateRoute allowedRoles={['admin']}><AdminOrders /></PrivateRoute>} />
-            <Route path="/shipping-requests" element={<PrivateRoute allowedRoles={['admin']}><ShippingRequestsAdmin /></PrivateRoute>} />
-            <Route path="/promotions" element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions /></PrivateRoute>} />
-            <Route path="/fee-configurations" element={<PrivateRoute allowedRoles={['admin']}><AdminFeeConfigurations /></PrivateRoute>} />
-            <Route path="/financial" element={<PrivateRoute allowedRoles={["admin"]}><AdminFinancialIndex /></PrivateRoute>} />
-            <Route path="/reports" element={<PrivateRoute allowedRoles={["admin"]}><ReportsPage /></PrivateRoute>} />
-            
-            {/* Admin & Manager routes */}
-            <Route path="/vehicles" element={<PrivateRoute allowedRoles={['admin', 'manager']}><VehiclesRouter /></PrivateRoute>} />
+                    {/* Dynamic role routes */}
+                    <Route path="/" element={<PrivateRoute><DashboardLayout/></PrivateRoute>}>
+                        <Route path="/account/settings" element={<PrivateRoute><AccountSettings/></PrivateRoute>}/>
+                        <Route path="/dashboard" element={<PrivateRoute><DashboardRouter/></PrivateRoute>}/>
+                        <Route path="/notifications" element={<PrivateRoute><NotificationList/></PrivateRoute>}/>
+                        <Route path="/notifications/:id" element={<PrivateRoute><NotificationDetail/></PrivateRoute>}/>
 
-            {/* User & Manager routes */}
-            <Route path="/orders/list" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderListRouter /></PrivateRoute>} />
-            <Route path="/orders/create" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderCreateRouter /></PrivateRoute>} />
-            <Route path="/orders/print" element={<PrivateRoute allowedRoles={['user', 'manager']}><WaybillPrintRouter /></PrivateRoute>} />
-            <Route path="/settlements" element={<PrivateRoute allowedRoles={['user', 'manager']}><SettlementRouter /></PrivateRoute>} />
-            <Route path="/settlements/:id" element={<PrivateRoute allowedRoles={['manager', 'user']}><SettlementDetailRouter /></PrivateRoute>} />
-            <Route path="/orders/tracking/:trackingNumber/edit" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderEditRouter /></PrivateRoute>} />
-            <Route path="/orders/tracking/:trackingNumber" element={<PrivateRoute allowedRoles={['user', 'manager']}><OrderDetailRouter /></PrivateRoute>} />
+                        {/* Admin routes */}
+                        <Route path="/users"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminUsers/></PrivateRoute>}/>
+                        <Route path="/postoffices"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminPostOffices/></PrivateRoute>}/>
+                        <Route path="/service-types"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminServiceTypes/></PrivateRoute>}/>
+                        <Route path="/orders"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminOrders/></PrivateRoute>}/>
+                        <Route path="/shipping-requests" element={<PrivateRoute
+                            allowedPermissionGroups={["group_admin"]}><ShippingRequestsAdmin/></PrivateRoute>}/>
+                        <Route path="/promotions"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminPromotions/></PrivateRoute>}/>
+                        <Route path="/fee-configurations" element={<PrivateRoute
+                            allowedPermissionGroups={["group_admin"]}><AdminFeeConfigurations/></PrivateRoute>}/>
+                        <Route path="/financial"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminFinancialIndex/></PrivateRoute>}/>
+                        <Route path="/reports"
+                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><ReportsPage/></PrivateRoute>}/>
 
-            {/* User routes */}
-            <Route path="/orders/requests" element={<PrivateRoute allowedRoles={['user']}><UserShippingRequests /></PrivateRoute>} />
-            <Route path="/orders/id/:orderId/edit" element={<PrivateRoute allowedRoles={['user']}><UserOrderEdit /></PrivateRoute>} />
-            <Route path="/orders/id/:orderId" element={<PrivateRoute allowedRoles={['user']}><UserOrderDetail /></PrivateRoute>} />
-            <Route path="/products" element={<PrivateRoute allowedRoles={['user']}><UserProducts /></PrivateRoute>} />
-            <Route path="/bank-accounts" element={<PrivateRoute allowedRoles={['user']}><UserBankAccounts /></PrivateRoute>} />
-            <Route path="/shipping-fee" element={<PrivateRoute allowedRoles={['user']}><ShippingFeeBody /></PrivateRoute>} />
-            <Route path="/office-search" element={<PrivateRoute allowedRoles={['user']}><OfficeSearchBody /></PrivateRoute>} />
-            <Route path="/shipping-rates" element={<PrivateRoute allowedRoles={['user']}><ShippingRatesBody /></PrivateRoute>} />
+                        <Route path="/support/tickets" element={<PrivateRoute
+                            allowedPermissionGroups={["group_admin", "group_manager"]}><SupportChatPage/></PrivateRoute>}/>
+                        <Route path="/support/tickets/:id" element={<PrivateRoute
+                            allowedPermissionGroups={["group_admin", "group_manager"]}><SupportChatPage/></PrivateRoute>}/>
 
-            {/* Manager */}
-            <Route path="/office" element={<PrivateRoute allowedRoles={['manager']}><ManagerOffice /></PrivateRoute>} />
-            <Route path="/supports" element={<PrivateRoute allowedRoles={['manager']}><ManagerShippingRequests /></PrivateRoute>} />
-            <Route path="/employees/list" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeeList /></PrivateRoute>} />
-            <Route path="/employees/performance" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerformance /></PrivateRoute>} />
-            <Route path="employees/performance/:employeeId/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerEmployeePerfomanceShipment /></PrivateRoute>} />
-            <Route path="employees/performance/:employeeId/shipments/:shipmentId/orders" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipmentOrders /></PrivateRoute>} />
-            <Route path="/shipments" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipments /></PrivateRoute>} />
-            <Route path="/shipments/:shipmentId/orders" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipmentOrders /></PrivateRoute>} />
-            <Route path="/employees/assign-area" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssign /></PrivateRoute>} />
-            <Route path="/employees/assign-history" element={<PrivateRoute allowedRoles={['manager']}><ManagerShipperAssignmentHistory /></PrivateRoute>} />
-            <Route path="/orders/incidents" element={<PrivateRoute allowedRoles={['manager']}><ManagerIncidentReports /></PrivateRoute>} />
+                        <Route
+                            path="/recruitment/hr/jobs"
+                            element={<PrivateRoute
+                                allowedPermissionGroups={["group_admin", "group_manager"]}><JobPostingManagementPage/></PrivateRoute>}
+                        />
+                        <Route
+                            path="/recruitment/hr/applications"
+                            element={<PrivateRoute
+                                allowedPermissionGroups={["group_admin", "group_manager"]}><ApplicationReviewPage/></PrivateRoute>}
+                        />
 
-            {/* Shipper routes */}
-            <Route path="/shipper/orders-unassigned" element={<PrivateRoute allowedRoles={['shipper']}><ShipperUnassignedOrders /></PrivateRoute>} />
-            <Route path="/shipper/orders" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrders /></PrivateRoute>} />
-            <Route path="/shipper/orders/:id" element={<PrivateRoute allowedRoles={['shipper']}><ShipperOrderDetail /></PrivateRoute>} />
-            <Route path="/shipper/scan-barcode" element={<PrivateRoute allowedRoles={['shipper']}><ShipperBarcodeScanner /></PrivateRoute>} />
-            <Route path="/route" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryRoute /></PrivateRoute>} />
-            <Route path="/shipper/shipping-requests" element={<PrivateRoute allowedRoles={['shipper']}><ShippingRequests /></PrivateRoute>} />
-            <Route path="/history" element={<PrivateRoute allowedRoles={['shipper']}><ShipperDeliveryHistory /></PrivateRoute>} />
-            <Route path="/cod" element={<PrivateRoute allowedRoles={['shipper']}><ShipperCODManagement /></PrivateRoute>} />
-            <Route path="/report" element={<PrivateRoute allowedRoles={['shipper']}><ShipperIncidentReport /></PrivateRoute>} />
+                        {/* Admin & Manager routes */}
+                        <Route path="/vehicles" element={<PrivateRoute
+                            allowedPermissionGroups={["group_admin", "group_manager"]}><VehiclesRouter/></PrivateRoute>}/>
 
-            {/* Driver routes */}
-            <Route path="/driver/orders" element={<PrivateRoute allowedRoles={['driver']}><DriverOrders /></PrivateRoute>} />
-            <Route path="/driver/shipments" element={<PrivateRoute allowedRoles={['driver']}><DriverShipments /></PrivateRoute>} />
-            <Route path="/driver/route" element={<PrivateRoute allowedRoles={['driver']}><DriverRoute /></PrivateRoute>} />
-            <Route path="/driver/history" element={<PrivateRoute allowedRoles={['driver']}><DriverHistory /></PrivateRoute>} />
-          </Route>
-        </Routes>
-      </Router>
-    </ConfigProvider>
-  );
+                        {/* User & Manager routes */}
+                        <Route path="/orders/list" element={<PrivateRoute
+                            allowedPermissionGroups={["group_user", "group_manager", "user_order_view"]}><OrderListRouter/></PrivateRoute>}/>
+                        <Route path="/orders/create" element={<PrivateRoute
+                            allowedPermissionGroups={["group_user", "group_manager", "user_order_create"]}><OrderCreateRouter/></PrivateRoute>}/>
+                        <Route path="/orders/print" element={<PrivateRoute
+                            allowedPermissionGroups={["group_user", "group_manager", "user_order_print_bulk", "user_order_print_single"]}><WaybillPrintRouter/></PrivateRoute>}/>
+                        <Route path="/orders/tracking/:trackingNumber/edit" element={<PrivateRoute
+                            allowedPermissionGroups={["group_user", "group_manager", "user_order_edit"]}><OrderEditRouter/></PrivateRoute>}/>
+                        <Route path="/orders/tracking/:trackingNumber" element={<PrivateRoute
+                            allowedPermissionGroups={["group_user", "group_manager", "user_order_detail"]}><OrderDetailRouter/></PrivateRoute>}/>
+                        <Route path="/settlements" element={<PrivateRoute
+                            allowedPermissionGroups={["group_user", "group_manager", "user_cod_session_view"]}><SettlementRouter/></PrivateRoute>}/>
+                        <Route path="/settlements/:id" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager", "group_user", "user_cod_detail"]}><SettlementDetailRouter/></PrivateRoute>}/>
+
+                        {/* User routes */}
+                        <Route path="/orders/requests"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_support_view"]}><UserShippingRequests/></PrivateRoute>}/>
+                        <Route path="/orders/id/:orderId/edit"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_order_edit"]}><UserOrderEdit/></PrivateRoute>}/>
+                        <Route path="/orders/id/:orderId"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_order_detail"]}><UserOrderDetail/></PrivateRoute>}/>
+                        <Route path="/products"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_product_view"]}><UserProducts/></PrivateRoute>}/>
+                        <Route path="/employees"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_employee_view"]}><UserEmployeeList/></PrivateRoute>}/>
+                        <Route path="/employees/:id/work-history"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_employee_history_view"]}><UserEmployeeHistory/></PrivateRoute>}/>
+                        <Route path="/roles"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_permission_group_view"]}><UserRoleList/></PrivateRoute>}/>
+                        <Route path="/roles/:id/employees"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_permission_group_user_view"]}><UserEmployeeByRoleIdList/></PrivateRoute>}/>
+                        <Route path="/customers"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_customer_view"]}><UserCustomers/></PrivateRoute>}/>
+                        <Route path="/bank-accounts"
+                               element={<PrivateRoute allowedPermissionGroups={["group_user", "user_bank_view"]}><UserBankAccounts/></PrivateRoute>}/>
+
+                        {/* Manager */}
+                        <Route path="/office"
+                               element={<PrivateRoute allowedPermissionGroups={["group_manager"]}><ManagerOffice/></PrivateRoute>}/>
+                        <Route path="/supports" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerShippingRequests/></PrivateRoute>}/>
+                        <Route path="/employees/list" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerEmployeeList/></PrivateRoute>}/>
+                        <Route path="/employees/performance" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerEmployeePerformance/></PrivateRoute>}/>
+                        <Route path="employees/performance/:employeeId/shipments" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerEmployeePerfomanceShipment/></PrivateRoute>}/>
+                        <Route path="employees/performance/:employeeId/shipments/:shipmentId/orders"
+                               element={<PrivateRoute
+                                   allowedPermissionGroups={["group_manager"]}><ManagerShipmentOrders/></PrivateRoute>}/>
+                        <Route path="/shipments"
+                               element={<PrivateRoute allowedPermissionGroups={["group_manager"]}><ManagerShipments/></PrivateRoute>}/>
+                        <Route path="/shipments/:shipmentId/orders" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerShipmentOrders/></PrivateRoute>}/>
+                        <Route path="/employees/assign-area" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerShipperAssign/></PrivateRoute>}/>
+                        <Route path="/employees/assign-history" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerShipperAssignmentHistory/></PrivateRoute>}/>
+                        <Route path="/orders/incidents" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerIncidentReports/></PrivateRoute>}/>
+                        <Route path="/manager/leaves" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><LeaveManagementPage/></PrivateRoute>}/>
+
+                        {/* Shipper routes */}
+                        <Route path="/shipper/orders-unassigned" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperUnassignedOrders/></PrivateRoute>}/>
+                        <Route path="/shipper/orders"
+                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperOrders/></PrivateRoute>}/>
+                        <Route path="/shipper/orders/:id"
+                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperOrderDetail/></PrivateRoute>}/>
+                        <Route path="/shipper/scan-barcode" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperBarcodeScanner/></PrivateRoute>}/>
+                        <Route path="/route" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperDeliveryRoute/></PrivateRoute>}/>
+                        <Route path="/shipper/shipping-requests"
+                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShippingRequests/></PrivateRoute>}/>
+                        <Route path="/history" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperDeliveryHistory/></PrivateRoute>}/>
+                        <Route path="/cod" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperCODManagement/></PrivateRoute>}/>
+                        <Route path="/report" element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperIncidentReport/></PrivateRoute>}/>
+                        <Route path="/employee/leaves" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper", "group_driver"]}><MyLeavePage/></PrivateRoute>}/>
+
+                        {/* Driver routes */}
+                        <Route path="/driver/shipments"
+                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverShipments/></PrivateRoute>}/>
+                        <Route path="/driver/route"
+                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverRoute/></PrivateRoute>}/>
+                        <Route path="/driver/history"
+                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverHistory/></PrivateRoute>}/>
+                    </Route>
+                </Routes>
+                <ChatWidget/>
+            </Router>
+        </ConfigProvider>
+    );
 };
 
 export default App;

@@ -8,7 +8,9 @@ export interface DecodedToken {
   account: {
     id: number;
     email: string;
-    role: string;
+    roleId: string;
+    roleName: string;
+    permissionGroups?: string[];
   };
   exp: number;
   iat: number;

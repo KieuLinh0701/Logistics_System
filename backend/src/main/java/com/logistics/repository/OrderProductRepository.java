@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,9 @@ import org.springframework.stereotype.Repository;
 public interface OrderProductRepository
         extends JpaRepository<OrderProduct, Integer>, JpaSpecificationExecutor<OrderProduct> {
     List<OrderProduct> findByOrderId(Integer orderId);
+        // Lấy danh sách OrderProduct theo orderId
+        @Query("SELECT op FROM OrderProduct op JOIN FETCH op.product p WHERE op.order.id = :orderId")
+        List<OrderProduct> findByOrderIdWithProduct(@Param("orderId") Integer orderId);
 
     // Top 5 sản phẩm bán chạy nhất
     @Query("""
@@ -64,5 +68,24 @@ public interface OrderProductRepository
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
             Pageable pageable);
+    // Cập nhật số lượng đã giao  
+    @Modifying
+    @Query("""
+            UPDATE OrderProduct p
+            SET p.deliveredQuantity = COALESCE(p.deliveredQuantity, 0) + :qty
+            WHERE p.id = :id
+              AND (p.quantity - COALESCE(p.deliveredQuantity, 0) - COALESCE(p.returnedQuantity, 0)) >= :qty
+            """)
+    int incrementDelivered(@Param("id") Integer id, @Param("qty") int qty);
+    
+    // Cập nhật số lượng đã trả hàng
+    @Modifying
+    @Query("""
+            UPDATE OrderProduct p
+            SET p.returnedQuantity = COALESCE(p.returnedQuantity, 0) + :qty
+            WHERE p.id = :id
+              AND (p.quantity - COALESCE(p.deliveredQuantity, 0) - COALESCE(p.returnedQuantity, 0)) >= :qty
+            """)
+    int incrementReturned(@Param("id") Integer id, @Param("qty") int qty);
 
 }

@@ -3,6 +3,8 @@ package com.logistics.controller.manager;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
+import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
+import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -35,6 +37,13 @@ public class OrderManagerController {
         return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
     }
 
+    @GetMapping("/status-counts")
+    public ResponseEntity<ApiResponse<List<ManagerOrderStatusCountResponse>>> getStatusCounts(
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.getStatusCounts(userId));
+    }
+
     @GetMapping("/all-ids")
     public ResponseEntity<ApiResponse<List<Integer>>> getAllOrderIds(
             @Valid UserOrderSearchRequest userOrderSearchRequest,
@@ -44,7 +53,7 @@ public class OrderManagerController {
         return ResponseEntity.ok(service.getAllOrderIds(userId, userOrderSearchRequest));
     }
 
-    @GetMapping("/{trackingNumber}")
+    @GetMapping("/tracking/{trackingNumber}")
     public ResponseEntity<ApiResponse<ManagerOrderDetailDto>> getOrderByTrackingNumber(
             @PathVariable String trackingNumber,
             HttpServletRequest request) {

@@ -6,7 +6,7 @@ import ProfileSettings from './components/ProfileSettings';
 import PasswordSettings from './components/PasswordSettings';
 import Title from 'antd/es/typography/Title';
 import './AccountSettings.css';
-import { getUserRole } from '../../../utils/authUtils';
+import {getUserRole, hasPermissionGroup} from '../../../utils/authUtils';
 import AddressSettingsUser from './components/userAddress/AddressSettingsUser';
 
 const AccountSettings: React.FC = () => {
@@ -56,7 +56,7 @@ const AccountSettings: React.FC = () => {
     },
   ];
 
-  if (role === "user") {
+  if (hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_VIEW'])) {
     tabs.push({
       key: 'address',
       label: (

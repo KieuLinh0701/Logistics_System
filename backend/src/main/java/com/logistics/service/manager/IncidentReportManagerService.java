@@ -59,12 +59,6 @@ public class IncidentReportManagerService {
 
     private final IncidentReportRepository incidentRepository;
 
-    private final AddressRepository addressRepository;
-
-    private final Cloudinary cloudinary;
-
-    private final ShippingRequestAttachmentRepository shippingRequestAttachmentRepository;
-
     private final EmployeeManagerService employeeManagerService;
 
     private final NotificationService notificationService;

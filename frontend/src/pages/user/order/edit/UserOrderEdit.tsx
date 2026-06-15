@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
@@ -33,6 +33,8 @@ import { canEditUserOrderStatus, type OrderStatus } from "../../../../utils/orde
 import ConfirmModal from "../../../common/ConfirmModal";
 import { canEditUserOrderField } from "../../../../utils/userOrderEditRules";
 import userApi from "../../../../api/userApi";
+import {geocodeAddress} from "../../../../service/mapsService.ts";
+import type {RecipientInfoRef} from "../create/components/RecipientInfo.tsx";
 
 const UserOrderEdit: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -96,9 +98,13 @@ const UserOrderEdit: React.FC = () => {
     const [payer, setPayer] = useState<string>("CUSTOMER");
     const [discountAmount, setDiscountAmount] = useState<number | undefined>(undefined);
     const [notes, setNotes] = useState("");
-    const [shippingFee, setShippingFee] = useState<number | undefined>(undefined);
+    const [_, setShippingFee] = useState<number | undefined>(undefined);
     const [pickupType, setPickupType] = useState<string | undefined>(undefined);
     const [serviceFee, setServiceFee] = useState<number | undefined>(undefined);
+    const [originalWeight, setOriginalWeight] = useState<number | undefined>(undefined);
+    const [length, setLength] = useState<number | undefined>(undefined);
+    const [width, setWidth] = useState<number | undefined>(undefined);
+    const [height, setHeight] = useState<number | undefined>(undefined);
 
     const [tempStatus, setTempStatus] = useState<"DRAFT" | "PENDING">("DRAFT");
 
@@ -110,7 +116,12 @@ const UserOrderEdit: React.FC = () => {
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: "",
         cityCode: 0,
+        cityName: "",
+        latitude: 0,
+        longitude: 0,
+        fullAddress: ""
     });
     const [senderData, setSenderData] = useState(empty);
     const [recipientData, setRecipientData] = useState(empty);
@@ -119,7 +130,7 @@ const UserOrderEdit: React.FC = () => {
     const [isHasOfficeSender, setIsHasOfficeSender] = useState(true);
     const [isHasOfficeRecipient, setIsHasOfficerRecipient] = useState(true);
 
-    const [userLocked, setUserLocked] = useState<Boolean>(false);
+    const [userLocked, setUserLocked] = useState<boolean>(false);
 
     // Form instances
     const [senderInfo] = Form.useForm();
@@ -127,6 +138,10 @@ const UserOrderEdit: React.FC = () => {
     const [paymentCard] = Form.useForm();
     const [fromOffice] = Form.useForm();
     const [orderInfo] = Form.useForm();
+
+    // Thông tin người nhận
+    const [savedRecipientAddressId, setSavedRecipientAddressId] = useState<number | null>(null);
+    const [saveRecipient, setSaveRecipient] = useState(false);
 
     // Đơn hàng để chỉnh sửa
     const fetchOrder = async () => {
@@ -214,19 +229,34 @@ const UserOrderEdit: React.FC = () => {
             phoneNumber: order.senderPhone || '',
             detail: order?.senderDetail || '',
             cityCode: order?.senderCityCode ?? 0,
-            wardCode: order?.senderWardCode ?? 0
+            cityName: order?.senderCityName || '',
+            wardCode: order?.senderWardCode ?? 0,
+            wardName: order?.senderWardName || '',
+            latitude: order?.senderLatitude || 0,
+            longitude: order?.senderLongitude || 0,
+            fullAddress: order?.senderFullAddress || '',
         });
 
         setRecipientData({
-            name: order.recipientAddress.name || '',
-            phoneNumber: order.recipientAddress.phoneNumber || '',
-            detail: order.recipientAddress.detail || '',
-            cityCode: order.recipientAddress.cityCode ?? 0,
-            wardCode: order.recipientAddress.wardCode ?? 0
+            name: order.recipientName || '',
+            phoneNumber: order.recipientPhone || '',
+            detail: order.recipientDetail || '',
+            cityCode: order.recipientCityCode ?? 0,
+            cityName: order.recipientCityName || '',
+            wardCode: order.recipientWardCode ?? 0,
+            wardName: order.recipientWardName || '',
+            latitude: order.recipientLatitude || 0,
+            longitude: order.recipientLongitude || 0,
+            fullAddress: order.recipientFullAddress || '',
         });
 
         setSelectedServiceType(order.serviceType);
         setWeight(order.weight);
+        setOriginalWeight(order.originalWeight)
+        setHeight(order.height)
+        setWidth(order.width)
+        setLength(order.length)
+        setDiscountAmount(order.discountAmount);
         setCodAmount(order.cod);
         setOrderValue(order.orderValue);
         setPickupType(order.pickupType);
@@ -237,6 +267,7 @@ const UserOrderEdit: React.FC = () => {
         setSelectedPromotion(order.promotion ?? null);
         setInitialOrderProducts(order.orderProducts);
         setNotes(order.notes);
+        setSavedRecipientAddressId(order.recipientAddress?.id ?? null);
 
         console.log("promotion", selectedPromotion);
 
@@ -333,7 +364,43 @@ const UserOrderEdit: React.FC = () => {
         setShowPromoModal(true);
     };
 
+    const handleCalculateWeight = async (
+        length: number,
+        width: number,
+        height: number,
+        originalWeight: number
+        ) => {
+        try {
+            const result = await shippingFeeApi.calculateWeight({
+                length,
+                width,
+                height,
+                originalWeight,
+            });
+
+            if (result.success && result.data !== undefined) {
+                const calculated = result.data;
+                setWeight(calculated || undefined);
+                orderInfo.setFieldValue("weight", calculated);
+            } else {
+                message.error(result.message || "Không thể tính khối lượng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tính khối lượng");
+        }
+    };
+
     useEffect(() => {
+        if (length && width && height && originalWeight) {
+            handleCalculateWeight(length, width, height, originalWeight);
+        }
+    }, [originalWeight, length, width, height,]);
+
+    useEffect(() => {
+        if (order != null && !canEditUserOrderField('promotion', order.status as OrderStatus)) {
+            return;
+        }
+
         if (!selectedPromotion) {
             setDiscountAmount(0);
             return;
@@ -362,7 +429,6 @@ const UserOrderEdit: React.FC = () => {
         setDiscountAmount(discount);
     }, [selectedPromotion, serviceFee]);
 
-
     // Người gửi với địa chỉ mặc định
     useEffect(() => {
         if (addresses && addresses.length > 0) {
@@ -371,7 +437,12 @@ const UserOrderEdit: React.FC = () => {
                 phoneNumber: selectedAddress?.phoneNumber || '',
                 detail: selectedAddress?.detail || '',
                 cityCode: selectedAddress?.cityCode ?? 0,
-                wardCode: selectedAddress?.wardCode ?? 0
+                wardCode: selectedAddress?.wardCode ?? 0,
+                cityName: selectedAddress?.cityName || '',
+                wardName: selectedAddress?.wardName || '',
+                latitude: selectedAddress?.latitude ?? 0,
+                longitude: selectedAddress?.longitude ?? 0,
+                fullAddress: selectedAddress?.fullAddress || ''
             });
         }
 
@@ -412,8 +483,12 @@ const UserOrderEdit: React.FC = () => {
                 ...address,
                 address: {
                     cityCode: address.cityCode || undefined,
+                    cityName: address.cityName || '',
                     wardCode: address.wardCode || undefined,
-                    detail: address.detail || ''
+                    wardName: address.wardName || '',
+                    detail: address.detail || '',
+                    latitude: address.latitude || undefined,
+                    longitude: address.longitude || undefined
                 }
             });
         } else {
@@ -422,14 +497,26 @@ const UserOrderEdit: React.FC = () => {
                 phoneNumber: '',
                 detail: '',
                 wardCode: 0,
+                wardName: '',
                 cityCode: 0,
+                cityName: '',
+                longitude: 0,
+                latitude: 0,
                 isDefault: addresses.length === 0
             };
             setEditingAddress(emptyAddress);
             form.resetFields();
             form.setFieldsValue({
                 ...emptyAddress,
-                address: { cityCode: undefined, wardCode: undefined, detail: '' }
+                address: {
+                    cityCode: undefined,
+                    cityName: '',
+                    wardCode: undefined,
+                    wardName: '',
+                    detail: '',
+                    latitude: undefined,
+                    longitude: undefined,
+                }
             });
         }
 
@@ -456,7 +543,11 @@ const UserOrderEdit: React.FC = () => {
                 name: values.name,
                 phoneNumber: values.phoneNumber,
                 cityCode: values.address.cityCode,
+                cityName: values.address.cityName,
                 wardCode: values.address.wardCode,
+                wardName: values.address.wardName,
+                latitude: values.address.latitude,
+                longitude: values.address.longitude,
                 detail: values.address.detail,
                 isDefault: values.isDefault,
             };
@@ -534,6 +625,11 @@ const UserOrderEdit: React.FC = () => {
             detail: address.detail,
             wardCode: address.wardCode,
             cityCode: address.cityCode,
+            cityName: address.cityName,
+            wardName: address.wardName,
+            latitude: address.latitude,
+            longitude: address.longitude,
+            fullAddress: address.fullAddress
         });
 
         setSelectedAddress(address);
@@ -681,6 +777,22 @@ const UserOrderEdit: React.FC = () => {
             setWeight(changedValues.weight);
         }
 
+        if (changedValues.originalWeight !== undefined) {
+            setOriginalWeight(changedValues.originalWeight);
+        }
+
+        if (changedValues.height !== undefined) {
+            setHeight(changedValues.height);
+        }
+
+        if (changedValues.width !== undefined) {
+            setWidth(changedValues.width);
+        }
+
+        if (changedValues.length !== undefined) {
+            setLength(changedValues.length);
+        }
+
         if (changedValues.orderValue !== undefined) {
             setOrderValue(changedValues.orderValue);
         }
@@ -810,10 +922,20 @@ const UserOrderEdit: React.FC = () => {
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
+                recipientCityName: recipientData.cityName,
+                recipientWardName: recipientData.wardName,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
                 recipientWardCode: recipientData.wardCode,
                 recipientDetail: recipientData.detail,
+                recipientAddressId: savedRecipientAddressId ?? undefined,
+                saveRecipient: saveRecipient,
                 pickupType: pickupType,
                 weight,
+                originalWeight,
+                height, 
+                length,
+                width,
                 serviceTypeId: selectedServiceType?.id,
                 cod: codAmount || 0,
                 orderValue: orderValue || 0,
@@ -847,8 +969,15 @@ const UserOrderEdit: React.FC = () => {
 
     useEffect(() => {
         const fetchShippingFee = async () => {
-            const hasEnoughData = senderData.cityCode && recipientData.cityCode &&
-                weight && selectedServiceType && codAmount !== undefined && orderValue !== undefined;
+            const effectiveWeight = order?.adjustedWeight != null ? order?.adjustedWeight : weight;
+
+            const hasEnoughData =
+                senderData.cityCode &&
+                recipientData.cityCode &&
+                effectiveWeight &&
+                selectedServiceType &&
+                codAmount !== undefined &&
+                orderValue !== undefined;
 
             if (!hasEnoughData) {
                 setShippingFee(0);
@@ -859,13 +988,13 @@ const UserOrderEdit: React.FC = () => {
             try {
                 const [result1, result2] = await Promise.all([
                     shippingFeeApi.calculateShippingFee({
-                        weight,
+                        weight: effectiveWeight,
                         serviceTypeId: selectedServiceType.id,
                         senderCodeCity: senderData.cityCode,
                         recipientCodeCity: recipientData.cityCode,
                     }),
                     shippingFeeApi.calculateTotalFeeUser({
-                        weight,
+                        weight: effectiveWeight,
                         serviceTypeId: selectedServiceType.id,
                         senderCodeCity: senderData.cityCode,
                         recipientCodeCity: recipientData.cityCode,
@@ -886,12 +1015,48 @@ const UserOrderEdit: React.FC = () => {
         };
 
         fetchShippingFee();
-    }, [senderData.cityCode, recipientData.cityCode, weight, selectedServiceType, codAmount, orderValue]);
+    }, [
+        senderData.cityCode,
+        recipientData.cityCode,
+        weight,
+        order?.adjustedWeight,
+        selectedServiceType,
+        codAmount,
+        orderValue
+    ]);
 
     useEffect(() => {
         if (serviceFee === undefined || discountAmount === undefined) return;
         setTotalFee(Math.max(serviceFee - discountAmount, 0))
     }, [discountAmount, serviceFee]);
+
+    useEffect(() => {
+        const shouldGeocode =
+            recipientData.cityCode &&
+            recipientData.wardCode &&
+            recipientData.detail &&
+            (!recipientData.latitude || !recipientData.longitude);
+
+        if (!shouldGeocode) return;
+
+        const timer = setTimeout(async () => {
+            try {
+                const fullAddr = `${recipientData.detail}, ${recipientData.wardName}, ${recipientData.cityName}, Việt Nam`;
+                const geo = await geocodeAddress(fullAddr);
+                if (geo.results[0]) {
+                    setRecipientData(prev => ({
+                        ...prev,
+                        latitude: geo.results[0].geometry.location.lat,
+                        longitude: geo.results[0].geometry.location.lng,
+                    }));
+                }
+            } catch (err) {
+                console.error("Geocode recipient thất bại:", err);
+            }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [recipientData.cityCode, recipientData.wardCode, recipientData.detail]);
 
     const handleCancelOrder = () => {
         navigate(-1);
@@ -1110,14 +1275,26 @@ const UserOrderEdit: React.FC = () => {
                                         detail: values.recipient?.detail ?? prev.detail,
                                         wardCode: values.recipient?.wardCode ?? prev.wardCode,
                                         cityCode: values.recipient?.cityCode ?? prev.cityCode,
+                                        cityName: values.recipient?.cityName ?? prev.cityName,
+                                        wardName: values.recipient?.wardName ?? prev.wardName,
+                                        latitude: values.recipient?.latitude ?? prev.latitude,
+                                        longitude: values.recipient?.longitude ?? prev.longitude,
                                     }));
                                 }}
+                                recipientAddressId={savedRecipientAddressId}
+                                onSavedAddressSelect={(id) => setSavedRecipientAddressId(id)}
+                                onSaveRecipientChange={(save) => setSaveRecipient(save)}
                             />
 
                             <OrderInfo
                                 form={orderInfo}
                                 codAmount={codAmount}
+                                originalWeight={originalWeight}
+                                length={length}
+                                height={height}
+                                width={width}
                                 weight={weight}
+                                adjustedWeight={order.adjustedWeight}
                                 orderValue={orderValue}
                                 orderProducts={orderProducts}
                                 orderColumns={orderColumns}

@@ -35,6 +35,10 @@ const ManagerOrderCreate: React.FC = () => {
     const [payer, setPayer] = useState<string>("CUSTOMER");
     const [notes, setNotes] = useState("");
     const [_, setShippingFee] = useState<number | undefined>(undefined);
+    const [originalWeight, setOriginalWeight] = useState<number | undefined>(undefined);
+    const [length, setLength] = useState<number | undefined>(undefined);
+    const [width, setWidth] = useState<number | undefined>(undefined);
+    const [height, setHeight] = useState<number | undefined>(undefined);
 
     // Người gửi và người nhận
     const [empty] = useState({
@@ -42,7 +46,11 @@ const ManagerOrderCreate: React.FC = () => {
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: '',
         cityCode: 0,
+        cityName: '',
+        latitude: 0,
+        longitude: 0
     });
     const [senderData, setSenderData] = useState(empty);
     const [recipientData, setRecipientData] = useState(empty);
@@ -59,6 +67,8 @@ const ManagerOrderCreate: React.FC = () => {
     const [recipientInfo] = Form.useForm();
     const [paymentCard] = Form.useForm();
     const [orderInfo] = Form.useForm();
+
+    const [resetTrigger, setResetTrigger] = useState(0);
 
     // Dịch vụ
     useEffect(() => {
@@ -154,14 +164,26 @@ const ManagerOrderCreate: React.FC = () => {
                 senderName: senderData.name,
                 senderPhone: senderData.phoneNumber,
                 senderCityCode: senderData.cityCode,
+                senderCityName: senderData.cityName,
                 senderWardCode: senderData.wardCode,
+                senderWardName: senderData.wardName,
+                senderLatitude: senderData.latitude,
+                senderLongitude: senderData.longitude,
                 senderDetail: senderData.detail,
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
+                recipientCityName: recipientData.cityName,
                 recipientWardCode: recipientData.wardCode,
+                recipientWardName: recipientData.wardName,
                 recipientDetail: recipientData.detail,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
                 weight,
+                originalWeight,
+                length,
+                width,
+                height,
                 serviceTypeId: selectedServiceType?.id,
                 orderValue: orderValue || 0,
                 payer: payer,
@@ -227,6 +249,38 @@ const ManagerOrderCreate: React.FC = () => {
         fetchShippingFee();
     }, [officeCityCode, recipientData.cityCode, weight, selectedServiceType, orderValue]);
 
+    const handleCalculateWeight = async (
+        length: number,
+        width: number,
+        height: number,
+        originalWeight: number
+    ) => {
+        try {
+            const result = await shippingFeeApi.calculateWeight({
+                length,
+                width,
+                height,
+                originalWeight,
+            });
+
+            if (result.success && result.data !== undefined) {
+                const calculated = result.data;
+                setWeight(calculated || undefined);
+                orderInfo.setFieldValue("weight", calculated);
+            } else {
+                message.error(result.message || "Không thể tính khối lượng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi tính khối lượng");
+        }
+    };
+
+    useEffect(() => {
+        if (length && width && originalWeight && height) {
+            handleCalculateWeight(length, width, height, originalWeight);
+        }
+    }, [originalWeight, height, length, width]);
+
     // Tạo đơn mới sau khi tạo thành công 
     const handleResetForm = async () => {
         // Reset tất cả form
@@ -237,6 +291,10 @@ const ManagerOrderCreate: React.FC = () => {
 
         setOrderValue(undefined);
         setWeight(undefined);
+        setOriginalWeight(undefined);
+        setHeight(undefined);
+        setLength(undefined);
+        setWidth(undefined);
         setTotalFee(undefined);
         setPayer("CUSTOMER");
         setNotes("");
@@ -249,10 +307,30 @@ const ManagerOrderCreate: React.FC = () => {
             phoneNumber: "",
             recipient: {
                 cityCode: undefined,
+                cityName: '',
                 wardCode: undefined,
-                detail: ""
+                wardName: '',
+                detail: "",
+                latitude: undefined,
+                longitude: undefined,
             }
         });
+
+        senderInfo.setFieldsValue({
+            name: "",
+            phoneNumber: "",
+            sender: {
+                cityCode: undefined,
+                cityName: '',
+                wardCode: undefined,
+                wardName: '',
+                detail: "",
+                latitude: undefined,
+                longitude: undefined,
+            }
+        });
+
+        setResetTrigger(prev => prev + 1);
     };
 
     return (
@@ -268,6 +346,7 @@ const ManagerOrderCreate: React.FC = () => {
                             <SenderInfo
                                 form={senderInfo}
                                 sender={senderData}
+                                resetTrigger={resetTrigger}
                                 onChange={(values) => {
                                     setSenderData(prev => ({
                                         ...prev,
@@ -275,7 +354,11 @@ const ManagerOrderCreate: React.FC = () => {
                                         phoneNumber: values.phoneNumber ?? prev.phoneNumber,
                                         detail: values.sender?.detail ?? prev.detail,
                                         wardCode: values.sender?.wardCode ?? prev.wardCode,
+                                        wardName: values.sender?.wardName ?? prev.wardName,
                                         cityCode: values.sender?.cityCode ?? prev.cityCode,
+                                        cityName: values.sender?.cityName ?? prev.cityName,
+                                        latitude: values.sender?.latitude ?? prev.latitude,
+                                        longitude: values.sender?.longitude ?? prev.longitude,
                                     }));
                                 }}
                             />
@@ -283,6 +366,7 @@ const ManagerOrderCreate: React.FC = () => {
                             <RecipientInfo
                                 form={recipientInfo}
                                 recipient={recipientData}
+                                resetTrigger={resetTrigger}
                                 onChange={(values) => {
                                     setRecipientData(prev => ({
                                         ...prev,
@@ -290,8 +374,11 @@ const ManagerOrderCreate: React.FC = () => {
                                         phoneNumber: values.phoneNumber ?? prev.phoneNumber,
                                         detail: values.recipient?.detail ?? prev.detail,
                                         wardCode: values.recipient?.wardCode ?? prev.wardCode,
+                                        wardName: values.recipient?.wardName ?? prev.wardName,
                                         cityCode: values.recipient?.cityCode ?? prev.cityCode,
-                                    }));
+                                        cityName: values.recipient?.cityName ?? prev.cityName,
+                                        latitude: values.recipient?.latitude ?? prev.latitude,
+                                        longitude: values.recipient?.longitude ?? prev.longitude,                                    }));
                                 }}
                             />
 
@@ -305,6 +392,10 @@ const ManagerOrderCreate: React.FC = () => {
                                 }}
                                 onChangeOrderInfo={(values) => {
                                     if (values.weight !== undefined) setWeight(values.weight);
+                                    if (values.length !== undefined) setLength(values.length);
+                                    if (values.width !== undefined) setWidth(values.width);
+                                    if (values.height !== undefined) setHeight(values.height);
+                                    if (values.originalWeight !== undefined) setOriginalWeight(values.originalWeight);
                                     if (values.orderValue !== undefined) setOrderValue(values.orderValue);
                                 }}
                             />

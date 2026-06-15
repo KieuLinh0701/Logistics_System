@@ -43,40 +43,6 @@ const OrderTable: React.FC<Props> = ({
 }) => {
 
   const navigate = useNavigate();
-  const [locationMap, setLocationMap] = useState<Record<number, {
-    senderCity: string; senderWard: string;
-    recipientCity: string; recipientWard: string;
-  }>>({});
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const map: Record<number, {
-        senderCity: string; senderWard: string;
-        recipientCity: string; recipientWard: string;
-      }> = {};
-
-      for (const order of orders) {
-        // Sender
-        const senderCityName = (await locationApi.getCityNameByCode(order.senderCityCode)) || "Unknown";
-        const senderWardName = (await locationApi.getWardNameByCode(order.senderCityCode, order.senderWardCode)) || "Unknown";
-
-        // Recipient
-        const recipientCityName = (await locationApi.getCityNameByCode(order.recipientAddress.cityCode)) || "Unknown";
-        const recipientWardName = (await locationApi.getWardNameByCode(order.recipientAddress.cityCode, order.recipientAddress.wardCode)) || "Unknown";
-
-        map[order.id!] = {
-          senderCity: senderCityName,
-          senderWard: senderWardName,
-          recipientCity: recipientCityName,
-          recipientWard: recipientWardName
-        };
-      }
-
-      setLocationMap(map);
-    };
-
-    fetchLocations();
-  }, [orders]);
 
   const columns: ColumnsType<any> = [
     {
@@ -118,14 +84,11 @@ const OrderTable: React.FC<Props> = ({
       key: "sender",
       align: "left",
       render: (_, record) => {
-        const location = locationMap[record.id];
-        const senderAddress = `${record.senderDetail || ""}, ${location?.senderWard || ""}, ${location?.senderCity || ""}`;
-
         return (
           <span className="long-column">
             <span className="custom-table-content-strong">{record.senderName}</span><br />
             {record.senderPhone}<br />
-            <span className="custom-table-content-limit">{senderAddress}</span>
+            <span className="custom-table-content-limit">{record.senderFullAddress}</span>
           </span>
         );
       }
@@ -135,14 +98,11 @@ const OrderTable: React.FC<Props> = ({
       key: "recipient",
       align: "left",
       render: (_, record) => {
-        const location = locationMap[record.id];
-        const recipientAddress = `${record.recipientAddress.detail || ""}, ${location?.recipientWard || ""}, ${location?.recipientCity || ""}`;
-
         return (
           <span className="long-column">
-            <span className="custom-table-content-strong">{record.recipientAddress.name}</span><br />
-            {record.recipientAddress.phoneNumber}<br />
-            <span className="custom-table-content-limit">{recipientAddress}</span>
+            <span className="custom-table-content-strong">{record.recipientName}</span><br />
+            {record.recipientPhone}<br />
+            <span className="custom-table-content-limit">{record.recipientFullAddress}</span>
           </span>
         );
       }
@@ -182,7 +142,23 @@ const OrderTable: React.FC<Props> = ({
       dataIndex: "weight",
       key: "weight",
       align: "center",
-      render: (weight: number) => (weight || 0).toFixed(2)
+      render: (_: any, record: any) => {
+        const declared = (record.weight || 0).toFixed(2);
+        const adjusted = record.adjustedWeight?.toFixed(2);
+
+        // nếu có chỉnh
+        if (record.adjustedWeight != null) {
+          return (
+            <div>
+              <span className="custom-table-content-error">{adjusted}</span><br />
+              (<span className="text-muted custom-text-removed">{declared}</span>)
+            </div>
+          );
+        }
+
+        // nếu không chỉnh
+        return <span>{declared}</span>;
+      }
     },
     {
       title: "Người tạo đơn hàng",

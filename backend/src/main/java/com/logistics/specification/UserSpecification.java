@@ -1,7 +1,10 @@
 package com.logistics.specification;
 
+import com.logistics.entity.Account;
 import com.logistics.entity.AccountRole;
 import com.logistics.entity.Employee;
+import com.logistics.entity.Role;
+import com.logistics.entity.ShopWorkHistory;
 import com.logistics.entity.User;
 import com.logistics.enums.EmployeeStatus;
 
@@ -9,11 +12,19 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserSpecification {
+
+    public static Specification<User> unrestrictedUser() {
+        return (root, query, cb) -> cb.conjunction();
+    }
+
 
     public static Specification<User> fetchAccount() {
         return (root, query, cb) -> {
@@ -103,6 +114,31 @@ public class UserSpecification {
             return cb.or(
                     cb.isNull(root.get("endAt")),
                     cb.greaterThanOrEqualTo(root.get("endAt"), now));
+        };
+    }
+
+    public static Specification<User> hasRole(Integer roleId) {
+        return (root, query, cb) -> {
+            if (roleId == null) return null;
+            query.distinct(true);
+            Join<User, Account> account = root.join("account", JoinType.LEFT);
+            Join<Account, AccountRole> accountRoles = account.join("accountRoles", JoinType.LEFT);
+            Join<AccountRole, Role> role = accountRoles.join("role", JoinType.LEFT);
+            return cb.equal(role.get("id"), roleId);
+        };
+    }
+
+    public static Specification<User> createdAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        return (root, query, cb) -> {
+            if (startDate == null && endDate == null) {
+                return null;
+            } else if (startDate != null && endDate != null) {
+                return cb.between(root.get("createdAt"), startDate, endDate);
+            } else if (startDate != null) {
+                return cb.greaterThanOrEqualTo(root.get("createdAt"), startDate);
+            } else {
+                return cb.lessThanOrEqualTo(root.get("createdAt"), endDate);
+            }
         };
     }
 }
