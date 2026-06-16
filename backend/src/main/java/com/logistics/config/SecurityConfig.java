@@ -27,7 +27,7 @@ public class SecurityConfig {
     private RoleCheckFilter roleCheckFilter;
 
     @Value("${app.cors.allowed-origins}")
-    private String[] allowedOrigins;
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

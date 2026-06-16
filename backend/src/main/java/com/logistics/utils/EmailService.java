@@ -12,8 +12,14 @@ import lombok.RequiredArgsConstructor;
 public class EmailService {
     private final JavaMailSender mailSender;
 
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
+
     @Value("${spring.mail.username}")
     private String fromEmail;
+
+    private final String LOGIN_URL = allowedOrigins + "/login";
+
     public void sendOTPEmail(String to, String otp, String subject) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -121,7 +127,7 @@ public class EmailService {
                 + "Mật khẩu tạm thời: " + tempPassword + "\n\n"
                 + "Vui lòng đăng nhập và đổi mật khẩu sau lần đăng nhập đầu tiên.\n\n"
                 + "Link đăng nhập:\n"
-                + "http://localhost:5173/login \n\n"
+                + LOGIN_URL + "\n\n"
                 + "Trân trọng,\nUTE Logistics";
 
         message.setText(content);
