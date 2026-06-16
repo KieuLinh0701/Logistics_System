@@ -1,7 +1,10 @@
 package com.logistics.utils;
 
 import java.util.Set;
+
+import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.ShipmentStatus;
+import com.logistics.enums.ShipmentType;
 
 public class ShipmentUtils {
 
@@ -27,5 +30,27 @@ public class ShipmentUtils {
 
     public static boolean canManagerAddOrderForShipment(ShipmentStatus status) {
         return ADDED_ORDER_STATUSES_BY_MANAGER.contains(status);
+    }
+
+    public static String translateShipmentStatus(ShipmentStatus value) {
+        if (value == null) return "";
+
+        return switch (value) {
+            case PENDING -> "Chờ khởi hành";
+            case IN_TRANSIT -> "Đang vận chuyển";
+            case COMPLETED -> "Đã hoàn thành";
+            case CANCELLED -> "Đã hủy";
+            default -> value.name();
+        };
+    }
+
+    public static String translateShipmentType(ShipmentType value) {
+        if (value == null) return "";
+
+        return switch (value) {
+            case DELIVERY -> "Giao hàng";
+            case TRANSFER -> "Trung chuyển";
+            default -> value.name();
+        };
     }
 }

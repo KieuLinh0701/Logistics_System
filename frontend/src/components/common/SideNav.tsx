@@ -213,7 +213,7 @@ const SideNav: React.FC = () => {
                     },
                     {
                         key: "/employees/performance",
-                        label: "Hiệu suất nhân viên",
+                        label: "Hiệu suất giao hàng",
                         path: "/employees/performance",
                     },
                     {

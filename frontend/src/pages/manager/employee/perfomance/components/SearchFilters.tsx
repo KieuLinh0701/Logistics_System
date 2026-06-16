@@ -4,7 +4,7 @@ import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import { OFFICE_MANAGER_ADDABLE_ROLES, translateRoleName } from "../../../../../utils/roleUtils";
 import { EMPLOYEE_SHIFTS, EMPLOYEE_STATUSES, translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
 
-type FilterKeys = "role" | 'shift' | 'status';
+type FilterKeys = 'shift' | 'status';
 
 interface Props {
   searchText: string;
@@ -57,17 +57,6 @@ const SearchFilters: React.FC<Props> = ({
             >
               <Select.Option value="ALL">Tất cả trạng thái</Select.Option>
               {EMPLOYEE_STATUSES.map((s) => <Select.Option key={s} value={s}>{translateEmployeeStatus(s)}</Select.Option>)}
-            </Select>
-
-            <Select
-              value={filters.role}
-              onChange={(val) => setFilters("role", val)}
-              className="filter-select"
-            >
-              <Select.Option value="ALL">Tất cả chức vụ</Select.Option>
-              {OFFICE_MANAGER_ADDABLE_ROLES.map((t) => (
-                <Option key={t} value={t}>{translateRoleName(t)}</Option>
-              ))}
             </Select>
 
             <Button

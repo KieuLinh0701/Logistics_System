@@ -6,6 +6,7 @@ import type {
     ManagerShipperAssignmentSearchRequest
 } from "../types/shipperAssignment";
 import {axiosExport} from "./exportClient";
+import type {ManagerEmployeeSearchRequest} from "../types/employee.ts";
 
 const shipperAssignmentApi = {
   // Manager
@@ -29,7 +30,7 @@ const shipperAssignmentApi = {
     return res;
   },
 
-  async exportManagerShipperAssignments(params: ManagerShipperAssignmentSearchRequest) {
+  async exportManagerShipperAssignmentHistory(params: ManagerShipperAssignmentSearchRequest) {
     try {
       const res = await axiosExport.get("/manager/shipper-assignments/export", {
         params,
@@ -67,7 +68,6 @@ const shipperAssignmentApi = {
       return { success: false, error };
     }
   },
-
 };
 
 export default shipperAssignmentApi;

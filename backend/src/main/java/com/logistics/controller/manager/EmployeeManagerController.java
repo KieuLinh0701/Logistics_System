@@ -3,6 +3,7 @@ package com.logistics.controller.manager;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import com.logistics.request.manager.vehicle.ManagerVehicleSearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -75,8 +76,8 @@ public class EmployeeManagerController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Boolean>> update(@PathVariable Integer id,
-            @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
-            HttpServletRequest request) {
+                                                       @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
+                                                       HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
@@ -126,14 +127,80 @@ public class EmployeeManagerController {
         return ResponseEntity.ok(shipmentManagerService.getShipmentsByEmployeeId(userId, id, searchRequest));
     }
 
-    @GetMapping("/export")
-    public ResponseEntity<byte[]> exportPerformance(HttpServletRequest request,
+    @GetMapping("/{id}/shipments/export")
+    public ResponseEntity<byte[]> export(
+            @PathVariable Integer id,
+            HttpServletRequest request,
             SearchRequest searchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = shipmentManagerService.exportShipmentsByEmployeeId(userId, id, searchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách chuyến hàng của nhân viên.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
+
+    @GetMapping("/performance/export")
+    public ResponseEntity<byte[]> exportPerformance(HttpServletRequest request,
+                                                    SearchRequest searchRequest) throws Exception {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
         byte[] data = service.exportPerformance(userId, searchRequest);
 
         String fileName = "UTE Logistics_Báo cáo hiệu suất nhân viên.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(HttpServletRequest request,
+                                         ManagerEmployeeSearchRequest managerEmployeeSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, managerEmployeeSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách nhân viên.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
+
+    @GetMapping("/shipper-assignments/export")
+    public ResponseEntity<byte[]> exportActiveShippersWithActiveAssignments(
+            HttpServletRequest request,
+            ManagerEmployeeSearchRequest managerShippingRequestSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.exportActiveShippersWithActiveAssignments(userId, managerShippingRequestSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách nhân viên giao hàng và khu vực phân công.xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
                 .replaceAll("\\+", "%20");
 

@@ -1,7 +1,9 @@
 package com.logistics.service.manager;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +14,17 @@ import java.util.stream.Collectors;
 
 import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
+import com.logistics.entity.*;
+import com.logistics.request.user.product.UserProductSearchRequest;
+import com.logistics.specification.ProductSpecification;
 import com.logistics.utils.AddressUtils;
 import com.logistics.utils.OrderFieldUtils;
 import com.logistics.utils.UserOrderEditRuleUtils;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,13 +37,6 @@ import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
-import com.logistics.entity.Address;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Office;
-import com.logistics.entity.Order;
-import com.logistics.entity.OrderHistory;
-import com.logistics.entity.OrderProduct;
-import com.logistics.entity.ServiceType;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderHistoryActionType;
@@ -63,6 +66,10 @@ import com.logistics.utils.OrderUtils;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import static com.logistics.utils.OrderUtils.*;
+import static com.logistics.utils.ProductUtils.translateProductStatus;
+import static com.logistics.utils.ProductUtils.translateProductType;
 
 @Service
 @RequiredArgsConstructor
@@ -820,6 +827,151 @@ public class OrderManagerService {
             return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
+        }
+    }
+
+    public byte[] export(Integer userId, UserOrderSearchRequest request) {
+        String search = request.getSearch();
+        String payer = request.getPayer();
+        String status = request.getStatus();
+        String pickupType = request.getPickupType();
+        Integer serviceTypeId = request.getServiceTypeId();
+        String paymentStatus = request.getPaymentStatus();
+        String cod = request.getCod();
+        String sort = request.getSort();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.officeId(userOffice.getId()))
+                .and(OrderSpecification.excludeDraft())
+                .and(OrderSpecification.searchManager(search))
+                .and(OrderSpecification.payer(payer))
+                .and(OrderSpecification.status(status))
+                .and(OrderSpecification.pickupType(pickupType))
+                .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                .and(OrderSpecification.paymentStatus(paymentStatus))
+                .and(OrderSpecification.cod(cod))
+                .and(OrderSpecification.createdAtBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            case "cod_high" -> Sort.by("cod").descending();
+            case "cod_low" -> Sort.by("cod").ascending();
+            case "order_value_high" -> Sort.by("orderValue").descending();
+            case "order_value_low" -> Sort.by("orderValue").ascending();
+            case "fee_high" -> Sort.by("totalFee").descending();
+            case "fee_low" -> Sort.by("totalFee").ascending();
+            case "weight_high" -> Sort.by("weight").descending();
+            case "weight_low" -> Sort.by("weight").ascending();
+            default -> Sort.by("createdAt").descending();
+        } : Sort.by("createdAt").descending();
+
+        List<Order> orders = repository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Orders");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã đơn",
+                    "Trạng thái",
+                    "Tên người gửi", "SĐT người gửi", "Địa chỉ người gửi",
+                    "Tên người nhận", "SĐT người nhận", "Địa chỉ người nhận",
+                    "Giá trị đơn", "COD (chưa phí)", "Phí dịch vụ",
+                    "Hình thức lấy hàng", "Dịch vụ giao hàng",
+                    "Người thanh toán", "Trạng thái thanh toán",
+                    "Khối lượng (Kg)", "Khối lượng điều chỉnh (Kg)",
+                    "Người tạo đơn", "Mã nhân viên / người dùng",
+                    "Thời gian tạo đơn", "Thời gian giao hàng", "Thời gian thanh toán"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (Order o : orders) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(o.getTrackingNumber() != null ? o.getTrackingNumber() : "Chưa có mã");
+                row.createCell(1).setCellValue(OrderUtils.translateOrderStatus(o.getStatus()));
+
+                // Người gửi
+                row.createCell(2).setCellValue(o.getSenderName() != null ? o.getSenderName() : "");
+                row.createCell(3).setCellValue(o.getSenderPhone() != null ? o.getSenderPhone() : "");
+                row.createCell(4).setCellValue(o.getSenderFullAddress() != null ? o.getSenderFullAddress() : "");
+
+                // Người nhận
+                row.createCell(5).setCellValue(o.getRecipientName() != null ? o.getRecipientName() : "");
+                row.createCell(6).setCellValue(o.getRecipientPhone() != null ? o.getRecipientPhone() : "");
+                row.createCell(7).setCellValue(o.getRecipientFullAddress() != null ? o.getRecipientFullAddress() : "");
+
+                // Tiền
+                row.createCell(8).setCellValue(o.getOrderValue() != null ? o.getOrderValue().doubleValue() : 0);
+                row.createCell(9).setCellValue(o.getCod() != null ? o.getCod().doubleValue() : 0);
+                row.createCell(10).setCellValue(o.getTotalFee() != null ? o.getTotalFee().doubleValue() : 0);
+
+                // Giao hàng
+                row.createCell(11).setCellValue(translateOrderPickupType(o.getPickupType()));
+                row.createCell(12).setCellValue(
+                        o.getServiceType() != null && o.getServiceType().getName() != null
+                                ? o.getServiceType().getName()
+                                : "");
+
+                // Thanh toán
+                row.createCell(13).setCellValue(translateOrderPayerType(o.getPayer()));
+                row.createCell(14).setCellValue(translateOrderPaymentStatus(o.getPaymentStatus()));
+
+                // Khối lượng
+                row.createCell(15).setCellValue(o.getWeight() != null ? o.getWeight().doubleValue() : 0);
+                row.createCell(16).setCellValue(o.getAdjustedWeight() != null ? o.getAdjustedWeight().doubleValue() : 0);
+
+                // Người tạo
+                row.createCell(17).setCellValue(translateOrderCreatorType(o.getCreatedByType()));
+                String creatorCode = (
+                        o.getEmployee() != null && o.getEmployee().getCode() != null && o.getCreatedByType() != null
+                                && !OrderCreatorType.USER.equals(o.getCreatedByType()))
+                        ? o.getEmployee().getCode()
+                        : (o.getUser().getCode() != null ? o.getUser().getCode() : "");
+                row.createCell(18).setCellValue(creatorCode);
+
+                // Thời gian
+                row.createCell(19).setCellValue(o.getCreatedAt() != null ? o.getCreatedAt().format(dtf) : "");
+                row.createCell(20).setCellValue(o.getDeliveredAt() != null ? o.getDeliveredAt().format(dtf) : "N/A");
+                row.createCell(21).setCellValue(o.getPaidAt() != null ? o.getPaidAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
         }
     }
 

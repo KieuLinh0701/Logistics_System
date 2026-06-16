@@ -68,6 +68,10 @@ import com.logistics.utils.PaymentSubmissionBatchUtils;
 
 import lombok.RequiredArgsConstructor;
 
+import static com.logistics.utils.EmployeeUtils.translateEmployeeShift;
+import static com.logistics.utils.EmployeeUtils.translateEmployeeStatus;
+import static com.logistics.utils.RoleUtils.translateSystemRoleName;
+
 @Service
 @RequiredArgsConstructor
 public class EmployeeManagerService {
@@ -104,7 +108,7 @@ public class EmployeeManagerService {
     }
 
     public ApiResponse<ListResponse<ManagerEmployeeListDto>> list(int userId,
-            ManagerEmployeeSearchRequest request) {
+                                                                  ManagerEmployeeSearchRequest request) {
         try {
             Office office = getManagedOfficeByUserId(userId);
 
@@ -168,6 +172,114 @@ public class EmployeeManagerService {
         }
     }
 
+    public byte[] export(int userId, ManagerEmployeeSearchRequest request) {
+        Office office = getManagedOfficeByUserId(userId);
+
+        String search = request.getSearch();
+        String sort = request.getSort();
+        String status = request.getStatus();
+        String role = request.getRole();
+        String shift = request.getShift();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? Instant.parse(request.getStartDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? Instant.parse(request.getEndDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                : null;
+
+        Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
+                .and(EmployeeSpecification.officeId(office.getId()))
+                .and(EmployeeSpecification.search(search))
+                .and(EmployeeSpecification.status(status))
+                .and(EmployeeSpecification.role(role, true))
+                .and(EmployeeSpecification.shift(shift))
+                .and(EmployeeSpecification.hireDateBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("hireDate").descending();
+            case "oldest" -> Sort.by("hireDate").ascending();
+            default -> Sort.by("hireDate").descending();
+        } : Sort.by("hireDate").descending();
+
+        List<Employee> employees = employeeRepository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Employees");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã NV",
+                    "Họ tên",
+                    "Số điện thoại", "Email",
+                    "Chức vụ",
+                    "Ca làm việc",
+                    "Trạng thái",
+                    "Ngày vào làm"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            int rowIdx = 1;
+            for (Employee e : employees) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(e.getCode() != null ? e.getCode() : "");
+
+                String lastName = (e.getUser() != null && e.getUser().getLastName() != null) ? e.getUser().getLastName() : "";
+                String firstName = (e.getUser() != null && e.getUser().getFirstName() != null) ? e.getUser().getFirstName() : "";
+                row.createCell(1).setCellValue((lastName + " " + firstName).trim());
+
+                row.createCell(2).setCellValue(e.getUser() != null && e.getUser().getPhoneNumber() != null ? e.getUser().getPhoneNumber() : "");
+                row.createCell(3).setCellValue(
+                        e.getUser() != null
+                                && e.getUser().getAccount() != null
+                                && e.getUser().getAccount().getEmail() != null
+                                ? e.getUser().getAccount().getEmail()
+                                : "");
+
+                boolean isSystem = e.getAccountRole() != null
+                        && e.getAccountRole().getRole() != null
+                        && e.getAccountRole().getRole().getUserOwner() == null;
+                String roleName = (e.getAccountRole() != null && e.getAccountRole().getRole() != null)
+                        ? e.getAccountRole().getRole().getName()
+                        : null;
+                row.createCell(4).setCellValue(translateSystemRoleName(roleName, isSystem));
+
+                row.createCell(5).setCellValue(translateEmployeeShift(e.getShift()));
+                row.createCell(6).setCellValue(translateEmployeeStatus(e.getStatus()));
+                row.createCell(7).setCellValue(e.getHireDate() != null ? e.getHireDate().format(dtf) : "");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
     public ApiResponse<ListResponse<ManagerEmployeePerformanceDto>> getEmployeePerformance(
             int userId,
             SearchRequest request) {
@@ -205,12 +317,11 @@ public class EmployeeManagerService {
 
             Pageable pageable = PageRequest.of(page - 1, limit);
 
-            Page<ManagerEmployeePerformanceDto> pageData = employeeRepository.getEmployeePerformance(
+            Page<ManagerEmployeePerformanceDto> pageData = employeeRepository.getShipperPerformance(
                     office.getId(),
                     search == null || search.isBlank() ? null : search,
-                    role,
-                    employeeShift,
-                    employeeStatus,
+                    employeeShift != null ? employeeShift.name() : null,
+                    employeeStatus != null ? employeeStatus.name() : null,
                     pageable);
 
             Pagination pagination = new Pagination(
@@ -793,7 +904,7 @@ public class EmployeeManagerService {
     }
 
     private Employee buildEmployee(User user, AccountRole accountRole, Office office,
-            ManagerEmployeeEditRequest req) {
+                                   ManagerEmployeeEditRequest req) {
         Employee emp = new Employee();
         emp.setUser(user);
         emp.setAccountRole(accountRole);
@@ -939,7 +1050,7 @@ public class EmployeeManagerService {
     }
 
     public ApiResponse<ListResponse<ManagerEmployeeListDto>> getActiveShippers(int userId,
-            ManagerEmployeeSearchRequest request) {
+                                                                               ManagerEmployeeSearchRequest request) {
         try {
             Office office = getManagedOfficeByUserId(userId);
 
@@ -1072,13 +1183,10 @@ public class EmployeeManagerService {
 
                 // Ca làm việc (string)
                 row.createCell(4)
-                        .setCellValue(data.getEmployeeShift() != null ? data.getEmployeeShift()
-                                .toString() : "");
+                        .setCellValue(translateEmployeeShift(data.getEmployeeShift()));
                 // Trạng thái làm việc
                 row.createCell(5)
-                        .setCellValue(
-                                data.getEmployeeStatus() != null ? PaymentSubmissionBatchUtils.translateStatus(
-                                        data.getEmployeeStatus()) : "");
+                        .setCellValue(translateEmployeeStatus(data.getEmployeeStatus()));
 
                 row.createCell(6)
                         .setCellValue(data.getTotalShipments() != null ? df.format(data.getTotalShipments()) : "");
@@ -1128,11 +1236,143 @@ public class EmployeeManagerService {
                     .toUpperCase());
         }
 
-        return employeeRepository.getEmployeePerformanceList(
+        return employeeRepository.getShipperPerformanceList(
                 office.getId(),
                 request.getSearch(),
-                request.getRole(),
-                employeeShift,
-                employeeStatus);
+                employeeShift != null ? employeeShift.name() : null,
+                employeeStatus != null ? employeeStatus.name() : null);
+    }
+
+    public byte[] exportActiveShippersWithActiveAssignments(int userId, ManagerEmployeeSearchRequest request) {
+        Office office = getManagedOfficeByUserId(userId);
+
+        String search = request.getSearch();
+        LocalDateTime now = LocalDateTime.now();
+
+        Specification<User> spec = Specification
+                .where(UserSpecification.activeShippersInOffice(office.getId(), search));
+
+        List<User> users = userRepository.findAll(spec, Sort.by("lastName").ascending());
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            // ── Sheet 1: Danh sách nhân viên ──
+            Sheet empSheet = workbook.createSheet("Danh sách Shipper");
+
+            String[] empHeaders = {
+                    "Mã NV",
+                    "Họ tên",
+                    "Email",
+                    "SĐT",
+                    "Ca làm",
+                    "Trạng thái",
+                    "Số vùng đang đảm nhận"
+            };
+
+            Row empHeader = empSheet.createRow(0);
+            for (int i = 0; i < empHeaders.length; i++) {
+                Cell cell = empHeader.createCell(i);
+                cell.setCellValue(empHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int empRowIdx = 1;
+            for (User user : users) {
+                Employee employee = user.getEmployees().stream()
+                        .filter(emp -> emp.getAccountRole() != null &&
+                                emp.getAccountRole().getRole() != null &&
+                                "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()))
+                        .findFirst().orElse(null);
+
+                List<ShipperAssignment> activeAssignments = user.getShipperAssignments().stream()
+                        .filter(sa -> sa.getEndAt() == null || !sa.getEndAt().isBefore(now))
+                        .toList();
+
+                Row row = empSheet.createRow(empRowIdx++);
+                row.createCell(0).setCellValue(employee != null && employee.getCode() != null ? employee.getCode() : "");
+                row.createCell(1).setCellValue((user.getLastName() != null ? user.getLastName() : "") + " "
+                        + (user.getFirstName() != null ? user.getFirstName() : ""));
+                row.createCell(2).setCellValue(user.getAccount() != null && user.getAccount().getEmail() != null ? user.getAccount().getEmail() : "");
+                row.createCell(3).setCellValue(user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+                row.createCell(4).setCellValue(employee != null ? translateEmployeeShift(employee.getShift()) : "");
+                row.createCell(5).setCellValue(employee != null ? translateEmployeeStatus(employee.getStatus()) : "");
+                row.createCell(6).setCellValue(activeAssignments.size());
+            }
+
+            for (int i = 0; i < empHeaders.length; i++) {
+                empSheet.autoSizeColumn(i);
+            }
+
+            // ── Sheet 2: Danh sách vùng phụ trách ──
+            Sheet assignSheet = workbook.createSheet("Vùng phụ trách");
+
+            String[] assignHeaders = {
+                    "Mã NV",
+                    "Họ tên",
+                    "Mã phường/xã",
+                    "Mã tỉnh/thành phố",
+                    "Ngày bắt đầu",
+                    "Ngày kết thúc",
+                    "Ghi chú"
+            };
+
+            Row assignHeader = assignSheet.createRow(0);
+            for (int i = 0; i < assignHeaders.length; i++) {
+                Cell cell = assignHeader.createCell(i);
+                cell.setCellValue(assignHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int assignRowIdx = 1;
+            for (User user : users) {
+                Employee employee = user.getEmployees().stream()
+                        .filter(emp -> emp.getAccountRole() != null &&
+                                emp.getAccountRole().getRole() != null &&
+                                "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()))
+                        .findFirst().orElse(null);
+
+                String code = employee != null && employee.getCode() != null ? employee.getCode() : "";
+                String fullName = (user.getLastName() != null ? user.getLastName() : "") + " "
+                        + (user.getFirstName() != null ? user.getFirstName() : "");
+
+                List<ShipperAssignment> activeAssignments = user.getShipperAssignments().stream()
+                        .filter(sa -> sa.getEndAt() == null || !sa.getEndAt().isBefore(now))
+                        .toList();
+
+                for (ShipperAssignment sa : activeAssignments) {
+                    Row row = assignSheet.createRow(assignRowIdx++);
+                    row.createCell(0).setCellValue(code);
+                    row.createCell(1).setCellValue(fullName);
+                    row.createCell(2).setCellValue(sa.getWardCode() != null ? String.valueOf(sa.getWardCode()) : "");
+                    row.createCell(3).setCellValue(sa.getCityCode() != null ? String.valueOf(sa.getCityCode()) : "");
+                    row.createCell(4).setCellValue(sa.getStartAt() != null ? sa.getStartAt().format(dtf) : "N/A");
+                    row.createCell(5).setCellValue(sa.getEndAt() != null ? sa.getEndAt().format(dtf) : "N/A");
+                    row.createCell(6).setCellValue(sa.getNotes() != null ? sa.getNotes() : "");
+                }
+            }
+
+            for (int i = 0; i < assignHeaders.length; i++) {
+                assignSheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
     }
 }

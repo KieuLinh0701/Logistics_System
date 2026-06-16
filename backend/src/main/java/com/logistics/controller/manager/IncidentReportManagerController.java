@@ -1,6 +1,8 @@
 package com.logistics.controller.manager;
 
+import com.logistics.request.user.order.UserOrderSearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +29,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/manager/incident-reports")
@@ -64,5 +69,27 @@ public class IncidentReportManagerController {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(service.processing(userId, id, updateRequest));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            SearchRequest searchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, searchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo sự cố bưu cục.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }
