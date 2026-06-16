@@ -16,18 +16,7 @@ public class SecurityUtils {
     private SecurityUtils() {
     }
 
-//        public static final Map<String, List<String>> PATH_ROLES = Map.of(
-//            "/api/user/", List.of("User", "Driver", "Shipper", "Manager", "Admin"),
-//            "/api/manager/", List.of("Manager"),
-//            "/api/admin/", List.of("Admin"),
-//            "/api/shipper/", List.of("Shipper"),
-//            "/api/driver/", List.of("Driver"),
-//            "/api/leaves", List.of("Manager", "Shipper", "Driver"),
-//            "/api/support", List.of("User", "Manager", "Admin"),
-//            "/api/job-applications", List.of("Admin", "Manager")
-//        );
-
-    public static final List<String> PUBLIC_PATHS = List.of("/api/auth/", "/api/public/", "/ws/");
+    public static final List<String> PUBLIC_PATHS = List.of("/api/auth/", "/api/public/", "/ws/", "/api/health");
 
     public static Integer getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext()
