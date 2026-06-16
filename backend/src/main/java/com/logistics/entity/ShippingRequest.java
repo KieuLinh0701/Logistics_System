@@ -89,22 +89,22 @@ public class ShippingRequest {
     @Column(length = 20)
     private String contactPhoneNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Integer contactWardCode;
 
-    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
     private String contactWardName;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Integer contactCityCode;
 
-    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
     private String contactCityName;
 
-    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
     private String contactDetail;
 
-    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
     private String contactFullAddress;
 
     private LocalDateTime responseAt;
