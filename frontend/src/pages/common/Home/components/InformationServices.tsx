@@ -27,7 +27,7 @@ const InformationServices: React.FC = () => {
           <Card
             hoverable
             className="home-card"
-            onClick={() => (window.location.href = "/promotions")}
+            onClick={() => (window.location.href = "/info/promotions")}
           >
             <div className="home-card-icon-wrapper">
               <GiftOutlined className="home-icon" />
