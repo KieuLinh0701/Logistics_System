@@ -20,24 +20,11 @@ public class ShipmentMapper {
         return new ManagerShipmentPerformanceDto(
                 entity.getId(),
                 entity.getCode(),
-                mapVehiclePerformance(entity.getVehicle()),
                 entity.getStatus() != null ? entity.getStatus().toString() : null,
-                entity.getType() != null ? entity.getType().toString() : null,
                 entity.getStartTime(),
                 entity.getEndTime(),
                 orderCount,
                 totalWeight);
-    }
-
-    private static ManagerShipmentPerformanceDto.VehicleShipment mapVehiclePerformance(Vehicle v) {
-        if (v == null) {
-            return null;
-        }
-
-        return new ManagerShipmentPerformanceDto.VehicleShipment(
-                v.getId(),
-                v.getLicensePlate(),
-                v.getCapacity());
     }
 
     public static ManagerShipmentListDto toManagerShipmentListDto(Shipment entity) {

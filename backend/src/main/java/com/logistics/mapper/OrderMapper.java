@@ -60,12 +60,7 @@ public class OrderMapper {
                             .getName(),
                     entity.getRecipientAddress()
                             .getPhoneNumber(),
-                    entity.getRecipientAddress()
-                            .getCityCode(),
-                    entity.getRecipientAddress()
-                            .getWardCode(),
-                    entity.getRecipientAddress()
-                            .getDetail());
+                    entity.getRecipientAddress().getFullAddress());
         }
 
         ManagerShipmentDetailDto.Office toOffice = null;

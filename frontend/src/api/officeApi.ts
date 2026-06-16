@@ -64,7 +64,7 @@ const officeApi = {
   },
 
   updateManagerOffice: async (data: OfficeEditRequest) => {
-    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/offices/me`, data);
+    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/offices/me`, data);
     return res;
   },
 

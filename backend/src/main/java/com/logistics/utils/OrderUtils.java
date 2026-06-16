@@ -186,4 +186,17 @@ public class OrderUtils {
             default -> value.name();
         };
     }
+
+    public static String translateOrderCreatorType(OrderCreatorType value) {
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+            case USER -> "Người dùng";
+            case MANAGER -> "Quản lý";
+            case ADMIN -> "Quản trị viên";
+            default -> value.name();
+        };
+    }
 }

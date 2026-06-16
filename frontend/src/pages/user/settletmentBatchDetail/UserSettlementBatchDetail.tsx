@@ -167,11 +167,13 @@ const UserSettlementBatchDetail = () => {
             const result = await settlementBatchApi.exportUserSettlementBatchDetail(settlementId);
 
             if (!result.success) {
-                message.error("Xuất báo cáo thất bại");
+                console.error("Export thất bại:", result.error);
+                message.error("Xuất file Excel thất bại");
             }
 
         } catch (error: any) {
-            message.error(error.message || "Xuất báo cáo thất bại")
+            message.error("Xuất file Excel thất bại");
+            console.error("Export thất bại:", error);
         }
     };
 

@@ -7,7 +7,7 @@ import OrderActions from "./components/Actions";
 import SearchFilters from "./components/SearchFilters";
 import OrderTable from "./components/Table";
 import Title from "antd/es/typography/Title";
-import type {ManagerOrderSearchRequest, Order, StatusCount} from "../../../../types/order";
+import type {ManagerOrderSearchRequest, Order, StatusCount, UserOrderSearchRequest} from "../../../../types/order";
 import orderApi from "../../../../api/orderApi";
 import "../../../../styles/ListPage.css";
 import type {ServiceType} from "../../../../types/serviceType";
@@ -166,6 +166,39 @@ const ManagerOrderList = () => {
             console.error(error.message || "Error fetching orders:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const param: ManagerOrderSearchRequest = {
+                page: page,
+                limit: limit,
+                search: search,
+                payer: filterPayer !== "ALL" ? filterPayer : undefined,
+                status: filterStatus !== "ALL" ? filterStatus : undefined,
+                serviceTypeId: filterServiceType !== null ? filterServiceType : undefined,
+                paymentStatus: filterPaymentStatus !== "ALL" ? filterPaymentStatus : undefined,
+                cod: filterCOD !== "ALL" ? filterCOD : undefined,
+                sort: filterSort,
+                pickupType: filterPickupType !== "ALL" ? filterPickupType : undefined,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await orderApi.exportManagerOrders(param);
+
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+                message.error("Xuất file Excel thất bại");
+            }
+
+        } catch (error: any) {
+            message.error("Xuất file Excel thất bại");
+            console.error("Export thất bại:", error);
         }
     };
 
@@ -546,6 +579,8 @@ const ManagerOrderList = () => {
                                 onAddShipment={handleAddShipment}
                                 disabled={selectedOrderIds.length !== 0}
                                 recordNumber={selectedOrderIds.length}
+                                total={total}
+                                onExport={handleExport}
                             />
                         </div>
                     </Col>

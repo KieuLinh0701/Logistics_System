@@ -4,10 +4,12 @@ import { FileExcelOutlined } from '@ant-design/icons';
 
 interface ActionsProps {
   onExport: () => void;
+  total: number;
 }
 
 const Actions: React.FC<ActionsProps> = ({
   onExport,
+    total
 }) => {
   return (
     <Space align="center">
@@ -15,6 +17,7 @@ const Actions: React.FC<ActionsProps> = ({
         className="success-button"
         icon={<FileExcelOutlined />}
         onClick={onExport}
+        disabled={total === 0}
       >
         Xuất Excel
       </Button>

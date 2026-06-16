@@ -285,10 +285,12 @@ const UserShippingRequests: React.FC = () => {
 
             if (!result.success) {
                 console.error("Export thất bại:", result.error);
+                message.error("Xuất file Excel thất bại");
             }
 
         } catch (error: any) {
-            message.error(error.message || "Xuất Excel thất bại!");
+            message.error("Xuất file Excel thất bại");
+            console.error("Export thất bại:", error);
         }
     };
 

@@ -376,8 +376,6 @@ public class RecruitmentService {
                     positionDisplay = switch (posting.getRoleType()) {
                         case DRIVER -> "Tài xế";
                         case SHIPPER -> "Nhân viên giao hàng";
-                        case WAREHOUSE_STAFF -> "Nhân viên kho";
-                        case RECONCILIATION_STAFF -> "Nhân viên đối soát";
                     };
                 }
 
@@ -475,8 +473,6 @@ public class RecruitmentService {
         return switch (roleType) {
             case DRIVER -> "Driver";
             case SHIPPER -> "Shipper";
-            case WAREHOUSE_STAFF -> "WarehouseStaff";
-            case RECONCILIATION_STAFF -> "ReconciliationStaff";
         };
     }
 
