@@ -3,9 +3,11 @@ import axiosClient from './axiosClient';
 export const reportApi = {
   getFinancial: (start?: string, end?: string) =>
     axiosClient.get(`/admin/reports/financial${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
+  getOverview: (start?: string, end?: string) =>
+    axiosClient.get(`/admin/reports/overview${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
   
   getShippers: (start?: string, end?: string) =>
-    axiosClient.get(`/admin/reports/shipper${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
+    axiosClient.get(`/admin/reports/shippers${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
   
   getShipper: (shipperId: number, start?: string, end?: string) =>
     axiosClient.get(`/admin/reports/shipper/${shipperId}${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
@@ -20,7 +22,16 @@ export const reportApi = {
     axiosClient.get(`/admin/reports/operations${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
   
   getOffice: (start?: string, end?: string) =>
-    axiosClient.get(`/admin/reports/office${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
+    axiosClient.get(`/admin/reports/offices${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
+
+  getShippersDetailed: (start?: string, end?: string) =>
+    axiosClient.get(`/admin/reports/shippers${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
+
+  getOfficesDetailed: (start?: string, end?: string) =>
+    axiosClient.get(`/admin/reports/offices${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
+
+  getFinance: (start?: string, end?: string) =>
+    axiosClient.get(`/admin/reports/finance${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
   
   getShop: (start?: string, end?: string) =>
     axiosClient.get(`/admin/reports/shop${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
@@ -45,6 +56,54 @@ export const reportApi = {
     if (start) params.push(`start=${start}`);
     if (end) params.push(`end=${end}`);
     const url = `${API_BASE}/admin/reports/office/export${params.length?`?${params.join('&')}`:''}`;
+    const resp = await fetch(url, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+    if (!resp.ok) throw new Error('Export failed');
+    return await resp.blob();
+  },
+
+  exportOverview: async (start?: string, end?: string) => {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const token = sessionStorage.getItem('token');
+    const params = [];
+    if (start) params.push(`start=${start}`);
+    if (end) params.push(`end=${end}`);
+    const url = `${API_BASE}/admin/reports/overview/export${params.length?`?${params.join('&')}`:''}`;
+    const resp = await fetch(url, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+    if (!resp.ok) throw new Error('Export failed');
+    return await resp.blob();
+  },
+
+  exportShippers: async (start?: string, end?: string) => {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const token = sessionStorage.getItem('token');
+    const params = [];
+    if (start) params.push(`start=${start}`);
+    if (end) params.push(`end=${end}`);
+    const url = `${API_BASE}/admin/reports/shippers/export${params.length?`?${params.join('&')}`:''}`;
+    const resp = await fetch(url, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+    if (!resp.ok) throw new Error('Export failed');
+    return await resp.blob();
+  },
+
+  exportFinance: async (start?: string, end?: string) => {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const token = sessionStorage.getItem('token');
+    const params = [];
+    if (start) params.push(`start=${start}`);
+    if (end) params.push(`end=${end}`);
+    const url = `${API_BASE}/admin/reports/finance/export${params.length?`?${params.join('&')}`:''}`;
+    const resp = await fetch(url, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
+    if (!resp.ok) throw new Error('Export failed');
+    return await resp.blob();
+  },
+
+  exportOfficesDetailed: async (start?: string, end?: string) => {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const token = sessionStorage.getItem('token');
+    const params = [];
+    if (start) params.push(`start=${start}`);
+    if (end) params.push(`end=${end}`);
+    const url = `${API_BASE}/admin/reports/offices/export${params.length?`?${params.join('&')}`:''}`;
     const resp = await fetch(url, { headers: { Authorization: token ? `Bearer ${token}` : '' } });
     if (!resp.ok) throw new Error('Export failed');
     return await resp.blob();

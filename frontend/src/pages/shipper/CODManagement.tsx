@@ -109,7 +109,7 @@ const ShipperCODManagement: React.FC = () => {
       setPagination((prev) => ({ ...prev, total: response.pagination?.total || 0 }));
     } catch (error) {
       console.error("Error fetching COD transactions:", error);
-      message.error("Lỗi khi tải danh sách giao dịch COD");
+      message.error("Lỗi khi tải danh sách giao dịch thu tiền");
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ const ShipperCODManagement: React.FC = () => {
       setSubmissionPagination((prev) => ({ ...prev, total: response.pagination?.total || 0 }));
     } catch (error) {
       console.error("Error fetching COD submissions:", error);
-      message.error("Lỗi khi tải lịch sử nộp tiền COD");
+      message.error("Lỗi khi tải lịch sử nộp tiền");
     } finally {
       setLoading(false);
     }
@@ -142,7 +142,7 @@ const ShipperCODManagement: React.FC = () => {
     try {
       setLoading(true);
       if (selectedTransactions.length === 0) {
-        message.error("Vui lòng chọn ít nhất một giao dịch COD");
+        message.error("Vui lòng chọn ít nhất một giao dịch thu tiền");
         return;
       }
 
@@ -152,14 +152,14 @@ const ShipperCODManagement: React.FC = () => {
         notes: values.notes,
       });
 
-      message.success("Đã nộp tiền COD thành công");
+      message.success("Đã nộp tiền thu được thành công");
       setSubmitModal(false);
       submitForm.resetFields();
       setSelectedTransactions([]);
       fetchTransactions();
     } catch (error) {
       console.error("Error submitting COD:", error);
-      message.error("Lỗi khi nộp tiền COD");
+      message.error("Lỗi khi nộp tiền thu được");
     } finally {
       setLoading(false);
     }
@@ -321,7 +321,7 @@ const ShipperCODManagement: React.FC = () => {
       <div className="list-page-content">
         <div className="list-page-header shipper-page-header">
           <div>
-            <h3 className="list-page-title-main">Quản lý COD</h3>
+            <h3 className="list-page-title-main">Quản lý tiền thu được</h3>
             <div className="shipper-header-meta">
               <div className="list-page-tag">
                 {activeTab === "transactions"
@@ -339,7 +339,7 @@ const ShipperCODManagement: React.FC = () => {
           items={[
             {
               key: "transactions",
-              label: "Giao dịch COD",
+              label: "Giao dịch thu tiền",
               icon: <DollarOutlined />,
               children: (
                 <div className="shipper-cod-tab-block">
@@ -532,7 +532,7 @@ const ShipperCODManagement: React.FC = () => {
       </div>
 
       <Modal
-        title="Nộp tiền COD"
+        title="Nộp tiền thu được"
         open={submitModal}
         onOk={() => submitForm.submit()}
         onCancel={() => {
@@ -569,7 +569,7 @@ const ShipperCODManagement: React.FC = () => {
       </Modal>
 
       <Modal
-        title="Chi tiết nộp tiền COD"
+        title="Chi tiết nộp tiền thu được"
         open={detailModal}
         onCancel={() => {
           setDetailModal(false);

@@ -131,12 +131,6 @@ const Sidenav: React.FC = () => {
                 ],
             },
             {
-                key: "/financial",
-                label: "Quản lý dòng tiền",
-                path: "/financial",
-                icon: <DollarOutlined/>,
-            },
-            {
                 key: "/account/settings",
                 label: "Cài đặt tài khoản",
                 path: "/account/settings?tab=profile",

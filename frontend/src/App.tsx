@@ -28,7 +28,6 @@ import AdminOrders from "./pages/admin/orders/OrdersPage";
 import AdminPostOffices from "./pages/admin/postoffices/PostOfficesPage";
 import AdminServiceTypes from "./pages/admin/service-types/ServiceTypesPage";
 import AdminFeeConfigurations from "./pages/admin/fee-configurations/FeeConfigurationsPage";
-import AdminFinancialIndex from "./pages/admin/financial/AdminFinancialIndex";
 import ReportsPage from "./pages/admin/reports/ReportsPage";
 
 import UserProducts from "./pages/user/product/UserProducts";
@@ -146,8 +145,6 @@ const App: React.FC = () => {
                                element={<PrivateRoute allowedRoles={['admin']}><AdminPromotions/></PrivateRoute>}/>
                         <Route path="/fee-configurations" element={<PrivateRoute
                             allowedRoles={['admin']}><AdminFeeConfigurations/></PrivateRoute>}/>
-                        <Route path="/financial"
-                               element={<PrivateRoute allowedRoles={["admin"]}><AdminFinancialIndex/></PrivateRoute>}/>
                         <Route path="/reports"
                                element={<PrivateRoute allowedRoles={["admin"]}><ReportsPage/></PrivateRoute>}/>
 

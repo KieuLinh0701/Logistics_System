@@ -4,6 +4,7 @@ import com.logistics.dto.admin.AdminFinancialPoint;
 import com.logistics.dto.admin.AdminShipperReportDto;
 import com.logistics.dto.admin.AdminOfficeReportDto;
 import com.logistics.dto.admin.AdminShopReportDto;
+import com.logistics.dto.admin.AdminOverviewDto;
 import com.logistics.service.admin.ReportAdminService;
 
 import java.time.LocalDate;
@@ -45,7 +46,7 @@ public class ReportAdminController {
     }
 
     @GetMapping("/shipper")
-    public ResponseEntity<List<AdminShipperReportDto>> shippers(
+    public ResponseEntity<List<AdminShipperReportDto>> shippersSummary(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
@@ -110,6 +111,46 @@ public class ReportAdminController {
         return ResponseEntity.ok(out);
     }
 
+    @GetMapping("/overview")
+    public ResponseEntity<AdminOverviewDto> overview(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        AdminOverviewDto dto = reportService.getOverview(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/offices")
+    public ResponseEntity<List<java.util.Map<String, Object>>> offices(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        List<java.util.Map<String, Object>> list = reportService.getOfficeReportDetailed(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/shippers")
+    public ResponseEntity<List<java.util.Map<String, Object>>> shippers(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        List<java.util.Map<String, Object>> list = reportService.getShipperReportDetailed(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/finance")
+    public ResponseEntity<java.util.Map<String, Object>> finance(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        java.util.Map<String, Object> report = reportService.getFinanceReport(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok(report);
+    }
+
     @GetMapping("/operations/export")
     public ResponseEntity<byte[]> exportOperations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
@@ -122,6 +163,58 @@ public class ReportAdminController {
                 .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 .body(data);
     }
+
+        @GetMapping("/overview/export")
+        public ResponseEntity<byte[]> exportOverview(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        byte[] data = reportService.exportOverviewXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=overview_report.xlsx")
+            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            .body(data);
+        }
+
+        @GetMapping("/offices/export")
+        public ResponseEntity<byte[]> exportOfficesDetailed(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        byte[] data = reportService.exportOfficesDetailedXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=offices_detailed_report.xlsx")
+            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            .body(data);
+        }
+
+        @GetMapping("/shippers/export")
+        public ResponseEntity<byte[]> exportShippersDetailed(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        byte[] data = reportService.exportShippersDetailedXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=shippers_detailed_report.xlsx")
+            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            .body(data);
+        }
+
+        @GetMapping("/finance/export")
+        public ResponseEntity<byte[]> exportFinance(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
+        LocalDate e = end == null ? LocalDate.now() : end;
+        byte[] data = reportService.exportFinanceXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=finance_report.xlsx")
+            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            .body(data);
+        }
 
     @GetMapping("/office")
     public ResponseEntity<List<AdminOfficeReportDto>> officeReport(

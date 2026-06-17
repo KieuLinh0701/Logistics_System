@@ -148,18 +148,28 @@ const ShipperOrders: React.FC = () => {
       },
     },
     {
-      title: "Dịch vụ & COD",
+      title: "Dịch vụ & tiền thu",
       key: "serviceCod",
       render: (record: ShipperOrder) => {
         const serviceName =
           typeof record.serviceType === "string"
             ? record.serviceType
             : (record.serviceType as any)?.name ?? "";
+        const payer = (record.payer || "").toUpperCase();
+        const shippingFee = Number(record.shippingFee || 0);
+        const cod = Number(record.cod || 0);
+        const totalToCollect = payer === "CUSTOMER" ? shippingFee + cod : cod;
         return (
           <Space direction="vertical" size={2}>
             <Text className="shipper-table-strong">{serviceName || "—"}</Text>
             <Text className="shipper-cod-value">
-              {record.cod ? `${record.cod.toLocaleString()}đ` : "COD: 0đ"}
+              COD thu hộ: {cod > 0 ? `${cod.toLocaleString()}đ` : "0đ"}
+            </Text>
+            <Text className="shipper-table-muted">
+              Phí ship cần thu: {payer === "CUSTOMER" && shippingFee > 0 ? `${shippingFee.toLocaleString()}đ` : "0đ"}
+            </Text>
+            <Text className="shipper-table-strong">
+              Tổng cần thu: {`${totalToCollect.toLocaleString()}đ`}
             </Text>
           </Space>
         );

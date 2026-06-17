@@ -472,7 +472,7 @@ const ShipperDeliveryRoute: React.FC = () => {
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <Statistic
-              title="Tổng COD"
+              title="Tổng COD thu hộ"
               value={routeInfo.totalCOD}
               prefix={<DollarOutlined />}
               formatter={(value) => `${value?.toLocaleString()}đ`}
@@ -733,7 +733,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                       {stop.etaTime && <Text type="secondary">ETA: {stop.etaTime}</Text>}
                       {stop.codAmount > 0 && (
                         <Text>
-                          <DollarOutlined /> COD: {stop.codAmount.toLocaleString()}đ
+                          <DollarOutlined /> COD thu hộ: {stop.codAmount.toLocaleString()}đ
                         </Text>
                       )}
                     </Space>

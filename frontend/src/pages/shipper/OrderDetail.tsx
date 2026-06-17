@@ -108,6 +108,27 @@ const ShipperOrderDetail: React.FC = () => {
     return Number(order?.codAmount ?? order?.cod ?? 0);
   };
 
+  const getPayerText = () => {
+    const payer = (order?.payer || "").toUpperCase();
+    if (payer === "SHOP") return "Shop / Người gửi";
+    if (payer === "CUSTOMER") return "Người nhận";
+    return order?.payer || "—";
+  };
+
+  const getShippingFeeLabel = () => {
+    const payer = (order?.payer || "").toUpperCase();
+    if (payer === "CUSTOMER") return "Phí vận chuyển cần thu";
+    return "Shop đã trả phí vận chuyển";
+  };
+
+  const getTotalNeedCollect = () => {
+    const payer = (order?.payer || "").toUpperCase();
+    const cod = Number(order?.cod || 0);
+    const shippingFee = Number(order?.shippingFee || 0);
+    if (payer === "CUSTOMER") return cod + shippingFee;
+    return cod;
+  };
+
   useEffect(() => {
     if (id) {
       fetchOrderDetail();
@@ -499,25 +520,16 @@ const fetchOrderDetail = async () => {
           {/* Payment Info */}
           <Card title="Thông tin thanh toán">
             <Descriptions column={2} bordered>
-              <Descriptions.Item label="Phí vận chuyển">
-                {order.shippingFee ? `${order.shippingFee.toLocaleString()}đ` : "—"}
+              <Descriptions.Item label="Người trả phí vận chuyển">
+                {getPayerText()}
               </Descriptions.Item>
-              <Descriptions.Item label="COD">
+              <Descriptions.Item label="COD thu hộ">
                 <Space>
                   <DollarOutlined style={{ color: "#f50" }} />
                   <div>
                     <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                      {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "Không"}
+                      {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "0đ"}
                     </Text>
-
-                    {/* If cod exists but codStatus explicitly NONE, show explanatory note */}
-                    {order.cod > 0 && order.codStatus === "NONE" && (
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>(Không thu COD)</Text>
-                      </div>
-                    )}
-
-                    {/* Show cod status tag only when status is meaningful (not NONE) */}
                     {order.codStatus && order.codStatus !== "NONE" && (
                       <div style={{ marginTop: 6 }}>
                         <Tag color={
@@ -531,11 +543,21 @@ const fetchOrderDetail = async () => {
                   </div>
                 </Space>
               </Descriptions.Item>
+              <Descriptions.Item label={getShippingFeeLabel()}>
+                {(order.payer || "").toUpperCase() === "CUSTOMER"
+                  ? `${Number(order.shippingFee || 0).toLocaleString()}đ`
+                  : "0đ"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Tổng tiền cần thu">
+                <Text strong style={{ color: "#f50", fontSize: 16 }}>
+                  {`${getTotalNeedCollect().toLocaleString()}đ`}
+                </Text>
+              </Descriptions.Item>
             </Descriptions>
           </Card>
 
           {/* Payment submissions (COD transactions) */}
-          <Card title="Giao dịch COD" style={{ marginTop: 12 }}>
+          <Card title="Giao dịch thu tiền" style={{ marginTop: 12 }}>
             {order.paymentSubmissions && order.paymentSubmissions.length > 0 ? (
               <Table
                 dataSource={order.paymentSubmissions}

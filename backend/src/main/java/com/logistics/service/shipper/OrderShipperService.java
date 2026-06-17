@@ -662,11 +662,8 @@ public class OrderShipperService {
             // Nếu có COD, tạo submission COD (tính toán từ delivered products)
             try {
                 User shipperUser = employee.getUser();
-                if (order.getCod() != null && order.getCod() > 0) {
-                    // avoid creating when already submitted/received
-                    if (order.getCodStatus() != OrderCodStatus.SUBMITTED && order.getCodStatus() != OrderCodStatus.RECEIVED) {
-                        createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
-                    }
+                if (order.getCod() != null && order.getCod() > 0 && !hasExistingCodSubmission(order)) {
+                    createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
                 }
             } catch (Exception e) { throw new RuntimeException(e); }
             return new ApiResponse<>(true, "Đơn hàng đã được giao hoàn tất", null);
@@ -696,17 +693,10 @@ public class OrderShipperService {
         if (totalDelivered > 0) {
             try {
                 User shipperUser = employee.getUser();
-                if (order.getCod() != null && order.getCod() > 0) {
-                    List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
-                    boolean hasPositive = existing.stream()
-                            .anyMatch(ps -> ps.getActualAmount() != null && ps.getActualAmount().compareTo(BigDecimal.ZERO) > 0);
-                    if (!hasPositive) {
-                        createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
-                        try { order.setCodStatus(OrderCodStatus.PENDING); } catch (Exception e) {}
-                        orderRepository.save(order);
-                    } else {
-                        // existing submission found
-                    }
+                if (order.getCod() != null && order.getCod() > 0 && !hasExistingCodSubmission(order)) {
+                    createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
+                    try { order.setCodStatus(OrderCodStatus.PENDING); } catch (Exception e) {}
+                    orderRepository.save(order);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -1359,6 +1349,7 @@ public class OrderShipperService {
         map.put("recipientPhone", order.getRecipientPhone());
         map.put("recipientAddress", recipientFullAddress);
         map.put("recipientFullAddress", recipientFullAddress);
+        map.put("payer", order.getPayer() != null ? order.getPayer().name() : null);
         map.put("cod", order.getCod());
         map.put("codAmount", order.getCod()); 
         map.put("shippingFee", order.getShippingFee());
@@ -1383,6 +1374,7 @@ public class OrderShipperService {
         map.put("recipientPhone", order.getRecipientPhone());
         map.put("recipientAddress", recipientFullAddress);
         map.put("recipientFullAddress", recipientFullAddress);
+        map.put("payer", order.getPayer() != null ? order.getPayer().name() : null);
         map.put("weight", order.getWeight());
         map.put("cod", order.getCod());
         map.put("codStatus", order.getCodStatus() != null ? order.getCodStatus().name() : null);
@@ -1490,6 +1482,50 @@ public class OrderShipperService {
     }
 
     // Tạo bản ghi đối soát tiền mặt (COD + phí dịch vụ) sau khi giao/hoàn
+    private boolean isCodPaymentSubmission(Order order, PaymentSubmission submission) {
+        if (order == null || submission == null) {
+            return false;
+        }
+
+        if (submission.getItems() != null && !submission.getItems().isEmpty()) {
+            if (order.getCod() == null || order.getCod() <= 0) {
+                return false;
+            }
+            BigDecimal submissionAmount = submission.getSystemAmount() != null ? submission.getSystemAmount() : submission.getActualAmount();
+            if (submissionAmount == null) {
+                return false;
+            }
+            return submissionAmount.compareTo(BigDecimal.valueOf(order.getCod())) == 0;
+        }
+
+        if (order.getCod() == null || order.getCod() <= 0) {
+            return false;
+        }
+
+        BigDecimal systemAmount = submission.getSystemAmount();
+        BigDecimal actualAmount = submission.getActualAmount();
+        BigDecimal codAmount = BigDecimal.valueOf(order.getCod());
+        return (systemAmount != null && systemAmount.compareTo(codAmount) == 0)
+                || (actualAmount != null && actualAmount.compareTo(codAmount) == 0)
+                || (submission.getNotes() != null && submission.getNotes().toUpperCase().contains("COD"));
+    }
+
+    private boolean hasExistingCodSubmission(Order order) {
+        if (order == null) {
+            return false;
+        }
+        List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
+        if (existing == null || existing.isEmpty()) {
+            return false;
+        }
+        for (PaymentSubmission submission : existing) {
+            if (isCodPaymentSubmission(order, submission)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void createPaymentSubmission(Order order, User shipperUser, int amount, String note) {
         if (amount <= 0) return;
 

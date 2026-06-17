@@ -116,6 +116,7 @@ export interface Order {
     userCode: string;
     codStatus: string;
     paymentSubmissions?: PaymentSubmission[];
+    codAmount?: number;
 }
 
 export interface UserOrderSearchRequest {
