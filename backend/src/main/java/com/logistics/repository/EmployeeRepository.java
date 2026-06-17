@@ -19,13 +19,9 @@ import java.util.Optional;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Integer>, JpaSpecificationExecutor<Employee> {
-    Optional<Employee> findByCode(String code);
-
     List<Employee> findByOfficeId(Integer officeId);
 
     List<Employee> findByUserId(Integer userId);
-
-    boolean existsByCode(String code);
 
     List<Employee> findAllByAccountRoleId(Integer accountRoleId);
 
@@ -51,160 +47,107 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
     List<Object[]> countActiveEmployeesByShiftForOffice(@Param("officeId") Integer officeId);
 
     @Query(value = """
-                SELECT new com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto(
-                    e.id,
-                    CONCAT(u.lastName, ' ', u.firstName),
-                    e.code,
-                    r.name,
-                    u.phoneNumber,
-                    CAST(e.status AS string),
-                    CAST(e.shift AS string),
-
-                    COUNT(DISTINCT s.id),
-                    COUNT(so.id),
-
-                    COALESCE(
-                        SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END),
-                        0
-                    ),
-
-                    CASE
-                        WHEN COUNT(so.id) = 0 THEN 0
-                        ELSE
-                            SUM(
-                                FUNCTION('TIMESTAMPDIFF', MINUTE, s.startTime, s.endTime)
-                            ) * 1.0 / COUNT(so.id)
-                    END
-                )
-                FROM Employee e
-                    JOIN e.user u
-                    JOIN e.office office
-                    JOIN e.accountRole ar
-                    JOIN ar.role r
-
-                    LEFT JOIN Shipment s ON s.employee.id = e.id
-                    LEFT JOIN ShipmentOrder so ON so.shipment.id = s.id
-                    LEFT JOIN so.order o
-
-                WHERE office.id = :officeId
-                  AND (
-                        :search IS NULL
-                        OR LOWER(e.code) LIKE LOWER(CONCAT('%', :search, '%'))
-                        OR LOWER(CONCAT(u.lastName, ' ', u.firstName))
-                            LIKE LOWER(CONCAT('%', :search, '%'))
-                        OR u.phoneNumber LIKE CONCAT('%', :search, '%')
-                  )
-                  AND (:roleName IS NULL OR r.name = :roleName)
-                  AND (:shift IS NULL OR e.shift = :shift)
-                  AND (:status IS NULL OR e.status = :status)
-                  AND r.isSystemRole = true
-                  AND r.name <> 'Manager'
-
-                GROUP BY
-                    e.id,
-                    u.lastName,
-                    u.firstName,
-                    e.code,
-                    r.name,
-                    u.phoneNumber,
-                    e.status,
-                    e.shift
+            SELECT
+                e.id                                                     AS id,
+                CONCAT(u.last_name, ' ', u.first_name)                  AS employeeName,
+                e.code                                                   AS employeeCode,
+                r.name                                                   AS employeeRole,
+                u.phone_number                                           AS employeePhone,
+                e.status                                                 AS employeeStatus,
+                e.shift                                                  AS employeeShift,
+                COUNT(DISTINCT s.id)                                     AS totalShipments,
+                COUNT(CASE WHEN so.order_id IS NOT NULL AND so.shipment_id IS NOT NULL THEN 1 ELSE NULL END) AS totalOrders,
+                COALESCE(SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END), 0)                        AS completedOrders,
+                CASE
+                    WHEN COUNT(CASE WHEN so.order_id IS NOT NULL AND so.shipment_id IS NOT NULL THEN 1 ELSE NULL END) = 0
+                    THEN 0.0
+                    ELSE SUM(TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time)) * 1.0
+                         / COUNT(CASE WHEN so.order_id IS NOT NULL AND so.shipment_id IS NOT NULL THEN 1 ELSE NULL END)
+                END                                                      AS avgTimePerOrder
+            FROM employees e
+                JOIN users u ON u.id = e.user_id
+                JOIN offices off ON off.id = e.office_id
+                JOIN account_roles ar ON ar.id = e.account_role_id
+                JOIN roles r ON r.id = ar.role_id
+                LEFT JOIN shipments s ON s.employee_id = e.id
+                LEFT JOIN shipment_orders so ON so.shipment_id = s.id
+                LEFT JOIN orders o ON o.id = so.order_id
+            WHERE off.id = :officeId
+              AND (:search IS NULL
+                    OR LOWER(e.code) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(CONCAT(u.last_name, ' ', u.first_name)) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR u.phone_number LIKE CONCAT('%', :search, '%'))
+              AND r.name = 'Shipper'
+              AND r.user_owner_id IS NULL
+              AND (:shift IS NULL OR e.shift = :shift)
+              AND (:status IS NULL OR e.status = :status)
+            GROUP BY e.id, u.last_name, u.first_name, e.code, r.name, u.phone_number, e.status, e.shift
             """,
-
             countQuery = """
-                        SELECT COUNT(DISTINCT e.id)
-                        FROM Employee e
-                            JOIN e.user u
-                            JOIN e.office office
-                            JOIN e.accountRole ar
-                            JOIN ar.role r
-
-                        WHERE office.id = :officeId
-                          AND (
-                                :search IS NULL
-                                OR LOWER(e.code) LIKE LOWER(CONCAT('%', :search, '%'))
-                                OR LOWER(CONCAT(u.lastName, ' ', u.firstName))
-                                    LIKE LOWER(CONCAT('%', :search, '%'))
-                                OR u.phoneNumber LIKE CONCAT('%', :search, '%')
-                          )
-                          AND (:roleName IS NULL OR r.name = :roleName)
-                          AND (:shift IS NULL OR e.shift = :shift)
-                          AND (:status IS NULL OR e.status = :status)
-                          AND r.isSystemRole = true
-                          AND r.name <> 'Manager'
-                    """)
-    Page<ManagerEmployeePerformanceDto> getEmployeePerformance(
+                    SELECT COUNT(DISTINCT e.id)
+                    FROM employees e
+                        JOIN users u ON u.id = e.user_id
+                        JOIN offices off ON off.id = e.office_id
+                        JOIN account_roles ar ON ar.id = e.account_role_id
+                        JOIN roles r ON r.id = ar.role_id
+                    WHERE off.id = :officeId
+                      AND (:search IS NULL
+                            OR LOWER(e.code) LIKE LOWER(CONCAT('%', :search, '%'))
+                            OR LOWER(CONCAT(u.last_name, ' ', u.first_name)) LIKE LOWER(CONCAT('%', :search, '%'))
+                            OR u.phone_number LIKE CONCAT('%', :search, '%'))
+                      AND r.name = 'Shipper'
+                      AND r.user_owner_id IS NULL
+                      AND (:shift IS NULL OR e.shift = :shift)
+                      AND (:status IS NULL OR e.status = :status)
+                    """,
+            nativeQuery = true)
+    Page<ManagerEmployeePerformanceDto> getShipperPerformance(
             @Param("officeId") Integer officeId,
             @Param("search") String search,
-            @Param("roleName") String roleName,
-            @Param("shift") EmployeeShift shift,
-            @Param("status") EmployeeStatus status,
+            @Param("shift") String shift,
+            @Param("status") String status,
             Pageable pageable);
 
-    @Query("""
-                SELECT new com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto(
-                    e.id,
-                    CONCAT(u.lastName, ' ', u.firstName),
-                    e.code,
-                    r.name,
-                    u.phoneNumber,
-                    CAST(e.status AS string),
-                    CAST(e.shift AS string),
-
-                    COUNT(DISTINCT s.id),
-                    COUNT(so.id),
-
-                    COALESCE(
-                        SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END),
-                        0
-                    ),
-
-                    CASE
-                        WHEN COUNT(so.id) = 0 THEN 0
-                        ELSE
-                            SUM(
-                                FUNCTION('TIMESTAMPDIFF', MINUTE, s.startTime, s.endTime)
-                            ) * 1.0 / COUNT(so.id)
-                    END
-                )
-                FROM Employee e
-                    JOIN e.user u
-                    JOIN e.office office
-                    JOIN e.accountRole ar
-                    JOIN ar.role r
-
-                    LEFT JOIN Shipment s ON s.employee.id = e.id
-                    LEFT JOIN ShipmentOrder so ON so.shipment.id = s.id
-                    LEFT JOIN so.order o
-
-                WHERE office.id = :officeId
-                  AND (
-                        :search IS NULL
-                        OR LOWER(e.code) LIKE LOWER(CONCAT('%', :search, '%'))
-                        OR LOWER(CONCAT(u.lastName, ' ', u.firstName))
-                            LIKE LOWER(CONCAT('%', :search, '%'))
-                        OR u.phoneNumber LIKE CONCAT('%', :search, '%')
-                  )
-                  AND (:roleName IS NULL OR r.name = :roleName)
-                  AND (:shift IS NULL OR e.shift = :shift)
-                  AND (:status IS NULL OR e.status = :status)
-                  AND r.isSystemRole = true
-                  AND r.name <> 'Manager'
-
-                GROUP BY
-                    e.id,
-                    u.lastName,
-                    u.firstName,
-                    e.code,
-                    r.name,
-                    u.phoneNumber,
-                    e.status,
-                    e.shift
-            """)
-    List<ManagerEmployeePerformanceDto> getEmployeePerformanceList(
+    @Query(value = """
+            SELECT
+                e.id                                                     AS id,
+                CONCAT(u.last_name, ' ', u.first_name)                  AS employeeName,
+                e.code                                                   AS employeeCode,
+                r.name                                                   AS employeeRole,
+                u.phone_number                                           AS employeePhone,
+                e.status                                                 AS employeeStatus,
+                e.shift                                                  AS employeeShift,
+                COUNT(DISTINCT s.id)                                     AS totalShipments,
+                COUNT(CASE WHEN so.order_id IS NOT NULL AND so.shipment_id IS NOT NULL THEN 1 ELSE NULL END) AS totalOrders,
+                COALESCE(SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END), 0)                        AS completedOrders,
+                CASE
+                    WHEN COUNT(CASE WHEN so.order_id IS NOT NULL AND so.shipment_id IS NOT NULL THEN 1 ELSE NULL END) = 0
+                    THEN 0.0
+                    ELSE SUM(TIMESTAMPDIFF(MINUTE, s.start_time, s.end_time)) * 1.0
+                         / COUNT(CASE WHEN so.order_id IS NOT NULL AND so.shipment_id IS NOT NULL THEN 1 ELSE NULL END)
+                END                                                      AS avgTimePerOrder
+            FROM employees e
+                JOIN users u ON u.id = e.user_id
+                JOIN offices off ON off.id = e.office_id
+                JOIN account_roles ar ON ar.id = e.account_role_id
+                JOIN roles r ON r.id = ar.role_id
+                LEFT JOIN shipments s ON s.employee_id = e.id
+                LEFT JOIN shipment_orders so ON so.shipment_id = s.id
+                LEFT JOIN orders o ON o.id = so.order_id
+            WHERE off.id = :officeId
+              AND (:search IS NULL
+                    OR LOWER(e.code) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(CONCAT(u.last_name, ' ', u.first_name)) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR u.phone_number LIKE CONCAT('%', :search, '%'))
+              AND r.name = 'Shipper'
+              AND r.user_owner_id IS NULL
+              AND (:shift IS NULL OR e.shift = :shift)
+              AND (:status IS NULL OR e.status = :status)
+            GROUP BY e.id, u.last_name, u.first_name, e.code, r.name, u.phone_number, e.status, e.shift
+            """, nativeQuery = true)
+    List<ManagerEmployeePerformanceDto> getShipperPerformanceList(
             @Param("officeId") Integer officeId,
             @Param("search") String search,
-            @Param("roleName") String roleName,
-            @Param("shift") EmployeeShift shift,
-            @Param("status") EmployeeStatus status);
+            @Param("shift") String shift,
+            @Param("status") String status);
 }

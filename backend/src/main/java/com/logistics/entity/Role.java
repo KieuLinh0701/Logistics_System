@@ -1,6 +1,7 @@
 package com.logistics.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,13 +15,18 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Data
 @Getter
 @Setter
 @Audited
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "roles")
+@Table(
+        name = "roles",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_role_name_per_owner",
+                columnNames = {"name", "owner_account_id"}
+        )
+)
 @EntityListeners(AuditingEntityListener.class)
 public class Role {
 
@@ -28,14 +34,15 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(columnDefinition = "NVARCHAR(50)", nullable = false, unique = true, length = 50)
+    @Column(columnDefinition = "NVARCHAR(50)", nullable = false, length = 50)
     private String name;
 
     @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
     private String description;
 
-    @Column(nullable = false)
-    private Boolean isSystemRole = true;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_owner_id", nullable = true)
+    private User userOwner;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -44,15 +51,14 @@ public class Role {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    // Liên kết với AccountRole
     @OneToMany(mappedBy = "role", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    private List<AccountRole> accountRoles;
+    private List<AccountRole> accountRoles = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "role_permissions",
+            name = "role_permission_groups",
             joinColumns = @JoinColumn(name = "role_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
+            inverseJoinColumns = @JoinColumn(name = "permission_group_id")
     )
-    private Set<Permission> permissions = new HashSet<>();
+    private Set<PermissionGroup> permissionGroups = new HashSet<>();
 }

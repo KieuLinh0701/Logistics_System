@@ -42,6 +42,10 @@ public class SettlementBatch {
     @Column
     private BigDecimal balanceAmount;
 
+    // đã thanh toán/khấu trừ bao nhiêu
+    @Column
+    private BigDecimal paidAmount = BigDecimal.ZERO;
+
     // Trạng thái đối soát
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)

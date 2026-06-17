@@ -1,8 +1,8 @@
-import { Avatar, Tag, Typography } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import {Avatar, Tag, Typography} from "antd";
+import {UserOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useEffect, useRef } from "react";
-import type { SupportMessage } from "../../types/support";
+import {useEffect, useRef} from "react";
+import type {SupportMessage} from "../../types/support";
 
 const { Text } = Typography;
 

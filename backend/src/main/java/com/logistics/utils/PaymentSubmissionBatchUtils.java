@@ -11,16 +11,12 @@ public class PaymentSubmissionBatchUtils {
     private static final Map<PaymentSubmissionBatchStatus, Set<PaymentSubmissionBatchStatus>> MANAGER_ALLOWED_STATUS_TRANSITIONS = Map
             .of(
 
-                    PaymentSubmissionBatchStatus.PENDING, Set.of(
-                            PaymentSubmissionBatchStatus.CHECKING,
-                            PaymentSubmissionBatchStatus.CANCELLED),
+                    PaymentSubmissionBatchStatus.OPEN, Set.of(),
 
-                    PaymentSubmissionBatchStatus.CHECKING, Set.of(
-                            PaymentSubmissionBatchStatus.COMPLETED,
-                            PaymentSubmissionBatchStatus.PARTIAL),
+                    PaymentSubmissionBatchStatus.PROCESSING, Set.of(
+                            PaymentSubmissionBatchStatus.COMPLETED),
 
-                    PaymentSubmissionBatchStatus.PARTIAL, Set.of(
-                            PaymentSubmissionBatchStatus.COMPLETED));
+                    PaymentSubmissionBatchStatus.COMPLETED, Set.of());
 
     public static boolean canManagerChangeStatus(
             PaymentSubmissionBatchStatus currentStatus,
@@ -35,11 +31,9 @@ public class PaymentSubmissionBatchUtils {
 
     // Dịch trạng thái sang tiếng Việt
     private static final Map<String, String> STATUS_MAP = Map.of(
-            "PENDING", "Đã nộp tiền",
-            "CHECKING", "Đang đối soát",
-            "COMPLETED", "Đã đối soát",
-            "PARTIAL", "Lệch tiền",
-            "CANCELLED", "Đã huỷ");
+            "OPEN", "Đang mở",
+            "PROCESSING", "Đang đối soát",
+            "COMPLETED", "Đã đối soát");
 
     public static String translateStatus(String status) {
         if (status == null)

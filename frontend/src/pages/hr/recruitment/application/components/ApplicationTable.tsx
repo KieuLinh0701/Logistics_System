@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
-import { Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { JobApplication } from "../../../../../types/recruitment";
+import React, {useMemo} from "react";
+import {Table} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import type {JobApplication} from "../../../../../types/recruitment";
 import StatusBadge from "./StatusBadge";
 import Actions from "./Actions";
 import "./ApplicationComponents.css";

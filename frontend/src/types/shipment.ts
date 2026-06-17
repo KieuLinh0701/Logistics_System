@@ -1,6 +1,8 @@
 import type { ManagerEmployee } from "./employee";
 import type { Office } from "./office";
 import type { Vehicle } from "./vehicle";
+import type {ListResponse} from "./response.ts";
+import type {Order} from "./order.ts";
 
 export interface ManagerShipment {
   id: number;
@@ -139,5 +141,9 @@ export interface DriverDeliveryStop {
     id: number;
     trackingNumber: string;
   }>;
+  status: string;
+}
+export interface GetOrdersByShipmentIdManagerResponse {
+  orders: ListResponse<ManagerOrderShipment>;
   status: string;
 }

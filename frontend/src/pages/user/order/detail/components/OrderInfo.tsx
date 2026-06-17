@@ -1,7 +1,7 @@
 import React from "react";
-import { translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
+import {translateOrderPickupType, translateOrderStatus} from "../../../../../utils/orderUtils";
 import Title from "antd/es/typography/Title";
-import type { Order } from "../../../../../types/order";
+import type {Order} from "../../../../../types/order";
 
 interface OrderInfoProps {
   order: Order;

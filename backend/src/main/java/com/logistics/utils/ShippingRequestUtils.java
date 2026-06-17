@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.logistics.entity.Office;
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
@@ -176,4 +177,33 @@ public class ShippingRequestUtils {
         return REQUEST_TYPE_ALLOWED_GUEST_CREATE.contains(value);
     }
 
+    public static String translateShippingRequestType(ShippingRequestType value) {
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+            case COMPLAINT -> "Khiếu nại";
+            case PICKUP_REMINDER -> "Hối lấy hàng";
+            case DELIVERY_REMINDER -> "Hối giao hàng";
+            case CHANGE_ORDER_INFO -> "Thay đổi thông tin ĐH";
+            case INQUIRY -> "Yêu cầu hỗ trợ";
+            default -> value.name();
+        };
+    }
+
+    public static String translateShippingRequestStatus(ShippingRequestStatus value) {
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+            case PENDING -> "Chờ xử lý";
+            case PROCESSING -> "Đang xử lý";
+            case RESOLVED -> "Đã xử lý";
+            case REJECTED -> "Từ chối";
+            case CANCELLED -> "Đã hủy";
+            default -> value.name();
+        };
+    }
 }

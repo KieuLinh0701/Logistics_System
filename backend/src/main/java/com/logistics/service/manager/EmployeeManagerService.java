@@ -68,6 +68,10 @@ import com.logistics.utils.PaymentSubmissionBatchUtils;
 
 import lombok.RequiredArgsConstructor;
 
+import static com.logistics.utils.EmployeeUtils.translateEmployeeShift;
+import static com.logistics.utils.EmployeeUtils.translateEmployeeStatus;
+import static com.logistics.utils.RoleUtils.translateSystemRoleName;
+
 @Service
 @RequiredArgsConstructor
 public class EmployeeManagerService {
@@ -93,14 +97,18 @@ public class EmployeeManagerService {
 
         Employee managed = employees.stream()
                 .filter(emp -> emp.getStatus() != EmployeeStatus.LEAVE)
-                .filter(emp -> emp.getOffice() != null && emp.getOffice().getManager().getId().equals(emp.getId()))
+                .filter(emp -> emp.getOffice() != null && emp.getOffice()
+                        .getManager()
+                        .getId()
+                        .equals(emp.getId()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Bạn không phải quản lý bưu cục hoặc đã nghỉ"));
 
         return managed.getOffice();
     }
 
-    public ApiResponse<ListResponse<ManagerEmployeeListDto>> list(int userId, ManagerEmployeeSearchRequest request) {
+    public ApiResponse<ListResponse<ManagerEmployeeListDto>> list(int userId,
+                                                                  ManagerEmployeeSearchRequest request) {
         try {
             Office office = getManagedOfficeByUserId(userId);
 
@@ -112,12 +120,18 @@ public class EmployeeManagerService {
             String role = request.getRole();
             String shift = request.getShift();
 
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-                    ? Instant.parse(request.getStartDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                    .isBlank()
+                    ? Instant.parse(request.getStartDate())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime()
                     : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-                    ? Instant.parse(request.getEndDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                    .isBlank()
+                    ? Instant.parse(request.getEndDate())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime()
                     : null;
 
             Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
@@ -129,8 +143,10 @@ public class EmployeeManagerService {
                     .and(EmployeeSpecification.hireDateBetween(startDate, endDate));
 
             Sort sortOpt = switch (sort.toLowerCase()) {
-                case "newest" -> Sort.by("hireDate").descending();
-                case "oldest" -> Sort.by("hireDate").ascending();
+                case "newest" -> Sort.by("hireDate")
+                        .descending();
+                case "oldest" -> Sort.by("hireDate")
+                        .ascending();
                 default -> Sort.unsorted();
             };
 
@@ -156,6 +172,114 @@ public class EmployeeManagerService {
         }
     }
 
+    public byte[] export(int userId, ManagerEmployeeSearchRequest request) {
+        Office office = getManagedOfficeByUserId(userId);
+
+        String search = request.getSearch();
+        String sort = request.getSort();
+        String status = request.getStatus();
+        String role = request.getRole();
+        String shift = request.getShift();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? Instant.parse(request.getStartDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? Instant.parse(request.getEndDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                : null;
+
+        Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
+                .and(EmployeeSpecification.officeId(office.getId()))
+                .and(EmployeeSpecification.search(search))
+                .and(EmployeeSpecification.status(status))
+                .and(EmployeeSpecification.role(role, true))
+                .and(EmployeeSpecification.shift(shift))
+                .and(EmployeeSpecification.hireDateBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("hireDate").descending();
+            case "oldest" -> Sort.by("hireDate").ascending();
+            default -> Sort.by("hireDate").descending();
+        } : Sort.by("hireDate").descending();
+
+        List<Employee> employees = employeeRepository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Employees");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã NV",
+                    "Họ tên",
+                    "Số điện thoại", "Email",
+                    "Chức vụ",
+                    "Ca làm việc",
+                    "Trạng thái",
+                    "Ngày vào làm"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            int rowIdx = 1;
+            for (Employee e : employees) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(e.getCode() != null ? e.getCode() : "");
+
+                String lastName = (e.getUser() != null && e.getUser().getLastName() != null) ? e.getUser().getLastName() : "";
+                String firstName = (e.getUser() != null && e.getUser().getFirstName() != null) ? e.getUser().getFirstName() : "";
+                row.createCell(1).setCellValue((lastName + " " + firstName).trim());
+
+                row.createCell(2).setCellValue(e.getUser() != null && e.getUser().getPhoneNumber() != null ? e.getUser().getPhoneNumber() : "");
+                row.createCell(3).setCellValue(
+                        e.getUser() != null
+                                && e.getUser().getAccount() != null
+                                && e.getUser().getAccount().getEmail() != null
+                                ? e.getUser().getAccount().getEmail()
+                                : "");
+
+                boolean isSystem = e.getAccountRole() != null
+                        && e.getAccountRole().getRole() != null
+                        && e.getAccountRole().getRole().getUserOwner() == null;
+                String roleName = (e.getAccountRole() != null && e.getAccountRole().getRole() != null)
+                        ? e.getAccountRole().getRole().getName()
+                        : null;
+                row.createCell(4).setCellValue(translateSystemRoleName(roleName, isSystem));
+
+                row.createCell(5).setCellValue(translateEmployeeShift(e.getShift()));
+                row.createCell(6).setCellValue(translateEmployeeStatus(e.getStatus()));
+                row.createCell(7).setCellValue(e.getHireDate() != null ? e.getHireDate().format(dtf) : "");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
     public ApiResponse<ListResponse<ManagerEmployeePerformanceDto>> getEmployeePerformance(
             int userId,
             SearchRequest request) {
@@ -175,7 +299,8 @@ public class EmployeeManagerService {
 
             if (shift != null && !shift.isBlank()) {
                 try {
-                    employeeShift = EmployeeShift.valueOf(shift.trim().toUpperCase());
+                    employeeShift = EmployeeShift.valueOf(shift.trim()
+                            .toUpperCase());
                 } catch (IllegalArgumentException ex) {
                     throw new BadRequestException("Ca làm việc không hợp lệ");
                 }
@@ -183,7 +308,8 @@ public class EmployeeManagerService {
 
             if (status != null && !status.isBlank()) {
                 try {
-                    employeeStatus = EmployeeStatus.valueOf(status.trim().toUpperCase());
+                    employeeStatus = EmployeeStatus.valueOf(status.trim()
+                            .toUpperCase());
                 } catch (IllegalArgumentException ex) {
                     throw new BadRequestException("Trạng thái làm việc không hợp lệ");
                 }
@@ -191,12 +317,11 @@ public class EmployeeManagerService {
 
             Pageable pageable = PageRequest.of(page - 1, limit);
 
-            Page<ManagerEmployeePerformanceDto> pageData = employeeRepository.getEmployeePerformance(
+            Page<ManagerEmployeePerformanceDto> pageData = employeeRepository.getShipperPerformance(
                     office.getId(),
                     search == null || search.isBlank() ? null : search,
-                    role,
-                    employeeShift,
-                    employeeStatus,
+                    employeeShift != null ? employeeShift.name() : null,
+                    employeeStatus != null ? employeeStatus.name() : null,
                     pageable);
 
             Pagination pagination = new Pagination(
@@ -210,7 +335,6 @@ public class EmployeeManagerService {
             data.setPagination(pagination);
 
             return new ApiResponse<>(true, "Lấy hiệu suất nhân viên thành công", data);
-
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
@@ -224,8 +348,11 @@ public class EmployeeManagerService {
             // 1. Lấy office của người dùng hiện tại
             Office office = getManagedOfficeByUserId(creatorUserId);
 
-            String email = req.getUserEmail().trim().toLowerCase();
-            String phone = req.getUserPhoneNumber().trim();
+            String email = req.getUserEmail()
+                    .trim()
+                    .toLowerCase();
+            String phone = req.getUserPhoneNumber()
+                    .trim();
 
             // 2. tìm account theo email
             Optional<Account> optAccount = accountRepository.findByEmail(email);
@@ -234,7 +361,8 @@ public class EmployeeManagerService {
             if (optAccount.isEmpty()) {
                 // phone phải unique toàn hệ thống
                 if (userRepository.existsByPhoneNumber(phone)) {
-                    return new ApiResponse<>(false, "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác", null);
+                    return new ApiResponse<>(false, "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác",
+                            null);
                 }
 
                 String DEFAULT_TEMP_PASSWORD = PasswordUtils.generateTempPassword();
@@ -266,7 +394,8 @@ public class EmployeeManagerService {
 
                 Role role = roleRepository.findByName(req.getUserRole())
                         .orElseThrow(
-                                () -> new RuntimeException("Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
+                                () -> new RuntimeException(
+                                        "Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
 
                 AccountRole accountRole = new AccountRole();
                 accountRole.setAccount(account);
@@ -285,7 +414,8 @@ public class EmployeeManagerService {
                         user.getId(),
                         null,
                         "employees",
-                        emp.getId().toString());
+                        emp.getId()
+                                .toString());
 
                 return new ApiResponse<>(true, "Thêm nhân viên mới thành công", true);
             }
@@ -304,9 +434,11 @@ public class EmployeeManagerService {
                     .findByAccountIdAndIsActiveTrue(account.getId());
 
             boolean hasActiveUserRole = activeAccountRoles.stream()
-                    .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole().getName()));
+                    .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole()
+                            .getName()));
             long activeNonUserRolesCount = activeAccountRoles.stream()
-                    .filter(ar -> !"User".equalsIgnoreCase(ar.getRole().getName()))
+                    .filter(ar -> !"User".equalsIgnoreCase(ar.getRole()
+                            .getName()))
                     .count();
 
             // role muốn thêm
@@ -327,7 +459,9 @@ public class EmployeeManagerService {
 
                     // 1. Nếu có employee (ACTIVE/INACTIVE) ở cùng office -> lỗi (C đúng)
                     boolean existsActiveOrInactiveHere = employees.stream()
-                            .anyMatch(e -> e.getOffice().getId().equals(office.getId())
+                            .anyMatch(e -> e.getOffice()
+                                    .getId()
+                                    .equals(office.getId())
                                     && e.getStatus() != EmployeeStatus.LEAVE);
                     if (existsActiveOrInactiveHere) {
                         return new ApiResponse<>(false, "Tài khoản này đã là nhân viên ở bưu cục hiện tại.", null);
@@ -336,7 +470,9 @@ public class EmployeeManagerService {
                     // 2. Nếu có employee ACTIVE/INACTIVE ở office khác -> lỗi (một người chỉ làm 1
                     // bưu cục)
                     boolean existsActiveOrInactiveElsewhere = employees.stream()
-                            .anyMatch(e -> !e.getOffice().getId().equals(office.getId())
+                            .anyMatch(e -> !e.getOffice()
+                                    .getId()
+                                    .equals(office.getId())
                                     && e.getStatus() != EmployeeStatus.LEAVE);
                     if (existsActiveOrInactiveElsewhere) {
                         return new ApiResponse<>(false,
@@ -363,7 +499,8 @@ public class EmployeeManagerService {
                 } else {
                     if (totalActiveAfterRestore > 1) {
                         return new ApiResponse<>(false,
-                                "Không thể kích hoạt chức vụ này vì tài khoản đã có chức vụ đang hoạt động.", null);
+                                "Không thể kích hoạt chức vụ này vì tài khoản đã có chức vụ đang hoạt động.",
+                                null);
                     }
                 }
 
@@ -376,7 +513,9 @@ public class EmployeeManagerService {
 
                 // nếu tồn tại employee cùng office -> khôi phục trạng thái
                 Optional<Employee> empHereOpt = employees.stream()
-                        .filter(e -> e.getOffice().getId().equals(office.getId()))
+                        .filter(e -> e.getOffice()
+                                .getId()
+                                .equals(office.getId()))
                         .findFirst();
 
                 if (empHereOpt.isPresent()) {
@@ -386,8 +525,8 @@ public class EmployeeManagerService {
                     }
                     e.setHireDate(req.getHireDate() != null
                             ? Instant.parse(req.getHireDate())
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDateTime()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime()
                             : e.getHireDate());
                     employeeRepository.save(e);
                     return new ApiResponse<>(true, "Nhân viên đã được khôi phục và sẵn sàng làm việc.", true);
@@ -410,15 +549,19 @@ public class EmployeeManagerService {
 
                 notificationService.create(
                         "Nhân viên đã được kích hoạt lại",
-                        "Bạn đã được kích hoạt trở lại với chức vụ " + ar.getRole().getName() +
+                        "Bạn đã được kích hoạt trở lại với chức vụ " + ar.getRole()
+                                .getName() +
                                 ". Hãy đăng nhập để tiếp tục công việc.",
                         "employee",
-                        account.getUser().getId(),
+                        account.getUser()
+                                .getId(),
                         null,
                         "employees",
-                        newEmp.getId().toString());
+                        newEmp.getId()
+                                .toString());
 
-                return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công sau khi khôi phục chức vụ.", true);
+                return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công sau khi khôi phục chức vụ.",
+                        true);
             }
 
             /*
@@ -438,7 +581,8 @@ public class EmployeeManagerService {
                 if (activeNonUserRolesCount >= 1) {
                     // account đã có 1 non-user active và không có user -> không thể thêm nữa
                     return new ApiResponse<>(false,
-                            "Tài khoản này đã có một chức vụ đang hoạt động. Không thể thêm chức vụ thứ hai.", null);
+                            "Tài khoản này đã có một chức vụ đang hoạt động. Không thể thêm chức vụ thứ hai.",
+                            null);
                 }
             }
 
@@ -452,7 +596,9 @@ public class EmployeeManagerService {
             // Kiểm tra employee active/inactive ở office khác
             List<Employee> allEmployeesForAccount = employeeRepository.findAllByAccountId(account.getId());
             boolean existsActiveOrInactiveElsewhere = allEmployeesForAccount.stream()
-                    .anyMatch(e -> !e.getOffice().getId().equals(office.getId())
+                    .anyMatch(e -> !e.getOffice()
+                            .getId()
+                            .equals(office.getId())
                             && e.getStatus() != EmployeeStatus.LEAVE);
 
             if (existsActiveOrInactiveElsewhere) {
@@ -466,7 +612,6 @@ public class EmployeeManagerService {
             employeeRepository.save(emp);
 
             return new ApiResponse<>(true, "Chức vụ và nhân viên mới đã được tạo thành công!", true);
-
         } catch (Exception ex) {
             return new ApiResponse<>(false, ex.getMessage(), null);
         }
@@ -482,24 +627,34 @@ public class EmployeeManagerService {
             Employee emp = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên này"));
 
-            if (!emp.getOffice().getId().equals(editorOffice.getId())) {
-                return new ApiResponse<>(false, "Bạn chỉ có thể chỉnh sửa nhân viên trong bưu cục của mình.", null);
+            if (!emp.getOffice()
+                    .getId()
+                    .equals(editorOffice.getId())) {
+                return new ApiResponse<>(false, "Bạn chỉ có thể chỉnh sửa nhân viên trong bưu cục của mình.",
+                        null);
             }
 
-            Account account = emp.getAccountRole().getAccount();
+            Account account = emp.getAccountRole()
+                    .getAccount();
             EmployeeStatus currentStatus = emp.getStatus();
 
             // Mới thêm
-            if (!emp.getAccountRole().getIsActive()) {
-                emp.getAccountRole().setIsActive(true);
+            if (!emp.getAccountRole()
+                    .getIsActive()) {
+                emp.getAccountRole()
+                        .setIsActive(true);
                 accountRoleRepository.save(emp.getAccountRole());
             }
 
             // ===== Kiểm tra employee ACTIVE/INACTIVE khác ở office khác =====
             boolean hasOtherOfficeActive = employeeRepository.findAllByAccountId(account.getId())
                     .stream()
-                    .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE || e.getStatus() == EmployeeStatus.INACTIVE)
-                    .anyMatch(e -> !e.getOffice().getId().equals(emp.getOffice().getId()));
+                    .filter(e -> e.getStatus() == EmployeeStatus.ACTIVE
+                            || e.getStatus() == EmployeeStatus.INACTIVE)
+                    .anyMatch(e -> !e.getOffice()
+                            .getId()
+                            .equals(emp.getOffice()
+                                    .getId()));
 
             if (hasOtherOfficeActive) {
                 return new ApiResponse<>(false,
@@ -509,20 +664,26 @@ public class EmployeeManagerService {
 
             // ===== Xử lý role nếu thay đổi =====
             Role newRole = roleRepository.findByName(req.getUserRole())
-                    .orElseThrow(() -> new RuntimeException("Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
+                    .orElseThrow(
+                            () -> new RuntimeException("Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
             AccountRole currentAR = emp.getAccountRole();
 
-            EmployeeStatus newStatus = req.getStatus() != null && !req.getStatus().isBlank()
+            EmployeeStatus newStatus = req.getStatus() != null && !req.getStatus()
+                    .isBlank()
                     ? EmployeeStatus.valueOf(req.getStatus())
                     : currentStatus;
 
-            if (!currentAR.getRole().getId().equals(newRole.getId()) && newStatus == EmployeeStatus.LEAVE) {
+            if (!currentAR.getRole()
+                    .getId()
+                    .equals(newRole.getId()) && newStatus == EmployeeStatus.LEAVE) {
                 return new ApiResponse<>(false,
                         "Không thể thay đổi chức vụ và cho nghỉ cùng lúc. Vui lòng thực hiện riêng từng thao tác.",
                         null);
             }
 
-            if (!currentAR.getRole().getId().equals(newRole.getId())) {
+            if (!currentAR.getRole()
+                    .getId()
+                    .equals(newRole.getId())) {
                 Optional<AccountRole> optAR = accountRoleRepository.findByAccountIdAndRoleId(account.getId(),
                         newRole.getId());
                 AccountRole newAR;
@@ -538,9 +699,12 @@ public class EmployeeManagerService {
                     List<AccountRole> activeRoles = accountRoleRepository
                             .findByAccountIdAndIsActiveTrue(account.getId());
                     boolean hasUserActive = activeRoles.stream()
-                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()));
+                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole()
+                                    .getName()));
                     long activeNonUserCount = activeRoles.stream()
-                            .filter(r -> !"User".equalsIgnoreCase(r.getRole().getName())).count();
+                            .filter(r -> !"User".equalsIgnoreCase(r.getRole()
+                                    .getName()))
+                            .count();
                     long totalActiveAfterAdd = activeRoles.size() + 1;
 
                     if (hasUserActive && totalActiveAfterAdd > 2 || !hasUserActive && totalActiveAfterAdd > 1) {
@@ -558,7 +722,10 @@ public class EmployeeManagerService {
                 // check xem có employee LEAVE cùng office + newAR không
                 List<Employee> leaveEmployees = employeeRepository.findAllByAccountRoleId(newAR.getId())
                         .stream()
-                        .filter(e -> e.getOffice().getId().equals(emp.getOffice().getId())
+                        .filter(e -> e.getOffice()
+                                .getId()
+                                .equals(emp.getOffice()
+                                        .getId())
                                 && e.getStatus() == EmployeeStatus.LEAVE)
                         .toList();
 
@@ -566,7 +733,9 @@ public class EmployeeManagerService {
                     Employee toRestore = leaveEmployees.get(0);
                     toRestore.setStatus(EmployeeStatus.ACTIVE);
                     toRestore.setHireDate(req.getHireDate() != null
-                            ? Instant.parse(req.getHireDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                            ? Instant.parse(req.getHireDate())
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime()
                             : toRestore.getHireDate());
                     toRestore.setShift(req.getShift() != null
                             ? EmployeeShift.valueOf(req.getShift())
@@ -592,16 +761,20 @@ public class EmployeeManagerService {
             // ===== Cập nhật hireDate, shift (chỉ khi nhân viên chưa nghỉ) =====
             if (newStatus != EmployeeStatus.LEAVE) {
                 if (req.getHireDate() != null) {
-                    emp.setHireDate(Instant.parse(req.getHireDate()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+                    emp.setHireDate(Instant.parse(req.getHireDate())
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime());
                 }
 
-                if (req.getShift() != null && !req.getShift().isBlank()) {
+                if (req.getShift() != null && !req.getShift()
+                        .isBlank()) {
                     emp.setShift(EmployeeShift.valueOf(req.getShift()));
                 }
             }
 
             // ===== Cập nhật status =====
-            if (req.getStatus() != null && !req.getStatus().isBlank()) {
+            if (req.getStatus() != null && !req.getStatus()
+                    .isBlank()) {
 
                 // ACTIVE ↔ INACTIVE
                 if ((currentStatus == EmployeeStatus.ACTIVE || currentStatus == EmployeeStatus.INACTIVE)
@@ -615,16 +788,20 @@ public class EmployeeManagerService {
                     emp.setStatus(EmployeeStatus.LEAVE);
 
                     // deactivate tất cả role
-                    List<AccountRole> roles = accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId());
+                    List<AccountRole> roles =
+                            accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId());
                     roles.forEach(r -> r.setIsActive(false));
                     accountRoleRepository.saveAll(roles);
 
-                    boolean hasActiveNonUserRole = accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId())
-                            .stream()
-                            .anyMatch(r -> !"User".equalsIgnoreCase(r.getRole().getName()));
+                    boolean hasActiveNonUserRole =
+                            accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId())
+                                    .stream()
+                                    .anyMatch(r -> !"User".equalsIgnoreCase(r.getRole()
+                                            .getName()));
                     boolean hasUserRole = accountRoleRepository.findByAccountIdAndIsActiveTrue(account.getId())
                             .stream()
-                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()));
+                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole()
+                                    .getName()));
 
                     // nếu không còn role active nào → tắt account
                     if (!hasActiveNonUserRole && !hasUserRole) {
@@ -636,14 +813,16 @@ public class EmployeeManagerService {
 
                     notificationService.create(
                             "Bạn đã nghỉ việc",
-                            "Trạng thái nhân viên của bạn tại bưu cục " + emp.getOffice().getName() +
+                            "Trạng thái nhân viên của bạn tại bưu cục " + emp.getOffice()
+                                    .getName() +
                                     " vừa được cập nhật là Đã nghỉ việc. Bạn sẽ không thể truy cập giao diện của chức vụ hiện tại.",
                             "employee",
-                            account.getUser().getId(),
+                            account.getUser()
+                                    .getId(),
                             null,
                             "employees",
-                            emp.getId().toString());
-
+                            emp.getId()
+                                    .toString());
                 }
                 // LEAVE → ACTIVE/INACTIVE
                 else if (currentStatus == EmployeeStatus.LEAVE
@@ -654,7 +833,10 @@ public class EmployeeManagerService {
                     // tìm employee LEAVE cùng office + accountRole
                     List<Employee> leaveEmployees = employeeRepository.findAllByAccountRoleId(ar.getId())
                             .stream()
-                            .filter(e -> e.getOffice().getId().equals(emp.getOffice().getId())
+                            .filter(e -> e.getOffice()
+                                    .getId()
+                                    .equals(emp.getOffice()
+                                            .getId())
                                     && e.getStatus() == EmployeeStatus.LEAVE)
                             .toList();
 
@@ -663,7 +845,9 @@ public class EmployeeManagerService {
                         Employee toRestore = leaveEmployees.get(0);
                         toRestore.setStatus(newStatus);
                         toRestore.setHireDate(req.getHireDate() != null
-                                ? Instant.parse(req.getHireDate()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                                ? Instant.parse(req.getHireDate())
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
                                 : toRestore.getHireDate());
                         toRestore.setShift(req.getShift() != null
                                 ? EmployeeShift.valueOf(req.getShift())
@@ -675,11 +859,15 @@ public class EmployeeManagerService {
                             List<AccountRole> activeRoles = accountRoleRepository
                                     .findByAccountIdAndIsActiveTrue(account.getId());
                             boolean hasUserActive = activeRoles.stream()
-                                    .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()));
+                                    .anyMatch(r -> "User".equalsIgnoreCase(r.getRole()
+                                            .getName()));
                             long activeNonUserCount = activeRoles.stream()
-                                    .filter(r -> !"User".equalsIgnoreCase(r.getRole().getName())).count();
+                                    .filter(r -> !"User".equalsIgnoreCase(r.getRole()
+                                            .getName()))
+                                    .count();
 
-                            if (hasUserActive && activeNonUserCount >= 1 || !hasUserActive && activeNonUserCount >= 1) {
+                            if (hasUserActive && activeNonUserCount >= 1
+                                    || !hasUserActive && activeNonUserCount >= 1) {
                                 return new ApiResponse<>(false,
                                         "Không thể kích hoạt nhân viên mới vì số lượng chức vụ đang hoạt động đã đạt giới hạn",
                                         null);
@@ -701,20 +889,22 @@ public class EmployeeManagerService {
                     "Thông tin nhân viên đã được cập nhật",
                     "Thông tin nhận viên của bạn vừa được quản lý bưu cục thay đổi. Nếu có bất kỳ thắc mắc nào vui lòng liên hệ với chúng tôi",
                     "employee",
-                    emp.getUser().getId(),
+                    emp.getUser()
+                            .getId(),
                     null,
                     "employees",
-                    emp.getId().toString());
+                    emp.getId()
+                            .toString());
 
             return new ApiResponse<>(true, "Thông tin nhân viên đã được cập nhật thành công!", true);
-
         } catch (Exception ex) {
             return new ApiResponse<>(false,
                     "Đã xảy ra lỗi: " + ex.getMessage() + ". Vui lòng thử lại hoặc liên hệ quản trị viên.", null);
         }
     }
 
-    private Employee buildEmployee(User user, AccountRole accountRole, Office office, ManagerEmployeeEditRequest req) {
+    private Employee buildEmployee(User user, AccountRole accountRole, Office office,
+                                   ManagerEmployeeEditRequest req) {
         Employee emp = new Employee();
         emp.setUser(user);
         emp.setAccountRole(accountRole);
@@ -722,8 +912,8 @@ public class EmployeeManagerService {
         emp.setHireDate(
                 req.getHireDate() != null
                         ? Instant.parse(req.getHireDate())
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDateTime()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
                         : LocalDateTime.now());
         emp.setShift(req.getShift() != null ? EmployeeShift.valueOf(req.getShift()) : EmployeeShift.FULL_DAY);
         emp.setStatus(req.getStatus() != null ? EmployeeStatus.valueOf(req.getStatus()) : EmployeeStatus.ACTIVE);
@@ -732,28 +922,35 @@ public class EmployeeManagerService {
 
     private void validateCreate(ManagerEmployeeEditRequest request) {
         List<String> missingFields = new ArrayList<>();
-        if (request.getUserFirstName() == null || String.valueOf(request.getUserFirstName()).isBlank())
+        if (request.getUserFirstName() == null || String.valueOf(request.getUserFirstName())
+                .isBlank())
             missingFields.add("Tên");
-        if (request.getUserLastName() == null || String.valueOf(request.getUserLastName()).isBlank())
+        if (request.getUserLastName() == null || String.valueOf(request.getUserLastName())
+                .isBlank())
             missingFields.add("Họ");
-        if (request.getUserPhoneNumber() == null || request.getUserPhoneNumber().isBlank())
+        if (request.getUserPhoneNumber() == null || request.getUserPhoneNumber()
+                .isBlank())
             missingFields.add("Số điện thoại");
-        if (request.getUserEmail() == null || request.getUserEmail().isBlank())
+        if (request.getUserEmail() == null || request.getUserEmail()
+                .isBlank())
             missingFields.add("Email");
-        if (request.getUserRole() == null || request.getUserRole().isBlank())
+        if (request.getUserRole() == null || request.getUserRole()
+                .isBlank())
             missingFields.add("Chức vụ");
 
         if (!missingFields.isEmpty())
             throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
 
-        if (request.getShift() != null && !request.getShift().isBlank()) {
+        if (request.getShift() != null && !request.getShift()
+                .isBlank()) {
             try {
                 EmployeeShift.valueOf(request.getShift());
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Ca làm việc không hợp lệ: " + request.getShift());
             }
         }
-        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+        if (request.getStatus() != null && !request.getStatus()
+                .isBlank()) {
             try {
                 EmployeeStatus.valueOf(request.getStatus());
             } catch (IllegalArgumentException e) {
@@ -764,20 +961,23 @@ public class EmployeeManagerService {
 
     private void validateEdit(ManagerEmployeeEditRequest request) {
         List<String> missingFields = new ArrayList<>();
-        if (request.getUserRole() == null || request.getUserRole().isBlank())
+        if (request.getUserRole() == null || request.getUserRole()
+                .isBlank())
             missingFields.add("Chức vụ");
 
         if (!missingFields.isEmpty())
             throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
 
-        if (request.getShift() != null && !request.getShift().isBlank()) {
+        if (request.getShift() != null && !request.getShift()
+                .isBlank()) {
             try {
                 EmployeeShift.valueOf(request.getShift());
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Ca làm việc không hợp lệ: " + request.getShift());
             }
         }
-        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+        if (request.getStatus() != null && !request.getStatus()
+                .isBlank()) {
             try {
                 EmployeeStatus.valueOf(request.getStatus());
             } catch (IllegalArgumentException e) {
@@ -801,23 +1001,31 @@ public class EmployeeManagerService {
             Specification<User> spec = Specification
                     .where(UserSpecification.activeShippersInOffice(office.getId(), search));
 
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("lastName").ascending());
+            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("lastName")
+                    .ascending());
             Page<User> pageData = userRepository.findAll(spec, pageable);
 
             // Map sang DTO
-            List<ManagerEmployeeListWithShipperAssignmentDto> list = pageData.getContent().stream()
+            List<ManagerEmployeeListWithShipperAssignmentDto> list = pageData.getContent()
+                    .stream()
                     .map(user -> {
                         // Lấy employee code
-                        Employee employee = user.getEmployees().stream()
+                        Employee employee = user.getEmployees()
+                                .stream()
                                 .filter(emp -> emp.getAccountRole() != null &&
-                                        emp.getAccountRole().getRole() != null &&
-                                        "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()))
+                                        emp.getAccountRole()
+                                                .getRole() != null &&
+                                        "Shipper".equalsIgnoreCase(emp.getAccountRole()
+                                                .getRole()
+                                                .getName()))
                                 .findFirst()
                                 .orElse(null);
 
                         // Lấy assignment còn hiệu lực
-                        List<ShipperAssignment> activeAssignments = user.getShipperAssignments().stream()
-                                .filter(sa -> sa.getEndAt() == null || !sa.getEndAt().isBefore(now))
+                        List<ShipperAssignment> activeAssignments = user.getShipperAssignments()
+                                .stream()
+                                .filter(sa -> sa.getEndAt() == null || !sa.getEndAt()
+                                        .isBefore(now))
                                 .toList();
 
                         String employeeCode = employee != null ? employee.getCode() : null;
@@ -836,14 +1044,13 @@ public class EmployeeManagerService {
             data.setPagination(pagination);
 
             return new ApiResponse<>(true, "Lấy danh sách Shipper đang làm việc thành công", data);
-
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
     }
 
     public ApiResponse<ListResponse<ManagerEmployeeListDto>> getActiveShippers(int userId,
-            ManagerEmployeeSearchRequest request) {
+                                                                               ManagerEmployeeSearchRequest request) {
         try {
             Office office = getManagedOfficeByUserId(userId);
 
@@ -902,10 +1109,12 @@ public class EmployeeManagerService {
                     .and(EmployeeSpecification.excludeStatus(EmployeeStatus.LEAVE.name()))
                     .and(EmployeeSpecification.role(role, true));
 
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("hireDate").ascending());
+            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("hireDate")
+                    .ascending());
             Page<Employee> pageData = employeeRepository.findAll(spec, pageable);
 
-            List<ManagerEmployeeListDto> list = pageData.getContent().stream()
+            List<ManagerEmployeeListDto> list = pageData.getContent()
+                    .stream()
                     .map(EmployeeMapper::toManagerEmployeeListDto)
                     .toList();
 
@@ -926,72 +1135,84 @@ public class EmployeeManagerService {
     }
 
     public byte[] exportPerformance(Integer userId, SearchRequest request) {
-    List<ManagerEmployeePerformanceDto> datas = getEmployeePerformanceForExport(userId, request);
+        List<ManagerEmployeePerformanceDto> datas = getEmployeePerformanceForExport(userId, request);
 
-    try (Workbook workbook = new XSSFWorkbook()) {
-        Sheet sheet = workbook.createSheet("EmployeePerformance");
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("EmployeePerformance");
 
-        // Header style
-        XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
-        XSSFFont font = (XSSFFont) workbook.createFont();
-        font.setBold(true);
-        font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
-        headerStyle.setFont(font);
-        headerStyle.setAlignment(HorizontalAlignment.CENTER);
-        headerStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
-        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            // Header style
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        // Header row
-        Row header = sheet.createRow(0);
-        String[] headers = { "Tên nhân viên", "Mã nhân viên",
-                "Số điện thoại", "Chức vụ",
-                "Ca làm việc", "Trạng thái làm việc", "Số chuyến",
-                "Tổng đơn", "Đơn thành công", "Tỉ lệ giao thành công",
-                "Thời gian giao TB" };
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = header.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
+            // Header row
+            Row header = sheet.createRow(0);
+            String[] headers = {"Tên nhân viên", "Mã nhân viên",
+                    "Số điện thoại", "Chức vụ",
+                    "Ca làm việc", "Trạng thái làm việc", "Số chuyến",
+                    "Tổng đơn", "Đơn thành công", "Tỉ lệ giao thành công",
+                    "Thời gian giao TB"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DecimalFormat df = new DecimalFormat("#,###");
+            df.setGroupingUsed(true);
+            df.setGroupingSize(3);
+
+            int rowIdx = 1;
+            for (ManagerEmployeePerformanceDto data : datas) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0)
+                        .setCellValue(data.getEmployeeName() != null ? data.getEmployeeName() : "");
+                row.createCell(1)
+                        .setCellValue(data.getEmployeeCode() != null ? data.getEmployeeCode() : "");
+                row.createCell(2)
+                        .setCellValue(data.getEmployeePhone() != null ? data.getEmployeePhone() : "");
+                row.createCell(3)
+                        .setCellValue(data.getEmployeeRole() != null ? data.getEmployeeRole() : "");
+
+                // Ca làm việc (string)
+                row.createCell(4)
+                        .setCellValue(translateEmployeeShift(data.getEmployeeShift()));
+                // Trạng thái làm việc
+                row.createCell(5)
+                        .setCellValue(translateEmployeeStatus(data.getEmployeeStatus()));
+
+                row.createCell(6)
+                        .setCellValue(data.getTotalShipments() != null ? df.format(data.getTotalShipments()) : "");
+                row.createCell(7)
+                        .setCellValue(data.getTotalOrders() != null ? df.format(data.getTotalOrders()) : "");
+                row.createCell(8)
+                        .setCellValue(
+                                data.getCompletedOrders() != null ? df.format(data.getCompletedOrders()) : "");
+                row.createCell(9)
+                        .setCellValue(data.getCompletionRate() != null ? data.getCompletionRate() : 0);
+                row.createCell(10)
+                        .setCellValue(
+                                data.getAvgTimePerOrder() != null ? df.format(data.getAvgTimePerOrder()) : "");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
         }
-
-        DecimalFormat df = new DecimalFormat("#,###");
-        df.setGroupingUsed(true);
-        df.setGroupingSize(3);
-
-        int rowIdx = 1;
-        for (ManagerEmployeePerformanceDto data : datas) {
-            Row row = sheet.createRow(rowIdx++);
-
-            row.createCell(0).setCellValue(data.getEmployeeName() != null ? data.getEmployeeName() : "");
-            row.createCell(1).setCellValue(data.getEmployeeCode() != null ? data.getEmployeeCode() : "");
-            row.createCell(2).setCellValue(data.getEmployeePhone() != null ? data.getEmployeePhone() : "");
-            row.createCell(3).setCellValue(data.getEmployeeRole() != null ? data.getEmployeeRole() : "");
-
-            // Ca làm việc (string)
-            row.createCell(4).setCellValue(data.getEmployeeShift() != null ? data.getEmployeeShift().toString() : "");
-            // Trạng thái làm việc
-            row.createCell(5).setCellValue(data.getEmployeeStatus() != null ? PaymentSubmissionBatchUtils.translateStatus(data.getEmployeeStatus()) : "");
-
-            row.createCell(6).setCellValue(data.getTotalShipments() != null ? df.format(data.getTotalShipments()) : "");
-            row.createCell(7).setCellValue(data.getTotalOrders() != null ? df.format(data.getTotalOrders()) : "");
-            row.createCell(8).setCellValue(data.getCompletedOrders() != null ? df.format(data.getCompletedOrders()) : "");
-            row.createCell(9).setCellValue(data.getCompletionRate() != null ? data.getCompletionRate() : 0);
-            row.createCell(10).setCellValue(data.getAvgTimePerOrder() != null ? df.format(data.getAvgTimePerOrder()) : "");
-        }
-
-        for (int i = 0; i < headers.length; i++) {
-            sheet.autoSizeColumn(i);
-        }
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        workbook.write(out);
-        return out.toByteArray();
-
-    } catch (Exception e) {
-        throw new RuntimeException("Lỗi khi xuất Excel", e);
     }
-}
-
 
     public List<ManagerEmployeePerformanceDto> getEmployeePerformanceForExport(
             int userId,
@@ -1002,19 +1223,156 @@ public class EmployeeManagerService {
         EmployeeShift employeeShift = null;
         EmployeeStatus employeeStatus = null;
 
-        if (request.getShift() != null && !request.getShift().isBlank()) {
-            employeeShift = EmployeeShift.valueOf(request.getShift().trim().toUpperCase());
+        if (request.getShift() != null && !request.getShift()
+                .isBlank()) {
+            employeeShift = EmployeeShift.valueOf(request.getShift()
+                    .trim()
+                    .toUpperCase());
         }
-        if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            employeeStatus = EmployeeStatus.valueOf(request.getStatus().trim().toUpperCase());
+        if (request.getStatus() != null && !request.getStatus()
+                .isBlank()) {
+            employeeStatus = EmployeeStatus.valueOf(request.getStatus()
+                    .trim()
+                    .toUpperCase());
         }
 
-        return employeeRepository.getEmployeePerformanceList(
+        return employeeRepository.getShipperPerformanceList(
                 office.getId(),
                 request.getSearch(),
-                request.getRole(),
-                employeeShift,
-                employeeStatus);
+                employeeShift != null ? employeeShift.name() : null,
+                employeeStatus != null ? employeeStatus.name() : null);
     }
 
+    public byte[] exportActiveShippersWithActiveAssignments(int userId, ManagerEmployeeSearchRequest request) {
+        Office office = getManagedOfficeByUserId(userId);
+
+        String search = request.getSearch();
+        LocalDateTime now = LocalDateTime.now();
+
+        Specification<User> spec = Specification
+                .where(UserSpecification.activeShippersInOffice(office.getId(), search));
+
+        List<User> users = userRepository.findAll(spec, Sort.by("lastName").ascending());
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            // ── Sheet 1: Danh sách nhân viên ──
+            Sheet empSheet = workbook.createSheet("Danh sách Shipper");
+
+            String[] empHeaders = {
+                    "Mã NV",
+                    "Họ tên",
+                    "Email",
+                    "SĐT",
+                    "Ca làm",
+                    "Trạng thái",
+                    "Số vùng đang đảm nhận"
+            };
+
+            Row empHeader = empSheet.createRow(0);
+            for (int i = 0; i < empHeaders.length; i++) {
+                Cell cell = empHeader.createCell(i);
+                cell.setCellValue(empHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int empRowIdx = 1;
+            for (User user : users) {
+                Employee employee = user.getEmployees().stream()
+                        .filter(emp -> emp.getAccountRole() != null &&
+                                emp.getAccountRole().getRole() != null &&
+                                "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()))
+                        .findFirst().orElse(null);
+
+                List<ShipperAssignment> activeAssignments = user.getShipperAssignments().stream()
+                        .filter(sa -> sa.getEndAt() == null || !sa.getEndAt().isBefore(now))
+                        .toList();
+
+                Row row = empSheet.createRow(empRowIdx++);
+                row.createCell(0).setCellValue(employee != null && employee.getCode() != null ? employee.getCode() : "");
+                row.createCell(1).setCellValue((user.getLastName() != null ? user.getLastName() : "") + " "
+                        + (user.getFirstName() != null ? user.getFirstName() : ""));
+                row.createCell(2).setCellValue(user.getAccount() != null && user.getAccount().getEmail() != null ? user.getAccount().getEmail() : "");
+                row.createCell(3).setCellValue(user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+                row.createCell(4).setCellValue(employee != null ? translateEmployeeShift(employee.getShift()) : "");
+                row.createCell(5).setCellValue(employee != null ? translateEmployeeStatus(employee.getStatus()) : "");
+                row.createCell(6).setCellValue(activeAssignments.size());
+            }
+
+            for (int i = 0; i < empHeaders.length; i++) {
+                empSheet.autoSizeColumn(i);
+            }
+
+            // ── Sheet 2: Danh sách vùng phụ trách ──
+            Sheet assignSheet = workbook.createSheet("Vùng phụ trách");
+
+            String[] assignHeaders = {
+                    "Mã NV",
+                    "Họ tên",
+                    "Mã phường/xã",
+                    "Mã tỉnh/thành phố",
+                    "Ngày bắt đầu",
+                    "Ngày kết thúc",
+                    "Ghi chú"
+            };
+
+            Row assignHeader = assignSheet.createRow(0);
+            for (int i = 0; i < assignHeaders.length; i++) {
+                Cell cell = assignHeader.createCell(i);
+                cell.setCellValue(assignHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int assignRowIdx = 1;
+            for (User user : users) {
+                Employee employee = user.getEmployees().stream()
+                        .filter(emp -> emp.getAccountRole() != null &&
+                                emp.getAccountRole().getRole() != null &&
+                                "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()))
+                        .findFirst().orElse(null);
+
+                String code = employee != null && employee.getCode() != null ? employee.getCode() : "";
+                String fullName = (user.getLastName() != null ? user.getLastName() : "") + " "
+                        + (user.getFirstName() != null ? user.getFirstName() : "");
+
+                List<ShipperAssignment> activeAssignments = user.getShipperAssignments().stream()
+                        .filter(sa -> sa.getEndAt() == null || !sa.getEndAt().isBefore(now))
+                        .toList();
+
+                for (ShipperAssignment sa : activeAssignments) {
+                    Row row = assignSheet.createRow(assignRowIdx++);
+                    row.createCell(0).setCellValue(code);
+                    row.createCell(1).setCellValue(fullName);
+                    row.createCell(2).setCellValue(sa.getWardCode() != null ? String.valueOf(sa.getWardCode()) : "");
+                    row.createCell(3).setCellValue(sa.getCityCode() != null ? String.valueOf(sa.getCityCode()) : "");
+                    row.createCell(4).setCellValue(sa.getStartAt() != null ? sa.getStartAt().format(dtf) : "N/A");
+                    row.createCell(5).setCellValue(sa.getEndAt() != null ? sa.getEndAt().format(dtf) : "N/A");
+                    row.createCell(6).setCellValue(sa.getNotes() != null ? sa.getNotes() : "");
+                }
+            }
+
+            for (int i = 0; i < assignHeaders.length; i++) {
+                assignSheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
 }

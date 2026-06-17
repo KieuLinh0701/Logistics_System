@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
-import com.logistics.dto.user.UserSettlementOrderDto;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.PickupAttemptDto;
@@ -62,12 +62,7 @@ public class OrderMapper {
                             .getName(),
                     entity.getRecipientAddress()
                             .getPhoneNumber(),
-                    entity.getRecipientAddress()
-                            .getCityCode(),
-                    entity.getRecipientAddress()
-                            .getWardCode(),
-                    entity.getRecipientAddress()
-                            .getDetail());
+                    entity.getRecipientAddress().getFullAddress());
         }
 
         ManagerShipmentDetailDto.Office toOffice = null;
@@ -122,12 +117,31 @@ public class OrderMapper {
                         .name(),
                 entity.getCreatedByType()
                         .name(),
+
+                AddressMapper.toDto(entity.getSenderAddress()),
+                entity.getSenderWardCode(),
+                entity.getSenderCityCode(),
+                entity.getSenderDetail(),
                 entity.getSenderName(),
                 entity.getSenderPhone(),
-                entity.getSenderCityCode(),
-                entity.getSenderWardCode(),
-                entity.getSenderDetail(),
+                entity.getSenderFullAddress(),
+                entity.getSenderCityName(),
+                entity.getSenderWardName(),
+                entity.getSenderLatitude(),
+                entity.getSenderLongitude(),
+
                 AddressMapper.toDto(entity.getRecipientAddress()),
+                entity.getRecipientWardCode(),
+                entity.getRecipientCityCode(),
+                entity.getRecipientDetail(),
+                entity.getRecipientName(),
+                entity.getRecipientPhone(),
+                entity.getRecipientFullAddress(),
+                entity.getRecipientCityName(),
+                entity.getRecipientWardName(),
+                entity.getRecipientLatitude(),
+                entity.getRecipientLongitude(),
+
                 entity.getPickupType()
                         .name(),
                 entity.getOriginalWeight(),
@@ -181,10 +195,10 @@ public class OrderMapper {
                         .name(),
                 entity.getSenderName(),
                 entity.getSenderPhone(),
-                entity.getSenderCityCode(),
-                entity.getSenderWardCode(),
-                entity.getSenderDetail(),
-                AddressMapper.toDto(entity.getRecipientAddress()),
+                entity.getSenderFullAddress(),
+                entity.getRecipientName(),
+                entity.getRecipientPhone(),
+                entity.getRecipientFullAddress(),
                 entity.getPickupType()
                         .name(),
                 entity.getWeight(),

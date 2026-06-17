@@ -24,32 +24,34 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @Validated
 @RequiredArgsConstructor
-@RequestMapping("/api/leaves")
+@RequestMapping
 public class EmployeeLeaveController {
 
     private final EmployeeLeaveService leaveService;
 
-    @PostMapping
+    // Shipper, Driver
+    @PostMapping("/api/leaves")
     public ResponseEntity<ApiResponse<EmployeeLeaveDto>> createLeave(@Valid @RequestBody CreateLeaveRequest request) {
         return ResponseEntity.ok(leaveService.createLeave(request));
     }
 
-    @GetMapping("/my")
+    @GetMapping("/api/leaves/my")
     public ResponseEntity<ApiResponse<List<EmployeeLeaveDto>>> getMyLeaves() {
         return ResponseEntity.ok(leaveService.getMyLeaves());
     }
 
-    @PutMapping("/{id}/cancel")
+    @PutMapping("/api/leaves/{id}/cancel")
     public ResponseEntity<ApiResponse<Boolean>> cancelLeave(@PathVariable Integer id) {
         return ResponseEntity.ok(leaveService.cancelLeave(id));
     }
 
-    @GetMapping("/office")
+    // Manager
+    @GetMapping("/api/manager/leaves/office")
     public ResponseEntity<ApiResponse<List<EmployeeLeaveDto>>> getOfficeLeaves() {
         return ResponseEntity.ok(leaveService.getOfficeLeaves());
     }
 
-    @PutMapping("/{id}/approve")
+    @PutMapping("/api/manager/leaves/{id}/approve")
     public ResponseEntity<ApiResponse<EmployeeLeaveDto>> approveLeave(
             @PathVariable Integer id,
             @Valid @RequestBody ApproveLeaveRequest request) {

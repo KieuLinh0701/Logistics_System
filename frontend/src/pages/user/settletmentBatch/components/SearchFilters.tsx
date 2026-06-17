@@ -1,8 +1,15 @@
-import React, { useState } from "react";
-import { Row, Col, Input, Button, Select, DatePicker, Tooltip } from "antd";
-import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import React, {useState} from "react";
+import {Button, Col, DatePicker, Input, Row, Select, Tooltip} from "antd";
+import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SETTLEMENT_BATCH_FILTER_SORT, SETTLEMENT_BATCH_STATUSES, SETTLEMENT_BATCH_TYPES, translateSettlementBatchStatus, translateSettlementBatchType, translateSettlementFilterSort } from "../../../../utils/settlementBatchUtils";
+import {
+    SETTLEMENT_BATCH_FILTER_SORT,
+    SETTLEMENT_BATCH_STATUSES,
+    SETTLEMENT_BATCH_TYPES,
+    translateSettlementBatchStatus,
+    translateSettlementBatchType,
+    translateSettlementFilterSort
+} from "../../../../utils/settlementBatchUtils";
 
 type FilterKeys = "sort" | "status" | "type"
 

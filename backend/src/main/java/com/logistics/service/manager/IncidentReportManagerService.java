@@ -7,13 +7,9 @@ import com.logistics.dto.manager.incidentReport.ManagerIncidentReportDetailDto;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportListDto;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
-import com.logistics.entity.Address;
-import com.logistics.entity.IncidentReport;
-import com.logistics.entity.Office;
-import com.logistics.entity.ShippingRequest;
-import com.logistics.entity.ShippingRequestAttachment;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.IncidentStatus;
+import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.mapper.IncidentReportMapper;
@@ -26,16 +22,24 @@ import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.incidentReport.ManagerIncidentUpdateRequest;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearchRequest;
+import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.IncidentReportSpecification;
+import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.IncidentReportUtils;
+import com.logistics.utils.OrderUtils;
 import com.logistics.utils.ShippingRequestUtils;
 
 import lombok.RequiredArgsConstructor;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,7 +48,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,17 +59,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.logistics.utils.IncidentReportUtils.*;
+import static com.logistics.utils.OrderUtils.*;
+import static com.logistics.utils.OrderUtils.translateOrderCreatorType;
+
 @Service
 @RequiredArgsConstructor
 public class IncidentReportManagerService {
 
     private final IncidentReportRepository incidentRepository;
-
-    private final AddressRepository addressRepository;
-
-    private final Cloudinary cloudinary;
-
-    private final ShippingRequestAttachmentRepository shippingRequestAttachmentRepository;
 
     private final EmployeeManagerService employeeManagerService;
 
@@ -209,6 +213,100 @@ public class IncidentReportManagerService {
             return new ApiResponse<>(true, "Phản hồi yêu cầu thành công", true);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
+    public byte[] export(int userId, SearchRequest request) {
+        String priority = request.getPriority();
+        String search = request.getSearch();
+        String status = request.getStatus();
+        String type = request.getType();
+        String sort = request.getSort();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        Specification<IncidentReport> spec = IncidentReportSpecification.unrestricted()
+                .and(IncidentReportSpecification.officeId(userOffice.getId()))
+                .and(IncidentReportSpecification.managerSearch(search))
+                .and(IncidentReportSpecification.status(status))
+                .and(IncidentReportSpecification.incidentType(type))
+                .and(IncidentReportSpecification.priority(priority))
+                .and(IncidentReportSpecification.createdAtBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            default -> Sort.by("createdAt").descending();
+        } : Sort.by("createdAt").descending();
+
+        List<IncidentReport> incidents = incidentRepository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Incidents");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã sự cố",
+                    "Độ ưu tiên",
+                    "Loại sự cố",
+                    "Trạng thái",
+                    "Tiêu đề",
+                    "Mã đơn hàng",
+                    "Thời gian báo cáo",
+                    "Thời gian cập nhật",
+                    "Thời gian xử lý"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (IncidentReport ir : incidents) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(ir.getCode() != null ? ir.getCode() : "");
+                row.createCell(1).setCellValue(translateIncidentPriority(ir.getPriority()));
+                row.createCell(2).setCellValue(translateIncidentType(ir.getIncidentType()));
+                row.createCell(3).setCellValue(translateIncidentStatus(ir.getStatus()));
+                row.createCell(4).setCellValue(ir.getTitle() != null ? ir.getTitle() : "");
+                row.createCell(5).setCellValue(
+                        ir.getOrder() != null && ir.getOrder().getTrackingNumber() != null
+                                ? ir.getOrder().getTrackingNumber() : "N/A");
+                row.createCell(6).setCellValue(ir.getCreatedAt() != null ? ir.getCreatedAt().format(dtf) : "");
+                row.createCell(7).setCellValue(ir.getUpdatedAt() != null ? ir.getUpdatedAt().format(dtf) : "N/A");
+                row.createCell(8).setCellValue(ir.getHandledAt() != null ? ir.getHandledAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
         }
     }
 

@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
-import type { ApiResponse } from "../types/response";
-import type { Address, AddressRequest } from "../types/address";
+import type {ApiResponse} from "../types/response";
+import type {Address, AddressRequest} from "../types/address";
 
 const addressApi = {
   // User

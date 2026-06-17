@@ -2,7 +2,10 @@ package com.logistics.utils;
 
 import java.util.Set;
 
+import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
+import com.logistics.enums.OrderPayerType;
+import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
 
@@ -112,48 +115,99 @@ public class OrderUtils {
         if (status == null)
             return "";
 
-        switch (status) {
-            case DRAFT:
-                return "Bản nháp";
-            case PENDING:
-                return "Chờ duyệt";
-            case CONFIRMED:
-                return "Đã xác nhận";
-            case READY_FOR_PICKUP:
-                return "Sẵn sàng để lấy";
-            case PICKUP_PENDING:
-                return "Chờ lấy hàng";
-            case PICKUP_SUCCESS:
-                return "Lấy hàng thành công";
-            case PICKUP_RETRY:
-                return "Lấy hàng thất bại - Thử lại";
-            case PICKUP_FAILED_FINAL:
-                return "Lấy hàng thất bại - Dừng";
-            case PICKING_UP:
-                return "Đang lấy hàng";
-            case PICKED_UP:
-                return "Đã lấy hàng";
-            case AT_ORIGIN_OFFICE:
-                return "Tại bưu cục gốc";
-            case IN_TRANSIT:
-                return "Đang vận chuyển";
-            case AT_DEST_OFFICE:
-                return "Tại bưu cục đích";
-            case DELIVERING:
-                return "Đang giao";
-            case DELIVERED:
-                return "Đã giao hàng";
-            case FAILED_DELIVERY:
-                return "Giao thất bại";
-            case CANCELLED:
-                return "Đã hủy";
-            case RETURNING:
-                return "Đang hoàn trả";
-            case RETURNED:
-                return "Đã hoàn trả";
-            default:
-                return status.name();
-        }
+        return switch (status) {
+            case DRAFT -> "Bản nháp";
+            case PENDING -> "Chờ duyệt";
+            case CONFIRMED -> "Đã xác nhận";
+            case READY_FOR_PICKUP -> "Sẵn sàng để lấy";
+
+            case PICKUP_PENDING -> "Chờ lấy hàng";
+            case PICKUP_SUCCESS -> "Lấy hàng thành công";
+            case PICKUP_RETRY -> "Lấy hàng thất bại - Thử lại";
+            case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại - Dừng";
+
+            case PICKING_UP -> "Đang lấy hàng";
+            case PICKED_UP -> "Đã lấy hàng";
+            case AT_ORIGIN_OFFICE -> "Tại bưu cục gốc";
+            case IN_TRANSIT -> "Đang vận chuyển";
+            case AT_DEST_OFFICE -> "Tại bưu cục đích";
+            case DELIVERING -> "Đang giao";
+            case DELIVERED -> "Đã giao hàng";
+
+            case PARTIAL_DELIVERY -> "Giao hàng một phần";
+            case PARTIAL_RETURN -> "Hoàn trả một phần";
+            case FAILED_DELIVERY -> "Giao thất bại";
+            case DELIVERY_RETRY -> "Giao thất bại - Thử lại";
+            case DELIVERY_FAILED_FINAL -> "Giao thất bại - Dừng";
+
+            case CANCELLED -> "Đã hủy";
+            case RETURNING -> "Đang hoàn trả";
+            case RETURNED -> "Đã hoàn trả";
+
+            default -> status.name();
+        };
     }
 
+    public static String translateOrderPickupType(OrderPickupType type) {
+        if (type == null)
+            return "";
+
+        return switch (type) {
+            case AT_OFFICE -> "Giao tại bưu cục";
+            case PICKUP_BY_COURIER -> "Lấy hàng tại nhà";
+            default -> type.name();
+        };
+    }
+
+    public static String translateOrderPayerType(OrderPayerType value) {
+        if (value == null)
+            return "";
+
+        return switch (value) {
+            case CUSTOMER -> "Người nhận";
+            case SHOP -> "Người gửi";
+            default -> value.name();
+        };
+    }
+
+    public static String translateOrderPaymentStatus(OrderPaymentStatus value) {
+        if (value == null)
+            return "";
+
+        return switch (value) {
+            case PAID -> "Đã thanh toán";
+            case UNPAID -> "Chưa thanh toán";
+            case REFUNDED -> "Đã hoàn tiền";
+            default -> value.name();
+        };
+    }
+
+    public static String translateOrderCodStatus(OrderCodStatus value) {
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+            case NONE -> "Không COD";
+            case EXPECTED -> "Chưa thu COD";
+            case PENDING -> "Shipper giữ COD";
+            case SUBMITTED -> "Đã nộp chờ đối soát";
+            case RECEIVED -> "Bưu cục đã nhận";
+            case TRANSFERRED -> "Đã chuyển shop";
+            default -> value.name();
+        };
+    }
+
+    public static String translateOrderCreatorType(OrderCreatorType value) {
+        if (value == null) {
+            return "";
+        }
+
+        return switch (value) {
+            case USER -> "Người dùng";
+            case MANAGER -> "Quản lý";
+            case ADMIN -> "Quản trị viên";
+            default -> value.name();
+        };
+    }
 }

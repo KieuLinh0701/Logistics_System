@@ -61,10 +61,6 @@ public class IncidentReport {
     @Lob
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "address_id")
-    private Address address;
-
     @Enumerated(EnumType.STRING)
     @Column(length = 10, nullable = false)
     private IncidentPriority priority = IncidentPriority.MEDIUM;

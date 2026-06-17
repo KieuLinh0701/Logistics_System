@@ -15,3 +15,291 @@
 .manager-batchs-payment-modal-amount-text {
     font-size: 18px;
 }
+
+.settlement-summary-wrap {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 0 30px 30px 30px;
+    margin-top: 20px;
+    margin-bottom: 4px;
+}
+
+.settlement-summary-cards {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.settlement-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 160px;
+}
+
+.ss-divider {
+    width: 1px;
+    height: 40px;
+    background: #f0f0f0;
+    flex-shrink: 0;
+}
+
+.ss-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.ss-icon.blue  { background: #e6f4ff; color: #1677ff; }
+.ss-icon.amber { background: #fff7e6; color: #fa8c16; }
+.ss-icon.red   { background: #fff2f0; color: #ff4d4f; }
+.ss-icon.green { background: #f6ffed; color: #52c41a; }
+
+.ss-amount {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 2px;
+    color: #1C3D90;
+}
+
+.ss-amount.amber { color: #fa8c16; }
+.ss-amount.red   { color: #ff4d4f; }
+.ss-amount.green { color: #52c41a; }
+
+.ss-label {
+    font-size: 11px;
+    color: #aaa;
+    margin: 0;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ss-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    font-size: 10px;
+    color: #aaa;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* ===== Settlement Summary ===== */
+.settlement-summary-overview {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    margin-bottom: 16px;
+}
+
+.settlement-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.settlement-summary-title {
+    color: #1C3D90 !important;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.settlement-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+/* Nếu có nextSettlementDate → 4 cột */
+.settlement-summary-stats.has-date {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.settlement-summary-stat {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 6px;
+    background: #fafafa;
+    transition: all 0.2s ease;
+    cursor: help;
+}
+
+.settlement-summary-stat:hover {
+    background: #f8f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(28, 61, 144, 0.1);
+}
+
+.settlement-summary-stat-icon {
+    font-size: 24px;
+    margin-right: 16px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(28, 61, 144, 0.08);
+    flex-shrink: 0;
+}
+
+.settlement-summary-stat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.settlement-summary-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1C3D90;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: nowrap;
+    line-height: 1.2;
+}
+
+.settlement-summary-stat-suffix {
+    font-size: 14px;
+    font-weight: 600;
+    margin-left: 4px;
+    color: #1C3D90;
+}
+
+.settlement-summary-stat-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.settlement-summary-stat-tooltip-icon {
+    font-size: 10px;
+    color: #999;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.settlement-summary-stat:hover .settlement-summary-stat-tooltip-icon {
+    opacity: 1;
+    color: #1C3D90;
+}
+
+/* Color per stat — Đã nhận (xanh) */
+.settlement-summary-stat:nth-child(1) .settlement-summary-stat-icon {
+    background: rgba(28, 61, 144, 0.1);
+    color: #1C3D90;
+}
+
+/* Sắp nhận (cam) */
+.settlement-summary-stat:nth-child(2) .settlement-summary-stat-icon {
+    background: rgba(250, 140, 22, 0.1);
+    color: #fa8c16;
+}
+
+.settlement-summary-stat:nth-child(2) .settlement-summary-stat-value,
+.settlement-summary-stat:nth-child(2) .settlement-summary-stat-suffix {
+    color: #fa8c16;
+}
+
+/* Còn nợ (đỏ) */
+.settlement-summary-stat:nth-child(3) .settlement-summary-stat-icon {
+    background: rgba(245, 34, 45, 0.1);
+    color: #f5222d;
+}
+
+.settlement-summary-stat:nth-child(3) .settlement-summary-stat-value,
+.settlement-summary-stat:nth-child(3) .settlement-summary-stat-suffix {
+    color: #f5222d;
+}
+
+/* Ngày đối soát (xanh lá) — chỉ có khi has-date */
+.settlement-summary-stat:nth-child(4) .settlement-summary-stat-icon {
+    background: rgba(82, 196, 26, 0.1);
+    color: #52c41a;
+}
+
+.settlement-summary-stat:nth-child(4) .settlement-summary-stat-value {
+    color: #52c41a;
+    font-size: 18px;
+}
+
+.settlement-summary-stat:nth-child(4) .settlement-summary-stat-label {
+    color: #52c41a;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+    .settlement-summary-stats,
+    .settlement-summary-stats.has-date {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .settlement-summary-overview {
+        padding: 16px;
+    }
+
+    .settlement-summary-stats,
+    .settlement-summary-stats.has-date {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .settlement-summary-stat {
+        padding: 12px;
+    }
+
+    .settlement-summary-stat-icon {
+        font-size: 20px;
+        width: 36px;
+        height: 36px;
+        margin-right: 12px;
+    }
+
+    .settlement-summary-stat-value {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .settlement-summary-stat {
+        padding: 10px;
+    }
+
+    .settlement-summary-stat-value {
+        font-size: 16px;
+    }
+
+    .settlement-summary-stat-label {
+        font-size: 11px;
+    }
+}

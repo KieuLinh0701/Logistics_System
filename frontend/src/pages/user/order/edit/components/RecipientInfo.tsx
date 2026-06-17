@@ -8,6 +8,7 @@ import type {RecipientAddressType, RecipientAddressWithStats} from "../../../../
 import recipientAddressApi from "../../../../../api/recipientAddressApi.ts";
 import {UnorderedListOutlined} from "@ant-design/icons";
 import RecipientAddressPickerModal from "../../../../common/order/RecipientAddressPickerModal.tsx";
+import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 interface Props {
     form: FormInstance;
@@ -185,7 +186,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
 
     const fetchSuggestion = useCallback(async (phone: string) => {
         try {
-            const result = await recipientAddressApi.getUserSuggestion({phone: Number(phone)});
+            const result = await recipientAddressApi.getUserSuggestion({phone});
             if (result.success && result.data) {
                 setSuggestionList(result.data.addresses ?? []);
                 setSuggestionType(result.data.type);
@@ -572,22 +573,24 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                             </Col>
                         </Row>
 
-                        <Row style={{marginTop: 8}}>
-                            <Col span={24}>
-                                <Checkbox
-                                    checked={saveRecipient}
-                                    disabled={!canEditUserOrderField('recipientSavedAddress', status) || isSavedLocked}
-                                    onChange={(e) => handleSaveCheckboxChange(e.target.checked)}
-                                >
+                        {hasPermissionGroup(['GROUP_USER', 'USER_CUSTOMER_CREATE']) && (
+                            <Row style={{marginTop: 8}}>
+                                <Col span={24}>
+                                    <Checkbox
+                                        checked={saveRecipient}
+                                        disabled={!canEditUserOrderField('recipientSavedAddress', status) || isSavedLocked}
+                                        onChange={(e) => handleSaveCheckboxChange(e.target.checked)}
+                                    >
                                     <span style={{fontSize: 13, color: "#595959"}}>
                                         Lưu địa chỉ người nhận này
                                         {isSavedLocked && (
                                             <span style={{color: "#8c8c8c", marginLeft: 6}}>(đã lưu)</span>
                                         )}
                                     </span>
-                                </Checkbox>
-                            </Col>
-                        </Row>
+                                    </Checkbox>
+                                </Col>
+                            </Row>
+                        )}
                     </div>
                 </Card>
             </Form>

@@ -1,8 +1,12 @@
 import React from "react";
-import { Card, Button, Tag } from "antd";
-import type { Job } from "../../../../types/recruitment";
-import { roleTypeLabelMap, postingStatusLabelMap, postingStatusColorMap } from "../../../common/recruitment/recruitmentHelpers";
-import { shiftLabel } from "../../../../utils/recruitmentHelpers";
+import {Button, Card, Tag} from "antd";
+import type {Job} from "../../../../types/recruitment";
+import {
+    postingStatusColorMap,
+    postingStatusLabelMap,
+    roleTypeLabelMap
+} from "../../../common/recruitment/recruitmentHelpers";
+import {shiftLabel} from "../../../../utils/recruitmentHelpers";
 import "../styles/recruitment.css";
 
 interface JobCardProps {

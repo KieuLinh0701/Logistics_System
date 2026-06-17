@@ -1,5 +1,9 @@
-import type { FeeConfiguration, CreateFeeConfigurationPayload, UpdateFeeConfigurationPayload } from "../types/feeConfiguration";
-import type { ApiResponse, ListResponse } from "../types/response";
+import type {
+    CreateFeeConfigurationPayload,
+    FeeConfiguration,
+    UpdateFeeConfigurationPayload
+} from "../types/feeConfiguration";
+import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const feeConfigurationApi = {

@@ -1,7 +1,7 @@
 import React from "react";
-import { Dropdown, Menu } from "antd";
-import { DownOutlined, EditOutlined, DeleteOutlined, CloseOutlined } from "@ant-design/icons";
-import type { JobPosting, JobPostingStatus } from "../../../../../types/recruitment";
+import {Dropdown, Menu} from "antd";
+import {CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
+import type {JobPosting, JobPostingStatus} from "../../../../../types/recruitment";
 import "./JobPostingComponents.css";
 
 interface ActionsProps {

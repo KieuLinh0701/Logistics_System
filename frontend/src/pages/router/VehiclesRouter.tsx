@@ -1,19 +1,23 @@
-import { getUserRole } from "../../utils/authUtils";
+import { getUserPermissionGroups } from "../../utils/authUtils";
 import AdminVehicles from "../admin/vehicles/VehiclesPage";
 import Forbidden from "../common/Forbidden";
 import ManagerVehicles from "../manager/vehicle/ManagerVehicles";
 
 const VehiclesRouter = () => {
-  const role = getUserRole();
+    const userPermissions = getUserPermissionGroups();
 
-  switch (role) {
-    case "admin":
-      return <AdminVehicles />;
-    case "manager":
-      return <ManagerVehicles />;
-    default:
-      return <Forbidden />;
-  }
+    const isAdmin = ["group_admin"].some(p => userPermissions.includes(p));
+    const isManager = ["group_manager"].some(p => userPermissions.includes(p));
+
+    if (isAdmin) {
+        return <AdminVehicles />;
+    }
+
+    if (isManager) {
+        return <ManagerVehicles />;
+    }
+
+    return <Forbidden />;
 };
 
 export default VehiclesRouter;

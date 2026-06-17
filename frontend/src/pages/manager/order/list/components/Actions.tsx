@@ -1,16 +1,18 @@
 import React from "react";
 import { Space, Button } from "antd";
-import { PlusOutlined, PrinterOutlined, TruckOutlined } from "@ant-design/icons";
+import {FileExcelOutlined, PlusOutlined, PrinterOutlined, TruckOutlined} from "@ant-design/icons";
 
 interface Props {
   onAdd: () => void;
   onPrint: () => void;
   onAddShipment: () => void;
+  onExport: () => void;
   disabled: boolean;
   recordNumber: number;
+  total: number;
 }
 
-const Actions: React.FC<Props> = ({ onAdd, onPrint, disabled, recordNumber, onAddShipment }) => {
+const Actions: React.FC<Props> = ({ onAdd, onPrint, disabled, recordNumber, onAddShipment, onExport, total }) => {
   return (
     <Space align="center">
       <Button
@@ -36,6 +38,14 @@ const Actions: React.FC<Props> = ({ onAdd, onPrint, disabled, recordNumber, onAd
       >
         Thêm vào chuyến {recordNumber !== 0 ? `(${recordNumber})` : ""}
       </Button>
+        <Button
+            className="success-button"
+            icon={<FileExcelOutlined />}
+            onClick={onExport}
+            disabled={total === 0}
+        >
+            Xuất Excel
+        </Button>
     </Space>
   );
 };

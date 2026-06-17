@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
-import { Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { JobPosting, JobPostingStatus, RecruitmentRoleType } from "../../../../../types/recruitment";
-import { postingStatusLabelMap, roleTypeLabelMap } from "../../../../common/recruitment/recruitmentHelpers";
-import { shiftLabel } from "../../../../../utils/recruitmentHelpers";
+import React, {useMemo} from "react";
+import {Table} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import type {JobPosting, JobPostingStatus, RecruitmentRoleType} from "../../../../../types/recruitment";
+import {postingStatusLabelMap, roleTypeLabelMap} from "../../../../common/recruitment/recruitmentHelpers";
+import {shiftLabel} from "../../../../../utils/recruitmentHelpers";
 import Actions from "./Actions";
 
 interface JobPostingTableProps {

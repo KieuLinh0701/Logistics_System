@@ -1,20 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { Table, Input, Button, message, Tooltip, Space, Row, Col, Tag } from "antd";
-import { SearchOutlined, DeleteOutlined, ShoppingOutlined, SaveOutlined, CloseCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import type { ManagerOrderShipment } from "../../../types/shipment";
-import type { BulkResponse } from "../../../types/response";
+import React, {useEffect, useState} from "react";
+import {Table, Input, Button, message, Tooltip, Space, Row, Col, Tag} from "antd";
+import {
+    SearchOutlined, DeleteOutlined, ShoppingOutlined, SaveOutlined, CloseCircleOutlined, PlusOutlined,
+    FileExcelOutlined
+} from "@ant-design/icons";
+import {useParams, useNavigate, useSearchParams} from "react-router-dom";
+import type {ManagerOrderShipment} from "../../../types/shipment";
+import type {BulkResponse} from "../../../types/response";
 import shipmentApi from "../../../api/shipmentApi";
 import shipmentOrderApi from "../../../api/shipmentOrderApi";
 import BulkResult from "./components/BulkResult";
-import { translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus } from "../../../utils/orderUtils";
-import type { ColumnsType } from "antd/es/table";
+import {translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus} from "../../../utils/orderUtils";
+import type {ColumnsType} from "antd/es/table";
 import locationApi from "../../../api/locationApi";
 import Title from "antd/es/typography/Title";
 import "./ManagerShipments.css"
+import type {ManagerOrderSearchRequest} from "../../../types/order.ts";
+import orderApi from "../../../api/orderApi.ts";
+import {canEditOrdersManagerShipment} from "../../../utils/shipmentUtils.ts";
 
 const ManagerShipmentOrders: React.FC = () => {
-    const { shipmentId } = useParams<{ shipmentId: string }>();
+    const {shipmentId} = useParams<{ shipmentId: string }>();
+    const [shipmentStatus, setShipmentStatus] = useState<string>("");
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -41,7 +48,7 @@ const ManagerShipmentOrders: React.FC = () => {
         if (searchText) params.search = searchText;
         if (page) params.page = page;
 
-        setSearchParams(params, { replace: true });
+        setSearchParams(params, {replace: true});
     };
 
     useEffect(() => {
@@ -63,8 +70,9 @@ const ManagerShipmentOrders: React.FC = () => {
                 search: searchText,
             });
             if (res.success && res.data) {
-                setOrders(res.data.list || []);
-                setTotal(res.data.pagination?.total || 0);
+                setOrders(res.data.orders.list || []);
+                setTotal(res.data.orders.pagination?.total || 0);
+                setShipmentStatus(res.data.status);
             } else {
                 message.error(res.message || "Lỗi khi lấy đơn hàng");
             }
@@ -72,6 +80,27 @@ const ManagerShipmentOrders: React.FC = () => {
             message.error(error.message || "Lỗi khi lấy đơn hàng");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const result = await shipmentApi.exportManagerOrdersByShipmentId(
+                Number(shipmentId),
+                {
+                    page: page,
+                    limit,
+                    search: searchText,
+                });
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+                message.error("Xuất file Excel thất bại");
+            }
+
+        } catch (error: any) {
+            message.error("Xuất file Excel thất bại");
+            console.error("Export thất bại:", error);
         }
     };
 
@@ -292,14 +321,14 @@ const ManagerShipmentOrders: React.FC = () => {
             key: "recipient",
             align: "left",
             render: (recipient, record) => {
-                const address = addressMap[`recipient-${record.id}`];
                 return (
                     <div>
                         <span className="custom-table-content-strong">{recipient?.name}</span>
-                        <br />
+                        <br/>
                         {recipient?.phone}
-                        <br />
-                        <span className="custom-table-content-limit">{address || "Chưa có địa chỉ"}</span>
+                        <br/>
+                        <span
+                            className="custom-table-content-limit">{recipient?.fullAddress || "Chưa có địa chỉ"}</span>
                     </div>
                 );
             },
@@ -315,7 +344,7 @@ const ManagerShipmentOrders: React.FC = () => {
                 return (
                     <div>
                         <span>{toOffice.name}</span> - <span>{toOffice.postalCode}</span>
-                        <br />
+                        <br/>
                         {toOffice.latitude && toOffice.longitude ? (
                             <Tooltip title="Nhấn để mở Google Maps">
                                 <span
@@ -348,7 +377,7 @@ const ManagerShipmentOrders: React.FC = () => {
                         danger
                         onClick={() => handleTempRemove(record.id)}
                     >
-                        <DeleteOutlined />
+                        <DeleteOutlined/>
                     </Button>
                 </Tooltip>
             ),
@@ -374,7 +403,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                         placeholder="Tìm theo mã đơn hành..."
                                         value={searchText}
                                         onChange={e => setSearchText(e.target.value)}
-                                        prefix={<SearchOutlined />}
+                                        prefix={<SearchOutlined/>}
                                     />
                                 </Tooltip>
                             </div>
@@ -385,7 +414,7 @@ const ManagerShipmentOrders: React.FC = () => {
                 <Row className="list-page-header" justify="space-between" align="middle">
                     <Col>
                         <Title level={3} className="list-page-title-main">
-                            <ShoppingOutlined className="title-icon" />
+                            <ShoppingOutlined className="title-icon"/>
                             Danh sách đơn hàng thuộc chuyến
                         </Title>
                     </Col>
@@ -395,43 +424,56 @@ const ManagerShipmentOrders: React.FC = () => {
                             <Col>
                                 <div className="list-page-actions">
                                     <Space size={8}>
-                                        <Tooltip title="Nhập mã đơn hàng (có thể nhập nhiều mã, cách nhau bằng dấu , ví dụ: UTE001,UTE002,UTE003)">
-                                            <Input
-                                                className="search-input shipment-search-input"
-                                                placeholder="Nhập mã đơn để thêm..."
-                                                value={newTrackingNumber}
-                                                onChange={e => setNewTrackingNumber(e.target.value)}
-                                                onPressEnter={handleAddOrder}
-                                                style={{ width: 220 }}
-                                            />
-                                        </Tooltip>
-                                        <Tooltip title="Thêm tạm thời">
-                                            <Button
-                                                className="warning-button"
-                                                loading={addingLoading}
-                                                icon={<PlusOutlined />}
-                                                onClick={handleAddOrder}
-                                            >
-                                                Thêm
-                                            </Button>
-                                        </Tooltip>
+                                        {canEditOrdersManagerShipment(shipmentStatus) && (
+                                            <><Tooltip
+                                                title="Nhập mã đơn hàng (có thể nhập nhiều mã, cách nhau bằng dấu , ví dụ: UTE001,UTE002,UTE003)">
+                                                <Input
+                                                    className="search-input shipment-search-input"
+                                                    placeholder="Nhập mã đơn để thêm..."
+                                                    value={newTrackingNumber}
+                                                    onChange={e => setNewTrackingNumber(e.target.value)}
+                                                    onPressEnter={handleAddOrder}
+                                                    style={{width: 220}}/>
+                                            </Tooltip><Tooltip title="Thêm tạm thời">
+                                                <Button
+                                                    className="warning-button"
+                                                    loading={addingLoading}
+                                                    icon={<PlusOutlined/>}
+                                                    onClick={handleAddOrder}
+                                                >
+                                                    Thêm
+                                                </Button>
+                                            </Tooltip></>
+                                        )}
 
-                                        {(tempAddedOrders.length > 0 || tempRemovedOrders.length > 0) && (
+                                        {(tempAddedOrders.length > 0 || tempRemovedOrders.length > 0) &&
+                                            canEditOrdersManagerShipment(shipmentStatus) && (
+                                                <Button
+                                                    className="modal-cancel-button"
+                                                    icon={<CloseCircleOutlined/>}
+                                                    onClick={handleDiscardChanges}
+                                                >
+                                                    Hủy thay đổi
+                                                </Button>
+                                            )}
+
+                                        {canEditOrdersManagerShipment(shipmentStatus) && (
                                             <Button
-                                                className="modal-cancel-button"
-                                                icon={<CloseCircleOutlined />}
-                                                onClick={handleDiscardChanges}
+                                                onClick={handleSaveOrders}
+                                                className="modal-ok-button"
+                                                icon={<SaveOutlined/>}
                                             >
-                                                Hủy thay đổi
+                                                Lưu
                                             </Button>
                                         )}
 
                                         <Button
-                                            onClick={handleSaveOrders}
-                                            className="modal-ok-button"
-                                            icon={<SaveOutlined />}
+                                            onClick={handleExport}
+                                            className="success-button"
+                                            icon={<FileExcelOutlined/>}
+                                            disabled={total === 0}
                                         >
-                                            Lưu
+                                            Xuất excel
                                         </Button>
                                     </Space>
                                 </div>
@@ -446,7 +488,7 @@ const ManagerShipmentOrders: React.FC = () => {
                         <Tag className="list-page-tag">Kết quả trả về: {total} đơn hàng</Tag>
                     </Col>
                     <Col>
-                    <span className="text-muted">Các thay đổi hiện tại chỉ là tạm thời. Nhấn Lưu để xác nhận và hoàn tất</span>
+                        <span className="text-muted">Các thay đổi hiện tại chỉ là tạm thời. Nhấn Lưu để xác nhận và hoàn tất</span>
                     </Col>
                 </Row>
 
@@ -455,7 +497,7 @@ const ManagerShipmentOrders: React.FC = () => {
                         columns={columns}
                         dataSource={tableData}
                         rowKey="id"
-                        scroll={{ x: "max-content" }}
+                        scroll={{x: "max-content"}}
                         className="list-page-table"
                         pagination={{
                             current: page,

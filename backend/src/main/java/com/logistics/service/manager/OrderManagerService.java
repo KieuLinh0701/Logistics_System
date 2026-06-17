@@ -1,11 +1,30 @@
 package com.logistics.service.manager;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
+import com.logistics.dto.user.order.UserOrderStatusCountResponse;
+import com.logistics.entity.*;
+import com.logistics.request.user.product.UserProductSearchRequest;
+import com.logistics.specification.ProductSpecification;
+import com.logistics.utils.AddressUtils;
+import com.logistics.utils.OrderFieldUtils;
+import com.logistics.utils.UserOrderEditRuleUtils;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,13 +37,6 @@ import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
-import com.logistics.entity.Address;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Office;
-import com.logistics.entity.Order;
-import com.logistics.entity.OrderHistory;
-import com.logistics.entity.OrderProduct;
-import com.logistics.entity.ServiceType;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.OrderHistoryActionType;
@@ -55,6 +67,10 @@ import com.logistics.utils.OrderUtils;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import static com.logistics.utils.OrderUtils.*;
+import static com.logistics.utils.ProductUtils.translateProductStatus;
+import static com.logistics.utils.ProductUtils.translateProductType;
 
 @Service
 @RequiredArgsConstructor
@@ -98,11 +114,13 @@ public class OrderManagerService {
             String paymentStatus = request.getPaymentStatus();
             String cod = request.getCod();
             String sort = request.getSort();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getStartDate())
                     : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
@@ -121,16 +139,26 @@ public class OrderManagerService {
                     .and(OrderSpecification.createdAtBetween(startDate, endDate));
 
             Sort sortOpt = switch (sort.toLowerCase()) {
-                case "newest" -> Sort.by("createdAt").descending();
-                case "oldest" -> Sort.by("createdAt").ascending();
-                case "cod_high" -> Sort.by("cod").descending();
-                case "cod_low" -> Sort.by("cod").ascending();
-                case "order_value_high" -> Sort.by("orderValue").descending();
-                case "order_value_low" -> Sort.by("orderValue").ascending();
-                case "fee_high" -> Sort.by("totalFee").descending();
-                case "fee_low" -> Sort.by("totalFee").ascending();
-                case "weight_high" -> Sort.by("weight").descending();
-                case "weight_low" -> Sort.by("weight").ascending();
+                case "newest" -> Sort.by("createdAt")
+                        .descending();
+                case "oldest" -> Sort.by("createdAt")
+                        .ascending();
+                case "cod_high" -> Sort.by("cod")
+                        .descending();
+                case "cod_low" -> Sort.by("cod")
+                        .ascending();
+                case "order_value_high" -> Sort.by("orderValue")
+                        .descending();
+                case "order_value_low" -> Sort.by("orderValue")
+                        .ascending();
+                case "fee_high" -> Sort.by("totalFee")
+                        .descending();
+                case "fee_low" -> Sort.by("totalFee")
+                        .ascending();
+                case "weight_high" -> Sort.by("weight")
+                        .descending();
+                case "weight_low" -> Sort.by("weight")
+                        .ascending();
                 default -> Sort.unsorted();
             };
 
@@ -156,6 +184,26 @@ public class OrderManagerService {
         }
     }
 
+    public ApiResponse<List<ManagerOrderStatusCountResponse>> getStatusCounts(Integer userId) {
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        List<Object[]> raw = repository.countByStatusForOffice(userOffice.getId());
+
+        List<ManagerOrderStatusCountResponse> counts = raw.stream()
+                .map(row -> new ManagerOrderStatusCountResponse(
+                        (String) row[0],
+                        (long) row[1]
+                ))
+                .collect(Collectors.toList());
+
+        long total = counts.stream()
+                .mapToLong(ManagerOrderStatusCountResponse::getCount)
+                .sum();
+        counts.add(0, new ManagerOrderStatusCountResponse("ALL", total));
+
+        return new ApiResponse<>(true, "Lấy số lượng theo trạng thái thành công", counts);
+    }
+
     public ApiResponse<List<Integer>> getAllOrderIds(int userId, UserOrderSearchRequest request) {
         try {
             String search = request.getSearch();
@@ -165,10 +213,12 @@ public class OrderManagerService {
             Integer serviceTypeId = request.getServiceTypeId();
             String paymentStatus = request.getPaymentStatus();
             String cod = request.getCod();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getStartDate())
                     : null;
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                    .isBlank()
                     ? LocalDateTime.parse(request.getEndDate())
                     : null;
 
@@ -207,8 +257,12 @@ public class OrderManagerService {
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             boolean hasAccess = (order.getFromOffice() != null
-                    && userOffice.getId().equals(order.getFromOffice().getId()))
-                    || (order.getToOffice() != null && userOffice.getId().equals(order.getToOffice().getId()));
+                    && userOffice.getId()
+                    .equals(order.getFromOffice()
+                            .getId()))
+                    || (order.getToOffice() != null && userOffice.getId()
+                    .equals(order.getToOffice()
+                            .getId()));
 
             if (!hasAccess) {
                 return new ApiResponse<>(false, "Bạn không có quyền xem đơn hàng này", null);
@@ -244,9 +298,13 @@ public class OrderManagerService {
                     .filter(order -> OrderUtils.canManagerPrint(order.getStatus()))
                     .filter(order -> {
                         boolean fromMatch = order.getFromOffice() != null
-                                && userOffice.getId().equals(order.getFromOffice().getId());
+                                && userOffice.getId()
+                                .equals(order.getFromOffice()
+                                        .getId());
                         boolean toMatch = order.getToOffice() != null
-                                && userOffice.getId().equals(order.getToOffice().getId());
+                                && userOffice.getId()
+                                .equals(order.getToOffice()
+                                        .getId());
                         return fromMatch || toMatch;
                     })
                     .toList();
@@ -263,7 +321,6 @@ public class OrderManagerService {
                     .toList();
 
             return new ApiResponse<>(true, "Lấy phiếu vận đơn thành công", printDtos);
-
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi khi lấy phiếu vận đơn: " + e.getMessage(), null);
         }
@@ -279,7 +336,9 @@ public class OrderManagerService {
             throw new RuntimeException("Đơn hàng đã vận chuyển, không thể hủy");
         }
 
-        if (order.getFromOffice() == null || !userOffice.getId().equals(order.getFromOffice().getId())) {
+        if (order.getFromOffice() == null || !userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId())) {
             return new ApiResponse<>(false, "Bạn không có quyền hủy đơn hàng này", false);
         }
 
@@ -290,10 +349,13 @@ public class OrderManagerService {
         productUserService.restoreStockFromOrder(orderProducts);
 
         if (order.getPromotion() != null) {
-            promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+            promotionUserService.decreaseUsage(order.getPromotion()
+                    .getId(), userId);
         }
 
-        if (!order.getCreatedByType().equals(OrderCreatorType.USER) && order.getPayer().equals(OrderPayerType.SHOP)) {
+        if (!order.getCreatedByType()
+                .equals(OrderCreatorType.USER) && order.getPayer()
+                .equals(OrderPayerType.SHOP)) {
             order.setRefundedAt(LocalDateTime.now());
             order.setPaymentStatus(OrderPaymentStatus.REFUNDED);
         }
@@ -313,7 +375,8 @@ public class OrderManagerService {
                             "Đơn hàng có mã vận đơn #%s của bạn đã bị hủy bởi nhân viên chúng tôi. Nếu bạn không yêu cầu hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
                     "recipientaddress",
-                    order.getUser().getId(),
+                    order.getUser()
+                            .getId(),
                     null,
                     "orders/list",
                     order.getTrackingNumber());
@@ -332,7 +395,9 @@ public class OrderManagerService {
             throw new RuntimeException("Trạng thái đơn hàng hoặc hình thức lấy hàng không phù hợp");
         }
 
-        if (order.getFromOffice() == null || !userOffice.getId().equals(order.getFromOffice().getId())) {
+        if (order.getFromOffice() == null || !userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId())) {
             return new ApiResponse<>(false, "Bạn không có quyền xác nhận đơn hàng này", false);
         }
 
@@ -346,7 +411,8 @@ public class OrderManagerService {
                             "Đơn hàng #%s đã được xác nhận. Vui lòng chuẩn bị hàng hóa và mang đến bưu cục để hoàn tất việc gửi hàng.",
                             order.getTrackingNumber()),
                     "recipientaddress",
-                    order.getUser().getId(),
+                    order.getUser()
+                            .getId(),
                     null,
                     "orders/list",
                     order.getTrackingNumber());
@@ -370,9 +436,13 @@ public class OrderManagerService {
 
             Integer totalFee = 0;
             if (userOffice.getCityCode() != null) {
-                totalFee = feeService.calculateTotalFeeManager(request.getWeight(), request.getServiceTypeId(),
-                        userOffice.getCityCode(), request.getRecipientCityCode(),
-                        request.getOrderValue(), 0);
+                totalFee = feeService.calculateTotalFeeManager(
+                        request.getWeight(),
+                        request.getServiceTypeId(),
+                        userOffice.getCityCode(),
+                        request.getRecipientCityCode(),
+                        request.getOrderValue(),
+                        0);
             }
 
             Employee currentEmployee = userOffice.getManager();
@@ -381,31 +451,50 @@ public class OrderManagerService {
                     .orElseThrow(() -> new RuntimeException("Dịch vụ vận chuyển không tồn tại"));
 
             Integer shippingFee = feeService.calculateShippingFee(
-                    request.getWeight(), request.getServiceTypeId(),
-                    userOffice.getCityCode(), request.getRecipientCityCode());
-
-            Address address = Address.builder()
-                    .wardCode(request.getRecipientWardCode())
-                    .cityCode(request.getRecipientCityCode())
-                    .detail(request.getRecipientDetail())
-                    .name(request.getRecipientName())
-                    .phoneNumber(request.getRecipientPhone())
-                    .isDefault(false)
-                    .build();
-            Address recipientAddress = addressUserService.save(address);
+                    request.getWeight(),
+                    request.getServiceTypeId(),
+                    userOffice.getCityCode(),
+                    request.getRecipientCityCode());
 
             Order order = new Order();
             order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
             order.setTrackingNumber(generateUniqueTrackingNumber(order.getStatus()));
             order.setCreatedByType(OrderCreatorType.MANAGER);
+
             order.setSenderName(request.getSenderName());
             order.setSenderPhone(request.getSenderPhone());
             order.setSenderCityCode(request.getSenderCityCode());
+            order.setSenderCityName(request.getSenderCityName());
             order.setSenderWardCode(request.getSenderWardCode());
+            order.setSenderWardName(request.getSenderWardName());
             order.setSenderDetail(request.getSenderDetail());
+            order.setSenderLatitude(request.getSenderLatitude());
+            order.setSenderLongitude(request.getSenderLongitude());
+            order.setSenderFullAddress(
+                    AddressUtils.buildFullAddress(
+                            request.getSenderDetail(),
+                            request.getSenderWardName(),
+                            request.getSenderCityName()
+                    )
+            );
+
             order.setRecipientName(request.getRecipientName());
             order.setRecipientPhone(request.getRecipientPhone());
-            order.setRecipientAddress(recipientAddress);
+            order.setRecipientCityCode(request.getRecipientCityCode());
+            order.setRecipientCityName(request.getRecipientCityName());
+            order.setRecipientWardCode(request.getRecipientWardCode());
+            order.setRecipientWardName(request.getRecipientWardName());
+            order.setRecipientDetail(request.getRecipientDetail());
+            order.setRecipientLatitude(request.getRecipientLatitude());
+            order.setRecipientLongitude(request.getRecipientLongitude());
+            order.setRecipientFullAddress(
+                    AddressUtils.buildFullAddress(
+                            request.getRecipientDetail(),
+                            request.getRecipientWardName(),
+                            request.getRecipientCityName()
+                    )
+            );
+
             order.setPickupType(OrderPickupType.AT_OFFICE);
             order.setWeight(request.getWeight());
             order.setOriginalWeight(request.getWeight());
@@ -424,7 +513,8 @@ public class OrderManagerService {
             order.setFromOffice(userOffice);
             order.setEmployee(currentEmployee);
             order.setCodStatus(OrderCodStatus.NONE);
-            if (OrderPayerType.valueOf(request.getPayer()).equals(OrderPayerType.SHOP)) {
+            if (OrderPayerType.valueOf(request.getPayer())
+                    .equals(OrderPayerType.SHOP)) {
                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                 order.setPaidAt(LocalDateTime.now());
             }
@@ -463,15 +553,17 @@ public class OrderManagerService {
                 throw new RuntimeException("Đơn hàng đã hoàn thành, không thể chỉnh sửa");
             }
 
-            if (!((order.getFromOffice() != null && userOffice.getId().equals(order.getFromOffice().getId()))
-                    || (order.getToOffice() != null && userOffice.getId().equals(order.getToOffice().getId())))) {
+            if (!((order.getFromOffice() != null && userOffice.getId()
+                    .equals(order.getFromOffice()
+                            .getId()))
+                    || (order.getToOffice() != null && userOffice.getId()
+                    .equals(order.getToOffice()
+                            .getId())))) {
                 throw new RuntimeException("Bạn không có quyền sửa đơn hàng này");
             }
 
             OrderStatus currentStatus = order.getStatus();
             OrderCreatorType creatorType = order.getCreatedByType();
-
-            Address recipient = order.getRecipientAddress();
 
             // NGƯỜI GỬI
             updateManagerField("senderName",
@@ -492,11 +584,23 @@ public class OrderManagerService {
                     currentStatus, creatorType,
                     order::setSenderCityCode);
 
+            updateManagerField("senderCityName",
+                    order.getSenderCityName(),
+                    request.getSenderCityName(),
+                    currentStatus, creatorType,
+                    order::setSenderCityName);
+
             updateManagerField("senderWardCode",
                     order.getSenderWardCode(),
                     request.getSenderWardCode(),
                     currentStatus, creatorType,
                     order::setSenderWardCode);
+
+            updateManagerField("senderWardName",
+                    order.getSenderWardName(),
+                    request.getSenderWardName(),
+                    currentStatus, creatorType,
+                    order::setSenderWardName);
 
             updateManagerField("senderDetailAddress",
                     order.getSenderDetail(),
@@ -504,40 +608,90 @@ public class OrderManagerService {
                     currentStatus, creatorType,
                     order::setSenderDetail);
 
+            updateManagerField("senderLatitude",
+                    order.getSenderLatitude(),
+                    request.getSenderLatitude(),
+                    currentStatus, creatorType,
+                    order::setSenderLatitude);
+
+            updateManagerField("senderLongitude",
+                    order.getSenderLongitude(),
+                    request.getSenderLongitude(),
+                    currentStatus, creatorType,
+                    order::setSenderLongitude);
+
+            order.setSenderFullAddress(AddressUtils.buildFullAddress(
+                    order.getSenderDetail(),
+                    order.getSenderWardName(),
+                    order.getSenderCityName()
+            ));
+
             // NGƯỜI NHẬN
             updateManagerField("recipientName",
-                    recipient.getName(),
+                    order.getRecipientName(),
                     request.getRecipientName(),
                     currentStatus, creatorType,
-                    recipient::setName);
+                    order::setRecipientName);
 
             updateManagerField("recipientPhoneNumber",
-                    recipient.getPhoneNumber(),
+                    order.getRecipientPhone(),
                     request.getRecipientPhone(),
                     currentStatus, creatorType,
-                    recipient::setPhoneNumber);
+                    order::setRecipientPhone);
 
             updateManagerField("recipientCityCode",
-                    recipient.getCityCode(),
+                    order.getRecipientCityCode(),
                     request.getRecipientCityCode(),
                     currentStatus, creatorType,
-                    recipient::setCityCode);
+                    order::setRecipientCityCode);
+
+            updateManagerField("recipientCityName",
+                    order.getRecipientCityName(),
+                    request.getRecipientCityName(),
+                    currentStatus, creatorType,
+                    order::setRecipientCityName);
 
             updateManagerField("recipientWardCode",
-                    recipient.getWardCode(),
+                    order.getRecipientWardCode(),
                     request.getRecipientWardCode(),
                     currentStatus, creatorType,
-                    recipient::setWardCode);
+                    order::setRecipientWardCode);
+
+            updateManagerField("recipientWardName",
+                    order.getRecipientWardName(),
+                    request.getRecipientWardName(),
+                    currentStatus, creatorType,
+                    order::setRecipientWardName);
 
             updateManagerField("recipientDetailAddress",
-                    recipient.getDetail(),
+                    order.getRecipientDetail(),
                     request.getRecipientDetail(),
                     currentStatus, creatorType,
-                    recipient::setDetail);
+                    order::setRecipientDetail);
+
+            updateManagerField("recipientLatitude",
+                    order.getRecipientLatitude(),
+                    request.getRecipientLatitude(),
+                    currentStatus, creatorType,
+                    order::setRecipientLatitude);
+
+            updateManagerField("recipientLongitude",
+                    order.getRecipientLongitude(),
+                    request.getRecipientLongitude(),
+                    currentStatus,
+                    creatorType,
+                    order::setRecipientLongitude);
+
+            order.setRecipientFullAddress(AddressUtils.buildFullAddress(
+                    order.getRecipientDetail(),
+                    order.getRecipientWardName(),
+                    order.getRecipientCityName()
+            ));
 
             if (request.getWeight() != null) {
 
-                if (order.getUser() != null) {
+                if (order.getCreatedByType()
+                        .equals(OrderCreatorType.USER)) {
                     updateManagerField(
                             "originalWeight",
                             order.getOriginalWeight(),
@@ -616,23 +770,28 @@ public class OrderManagerService {
 
                 if (oldWeight == null || oldWeight.compareTo(request.getWeight()) != 0) {
 
-                    int calcShippingFee = feeService.calculateShippingFee(request.getWeight(),
-                            order.getServiceType().getId(),
-                            order.getSenderCityCode(), order.getRecipientAddress().getCityCode());
+                    int calcShippingFee = feeService.calculateShippingFee(
+                            request.getWeight(),
+                            order.getServiceType()
+                                    .getId(),
+                            order.getSenderCityCode(),
+                            order.getRecipientCityCode());
                     order.setShippingFee(calcShippingFee);
 
                     int calcServiceFee = feeService.calculateTotalFee(
                             request.getWeight(),
-                            order.getServiceType().getId(),
+                            order.getServiceType()
+                                    .getId(),
                             order.getSenderCityCode(),
-                            order.getRecipientAddress().getCityCode(),
+                            order.getRecipientCityCode(),
                             order.getOrderValue(),
                             order.getCod());
 
                     int discountAmount = 0;
 
                     if (order.getPromotion() != null) {
-                        promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+                        promotionUserService.decreaseUsage(order.getPromotion()
+                                .getId(), userId);
 
                         order.setPromotion(null);
                     }
@@ -644,13 +803,16 @@ public class OrderManagerService {
                     notificationService.create(
                             "Điều chỉnh khối lượng đơn hàng",
                             String.format(
-                                    "Đơn hàng với mã vận đơn #%s phát hiện sai lệch khối lượng so với khai báo ban đầu. " +
+                                    "Đơn hàng với mã vận đơn #%s phát hiện sai lệch khối lượng so với khai báo ban đầu. "
+                                            +
                                             "Hệ thống đã tự động điều chỉnh từ %s kg thành %s kg, phí vận chuyển được cập nhật và khuyến mãi đã bị hủy.",
                                     order.getTrackingNumber(),
                                     oldWeight == null ? "0" : oldWeight.toPlainString(),
-                                    request.getWeight().toPlainString()),
+                                    request.getWeight()
+                                            .toPlainString()),
                             "recipientaddress",
-                            order.getUser().getId(),
+                            order.getUser()
+                                    .getId(),
                             null,
                             "orders/tracking",
                             order.getTrackingNumber());
@@ -667,26 +829,169 @@ public class OrderManagerService {
             repository.save(order);
 
             return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
-
         } catch (Exception e) {
             return new ApiResponse<>(false, e.getMessage(), null);
         }
     }
 
-    private <T> void updateManagerField(
-            String field,
-            T oldValue,
-            T newValue,
-            OrderStatus status,
-            OrderCreatorType creatorType,
-            java.util.function.Consumer<T> setter) {
-        if (!Objects.equals(oldValue, newValue)) {
+    public byte[] export(Integer userId, UserOrderSearchRequest request) {
+        String search = request.getSearch();
+        String payer = request.getPayer();
+        String status = request.getStatus();
+        String pickupType = request.getPickupType();
+        Integer serviceTypeId = request.getServiceTypeId();
+        String paymentStatus = request.getPaymentStatus();
+        String cod = request.getCod();
+        String sort = request.getSort();
 
-            if (!ManagerOrderEditRuleUtils.canManagerEditOrderField(field, status, creatorType)) {
-                throw new RuntimeException(
-                        "Trường '" + field + "' không thể chỉnh sửa ở trạng thái " + status);
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.officeId(userOffice.getId()))
+                .and(OrderSpecification.excludeDraft())
+                .and(OrderSpecification.searchManager(search))
+                .and(OrderSpecification.payer(payer))
+                .and(OrderSpecification.status(status))
+                .and(OrderSpecification.pickupType(pickupType))
+                .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                .and(OrderSpecification.paymentStatus(paymentStatus))
+                .and(OrderSpecification.cod(cod))
+                .and(OrderSpecification.createdAtBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            case "cod_high" -> Sort.by("cod").descending();
+            case "cod_low" -> Sort.by("cod").ascending();
+            case "order_value_high" -> Sort.by("orderValue").descending();
+            case "order_value_low" -> Sort.by("orderValue").ascending();
+            case "fee_high" -> Sort.by("totalFee").descending();
+            case "fee_low" -> Sort.by("totalFee").ascending();
+            case "weight_high" -> Sort.by("weight").descending();
+            case "weight_low" -> Sort.by("weight").ascending();
+            default -> Sort.by("createdAt").descending();
+        } : Sort.by("createdAt").descending();
+
+        List<Order> orders = repository.findAll(spec, sortOpt);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Orders");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã đơn",
+                    "Trạng thái",
+                    "Tên người gửi", "SĐT người gửi", "Địa chỉ người gửi",
+                    "Tên người nhận", "SĐT người nhận", "Địa chỉ người nhận",
+                    "Giá trị đơn", "COD (chưa phí)", "Phí dịch vụ",
+                    "Hình thức lấy hàng", "Dịch vụ giao hàng",
+                    "Người thanh toán", "Trạng thái thanh toán",
+                    "Khối lượng (Kg)", "Khối lượng điều chỉnh (Kg)",
+                    "Người tạo đơn", "Mã nhân viên / người dùng",
+                    "Thời gian tạo đơn", "Thời gian giao hàng", "Thời gian thanh toán"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
             }
 
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (Order o : orders) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(o.getTrackingNumber() != null ? o.getTrackingNumber() : "Chưa có mã");
+                row.createCell(1).setCellValue(OrderUtils.translateOrderStatus(o.getStatus()));
+
+                // Người gửi
+                row.createCell(2).setCellValue(o.getSenderName() != null ? o.getSenderName() : "");
+                row.createCell(3).setCellValue(o.getSenderPhone() != null ? o.getSenderPhone() : "");
+                row.createCell(4).setCellValue(o.getSenderFullAddress() != null ? o.getSenderFullAddress() : "");
+
+                // Người nhận
+                row.createCell(5).setCellValue(o.getRecipientName() != null ? o.getRecipientName() : "");
+                row.createCell(6).setCellValue(o.getRecipientPhone() != null ? o.getRecipientPhone() : "");
+                row.createCell(7).setCellValue(o.getRecipientFullAddress() != null ? o.getRecipientFullAddress() : "");
+
+                // Tiền
+                row.createCell(8).setCellValue(o.getOrderValue() != null ? o.getOrderValue().doubleValue() : 0);
+                row.createCell(9).setCellValue(o.getCod() != null ? o.getCod().doubleValue() : 0);
+                row.createCell(10).setCellValue(o.getTotalFee() != null ? o.getTotalFee().doubleValue() : 0);
+
+                // Giao hàng
+                row.createCell(11).setCellValue(translateOrderPickupType(o.getPickupType()));
+                row.createCell(12).setCellValue(
+                        o.getServiceType() != null && o.getServiceType().getName() != null
+                                ? o.getServiceType().getName()
+                                : "");
+
+                // Thanh toán
+                row.createCell(13).setCellValue(translateOrderPayerType(o.getPayer()));
+                row.createCell(14).setCellValue(translateOrderPaymentStatus(o.getPaymentStatus()));
+
+                // Khối lượng
+                row.createCell(15).setCellValue(o.getWeight() != null ? o.getWeight().doubleValue() : 0);
+                row.createCell(16).setCellValue(o.getAdjustedWeight() != null ? o.getAdjustedWeight().doubleValue() : 0);
+
+                // Người tạo
+                row.createCell(17).setCellValue(translateOrderCreatorType(o.getCreatedByType()));
+                String creatorCode = (
+                        o.getEmployee() != null && o.getEmployee().getCode() != null && o.getCreatedByType() != null
+                                && !OrderCreatorType.USER.equals(o.getCreatedByType()))
+                        ? o.getEmployee().getCode()
+                        : (o.getUser().getCode() != null ? o.getUser().getCode() : "");
+                row.createCell(18).setCellValue(creatorCode);
+
+                // Thời gian
+                row.createCell(19).setCellValue(o.getCreatedAt() != null ? o.getCreatedAt().format(dtf) : "");
+                row.createCell(20).setCellValue(o.getDeliveredAt() != null ? o.getDeliveredAt().format(dtf) : "N/A");
+                row.createCell(21).setCellValue(o.getPaidAt() != null ? o.getPaidAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
+    private <T> void updateManagerField(
+            String fieldName,
+            T oldValue,
+            T newValue,
+            OrderStatus currentStatus,
+            OrderCreatorType creatorType,
+            Consumer<T> setter) {
+
+        if (OrderFieldUtils.isChanged(oldValue, newValue)) {
+            if (!ManagerOrderEditRuleUtils.canManagerEditOrderField(fieldName, currentStatus, creatorType)) {
+                throw new RuntimeException(
+                        "Trường '" + fieldName + "' không thể chỉnh sửa ở trạng thái " + currentStatus);
+            }
             setter.accept(newValue);
         }
     }
@@ -697,24 +1002,42 @@ public class OrderManagerService {
 
         if (isBlank(request.getSenderName()))
             missing.add("Tên người gửi");
+        if (isBlank(request.getSenderPhone()))
+            missing.add("Số điện thoại người gửi");
         if (isBlank(request.getSenderDetail()))
             missing.add("Địa chỉ chi tiết người gửi");
         if (request.getSenderCityCode() == null)
             missing.add("Tỉnh/ thành phố người gửi");
+        if (isBlank(request.getSenderCityName()))
+            missing.add("Tên tỉnh/ thành phố người gửi");
         if (request.getSenderWardCode() == null)
             missing.add("Phường/ xã người gửi");
-        if (isBlank(request.getSenderPhone()))
-            missing.add("Số điện thoại người gửi");
+        if (isBlank(request.getSenderWardName()))
+            missing.add("Tên phường/ xã người gửi");
+        if (request.getSenderLatitude() == null)
+            missing.add("Vĩ độ người gửi");
+        if (request.getSenderLongitude() == null)
+            missing.add("Kinh độ người gửi");
+
         if (isBlank(request.getRecipientName()))
             missing.add("Tên người nhận");
+        if (isBlank(request.getRecipientPhone()))
+            missing.add("Số điện thoại người nhận");
         if (isBlank(request.getRecipientDetail()))
             missing.add("Địa chỉ chi tiết người nhận");
         if (request.getRecipientCityCode() == null)
             missing.add("Tỉnh/ thành phố người nhận");
+        if (isBlank(request.getRecipientCityName()))
+            missing.add("Tên tỉnh/ thành phố người nhận");
         if (request.getRecipientWardCode() == null)
             missing.add("Phường/ xã người nhận");
-        if (isBlank(request.getRecipientPhone()))
-            missing.add("Số điện thoại người nhận");
+        if (isBlank(request.getRecipientWardName()))
+            missing.add("Tên phường/ xã người nhận");
+        if (request.getRecipientLatitude() == null)
+            missing.add("Vĩ độ người nhận");
+        if (request.getRecipientLongitude() == null)
+            missing.add("Kinh độ người nhận");
+
         if (request.getWeight() == null)
             missing.add("Khối lượng quy đổi");
         if (request.getHeight() == null)
@@ -742,35 +1065,50 @@ public class OrderManagerService {
             throw new RuntimeException("Người trả phí không hợp lệ");
         }
 
-        if (!request.getSenderPhone().matches("\\d{10}"))
+        if (!request.getSenderPhone()
+                .matches("\\d{10}"))
             throw new RuntimeException("Số điện thoại người gửi phải gồm đúng 10 chữ số");
 
-        if (!request.getRecipientPhone().matches("\\d{10}"))
+        if (!request.getRecipientPhone()
+                .matches("\\d{10}"))
             throw new RuntimeException("Số điện thoại người nhận phải gồm đúng 10 chữ số");
 
-        if (request.getRecipientCityCode() <= 0)
+        if (request.getSenderCityCode() <= 0)
             throw new RuntimeException("Mã Thành phố người gửi không hợp lệ");
-        if (request.getRecipientWardCode() <= 0)
+        if (request.getSenderWardCode() <= 0)
             throw new RuntimeException("Mã Phường/Xã người gửi không hợp lệ");
+        if (request.getSenderLatitude() < -90 || request.getSenderLatitude() > 90)
+            throw new RuntimeException("Vĩ độ người gửi không hợp lệ");
 
+        if (request.getSenderLongitude() < -180 || request.getSenderLongitude() > 180)
+            throw new RuntimeException("Kinh độ người gửi không hợp lệ");
         if (request.getRecipientCityCode() <= 0)
             throw new RuntimeException("Mã Thành phố người nhận không hợp lệ");
         if (request.getRecipientWardCode() <= 0)
             throw new RuntimeException("Mã Phường/Xã người nhận không hợp lệ");
+        if (request.getRecipientLatitude() < -90 || request.getRecipientLatitude() > 90)
+            throw new RuntimeException("Vĩ độ người nhận không hợp lệ");
+        if (request.getRecipientLongitude() < -180 || request.getRecipientLongitude() > 180)
+            throw new RuntimeException("Kinh độ người nhận không hợp lệ");
 
-        if (request.getWeight().doubleValue() <= 0)
+        if (request.getWeight()
+                .doubleValue() <= 0)
             throw new RuntimeException("Khối lượng quy đổi phải lớn hơn 0");
 
-        if (request.getOriginalWeight().doubleValue() <= 0)
+        if (request.getOriginalWeight()
+                .doubleValue() <= 0)
             throw new RuntimeException("Khối lượng thực tế phải lớn hơn 0");
 
-        if (request.getLength().doubleValue() <= 0)
+        if (request.getLength()
+                .doubleValue() <= 0)
             throw new RuntimeException("Chiều dài phải lớn hơn 0");
 
-        if (request.getWidth().doubleValue() <= 0)
+        if (request.getWidth()
+                .doubleValue() <= 0)
             throw new RuntimeException("Chiều rộng phải lớn hơn 0");
 
-        if (request.getHeight().doubleValue() <= 0)
+        if (request.getHeight()
+                .doubleValue() <= 0)
             throw new RuntimeException("Chiều cao phải lớn hơn 0");
 
         if (request.getServiceTypeId() <= 0)
@@ -779,7 +1117,8 @@ public class OrderManagerService {
         if (request.getOrderValue() != null && request.getOrderValue() < 0)
             throw new RuntimeException("Giá trị đơn hàng phải lớn hơn hoặc bằng 0");
 
-        if (request.getNotes() != null && request.getNotes().length() > 1000)
+        if (request.getNotes() != null && request.getNotes()
+                .length() > 1000)
             throw new RuntimeException("Ghi chú tối đa 1000 ký tự");
     }
 
@@ -790,7 +1129,8 @@ public class OrderManagerService {
     private String generateTrackingNumber() {
         String prefix = "UTE";
 
-        String date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+        String date = java.time.LocalDate.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
 
         String random = java.util.UUID.randomUUID()
                 .toString()
@@ -820,7 +1160,9 @@ public class OrderManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        if (order.getFromOffice() == null || !userOffice.getId().equals(order.getFromOffice().getId())) {
+        if (order.getFromOffice() == null || !userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId())) {
             return new ApiResponse<>(false, "Bạn không có quyền hủy đơn hàng này", false);
         }
 
@@ -828,7 +1170,8 @@ public class OrderManagerService {
             throw new RuntimeException("Trạng thái đơn hàng không hợp lệ để chuyển");
         }
 
-        if (!order.getPickupType().equals(OrderPickupType.AT_OFFICE)) {
+        if (!order.getPickupType()
+                .equals(OrderPickupType.AT_OFFICE)) {
             throw new RuntimeException("Hình thức lấy hàng không hợp lệ để chuyển");
         }
 
@@ -850,7 +1193,8 @@ public class OrderManagerService {
                             "Đơn hàng có mã vận đơn #%s của bạn đã được mang đến và bàn giao cho đơn vị vận chuyển thành công tại bưu cục xuất phát. Nếu bạn không thực hiện hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
                     "recipientaddress",
-                    order.getUser().getId(),
+                    order.getUser()
+                            .getId(),
                     null,
                     "orders/tracking",
                     order.getTrackingNumber());

@@ -32,9 +32,7 @@ public class ManagerShipmentDetailDto {
     public static class Recipient {
         private String name;
         private String phone;
-        private Integer cityCode;
-        private Integer wardCode;
-        private String detail;
+        private String fullAddress;
     }
 
     @Getter

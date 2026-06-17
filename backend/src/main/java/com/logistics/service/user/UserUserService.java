@@ -20,9 +20,30 @@ public class UserUserService {
     }
 
     public ApiResponse<Boolean> checkLocked(Integer id) {
-        User user = findById(id);
+        Integer shopId = getShopId(id);
+
+        User user = getUser(shopId);
         Boolean checked = user.getLocked();
         return new ApiResponse<>(true, "Kiểm tra tài khoản bị khóa thành công", checked);
     }
 
+    public Integer getShopId(User user) {
+        return user.getCurrentShop() != null
+                ? user.getCurrentShop()
+                .getId()
+                : user.getId();
+    }
+
+    public Integer getShopId(Integer userId) {
+        User user = getUser(userId);
+        return user.getCurrentShop() != null
+                ? user.getCurrentShop()
+                .getId()
+                : user.getId();
+    }
+
+    public User getUser(int userId) {
+        return repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+    }
 }

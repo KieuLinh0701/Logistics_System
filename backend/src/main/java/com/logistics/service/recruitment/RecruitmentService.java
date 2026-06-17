@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -314,7 +315,7 @@ public class RecruitmentService {
         Office office = posting.getOffice();
         String targetRoleName = mapRecruitmentRoleToRoleName(posting.getRoleType());
 
-        Role role = roleRepository.findByNameAndIsSystemRole(targetRoleName, true)
+        Role role = roleRepository.findByNameAndUserOwnerIsNull(targetRoleName)
                 .or(() -> roleRepository.findByName(targetRoleName))
                 .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy role hệ thống: " + targetRoleName));
@@ -375,8 +376,6 @@ public class RecruitmentService {
                     positionDisplay = switch (posting.getRoleType()) {
                         case DRIVER -> "Tài xế";
                         case SHIPPER -> "Nhân viên giao hàng";
-                        case WAREHOUSE_STAFF -> "Nhân viên kho";
-                        case RECONCILIATION_STAFF -> "Nhân viên đối soát";
                     };
                 }
 
@@ -438,7 +437,8 @@ public class RecruitmentService {
     }
 
     private String getCurrentRoleOrThrow() {
-        String role = SecurityUtils.getAuthenticatedUserRole();
+        String role = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         if (role == null || role.isBlank()) {
             throw new RecruitmentException(HttpStatus.UNAUTHORIZED, "Không xác định được role hiện tại");
         }
@@ -473,8 +473,6 @@ public class RecruitmentService {
         return switch (roleType) {
             case DRIVER -> "Driver";
             case SHIPPER -> "Shipper";
-            case WAREHOUSE_STAFF -> "WarehouseStaff";
-            case RECONCILIATION_STAFF -> "ReconciliationStaff";
         };
     }
 

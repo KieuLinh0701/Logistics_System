@@ -1,16 +1,7 @@
 import React from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  CartesianGrid,
-} from "recharts";
+import {CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,} from "recharts";
 import dayjs from "dayjs";
-import type { UserOrderTimeLineItem } from "../../../../types/dashboard";
+import type {UserOrderTimeLineItem} from "../../../../types/dashboard";
 
 interface Props {
   data?: UserOrderTimeLineItem[];

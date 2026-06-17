@@ -1,5 +1,14 @@
-import type { ForgotPasswordResetData, ForgotPasswordEmailData, LoginData, RegisterData, VerifyRegisterOtpData, VerifyResetOTPData, TokenResponse, ChooseRoleData } from "../types/auth";
-import type { ApiResponse } from "../types/response";
+import type {
+    ChooseRoleData,
+    ForgotPasswordEmailData,
+    ForgotPasswordResetData,
+    LoginData,
+    RegisterData,
+    TokenResponse,
+    VerifyRegisterOtpData,
+    VerifyResetOTPData
+} from "../types/auth";
+import type {ApiResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const authApi = {

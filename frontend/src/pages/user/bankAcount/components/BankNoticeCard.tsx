@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card } from 'antd';
-import { ExclamationCircleOutlined } from '@ant-design/icons';
+import {Card} from 'antd';
+import {ExclamationCircleOutlined} from '@ant-design/icons';
 
 const BankNoticeCard: React.FC = () => {
     return (

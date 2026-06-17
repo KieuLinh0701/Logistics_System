@@ -1,176 +1,165 @@
 import React from "react";
-import { Table, Button, Tag } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { ManagerEmployeePerformanceData } from "../../../../../types/employee";
-import { translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
+import {Table, Button, Tag, Tooltip} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import type {ManagerEmployeePerformanceData} from "../../../../../types/employee";
+import {translateEmployeeShift, translateEmployeeStatus} from "../../../../../utils/employeeUtils";
 
 interface Props {
-  data: ManagerEmployeePerformanceData[];
-  onDetail: (employeeId: number) => void;
-  currentPage: number;
-  pageSize: number;
-  total: number;
-  loading: boolean;
-  onPageChange: (page: number, pageSize?: number) => void;
+    data: ManagerEmployeePerformanceData[];
+    onDetail: (employeeId: number) => void;
+    currentPage: number;
+    pageSize: number;
+    total: number;
+    loading: boolean;
+    onPageChange: (page: number, pageSize?: number) => void;
 }
 
 const EmployeeTable: React.FC<Props> = ({
-  data,
-  onDetail,
-  currentPage,
-  pageSize,
-  total,
-  loading,
-  onPageChange,
-}) => {
+                                            data,
+                                            onDetail,
+                                            currentPage,
+                                            pageSize,
+                                            total,
+                                            loading,
+                                            onPageChange,
+                                        }) => {
 
-  const tableData = data.map((o) => ({ ...o, key: String(o.id) }));
+    const tableData = data.map((o) => ({...o, key: String(o.id)}));
 
-  const columns: ColumnsType<ManagerEmployeePerformanceData> = [
-    {
-      title: "Nhân viên",
-      key: "employee",
-      align: "left",
-      render: (_, record) => (
-        <div>
-          <div className="custom-table-content-strong">
-            {record.employeeName}
-          </div>
-          <div className="text-muted text-sm">
-            {record.employeePhone}
-          </div>
-          <div className="text-muted text-sm">
-            {record.employeeCode} - {
-              (() => {
-                const r = record.employeeRole ? String(record.employeeRole).toLowerCase() : "";
-                const ROLE_LABELS: Record<string, string> = {
-                  admin: "Quản trị viên",
-                  manager: "Quản lý bưu cục",
-                  user: "Cửa hàng",
-                  shipper: "Nhân viên giao hàng",
-                  driver: "Tài xế lái xe",
-                  staff: "Nhân viên",
-                  employee: "Nhân viên",
-                };
-                const getRoleColor = (role: string) => {
-                  const colors: Record<string, string> = {
-                    admin: "red",
-                    manager: "blue",
-                    staff: "green",
-                    driver: "purple",
-                    user: "gold",
-                    shipper: "orange",
-                    employee: "cyan",
-                  };
-                  return colors[role] || "default";
-                };
-                return <Tag color={getRoleColor(r)}>{ROLE_LABELS[r] || record.employeeRole}</Tag>;
-              })()
+    const columns: ColumnsType<ManagerEmployeePerformanceData> = [
+        {
+            title: "Mã nhân viên",
+            key: "employeeCode",
+            dataIndex: "employeeCode",
+            align: "left",
+            render: (_, record) => {
+                return (
+                    <Tooltip title="Click để xem danh sách chuyến hàng của nhân viên">
+                        <span
+                            className="navigate-link"
+                            onClick={() => onDetail(record.id)}
+                        >
+                          {record.employeeCode}
+                        </span>
+                    </Tooltip>
+                );
             }
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Làm việc",
-      key: "workingInfo",
-      align: "left",
-      render: (_, record) => (
-        <div>
-          <div>
-            {translateEmployeeShift(record.employeeShift)}
-          </div>
-          <div className="text-muted text-sm">
-            ({translateEmployeeStatus(record.employeeStatus)})
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Số Chuyến",
-      key: "shipments",
-      align: "center",
-      render: (_, record) => (
-        <div>
-          {record.totalShipments.toLocaleString("vi-VN")}
-        </div>
-      ),
-    },
-    {
-      title: "Tổng đơn",
-      dataIndex: "totalOrders",
-      key: "totalOrders",
-      align: "center",
-      render: (value) => (value ?? 0).toLocaleString("vi-VN"),
-    },
-    {
-      title: "Đơn thành công",
-      dataIndex: "completedOrders",
-      key: "completedOrders",
-      align: "center",
-      render: (value) => (value ?? 0).toLocaleString("vi-VN"),
-    },
-    {
-      title: "Hiệu suất",
-      key: "performance",
-      align: "left",
-      render: (_, record) => {
-        const completionRate = record.completionRate ?? 0;
-        const avgTimePerOrder = record.avgTimePerOrder ?? 0;
+        },
+        {
+            title: "Tên nhân viên",
+            key: "employeeName",
+            dataIndex: 'employeeName',
+            align: "left",
+        },
+        {
+            title: "Số điện thoại",
+            key: "employeePhone",
+            dataIndex: "employeePhone",
+            align: "left",
+        },
+        {
+            title: "Ca làm việc",
+            key: "workingInfo",
+            align: "center",
+            render: (_, record) => (
+                <div>
+                    {translateEmployeeShift(record.employeeShift)}
+                </div>
+            ),
+        },
+        {
+            title: "Trạng thái",
+            key: "status",
+            align: "center",
+            render: (_, record) => (
 
-        return (
-          <div>
-            <div>
-              <span className="custom-table-content-strong">
-                Tỉ lệ giao thành công:
-              </span>{" "}
-              {completionRate.toFixed(2)}%
-            </div>
+                <div>
+                    {translateEmployeeStatus(record.employeeStatus)}
+                </div>
+            ),
+        },
+        {
+            title: "Số Chuyến",
+            key: "shipments",
+            align: "center",
+            render: (_, record) => (
+                <div>
+                    {record.totalShipments.toLocaleString("vi-VN")}
+                </div>
+            ),
+        },
+        {
+            title: "Tổng đơn",
+            dataIndex: "totalOrders",
+            key: "totalOrders",
+            align: "center",
+            render: (value) => (value ?? 0).toLocaleString("vi-VN"),
+        },
+        {
+            title: "Đơn thành công",
+            dataIndex: "completedOrders",
+            key: "completedOrders",
+            align: "center",
+            render: (value) => (value ?? 0).toLocaleString("vi-VN"),
+        },
+        // Thay thế đoạn code cũ bằng 2 cột này:
 
-            <div>
-              <span className="custom-table-content-strong">
-                Thời gian TB / đơn:
-              </span>{" "}
-              {avgTimePerOrder.toFixed(2)} phút
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: "action",
-      align: "center",
-      render: (_, record) => (
-        <Button
-          className="action-button-link"
-          type="link"
-          size="small"
-          onClick={() => onDetail(record.id)}
-        >
-          DS chuyến đi
-        </Button>
-      ),
-    },
-  ];
+        {
+            title: "Tỉ lệ thành công",
+            dataIndex: "completionRate", // Trỏ trực tiếp vào key của record
+            key: "completionRate",
+            align: "center",
+            render: (value) => (
+                <span>
+                  {(value ?? 0).toFixed(2)}%
+              </span>
+            ),
+        },
+        {
+            title: "Thời gian TB / đơn",
+            dataIndex: "avgTimePerOrder",
+            key: "avgTimePerOrder",
+            align: "center",
+            render: (value) => (
+                <span>
+            {(value ?? 0).toFixed(2)} phút
+        </span>
+            ),
+        },
+        {
+            key: "action",
+            align: "center",
+            render: (_, record) => (
+                <Button
+                    className="action-button-link"
+                    type="link"
+                    size="small"
+                    onClick={() => onDetail(record.id)}
+                >
+                    DS chuyến hàng
+                </Button>
+            ),
+        },
+    ];
 
-  return (
-    <div className="table-container">
-      <Table
-        columns={columns}
-        dataSource={tableData}
-        rowKey="id"
-        scroll={{ x: "max-content" }}
-        className="list-page-table"
-        loading={loading}
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          onChange: onPageChange,
-        }}
-      />
-    </div>
-  );
+    return (
+        <div className="table-container">
+            <Table
+                columns={columns}
+                dataSource={tableData}
+                rowKey="id"
+                scroll={{x: "max-content"}}
+                className="list-page-table"
+                loading={loading}
+                pagination={{
+                    current: currentPage,
+                    pageSize,
+                    total,
+                    onChange: onPageChange,
+                }}
+            />
+        </div>
+    );
 };
 
 export default EmployeeTable;

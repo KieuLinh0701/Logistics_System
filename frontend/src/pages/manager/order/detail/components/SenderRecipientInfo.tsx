@@ -1,77 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Title from "antd/es/typography/Title";
-import locationApi from "../../../../../api/locationApi";
 
 interface SenderRecipientInfoProps {
   sender: {
-    name: string;
-    phone: string;
-    detail: string;
-    wardCode: number;
-    cityCode: number;
+      name: string;
+      phone: string;
+      fullAddress: string;
   };
   recipient: {
-    name: string;
-    phone: string;
-    detail: string;
-    wardCode: number;
-    cityCode: number;
+      name: string;
+      phone: string;
+      fullAddress: string;
   };
 }
 
 const SenderRecipientInfo: React.FC<SenderRecipientInfoProps> = ({ sender, recipient }) => {
-  const [senderAddress, setSenderAddress] = useState<string>("");
-  const [recipientAddress, setRecipientAddress] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const formatAddress = async (detail: string, wardCode: number, cityCode: number) => {
-    try {
-      const cityName = (await locationApi.getCityNameByCode(cityCode)) || "";
-      const wardName = (await locationApi.getWardNameByCode(cityCode, wardCode)) || "";
-      return [detail, wardName, cityName].filter(Boolean).join(", ");
-    } catch (error) {
-      console.error("Error formatting address:", error);
-      return detail || "";
-    }
-  };
-
-  useEffect(() => {
-    const fetchAddresses = async () => {
-      setIsLoading(true);
-      try {
-        const [senderAddr, recipientAddr] = await Promise.all([
-          formatAddress(sender.detail, sender.wardCode, sender.cityCode),
-          formatAddress(recipient.detail, recipient.wardCode, recipient.cityCode)
-        ]);
-
-        setSenderAddress(senderAddr);
-        setRecipientAddress(recipientAddr);
-      } catch (error) {
-        console.error("Error fetching addresses:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAddresses();
-  }, [sender, recipient]);
-
-  const renderField = (label: string, value: string, isAddressLoading: boolean = false) => {
-    let displayValue;
-
-    if (isAddressLoading) {
-      displayValue = <span className="order-detail-card-loading">Đang tải...</span>;
-    } else if (!value) {
-      displayValue = <span className="order-detail-card-na-tag">N/A</span>;
-    } else {
-      displayValue = value;
-    }
+  const renderField = (label: string, value: string) => {
 
     return (
       <div className="order-detail-card-field">
         <strong className="order-detail-card-label">{label}</strong>
         <span className={`order-detail-card-value ${label === "Địa chỉ:" ? "order-detail-card-address" : ""}`}>
-          {displayValue}
+          {value}
         </span>
       </div>
     );
@@ -86,7 +37,7 @@ const SenderRecipientInfo: React.FC<SenderRecipientInfoProps> = ({ sender, recip
         </Title>
         {renderField("Tên:", sender.name)}
         {renderField("SĐT:", sender.phone)}
-        {renderField("Địa chỉ:", senderAddress, isLoading)}
+        {renderField("Địa chỉ:", sender.fullAddress)}
       </div>
 
       {/* Thông tin người nhận */}
@@ -96,7 +47,7 @@ const SenderRecipientInfo: React.FC<SenderRecipientInfoProps> = ({ sender, recip
         </Title>
         {renderField("Tên:", recipient.name)}
         {renderField("SĐT:", recipient.phone)}
-        {renderField("Địa chỉ:", recipientAddress, isLoading)}
+        {renderField("Địa chỉ:", recipient.fullAddress)}
       </div>
     </div>
   );

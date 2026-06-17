@@ -59,8 +59,6 @@ public class PaymentSubmissionBatchManagerService {
 
     private final EmployeeManagerService employeeManagerService;
 
-    private final EmployeeRepository employeeRepository;
-
     private final PaymentSubmissionBatchRepository batchRepository;
 
     private final PaymentSubmissionRepository submissionRepository;
@@ -262,56 +260,6 @@ public class PaymentSubmissionBatchManagerService {
     }
 
     @Transactional
-    public ApiResponse<Boolean> create(Integer userId, ManagerPaymentSubmissionBatchCreateForm form) {
-        try {
-            Office managedOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
-            Employee employeeShipper = employeeRepository.findById(form.getShipperId())
-                    .orElseThrow(() -> new RuntimeException("Nhân viên giao hàng không tồn tại"));
-
-            if (employeeShipper.getOffice() == null
-                    || !employeeShipper.getOffice().getId().equals(managedOffice.getId())) {
-                throw new RuntimeException("Nhân viên này không thuộc bưu cục của bạn");
-            }
-
-            User shipper = employeeShipper.getUser();
-
-            PaymentSubmissionBatch batch = new PaymentSubmissionBatch();
-            batch.setShipper(shipper);
-            batch.setTotalActualAmount(form.getTotalActualAmount());
-            batch.setTotalSystemAmount(BigDecimal.ZERO);
-            batch.setStatus(PaymentSubmissionBatchStatus.PENDING);
-            batch.setOffice(managedOffice);
-
-            batchRepository.save(batch);
-
-            List<PaymentSubmission> submissions = submissionRepository
-                    .findByBatchIsNullAndStatusIn(List.of(PaymentSubmissionStatus.PENDING));
-
-            for (PaymentSubmission ps : submissions) {
-                ps.setBatch(batch);
-                ps.setStatus(PaymentSubmissionStatus.IN_BATCH);
-
-                Order order = ps.getOrder();
-                if (order != null && order.getCod() > 0) {
-                    order.setCodStatus(OrderCodStatus.SUBMITTED);
-                    orderRepository.save(order);
-                }
-            }
-            submissionRepository.saveAll(submissions);
-
-            BigDecimal totalSystem = submissions.stream()
-                    .map(PaymentSubmission::getSystemAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            batch.setTotalSystemAmount(totalSystem);
-            batchRepository.save(batch);
-
-            return new ApiResponse<>(true, "Tạo phiên đối soát thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
-    }
-
     public ApiResponse<Boolean> processing(Integer userId, Integer id, ManagerPaymentSubmissionBatchEditForm request) {
         PaymentSubmissionBatch batch = batchRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Phiên đối soát không tồn tại"));
@@ -341,8 +289,7 @@ public class PaymentSubmissionBatchManagerService {
 
         syncSubmissionsWithBatch(batch, newStatus, user);
 
-        if (batch.getShipper() != null) {
-            if (batch.getStatus().equals(PaymentSubmissionBatchStatus.COMPLETED)) {
+        if (batch.getShipper() != null && batch.getStatus().equals(PaymentSubmissionBatchStatus.COMPLETED)) {
                 notificationService.create(
                         "Phiên đối soát của bạn đã hoàn tất",
                         String.format(
@@ -353,18 +300,6 @@ public class PaymentSubmissionBatchManagerService {
                         null,
                         "settlements",
                         batch.getId().toString());
-            } else if (batch.getStatus().equals(PaymentSubmissionBatchStatus.PARTIAL)) {
-                notificationService.create(
-                        "Phiên đối soát của bạn đang được xử lý",
-                        String.format(
-                                "Phiên đối soát #%s của bạn đang được xử lý một phần. Một số đơn hàng đã được soát, một số đang chờ cập nhật. Vui lòng kiểm tra chi tiết trong hệ thống.",
-                                batch.getCode()),
-                        "payment_submission",
-                        batch.getShipper().getId(),
-                        null,
-                        "settlements",
-                        batch.getId().toString());
-            }
         }
 
         return new ApiResponse<>(true, "Cập nhật phiên đối soát thành công", true);
@@ -379,12 +314,8 @@ public class PaymentSubmissionBatchManagerService {
         LocalDateTime now = LocalDateTime.now();
 
         for (PaymentSubmission sub : submissions) {
+            Order order = sub.getOrder();
             switch (newStatus) {
-                case PARTIAL:
-                    sub.setStatus(PaymentSubmissionStatus.MISMATCHED);
-                    sub.setCheckedBy(user);
-                    sub.setCheckedAt(now);
-                    break;
                 case COMPLETED:
                     if (!sub.getStatus().equals(PaymentSubmissionStatus.ADJUSTED)) {
                         sub.setStatus(PaymentSubmissionStatus.MATCHED);
@@ -392,19 +323,21 @@ public class PaymentSubmissionBatchManagerService {
                         sub.setCheckedAt(now);
                     }
 
-                    Order order = sub.getOrder();
+
                     if (order != null && order.getCod() > 0) {
                         order.setCodStatus(OrderCodStatus.RECEIVED);
                         orderRepository.save(order);
                     }
                     break;
-                case CANCELLED:
-                    sub.setStatus(PaymentSubmissionStatus.PENDING);
-                    sub.setBatch(null);
+                case PROCESSING:
+                    sub.setStatus(PaymentSubmissionStatus.PROCESSING);
+
+                    if (order != null && order.getCod() > 0) {
+                        order.setCodStatus(OrderCodStatus.SUBMITTED);
+                        orderRepository.save(order);
+                    }
                     break;
-                case CHECKING:
-                    break;
-                case PENDING:
+                case OPEN:
                     break;
             }
         }

@@ -1,9 +1,11 @@
 package com.logistics.config;
 
 import com.logistics.entity.Account;
+import com.logistics.entity.PermissionGroupApi;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import com.logistics.security.UserPrincipal;
+import com.logistics.service.common.RoleService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -11,7 +13,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,15 +34,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final Key key;
 
-    public JwtAuthenticationFilter(
-            @Value("${jwt.secret}") String secret) {
+    @Autowired
+    private RoleService roleService;
+
+    public JwtAuthenticationFilter(@Value("${jwt.secret}") String secret) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
+    protected void doFilterInternal(
+            HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String path = request.getRequestURI();
 
@@ -68,20 +74,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Object userObj = claims.get("user");
 
                 @SuppressWarnings("unchecked")
-                Map<String, Object> accountMap = (accountObj instanceof Map<?, ?>) ? (Map<String, Object>) accountObj
-                        : null;
+                Map<String, Object> accountMap = (accountObj instanceof Map<?, ?>)
+                        ? (Map<String, Object>) accountObj : null;
 
                 @SuppressWarnings("unchecked")
-                Map<String, Object> userMap = (userObj instanceof Map<?, ?>) ? (Map<String, Object>) userObj : null;
+                Map<String, Object> userMap = (userObj instanceof Map<?, ?>)
+                        ? (Map<String, Object>) userObj : null;
 
                 if (email != null && SecurityContextHolder.getContext().getAuthentication() == null
                         && accountMap != null) {
 
                     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                     String roleName = null;
-                    if (accountMap.get("role") != null) {
-                        roleName = (String) accountMap.get("role");
+                    Integer roleId = null;
+
+                    if (accountMap.get("roleName") != null || accountMap.get("roleId") != null) {
+                        roleName = (String) accountMap.get("roleName");
                         authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+
+                        roleId = (Integer) accountMap.get("roleId");
+
+                        Role role = roleService.findByIdWithPermissionGroups(roleId);
+                        role.getPermissionGroups().stream()
+                                .flatMap(group -> group.getPermissionGroupApis().stream())
+                                .map(PermissionGroupApi::getPermissionApi)
+                                .filter(api -> api != null
+                                        && api.getUrl() != null
+                                        && api.getMethod() != null
+                                        && Boolean.TRUE.equals(api.getIsActive()))
+                                .forEach(api -> authorities.add(
+                                        new SimpleGrantedAuthority(api.getMethod().toUpperCase() + "::" + api.getUrl())
+                                ));
                     }
 
                     Account account = new Account();
@@ -93,6 +116,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (roleName != null) {
                         currentRole = new Role();
                         currentRole.setName(roleName);
+                        currentRole.setId(roleId);
                     }
 
                     User user = new User();
@@ -102,8 +126,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     UserPrincipal principal = new UserPrincipal(account, user, currentRole, authorities);
 
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(principal,
-                            null, authorities);
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
                     Map<String, Object> details = new HashMap<>();
                     details.put("request", new WebAuthenticationDetailsSource().buildDetails(request));

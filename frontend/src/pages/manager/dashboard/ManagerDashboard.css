@@ -315,6 +315,150 @@
   }
 }
 
+/* ==========================================================================
+   Four Stats (Thêm mới cho hiển thị 4 ô)
+   ========================================================================== */
+.manager-dashboard-four-overview {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    margin-bottom: 16px;
+}
+
+.manager-dashboard-four-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #f5f5f5;
+    gap: 12px;
+}
+
+.manager-dashboard-four-title {
+    color: #1C3D90 !important;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.manager-dashboard-four-icon {
+    color: #1C3D90 !important;
+    font-size: 22px;
+    margin-right: 12px;
+}
+
+.manager-dashboard-four-view-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #1C3D90;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.manager-dashboard-four-view-detail:hover {
+    color: #0d2a6e;
+    background: #f8f9ff;
+    text-decoration: underline;
+}
+
+.manager-dashboard-four-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Hiển thị 4 cột thẳng hàng */
+    gap: 12px;
+}
+
+.manager-dashboard-four-item {
+    background: #fafafa;
+    border-radius: 6px;
+    padding: 20px 16px;
+    text-align: center;
+    border: 1px solid #f0f0f0;
+    transition: all 0.2s ease;
+}
+
+.manager-dashboard-four-item:hover {
+    background: #f8f9ff;
+    border-color: #e8edff;
+    transform: translateY(-2px);
+}
+
+.manager-dashboard-four-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1C3D90;
+    margin-bottom: 4px;
+    line-height: 1;
+}
+
+.manager-dashboard-four-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 470;
+    line-height: 1.2;
+}
+
+/* Biến ô đầu tiên thành dạng làm nổi bật (màu xanh gradient) */
+.manager-dashboard-four-item:first-child {
+    background: linear-gradient(135deg, #1C3D90 0%, #2E5BBA 100%);
+    border: none;
+}
+
+.manager-dashboard-four-item:first-child .manager-dashboard-four-value {
+    color: white;
+}
+
+.manager-dashboard-four-item:first-child .manager-dashboard-four-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Cấu hình Responsive cho giao diện 4 ô */
+@media (max-width: 1200px) {
+    .manager-dashboard-four-grid {
+        grid-template-columns: repeat(2, 1fr); /* Màn hình vừa chia thành cụm 2x2 */
+    }
+}
+
+@media (max-width: 768px) {
+    .manager-dashboard-four-overview {
+        padding: 16px;
+    }
+
+    .manager-dashboard-four-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .manager-dashboard-four-item {
+        padding: 14px 10px;
+    }
+
+    .manager-dashboard-four-value {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .manager-dashboard-four-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .manager-dashboard-four-value {
+        font-size: 16px;
+    }
+
+    .manager-dashboard-four-label {
+        font-size: 11px;
+    }
+}
+
 @media (max-width: 480px) {
   .manager-dashboard-five-grid {
     grid-template-columns: repeat(3, 1fr);

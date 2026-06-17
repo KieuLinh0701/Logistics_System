@@ -6,8 +6,10 @@ import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.shipment.ManagerOrdersShipmentSearchRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentAddEditRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentSearchRequest;
+import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
+import com.logistics.response.manager.GetOrdersByShipmentIdManagerResponse;
 import com.logistics.service.manager.ShipmentManagerService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,18 +41,18 @@ public class ShipmentManagerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ListResponse<ManagerShipmentDetailDto>>> getOrdersByShipmentId(
+    public ResponseEntity<ApiResponse<GetOrdersByShipmentIdManagerResponse>> getOrdersByShipmentId(
             @PathVariable Integer id,
             @Valid ManagerOrdersShipmentSearchRequest searchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerShipmentDetailDto>> result = service.getOrdersByShipmentId(userId, id,
+        ApiResponse<GetOrdersByShipmentIdManagerResponse> result = service.getOrdersByShipmentId(userId, id,
                 searchRequest);
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/{id}/export")
+    @GetMapping("/employee-performance/{id}/export")
     public ResponseEntity<byte[]> exportShipmentPerformance(HttpServletRequest request,
             @PathVariable Integer id,
             SearchRequest searchRequest) throws Exception {
@@ -107,5 +109,49 @@ public class ShipmentManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.update(userId, id, editRequest));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            ManagerShipmentSearchRequest managerShipmentSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, managerShipmentSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách chuyến hàng của bưu cục.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
+
+    @GetMapping("/{id}/export")
+    public ResponseEntity<byte[]> exportOrdersByShipmentId(HttpServletRequest request,
+                                                            @PathVariable Integer id,
+                                                            ManagerOrdersShipmentSearchRequest managerOrdersShipmentSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.exportOrdersByShipmentId(userId, id, managerOrdersShipmentSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách đơn hàng của chuyến hàng.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

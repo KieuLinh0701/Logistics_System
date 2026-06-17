@@ -1,5 +1,9 @@
-import type { ApiResponse } from "../types/response";
-import type { CalculateShippingFeeRequest, CalculateTotalFeeUserRequest, CalculateWeightRequest } from "../types/shippingFee";
+import type {ApiResponse} from "../types/response";
+import type {
+    CalculateShippingFeeRequest,
+    CalculateTotalFeeUserRequest,
+    CalculateWeightRequest
+} from "../types/shippingFee";
 import axiosClient from "./axiosClient";
 
 const shippingFeeApi = {

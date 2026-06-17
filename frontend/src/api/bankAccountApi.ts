@@ -1,7 +1,7 @@
 import axios from "axios";
-import type { BankAccount, BankAccountRequest, BankApiResponse } from "../types/bankAccount";
+import type {BankAccount, BankAccountRequest, BankApiResponse} from "../types/bankAccount";
 import axiosClient from "./axiosClient";
-import type { ApiResponse } from "../types/response";
+import type {ApiResponse} from "../types/response";
 
 const bankAccountApi = {
   // Net

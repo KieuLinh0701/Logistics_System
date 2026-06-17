@@ -1,9 +1,10 @@
 import React from "react";
 import dayjs from 'dayjs';
-import { Table, Tooltip } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { Order } from "../../../../types/order";
-import { translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus } from "../../../../utils/orderUtils";
+import {message, Table, Tooltip} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import type {Order} from "../../../../types/order";
+import {translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus} from "../../../../utils/orderUtils";
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface Props {
   datas: Order[];
@@ -26,6 +27,14 @@ const DataTable: React.FC<Props> = ({
 }) => {
   const tableData = datas.map((o) => ({ ...o, key: String(o.id) }));
 
+    const handleViewOrderDetail = (trackingNumber: string) => {
+        if (hasPermissionGroup(['GROUP_USER', 'USER_ORDER_DETAIL'])) {
+            onDetail(trackingNumber);
+        } else {
+            message.error("Bạn không có quyền xem chi tiết đơn hàng này.");
+        }
+    };
+
   const columns: ColumnsType<Order> = [
     {
       title: "Mã đơn hàng",
@@ -36,7 +45,7 @@ const DataTable: React.FC<Props> = ({
           <Tooltip title="Nhấn để xem chi tiết đơn hàng">
             <span
               className="navigate-link"
-              onClick={() => onDetail(record.trackingNumber)}
+              onClick={() => handleViewOrderDetail(record.trackingNumber)}
             >
               {record.trackingNumber}
             </span>

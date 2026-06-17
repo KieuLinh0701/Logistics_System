@@ -56,6 +56,15 @@ public class ShippingRequest {
     @JoinColumn(name = "handler_id", nullable = true)
     private User handler;
 
+    @Column(columnDefinition = "NVARCHAR(100)")
+    private String handlerName;
+
+    @Column(length = 100)
+    private String handlerEmail;
+
+    @Column(length = 20)
+    private String handlerPhoneNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private ShippingRequestType requestType;
@@ -80,9 +89,23 @@ public class ShippingRequest {
     @Column(length = 20)
     private String contactPhoneNumber;
 
-    @ManyToOne
-    @JoinColumn(name = "address_id")
-    private Address address;
+    @Column(nullable = true)
+    private Integer contactWardCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
+    private String contactWardName;
+
+    @Column(nullable = true)
+    private Integer contactCityCode;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
+    private String contactCityName;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
+    private String contactDetail;
+
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = true)
+    private String contactFullAddress;
 
     private LocalDateTime responseAt;
 

@@ -1,6 +1,6 @@
-import { Button, Input } from "antd";
-import { SendOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import {Button, Input} from "antd";
+import {SendOutlined} from "@ant-design/icons";
+import {useState} from "react";
 
 const { TextArea } = Input;
 

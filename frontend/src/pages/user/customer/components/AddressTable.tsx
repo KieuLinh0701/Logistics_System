@@ -1,9 +1,10 @@
 import React from "react";
-import { Table, Button, Dropdown } from "antd";
-import { EditOutlined, DeleteOutlined, DownOutlined } from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
-import type { Address } from "../../../../types/address.ts";
-import type { RecipientAddressWithStats } from "../../../../types/recipientAddress.ts";
+import {Button, Dropdown, Table} from "antd";
+import {DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
+import type {ColumnsType} from "antd/es/table";
+import type {Address} from "../../../../types/address.ts";
+import type {RecipientAddressWithStats} from "../../../../types/recipientAddress.ts";
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface AddressTableProps {
     data: RecipientAddressWithStats[];
@@ -77,23 +78,35 @@ const AddressTable: React.FC<AddressTableProps> = ({
             render: (_, record) => {
                 const addr = record.address;
 
-                const items = [
-                    {
+                const canEdit = hasPermissionGroup(['GROUP_USER', 'USER_CUSTOMER_EDIT']);
+                const canDelete = hasPermissionGroup(['GROUP_USER', 'USER_CUSTOMER_DELETE']);
+
+                const items = [];
+
+                if (canEdit) {
+                    items.push({
                         key: "edit",
                         icon: <EditOutlined />,
                         label: "Sửa",
                         onClick: () => onEdit(addr),
-                    },
-                    {
+                    });
+                }
+
+                if (canDelete) {
+                    items.push({
                         key: "delete",
                         icon: <DeleteOutlined />,
                         label: "Xóa",
                         onClick: () => onDelete(addr.id!),
-                    },
-                ];
+                    });
+                }
 
                 return (
-                    <Dropdown menu={{ items }} trigger={["click"]}>
+                    <Dropdown
+                        menu={{ items }}
+                        trigger={["click"]}
+                        disabled={items.length === 0}
+                    >
                         <Button className="dropdown-trigger-button">
                             Hành động <DownOutlined />
                         </Button>

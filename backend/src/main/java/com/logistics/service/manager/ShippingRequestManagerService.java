@@ -24,25 +24,36 @@ import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShippingRequestSpecification;
 import com.logistics.utils.ShippingRequestUtils;
-
-import lombok.RequiredArgsConstructor;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.*;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -140,6 +151,125 @@ public class ShippingRequestManagerService {
         }
     }
 
+    public byte[] export(int userId, ManagerShippingRequestSearchRequest request) {
+        String search = request.getSearch();
+        String status = request.getStatus();
+        String type = request.getType();
+        String sort = request.getSort();
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        Specification<ShippingRequest> spec = ShippingRequestSpecification.unrestrictedShippingRequest()
+                .and(ShippingRequestSpecification.officeId(userOffice.getId()))
+                .and(ShippingRequestSpecification.managerSearch(search))
+                .and(ShippingRequestSpecification.status(status))
+                .and(ShippingRequestSpecification.requestType(type))
+                .and(ShippingRequestSpecification.createdAtBetween(startDate, endDate))
+                .and(ShippingRequestSpecification.responseAtBetween(startDate, endDate));
+
+        Sort sortOpt = sort != null ? switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("paidAt").descending();
+            case "oldest" -> Sort.by("paidAt").ascending();
+            default -> Sort.by("createdAt").descending();
+        } : Sort.by("createdAt").descending();
+
+        List<ShippingRequest> requests = repository.findAll(spec, sortOpt);
+
+        // Build addressMap giống list
+        List<Integer> userIds = requests.stream()
+                .map(item -> item.getUser() != null ? item.getUser().getId() : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<Integer, Address> addressMap = addressRepository
+                .findByUserIdInAndIsDefaultTrue(userIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        a -> a.getUser().getId(),
+                        a -> a));
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ShippingRequests");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã yêu cầu",
+                    "Loại yêu cầu",
+                    "Trạng thái",
+                    "Tên người gửi", "Mã người dùng", "Email", "SĐT", "Địa chỉ",
+                    "ĐH liên quan",
+                    "Nội dung yêu cầu",
+                    "Nội dung phản hồi",
+                    "Thời gian gửi",
+                    "Thời gian phản hồi"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (ShippingRequest sr : requests) {
+                Row row = sheet.createRow(rowIdx++);
+
+                Integer uid = sr.getUser() != null ? sr.getUser().getId() : null;
+                Address address = (uid != null) ? addressMap.getOrDefault(uid, null) : null;
+
+                row.createCell(0).setCellValue(sr.getCode() != null ? sr.getCode() : "");
+                row.createCell(1).setCellValue(translateShippingRequestType(sr.getRequestType()));
+                row.createCell(2).setCellValue(translateShippingRequestStatus(sr.getStatus()));
+
+                // Người gửi
+                row.createCell(3).setCellValue(sr.getContactName() != null ? sr.getContactName() : "N/A");
+                row.createCell(4).setCellValue(sr.getUser() != null && sr.getUser().getCode() != null ? sr.getUser().getCode() : "Khách vãng lai");
+                row.createCell(5).setCellValue(sr.getContactEmail() != null ? sr.getContactEmail() : "N/A");
+                row.createCell(6).setCellValue(sr.getContactPhoneNumber() != null ? sr.getContactPhoneNumber() : "N/A");
+                row.createCell(7).setCellValue(sr.getContactFullAddress() != null ? sr.getContactFullAddress()
+                        : (address != null && address.getFullAddress() != null ? address.getFullAddress() : "N/A"));
+
+                // Nội dung
+                row.createCell(8).setCellValue(sr.getOrder() != null && sr.getOrder().getTrackingNumber() != null ? sr.getOrder().getTrackingNumber() : "");
+                row.createCell(9).setCellValue(sr.getRequestContent() != null ? sr.getRequestContent() : "");
+                row.createCell(10).setCellValue(sr.getResponse() != null ? sr.getResponse() : "Chưa phản hồi");
+
+                // Thời gian
+                row.createCell(11).setCellValue(sr.getPaidAt() != null ? sr.getPaidAt().format(dtf) : "");
+                row.createCell(12).setCellValue(sr.getResponseAt() != null ? sr.getResponseAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
     private boolean checkPermission(int userId, ShippingRequest request) {
         if (request == null) {
             return false;
@@ -167,17 +297,6 @@ public class ShippingRequestManagerService {
                 return new ApiResponse<>(false, "Không có quyền xem yêu cầu này", null);
             }
 
-            Address address = null;
-
-            if (request.getUser() != null) {
-                Integer uid = request.getUser().getId();
-                address = addressRepository
-                        .findByUserIdAndIsDefaultTrue(uid)
-                        .orElse(null);
-            } else {
-                address = request.getAddress();
-            }
-
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.REQUEST);
 
@@ -186,7 +305,6 @@ public class ShippingRequestManagerService {
 
             ManagerShippingRequestDetailDto data = ShippingRequestMapper.toManagerShippingRequestDetailDto(
                     request,
-                    address,
                     requestAttachments,
                     responseAttachments);
 
@@ -236,7 +354,14 @@ public class ShippingRequestManagerService {
         shippingRequest.setStatus(newStatus);
         shippingRequest.setResponse(request.getResponse());
         shippingRequest.setResponseAt(LocalDateTime.now());
+
         shippingRequest.setHandler(user);
+        shippingRequest.setHandlerName(user != null ? user.getFullName() : null);
+        shippingRequest.setHandlerEmail((user != null && user.getAccount() != null)
+                ? user.getAccount().getEmail()
+                : null);
+        shippingRequest.setHandlerPhoneNumber(user != null ? user.getPhoneNumber() : null);
+
         shippingRequest = repository.save(shippingRequest);
 
         saveAttachments(shippingRequest, request.getAttachments(), oldAttachmentIds);

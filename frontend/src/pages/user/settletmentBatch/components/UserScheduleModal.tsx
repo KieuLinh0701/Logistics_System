@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Button, Space } from "antd";
-import { translateUserSettlementScheduleWeekday, USER_SETTLEMENT_SCHEDULE_WEEKDAY } from "../../../../utils/userSettlementScheduleUtils";
+import React, {useEffect, useState} from "react";
+import {Button, Modal, Space} from "antd";
+import {
+    translateUserSettlementScheduleWeekday,
+    USER_SETTLEMENT_SCHEDULE_WEEKDAY
+} from "../../../../utils/userSettlementScheduleUtils";
 
 interface Props {
     visible: boolean;

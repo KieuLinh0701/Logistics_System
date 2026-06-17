@@ -1,5 +1,5 @@
-import type { BulkResponse } from "../types/response";
-import type { ManagerOrderShipment } from "../types/shipment";
+import type {BulkResponse} from "../types/response";
+import type {ManagerOrderShipment} from "../types/shipment";
 import axiosClient from "./axiosClient";
 
 const shipmentOrderApi = {

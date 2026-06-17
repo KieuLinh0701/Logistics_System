@@ -1745,3 +1745,64 @@
 .dropdown-item:last-child {
     border-bottom: none;
 }
+
+.status-bar-wrap {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-top: 20px;
+    margin-bottom: 4px;
+}
+
+.status-bar-wrap::-webkit-scrollbar {
+    display: none;
+}
+
+.status-bar-item {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #e8edff;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+    font-weight: 400;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.status-bar-item:hover {
+    border-color: #1C3D90;
+    color: #1C3D90;
+}
+
+.status-bar-item.active {
+    background: #1C3D90;
+    border-color: #1C3D90;
+    color: #fff;
+    font-weight: 500;
+}
+
+.status-bar-badge {
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 20px;
+    background: #f0f0f0;
+    color: #888;
+    transition: all 0.2s ease;
+}
+
+.status-bar-item:hover .status-bar-badge {
+    background: #e8edff;
+    color: #1C3D90;
+}
+
+.status-bar-item.active .status-bar-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}

@@ -1,69 +1,76 @@
 package com.logistics.utils;
 
+import com.logistics.entity.PermissionGroup;
+import com.logistics.entity.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.logistics.entity.Account;
 import com.logistics.entity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
 public class JwtUtils {
 
-        private final Key key;
-        private final long jwtExpirationMs;
+    private final Key key;
+    private final long jwtExpirationMs;
 
-        public JwtUtils(
-                        @Value("${jwt.secret}") String secret,
-                        @Value("${jwt.expiration}") long jwtExpirationMs) {
-                this.key = Keys.hmacShaKeyFor(secret.getBytes());
-                this.jwtExpirationMs = jwtExpirationMs;
-        }
+    public JwtUtils(@Value("${jwt.secret}") String secret, @Value("${jwt.expiration}") long jwtExpirationMs) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        this.jwtExpirationMs = jwtExpirationMs;
+    }
 
-        public String generateToken(Account account, User user, String roleName) {
-                Date now = new Date();
-                Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+    public String generateToken(Account account, User user, Role role, List<String> permissionGroupCodes) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
-                Map<String, Object> userMap = new HashMap<>();
-                userMap.put("id", user.getId());
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
 
-                Map<String, Object> accountMap = new HashMap<>();
-                accountMap.put("id", account.getId());
-                accountMap.put("email", account.getEmail());
-                accountMap.put("role", roleName);
+        Map<String, Object> accountMap = new HashMap<>();
+        accountMap.put("id", account.getId());
+        accountMap.put("email", account.getEmail());
+        accountMap.put("roleName", role.getName());
+        accountMap.put("roleId", role.getId());
+        accountMap.put("permissionGroups", permissionGroupCodes);
 
-                return Jwts.builder()
-                                .setSubject(account.getEmail())
-                                .claim("user", userMap)
-                                .claim("account", accountMap)
-                                .setIssuedAt(now)
-                                .setExpiration(expiryDate)
-                                .signWith(key)
-                                .compact();
-        }
+        return Jwts.builder()
+                .setSubject(account.getEmail())
+                .claim("user", userMap)
+                .claim("account", accountMap)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key)
+                .compact();
+    }
 
-        public String generateTempToken(Account account) {
-                Date now = new Date();
-                Date expiryDate = new Date(now.getTime() + 5 * 60 * 1000);
+    public String generateTempToken(Account account) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + 5 * 60 * 1000);
 
-                Map<String, Object> userMap = new HashMap<>();
-                userMap.put("accountId", account.getId());
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("accountId", account.getId());
 
-                return Jwts.builder()
-                                .setClaims(userMap)
-                                .setIssuedAt(now)
-                                .setExpiration(expiryDate)
-                                .signWith(key)
-                                .compact();
-        }
+        return Jwts.builder()
+                .setClaims(userMap)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key)
+                .compact();
+    }
 
-        public Integer getAccountIdFromTempToken(String token) {
-                return (Integer) Jwts.parserBuilder().setSigningKey(key).build()
-                                .parseClaimsJws(token)
-                                .getBody().get("accountId");
-        }
+    public Integer getAccountIdFromTempToken(String token) {
+        return (Integer) Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("accountId");
+    }
 }

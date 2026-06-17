@@ -1,7 +1,11 @@
 import React from "react";
 import Title from "antd/es/typography/Title";
-import type { Order } from "../../../../../types/order";
-import { translateOrderCodStatus, translateOrderPayerType, translateOrderPaymentStatus } from "../../../../../utils/orderUtils";
+import type {Order} from "../../../../../types/order";
+import {
+    translateOrderCodStatus,
+    translateOrderPayerType,
+    translateOrderPaymentStatus
+} from "../../../../../utils/orderUtils";
 
 interface PaymentInfoProps {
   order: Order;

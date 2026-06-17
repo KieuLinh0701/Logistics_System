@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Col, Form, message, Row, Tag } from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Col, Form, message, Row, Tag} from 'antd';
 import Actions from './components/Actions';
 import BankAccountTable from './components/Table';
 import AddEditModal from './components/AddEditModal';
 import BankNoticeCard from './components/BankNoticeCard';
 import bankAccountApi from '../../../api/bankAccountApi';
-import type { BankAccount, BankAccountRequest } from '../../../types/bankAccount';
+import type {BankAccount, BankAccountRequest} from '../../../types/bankAccount';
 import Title from 'antd/es/typography/Title';
-import { BankOutlined } from '@ant-design/icons';
+import {BankOutlined} from '@ant-design/icons';
 import "../../../styles/ListPage.css";
 
 const UserBankAccounts: React.FC = () => {

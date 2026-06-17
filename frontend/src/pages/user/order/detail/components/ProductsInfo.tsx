@@ -1,6 +1,6 @@
 import React from "react";
 import Title from "antd/es/typography/Title";
-import type { OrderProduct } from "../../../../../types/orderProduct";
+import type {OrderProduct} from "../../../../../types/orderProduct";
 
 interface Props {
   products: OrderProduct[];

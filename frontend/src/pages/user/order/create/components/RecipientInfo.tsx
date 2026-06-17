@@ -1,11 +1,16 @@
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
-import { Card, Col, Checkbox, Form, Input, Row, Button } from "antd";
-import { UnorderedListOutlined } from "@ant-design/icons";
-import type { FormInstance } from "antd/lib";
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from "react";
+import {Button, Card, Checkbox, Col, Form, Input, Row} from "antd";
+import {UnorderedListOutlined} from "@ant-design/icons";
+import type {FormInstance} from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
 import RecipientAddressPickerModal from "../../../../common/order/RecipientAddressPickerModal.tsx";
 import recipientAddressApi from "../../../../../api/recipientAddressApi.ts";
-import type { RecipientAddressType, RecipientAddressWithStats } from "../../../../../types/recipientAddress.ts";
+import type {
+    RecipientAddressSuggestionRequest,
+    RecipientAddressType,
+    RecipientAddressWithStats
+} from "../../../../../types/recipientAddress.ts";
+import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 interface Props {
     form: FormInstance;
@@ -21,6 +26,7 @@ interface Props {
         longitude: number;
         fullAddress: string;
     };
+    resetTrigger?: number;
     disabled: boolean;
     onChange?: (values: any) => void;
     onSaveRecipientChange?: (save: boolean) => void;
@@ -50,7 +56,7 @@ function snapshotFields(values: {
 }
 
 const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
-                                                               form, recipient, disabled, onChange, onSaveRecipientChange, onSavedAddressSelect,
+                                                               form, recipient, disabled, onChange, onSaveRecipientChange, onSavedAddressSelect, resetTrigger,
                                                            }, ref) => {
     const watchedName        = Form.useWatch("name", form);
     const watchedPhone       = Form.useWatch("phoneNumber", form);
@@ -139,7 +145,10 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
 
     const fetchSuggestion = useCallback(async (phone: string) => {
         try {
-            const result = await recipientAddressApi.getUserSuggestion({ phone: Number(phone) });
+            const params: RecipientAddressSuggestionRequest = {
+                phone
+            }
+            const result = await recipientAddressApi.getUserSuggestion(params);
             if (result.success && result.data) {
                 setSuggestionList(result.data.addresses ?? []);
                 setSuggestionType(result.data.type);
@@ -387,6 +396,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                             </Col>
                         </Row>
 
+                        {hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_CREATE']) && (
                         <Row style={{ marginTop: 8 }}>
                             <Col span={24}>
                                 <Checkbox
@@ -403,6 +413,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
                                 </Checkbox>
                             </Col>
                         </Row>
+                        )}
                     </div>
                 </Card>
             </Form>

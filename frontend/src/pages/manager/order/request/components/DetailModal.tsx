@@ -3,8 +3,6 @@ import { Modal, Descriptions, Button, Typography, Space, Tooltip, Upload } from 
 import { EditOutlined } from '@ant-design/icons';
 import type { ShippingRequest } from '../../../../../types/shippingRequest';
 import { translateShippingRequestStatus, translateShippingRequestType } from '../../../../../utils/shippingRequestUtils';
-import { useEffect, useState } from 'react';
-import { formatAddress } from '../../../../../utils/locationUtils';
 
 const { Text } = Typography;
 
@@ -25,29 +23,6 @@ const DetailModal: React.FC<DetailModalProps> = ({
     onEdit,
     onViewOrderDetail
 }) => {
-    const [address, setAddress] = useState<string>('');
-
-    useEffect(() => {
-        if (!request) {
-            setAddress('');
-            return;
-        }
-
-        const loadAddress = async () => {
-            try {
-                const full = await formatAddress(
-                    request.contactDetail || '',
-                    request.contactWardCode,
-                    request.contactCityCode
-                );
-                setAddress(full);
-            } catch {
-                setAddress(request.contactDetail || '');
-            }
-        };
-
-        loadAddress();
-    }, [request]);
 
     if (!request) return null;
 
@@ -188,7 +163,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                         </div>
 
                         <div>
-                            {address || 'N/A'}
+                            {(request.contactFullAddress || 'N/A')}
                         </div>
                     </div>
                 </Descriptions.Item>
@@ -230,7 +205,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                             {request.handlerName}
                         </span><br />
                         <span>
-                            {request.handlerPhone}
+                            {request.handlerPhoneNumber}
                         </span><br />
                         <span>
                             {request.handlerEmail}

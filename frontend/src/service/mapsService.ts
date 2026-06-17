@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE;
+const BASE = `${import.meta.env.VITE_API_BASE}/public`;
 
 export interface Prediction {
     place_id: string;

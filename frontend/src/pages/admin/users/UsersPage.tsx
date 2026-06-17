@@ -19,6 +19,12 @@ const UsersPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [roles, setRoles] = useState<Array<{ id: number; name: string }>>([]);
 
+  const toRoles = (items: any[] = []) =>
+    items.filter(r => r.id != null).map(r => ({
+      id: Number(r.id),
+      name: r.name
+  }));
+  
   const [data, setData] = useState<AU[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [total, setTotal] = useState<number>(0);
@@ -42,7 +48,7 @@ const UsersPage: React.FC = () => {
       if (!roles || roles.length === 0) {
         const res = await roleApi.getAdminRoles();
         if (res && res.success && res.data) {
-          setRoles(res.data || []);
+          setRoles(toRoles(res.data));
         }
       }
     } catch (e) {
@@ -120,7 +126,7 @@ const UsersPage: React.FC = () => {
       try {
         const res = await roleApi.getAdminRoles();
         if (mounted && res && res.success && res.data) {
-          setRoles(res.data || []);
+          setRoles(toRoles(res.data));
         }
       } catch (e) {
         // ignore

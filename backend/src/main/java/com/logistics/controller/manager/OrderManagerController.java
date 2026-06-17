@@ -3,8 +3,11 @@ package com.logistics.controller.manager;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
+import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
+import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
+import com.logistics.request.user.product.UserProductSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.OrderManagerService;
@@ -12,10 +15,14 @@ import com.logistics.service.manager.OrderManagerService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +42,13 @@ public class OrderManagerController {
         return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
     }
 
+    @GetMapping("/status-counts")
+    public ResponseEntity<ApiResponse<List<ManagerOrderStatusCountResponse>>> getStatusCounts(
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.getStatusCounts(userId));
+    }
+
     @GetMapping("/all-ids")
     public ResponseEntity<ApiResponse<List<Integer>>> getAllOrderIds(
             @Valid UserOrderSearchRequest userOrderSearchRequest,
@@ -44,7 +58,7 @@ public class OrderManagerController {
         return ResponseEntity.ok(service.getAllOrderIds(userId, userOrderSearchRequest));
     }
 
-    @GetMapping("/{trackingNumber}")
+    @GetMapping("/tracking/{trackingNumber}")
     public ResponseEntity<ApiResponse<ManagerOrderDetailDto>> getOrderByTrackingNumber(
             @PathVariable String trackingNumber,
             HttpServletRequest request) {
@@ -113,5 +127,27 @@ public class OrderManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.confirmOrder(userId, id));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            UserOrderSearchRequest userOrderSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, userOrderSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo đơn hàng bưu cục.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

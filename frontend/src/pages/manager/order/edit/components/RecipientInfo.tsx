@@ -1,9 +1,9 @@
-import React, { useEffect } from "react";
-import { Card, Col, Form, Input, Row } from "antd";
-import type { FormInstance } from "antd/lib";
+import React, {useEffect, useRef} from "react";
+import {Card, Col, Form, Input, Row} from "antd";
+import type {FormInstance} from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
-import { type OrderCreatorType, type OrderStatus } from "../../../../../utils/orderUtils";
-import { canManagerEditOrderField } from "../../../../../utils/managerOrderEditRules";
+import {type OrderCreatorType, type OrderStatus} from "../../../../../utils/orderUtils";
+import {canManagerEditOrderField} from "../../../../../utils/managerOrderEditRules";
 
 interface Props {
     form: FormInstance;
@@ -12,33 +12,40 @@ interface Props {
         phoneNumber: string;
         detail: string;
         wardCode: number;
+        wardName: string;
         cityCode: number;
+        cityName: string;
+        latitude: number;
+        longitude: number;
     };
     status: OrderStatus;
     creator: OrderCreatorType;
     onChange?: (values: any) => void;
 }
 
-const RecipientInfo: React.FC<Props> = ({
-    form,
-    recipient,
-    onChange,
-    status,
-    creator,
-}) => {
+const RecipientInfo: React.FC<Props> = ({form, recipient, onChange, status, creator}) => {
+    const prevRef = useRef<string>("");
 
     useEffect(() => {
-        if (recipient) {
-            form.setFieldsValue({
-                name: recipient.name,
-                phoneNumber: recipient.phoneNumber,
-                recipient: {
-                    cityCode: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
-                    wardCode: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
-                    detail: recipient.detail,
-                }
-            });
-        }
+        if (!recipient) return;
+
+        const key = JSON.stringify(recipient);
+        if (prevRef.current === key) return;
+        prevRef.current = key;
+
+        form.setFieldsValue({
+            name: recipient.name,
+            phoneNumber: recipient.phoneNumber,
+            recipient: {
+                cityCode: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
+                wardCode: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
+                detail: recipient.detail,
+                cityName: recipient.cityName,
+                wardName: recipient.wardName,
+                latitude: recipient.latitude,
+                longitude: recipient.longitude,
+            },
+        });
     }, [recipient, form]);
 
     return (
@@ -46,41 +53,59 @@ const RecipientInfo: React.FC<Props> = ({
             <Form
                 form={form}
                 layout="vertical"
-                onValuesChange={(_, allValues) => {
-                    onChange?.(allValues);
+                initialValues={{
+                    name: recipient.name,
+                    phoneNumber: recipient.phoneNumber,
+                    recipient: {
+                        cityCode: recipient.cityCode !== 0 ? recipient.cityCode : undefined,
+                        cityName: recipient.cityName,
+                        wardCode: recipient.wardCode !== 0 ? recipient.wardCode : undefined,
+                        wardName: recipient.wardName,
+                        latitude: recipient.latitude,
+                        longitude: recipient.longitude,
+                        detail: recipient.detail,
+                    },
+                }}
+                onFieldsChange={() => {
+                    setTimeout(() => {
+                        console.log(form.getFieldsValue(true));
+                        onChange?.(form.getFieldsValue(true));
+                    }, 0);
                 }}
             >
                 <Card className="create-order-custom-card">
                     <div className="create-order-custom-card-title">Thông tin người nhận</div>
                     <div className="create-order-content">
-                        <Row gutter={16} >
+                        <Row gutter={16}>
                             <Col span={12}>
                                 <Form.Item
                                     name="name"
                                     label={<span className="modal-lable">Tên người nhận</span>}
-                                    rules={[{ required: true, message: "Vui lòng nhập tên" }]}
+                                    rules={[{required: true, message: "Vui lòng nhập tên"}]}
                                 >
                                     <Input
                                         className="modal-custom-input"
                                         placeholder="Nhập tên người nhận"
-                                        disabled={!canManagerEditOrderField('recipientName', status, creator)} />
+                                        disabled={!canManagerEditOrderField('recipientName', status, creator)}
+                                    />
                                 </Form.Item>
 
                                 <Form.Item
                                     name="phoneNumber"
                                     label={<span className="modal-lable">Số điện thoại</span>}
                                     rules={[
-                                        { required: true, message: "Vui lòng nhập số điện thoại" },
+                                        {required: true, message: "Vui lòng nhập số điện thoại"},
                                         {
                                             pattern: /^\d{10,11}$/,
-                                            message: "Số điện thoại phải gồm 10 hoặc 11 chữ số",
+                                            message: "Số điện thoại phải gồm 10 hoặc 11 chữ số"
                                         },
                                     ]}
                                 >
                                     <Input
                                         className="modal-custom-input"
                                         placeholder="Ví dụ: 0901234567"
-                                        disabled={!canManagerEditOrderField('recipientPhoneNumber', status, creator)} />
+                                        disabled={!canManagerEditOrderField('recipientPhoneNumber', status, creator)}
+                                    />
                                 </Form.Item>
                             </Col>
 

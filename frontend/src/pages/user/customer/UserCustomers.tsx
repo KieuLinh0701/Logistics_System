@@ -1,18 +1,17 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {message, Col, Row, Tag} from 'antd';
-import {TeamOutlined} from '@ant-design/icons';
-import { Form } from 'antd';
+import React, {useEffect, useRef, useState} from 'react';
+import {Col, Form, message, Row, Tag} from 'antd';
+import {ContactsOutlined} from '@ant-design/icons';
 import AddressTable from './components/AddressTable';
 import AddressModal from './components/AddressModal';
 import recipientAddressApi from "../../../api/recipientAddressApi.ts";
-import type {RecipientAddressWithStats, RecipientAddressRequest} from "../../../types/recipientAddress.ts";
+import type {RecipientAddressRequest, RecipientAddressWithStats} from "../../../types/recipientAddress.ts";
 import dayjs from "dayjs";
 import {useSearchParams} from "react-router-dom";
-import type {UserOrderSearchRequest} from "../../../types/order.ts";
 import Title from "antd/es/typography/Title";
 import Actions from "./components/Actions.tsx";
 import SearchFilters from "./components/SearchFilters.tsx";
 import type {Address} from "../../../types/address.ts";
+import type {SearchRequest} from "../../../types/request.ts";
 
 const UserCustomers: React.FC = () => {
     const [form] = Form.useForm();
@@ -72,7 +71,7 @@ const UserCustomers: React.FC = () => {
             const requestId = ++latestRequestRef.current;
             setLoading(true);
 
-            const param: UserOrderSearchRequest = {
+            const param: SearchRequest = {
                 page: currentPage,
                 limit: limit,
                 search: search,
@@ -97,6 +96,33 @@ const UserCustomers: React.FC = () => {
             console.error("Error fetching Addresses:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const param: SearchRequest = {
+                page: page,
+                limit: limit,
+                search: search,
+                sort: filterSort,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await recipientAddressApi.exportUserAddresses(param);
+
+
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+                message.error("Xuất file Excel thất bại");
+            }
+
+        } catch (error: any) {
+            message.error("Xuất file Excel thất bại");
+            console.error("Export thất bại:", error);
         }
     };
 
@@ -267,7 +293,7 @@ const UserCustomers: React.FC = () => {
                 <Row className="list-page-header" justify="space-between" align="middle">
                     <Col>
                         <Title level={3} className="list-page-title-main">
-                            <TeamOutlined className="title-icon" />
+                            <ContactsOutlined className="title-icon" />
                             Danh sách khách hàng
                         </Title>
                     </Col>
@@ -275,6 +301,7 @@ const UserCustomers: React.FC = () => {
                         <div className="list-page-actions">
                             <Actions
                                 onAdd={handleShowModal}
+                                onExport={handleExport}
                             />
                         </div>
                     </Col>

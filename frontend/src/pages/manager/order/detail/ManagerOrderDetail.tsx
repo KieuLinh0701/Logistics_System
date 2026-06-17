@@ -13,7 +13,19 @@ import type { Order, OrderFulfillmentSummary } from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
-import { canAtOriginOfficeManagerOrder, translateOrderStatus, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, translatePickupAttemptStatus, translatePickupFailReason, type OrderCreatorType, type OrderPickupType, type OrderStatus } from "../../../../utils/orderUtils";
+import {
+    canAtOriginOfficeManagerOrder,
+    canCancelManagerOrder,
+    canConfirmManagerOrder,
+    canEditManagerOrder,
+    canPrintManagerOrder,
+    translateOrderStatus,
+    translatePickupAttemptStatus,
+    translatePickupFailReason,
+    type OrderCreatorType,
+    type OrderPickupType,
+    type OrderStatus
+} from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 
@@ -197,16 +209,12 @@ const UserOrderDetail: React.FC = () => {
                 sender={{
                     name: order.senderName,
                     phone: order.senderPhone,
-                    detail: order.senderDetail,
-                    wardCode: order.senderWardCode,
-                    cityCode: order.senderCityCode,
+                    fullAddress: order.senderFullAddress,
                 }}
                 recipient={{
-                    name: order.recipientAddress.name,
-                    phone: order.recipientAddress.phoneNumber,
-                    detail: order.recipientAddress.detail,
-                    wardCode: order.recipientAddress.wardCode,
-                    cityCode: order.recipientAddress.cityCode,
+                    name: order.recipientName,
+                    phone: order.recipientPhone,
+                    fullAddress: order.recipientFullAddress,
                 }}
             />
             <OrderInfo order={order} />

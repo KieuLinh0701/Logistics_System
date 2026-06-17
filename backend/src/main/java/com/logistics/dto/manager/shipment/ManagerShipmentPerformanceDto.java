@@ -15,22 +15,9 @@ import lombok.Setter;
 public class ManagerShipmentPerformanceDto {
     private Integer id;
     private String code;
-    private VehicleShipment vehicle;
     private String status;
-    private String type;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private long orderCount;
     private long totalWeight;
-
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class VehicleShipment {
-        private Integer id;
-        private String licensePlate;
-        private BigDecimal capacity;
-    }
 }

@@ -1,484 +1,408 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, Col, Row, Space, Tag, message } from "antd";
+import {useEffect, useRef, useState} from "react";
+import {Button, Col, message, Row, Space, Tag} from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import SubmissionTable from "./components/Table";
 import Actions from "./components/Actions";
 import Title from "antd/es/typography/Title";
-import { CheckCircleOutlined, ScheduleOutlined } from "@ant-design/icons";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import type { SearchRequest } from "../../../types/request";
+import {CheckCircleOutlined, ScheduleOutlined} from "@ant-design/icons";
+import {useNavigate, useSearchParams} from "react-router-dom";
+import type {SearchRequest} from "../../../types/request";
 import "./UserSettlementBatchs.css";
-import type { SettlementBatch } from "../../../types/settlementBatch";
+import type {SettlementBatch} from "../../../types/settlementBatch";
 import settlementBatchApi from "../../../api/settlementBatchApi";
 import UserScheduleModal from "./components/UserScheduleModal";
 import userSettlementScheduleApi from "../../../api/userSettlementScheduleApi";
-import type { PaymentCheck, PaymentRequest, PaymentsRequest } from "../../../types/payment";
+import type {PaymentCheck} from "../../../types/payment";
 import paymentApi from "../../../api/paymentApi";
-import PaymentModal from "./components/PaymentModal";
-import { weekdayOrder } from "../../../utils/userSettlementScheduleUtils";
-
+import {weekdayOrder} from "../../../utils/userSettlementScheduleUtils";
+import SettlementSummary from "./components/SettlementSummary.tsx";
+import {hasPermissionGroup} from "../../../utils/authUtils.ts";
 
 const UserSettlementBatchs = () => {
-  const navigate = useNavigate();
-  const latestRequestRef = useRef(0);
-  const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const latestRequestRef = useRef(0);
+    const [searchParams, setSearchParams] = useSearchParams();
 
-  const [loading, setLoading] = useState(false);
-  const [loadingSchedule, setLoadingSchedule] = useState(false);
-  const [settlementBatchs, setSettlementBatchs] = useState<SettlementBatch[] | []>([]);
+    const [loading, setLoading] = useState(false);
+    const [loadingSchedule, setLoadingSchedule] = useState(false);
+    const [settlementBatchs, setSettlementBatchs] = useState<SettlementBatch[] | []>([]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
 
-  const [searchText, setSearchText] = useState("");
-  const [filterSort, setFilterSort] = useState("NEWEST");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [filterType, setFilterType] = useState("ALL");
-  const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+    const [searchText, setSearchText] = useState("");
+    const [filterSort, setFilterSort] = useState("NEWEST");
+    const [filterStatus, setFilterStatus] = useState("ALL");
+    const [filterType, setFilterType] = useState("ALL");
+    const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
-  const [modalSettlementScheduleVisible, setModalSettlementScheduleVisible] = useState(false);
-  const [userWeekdays, setUserWeekdays] = useState<string[]>([]);
+    const [modalSettlementScheduleVisible, setModalSettlementScheduleVisible] = useState(false);
+    const [userWeekdays, setUserWeekdays] = useState<string[]>([]);
 
-  const [processModalVisible, setProcessModalVisible] = useState(false);
-  const [selectedSettlementBatch, setSelectedSettlementBatch] = useState<SettlementBatch | null>(null);
+    const [summary, setSummary] = useState({received: 0, pending: 0, debt: 0});
 
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [allTotalAmount, setAllTotalAmount] = useState(0);
+    const updateURL = () => {
+        const params: any = {};
 
+        if (searchText) params.search = searchText;
+        if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
+        if (filterType !== "ALL") params.type = filterType.toLowerCase();
+        params.sort = (filterSort ?? "NEWEST").toLowerCase();
+        if (currentPage) params.page = currentPage;
 
-  const updateURL = () => {
-    const params: any = {};
-
-    if (searchText) params.search = searchText;
-    if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
-    if (filterType !== "ALL") params.type = filterType.toLowerCase();
-    params.sort = (filterSort ?? "NEWEST").toLowerCase();
-    if (currentPage) params.page = currentPage;
-
-    if (dateRange) {
-      params.start = dateRange[0].format("YYYY-MM-DD");
-      params.end = dateRange[1].format("YYYY-MM-DD");
-    }
-
-    setSearchParams(params, { replace: true });
-  };
-
-  useEffect(() => {
-    const pageParam = Number(searchParams.get("page")) || 1;
-    const s = searchParams.get("search");
-    const st = searchParams.get("status")?.toLocaleUpperCase();
-    const t = searchParams.get("type")?.toLocaleUpperCase();
-    const sort = searchParams.get("sort")?.toLocaleUpperCase();
-    const startDate = searchParams.get("start");
-    const endDate = searchParams.get("end");
-
-    setCurrentPage(pageParam);
-    if (s) setSearchText(s);
-    if (t) setFilterType(t);
-    if (st) setFilterStatus(st);
-    if (sort) setFilterSort(sort);
-
-    if (startDate && endDate) {
-      setDateRange([
-        dayjs(startDate, "YYYY-MM-DD"),
-        dayjs(endDate, "YYYY-MM-DD")
-      ]);
-    }
-  }, [searchParams]);
-
-  const fetch = async (page = currentPage) => {
-    try {
-      const requestId = ++latestRequestRef.current;
-
-      setLoading(true);
-      const payload: SearchRequest = {
-        page,
-        limit: pageSize,
-        status: filterStatus !== "ALL" ? filterStatus : undefined,
-        search: searchText,
-        sort: filterSort,
-        type: filterType,
-      };
-      if (dateRange) {
-        payload.startDate = dateRange[0]
-          .startOf("day")
-          .format("YYYY-MM-DDTHH:mm:ss");
-
-        payload.endDate = dateRange[1]
-          .endOf("day")
-          .format("YYYY-MM-DDTHH:mm:ss");
-      }
-
-      const result = await settlementBatchApi.listUserSettlementBatchs(payload);
-
-      if (requestId !== latestRequestRef.current) return;
-
-
-      if (result.success && result.data) {
-        const list = result.data?.list || [];
-        setSettlementBatchs(list);
-        setTotal(result.data.pagination?.total || 0);
-      } else {
-        message.error(result.message || "Lỗi khi lấy danh sách phiên đối soát của bưu cục");
-      }
-    } catch (error: any) {
-      message.error(error.message || "Lỗi khi lấy danh sách phiên đối soát của bạn");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      setLoading(true);
-      const param: SearchRequest = {
-        status: filterStatus !== "ALL" ? filterStatus : undefined,
-        search: searchText,
-        sort: filterSort,
-        type: filterType,
-      };
-
-      if (dateRange) {
-        param.startDate = dateRange[0].startOf("day").toISOString();
-        param.endDate = dateRange[1].endOf("day").toISOString();
-      }
-
-      const result = await settlementBatchApi.exportUserSettlementBatchs(param);
-
-      if (!result.success) {
-        message.error("Xuất báo cáo thất bại");
-        console.error("Export thất bại:", result.error);
-      }
-
-    } catch (error: any) {
-      message.error(error.message || "Xuất báo cáo thất bại")
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAllSettlementBatchIds = async () => {
-    try {
-      setLoading(true);
-      const param: SearchRequest = {
-        status: filterStatus !== "ALL" ? filterStatus : undefined,
-        search: searchText,
-        sort: filterSort,
-        type: filterType,
-      };
-      if (dateRange) {
-        param.startDate = dateRange[0].startOf("day").toISOString();
-        param.endDate = dateRange[1].endOf("day").toISOString();
-      }
-      const result = await settlementBatchApi.getAllUserIds(param);
-      if (result.success && result.data) {
-        setSelectedIds(result.data.ids);
-        setAllTotalAmount(result.data.totalAmount || 0);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePayment = (batch: SettlementBatch) => {
-    setSelectedSettlementBatch(batch);
-    setProcessModalVisible(true);
-  };
-
-  const handleSubmitPayment = async (amount: number) => {
-    if (!selectedSettlementBatch) return;
-
-    try {
-      const param: PaymentRequest = {
-        settlementId: selectedSettlementBatch.id,
-        amount
-      };
-
-      const result = await paymentApi.createVNPayURLFromList(param);
-
-      if (result.success && result.data) {
-        window.location.href = result.data;
-        message.info("Đang chuyển tới VNPay để thanh toán...");
-      } else {
-        const errMsg = result.message || "Không tạo được link thanh toán";
-        message.error(errMsg);
-      }
-    } catch (error: any) {
-      message.error(error.message || "Lỗi khi tạo link thanh toán VNPay");
-    }
-  };
-
-  const handlePaymentSettlements = async () => {
-    if (selectedIds.length == 0) {
-      message.error("Vui lòng chọn các phiên đối soát cần thanh toán!")
-      return;
-    }
-
-    if (allTotalAmount < 10000) {
-      message.error("Tổng tiền thanh toán chưa đạt mức tối thiểu!")
-      return;
-    }
-
-    try {
-      const selectedIdsString = selectedIds.join(",");
-      const param: PaymentsRequest = {
-        settlementIds: selectedIdsString,
-        amount: allTotalAmount,
-      };
-
-      const result = await paymentApi.createVNPayURLForSettlements(param);
-
-      if (result.success && result.data) {
-        window.location.href = result.data;
-        message.info("Đang chuyển tới VNPay để thanh toán...");
-      } else {
-        const errMsg = result.message || "Không tạo được link thanh toán";
-        message.error(errMsg);
-      }
-    } catch (error: any) {
-      message.error(error.message || "Lỗi khi tạo link thanh toán VNPay");
-    }
-  };
-
-  useEffect(() => {
-    const checkPayment = async () => {
-      const queryParams = new URLSearchParams(window.location.search);
-
-      // Map các param VNPay sang PaymentCheck
-      const paymentCheck: PaymentCheck = {
-        transactionCode: queryParams.get("vnp_TxnRef") || "",
-        responseCode: queryParams.get("vnp_ResponseCode") || "",
-        referenceCode: queryParams.get("vnp_TransactionNo") || "",
-        secureHash: queryParams.get("vnp_SecureHash") || "",
-        amount: queryParams.get("vnp_Amount") || undefined,
-        bankCode: queryParams.get("vnp_BankCode") || undefined,
-        bankTranNo: queryParams.get("vnp_BankTranNo") || undefined,
-        cardType: queryParams.get("vnp_CardType") || undefined,
-        orderInfo: queryParams.get("vnp_OrderInfo") || undefined,
-        payDate: queryParams.get("vnp_PayDate") || undefined,
-        tmnCode: queryParams.get("vnp_TmnCode") || undefined,
-        transactionStatus: queryParams.get("vnp_TransactionStatus") || undefined,
-        secureHashType: queryParams.get("vnp_SecureHashType") || undefined,
-      };
-
-      // Kiểm tra param bắt buộc
-      const requiredFields = ["transactionCode", "responseCode", "referenceCode", "secureHash"];
-      const hasAllFields = requiredFields.every((field) => (paymentCheck as any)[field]);
-      if (!hasAllFields) return;
-
-      try {
-        // Gọi backend để kiểm tra và cập nhật giao dịch
-        const result = await paymentApi.checkPaymentVPN(paymentCheck);
-
-        if (result.success) {
-          if (result.data) {
-            message.success(result.message || "Thanh toán phiên đối soát thành công");
-            setProcessModalVisible(false);
-            fetch(currentPage);
-          } else {
-            message.error(result.message || "Thanh toán phiên đối soát thất bại");
-          }
-          fetch(currentPage);
-        } else {
-          message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
+        if (dateRange) {
+            params.start = dateRange[0].format("YYYY-MM-DD");
+            params.end = dateRange[1].format("YYYY-MM-DD");
         }
-      } catch (error: any) {
-        message.error(error.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
-      }
+
+        setSearchParams(params, {replace: true});
     };
 
-    checkPayment();
-  }, []);
+    useEffect(() => {
+        const pageParam = Number(searchParams.get("page")) || 1;
+        const s = searchParams.get("search");
+        const st = searchParams.get("status")?.toLocaleUpperCase();
+        const t = searchParams.get("type")?.toLocaleUpperCase();
+        const sort = searchParams.get("sort")?.toLocaleUpperCase();
+        const startDate = searchParams.get("start");
+        const endDate = searchParams.get("end");
 
+        setCurrentPage(pageParam);
+        if (s) setSearchText(s);
+        if (t) setFilterType(t);
+        if (st) setFilterStatus(st);
+        if (sort) setFilterSort(sort);
 
-  const handleDetail = (id: number) => {
-    navigate(`/settlements/${id}`);
-  };
-
-  const handleOpenModalSetSchedule = async () => {
-    setModalSettlementScheduleVisible(true);
-  };
-
-  const handleSaveSettlementSchedule = async (selectedDays: string[]) => {
-    try {
-      setLoadingSchedule(true);
-      const result = await userSettlementScheduleApi.updateUserSchedule(selectedDays);
-
-      if (result.success) {
-        message.success(result.message || "Cập nhật trạng thái thành công phiên đối soát");
-        setUserWeekdays(selectedDays);
-        setSelectedSettlementBatch(null);
-        setModalSettlementScheduleVisible(false);
-      } else {
-        message.error(result.message || "Cập nhật trạng thái thất bại phiên đối soát");
-      }
-    } catch (error: any) {
-      message.error(error.message || "Lỗi khi cập nhật trạng thái phiên đối soát");
-    } finally {
-      setLoadingSchedule(false);
-    }
-  };
-
-  useEffect(() => {
-    const fetchUserSchedule = async () => {
-      try {
-        setLoadingSchedule(true);
-
-        const result = await userSettlementScheduleApi.getUserSchedule();
-        if (result.success && result.data) {
-          setUserWeekdays(result.data.weekdays || []);
-        } else {
-          message.error(result.message || "Không lấy được lịch đối soát");
-          setUserWeekdays([]);
+        if (startDate && endDate) {
+            setDateRange([
+                dayjs(startDate, "YYYY-MM-DD"),
+                dayjs(endDate, "YYYY-MM-DD")
+            ]);
         }
-      } catch (error: any) {
-        message.error(error.message || "Lỗi khi lấy lịch đối soát");
-        setUserWeekdays([]);
-      } finally {
-        setLoadingSchedule(false);
-      }
+    }, [searchParams]);
+
+    const fetch = async (page = currentPage) => {
+        try {
+            const requestId = ++latestRequestRef.current;
+
+            setLoading(true);
+            const payload: SearchRequest = {
+                page,
+                limit: pageSize,
+                status: filterStatus !== "ALL" ? filterStatus : undefined,
+                search: searchText,
+                sort: filterSort,
+                type: filterType,
+            };
+            if (dateRange) {
+                payload.startDate = dateRange[0]
+                    .startOf("day")
+                    .format("YYYY-MM-DDTHH:mm:ss");
+
+                payload.endDate = dateRange[1]
+                    .endOf("day")
+                    .format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await settlementBatchApi.listUserSettlementBatchs(payload);
+
+            if (requestId !== latestRequestRef.current) return;
+
+            if (result.success && result.data) {
+                const list = result.data?.list || [];
+                setSettlementBatchs(list);
+                setTotal(result.data.pagination?.total || 0);
+            } else {
+                message.error(result.message || "Lỗi khi lấy danh sách phiên đối soát của bưu cục");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi khi lấy danh sách phiên đối soát của bạn");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    fetchUserSchedule();
-  }, []);
+    const handleExport = async () => {
+        try {
+            const param: SearchRequest = {
+                page: currentPage,
+                limit: pageSize,
+                status: filterStatus !== "ALL" ? filterStatus : undefined,
+                search: searchText,
+                sort: filterSort,
+                type: filterType,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
 
-  const handleSelectedChange = (values: SettlementBatch[]) => {
-    const ids = values.map(item => item.id);
-
-    const totalRemain = values.reduce((sum, item) => sum + (item.remainAmount || 0), 0);
-
-    setSelectedIds(ids);
-    setAllTotalAmount(totalRemain);
-  };
+            const result = await settlementBatchApi.exportUserSettlementBatchs(param);
 
 
-  useEffect(() => {
-    fetch(currentPage);
-    updateURL();
-  }, [pageSize, currentPage, searchText, dateRange, filterSort, filterStatus, filterType]);
+            if (!result.success) {
+                console.error("Export thất bại:", result.error);
+                message.error("Xuất file Excel thất bại");
+            }
 
-  return (
-    <div className="list-page-layout">
-      <div className="list-page-content">
-        <SearchFilters
-          searchText={searchText}
-          setSearchText={setSearchText}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          filters={{
-            sort: filterSort,
-            status: filterStatus,
-            type: filterType,
-          }}
-          setFilters={(key, val) => {
-            if (key === "sort") setFilterSort(val as string);
-            if (key === "status") setFilterStatus(val as string);
-            if (key === "type") setFilterType(val as string);
-          }}
-          onReset={() => {
-            setSearchText("");
-            setFilterStatus("ALL");
-            setFilterSort("NEWEST");
-            setFilterType("ALL");
-            setDateRange(null);
-            setCurrentPage(1);
-          }}
-        />
+        } catch (error: any) {
+            message.error("Xuất file Excel thất bại");
+            console.error("Export thất bại:", error);
+        }
+    };
 
-        <Row className="list-page-header" justify="space-between" align="middle">
-          <Col>
-            <Title level={3} className="list-page-title-main">
-              <CheckCircleOutlined className="title-icon" />
-              Lịch sử đối soát
-            </Title>
-          </Col>
+    const fetchSummary = async () => {
+        try {
+            const result = await settlementBatchApi.getUserSettlementSummary();
+            if (result.success && result.data) {
+                setSummary(result.data);
+            }
+        } catch (error: any) {
+            console.error(error);
+        }
+    };
 
-          <Col>
-            <div className="list-page-actions">
-              <Actions
-                totalAmount={allTotalAmount}
-                countIds={selectedIds?.length}
-                onPayment={handlePaymentSettlements}
-                onExport={handleExport}
-              />
-            </div>
-          </Col>
-        </Row>
+    useEffect(() => {
+        fetchSummary();
+    }, []);
 
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Tag className="list-page-tag">Kết quả trả về: {total} phiên đối soát</Tag>
-          </Col>
-          <Col>
-            <Space align="center">
-              {userWeekdays.length > 0 && (
-                <div className="text-muted">
-                  COD của bạn sẽ được chuyển vào thứ{" "}
-                  {userWeekdays
-                    .slice()
-                    .sort((a, b) => (weekdayOrder[a] || 0) - (weekdayOrder[b] || 0))
-                    .map((day, index, arr) => (
-                      <span key={day}>
+    const handlePaymentSettlements = async () => {
+
+        try {
+            const result = await paymentApi.createVNPayURLForSettlements();
+
+            if (result.success && result.data) {
+                window.location.href = result.data;
+                message.info("Đang chuyển tới VNPay để thanh toán...");
+            } else {
+                const errMsg = result.message || "Không tạo được link thanh toán";
+                message.error(errMsg);
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi khi tạo link thanh toán VNPay");
+        }
+    };
+
+    useEffect(() => {
+        const checkPayment = async () => {
+            const queryParams = new URLSearchParams(window.location.search);
+
+            // Map các param VNPay sang PaymentCheck
+            const paymentCheck: PaymentCheck = {
+                transactionCode: queryParams.get("vnp_TxnRef") || "",
+                responseCode: queryParams.get("vnp_ResponseCode") || "",
+                referenceCode: queryParams.get("vnp_TransactionNo") || "",
+                secureHash: queryParams.get("vnp_SecureHash") || "",
+                amount: queryParams.get("vnp_Amount") || undefined,
+                bankCode: queryParams.get("vnp_BankCode") || undefined,
+                bankTranNo: queryParams.get("vnp_BankTranNo") || undefined,
+                cardType: queryParams.get("vnp_CardType") || undefined,
+                orderInfo: queryParams.get("vnp_OrderInfo") || undefined,
+                payDate: queryParams.get("vnp_PayDate") || undefined,
+                tmnCode: queryParams.get("vnp_TmnCode") || undefined,
+                transactionStatus: queryParams.get("vnp_TransactionStatus") || undefined,
+                secureHashType: queryParams.get("vnp_SecureHashType") || undefined,
+            };
+
+            // Kiểm tra param bắt buộc
+            const requiredFields = ["transactionCode", "responseCode", "referenceCode", "secureHash"];
+            const hasAllFields = requiredFields.every((field) => (paymentCheck as any)[field]);
+            if (!hasAllFields) return;
+
+            try {
+                // Gọi backend để kiểm tra và cập nhật giao dịch
+                const result = await paymentApi.checkPaymentVPN(paymentCheck);
+
+                if (result.success) {
+                    if (result.data) {
+                        message.success(result.message || "Thanh toán phiên đối soát thành công");
+                        fetch(currentPage);
+                        fetchSummary()
+                    } else {
+                        message.error(result.message || "Thanh toán phiên đối soát thất bại");
+                    }
+                    fetch(currentPage);
+                } else {
+                    message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
+                }
+            } catch (error: any) {
+                message.error(error.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
+            }
+        };
+
+        checkPayment();
+    }, []);
+
+
+    const handleDetail = (id: number) => {
+        navigate(`/settlements/${id}`);
+    };
+
+    const handleOpenModalSetSchedule = async () => {
+        setModalSettlementScheduleVisible(true);
+    };
+
+    const handleSaveSettlementSchedule = async (selectedDays: string[]) => {
+        try {
+            setLoadingSchedule(true);
+            const result = await userSettlementScheduleApi.updateUserSchedule(selectedDays);
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật trạng thái thành công phiên đối soát");
+                setUserWeekdays(selectedDays);
+                setModalSettlementScheduleVisible(false);
+            } else {
+                message.error(result.message || "Cập nhật trạng thái thất bại phiên đối soát");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Lỗi khi cập nhật trạng thái phiên đối soát");
+        } finally {
+            setLoadingSchedule(false);
+        }
+    };
+
+    useEffect(() => {
+        const fetchUserSchedule = async () => {
+            try {
+                setLoadingSchedule(true);
+
+                const result = await userSettlementScheduleApi.getUserSchedule();
+                if (result.success && result.data) {
+                    setUserWeekdays(result.data.weekdays || []);
+                } else {
+                    message.error(result.message || "Không lấy được lịch đối soát");
+                    setUserWeekdays([]);
+                }
+            } catch (error: any) {
+                message.error(error.message || "Lỗi khi lấy lịch đối soát");
+                setUserWeekdays([]);
+            } finally {
+                setLoadingSchedule(false);
+            }
+        };
+
+        fetchUserSchedule();
+    }, []);
+
+    useEffect(() => {
+        fetch(currentPage);
+        updateURL();
+    }, [pageSize, currentPage, searchText, dateRange, filterSort, filterStatus, filterType]);
+
+    return (
+        <div className="list-page-layout">
+            <div className="list-page-content">
+                <SettlementSummary
+                    received={summary.received}
+                    pending={summary.pending}
+                    debt={summary.debt}
+                    onPayment={handlePaymentSettlements}
+                />
+
+                {hasPermissionGroup(['GROUP_USER', 'USER_COD_SESSION_VIEW']) && (
+                    <><SearchFilters
+                        searchText={searchText}
+                        setSearchText={setSearchText}
+                        dateRange={dateRange}
+                        setDateRange={setDateRange}
+                        filters={{
+                            sort: filterSort,
+                            status: filterStatus,
+                            type: filterType,
+                        }}
+                        setFilters={(key, val) => {
+                            if (key === "sort") setFilterSort(val as string);
+                            if (key === "status") setFilterStatus(val as string);
+                            if (key === "type") setFilterType(val as string);
+                        }}
+                        onReset={() => {
+                            setSearchText("");
+                            setFilterStatus("ALL");
+                            setFilterSort("NEWEST");
+                            setFilterType("ALL");
+                            setDateRange(null);
+                            setCurrentPage(1);
+                        }}/><Row className="list-page-header" justify="space-between" align="middle">
+                        <Col>
+                            <Title level={3} className="list-page-title-main">
+                                <CheckCircleOutlined className="title-icon"/>
+                                Lịch sử đối soát
+                            </Title>
+                        </Col>
+
+                        <Col>
+                            <div className="list-page-actions">
+                                <Actions
+                                    onExport={handleExport}/>
+                            </div>
+                        </Col>
+                    </Row></>
+                )}
+
+                <Row justify="space-between" align="middle">
+
+                    <Col>
+                        {hasPermissionGroup(['GROUP_USER', 'USER_COD_SESSION_VIEW']) && (
+                            <Tag className="list-page-tag">Kết quả trả về: {total} phiên đối soát</Tag>
+                        )}
+                    </Col>
+                    <Col>
+                        <Space align="center">
+                            {userWeekdays.length > 0 && hasPermissionGroup(['GROUP_USER', 'USER_COD_SCHEDULE_VIEW']) && (
+                                <div className="text-muted">
+                                    COD của bạn sẽ được chuyển vào thứ{" "}
+                                    {userWeekdays
+                                        .slice()
+                                        .sort((a, b) => (weekdayOrder[a] || 0) - (weekdayOrder[b] || 0))
+                                        .map((day, index, arr) => (
+                                            <span key={day}>
                         {weekdayOrder[day]}
-                        {index < arr.length - 1 ? ", " : ""}
+                                                {index < arr.length - 1 ? ", " : ""}
                       </span>
-                    ))}
-                  {" "}lúc 20:00 hàng tuần
-                </div>
-              )}
-              <Button
-                className="primary-button"
-                icon={<ScheduleOutlined />}
-                onClick={handleOpenModalSetSchedule}
-              >
-                Đổi lịch đối soát
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+                                        ))}
+                                    {" "}lúc 20:00 hàng tuần
+                                </div>
+                            )}
+                            {hasPermissionGroup(['GROUP_USER', 'USER_COD_SCHEDULE_EDIT']) && (
+                                <Button
+                                    className="primary-button"
+                                    icon={<ScheduleOutlined/>}
+                                    onClick={handleOpenModalSetSchedule}
+                                >
+                                    Đổi lịch đối soát
+                                </Button>
+                            )}
+                        </Space>
+                    </Col>
+                </Row>
 
-        <SubmissionTable
-          datas={settlementBatchs}
-          onProcess={handlePayment}
-          onDetail={handleDetail}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          total={total}
-          loading={loading}
-          onSelectionChange={handleSelectedChange}
-          onSelectAllAction={fetchAllSettlementBatchIds}
-          onPageChange={(page, size) => {
-            setCurrentPage(page);
-            if (size) setPageSize(size);
-          }}
-        />
+                {hasPermissionGroup(['GROUP_USER', 'USER_COD_SESSION_VIEW']) && (
+                    <SubmissionTable
+                        data={settlementBatchs}
+                        onDetail={handleDetail}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        total={total}
+                        loading={loading}
+                        onPageChange={(page, size) => {
+                            setCurrentPage(page);
+                            if (size) setPageSize(size);
+                        }}
+                    />
+                )}
 
-        <UserScheduleModal
-          visible={modalSettlementScheduleVisible}
-          initialWeekdays={userWeekdays}
-          loading={loadingSchedule}
-          onCancel={() => setModalSettlementScheduleVisible(false)}
-          onSave={handleSaveSettlementSchedule}
-        />
-
-        <PaymentModal
-          visible={processModalVisible}
-          settlementCode={selectedSettlementBatch?.code}
-          remainAmount={selectedSettlementBatch?.remainAmount || 0}
-          onCancel={() => {
-            setProcessModalVisible(false);
-            setSelectedSettlementBatch(null);
-          }}
-          onSubmit={(amount) => {
-            handleSubmitPayment(amount);
-            setProcessModalVisible(false);
-          }}
-        />
-      </div>
-    </div>
-  );
+                <UserScheduleModal
+                    visible={modalSettlementScheduleVisible}
+                    initialWeekdays={userWeekdays}
+                    loading={loadingSchedule}
+                    onCancel={() => setModalSettlementScheduleVisible(false)}
+                    onSave={handleSaveSettlementSchedule}
+                />
+            </div>
+        </div>
+    );
 };
 
 export default UserSettlementBatchs;

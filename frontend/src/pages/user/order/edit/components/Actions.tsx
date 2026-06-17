@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
-import { Button, Row, Switch, Col } from "antd";
-import { canEditUserOrder, type OrderStatus } from "../../../../../utils/orderUtils";
+import React, {useEffect, useState} from "react";
+import {CloseOutlined, SaveOutlined} from "@ant-design/icons";
+import {Button, Col, Row, Switch} from "antd";
+import {canEditUserOrder, type OrderStatus} from "../../../../../utils/orderUtils";
+import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 interface Props {
   onStatusChange: (status: "DRAFT" | "PENDING") => void;
@@ -44,7 +45,7 @@ const Actions: React.FC<Props> = ({
 
   return (
     <div className="create-order-actions-container">
-      {status === "DRAFT" && (
+      {status === "DRAFT" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PROCESS']) && (
         <Row className="create-order-switch-container" justify="space-between" align="middle">
           <Col>
             <span>Chuyển sang công khai</span>

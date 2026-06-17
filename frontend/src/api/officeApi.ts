@@ -1,5 +1,13 @@
-import type { Office, OfficeSearchRequest, AdminOffice, CreateOfficePayload, UpdateOfficePayload, LocalOfficeRequest, OfficeEditRequest } from "../types/office";
-import type { ApiResponse } from "../types/response";
+import type {
+    AdminOffice,
+    CreateOfficePayload,
+    LocalOfficeRequest,
+    Office,
+    OfficeEditRequest,
+    OfficeSearchRequest,
+    UpdateOfficePayload
+} from "../types/office";
+import type {ApiResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const officeApi = {
@@ -56,7 +64,7 @@ const officeApi = {
   },
 
   updateManagerOffice: async (data: OfficeEditRequest) => {
-    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/offices/me`, data);
+    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/offices/me`, data);
     return res;
   },
 

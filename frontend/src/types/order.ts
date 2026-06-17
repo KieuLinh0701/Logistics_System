@@ -119,6 +119,12 @@ export interface Order {
     codAmount?: number;
 }
 
+export interface StatusCount {
+    status: string;
+    count: number;
+}
+
+
 export interface UserOrderSearchRequest {
     page: number;
     limit: number;
@@ -189,15 +195,23 @@ export interface ManagerOrderRequest {
     id?: number;
     code?: string;
     senderName: string;
+    senderPhone: string;
     senderDetail: string;
     senderWardCode: number;
+    senderWardName: string;
     senderCityCode: number;
-    senderPhone: string;
+    senderCityName: string;
+    senderLatitude: number;
+    senderLongitude: number;
     recipientName: string;
     recipientPhone: string;
     recipientCityCode: number;
+    recipientCityName: string;
     recipientWardCode: number;
+    recipientWardName: string;
     recipientDetail: string;
+    recipientLatitude: number;
+    recipientLongitude:number;
     weight: number;
     originalWeight: number;
     length: number;

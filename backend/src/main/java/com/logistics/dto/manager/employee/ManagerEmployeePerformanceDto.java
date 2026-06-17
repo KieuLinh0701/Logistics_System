@@ -1,33 +1,23 @@
 package com.logistics.dto.manager.employee;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.logistics.enums.EmployeeShift;
+import com.logistics.enums.EmployeeStatus;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class ManagerEmployeePerformanceDto {
+public interface ManagerEmployeePerformanceDto {
+  Integer getId();
+  String getEmployeeName();
+  String getEmployeeCode();
+  String getEmployeeRole();
+  String getEmployeePhone();
+  EmployeeStatus getEmployeeStatus();
+  EmployeeShift getEmployeeShift();
+  Long getTotalShipments();
+  Long getTotalOrders();
+  Long getCompletedOrders();
+  Double getAvgTimePerOrder();
 
-  private Integer id;
-
-  private String employeeName;
-  private String employeeCode;
-  private String employeeRole;
-  private String employeePhone;
-  private String employeeStatus; 
-  private String employeeShift;
-
-  private Long totalShipments;
-  private Long totalOrders;
-  private Long completedOrders;
-
-  private Double avgTimePerOrder;
-
-  public Double getCompletionRate() {
-    if (totalOrders == 0) return 0.0;
-    return completedOrders * 100.0 / totalOrders;
+  default Double getCompletionRate() {
+    if (getTotalOrders() == null || getTotalOrders() == 0) return 0.0;
+    return getCompletedOrders() * 100.0 / getTotalOrders();
   }
 }

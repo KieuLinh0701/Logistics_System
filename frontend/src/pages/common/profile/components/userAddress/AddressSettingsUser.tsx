@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Button, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import { Form } from 'antd';
-import type { Address } from './components/AddressTable';
-import type { AddressRequest } from '../../../../../types/address';
+import React, {useState, useEffect} from 'react';
+import {Card, Button, message} from 'antd';
+import {PlusOutlined} from '@ant-design/icons';
+import {Form} from 'antd';
+import type {Address} from './components/AddressTable';
+import type {AddressRequest} from '../../../../../types/address';
 import AddressTable from './components/AddressTable';
 import AddressModal from './components/AddressModal';
 import addressApi from '../../../../../api/addressApi';
+import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 const AddressSettingsUser: React.FC = () => {
     const [form] = Form.useForm();
@@ -23,7 +24,7 @@ const AddressSettingsUser: React.FC = () => {
             setLoading(true);
             const response = await addressApi.getUserAddresses();
             if (response.success && response.data) {
-                setAddresses(response.data);
+                setAddresses(response.data as any);
                 setTotal(response.data.length);
             }
         } catch (error) {
@@ -72,11 +73,11 @@ const AddressSettingsUser: React.FC = () => {
                 cityName: '',
                 isDefault: addresses.length === 0
             };
-            setEditingAddress(emptyAddress);
+            setEditingAddress(emptyAddress as any);
             form.resetFields();
             form.setFieldsValue({
                 ...emptyAddress,
-                address: { cityCode: undefined, wardCode: undefined, detail: '' }
+                address: {cityCode: undefined, wardCode: undefined, detail: ''}
             });
         }
 
@@ -89,7 +90,7 @@ const AddressSettingsUser: React.FC = () => {
         setEditingAddress(null);
         form.resetFields();
         form.setFieldsValue({
-            address: { cityCode: undefined, wardCode: undefined, detail: 'Hello' }
+            address: {cityCode: undefined, wardCode: undefined, detail: 'Hello'}
         });
     };
 
@@ -186,16 +187,18 @@ const AddressSettingsUser: React.FC = () => {
     return (
         <div className="tab-content">
             <Card className="profile-form-card">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                    <Button
-                        className="primary-button"
-                        icon={<PlusOutlined />}
-                        onClick={() => showModal('create')}
-                        disabled={total >= 20}
-                    >
-                        Thêm địa chỉ mới
-                    </Button>
-                </div>
+                {hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_CREATE']) && (
+                    <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: 16}}>
+                        <Button
+                            className="primary-button"
+                            icon={<PlusOutlined/>}
+                            onClick={() => showModal('create')}
+                            disabled={total >= 20}
+                        >
+                            Thêm địa chỉ mới
+                        </Button>
+                    </div>
+                )}
 
                 <AddressTable
                     data={addresses}
@@ -213,8 +216,8 @@ const AddressSettingsUser: React.FC = () => {
                         phoneNumber: '',
                         detail: '',
                         wardCode: 0,
-                        cityCode: 0,
                         wardName: '',
+                        cityCode: 0,
                         cityName: '',
                         isDefault: addresses.length === 0
                     }}

@@ -24,11 +24,13 @@ import lombok.RequiredArgsConstructor;
 public class UserSettlementScheduleUserService {
 
     private final UserSettlementScheduleRepository scheduleRepository;
-    private final UserRepository userRepository;
+    private final UserUserService userService;
 
     public ApiResponse<UserSettlementScheduleDto> getUserSchedule(Integer userId) {
         try {
-            UserSettlementSchedule schedule = scheduleRepository.findByUserId(userId);
+            Integer shopId = userService.getShopId(userId);
+
+            UserSettlementSchedule schedule = scheduleRepository.findByUserId(shopId);
 
             if (schedule == null) {
                 return new ApiResponse<>(true, "Người dùng chưa có lịch đối soát", null);
@@ -46,7 +48,9 @@ public class UserSettlementScheduleUserService {
     @Transactional
     public ApiResponse<Boolean> updateUserSchedule(Integer userId, Set<String> weekdays) {
         try {
-            User user = userRepository.findById(userId).orElse(null);
+            Integer shopId = userService.getShopId(userId);
+            User user = userService.getUser(shopId);
+
             if (user == null) {
                 return new ApiResponse<>(false, "Người dùng không tồn tại", false);
             }
@@ -64,7 +68,7 @@ public class UserSettlementScheduleUserService {
                 }
             }
 
-            UserSettlementSchedule schedule = scheduleRepository.findByUserId(userId);
+            UserSettlementSchedule schedule = scheduleRepository.findByUserId(shopId);
             if (schedule == null) {
                 schedule = new UserSettlementSchedule();
                 schedule.setUser(user);

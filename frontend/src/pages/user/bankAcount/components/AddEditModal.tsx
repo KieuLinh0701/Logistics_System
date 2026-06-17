@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal, Form, Input, Switch, AutoComplete, message } from 'antd';
-import type { BankAccountRequest } from '../../../../types/bankAccount';
+import {AutoComplete, Form, Input, message, Modal, Switch} from 'antd';
+import type {BankAccountRequest} from '../../../../types/bankAccount';
 
 interface AddEditModalProps {
   open: boolean;

@@ -1,6 +1,6 @@
 import React from "react";
-import type { UserOrderStats } from "../../../../types/dashboard";
-import { Link } from "react-router-dom"; 
+import type {UserOrderStats} from "../../../../types/dashboard";
+import {Link} from "react-router-dom";
 
 interface Props {
   data: UserOrderStats;
@@ -33,7 +33,7 @@ export const OrderStatusOverview: React.FC<Props> = ({ data }) => {
       <div className="dashboard-order-status-grid">
         {stats.map((stat) => (
           <div key={stat.key} className="dashboard-order-status-item">
-            <div className="dashboard-order-status-value">{stat.value}</div>
+            <div className="dashboard-order-status-value">{stat.value ?? 0}</div>
             <div className="dashboard-order-status-label">{stat.label}</div>
           </div>
         ))}

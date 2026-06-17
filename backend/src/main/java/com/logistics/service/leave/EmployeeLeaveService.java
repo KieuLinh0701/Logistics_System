@@ -3,6 +3,7 @@ package com.logistics.service.leave;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -163,7 +164,8 @@ public class EmployeeLeaveService {
     }
 
     private Employee getCurrentEmployeeForDriverOrShipper() {
-        String roleName = SecurityUtils.getAuthenticatedUserRole();
+        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         if (!"Driver".equalsIgnoreCase(roleName) && !"Shipper".equalsIgnoreCase(roleName)) {
             throw new LeaveException("Chỉ tài xế hoặc shipper mới được thao tác đơn nghỉ phép");
         }
@@ -177,7 +179,8 @@ public class EmployeeLeaveService {
     }
 
     private Office getManagedOffice() {
-        String roleName = SecurityUtils.getAuthenticatedUserRole();
+        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
+                .getName();
         if (!"Manager".equalsIgnoreCase(roleName)) {
             throw new LeaveException("Chỉ quản lý bưu cục mới được thao tác chức năng này");
         }

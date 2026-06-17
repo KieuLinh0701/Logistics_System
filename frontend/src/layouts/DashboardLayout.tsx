@@ -6,7 +6,7 @@ import {
 } from "@ant-design/icons";
 import { Outlet } from "react-router-dom";
 import Header from "../components/common/Header";
-import Sidenav from "../components/common/Sidenav";
+import SideNav from "../components/common/SideNav.tsx";
 import "./DashboardLayout.css";
 
 const { Header: AntHeader, Sider, Content } = Layout;
@@ -38,7 +38,7 @@ const DashboardLayout: React.FC = () => {
           }}
         >
           <div className="sidenav-container">
-            <Sidenav/>
+            <SideNav/>
           </div>
 
         </Sider>

@@ -3,8 +3,10 @@ import SockJS from 'sockjs-client';
 
 let stompClient: Client;
 
+const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+
 export const connectWebSocket = (userId: number, onMessage: (msg: any) => void) => {
-  const socket = new SockJS(`http://localhost:8080/ws?userId=${userId}`);
+  const socket = new SockJS(`${baseUrl}/ws?userId=${userId}`);
   stompClient = new Client({
     webSocketFactory: () => socket,
     debug: (str) => console.log(str),

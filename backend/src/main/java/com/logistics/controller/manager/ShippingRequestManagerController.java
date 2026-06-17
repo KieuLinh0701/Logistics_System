@@ -1,6 +1,8 @@
 package com.logistics.controller.manager;
 
+import com.logistics.request.user.order.UserOrderSearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +23,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/manager/shipping-requests")
@@ -57,5 +62,27 @@ public class ShippingRequestManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         return ResponseEntity.ok(service.processing(userId, id, managerShippingRequestForm));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            HttpServletRequest request,
+            ManagerShippingRequestSearchRequest managerShippingRequestSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.export(userId, managerShippingRequestSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo danh sách yêu cầu hỗ trợ & khiếu nại.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

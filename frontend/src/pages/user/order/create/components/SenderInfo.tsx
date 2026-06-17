@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Card, Button, Alert } from "antd";
-import { EditOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Alert, Button, Card} from "antd";
+import {EditOutlined} from "@ant-design/icons";
 import AddressPickerModal from "./AddressPickerModal";
-import type { Address } from "../../../../../types/address";
+import type {Address} from "../../../../../types/address";
 import locationApi from "../../../../../api/locationApi";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
 interface Props {
     sender: {

@@ -21,13 +21,18 @@ public class BankAccountUserService {
 
     private final BankAccountRepository repository;
     private final UserRepository userRepository;
+    private final UserUserService userService;
 
     public ApiResponse<List<BankAccountDto>> list(int userId) {
         try {
-            List<BankAccount> accounts = repository.findByUserIdOrderByCreatedAtDesc(userId);
+            Integer shopId = userService.getShopId(userId);
+
+            List<BankAccount> accounts = repository.findByUserIdOrderByCreatedAtDesc(shopId);
+
             List<BankAccountDto> data = accounts.stream()
                     .map(BankAccountMapper::toDto)
                     .toList();
+
             return new ApiResponse<>(true, "Lấy danh sách thành công", data);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
@@ -38,12 +43,14 @@ public class BankAccountUserService {
     public ApiResponse<BankAccountDto> create(int userId, BankAccountRequest request) {
         try {
             validateForm(request);
-            long count = repository.countByUserId(userId);
+
+            Integer shopId = userService.getShopId(userId);
+
+            long count = repository.countByUserId(shopId);
             if (count >= 5) {
                 return new ApiResponse<>(false, "Chỉ được tạo tối đa 5 tài khoản ngân hàng", null);
             }
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+            User user = userService.getUser(shopId);
 
             BankAccount account = new BankAccount();
             account.setUser(user);
@@ -53,7 +60,7 @@ public class BankAccountUserService {
             account.setNotes(request.getNotes());
 
             if (request.getIsDefault() != null && request.getIsDefault()) {
-                repository.clearDefaultExcept(userId, -1);
+                repository.clearDefaultExcept(shopId, -1);
                 account.setIsDefault(true);
             } else if (count == 0) {
                 account.setIsDefault(true);
@@ -70,7 +77,10 @@ public class BankAccountUserService {
     public ApiResponse<BankAccountDto> update(int userId, int id, BankAccountRequest request) {
         try {
             validateForm(request);
-            BankAccount account = repository.findByIdAndUserId(id, userId)
+
+            Integer shopId = userService.getShopId(userId);
+
+            BankAccount account = repository.findByIdAndUserId(id, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản ngân hàng"));
 
             account.setBankName(request.getBankName());
@@ -79,7 +89,7 @@ public class BankAccountUserService {
             account.setNotes(request.getNotes());
 
             if (request.getIsDefault() != null && request.getIsDefault() && !account.getIsDefault()) {
-                repository.clearDefaultExcept(userId, id);
+                repository.clearDefaultExcept(shopId, id);
                 account.setIsDefault(true);
             }
 
@@ -92,11 +102,15 @@ public class BankAccountUserService {
 
     public ApiResponse<Boolean> delete(int userId, int id) {
         try {
-            BankAccount account = repository.findByIdAndUserId(id, userId)
+            Integer shopId = userService.getShopId(userId);
+
+            BankAccount account = repository.findByIdAndUserId(id, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản ngân hàng"));
+
             if (account.getIsDefault()) {
                 return new ApiResponse<>(false, "Vui lòng chọn tài khoản mặc định khác trước khi xóa", false);
             }
+
             repository.delete(account);
             return new ApiResponse<>(true, "Xóa tài khoản thành công", true);
         } catch (Exception e) {
@@ -107,9 +121,12 @@ public class BankAccountUserService {
     @Transactional
     public ApiResponse<Boolean> setDefault(int userId, int id) {
         try {
-            BankAccount account = repository.findByIdAndUserId(id, userId)
+            Integer shopId = userService.getShopId(userId);
+
+            BankAccount account = repository.findByIdAndUserId(id, shopId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản ngân hàng"));
-            repository.clearDefaultExcept(userId, id);
+
+            repository.clearDefaultExcept(shopId, id);
             account.setIsDefault(true);
             repository.save(account);
             return new ApiResponse<>(true, "Đặt tài khoản mặc định thành công", true);
@@ -120,7 +137,10 @@ public class BankAccountUserService {
 
     public ApiResponse<Boolean> hasBankAccount(int userId) {
         try {
-            boolean exist = repository.existsByUserId(userId);
+            Integer shopId = userService.getShopId(userId);
+
+            boolean exist = repository.existsByUserId(shopId);
+
             return new ApiResponse<>(true, "Kiểm tra tài khoản thành công", exist);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);

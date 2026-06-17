@@ -1,10 +1,10 @@
-import { message } from "antd";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {message} from "antd";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import supportApi from "../../api/supportApi";
-import type { SupportMessage, SupportTicket } from "../../types/support";
-import { chatStore } from "../../hooks/chatStore";
-import { useChatSocket } from "../../hooks/useChatSocket";
-import { getUserId, getUserRole } from "../../utils/authUtils";
+import type {SupportMessage, SupportTicket} from "../../types/support";
+import {chatStore} from "../../hooks/chatStore";
+import {useChatSocket} from "../../hooks/useChatSocket";
+import {getUserId, getUserRole} from "../../utils/authUtils";
 import ChatBubble from "./ChatBubble.tsx";
 import ChatModal from "./ChatModal.tsx";
 

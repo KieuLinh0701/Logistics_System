@@ -1,6 +1,6 @@
 import React from "react";
-import type { JobApplicationStatus } from "../../../../../types/recruitment";
-import { applicationStatusLabelMap } from "../../../../common/recruitment/recruitmentHelpers";
+import type {JobApplicationStatus} from "../../../../../types/recruitment";
+import {applicationStatusLabelMap} from "../../../../common/recruitment/recruitmentHelpers";
 import "./ApplicationComponents.css";
 
 interface StatusBadgeProps {

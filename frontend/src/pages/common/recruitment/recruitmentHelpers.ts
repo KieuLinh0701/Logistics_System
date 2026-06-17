@@ -3,8 +3,6 @@ import type { JobApplicationStatus, JobPostingStatus, RecruitmentRoleType } from
 export const roleTypeLabelMap: Record<RecruitmentRoleType, string> = {
   DRIVER: "Tài xế",
   SHIPPER: "Nhân viên giao hàng",
-  WAREHOUSE_STAFF: "Nhân viên kho",
-  RECONCILIATION_STAFF: "Nhân viên đối soát",
 };
 
 export const postingStatusLabelMap: Record<JobPostingStatus, string> = {
@@ -34,8 +32,6 @@ export const applicationStatusColorMap: Record<JobApplicationStatus, string> = {
 export const roleTypeOptions = [
   { label: roleTypeLabelMap.DRIVER, value: "DRIVER" },
   { label: roleTypeLabelMap.SHIPPER, value: "SHIPPER" },
-  { label: roleTypeLabelMap.WAREHOUSE_STAFF, value: "WAREHOUSE_STAFF" },
-  { label: roleTypeLabelMap.RECONCILIATION_STAFF, value: "RECONCILIATION_STAFF" },
 ];
 
 export const jobStatusOptions = [

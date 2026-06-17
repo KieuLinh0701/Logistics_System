@@ -1,8 +1,9 @@
-import type { UploadFile } from 'antd/es/upload/interface';
-import { Modal, Descriptions, Button, Typography, Space, Tooltip, Upload } from 'antd';
-import { CloseCircleOutlined, EditOutlined } from '@ant-design/icons';
-import type { ShippingRequest } from '../../../../../types/shippingRequest';
-import { translateShippingRequestStatus, translateShippingRequestType } from '../../../../../utils/shippingRequestUtils';
+import type {UploadFile} from 'antd/es/upload/interface';
+import {Button, Descriptions, message, Modal, Space, Tooltip, Typography, Upload} from 'antd';
+import {CloseCircleOutlined, EditOutlined} from '@ant-design/icons';
+import type {ShippingRequest} from '../../../../../types/shippingRequest';
+import {translateShippingRequestStatus, translateShippingRequestType} from '../../../../../utils/shippingRequestUtils';
+import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 
 const { Text } = Typography;
 
@@ -28,8 +29,10 @@ const DetailModal: React.FC<DetailModalProps> = ({
     if (!request) return null;
 
     const handleViewOrder = () => {
-        if (request.orderTrackingNumber) {
+        if (request.orderTrackingNumber && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_DETAIL'])) {
             onViewOrderDetail?.(request.orderTrackingNumber);
+        } else {
+            message.error("Bạn không có quyền xem chi tiết đơn hàng này.");
         }
     };
 
@@ -116,7 +119,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
             className="modal-hide-scrollbar"
             footer={[
                 <Space key={`space-${request.id}`}>
-                    {request.status === 'PENDING' &&
+                    {request.status === 'PENDING' && hasPermissionGroup(['GROUP_USER', 'USER_SUPPORT_EDIT']) &&
                         <Button
                             key={`editRequest-${request.id}`}
                             type="primary"
@@ -128,7 +131,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                         </Button>
                     }
 
-                    {request.status === 'PENDING' &&
+                    {request.status === 'PENDING' && hasPermissionGroup(['GROUP_USER', 'USER_SUPPORT_CANCEL']) &&
                         <Button
                             key={`cancelRequest-${request.id}`}
                             type="primary"
@@ -223,7 +226,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                             {request.handlerName}
                         </span><br />
                         <span>
-                            {request.handlerPhone}
+                            {request.handlerPhoneNumber}
                         </span><br />
                         <span>
                             {request.handlerEmail}

@@ -29,7 +29,6 @@ import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.PickupAttemptRepository;
-import com.logistics.repository.AddressRepository;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
@@ -107,9 +106,6 @@ public class OrderShipperService {
 
     @Autowired
     private ConfigService configService;
-
-    @Autowired
-    private AddressRepository addressRepository;
 
     @Autowired
     private AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
@@ -272,10 +268,10 @@ public class OrderShipperService {
                 || o.getStatus() == OrderStatus.RETURNED)
             .count();
 
-        // COD shipper đã thu (PENDING / IN_BATCH)
+        // COD shipper đã thu (PENDING)
         int codCollected = paymentSubmissionRepository
             .findByShipperIdAndStatusIn(employee.getUser().getId(),
-                Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
+                Arrays.asList(PaymentSubmissionStatus.PENDING))
             .stream()
             .mapToInt(ps -> ps.getActualAmount().intValue())
             .sum();
@@ -1124,11 +1120,11 @@ public class OrderShipperService {
         stats.put("delivered", deliveredCount);
         stats.put("failed", failedCount);
         int codCollectedHistory = paymentSubmissionRepository
-                .findByShipperIdAndStatusIn(shipperUserId,
-                        Arrays.asList(PaymentSubmissionStatus.PENDING, PaymentSubmissionStatus.IN_BATCH))
-                .stream()
-                .mapToInt(ps -> ps.getActualAmount().intValue())
-                .sum();
+            .findByShipperIdAndStatusIn(employee.getUser().getId(),
+                    List.of(PaymentSubmissionStatus.PENDING))
+            .stream()
+            .mapToInt(ps -> ps.getActualAmount().intValue())
+            .sum();
         stats.put("codCollected", codCollectedHistory);
 
         Map<String, Object> result = new HashMap<>();
@@ -1159,12 +1155,6 @@ public class OrderShipperService {
 
         incident.setTitle(request.getTitle());
         incident.setDescription(request.getDescription());
-
-        if (request.getAddressId() != null) {
-            addressRepository.findById(request.getAddressId()).ifPresent(incident::setAddress);
-        } else if (order.getRecipientAddress() != null) {
-            incident.setAddress(order.getRecipientAddress());
-        }
 
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             incident.setImages(request.getImages());
@@ -1203,7 +1193,7 @@ public class OrderShipperService {
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, Integer addressId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
+    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
@@ -1226,12 +1216,6 @@ public class OrderShipperService {
 
         incident.setTitle(title);
         incident.setDescription(description);
-
-        if (addressId != null) {
-            addressRepository.findById(addressId).ifPresent(incident::setAddress);
-        } else if (order.getRecipientAddress() != null) {
-            incident.setAddress(order.getRecipientAddress());
-        }
 
         if (priority != null) {
             try {
@@ -1477,7 +1461,6 @@ public class OrderShipperService {
         map.put("createdAt", incident.getCreatedAt());
         map.put("handledAt", incident.getHandledAt());
         map.put("officeId", incident.getOffice() != null ? incident.getOffice().getId() : null);
-        map.put("addressId", incident.getAddress() != null ? incident.getAddress().getId() : null);
         return map;
     }
 
@@ -1549,7 +1532,7 @@ public class OrderShipperService {
         List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
         if (existing != null) {
             for (PaymentSubmission ex : existing) {
-                if (ex.getStatus() == PaymentSubmissionStatus.PENDING || ex.getStatus() == PaymentSubmissionStatus.IN_BATCH) {
+                if (ex.getStatus() == PaymentSubmissionStatus.PENDING) {
                     if (isCod) {
                         try {
                             List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(order.getId());

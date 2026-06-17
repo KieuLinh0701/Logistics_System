@@ -1,15 +1,10 @@
+import type {AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig,} from "axios";
 import axios from "axios";
-import type {
-  AxiosInstance,
-  AxiosError,
-  InternalAxiosRequestConfig,
-  AxiosResponse,
-} from "axios";
 
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8080/api",
   timeout: 60000,
-  withCredentials: false, 
+  withCredentials: false,
 });
 
 

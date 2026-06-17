@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
+import {Button, Col, Form, InputNumber, message, Row, Tooltip} from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
 import RecipientInfo, {type RecipientInfoRef} from "./components/RecipientInfo";
@@ -8,20 +8,20 @@ import PaymentCard from "./components/PaymentCard";
 import OrderInfo from "./components/OrderInfo";
 import SenderInfo from "./components/SenderInfo";
 import SelectProductModal from "./components/SelectProductModal";
-import { DeleteOutlined } from "@ant-design/icons";
+import {DeleteOutlined} from "@ant-design/icons";
 import PickupType from "./components/PickupType";
 import SelectedPromoModal from "./components/SelectPromoModal";
 import PromotionCard from "./components/PromotionCard";
-import type { UserOrderRequest } from "../../../../types/order";
-import type { Product } from "../../../../types/product";
-import type { OrderProduct } from "../../../../types/orderProduct";
-import type { Office } from "../../../../types/office";
-import type { Promotion } from "../../../../types/promotion";
-import type { ServiceType } from "../../../../types/serviceType";
+import type {UserOrderRequest} from "../../../../types/order";
+import type {Product} from "../../../../types/product";
+import type {OrderProduct} from "../../../../types/orderProduct";
+import type {Office} from "../../../../types/office";
+import type {Promotion} from "../../../../types/promotion";
+import type {ServiceType} from "../../../../types/serviceType";
 import "./UserOrderCreate.css"
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import promotionApi from "../../../../api/promotionApi";
-import type { Address, AddressRequest } from "../../../../types/address";
+import type {Address, AddressRequest} from "../../../../types/address";
 import addressApi from "../../../../api/addressApi";
 import AddressModal from "../../../common/profile/components/userAddress/components/AddressModal";
 import productApi from "../../../../api/productApi";
@@ -136,6 +136,8 @@ const UserOrderCreate: React.FC = () => {
     const [paymentCard] = Form.useForm();
     const [fromOffice] = Form.useForm();
     const [orderInfo] = Form.useForm();
+
+    const [resetTrigger, setResetTrigger] = useState(0);
 
     // Khuyến mãi
     const fetchPromotions = async () => {
@@ -996,10 +998,16 @@ const UserOrderCreate: React.FC = () => {
             phoneNumber: "",
             recipient: {
                 cityCode: undefined,
+                cityName: '',
                 wardCode: undefined,
-                detail: ""
+                wardName: '',
+                detail: "",
+                latitude: undefined,
+                longitude: undefined,
             }
         });
+
+        setResetTrigger(prev => prev + 1);
     };
 
     const orderColumns = [
@@ -1177,6 +1185,7 @@ const UserOrderCreate: React.FC = () => {
                                 disabled={!selectedAddress || !existBankAccount || userLocked as boolean}
                                 onSaveRecipientChange={(save) => setSaveRecipient(save)}
                                 onSavedAddressSelect={(id) => setSavedRecipientAddressId(id)}
+                                resetTrigger={resetTrigger}
                                 onChange={(values) => {
                                     if (selectedAddress === null) return;
                                     setRecipientData(prev => ({

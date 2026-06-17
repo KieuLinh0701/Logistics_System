@@ -37,7 +37,7 @@ export const reportApi = {
     axiosClient.get(`/admin/reports/shop${start || end ? `?${start?`start=${start}`:''}${start&&end?'&':''}${end?`end=${end}`:''}` : ''}`),
   
   exportOperations: async (start?: string, end?: string) => {
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
     const token = sessionStorage.getItem('token');
     const params = [];
     if (start) params.push(`start=${start}`);
@@ -50,7 +50,7 @@ export const reportApi = {
   },
 
   exportOffice: async (start?: string, end?: string) => {
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
     const token = sessionStorage.getItem('token');
     const params = [];
     if (start) params.push(`start=${start}`);
@@ -110,7 +110,7 @@ export const reportApi = {
   },
 
   exportShop: async (start?: string, end?: string) => {
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080/api';
     const token = sessionStorage.getItem('token');
     const params = [];
     if (start) params.push(`start=${start}`);

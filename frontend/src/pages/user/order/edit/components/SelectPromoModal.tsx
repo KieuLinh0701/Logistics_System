@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Input, Radio, List, Pagination } from "antd";
-import type { Promotion } from "../../../../../types/promotion";
-import { SearchOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Input, List, Modal, Pagination, Radio} from "antd";
+import type {Promotion} from "../../../../../types/promotion";
+import {SearchOutlined} from "@ant-design/icons";
 
 interface Props {
   open: boolean;

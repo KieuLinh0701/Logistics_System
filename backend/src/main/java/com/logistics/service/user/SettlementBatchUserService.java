@@ -1,9 +1,25 @@
 package com.logistics.service.user;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
+import com.logistics.entity.ShippingRequest;
+import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
+import com.logistics.specification.ShippingRequestSpecification;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,16 +27,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import com.logistics.dto.user.UserSettlementBatchListDto;
-import com.logistics.dto.user.UserSettlementOrderDto;
-import com.logistics.dto.user.UserSettlementTransactionDto;
+import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
+import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
 import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
 import com.logistics.entity.Order;
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.SettlementStatus;
-import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.SettlementBatchMapper;
 import com.logistics.mapper.SettlementTransactionMapper;
@@ -36,6 +51,15 @@ import com.logistics.specification.SettlementBatchSpecification;
 
 import lombok.RequiredArgsConstructor;
 
+import static com.logistics.utils.OrderUtils.translateOrderPayerType;
+import static com.logistics.utils.OrderUtils.translateOrderPaymentStatus;
+import static com.logistics.utils.OrderUtils.translateOrderStatus;
+import static com.logistics.utils.SettlementBatchUtils.translateSettlementBatchStatus;
+import static com.logistics.utils.SettlementTransactionUtils.translateSettlementTransactionStatus;
+import static com.logistics.utils.SettlementTransactionUtils.translateSettlementTransactionType;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
+import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
+
 @Service
 @RequiredArgsConstructor
 public class SettlementBatchUserService {
@@ -48,19 +72,53 @@ public class SettlementBatchUserService {
 
     private final UserSettlementScheduleUserService scheduleUserService;
 
+    private final UserUserService userService;
+
+    public ApiResponse<UserSettlementSummaryResponse> getSummary(Integer userId) {
+        try {
+            Integer shopId = userService.getShopId(userId);
+
+            List<SettlementBatch> batches = batchRepository.findByShop_Id(shopId);
+
+            BigDecimal received = batches.stream()
+                    .filter(b -> b.getStatus() == SettlementStatus.COMPLETED
+                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
+                    .map(SettlementBatch::getBalanceAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal pending = batches.stream()
+                    .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
+                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
+                    .map(SettlementBatch::getBalanceAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal debt = batches.stream()
+                    .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
+                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) < 0)
+                    .map(b -> b.getBalanceAmount().abs().subtract(b.getPaidAmount()))
+                    .filter(r -> r.compareTo(BigDecimal.ZERO) > 0)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            return new ApiResponse<>(true, "Lấy tổng quan đối soát thành công",
+                    new UserSettlementSummaryResponse(received, pending, debt));
+
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        }
+    }
+
     public ApiResponse<ListResponse<UserSettlementBatchListDto>> list(
             Integer userId, SearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             Sort sort = buildSort(request.getSort());
             Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
-            Page<SettlementBatch> pageData = getSettlementBatchs(userId, request, pageable);
+            Page<SettlementBatch> pageData = getSettlementBatchs(shopId, request, pageable);
 
             List<UserSettlementBatchListDto> list = pageData.getContent()
                     .stream()
-                    .map(batch -> {
-                        BigDecimal remainAmount = calculateRemainAmount(batch);
-                        return SettlementBatchMapper.toListDtos(batch, remainAmount);
-                    })
+                    .map(SettlementBatchMapper::toListDtos)
                     .toList();
 
             Pagination pagination = new Pagination(
@@ -74,29 +132,6 @@ public class SettlementBatchUserService {
             data.setPagination(pagination);
 
             return new ApiResponse<>(true, "Lấy danh sách phiên đối soát thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
-    }
-
-    public ApiResponse<List<Integer>> getAllIds(int userId, SearchRequest request) {
-        try {
-            Specification<SettlementBatch> spec = SettlementBatchSpecification.unrestricted()
-                    .and(SettlementBatchSpecification.userId(userId))
-                    .and(SettlementBatchSpecification.search(request.getSearch()))
-                    .and(SettlementBatchSpecification.createdAtBetween(
-                            parseDate(request.getStartDate()),
-                            parseDate(request.getEndDate())))
-                    .and((root, query, cb) -> cb.notEqual(root.get("status"), "COMPLETED"))
-                    .and((root, query, cb) -> cb.lessThan(root.get("balanceAmount"), 0));
-
-            List<SettlementBatch> batches = batchRepository.findAll(spec);
-
-            List<Integer> batchIds = batches.stream()
-                    .map(SettlementBatch::getId)
-                    .toList();
-
-            return new ApiResponse<>(true, "Lấy toàn bộ ID phiên đối soát thành công", batchIds);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
@@ -119,24 +154,6 @@ public class SettlementBatchUserService {
         return batchRepository.findAll(spec, pageable);
     }
 
-    private BigDecimal calculateRemainAmount(SettlementBatch batch) {
-
-        BigDecimal balance = batch.getBalanceAmount();
-        if (balance == null) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal paidAmount = transactionRepository.sumAmountByBatchAndStatus(
-                batch.getId(),
-                SettlementTransactionStatus.SUCCESS);
-
-        if (paidAmount == null) {
-            paidAmount = BigDecimal.ZERO;
-        }
-
-        return balance.abs().subtract(paidAmount);
-    }
-
     private Sort buildSort(String sort) {
         if (sort == null)
             return Sort.unsorted();
@@ -156,6 +173,8 @@ public class SettlementBatchUserService {
     public ApiResponse<ListResponse<UserSettlementOrderDto>> getOrdersBySettlementBatchId(int userId, Integer batchId,
             SearchRequest request) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -173,7 +192,7 @@ public class SettlementBatchUserService {
 
             Specification<Order> spec = OrderSpecification.unrestrictedOrder()
                     .and(OrderSpecification.settlementBatchId(batchId))
-                    .and(OrderSpecification.userId(userId))
+                    .and(OrderSpecification.userId(shopId))
                     .and(OrderSpecification.settlementSearch(search))
                     .and(OrderSpecification.payer(payer))
                     .and(OrderSpecification.status(status))
@@ -215,10 +234,12 @@ public class SettlementBatchUserService {
     public ApiResponse<List<UserSettlementTransactionDto>> getSettlementTransactionsBySettlementBatchId(
             Integer userId, Integer batchId) {
         try {
+            Integer shopId = userService.getShopId(userId);
+
             Sort sort = Sort.by(Sort.Direction.DESC, "paidAt");
 
             SettlementBatch batch = batchRepository
-                    .findByIdAndShop_Id(batchId, userId)
+                    .findByIdAndShop_Id(batchId, shopId)
                     .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
 
             List<SettlementTransaction> transactions = transactionRepository.findBySettlementBatchId(batchId, sort);
@@ -238,14 +259,15 @@ public class SettlementBatchUserService {
 
     public ApiResponse<UserSettlementBatchListDto> getBySettlementBatchId(Integer userId, Integer batchId) {
         try {
-            SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, userId)
+            Integer shopId = userService.getShopId(userId);
+
+            SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, shopId)
                     .orElse(null);
 
             if (batch == null) {
                 return new ApiResponse<>(false, "Không tìm thấy phiên đối soát của bạn", null);
             }
-            BigDecimal remainAmount = calculateRemainAmount(batch);
-            UserSettlementBatchListDto dto = SettlementBatchMapper.toListDtos(batch, remainAmount);
+            UserSettlementBatchListDto dto = SettlementBatchMapper.toListDtos(batch);
 
             return new ApiResponse<>(true, "Lấy thông tin phiên đối soát thành công", dto);
 
@@ -285,18 +307,197 @@ public class SettlementBatchUserService {
 
                 totalDebt = totalDebt.add(originalDebt);
             }
-
-            else if (b.getStatus() == SettlementStatus.PARTIAL) {
-                BigDecimal paid = transactionRepository
-                        .sumPaidDebtByBatch(b.getId());
-
-                BigDecimal remaining = originalDebt.subtract(paid).max(BigDecimal.ZERO);
-
-                totalDebt = totalDebt.add(remaining);
-            }
         }
 
         return totalDebt;
     }
 
+    public byte[] export(Integer userId, SearchRequest request) {
+        Integer shopId = userService.getShopId(userId);
+
+        Sort sort = buildSort(request.getSort());
+        List<SettlementBatch> batches = getSettlementBatchs(shopId, request, Pageable.unpaged(sort))
+                .getContent();
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("SettlementBatches");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã phiên",
+                    "Trạng thái",
+                    "Hình thức",
+                    "Số tiền",
+                    "Thời gian đối soát",
+                    "Thời gian cập nhật"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (SettlementBatch b : batches) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(b.getCode() != null ? b.getCode() : "");
+                row.createCell(1).setCellValue(translateSettlementBatchStatus(b.getStatus()));
+
+                String type = (b.getBalanceAmount().compareTo(BigDecimal.ZERO) == 0) ? "Hòa"
+                        : (b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0) ? "Shop trả hệ thống"
+                                : "Hệ thống trả shop";
+                row.createCell(2).setCellValue(type);
+
+                row.createCell(3).setCellValue(b.getBalanceAmount().doubleValue());
+                row.createCell(4).setCellValue(b.getCreatedAt() != null ? b.getCreatedAt().format(dtf) : "N/A");
+                row.createCell(5).setCellValue(b.getUpdatedAt() != null ? b.getUpdatedAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
+
+    public byte[] exportById(Integer userId, Integer settlementBatchId) {
+        Integer shopId = userService.getShopId(userId);
+
+        // Lấy thông tin batch
+        SettlementBatch batch = batchRepository
+                .findByIdAndShop_Id(settlementBatchId, shopId)
+                .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
+
+        // Lấy toàn bộ đơn hàng của batch (không filter)
+        Specification<Order> orderSpec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.settlementBatchId(settlementBatchId))
+                .and(OrderSpecification.userId(shopId));
+
+        List<Order> orders = orderRepository.findAll(orderSpec, Sort.by("createdAt").descending());
+
+        // Lấy toàn bộ giao dịch thanh toán
+        List<SettlementTransaction> transactions = transactionRepository
+                .findBySettlementBatchId(settlementBatchId, Sort.by(Sort.Direction.DESC, "paidAt"));
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+            DateTimeFormatter dtfDate = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            // ── Sheet 1: Danh sách đơn hàng ──
+            Sheet orderSheet = workbook.createSheet("Orders");
+
+            String[] orderHeaders = {
+                    "Mã đơn hàng",
+                    "Trạng thái",
+                    "Ngày giao / hoàn",
+                    "Người thanh toán",
+                    "COD (chưa phí)",
+                    "Phí dịch vụ",
+                    "Trạng thái thanh toán"
+            };
+
+            Row orderHeaderRow = orderSheet.createRow(0);
+            for (int i = 0; i < orderHeaders.length; i++) {
+                Cell cell = orderHeaderRow.createCell(i);
+                cell.setCellValue(orderHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int orderRowIdx = 1;
+            for (Order o : orders) {
+                Row row = orderSheet.createRow(orderRowIdx++);
+
+                row.createCell(0).setCellValue(o.getTrackingNumber() != null ? o.getTrackingNumber() : "");
+                row.createCell(1).setCellValue(translateOrderStatus(o.getStatus()));
+                row.createCell(2).setCellValue(o.getDeliveredAt() != null ? o.getDeliveredAt().format(dtfDate) : "N/A");
+                row.createCell(3).setCellValue(translateOrderPayerType(o.getPayer()));
+                row.createCell(4).setCellValue(o.getCod() != null ? o.getCod().doubleValue() : 0);
+                row.createCell(5).setCellValue(o.getTotalFee() != null ? o.getTotalFee().doubleValue() : 0);
+                row.createCell(6).setCellValue(translateOrderPaymentStatus(o.getPaymentStatus()));
+            }
+
+            for (int i = 0; i < orderHeaders.length; i++) {
+                orderSheet.autoSizeColumn(i);
+            }
+
+            // ── Sheet 2: Hóa đơn thanh toán ──
+            Sheet txSheet = workbook.createSheet("Transactions");
+
+            String[] txHeaders = {
+                    "Mã giao dịch",
+                    "Loại",
+                    "Số tiền",
+                    "Trạng thái",
+                    "Ngân hàng",
+                    "Tên tài khoản",
+                    "Số tài khoản",
+                    "Thời gian tạo",
+                    "Thời gian thanh toán"
+            };
+
+            Row txHeaderRow = txSheet.createRow(0);
+            for (int i = 0; i < txHeaders.length; i++) {
+                Cell cell = txHeaderRow.createCell(i);
+                cell.setCellValue(txHeaders[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int txRowIdx = 1;
+            for (SettlementTransaction tx : transactions) {
+                Row row = txSheet.createRow(txRowIdx++);
+
+                row.createCell(0).setCellValue(tx.getCode() != null ? tx.getCode() : "");
+                row.createCell(1).setCellValue(translateSettlementTransactionType(tx.getType()));
+                row.createCell(2).setCellValue(tx.getAmount() != null ? tx.getAmount().doubleValue() : 0);
+                row.createCell(3).setCellValue(translateSettlementTransactionStatus(tx.getStatus()));
+                row.createCell(4).setCellValue(tx.getBankName() != null ? tx.getBankName() : "N/A");
+                row.createCell(5).setCellValue(tx.getAccountName() != null ? tx.getAccountName() : "N/A");
+                row.createCell(6).setCellValue(tx.getAccountNumber() != null ? tx.getAccountNumber() : "N/A");
+                row.createCell(7).setCellValue(tx.getCreatedAt() != null ? tx.getCreatedAt().format(dtf) : "N/A");
+                row.createCell(8).setCellValue(tx.getPaidAt() != null ? tx.getPaidAt().format(dtf) : "N/A");
+            }
+
+            for (int i = 0; i < txHeaders.length; i++) {
+                txSheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi xuất Excel", e);
+        }
+    }
 }

@@ -1,5 +1,11 @@
-import type { Promotion, CreatePromotionPayload, UpdatePromotionPayload, PromotionUserRequest, PromotionPublicRequest} from "../types/promotion";
-import type { ApiResponse, ListResponse } from "../types/response";
+import type {
+    CreatePromotionPayload,
+    Promotion,
+    PromotionPublicRequest,
+    PromotionUserRequest,
+    UpdatePromotionPayload
+} from "../types/promotion";
+import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 
 const promotionApi = {

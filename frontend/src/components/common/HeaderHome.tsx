@@ -1,25 +1,16 @@
 import React from "react";
+import type {MenuProps} from "antd";
+import {Avatar, Button, Col, Dropdown, Layout, Menu, Row, Typography,} from "antd";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 import {
-  Layout,
-  Menu,
-  Button,
-  Row,
-  Col,
-  Typography,
-  Avatar,
-  Dropdown,
-} from "antd";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  BarChartOutlined,
-  DashboardOutlined,
-  DollarOutlined,
-  HomeOutlined,
-  InboxOutlined,
-  LogoutOutlined,
-  UserOutlined,
+    BarChartOutlined,
+    DashboardOutlined,
+    DollarOutlined,
+    HomeOutlined,
+    InboxOutlined,
+    LogoutOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
-import type { MenuProps } from "antd";
 import authApi from "../../api/authApi";
 import "./HeaderHome.css";
 import logo from "../../assets/images/home/logo.png";

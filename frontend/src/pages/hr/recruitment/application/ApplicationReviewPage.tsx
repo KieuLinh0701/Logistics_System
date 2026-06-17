@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Alert, message } from "antd";
+import React, {useEffect, useState} from "react";
+import {Alert, message} from "antd";
 import recruitmentApi from "../../../../api/recruitmentApi";
-import type { JobApplication, JobApplicationStatus } from "../../../../types/recruitment";
-import { getUserRole, getUserOfficeId } from "../../../../utils/authUtils";
+import type {JobApplication, JobApplicationStatus} from "../../../../types/recruitment";
+import {getUserOfficeId, getUserRole} from "../../../../utils/authUtils";
 import officeApi from "../../../../api/officeApi";
-import { UsergroupAddOutlined } from "@ant-design/icons";
+import {UsergroupAddOutlined} from "@ant-design/icons";
 import SearchFilters from "./components/SearchFilters";
 import ApplicationTable from "./components/ApplicationTable";
 import ApplicationDetailModal from "./components/ApplicationDetailModal";

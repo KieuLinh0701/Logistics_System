@@ -1,9 +1,9 @@
-import React, { useEffect } from "react";
-import { Modal, Input, Table, Select, Tag, Row, Col } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
-import type { Product } from "../../../../../types/product";
-import { PRODUCT_TYPES, translateProductType } from "../../../../../utils/productUtils";
-import type { ColumnsType } from "antd/es/table";
+import React, {useEffect} from "react";
+import {Col, Input, Modal, Row, Select, Table, Tag} from "antd";
+import {SearchOutlined} from "@ant-design/icons";
+import type {Product} from "../../../../../types/product";
+import {PRODUCT_TYPES, translateProductType} from "../../../../../utils/productUtils";
+import type {ColumnsType} from "antd/es/table";
 
 interface Props {
   open: boolean;

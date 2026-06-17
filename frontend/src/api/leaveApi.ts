@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
-import type { ApiResponse } from "../types/response";
-import type { ApproveLeavePayload, CreateLeavePayload, LeaveItem } from "../types/leave";
+import type {ApiResponse} from "../types/response";
+import type {ApproveLeavePayload, CreateLeavePayload, LeaveItem} from "../types/leave";
 
 const leaveApi = {
   async createLeave(payload: CreateLeavePayload) {
@@ -16,11 +16,11 @@ const leaveApi = {
   },
 
   async getOfficeLeaves() {
-    return axiosClient.get<ApiResponse<LeaveItem[]>>("/leaves/office");
+    return axiosClient.get<ApiResponse<LeaveItem[]>>("/manager/leaves/office");
   },
 
   async approveLeave(id: number, payload: ApproveLeavePayload) {
-    return axiosClient.put<ApiResponse<LeaveItem>>(`/leaves/${id}/approve`, payload);
+    return axiosClient.put<ApiResponse<LeaveItem>>(`/manager/leaves/${id}/approve`, payload);
   },
 };
 

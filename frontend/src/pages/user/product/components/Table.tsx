@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Table, Button, Dropdown, Modal } from 'antd';
-import { DeleteOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import React, {useState} from 'react';
+import {Button, Dropdown, Modal, Table} from 'antd';
+import {DeleteOutlined, DownOutlined, EditOutlined} from '@ant-design/icons';
+import type {ColumnsType} from 'antd/es/table';
 import dayjs from 'dayjs';
-import type { Product } from '../../../../types/product';
+import type {Product} from '../../../../types/product';
 import defaultImage from "../../../../assets/images/imageDefault.jpg";
-import { translateProductStatus, translateProductType } from '../../../../utils/productUtils';
+import {translateProductStatus, translateProductType} from '../../../../utils/productUtils';
+import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 interface ProductTableProps {
   data: Product[];
@@ -86,7 +87,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
       align: 'left',
       render: (_, record: Product) => (
         <>
-          <span className="custom-table-content-strong">Khối lượng quy đổi: </span>{record.weight} Kg<br />
+          <span className="custom-table-content-strong">Khối lượng: </span>{record.weight} Kg<br />
           <span className="custom-table-content-strong">Giá SP: </span>{record.price.toLocaleString()} VNĐ
         </>
       )
@@ -115,14 +116,19 @@ const ProductTable: React.FC<ProductTableProps> = ({
       render: (_, record: Product) => {
         const items = [];
 
-        items.push({
-          key: "edit",
-          icon: <EditOutlined />,
-          label: "Sửa",
-          onClick: () => onEdit(record),
-        });
+        const canEdit = hasPermissionGroup(['GROUP_USER', 'USER_PRODUCT_EDIT']);
+        const canDelete = hasPermissionGroup(['GROUP_USER', 'USER_PRODUCT_DELETE']);
 
-        if (record.soldQuantity === 0) {
+        if (canEdit) {
+            items.push({
+                key: "edit",
+                icon: <EditOutlined/>,
+                label: "Sửa",
+                onClick: () => onEdit(record),
+            });
+        }
+
+        if (record.soldQuantity === 0 && canDelete) {
           items.push({
             key: "delete",
             icon: <DeleteOutlined />,
@@ -135,6 +141,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
           <Dropdown
             menu={{ items }}
             trigger={['click']}
+            disabled={items.length === 0}
           >
             <Button className="dropdown-trigger-button">
               Hành động <DownOutlined />

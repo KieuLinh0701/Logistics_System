@@ -10,15 +10,23 @@ import lombok.*;
 @NoArgsConstructor
 public class ManagerOrderCreateRequest {
     private String senderName;
+    private String senderPhone;
     private String senderDetail;
     private Integer senderWardCode;
+    private String senderWardName;
     private Integer senderCityCode;
-    private String senderPhone;
+    private String senderCityName;
+    private Double senderLatitude;
+    private Double senderLongitude;
     private String recipientName;
     private String recipientPhone;
-    private Integer recipientCityCode;
-    private Integer recipientWardCode;
     private String recipientDetail;
+    private Integer recipientWardCode;
+    private String recipientWardName;
+    private Integer recipientCityCode;
+    private String recipientCityName;
+    private Double recipientLatitude;
+    private Double recipientLongitude;
     private BigDecimal weight;
     private BigDecimal originalWeight;
     private BigDecimal height;

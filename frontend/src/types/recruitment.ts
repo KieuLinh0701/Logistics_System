@@ -1,4 +1,4 @@
-export type RecruitmentRoleType = "DRIVER" | "SHIPPER" | "WAREHOUSE_STAFF" | "RECONCILIATION_STAFF";
+export type RecruitmentRoleType = "DRIVER" | "SHIPPER";
 export type JobPostingStatus = "OPEN" | "CLOSED";
 export type JobApplicationStatus = "PENDING" | "REVIEWING" | "APPROVED" | "REJECTED";
 

@@ -46,7 +46,11 @@ const ManagerOrderCreate: React.FC = () => {
         phoneNumber: "",
         detail: "",
         wardCode: 0,
+        wardName: '',
         cityCode: 0,
+        cityName: '',
+        latitude: 0,
+        longitude: 0
     });
     const [senderData, setSenderData] = useState(empty);
     const [recipientData, setRecipientData] = useState(empty);
@@ -63,6 +67,8 @@ const ManagerOrderCreate: React.FC = () => {
     const [recipientInfo] = Form.useForm();
     const [paymentCard] = Form.useForm();
     const [orderInfo] = Form.useForm();
+
+    const [resetTrigger, setResetTrigger] = useState(0);
 
     // Dịch vụ
     useEffect(() => {
@@ -155,13 +161,21 @@ const ManagerOrderCreate: React.FC = () => {
                 senderName: senderData.name,
                 senderPhone: senderData.phoneNumber,
                 senderCityCode: senderData.cityCode,
+                senderCityName: senderData.cityName,
                 senderWardCode: senderData.wardCode,
+                senderWardName: senderData.wardName,
+                senderLatitude: senderData.latitude,
+                senderLongitude: senderData.longitude,
                 senderDetail: senderData.detail,
                 recipientName: recipientData.name,
                 recipientPhone: recipientData.phoneNumber,
                 recipientCityCode: recipientData.cityCode,
+                recipientCityName: recipientData.cityName,
                 recipientWardCode: recipientData.wardCode,
+                recipientWardName: recipientData.wardName,
                 recipientDetail: recipientData.detail,
+                recipientLatitude: recipientData.latitude,
+                recipientLongitude: recipientData.longitude,
                 weight,
                 originalWeight,
                 length,
@@ -290,10 +304,30 @@ const ManagerOrderCreate: React.FC = () => {
             phoneNumber: "",
             recipient: {
                 cityCode: undefined,
+                cityName: '',
                 wardCode: undefined,
-                detail: ""
+                wardName: '',
+                detail: "",
+                latitude: undefined,
+                longitude: undefined,
             }
         });
+
+        senderInfo.setFieldsValue({
+            name: "",
+            phoneNumber: "",
+            sender: {
+                cityCode: undefined,
+                cityName: '',
+                wardCode: undefined,
+                wardName: '',
+                detail: "",
+                latitude: undefined,
+                longitude: undefined,
+            }
+        });
+
+        setResetTrigger(prev => prev + 1);
     };
 
     return (
@@ -309,6 +343,7 @@ const ManagerOrderCreate: React.FC = () => {
                             <SenderInfo
                                 form={senderInfo}
                                 sender={senderData}
+                                resetTrigger={resetTrigger}
                                 onChange={(values) => {
                                     setSenderData(prev => ({
                                         ...prev,
@@ -316,7 +351,11 @@ const ManagerOrderCreate: React.FC = () => {
                                         phoneNumber: values.phoneNumber ?? prev.phoneNumber,
                                         detail: values.sender?.detail ?? prev.detail,
                                         wardCode: values.sender?.wardCode ?? prev.wardCode,
+                                        wardName: values.sender?.wardName ?? prev.wardName,
                                         cityCode: values.sender?.cityCode ?? prev.cityCode,
+                                        cityName: values.sender?.cityName ?? prev.cityName,
+                                        latitude: values.sender?.latitude ?? prev.latitude,
+                                        longitude: values.sender?.longitude ?? prev.longitude,
                                     }));
                                 }}
                             />
@@ -324,6 +363,7 @@ const ManagerOrderCreate: React.FC = () => {
                             <RecipientInfo
                                 form={recipientInfo}
                                 recipient={recipientData}
+                                resetTrigger={resetTrigger}
                                 onChange={(values) => {
                                     setRecipientData(prev => ({
                                         ...prev,
@@ -331,8 +371,11 @@ const ManagerOrderCreate: React.FC = () => {
                                         phoneNumber: values.phoneNumber ?? prev.phoneNumber,
                                         detail: values.recipient?.detail ?? prev.detail,
                                         wardCode: values.recipient?.wardCode ?? prev.wardCode,
+                                        wardName: values.recipient?.wardName ?? prev.wardName,
                                         cityCode: values.recipient?.cityCode ?? prev.cityCode,
-                                    }));
+                                        cityName: values.recipient?.cityName ?? prev.cityName,
+                                        latitude: values.recipient?.latitude ?? prev.latitude,
+                                        longitude: values.recipient?.longitude ?? prev.longitude,                                    }));
                                 }}
                             />
 

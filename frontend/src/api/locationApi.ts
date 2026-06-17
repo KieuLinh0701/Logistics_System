@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { City, Ward } from "../types/location";
+import type {City, Ward} from "../types/location";
 
 const locationApi = {
   getCities: async (): Promise<City[]> => {

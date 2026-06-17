@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { Card, Button } from "antd";
-import { EditOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Card} from "antd";
+import {EditOutlined} from "@ant-design/icons";
 import AddressPickerModal from "./AddressPickerModal";
-import type { Address } from "../../../../../types/address";
+import type {Address} from "../../../../../types/address";
 import locationApi from "../../../../../api/locationApi";
-import { type OrderStatus } from "../../../../../utils/orderUtils";
-import { canEditUserOrderField } from "../../../../../utils/userOrderEditRules";
+import {type OrderStatus} from "../../../../../utils/orderUtils";
+import {canEditUserOrderField} from "../../../../../utils/userOrderEditRules";
 
 interface Props {
     sender: {

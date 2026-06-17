@@ -39,9 +39,35 @@ export interface User {
   phoneNumber?: string;
   role?: string;
   roleId?: number;
-  isActive: boolean;
-  isVerified: boolean;
+  isActive?: boolean;
+  isVerified?: boolean;
   images?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface UserEmployeeSearchRequest {
+    page: number;
+    limit: number;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export interface UserEmployeeSearchRequest {
+    page: number;
+    limit: number;
+    search?: string;
+    active?: boolean;
+    sort?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export interface UserFormValues {
+    email?: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    roleId?: number;
 }

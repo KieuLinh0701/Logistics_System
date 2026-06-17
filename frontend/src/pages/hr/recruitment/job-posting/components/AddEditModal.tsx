@@ -1,9 +1,9 @@
 import React from "react";
-import { Form, Input, Modal, Select, InputNumber } from "antd";
-import type { FormInstance } from "antd";
-import type { JobPosting } from "../../../../../types/recruitment";
-import { jobStatusOptions, roleTypeOptions } from "../../../../common/recruitment/recruitmentHelpers";
-import { shiftOptions } from "../../../../../utils/recruitmentHelpers";
+import type {FormInstance} from "antd";
+import {Form, Input, InputNumber, Modal, Select} from "antd";
+import type {JobPosting} from "../../../../../types/recruitment";
+import {jobStatusOptions, roleTypeOptions} from "../../../../common/recruitment/recruitmentHelpers";
+import {shiftOptions} from "../../../../../utils/recruitmentHelpers";
 import "./JobPostingComponents.css";
 import officeApi from "../../../../../api/officeApi";
 
