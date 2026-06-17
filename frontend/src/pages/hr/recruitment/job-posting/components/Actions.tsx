@@ -6,13 +6,12 @@ import "./JobPostingComponents.css";
 
 interface ActionsProps {
   record: JobPosting;
-  actionLoading: boolean;
   onEdit: (job: JobPosting) => void;
   onToggleStatus: (job: JobPosting, nextStatus: JobPostingStatus) => void;
   onDelete: (id: number) => void;
 }
 
-const Actions: React.FC<ActionsProps> = ({ record, actionLoading, onEdit, onToggleStatus, onDelete }) => {
+const Actions: React.FC<ActionsProps> = ({ record, onEdit, onToggleStatus, onDelete }) => {
   const nextStatus: JobPostingStatus = record.status === "OPEN" ? "CLOSED" : "OPEN";
 
   const menu = (

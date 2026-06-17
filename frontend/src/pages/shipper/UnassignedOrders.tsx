@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Card, Table, Button, Space, Tag, message, Typography, Row, Col } from "antd";
+import { Table, Button, Space, Tag, message, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EyeOutlined } from "@ant-design/icons";
+import { EyeOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import type { ShipperOrder } from "../../api/orderApi";
+import "../../styles/ListPage.css";
+import "./ShipperPagesShared.css";
 
 type OrderItem = ShipperOrder;
 
@@ -100,23 +102,24 @@ const ShipperUnassignedOrders: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string) => <Typography.Text strong style={{ color: "#1f2937" }}>{text}</Typography.Text>,
+      render: (text: string) => <Typography.Text strong className="shipper-table-strong">{text}</Typography.Text>,
     },
     {
       title: "Thông tin người nhận",
       key: "recipient",
       render: (_, record) => {
         const address =
-          typeof record.recipientAddress === "string"
+          record.recipientFullAddress ||
+          (typeof record.recipientAddress === "string"
             ? record.recipientAddress
-            : (record.recipientAddress as any)?.fullAddress ?? "";
+            : (record.recipientAddress as any)?.fullAddress) || "";
         return (
           <Space direction="vertical" size={2}>
-            <Typography.Text strong style={{ color: "#111827" }}>{record.recipientName}</Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12, color: "#6b7280" }}>
-              {record.recipientPhone}
+            <Typography.Text strong className="shipper-table-strong">
+              {record.recipientName}
             </Typography.Text>
-            <Typography.Text style={{ fontSize: 12, color: "#4b5563" }}>{address}</Typography.Text>
+            <Typography.Text className="shipper-table-muted">{record.recipientPhone}</Typography.Text>
+            <Typography.Text className="shipper-table-muted">{address}</Typography.Text>
           </Space>
         );
       },
@@ -129,8 +132,8 @@ const ShipperUnassignedOrders: React.FC = () => {
           typeof record.serviceType === "string" ? record.serviceType : (record.serviceType as any)?.name ?? "";
         return (
           <Space direction="vertical" size={2}>
-            <Typography.Text style={{ color: "#1f2937" }}>{serviceName || "—"}</Typography.Text>
-            <Typography.Text style={{ color: "#ef4444", fontWeight: 600 }}>
+            <Typography.Text className="shipper-table-strong">{serviceName || "—"}</Typography.Text>
+            <Typography.Text className="shipper-cod-value">
               {record.cod ? `${record.cod.toLocaleString()}đ` : "COD: 0đ"}
             </Typography.Text>
           </Space>
@@ -155,37 +158,50 @@ const ShipperUnassignedOrders: React.FC = () => {
           <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`)}>
             Chi tiết
           </Button>
-          <Button type="primary" onClick={() => handleClaim(record.id!)}>Nhận đơn</Button>
+          <Button type="primary" className="primary-button" onClick={() => handleClaim(record.id!)}>
+            Nhận đơn
+          </Button>
         </Space>
       ),
     },
   ];
 
-  const { Title } = Typography;
-
   return (
-    <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <Title level={3} className="list-page-title-main">Đơn chưa gán</Title>
-        </Col>
-        <Col />
-      </Row>
+    <div className="list-page-layout shipper-page-root">
+      <div className="list-page-content">
+        <div className="shipper-filter-panel shipper-filter-panel--end">
+          <div className="shipper-filter-actions">
+            <Button icon={<ReloadOutlined />} onClick={() => fetchUnassigned(page, limit)}>
+              Làm mới
+            </Button>
+          </div>
+        </div>
 
-      <Card bordered={false}>
-        <Table
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={data}
-          pagination={{
-            current: page,
-            pageSize: limit,
-            total,
-            onChange: (p, l) => fetchUnassigned(p, l),
-          }}
-        />
-      </Card>
+        <div className="list-page-header shipper-page-header">
+          <div>
+            <h3 className="list-page-title-main">Đơn chưa gán</h3>
+            <div className="shipper-header-meta">
+              <div className="list-page-tag">Kết quả: {total} đơn</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="list-page-table shipper-page-table">
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={data}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total,
+              onChange: (p, l) => fetchUnassigned(p, l),
+            }}
+            scroll={{ x: 960 }}
+          />
+        </div>
+      </div>
     </div>
   );
 };

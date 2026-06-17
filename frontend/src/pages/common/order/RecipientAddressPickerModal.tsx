@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Modal, List, Button, Empty, message, Radio} from "antd";
-import {EnvironmentOutlined} from "@ant-design/icons";
+import {Modal, List, Empty, message, Radio} from "antd";
 import recipientAddressApi from "../../../api/recipientAddressApi.ts";
 import type {RecipientAddressWithStats} from "../../../types/recipientAddress.ts";
 
@@ -22,7 +21,7 @@ const RecipientAddressPickerModal: React.FC<Props> = ({
     const [recipientAddresses, setRecipientAddresses] = useState<RecipientAddressWithStats[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
-    const [keyword, setKeyword] = useState<string>("");
+    const keyword = "";
     const [page, setPage] = useState<number>(1);
     const [total, setTotal] = useState<number>(0);
     const [limit, setLimit] = useState<number>(10);
@@ -58,6 +57,7 @@ const RecipientAddressPickerModal: React.FC<Props> = ({
                 }
 
                 setRecipientAddresses(response);
+                setTotal(result.data?.pagination?.total || 0);
             } else {
                 message.error(result.message || "Không thể tải địa chỉ người nhận")
             }

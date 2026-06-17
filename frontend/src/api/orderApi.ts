@@ -8,7 +8,8 @@ import type {
     OrderPrint,
     StatusCount,
     UserOrderRequest,
-    UserOrderSearchRequest
+    UserOrderSearchRequest,
+    OrderFulfillmentSummary
 } from "../types/order";
 import axiosClient from "./axiosClient";
 import type {OrderHistory} from "../types/orderHistory";
@@ -213,6 +214,35 @@ const orderApi = {
         return res.data;
     },
 
+    async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string; failReason?: string }) {
+        await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
+    },
+
+    async createDeliveryAttempt(id: number, payload: { status: string; failReason?: string; note?: string; notes?: string }) {
+        const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${id}/delivery-attempt`, payload);
+        return res.data;
+    },
+
+    async returnFailedToOffice(orderId: number) {
+        const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/return-failed-to-office`);
+        return res.data;
+    },
+
+    async recordPickupAttempt(orderId: number, payload: { status: string; failReason?: string; note?: string }) {
+        const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/pickup-attempt`, payload);
+        return res.data;
+    },
+
+    async getShipperDeliveryHistory(params: { page?: number; limit?: number; status?: string }) {
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/history", { params });
+        const data = res.data || {};
+        return {
+            orders: (data.orders || []) as ShipperOrder[],
+            pagination: data.pagination || { page: 1, limit: 10, total: 0 },
+            stats: (data.stats || {}) as ShipperStats,
+        };
+    },
+
     async unclaimShipperOrder(orderId: number) {
         await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/unclaim`);
     },
@@ -249,20 +279,6 @@ const orderApi = {
     async finishPartialDelivery(orderId: number) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/partial-finish`);
         return res.data;
-    },
-
-    async updateShipperDeliveryStatus(id: number, payload: { status: string; notes?: string }) {
-        await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
-    },
-
-    async getShipperDeliveryHistory(params: { page?: number; limit?: number; status?: string }) {
-        const res = await axiosClient.get<ApiResponse<any>>("/shipper/history", {params});
-        const data = res.data || {};
-        return {
-            orders: (data.orders || []) as ShipperOrder[],
-            pagination: data.pagination || {page: 1, limit: 10, total: 0},
-            stats: (data.stats || {}) as ShipperStats,
-        };
     },
 
     // COD
@@ -404,6 +420,18 @@ const orderApi = {
         return res;
     },
 
+    // Public
+    async getPublicOrderByTrackingNumber(trackingNumber: string) {
+        const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
+        return res;
+    },
+
+    //
+    async getFulfillmentSummary(orderId: number) {
+        const res = await axiosClient.get<ApiResponse<OrderFulfillmentSummary>>(`/orders/${orderId}/fulfillment-summary`);
+        return res;
+    },
+
     async exportManagerOrders(params: ManagerOrderSearchRequest) {
         try {
             const res = await axiosExport.get("/manager/orders/export", {
@@ -443,11 +471,6 @@ const orderApi = {
         }
     },
 
-    // Pubic
-    async getPublicOrderByTrackingNumber(trackingNumber: string) {
-        const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
-        return res;
-    },
 };
 
 export default orderApi;

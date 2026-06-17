@@ -1,6 +1,5 @@
 package com.logistics.controller.admin;
 
-import com.logistics.request.admin.UpdateOrderStatusRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.OrderAdminService;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
@@ -34,21 +33,6 @@ public class OrderAdminController {
         }
 
         return ResponseEntity.ok(orderAdminService.listOrders(page, limit, search, status));
-    }
-
-    @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateOrderStatus(
-            @PathVariable Integer id,
-            @RequestBody UpdateOrderStatusRequest request) {
-        if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
-        }
-
-        ApiResponse<Map<String, Object>> response = orderAdminService.updateOrderStatus(id, request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

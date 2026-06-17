@@ -33,6 +33,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import orderApi from "../../api/orderApi";
 import { getUserRole } from "../../utils/authUtils";
+import { dispatchShipperRouteRefresh } from "./deliveryRouteEvents";
 import type { ShipperOrder } from "../../api/orderApi";
 import { translateOrderCodStatus, translatePaymentSubmissionStatus } from "../../utils/orderUtils";
 
@@ -55,12 +56,12 @@ const ShipperOrderDetail: React.FC = () => {
   // Có thể bật nút xác nhận hay không
   const [canSubmit, setCanSubmit] = useState(false);
   const [partialModalOpen, setPartialModalOpen] = useState(false);
-  const [codAfterFinish, setCodAfterFinish] = useState(false);
   const [paymentSubmissionResponse, setPaymentSubmissionResponse] = useState<any | null>(null);
 
   const getCodPreviewItems = () => {
     if (!order || !order.orderProducts) return [];
-    return (order.orderProducts as any[]).map((p: any) => {
+
+    const baseItems = (order.orderProducts as any[]).map((p: any) => {
       const delivered = p.deliveredQuantity ?? 0;
       const price = p.price ?? p.productPrice ?? 0;
       const amount = delivered * price;
@@ -71,10 +72,60 @@ const ShipperOrderDetail: React.FC = () => {
         amount,
       };
     });
+
+    const totalByDelivered = baseItems.reduce((s, it) => s + (it.amount || 0), 0);
+    const orderCod = Number(order?.cod ?? 0);
+
+    // Fallback cho luồng giao thành công nhanh: chưa cập nhật deliveredQuantity nhưng vẫn cần hiển thị COD phải thu
+    if (totalByDelivered <= 0 && orderCod > 0) {
+      const first = baseItems[0];
+      if (first) {
+        return [
+          {
+            ...first,
+            deliveredQuantity: first.deliveredQuantity > 0 ? first.deliveredQuantity : 1,
+            amount: orderCod,
+          },
+        ];
+      }
+      return [
+        {
+          productName: "COD",
+          deliveredQuantity: 1,
+          price: orderCod,
+          amount: orderCod,
+        },
+      ];
+    }
+
+    return baseItems;
   };
 
   const getTotalCodPreview = () => {
-    return getCodPreviewItems().reduce((s, it) => s + (it.amount || 0), 0);
+    const sum = getCodPreviewItems().reduce((s, it) => s + (it.amount || 0), 0);
+    if (sum > 0) return sum;
+    return Number(order?.codAmount ?? order?.cod ?? 0);
+  };
+
+  const getPayerText = () => {
+    const payer = (order?.payer || "").toUpperCase();
+    if (payer === "SHOP") return "Shop / Người gửi";
+    if (payer === "CUSTOMER") return "Người nhận";
+    return order?.payer || "—";
+  };
+
+  const getShippingFeeLabel = () => {
+    const payer = (order?.payer || "").toUpperCase();
+    if (payer === "CUSTOMER") return "Phí vận chuyển cần thu";
+    return "Shop đã trả phí vận chuyển";
+  };
+
+  const getTotalNeedCollect = () => {
+    const payer = (order?.payer || "").toUpperCase();
+    const cod = Number(order?.cod || 0);
+    const shippingFee = Number(order?.shippingFee || 0);
+    if (payer === "CUSTOMER") return cod + shippingFee;
+    return cod;
   };
 
   useEffect(() => {
@@ -116,14 +167,7 @@ const fetchOrderDetail = async () => {
 
   const handleFinishDelivery = () => {
     if (!order) return;
-    // Nếu đơn có COD, mở modal thu COD để shipper nhập ghi chú; việc thu tiền do backend xử lý (không gửi số tiền)
-    if (order.cod && order.cod > 0) {
-      setCodAfterFinish(true);
-      codForm.resetFields();
-      setCodModal(true);
-      return;
-    }
-    updateDeliveryStatus("DELIVERED", "");
+    updateDeliveryAttempt({ status: "SUCCESS", note: "Đã giao thành công" });
   };
 
   const handleSubmitDelivery = async (values: any) => {
@@ -159,17 +203,7 @@ const fetchOrderDetail = async () => {
 
       message.success("Đã thu COD thành công");
       setCodModal(false);
-
-      // Nếu modal mở trong quá trình hoàn tất giao hàng, thực hiện cập nhật trạng thái giao ngay
-      if (codAfterFinish) {
-        try {
-          await updateDeliveryStatus("DELIVERED", values.notes || "");
-        } finally {
-          setCodAfterFinish(false);
-        }
-      } else {
-        fetchOrderDetail();
-      }
+      fetchOrderDetail();
     } catch (error: any) {
       message.error(error?.response?.data?.message || "Lỗi khi thu COD");
     } finally {
@@ -177,15 +211,13 @@ const fetchOrderDetail = async () => {
     }
   };
 
-  const updateDeliveryStatus = async (status: string, notes?: string) => {
+  const updateDeliveryAttempt = async (payload: { status: string; note?: string; failReason?: string }) => {
     try {
       setLoading(true);
-      await orderApi.updateShipperDeliveryStatus(Number(id), {
-        status,
-        notes,
-      });
+      await orderApi.createDeliveryAttempt(Number(id), payload);
       message.success("Đã cập nhật trạng thái giao hàng");
       fetchOrderDetail();
+      dispatchShipperRouteRefresh();
     } catch (error) {
       message.error("Lỗi khi cập nhật trạng thái");
     } finally {
@@ -196,6 +228,23 @@ const fetchOrderDetail = async () => {
   const handleFailedDelivery = () => {
     failedForm.resetFields();
     setFailedModal(true);
+  };
+
+  const mapFailReason = (label: string): string => {
+    switch (label) {
+      case "Khách không có mặt":
+        return "RECIPIENT_NOT_AVAILABLE";
+      case "Không liên lạc được":
+        return "NO_RESPONSE";
+      case "Sai địa chỉ":
+        return "WRONG_ADDRESS";
+      case "Khách từ chối nhận":
+        return "RECIPIENT_REFUSED";
+      case "Khách hẹn giao lại":
+        return "RESCHEDULE_REQUESTED";
+      default:
+        return "OTHER";
+    }
   };
 
   const handleNavigateToRoute = () => {
@@ -216,6 +265,8 @@ const fetchOrderDetail = async () => {
       case "DELIVERED":
         return "success";
       case "FAILED_DELIVERY":
+      case "DELIVERY_RETRY":
+      case "DELIVERY_FAILED_FINAL":
       case "RETURNED":
         return "error";
       default:
@@ -242,6 +293,10 @@ const fetchOrderDetail = async () => {
         return "Đã giao";
       case "FAILED_DELIVERY":
         return "Giao thất bại";
+      case "DELIVERY_RETRY":
+        return "Chờ nộp về bưu cục";
+      case "DELIVERY_FAILED_FINAL":
+        return "Giao thất bại cuối cùng";
       case "PARTIAL_DELIVERY":
         return "Giao 1 phần";
       case "PARTIAL_RETURN":
@@ -253,17 +308,19 @@ const fetchOrderDetail = async () => {
     }
   };
 
-  const buildAddress = (address: any): string => {
+  const buildAddress = (address: any, fallback?: string): string => {
+    if (fallback) return fallback;
     if (typeof address === "string") return address;
+    if (address?.fullAddress) return address.fullAddress;
     if (!address) return "";
-    const parts = [
-      address.detailAddress,
-      address.ward?.name,
-      address.district?.name,
-      address.province?.name,
-    ].filter(Boolean);
+    const parts = [address.detail, address.wardName, address.cityName].filter(Boolean);
     return parts.join(", ");
   };
+
+  const recipientAddressText = buildAddress(
+    order?.recipientAddress,
+    order?.recipientFullAddress
+  );
 
   if (loading && !order) {
     return (
@@ -452,7 +509,7 @@ const fetchOrderDetail = async () => {
               <Descriptions.Item label="Địa chỉ">
                 <Space>
                   <EnvironmentOutlined />
-                  <Text>{buildAddress(order.recipientAddress)}</Text>
+                  <Text>{recipientAddressText}</Text>
                 </Space>
               </Descriptions.Item>
             </Descriptions>
@@ -461,25 +518,16 @@ const fetchOrderDetail = async () => {
           {/* Payment Info */}
           <Card title="Thông tin thanh toán">
             <Descriptions column={2} bordered>
-              <Descriptions.Item label="Phí vận chuyển">
-                {order.shippingFee ? `${order.shippingFee.toLocaleString()}đ` : "—"}
+              <Descriptions.Item label="Người trả phí vận chuyển">
+                {getPayerText()}
               </Descriptions.Item>
-              <Descriptions.Item label="COD">
+              <Descriptions.Item label="COD thu hộ">
                 <Space>
                   <DollarOutlined style={{ color: "#f50" }} />
                   <div>
                     <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                      {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "Không"}
+                      {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "0đ"}
                     </Text>
-
-                    {/* If cod exists but codStatus explicitly NONE, show explanatory note */}
-                    {order.cod > 0 && order.codStatus === "NONE" && (
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>(Không thu COD)</Text>
-                      </div>
-                    )}
-
-                    {/* Show cod status tag only when status is meaningful (not NONE) */}
                     {order.codStatus && order.codStatus !== "NONE" && (
                       <div style={{ marginTop: 6 }}>
                         <Tag color={
@@ -493,11 +541,21 @@ const fetchOrderDetail = async () => {
                   </div>
                 </Space>
               </Descriptions.Item>
+              <Descriptions.Item label={getShippingFeeLabel()}>
+                {(order.payer || "").toUpperCase() === "CUSTOMER"
+                  ? `${Number(order.shippingFee || 0).toLocaleString()}đ`
+                  : "0đ"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Tổng tiền cần thu">
+                <Text strong style={{ color: "#f50", fontSize: 16 }}>
+                  {`${getTotalNeedCollect().toLocaleString()}đ`}
+                </Text>
+              </Descriptions.Item>
             </Descriptions>
           </Card>
 
           {/* Payment submissions (COD transactions) */}
-          <Card title="Giao dịch COD" style={{ marginTop: 12 }}>
+          <Card title="Giao dịch thu tiền" style={{ marginTop: 12 }}>
             {order.paymentSubmissions && order.paymentSubmissions.length > 0 ? (
               <Table
                 dataSource={order.paymentSubmissions}
@@ -604,8 +662,11 @@ const fetchOrderDetail = async () => {
           form={failedForm}
           layout="vertical"
           onFinish={(values: any) => {
-            const note = (values?.reason || "") + (values?.detail ? `: ${values.detail}` : "");
-            updateDeliveryStatus("FAILED_DELIVERY", note);
+            updateDeliveryAttempt({
+              status: "FAILED",
+              failReason: mapFailReason(values?.reason),
+              note: values?.detail || "",
+            });
             setFailedModal(false);
           }}
         >
@@ -615,10 +676,11 @@ const fetchOrderDetail = async () => {
             rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
           >
             <Select placeholder="Chọn lý do thất bại">
-              <Select.Option value="Người nhận không có mặt">Người nhận không có mặt</Select.Option>
-              <Select.Option value="Người nhận từ chối">Người nhận từ chối</Select.Option>
+              <Select.Option value="Khách không có mặt">Khách không có mặt</Select.Option>
+              <Select.Option value="Không liên lạc được">Không liên lạc được</Select.Option>
               <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
-              <Select.Option value="Hàng hư hỏng">Hàng hư hỏng</Select.Option>
+              <Select.Option value="Khách từ chối nhận">Khách từ chối nhận</Select.Option>
+              <Select.Option value="Khách hẹn giao lại">Khách hẹn giao lại</Select.Option>
               <Select.Option value="Khác">Khác</Select.Option>
             </Select>
           </Form.Item>

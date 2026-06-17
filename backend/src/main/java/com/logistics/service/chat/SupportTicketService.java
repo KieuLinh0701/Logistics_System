@@ -1,6 +1,7 @@
 package com.logistics.service.chat;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,7 +142,7 @@ public class SupportTicketService {
             boolean allowed = false;
             if (roleName != null && roleName.equalsIgnoreCase("Admin")) allowed = true;
             else if (roleName != null && roleName.equalsIgnoreCase("Manager") && ticket.getAssignedToAccountId() != null && ticket.getAssignedToAccountId().equals(accountId)) allowed = true;
-            else if (ticket.getCreatedByAccountId() != null && ticket.getCreatedByAccountId().equals(accountId)) allowed = true;
+            else if (Objects.equals(ticket.getCreatedByAccountId(), accountId)) allowed = true;
 
             if (!allowed) return new ApiResponse<>(false, "Bạn không có quyền xem ticket này", null);
 

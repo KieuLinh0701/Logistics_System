@@ -46,7 +46,7 @@ const ManagerShipperAssigns = () => {
 
     const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const limit = 10;
     const [totalShipper, setTotalShipper] = useState(0);
     const [loadingShipper, setLoadingShipper] = useState(false);
     const [searchTextShipper, setSearchTextShipper] = useState("");

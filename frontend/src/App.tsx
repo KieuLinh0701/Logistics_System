@@ -23,12 +23,11 @@ import CompanyInfo from "./pages/common/info/CompanyInfo";
 import ContactForm from "./pages/common/info/ContactForm";
 import OrderTracking from "./pages/common/tracking/OrderTracking";
 
-import AdminUsers from "./pages/admin/Users";
-import AdminOrders from "./pages/admin/Orders";
-import AdminPostOffices from "./pages/admin/PostOffices";
-import AdminServiceTypes from "./pages/admin/ServiceTypes";
-import AdminFeeConfigurations from "./pages/admin/FeeConfigurations";
-import AdminFinancialIndex from "./pages/admin/financial/AdminFinancialIndex";
+import AdminUsers from "./pages/admin/users/UsersPage";
+import AdminOrders from "./pages/admin/orders/OrdersPage";
+import AdminPostOffices from "./pages/admin/postoffices/PostOfficesPage";
+import AdminServiceTypes from "./pages/admin/service-types/ServiceTypesPage";
+import AdminFeeConfigurations from "./pages/admin/fee-configurations/FeeConfigurationsPage";
 import ReportsPage from "./pages/admin/reports/ReportsPage";
 
 // Manager
@@ -53,6 +52,7 @@ import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
 import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
+import ManagerAiRouteOptimization from "./pages/manager/ai-route/ManagerAiRouteOptimization";
 
 // User
 import UserRoleList from "./pages/user/grouppermission/list/UserRoleList.tsx";
@@ -74,14 +74,15 @@ import ShipperCODManagement from "./pages/shipper/CODManagement";
 import ShipperIncidentReport from "./pages/shipper/IncidentReport";
 import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
+import FailedDeliveryOrders from "./pages/shipper/FailedDeliveryOrders";
 
 // Driver
 import DriverShipments from "./pages/driver/Shipments";
 import DriverRoute from "./pages/driver/Route";
 import DriverHistory from "./pages/driver/History";
 import PromotionList from "./pages/common/info/PromotionList";
-import AdminPromotions from "./pages/admin/Promotions";
-import ShippingRequestsAdmin from "./pages/admin/ShippingRequests";
+import AdminPromotions from "./pages/admin/promotions/PromotionsPage";
+import ShippingRequestsAdmin from "./pages/admin/shipping-requests/ShippingRequestsPage";
 import MyLeavePage from "./pages/leave/MyLeavePage";
 import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
 import SupportChatPage from "./pages/chat/SupportChatPage";
@@ -149,8 +150,6 @@ const App: React.FC = () => {
                                element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminPromotions/></PrivateRoute>}/>
                         <Route path="/fee-configurations" element={<PrivateRoute
                             allowedPermissionGroups={["group_admin"]}><AdminFeeConfigurations/></PrivateRoute>}/>
-                        <Route path="/financial"
-                               element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminFinancialIndex/></PrivateRoute>}/>
                         <Route path="/reports"
                                element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><ReportsPage/></PrivateRoute>}/>
 
@@ -213,21 +212,22 @@ const App: React.FC = () => {
                                element={<PrivateRoute allowedPermissionGroups={["group_user", "user_bank_view"]}><UserBankAccounts/></PrivateRoute>}/>
 
                         {/* Manager */}
-                        <Route path="/office"
-                               element={<PrivateRoute allowedPermissionGroups={["group_manager"]}><ManagerOffice/></PrivateRoute>}/>
+                        <Route path="/office" element={<PrivateRoute 
+                            allowedPermissionGroups={["group_manager"]}><ManagerOffice/></PrivateRoute>}/>
                         <Route path="/supports" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerShippingRequests/></PrivateRoute>}/>
                         <Route path="/employees/list" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerEmployeeList/></PrivateRoute>}/>
                         <Route path="/employees/performance" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerEmployeePerformance/></PrivateRoute>}/>
-                        <Route path="employees/performance/:employeeId/shipments" element={<PrivateRoute
+                        <Route path="/employees/performance/:employeeId/shipments" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerEmployeePerfomanceShipment/></PrivateRoute>}/>
-                        <Route path="employees/performance/:employeeId/shipments/:shipmentId/orders"
-                               element={<PrivateRoute
-                                   allowedPermissionGroups={["group_manager"]}><ManagerShipmentOrders/></PrivateRoute>}/>
-                        <Route path="/shipments"
-                               element={<PrivateRoute allowedPermissionGroups={["group_manager"]}><ManagerShipments/></PrivateRoute>}/>
+                        <Route path="/employees/performance/:employeeId/shipments/:shipmentId/orders"
+                            element={<PrivateRoute allowedPermissionGroups={["group_manager"]}><ManagerShipmentOrders/></PrivateRoute>}/>
+                        <Route path="/shipments" element={<PrivateRoute 
+                            allowedPermissionGroups={["group_manager"]}><ManagerShipments/></PrivateRoute>}/>
+                        <Route path="/manager/ai-routes" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerAiRouteOptimization/></PrivateRoute>}/>
                         <Route path="/shipments/:shipmentId/orders" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerShipmentOrders/></PrivateRoute>}/>
                         <Route path="/employees/assign-area" element={<PrivateRoute
@@ -250,15 +250,20 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_shipper"]}><ShipperBarcodeScanner/></PrivateRoute>}/>
                         <Route path="/route" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><ShipperDeliveryRoute/></PrivateRoute>}/>
-                        <Route path="/shipper/shipping-requests"
-                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShippingRequests/></PrivateRoute>}/>
+                        <Route path="/shipper/shipping-requests" element={<PrivateRoute 
+                            allowedPermissionGroups={["group_shipper"]}><ShippingRequests/></PrivateRoute>}/>
+                        <Route path="/shipper/failed-deliveries" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><FailedDeliveryOrders/></PrivateRoute>}/>
                         <Route path="/history" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><ShipperDeliveryHistory/></PrivateRoute>}/>
                         <Route path="/cod" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><ShipperCODManagement/></PrivateRoute>}/>
-                        <Route path="/report" element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperIncidentReport/></PrivateRoute>}/>
+                        <Route path="/report" element={<PrivateRoute 
+                            allowedPermissionGroups={["group_shipper"]}><ShipperIncidentReport/></PrivateRoute>}/>
                         <Route path="/employee/leaves" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper", "group_driver"]}><MyLeavePage/></PrivateRoute>}/>
+                        <Route path="/shipper/settings/vehicle" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><Navigate to="/account/settings?tab=vehicle" replace /></PrivateRoute>}/>
 
                         {/* Driver routes */}
                         <Route path="/driver/shipments"

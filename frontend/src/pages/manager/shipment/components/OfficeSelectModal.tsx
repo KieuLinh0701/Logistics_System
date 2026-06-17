@@ -21,7 +21,7 @@ const OfficeSelectModal: React.FC<OfficeSelectModalProps> = ({
     value,
 }) => {
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
+    const loading = false;
     const [cities, setCities] = useState<City[]>([]);
     const [wards, setWards] = useState<Ward[]>([]);
     const [offices, setOffices] = useState<Office[]>([]);

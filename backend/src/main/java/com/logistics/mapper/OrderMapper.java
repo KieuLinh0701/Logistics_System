@@ -10,9 +10,11 @@ import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
+import com.logistics.dto.PickupAttemptDto;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
+import com.logistics.entity.PickupAttempt;
 import com.logistics.entity.Promotion;
 
 public class OrderMapper {
@@ -102,7 +104,8 @@ public class OrderMapper {
 
     public static ManagerOrderDetailDto toManagerOrderDetailDto(Order entity,
             List<OrderHistory> orderHistories,
-            List<OrderProduct> orderProducts) {
+            List<OrderProduct> orderProducts,
+            List<PickupAttempt> pickupAttempts) {
         if (entity == null) {
             return null;
         }
@@ -169,6 +172,7 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getToOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
+                toPickupAttemptDtoList(pickupAttempts),
                 entity.getEmployee() != null ? entity.getEmployee()
                         .getCode() : null,
                 entity.getUser() != null ? entity.getUser()
@@ -225,7 +229,8 @@ public class OrderMapper {
 
     public static UserOrderDetailDto toUserOrderDetailDto(Order entity,
             List<OrderHistory> orderHistories,
-            List<OrderProduct> orderProducts) {
+            List<OrderProduct> orderProducts,
+            List<PickupAttempt> pickupAttempts) {
         if (entity == null) {
             return null;
         }
@@ -290,6 +295,7 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
+                toPickupAttemptDtoList(pickupAttempts),
                 OrderMapper.toUserOrderDetailDtoPromotion(entity.getPromotion()),
                 entity.getCodStatus()
                         .name());
@@ -341,4 +347,32 @@ public class OrderMapper {
                 entity.getCodStatus()
                         .name());
     }
+
+    public static List<PickupAttemptDto> toPickupAttemptDtoList(List<PickupAttempt> attempts) {
+        if (attempts == null || attempts.isEmpty()) {
+            return List.of();
+        }
+
+        return attempts.stream().map(OrderMapper::toPickupAttemptDto).collect(Collectors.toList());
+    }
+
+    public static PickupAttemptDto toPickupAttemptDto(PickupAttempt entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        String shipperName = null;
+        if (entity.getShipper() != null) {
+            shipperName = entity.getShipper().getFullName();
+        }
+
+        return new PickupAttemptDto(
+                entity.getAttemptNumber(),
+                entity.getStatus() != null ? entity.getStatus().name() : null,
+                entity.getFailReason() != null ? entity.getFailReason().name() : null,
+                entity.getNote(),
+                entity.getAttemptedAt(),
+                shipperName);
+    }
+
 }

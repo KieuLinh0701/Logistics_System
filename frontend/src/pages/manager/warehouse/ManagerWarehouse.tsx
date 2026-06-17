@@ -19,44 +19,16 @@ const ManagerWarehouse: React.FC = () => {
   const [hover, setHover] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('1');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
+  const limit = 10;
+  const [total] = useState(0);
 
-  const [orders, setOrders] = useState<OrderHistory[]>([]);
+  const [orders] = useState<OrderHistory[]>([]);
 
   // Fetch orders based on tab and page
-  const fetchOrdersByTab = async (tabKey: string, pageNumber = 1) => {
+  const fetchOrdersByTab = async (_tabKey: string, _pageNumber = 1) => {
     setLoading(true);
     try {
-      const params: any = {
-        page: pageNumber,
-        searchText: searchText || undefined,
-        serviceType: filterServiceType !== "ALL" ? filterServiceType : undefined,
-        sort: filterSort !== "NEWEST" ? filterSort : undefined,
-        limit,
-      };
-
-      let result;
-      switch (tabKey) {
-        case "1":
-          // TODO: replace with real API call
-          // result = await api.getIncomingOrders(params);
-          break;
-        case "2":
-          // result = await api.getInWarehouseOrders(params);
-          break;
-        case "3":
-          // result = await api.getExportedOrders(params);
-          break;
-      }
-
-      // if (result?.success) {
-      //   setOrders(result.data);
-      //   setPage(pageNumber);
-      //   setTotal(result.total);
-      // } else if (result?.message) {
-      //   message.error(result.message);
-      // }
+      // Logic for future API integration
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách đơn hàng");
     } finally {

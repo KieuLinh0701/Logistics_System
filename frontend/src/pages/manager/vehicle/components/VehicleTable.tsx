@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Tag } from 'antd';
+import { Table, Button, Space } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';

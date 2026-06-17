@@ -3,7 +3,6 @@ import { Button, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
-import { translateRoleName } from '../../../../../utils/roleUtils';
 import { EditOutlined } from '@ant-design/icons';
 import type { ManagerEmployee } from '../../../../../types/employee';
 

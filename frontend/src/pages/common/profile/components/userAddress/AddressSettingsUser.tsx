@@ -42,7 +42,17 @@ const AddressSettingsUser: React.FC = () => {
         setModalMode(mode);
 
         if (mode === 'edit' && address) {
-            setEditingAddress(address as any);
+            setEditingAddress({
+                id: address.id,
+                name: address.name,
+                phoneNumber: address.phoneNumber,
+                cityCode: address.cityCode,
+                wardCode: address.wardCode,
+                detail: address.detail,
+                isDefault: address.isDefault,
+                wardName: address.wardName || '',
+                cityName: address.cityName || '',
+            });
             form.resetFields();
             form.setFieldsValue({
                 ...address,
@@ -59,6 +69,8 @@ const AddressSettingsUser: React.FC = () => {
                 detail: '',
                 wardCode: 0,
                 cityCode: 0,
+                wardName: '',
+                cityName: '',
                 isDefault: addresses.length === 0
             };
             setEditingAddress(emptyAddress as any);

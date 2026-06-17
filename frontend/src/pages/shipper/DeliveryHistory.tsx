@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Card,
   Table,
   Tag,
   Button,
@@ -8,13 +7,13 @@ import {
   Typography,
   Row,
   Col,
+  Card,
   Select,
   DatePicker,
   Input,
   Statistic,
   message,
   Modal,
-  Image,
 } from "antd";
 import {
   EyeOutlined,
@@ -22,14 +21,17 @@ import {
   ClockCircleOutlined,
   DollarOutlined,
   PhoneOutlined,
+  ReloadOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import type { ShipperOrder, ShipperStats } from "../../api/orderApi";
 import dayjs from "dayjs";
-import { translateOrderCodStatus } from "../../utils/orderUtils";
+import { translateOrderCodStatus, translateOrderStatus } from "../../utils/orderUtils";
+import "../../styles/ListPage.css";
+import "./ShipperPagesShared.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -40,7 +42,6 @@ interface FilterParams {
 }
 
 const ShipperDeliveryHistory: React.FC = () => {
-  const navigate = useNavigate();
   const [history, setHistory] = useState<ShipperOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<FilterParams>({});
@@ -92,6 +93,7 @@ const ShipperDeliveryHistory: React.FC = () => {
 
   const resetFilters = () => {
     setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleViewDetail = (record: ShipperOrder) => {
@@ -112,44 +114,21 @@ const ShipperDeliveryHistory: React.FC = () => {
         return "processing";
       case "DELIVERED":
         return "success";
+      case "DELIVERY_RETRY":
+      case "DELIVERY_FAILED_FINAL":
       case "FAILED_DELIVERY":
       case "CANCELLED":
         return "error";
-      case "RETURNED":
+      case "RETURNING":
         return "warning";
+      case "RETURNED":
+        return "gold";
       default:
         return "default";
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "PENDING":
-        return "Chờ xử lý";
-      case "CONFIRMED":
-        return "Đã xác nhận";
-      case "AT_DEST_OFFICE":
-        return "Đã đến bưu cục";
-      case "PICKED_UP":
-        return "Đã lấy hàng";
-      case "DELIVERING":
-        return "Đang giao hàng";
-      case "DELIVERED":
-        return "Đã giao";
-      case "PARTIAL_DELIVERY":
-        return "Giao 1 phần";
-      case "PARTIAL_RETURN":
-        return "Trả 1 phần";
-      case "FAILED_DELIVERY":
-        return "Giao thất bại";
-      case "CANCELLED":
-        return "Đã hủy";
-      case "RETURNED":
-        return "Đã hoàn";
-      default:
-        return status;
-    }
-  };
+  const getStatusText = (status: string) => translateOrderStatus(status);
 
   const columns = [
     {
@@ -157,7 +136,11 @@ const ShipperDeliveryHistory: React.FC = () => {
       dataIndex: "trackingNumber",
       key: "trackingNumber",
       width: 140,
-      render: (text: string) => <Text strong style={{ fontSize: "13px" }}>{text}</Text>,
+      render: (text: string) => (
+        <Text strong className="shipper-table-strong" style={{ fontSize: "13px" }}>
+          {text}
+        </Text>
+      ),
     },
     {
       title: "Người nhận",
@@ -165,15 +148,21 @@ const ShipperDeliveryHistory: React.FC = () => {
       width: 200,
       render: (record: ShipperOrder) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{record.recipientName}</Text>
+          <Text strong className="shipper-table-strong">
+            {record.recipientName}
+          </Text>
           <Space size={4}>
-            <PhoneOutlined style={{ fontSize: "12px", color: "#666" }} />
-            <Text style={{ fontSize: "12px" }}>{record.recipientPhone}</Text>
+            <PhoneOutlined className="shipper-table-muted" style={{ fontSize: "12px" }} />
+            <Text className="shipper-table-muted" style={{ fontSize: "12px" }}>
+              {record.recipientPhone}
+            </Text>
           </Space>
-          <Text style={{ fontSize: "11px", color: "#666" }} ellipsis>
-            {typeof record.recipientAddress === "string"
-              ? record.recipientAddress
-              : (record.recipientAddress as any)?.fullAddress ?? ""}
+          <Text className="shipper-table-muted" style={{ fontSize: "11px" }} ellipsis>
+            {record.recipientFullAddress ||
+              (typeof record.recipientAddress === "string"
+                ? record.recipientAddress
+                : (record.recipientAddress as any)?.fullAddress) ||
+              ""}
           </Text>
         </Space>
       ),
@@ -186,13 +175,25 @@ const ShipperDeliveryHistory: React.FC = () => {
       render: (amount: number, record: ShipperOrder & any) => (
         <div>
           {amount > 0 ? (
-            <Text strong style={{ color: "#f50" }}>{amount.toLocaleString()}đ</Text>
+            <Text strong className="shipper-cod-value">
+              {amount.toLocaleString()}đ
+            </Text>
           ) : (
-            <Text type="secondary">—</Text>
+            <Text className="shipper-table-muted">—</Text>
           )}
           {record.codStatus && (
             <div style={{ marginTop: 6 }}>
-              <Tag color={record.codStatus === "PENDING" ? "orange" : record.codStatus === "SUBMITTED" ? "blue" : record.codStatus === "RECEIVED" || record.codStatus === "TRANSFERRED" ? "green" : "default"}>
+              <Tag
+                color={
+                  record.codStatus === "PENDING"
+                    ? "orange"
+                    : record.codStatus === "SUBMITTED"
+                      ? "blue"
+                      : record.codStatus === "RECEIVED" || record.codStatus === "TRANSFERRED"
+                        ? "green"
+                        : "default"
+                }
+              >
                 {translateOrderCodStatus(record.codStatus)}
               </Tag>
             </div>
@@ -209,10 +210,13 @@ const ShipperDeliveryHistory: React.FC = () => {
     },
     {
       title: "Ngày giao",
-      dataIndex: "deliveredAt",
-      key: "deliveredAt",
+      dataIndex: "displayDate",
+      key: "displayDate",
       width: 150,
-      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—"),
+      render: (_: string, record: ShipperOrder & { historyDate?: string; displayDate?: string; deliveredAt?: string }) => {
+        const date = record.historyDate || record.displayDate || record.deliveredAt;
+        return date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—";
+      },
     },
     {
       title: "Thao tác",
@@ -227,80 +231,103 @@ const ShipperDeliveryHistory: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <Title level={2} style={{ color: "#1C3D90", marginBottom: 24 }}>
-        Lịch sử giao hàng
-      </Title>
-
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic title="Tổng đơn đã giao" value={stats.delivered} prefix={<CheckCircleOutlined />} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic title="Giao thất bại" value={stats.failed} prefix={<ClockCircleOutlined />} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="COD đã thu"
-              value={stats.codCollected}
-              prefix={<DollarOutlined />}
-              formatter={(value) => `${value?.toLocaleString()}đ`}
+    <div className="list-page-layout shipper-page-root">
+      <div className="list-page-content">
+        <div className="shipper-filter-panel">
+          <div className="shipper-filter-grow">
+            <Input
+              allowClear
+              className="search-input"
+              placeholder="Tìm kiếm theo mã đơn, tên người nhận..."
+              prefix={<SearchOutlined />}
+              style={{ width: "100%" }}
+              value={filters.search}
+              onChange={(e) => handleFilterChange("search", e.target.value || undefined)}
             />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic title="Tổng đơn" value={stats.totalAssigned} />
-          </Card>
-        </Col>
-      </Row>
+          </div>
+          <div className="shipper-filter-actions">
+            <Select
+              allowClear
+              placeholder="Lọc theo trạng thái"
+              style={{ width: 200 }}
+              value={filters.status}
+              onChange={(value) => handleFilterChange("status", value || undefined)}
+            >
+              <Option value="DELIVERED">Đã giao</Option>
+              <Option value="DELIVERY_RETRY">Chờ giao lại</Option>
+              <Option value="AT_DEST_OFFICE">Đã nộp về bưu cục</Option>
+              <Option value="DELIVERY_FAILED_FINAL">Giao thất bại</Option>
+              <Option value="RETURNING">Đang hoàn hàng</Option>
+              <Option value="RETURNED">Đã hoàn hàng</Option>
+            </Select>
+            <RangePicker
+              value={filters.dateRange ?? null}
+              onChange={(dates) => {
+                handleFilterChange("dateRange", dates);
+              }}
+            />
+            <Button icon={<ReloadOutlined />} onClick={resetFilters}>
+              Làm mới
+            </Button>
+          </div>
+        </div>
 
-      <Card>
-        <Space style={{ marginBottom: 16 }}>
-          <Input
-            placeholder="Tìm kiếm theo mã đơn, tên người nhận..."
-            style={{ width: 300 }}
-            allowClear
-            onChange={(e) => handleFilterChange("search", e.target.value || undefined)}
-          />
-          <Select
-            placeholder="Lọc theo trạng thái"
-            allowClear
-            style={{ width: 200 }}
-            onChange={(value) => handleFilterChange("status", value || undefined)}
-          >
-            <Option value="DELIVERED">Đã giao</Option>
-            <Option value="PARTIAL_DELIVERY">Giao 1 phần</Option>
-            <Option value="PARTIAL_RETURN">Trả 1 phần</Option>
-            <Option value="FAILED_DELIVERY">Giao thất bại</Option>
-            <Option value="RETURNED">Đã hoàn</Option>
-          </Select>
-          <RangePicker
-            onChange={(dates) => {
-              handleFilterChange("dateRange", dates);
+        <div className="list-page-header shipper-page-header">
+          <div>
+            <h3 className="list-page-title-main">Lịch sử giao hàng</h3>
+            <div className="shipper-header-meta">
+              <div className="list-page-tag">Kết quả: {history.length} đơn</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="shipper-stats-section">
+          <Row gutter={16}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic title="Tổng đơn đã giao" value={stats.delivered} prefix={<CheckCircleOutlined />} />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic title="Giao thất bại" value={stats.failed} prefix={<ClockCircleOutlined />} />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="COD đã thu"
+                  value={stats.codCollected}
+                  prefix={<DollarOutlined />}
+                  formatter={(value) => `${value?.toLocaleString()}đ`}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic title="Tổng đơn" value={stats.totalAssigned} />
+              </Card>
+            </Col>
+          </Row>
+        </div>
+
+        <div className="list-page-table shipper-page-table">
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={history}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              onChange: (page, pageSize) =>
+                setPagination({ ...pagination, current: page, pageSize: pageSize || 10 }),
             }}
+            scroll={{ x: 960 }}
           />
-          <Button onClick={resetFilters}>Đặt lại</Button>
-        </Space>
-
-        <Table
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={history}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            onChange: (page, pageSize) => setPagination({ ...pagination, current: page, pageSize: pageSize || 10 }),
-          }}
-        />
-      </Card>
+        </div>
+      </div>
 
       <Modal
         title="Chi tiết đơn hàng"
@@ -337,7 +364,7 @@ const ShipperDeliveryHistory: React.FC = () => {
               </div>
               <div>
                 <Text strong>COD: </Text>
-                <Text style={{ color: "#f50" }}>{selectedRecord.cod?.toLocaleString()}đ</Text>
+                <Text className="shipper-cod-value">{selectedRecord.cod?.toLocaleString()}đ</Text>
               </div>
               <div>
                 <Text strong>Trạng thái: </Text>
@@ -355,7 +382,6 @@ const ShipperDeliveryHistory: React.FC = () => {
                   <Text>{selectedRecord.notes}</Text>
                 </div>
               )}
-              {/* Payment submissions */}
               <div>
                 <Text strong>Giao dịch COD:</Text>
                 {selectedRecord.paymentSubmissions && selectedRecord.paymentSubmissions.length > 0 ? (
@@ -365,14 +391,31 @@ const ShipperDeliveryHistory: React.FC = () => {
                     pagination={false}
                     columns={[
                       { title: "Mã", dataIndex: "code", key: "code" },
-                      { title: "Số hệ thống", dataIndex: "systemAmount", key: "systemAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
-                      { title: "Số thực thu", dataIndex: "actualAmount", key: "actualAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
-                      { title: "Trạng thái", dataIndex: "status", key: "status", render: (s:string) => <Tag>{s}</Tag> },
-                      { title: "Ngày", dataIndex: "paidAt", key: "paidAt", render: (d:string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—' },
+                      {
+                        title: "Số hệ thống",
+                        dataIndex: "systemAmount",
+                        key: "systemAmount",
+                        render: (v: number) => v?.toLocaleString() + "đ",
+                      },
+                      {
+                        title: "Số thực thu",
+                        dataIndex: "actualAmount",
+                        key: "actualAmount",
+                        render: (v: number) => v?.toLocaleString() + "đ",
+                      },
+                      { title: "Trạng thái", dataIndex: "status", key: "status", render: (s: string) => <Tag>{s}</Tag> },
+                      {
+                        title: "Ngày",
+                        dataIndex: "paidAt",
+                        key: "paidAt",
+                        render: (d: string) => (d ? dayjs(d).format("DD/MM/YYYY HH:mm") : "—"),
+                      },
                     ]}
                   />
                 ) : (
-                  <div><Text type="secondary">Chưa có giao dịch COD.</Text></div>
+                  <div>
+                    <Text type="secondary">Chưa có giao dịch COD.</Text>
+                  </div>
                 )}
               </div>
             </Space>

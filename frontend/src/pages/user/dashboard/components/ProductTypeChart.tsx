@@ -79,7 +79,7 @@ export const ProductTypeChart: React.FC<Props> = ({ data }) => {
                 paddingAngle={2}
                 labelLine={false}
               >
-                {chartData.map((entry, index) => (
+                {chartData.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}

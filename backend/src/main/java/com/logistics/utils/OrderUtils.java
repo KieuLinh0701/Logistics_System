@@ -108,7 +108,7 @@ public class OrderUtils {
 
     public static boolean canManagerConfirm(OrderStatus status, OrderPickupType pickupType) {
         return STATUSES_ALLOWED_TO_CONFIRMED_FOR_MANAGER.contains(status)
-                && pickupType == OrderPickupType.AT_OFFICE;
+                && (pickupType == OrderPickupType.AT_OFFICE || pickupType == OrderPickupType.PICKUP_BY_COURIER);
     }
 
     public static String translateOrderStatus(OrderStatus status) {
@@ -120,6 +120,12 @@ public class OrderUtils {
             case PENDING -> "Chờ duyệt";
             case CONFIRMED -> "Đã xác nhận";
             case READY_FOR_PICKUP -> "Sẵn sàng để lấy";
+
+            case PICKUP_PENDING -> "Chờ lấy hàng";
+            case PICKUP_SUCCESS -> "Lấy hàng thành công";
+            case PICKUP_RETRY -> "Lấy hàng thất bại - Thử lại";
+            case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại - Dừng";
+
             case PICKING_UP -> "Đang lấy hàng";
             case PICKED_UP -> "Đã lấy hàng";
             case AT_ORIGIN_OFFICE -> "Tại bưu cục gốc";
@@ -127,12 +133,17 @@ public class OrderUtils {
             case AT_DEST_OFFICE -> "Tại bưu cục đích";
             case DELIVERING -> "Đang giao";
             case DELIVERED -> "Đã giao hàng";
+
+            case PARTIAL_DELIVERY -> "Giao hàng một phần";
+            case PARTIAL_RETURN -> "Hoàn trả một phần";
             case FAILED_DELIVERY -> "Giao thất bại";
+            case DELIVERY_RETRY -> "Giao thất bại - Thử lại";
+            case DELIVERY_FAILED_FINAL -> "Giao thất bại - Dừng";
+
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn trả";
             case RETURNED -> "Đã hoàn trả";
-            case PARTIAL_DELIVERY -> "Giao hàng một phần";
-            case PARTIAL_RETURN -> "Hoàn trả một phần";
+
             default -> status.name();
         };
     }

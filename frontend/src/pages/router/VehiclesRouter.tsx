@@ -1,5 +1,5 @@
 import { getUserPermissionGroups } from "../../utils/authUtils";
-import AdminVehicles from "../admin/Vehicles";
+import AdminVehicles from "../admin/vehicles/VehiclesPage";
 import Forbidden from "../common/Forbidden";
 import ManagerVehicles from "../manager/vehicle/ManagerVehicles";
 

@@ -4,7 +4,6 @@ import {
   TruckOutlined,
   BoxPlotOutlined,
   DollarOutlined,
-  ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   BellOutlined,
@@ -159,7 +158,7 @@ const ShipperDashboard: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string, record: ShipperOrder) => (
+      render: (text: string, _record: ShipperOrder) => (
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
         </Space>
@@ -182,9 +181,9 @@ const ShipperDashboard: React.FC = () => {
       key: "recipientAddress",
       ellipsis: true,
       render: (record: ShipperOrder) =>
-        typeof record.recipientAddress === "string"
-          ? record.recipientAddress
-          : (record.recipientAddress as any)?.fullAddress ?? "",
+        record.recipientFullAddress ||
+        record.recipientAddress?.fullAddress ||
+        "-",
     },
     {
       title: "COD",

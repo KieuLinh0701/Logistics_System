@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.logistics.enums.SupportMessageSenderType;
 import com.logistics.enums.SupportMessageType;
 
 import jakarta.persistence.Column;
@@ -39,6 +40,10 @@ public class SupportMessage {
 
     @Column(name = "sender_account_id", nullable = false)
     private Integer senderAccountId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sender_type", nullable = false, length = 20)
+    private SupportMessageSenderType senderType = SupportMessageSenderType.USER;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String message;

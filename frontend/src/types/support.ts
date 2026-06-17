@@ -1,4 +1,5 @@
 export type SupportMessageType = "TEXT" | "IMAGE" | "SYSTEM";
+export type SupportMessageSenderType = "USER" | "MANAGER" | "ADMIN" | "SYSTEM" | "BOT";
 
 export interface SupportTicket {
   id: number;
@@ -24,6 +25,9 @@ export interface SupportMessage {
   id: number;
   ticketId: number;
   senderAccountId: number;
+  senderType?: SupportMessageSenderType | null;
+  senderLabel?: string | null;
+  isBotMessage?: boolean;
   message: string;
   messageType: SupportMessageType;
   isInternalNote: boolean;

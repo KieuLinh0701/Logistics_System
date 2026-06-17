@@ -376,23 +376,51 @@ const SupportChatPage: React.FC = () => {
               <Spin spinning={loadingMessages}>
                 <div className="support-chat-messages">
                   {selectedMessages.map((msg) => {
+                    const isBot = msg.isBotMessage === true || msg.senderType === "BOT";
                     const isMine = msg.senderAccountId === accountId;
+                    const alignRight = isMine && !isBot;
+                    const bubbleStyle = isBot
+                      ? {
+                          background: "linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%)",
+                          border: "1px solid #91caff",
+                          boxShadow: "0 1px 6px rgba(22,119,255,0.08)",
+                        }
+                      : undefined;
+
                     return (
-                      <div key={msg.id} className={`support-chat-bubble-row ${isMine ? "mine" : "their"}`}>
-                        {!isMine ? (
+                      <div key={msg.id} className={`support-chat-bubble-row ${alignRight ? "mine" : "their"}`}>
+                        {(!alignRight || isBot) ? (
                           <div style={{ marginRight: 8 }}>
-                            <Avatar src={msg.senderImage || undefined} icon={<UserOutlined />} />
+                            <Avatar
+                              src={isBot ? undefined : (msg.senderImage || undefined)}
+                              icon={isBot ? <span style={{ fontSize: 14 }}>🤖</span> : <UserOutlined />}
+                              style={isBot ? { background: "#1677ff" } : undefined}
+                            />
                           </div>
                         ) : null}
 
-                        <div className={`support-chat-bubble ${isMine ? "mine" : "their"}`}>
-                          <div>{msg.message}</div>
+                        <div
+                          className={`support-chat-bubble ${alignRight ? "mine" : "their"}`}
+                          style={bubbleStyle}
+                        >
+                          {isBot ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                              <Tag color="processing" style={{ marginInlineEnd: 0 }}>
+                                Trợ lý logistics
+                              </Tag>
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                Bot
+                              </Text>
+                            </div>
+                          ) : null}
+
+                          <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.message}</div>
                           <Text type="secondary" style={{ fontSize: 11 }}>
                             {dayjs(msg.createdAt).format("DD/MM HH:mm")}
                           </Text>
                         </div>
 
-                        {isMine ? (
+                        {alignRight && !isBot ? (
                           <div style={{ marginLeft: 8 }}>
                             <Avatar src={msg.senderImage || undefined} icon={<UserOutlined />} />
                           </div>

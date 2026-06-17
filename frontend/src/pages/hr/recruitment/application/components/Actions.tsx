@@ -6,7 +6,6 @@ import "./ApplicationComponents.css";
 
 interface ActionsProps {
   record: JobApplication;
-  actionLoading: boolean;
   onView: (application: JobApplication) => void;
   onReviewing: (id: number) => void;
   onApprove: (id: number) => void;
@@ -16,7 +15,7 @@ interface ActionsProps {
 const canMoveToReviewing = (status: JobApplicationStatus) => status === "PENDING";
 const canApproveOrReject = (status: JobApplicationStatus) => status === "REVIEWING";
 
-const Actions: React.FC<ActionsProps> = ({ record, actionLoading, onView, onReviewing, onApprove, onReject }) => {
+const Actions: React.FC<ActionsProps> = ({ record, onView, onReviewing, onApprove, onReject }) => {
   const items = [
     {
       key: "review",

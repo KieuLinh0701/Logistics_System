@@ -1,0 +1,43 @@
+.fee-configurations-page .fee-configurations-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fee-configurations-page .list-page-header {
+  margin-bottom: 12px;
+}
+
+.fee-configurations-page .list-page__pagination {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fee-configurations-page .admin-actions-trigger {
+  color: #000;
+  border: 1px solid #000;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.fee-configurations-page .admin-actions-trigger:hover {
+  background: #f6f7fb;
+}
+
+.fee-configurations-page .list-page-table .ant-table-tbody > tr > td,
+.fee-configurations-page .list-page-table .ant-table-thead > tr > th {
+  color: #000;
+}
+
+@media (max-width: 960px) {
+  .fee-configurations-page .fee-configurations-toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}

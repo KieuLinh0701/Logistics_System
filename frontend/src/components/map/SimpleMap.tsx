@@ -1,6 +1,6 @@
 import React from 'react';
-import {Card, List, Space, Typography} from 'antd';
-import {EnvironmentOutlined, PhoneOutlined} from '@ant-design/icons';
+import { Card, List, Space, Typography } from 'antd';
+import { EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
 
 interface DeliveryStop {
   id: number;

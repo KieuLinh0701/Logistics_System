@@ -9,7 +9,7 @@ import "./ApplicationComponents.css";
 interface ApplicationTableProps {
   data: JobApplication[];
   loading: boolean;
-  actionLoading: boolean;
+  actionLoading?: boolean;
   currentPage: number;
   pageSize: number;
   total: number;
@@ -23,7 +23,6 @@ interface ApplicationTableProps {
 const ApplicationTable: React.FC<ApplicationTableProps> = ({
   data,
   loading,
-  actionLoading,
   currentPage,
   pageSize,
   total,
@@ -67,7 +66,6 @@ const ApplicationTable: React.FC<ApplicationTableProps> = ({
         render: (_, record) => (
           <Actions
             record={record}
-            actionLoading={actionLoading}
             onView={onView}
             onReviewing={onReviewing}
             onApprove={onApprove}
@@ -78,7 +76,7 @@ const ApplicationTable: React.FC<ApplicationTableProps> = ({
         align: 'right',
       },
     ],
-    [actionLoading, onApprove, onReject, onReviewing, onView]
+    [onApprove, onReject, onReviewing, onView]
   );
 
   return (

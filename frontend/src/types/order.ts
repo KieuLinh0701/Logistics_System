@@ -13,32 +13,49 @@ export interface AdminOrder {
     senderPhone?: string;
     senderCityCode?: number;
     senderWardCode?: number;
+    senderCityName: string;
+    senderWardName: string;
     senderDetail?: string;
+    senderFullAddress: string;
     senderAddress?: Address;
     fromOffice?: Office;
     toOffice?: Office;
     pickupType?: string;
     recipientName: string;
+    recipientPhone?: string;
+    recipientCityName: string;
+    recipientWardName: string;
+    recipientDetail: string;
+    recipientFullAddress: string;
+    recipientAddress?: Address;
     status: string;
+    serviceTypeName?: string;
+    serviceType?: ServiceType;
+    weight?: number;
+    shippingFee?: number;
+    cod?: number;
+    paymentStatus?: string;
+    payer?: string;
+    orderProducts?: OrderProduct[];
+    notes?: string;
     totalFee: number;
     createdAt: string;
 }
+
+  export interface PickupAttempt {
+    attemptNumber: number;
+    status: string;
+    failReason?: string | null;
+    note?: string | null;
+    attemptedAt: string;
+    shipperName?: string | null;
+  }
 
 export interface Order {
     id: number;
     trackingNumber: string;
     status: string;
     createdByType: string;
-    recipientDetail: string;
-    recipientName: string;
-    recipientPhone: string;
-    recipientCityCode: number;
-    recipientCityName: string;
-    recipientWardCode: number;
-    recipientWardName: string;
-    recipientLatitude: number;
-    recipientLongitude: number;
-    recipientFullAddress: string;
     senderName: string;
     senderPhone: string;
     senderCityCode: number;
@@ -49,6 +66,16 @@ export interface Order {
     senderLatitude: number;
     senderLongitude: number;
     senderFullAddress: string;
+    recipientName: string;
+    recipientPhone: string;
+    recipientDetail: string;
+    recipientCityCode: number;
+    recipientCityName: string;
+    recipientWardCode: number;
+    recipientWardName: string;
+    recipientLatitude: number;
+    recipientLongitude: number;
+    recipientFullAddress: string;
     senderAddress: Address;
     recipientAddress: Address;
     pickupType: string;
@@ -61,7 +88,7 @@ export interface Order {
     adjustedOriginalWeight: number;
     adjustedHeight: number;
     adjustedWidth: number;
-    adjustedLength: number
+    adjustedLength: number;
     serviceTypeName: string;
     serviceType: ServiceType;
     discountAmount: number;
@@ -83,10 +110,13 @@ export interface Order {
     toOffice: Office;
     orderProducts: OrderProduct[];
     orderHistories: OrderHistory[];
+    pickupAttempts?: PickupAttempt[];
+    maxPickupAttempts?: number;
     employeeCode: string;
     userCode: string;
     codStatus: string;
     paymentSubmissions?: PaymentSubmission[];
+    codAmount?: number;
 }
 
 export interface StatusCount {
@@ -212,4 +242,15 @@ export interface OrderPrint {
     weight: number;
     createdAt: Date;
     orderProducts: OrderProductPrint[];
+}
+
+export interface OrderFulfillmentSummary {
+  orderId: number;
+  orderStatus: string;
+  totalItems: number;
+  deliveredItems: number;
+  returnedItems: number;
+  expectedCOD: number;
+  collectedCOD: number;
+  returnedValue: number;
 }

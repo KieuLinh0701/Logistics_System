@@ -50,9 +50,33 @@ export interface ManagerShippingRequestSearchRequest {
 }
 
 export interface PublicShippingRequestCreate {
-    contactName: string;
-    contactEmail: string;
-    contactPhoneNumber: string;
-    requestType: string;
-    requestContent: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhoneNumber: string;
+  requestType: string;
+  requestContent: string;
+}
+
+export interface OfficeOption {
+  id: number;
+  name: string;
+}
+
+export interface ShippingRequestRow {
+  id: number;
+  code: string;
+  requestType: string;
+  status: string;
+  office?: OfficeOption;
+  userName?: string;
+  createdAt: string;
+  content: string;
+  contactName?: string;
+  contactPhoneNumber?: string;
+  contactEmail?: string;
+  orderTrackingNumber?: string | null;
+  response?: string;
+  responseAt?: string | null;
+  
+  requestContent: string;
 }

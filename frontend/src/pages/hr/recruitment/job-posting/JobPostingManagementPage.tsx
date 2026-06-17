@@ -19,14 +19,7 @@ interface OfficeOption {
   value: string;
 }
 
-interface OfficeItem {
-  id: number;
-  name: string;
-}
 
-interface OfficeListPayload {
-  data?: OfficeItem[];
-}
 
 const JobPostingManagementPage: React.FC = () => {
   const [form] = Form.useForm();

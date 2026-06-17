@@ -24,7 +24,11 @@ import {
     EnvironmentOutlined,
     BankOutlined,
     CheckCircleOutlined,
-    ScanOutlined, UserSwitchOutlined, ContactsOutlined,
+    ScanOutlined,
+    NodeIndexOutlined,
+    WarningOutlined,
+    UserSwitchOutlined, 
+    ContactsOutlined,
 } from "@ant-design/icons";
 import "./SideNav.css";
 import {useMemo} from "react";
@@ -147,12 +151,6 @@ const SideNav: React.FC = () => {
                 ],
             },
             {
-                key: "/financial",
-                label: "Quản lý dòng tiền",
-                path: "/financial",
-                icon: <DollarOutlined/>,
-            },
-            {
                 key: "/account/settings",
                 label: "Cài đặt tài khoản",
                 path: "/account/settings?tab=profile",
@@ -188,6 +186,12 @@ const SideNav: React.FC = () => {
                 label: "Quản lý chuyến hàng",
                 path: "/shipments",
                 icon: <TruckOutlined/>,
+            },
+            {
+                key: "/manager/ai-routes",
+                label: "Tối ưu tuyến giao hàng",
+                path: "/manager/ai-routes",
+                icon: <NodeIndexOutlined/>,
             },
             {
                 key: "/supports",
@@ -393,6 +397,12 @@ const SideNav: React.FC = () => {
                 label: "Yêu cầu lấy hàng",
                 path: "/shipper/shipping-requests",
                 icon: <ExclamationCircleOutlined/>,
+            },
+            {
+                key: "/shipper/failed-deliveries",
+                label: "Hàng giao thất bại",
+                path: "/shipper/failed-deliveries",
+                icon: <WarningOutlined/>,
             },
             {
                 key: "/cod",

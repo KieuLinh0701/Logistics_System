@@ -4,7 +4,7 @@ import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from 'dayjs';
 import type { ManagerShipment } from "../../../../../types/shipment";
-import { SHIPMENT_FILTER_SORT, SHIPMENT_TYPES, translateShipmentFilterSort, translateShipmentStatus, translateShipmentType } from "../../../../../utils/shipmentUtils";
+import { SHIPMENT_FILTER_SORT, SHIPMENT_TYPES, translateShipmentFilterSort, translateShipmentType } from "../../../../../utils/shipmentUtils";
 import locationApi from "../../../../../api/locationApi";
 import { Option } from "antd/es/mentions";
 

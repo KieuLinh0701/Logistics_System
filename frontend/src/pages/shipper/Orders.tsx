@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-  Card,
   Table,
   Tag,
   Button,
   Space,
   Typography,
-  Row,
-  Col,
   Select,
   Input,
   message,
@@ -20,8 +17,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import type { ShipperOrder } from "../../api/orderApi";
+import "../../styles/ListPage.css";
+import "./ShipperPagesShared.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 interface FilterParams {
@@ -55,7 +54,6 @@ const ShipperOrders: React.FC = () => {
         search: filters.search,
       } as any;
       const res = await orderApi.getShipperOrders(params);
-      // Exclude orders that are already delivered or failed from the "Đơn hàng cần giao" list
       const visible = (res.orders || []).filter(
         (o: any) => o.status !== "DELIVERED" && o.status !== "FAILED_DELIVERY"
       );
@@ -99,6 +97,10 @@ const ShipperOrders: React.FC = () => {
         return "Đã giao";
       case "FAILED_DELIVERY":
         return "Giao thất bại";
+      case "DELIVERY_RETRY":
+        return "Chờ giao lại";
+      case "DELIVERY_FAILED_FINAL":
+        return "Giao thất bại";
       case "PARTIAL_DELIVERY":
         return "Giao 1 phần";
       case "PARTIAL_RETURN":
@@ -112,6 +114,11 @@ const ShipperOrders: React.FC = () => {
 
   const resetFilters = () => {
     setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleRefresh = () => {
+    resetFilters();
   };
 
   const columns = [
@@ -120,40 +127,49 @@ const ShipperOrders: React.FC = () => {
       dataIndex: "trackingNumber",
       key: "trackingNumber",
       width: 140,
-      render: (text: string) => <Text strong style={{ color: "#1f2937" }}>{text}</Text>,
+      render: (text: string) => <Text strong className="shipper-table-strong">{text}</Text>,
     },
     {
       title: "Thông tin người nhận",
       key: "recipient",
       render: (record: ShipperOrder) => {
         const address =
-          typeof record.recipientAddress === "string"
+          record.recipientFullAddress ||
+          (typeof record.recipientAddress === "string"
             ? record.recipientAddress
-            : (record.recipientAddress as any)?.fullAddress ?? "";
+            : (record.recipientAddress as any)?.fullAddress) || "";
         return (
           <Space direction="vertical" size={2}>
-            <Text strong style={{ color: "#111827" }}>{record.recipientName}</Text>
-            <Text type="secondary" style={{ fontSize: 12, color: "#6b7280" }}>
-              {record.recipientPhone}
-            </Text>
-            <Text style={{ fontSize: 12, color: "#4b5563" }}>{address}</Text>
+            <Text strong className="shipper-table-strong">{record.recipientName}</Text>
+            <Text className="shipper-table-muted">{record.recipientPhone}</Text>
+            <Text className="shipper-table-muted">{address}</Text>
           </Space>
         );
       },
     },
     {
-      title: "Dịch vụ & COD",
+      title: "Dịch vụ & tiền thu",
       key: "serviceCod",
       render: (record: ShipperOrder) => {
         const serviceName =
           typeof record.serviceType === "string"
             ? record.serviceType
             : (record.serviceType as any)?.name ?? "";
+        const payer = (record.payer || "").toUpperCase();
+        const shippingFee = Number(record.shippingFee || 0);
+        const cod = Number(record.cod || 0);
+        const totalToCollect = payer === "CUSTOMER" ? shippingFee + cod : cod;
         return (
           <Space direction="vertical" size={2}>
-            <Text style={{ color: "#1f2937" }}>{serviceName || "—"}</Text>
-            <Text style={{ color: "#ef4444", fontWeight: 600 }}>
-              {record.cod ? `${record.cod.toLocaleString()}đ` : "COD: 0đ"}
+            <Text className="shipper-table-strong">{serviceName || "—"}</Text>
+            <Text className="shipper-cod-value">
+              COD thu hộ: {cod > 0 ? `${cod.toLocaleString()}đ` : "0đ"}
+            </Text>
+            <Text className="shipper-table-muted">
+              Phí ship cần thu: {payer === "CUSTOMER" && shippingFee > 0 ? `${shippingFee.toLocaleString()}đ` : "0đ"}
+            </Text>
+            <Text className="shipper-table-strong">
+              Tổng cần thu: {`${totalToCollect.toLocaleString()}đ`}
             </Text>
           </Space>
         );
@@ -183,21 +199,23 @@ const ShipperOrders: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <Title level={3}>Đơn hàng cần giao</Title>
-        </Col>
-        <Col>
-          <Space>
+    <div className="list-page-layout shipper-page-root">
+      <div className="list-page-content">
+        <div className="shipper-filter-panel">
+          <div className="shipper-filter-grow">
             <Input
               allowClear
+              className="search-input"
               placeholder="Tìm theo mã đơn, người nhận, SĐT"
               prefix={<SearchOutlined />}
-              style={{ width: 260 }}
               value={filters.search}
-              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, search: e.target.value || undefined }))
+              }
+              style={{ width: "100%" }}
             />
+          </div>
+          <div className="shipper-filter-actions">
             <Select
               allowClear
               placeholder="Trạng thái"
@@ -211,28 +229,38 @@ const ShipperOrders: React.FC = () => {
               <Option value="FAILED_DELIVERY">Giao thất bại</Option>
               <Option value="RETURNED">Đã hoàn</Option>
             </Select>
-            <Button icon={<ReloadOutlined />} onClick={resetFilters}>
-              Xóa lọc
+            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
+              Làm mới
             </Button>
-          </Space>
-        </Col>
-      </Row>
+          </div>
+        </div>
 
-      <Card bordered={false}>
-        <Table
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={orders}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            onChange: (page, pageSize) =>
-              setPagination((prev) => ({ ...prev, current: page, pageSize })),
-          }}
-        />
-      </Card>
+        <div className="list-page-header shipper-page-header">
+          <div>
+            <h3 className="list-page-title-main">Đơn hàng cần giao</h3>
+            <div className="shipper-header-meta">
+              <div className="list-page-tag">Kết quả: {orders.length} đơn</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="list-page-table shipper-page-table">
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={orders}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              onChange: (page, pageSize) =>
+                setPagination((prev) => ({ ...prev, current: page, pageSize: pageSize || 10 })),
+            }}
+            scroll={{ x: 960 }}
+          />
+        </div>
+      </div>
     </div>
   );
 };

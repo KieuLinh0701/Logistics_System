@@ -42,11 +42,8 @@ const userApi = {
     },
 
     // Admin
-    async listAdminUsers(params: { page?: number; limit?: number; search?: string }) {
-        const res = await axiosClient.get<ApiResponse<{
-            data: AdminUser[];
-            pagination: any
-        }>>("/admin/users", {params});
+    async listAdminUsers(params: { page?: number; limit?: number; search?: string; status?: string; roleId?: number; role?: string }) {
+        const res = await axiosClient.get<ApiResponse<{ data: AdminUser[]; pagination: any }>>("/admin/users", { params });
         return res;
     },
 
@@ -61,7 +58,7 @@ const userApi = {
         firstName: string;
         lastName: string;
         phoneNumber: string;
-        roleId: number;
+        roleIds?: number[];
         isActive?: boolean;
     }) {
         const res = await axiosClient.post<ApiResponse<AdminUser>>("/admin/users", data);
@@ -73,7 +70,7 @@ const userApi = {
         lastName?: string;
         phoneNumber?: string;
         password?: string;
-        roleId?: number;
+        roleIds?: number[];
         isActive?: boolean;
     }) {
         const res = await axiosClient.put<ApiResponse<AdminUser>>(`/admin/users/${id}`, data);

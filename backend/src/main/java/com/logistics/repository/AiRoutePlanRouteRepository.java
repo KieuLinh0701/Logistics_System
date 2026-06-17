@@ -1,0 +1,26 @@
+package com.logistics.repository;
+
+import com.logistics.entity.AiRoutePlanRoute;
+import com.logistics.enums.AiRoutePlanStatus;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+
+public interface AiRoutePlanRouteRepository extends JpaRepository<AiRoutePlanRoute, Long> {
+
+    @Query("""
+            SELECT DISTINCT r FROM AiRoutePlanRoute r
+            JOIN FETCH r.plan p
+            LEFT JOIN FETCH r.stops s
+            LEFT JOIN FETCH s.order
+            WHERE r.shipperEmployeeId = :employeeId
+              AND p.status = :status
+            ORDER BY p.confirmedAt DESC
+            """)
+    List<AiRoutePlanRoute> findConfirmedRoutesForShipper(
+            @Param("employeeId") Integer employeeId,
+            @Param("status") AiRoutePlanStatus status);
+}

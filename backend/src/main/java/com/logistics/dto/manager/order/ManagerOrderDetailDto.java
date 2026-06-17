@@ -8,6 +8,7 @@ import com.logistics.dto.AddressDto;
 import com.logistics.dto.OfficeDto;
 import com.logistics.dto.OrderHistoryDto;
 import com.logistics.dto.OrderProductDto;
+import com.logistics.dto.PickupAttemptDto;
 import com.logistics.dto.ServiceTypeDto;
 
 import lombok.AllArgsConstructor;
@@ -76,6 +77,7 @@ public class ManagerOrderDetailDto {
     private OfficeDto toOffice;
     private List<OrderProductDto> orderProducts;
     private List<OrderHistoryDto> orderHistories;
+    private List<PickupAttemptDto> pickupAttempts;
     private String employeeCode;
     private String userCode;
     private String codStatus;

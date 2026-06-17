@@ -20,6 +20,8 @@ export interface AdminUser {
   lastName?: string;
   phoneNumber?: string;
   role?: string;
+  roles?: string[];
+  rolesIds?: number[];
   roleId?: number;
   isActive: boolean;
   isVerified: boolean;

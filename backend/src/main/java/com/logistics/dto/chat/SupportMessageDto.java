@@ -2,6 +2,7 @@ package com.logistics.dto.chat;
 
 import java.time.LocalDateTime;
 
+import com.logistics.enums.SupportMessageSenderType;
 import com.logistics.enums.SupportMessageType;
 
 import lombok.AllArgsConstructor;
@@ -17,6 +18,9 @@ public class SupportMessageDto {
     private Integer id;
     private Integer ticketId;
     private Integer senderAccountId;
+    private SupportMessageSenderType senderType;
+    private String senderLabel;
+    private Boolean isBotMessage;
     private String message;
     private SupportMessageType messageType;
     private Boolean isInternalNote;

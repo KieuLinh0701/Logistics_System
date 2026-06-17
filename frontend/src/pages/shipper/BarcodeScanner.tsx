@@ -3,7 +3,7 @@ import { Button, Card, message, Typography, Space, Upload, Alert, Spin } from "a
 import { CameraOutlined, FileImageOutlined, StopOutlined, ScanOutlined } from "@ant-design/icons";
 import { Html5Qrcode } from "html5-qrcode";
 import orderApi from "../../api/orderApi";
-import type { UploadFile } from "antd";
+
 
 const { Title, Text } = Typography;
 

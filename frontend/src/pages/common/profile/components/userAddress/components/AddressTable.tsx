@@ -6,13 +6,15 @@ import locationApi from '../../../../../../api/locationApi';
 import {hasPermissionGroup} from "../../../../../../utils/authUtils.ts";
 
 export interface Address {
-    id: number;
-    wardCode: number;
-    cityCode: number;
-    detail: string;
-    isDefault: boolean;
-    name: string;
-    phoneNumber: string;
+  id?: number;
+  wardCode: number;
+  cityCode: number;
+  detail: string;
+  isDefault: boolean;
+  name: string;
+  phoneNumber: string;
+  wardName?: string;
+  cityName?: string;
 }
 
 interface AddressTableProps {
@@ -34,7 +36,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
 
     const canEdit = hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_EDIT']);
     const canDelete = hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_DELETE']);
-    const canSetDefault = hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_SET_DEFAULT'])
+    const canSetDefault = hasPermissionGroup(['GROUP_USER', 'USER_ADDRESS_SET_DEFAULT']);
 
     useEffect(() => {
         const fetchLocations = async () => {
@@ -42,7 +44,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
             for (const address of data) {
                 const cityName = await locationApi.getCityNameByCode(address.cityCode) || "Unknown";
                 const wardName = await locationApi.getWardNameByCode(address.cityCode, address.wardCode) || "Unknown";
-                map[address.id] = {city: cityName, ward: wardName};
+                map[address.id ?? 0] = {city: cityName, ward: wardName};
             }
             setLocationMap(map);
         };
@@ -68,7 +70,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
             key: 'detail',
             align: 'left',
             render: (text: string, record: Address) => {
-                const location = locationMap[record.id];
+                const location = locationMap[record.id ?? 0];
                 const cityName = location?.city || "";
                 const wardName = location?.ward || "";
 
@@ -90,7 +92,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
                     className={"custom-switch"}
                     checked={val}
                     disabled={val || !canSetDefault}
-                    onChange={() => onSetDefault(record.id)}
+                    onChange={() => onSetDefault(record.id ?? 0)}
                     checkedChildren={<CheckOutlined/>}
                     unCheckedChildren={<CloseOutlined/>}
                 />
@@ -116,7 +118,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
                         key: "delete",
                         icon: <DeleteOutlined/>,
                         label: "Xóa",
-                        onClick: () => onDelete(record.id),
+                        onClick: () => onDelete(record.id ?? 0),
                     });
                 }
 
@@ -131,7 +133,7 @@ const AddressTable: React.FC<AddressTableProps> = ({
         },
     ];
 
-    const tableData = data.map((p) => ({...p, key: p.id}));
+    const tableData = data.map((p) => ({...p, key: p.id ?? 0}));
 
     return (
         <div className="table-container">

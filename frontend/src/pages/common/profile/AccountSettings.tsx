@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs } from 'antd';
-import { UserOutlined, MailOutlined, LockOutlined, ProfileOutlined } from '@ant-design/icons';
+import { UserOutlined, MailOutlined, LockOutlined, ProfileOutlined, CarOutlined } from '@ant-design/icons';
 import EmailSettings from './components/EmailSettings';
 import ProfileSettings from './components/ProfileSettings';
 import PasswordSettings from './components/PasswordSettings';
@@ -8,6 +8,7 @@ import Title from 'antd/es/typography/Title';
 import './AccountSettings.css';
 import {getUserRole, hasPermissionGroup} from '../../../utils/authUtils';
 import AddressSettingsUser from './components/userAddress/AddressSettingsUser';
+import ShipperVehicleSettingPage from '../../shipper/ShipperVehicleSetting';
 
 const AccountSettings: React.FC = () => {
   const role = getUserRole();
@@ -65,6 +66,18 @@ const AccountSettings: React.FC = () => {
         </span>
       ),
       children: <AddressSettingsUser />,
+    });
+  }
+
+  if (role === "shipper") {
+    tabs.push({
+      key: 'vehicle',
+      label: (
+        <span className="tab-label">
+          <CarOutlined /> Cài Đặt Phương Tiện
+        </span>
+      ),
+      children: <ShipperVehicleSettingPage />,
     });
   }
 

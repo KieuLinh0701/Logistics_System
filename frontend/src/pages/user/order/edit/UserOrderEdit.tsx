@@ -164,7 +164,7 @@ const UserOrderEdit: React.FC = () => {
 
             const lockRes = await userApi.checkUserLocked();
             if (lockRes.success && lockRes.data != null) {
-                setUserLocked(lockRes.data);
+                setUserLocked(!!lockRes.data);
             } else {
                 message.error(lockRes.message || "Lỗi khi kiểm tra trạng thái khóa");
             }

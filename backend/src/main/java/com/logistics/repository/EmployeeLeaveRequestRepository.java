@@ -1,15 +1,31 @@
 package com.logistics.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.logistics.entity.EmployeeLeaveRequest;
+import com.logistics.enums.LeaveRequestStatus;
 
 @Repository
 public interface EmployeeLeaveRequestRepository extends JpaRepository<EmployeeLeaveRequest, Integer> {
     List<EmployeeLeaveRequest> findByEmployeeId(Integer employeeId);
 
     List<EmployeeLeaveRequest> findByOfficeId(Integer officeId);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(l) > 0 THEN true ELSE false END
+            FROM EmployeeLeaveRequest l
+            WHERE l.employee.id = :employeeId
+              AND l.leaveDate = :leaveDate
+              AND l.status = :status
+            """)
+    boolean existsApprovedLeaveOnDate(
+            @Param("employeeId") Integer employeeId,
+            @Param("leaveDate") LocalDate leaveDate,
+            @Param("status") LeaveRequestStatus status);
 }

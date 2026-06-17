@@ -14,8 +14,8 @@ import {
 import authApi from "../../api/authApi";
 import "./HeaderHome.css";
 import logo from "../../assets/images/home/logo.png";
-import {getCurrentUser} from "../../utils/authUtils";
-import {getFullName} from "../../types/auth";
+import { getCurrentUser } from "../../utils/authUtils";
+import { getFullName } from "../../types/auth";
 
 const { Header: AntHeader } = Layout;
 const { Title } = Typography;

@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
+    "@googlemaps/polyline-codec": "^1.0.28",
+    "@mapbox/polyline": "^1.2.1",
+    "@react-google-maps/api": "^2.20.8",
     "@reduxjs/toolkit": "^2.9.1",
     "@stomp/stompjs": "^7.2.1",
     "antd": "^5.28.0",

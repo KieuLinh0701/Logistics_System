@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdateUserRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.UserAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.repository.RoleRepository;
+import com.logistics.response.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,21 +20,26 @@ public class UserAdminController {
     @Autowired
     private UserAdminService userAdminService;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> listUsers(
+        public ResponseEntity<ApiResponse<Map<String, Object>>> listUsers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String role) {
 
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(userAdminService.listUsers(page, limit, search));
+        return ResponseEntity.ok(userAdminService.listUsers(page, limit, search, status, role));
     }
 
     @GetMapping("/{id}")
@@ -87,6 +94,24 @@ public class UserAdminController {
             return ResponseEntity.status(404).body(response);
         }
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/roles")
+    public ResponseEntity<ApiResponse<java.util.List<java.util.Map<String, Object>>>> listRoles() {
+        if (isNotAdmin()) {
+            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+        }
+
+        var roles = roleRepository.findAll().stream()
+                .map(r -> {
+                    java.util.Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("id", r.getId());
+                    m.put("name", r.getName());
+                    return m;
+                })
+                .toList();
+
+        return ResponseEntity.ok(new ApiResponse<>(true, "Lấy danh sách role thành công", roles));
     }
 }
 

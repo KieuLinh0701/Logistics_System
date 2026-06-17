@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Typography, message, Spin, Table, Card, Row, Col, Button } from "antd";
+import { Typography, message, Spin, Table, Card, Row, Col } from "antd";
 import "./ShippingRates.css";
 
 import type { ServiceTypeWithShippingRatesResponse } from "../../../../types/serviceType";

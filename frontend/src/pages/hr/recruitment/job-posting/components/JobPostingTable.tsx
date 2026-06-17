@@ -9,7 +9,7 @@ import Actions from "./Actions";
 interface JobPostingTableProps {
   data: JobPosting[];
   loading: boolean;
-  actionLoading: boolean;
+  actionLoading?: boolean;
   currentPage: number;
   pageSize: number;
   total: number;
@@ -22,7 +22,6 @@ interface JobPostingTableProps {
 const JobPostingTable: React.FC<JobPostingTableProps> = ({
   data,
   loading,
-  actionLoading,
   currentPage,
   pageSize,
   total,
@@ -66,7 +65,6 @@ const JobPostingTable: React.FC<JobPostingTableProps> = ({
         render: (_, record) => (
           <Actions
             record={record}
-            actionLoading={actionLoading}
             onEdit={onEdit}
             onToggleStatus={onToggleStatus}
             onDelete={onDelete}
@@ -74,7 +72,7 @@ const JobPostingTable: React.FC<JobPostingTableProps> = ({
         ),
       },
     ],
-    [actionLoading, onDelete, onEdit, onToggleStatus]
+    [onDelete, onEdit, onToggleStatus]
   );
 
   return (

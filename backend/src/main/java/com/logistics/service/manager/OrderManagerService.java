@@ -50,6 +50,7 @@ import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
+import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
@@ -98,6 +99,8 @@ public class OrderManagerService {
     private final EmployeeManagerService employeeManagerService;
 
     private final NotificationService notificationService;
+
+    private final PickupAttemptRepository pickupAttemptRepository;
 
     public ApiResponse<ListResponse<ManagerOrderListDto>> list(int userId, UserOrderSearchRequest request) {
         try {
@@ -269,8 +272,9 @@ public class OrderManagerService {
                     .findByOrderIdOrderByActionTimeDesc(order.getId());
 
             List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+                var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-            ManagerOrderDetailDto data = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts);
+                ManagerOrderDetailDto data = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
 
             return new ApiResponse<>(true, "Lấy chi tiết đơn hàng theo mã đơn hàng thành công", data);
         } catch (Exception e) {

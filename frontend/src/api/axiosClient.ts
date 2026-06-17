@@ -3,7 +3,7 @@ import axios from "axios";
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8080/api",
-  timeout: 30000,
+  timeout: 60000,
   withCredentials: false,
 });
 

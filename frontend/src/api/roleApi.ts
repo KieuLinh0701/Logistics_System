@@ -5,7 +5,7 @@ import type {Role, UserRoleSearchRequest} from "../types/role.ts";
 const roleApi = {
     // Admin
     async getAdminRoles() {
-        const res = await axiosClient.get<ApiResponse<Role[]>>('/admin/roles');
+        const res = await axiosClient.get<ApiResponse<Role[]>>('/admin/users/roles');
         return res;
     },
 

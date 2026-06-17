@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Table, Button, Space, Typography, message, Tag, Descriptions } from "antd";
+import { Table, Button, Space, Typography, message, Descriptions, Row } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
 import type { DriverShipment } from "../../types/shipment";
@@ -32,16 +32,7 @@ const DriverHistory: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "COMPLETED":
-        return "success";
-      case "CANCELLED":
-        return "error";
-      default:
-        return "default";
-    }
-  };
+  
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -91,7 +82,7 @@ const DriverHistory: React.FC = () => {
       title: "Trạng thái",
       key: "status",
       render: (_: any, r: DriverShipment) => (
-        <Tag color={getStatusColor(r.status)}>{getStatusText(r.status)}</Tag>
+        <div className="list-table-status-text">{getStatusText(r.status)}</div>
       ),
     },
     {
@@ -123,52 +114,56 @@ const DriverHistory: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <Card
-        title={<Title level={3}>Lịch sử vận chuyển</Title>}
-        extra={
-          <Button icon={<ReloadOutlined />} onClick={loadHistory}>
-            Tải lại
-          </Button>
-        }
-      >
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={shipments}
-          loading={loading}
-          pagination={{
-            current: pagination.page,
-            pageSize: pagination.limit,
-            total: pagination.total,
-            onChange: (page, pageSize) => {
-              setPagination({ ...pagination, page, limit: pageSize });
-            },
-          }}
-          expandable={{
-            expandedRowRender: (record: DriverShipment) => (
-              <div style={{ margin: 0 }}>
-                <Title level={5}>Chi tiết đơn hàng trong chuyến</Title>
-                {record.orders && record.orders.length > 0 ? (
-                  <Descriptions size="small" column={2}>
-                    {record.orders.map((order: DriverOrderItem, index: number) => (
-                      <Descriptions.Item key={order.id} label={`Đơn ${index + 1}`}>
-                        <Space direction="vertical" size={0}>
-                          <Text strong>{order.trackingNumber}</Text>
-                          <Text type="secondary">{order.toOffice?.name || "—"}</Text>
-                        </Space>
-                      </Descriptions.Item>
-                    ))}
-                  </Descriptions>
-                ) : (
-                  <Text type="secondary">Không có đơn hàng</Text>
-                )}
-              </div>
-            ),
-            rowExpandable: (record: DriverShipment) => !!((record.orders && record.orders.length > 0) || (record.orderCount && record.orderCount > 0)),
-          }}
-        />
-      </Card>
+    <div className="list-page-layout">
+      <div className="list-page-content">
+        <Row className="list-page-header" justify="space-between" align="middle">
+          <Title level={3} className="list-page-title-main">Lịch sử vận chuyển</Title>
+          <div className="list-page-actions">
+            <Button icon={<ReloadOutlined />} onClick={loadHistory}>Tải lại</Button>
+          </div>
+        </Row>
+
+        <div className="list-page-table">
+          <Table
+            rowKey="id"
+            className="list-page-table"
+            columns={columns}
+            dataSource={shipments}
+            loading={loading}
+            bordered
+            pagination={{
+              current: pagination.page,
+              pageSize: pagination.limit,
+              total: pagination.total,
+              onChange: (page, pageSize) => {
+                setPagination({ ...pagination, page, limit: pageSize });
+              },
+            }}
+            expandable={{
+              expandedRowRender: (record: DriverShipment) => (
+                <div style={{ margin: 0 }}>
+                  <Title level={5}>Chi tiết đơn hàng trong chuyến</Title>
+                  {record.orders && record.orders.length > 0 ? (
+                    <Descriptions size="small" column={2}>
+                      {record.orders.map((order: DriverOrderItem, index: number) => (
+                        <Descriptions.Item key={order.id} label={`Đơn ${index + 1}`}>
+                          <Space direction="vertical" size={0}>
+                            <Text strong>{order.trackingNumber}</Text>
+                            <Text type="secondary">{order.toOffice?.name || "—"}</Text>
+                          </Space>
+                        </Descriptions.Item>
+                      ))}
+                    </Descriptions>
+                  ) : (
+                    <Text type="secondary">Không có đơn hàng</Text>
+                  )}
+                </div>
+              ),
+              rowExpandable: (record: DriverShipment) => !!((record.orders && record.orders.length > 0) || (record.orderCount && record.orderCount > 0)),
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
