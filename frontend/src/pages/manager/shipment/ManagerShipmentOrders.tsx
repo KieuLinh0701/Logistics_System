@@ -17,9 +17,11 @@ import Title from "antd/es/typography/Title";
 import "./ManagerShipments.css"
 import type {ManagerOrderSearchRequest} from "../../../types/order.ts";
 import orderApi from "../../../api/orderApi.ts";
+import {canEditOrdersManagerShipment} from "../../../utils/shipmentUtils.ts";
 
 const ManagerShipmentOrders: React.FC = () => {
     const {shipmentId} = useParams<{ shipmentId: string }>();
+    const [shipmentStatus, setShipmentStatus] = useState<string>("");
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -68,8 +70,9 @@ const ManagerShipmentOrders: React.FC = () => {
                 search: searchText,
             });
             if (res.success && res.data) {
-                setOrders(res.data.list || []);
-                setTotal(res.data.pagination?.total || 0);
+                setOrders(res.data.orders.list || []);
+                setTotal(res.data.orders.pagination?.total || 0);
+                setShipmentStatus(res.data.status);
             } else {
                 message.error(res.message || "Lỗi khi lấy đơn hàng");
             }
@@ -421,45 +424,48 @@ const ManagerShipmentOrders: React.FC = () => {
                             <Col>
                                 <div className="list-page-actions">
                                     <Space size={8}>
-                                        <Tooltip
-                                            title="Nhập mã đơn hàng (có thể nhập nhiều mã, cách nhau bằng dấu , ví dụ: UTE001,UTE002,UTE003)">
-                                            <Input
-                                                className="search-input shipment-search-input"
-                                                placeholder="Nhập mã đơn để thêm..."
-                                                value={newTrackingNumber}
-                                                onChange={e => setNewTrackingNumber(e.target.value)}
-                                                onPressEnter={handleAddOrder}
-                                                style={{width: 220}}
-                                            />
-                                        </Tooltip>
-                                        <Tooltip title="Thêm tạm thời">
-                                            <Button
-                                                className="warning-button"
-                                                loading={addingLoading}
-                                                icon={<PlusOutlined/>}
-                                                onClick={handleAddOrder}
-                                            >
-                                                Thêm
-                                            </Button>
-                                        </Tooltip>
-
-                                        {(tempAddedOrders.length > 0 || tempRemovedOrders.length > 0) && (
-                                            <Button
-                                                className="modal-cancel-button"
-                                                icon={<CloseCircleOutlined/>}
-                                                onClick={handleDiscardChanges}
-                                            >
-                                                Hủy thay đổi
-                                            </Button>
+                                        {canEditOrdersManagerShipment(shipmentStatus) && (
+                                            <><Tooltip
+                                                title="Nhập mã đơn hàng (có thể nhập nhiều mã, cách nhau bằng dấu , ví dụ: UTE001,UTE002,UTE003)">
+                                                <Input
+                                                    className="search-input shipment-search-input"
+                                                    placeholder="Nhập mã đơn để thêm..."
+                                                    value={newTrackingNumber}
+                                                    onChange={e => setNewTrackingNumber(e.target.value)}
+                                                    onPressEnter={handleAddOrder}
+                                                    style={{width: 220}}/>
+                                            </Tooltip><Tooltip title="Thêm tạm thời">
+                                                <Button
+                                                    className="warning-button"
+                                                    loading={addingLoading}
+                                                    icon={<PlusOutlined/>}
+                                                    onClick={handleAddOrder}
+                                                >
+                                                    Thêm
+                                                </Button>
+                                            </Tooltip></>
                                         )}
 
-                                        <Button
-                                            onClick={handleSaveOrders}
-                                            className="modal-ok-button"
-                                            icon={<SaveOutlined/>}
-                                        >
-                                            Lưu
-                                        </Button>
+                                        {(tempAddedOrders.length > 0 || tempRemovedOrders.length > 0) &&
+                                            canEditOrdersManagerShipment(shipmentStatus) && (
+                                                <Button
+                                                    className="modal-cancel-button"
+                                                    icon={<CloseCircleOutlined/>}
+                                                    onClick={handleDiscardChanges}
+                                                >
+                                                    Hủy thay đổi
+                                                </Button>
+                                            )}
+
+                                        {canEditOrdersManagerShipment(shipmentStatus) && (
+                                            <Button
+                                                onClick={handleSaveOrders}
+                                                className="modal-ok-button"
+                                                icon={<SaveOutlined/>}
+                                            >
+                                                Lưu
+                                            </Button>
+                                        )}
 
                                         <Button
                                             onClick={handleExport}

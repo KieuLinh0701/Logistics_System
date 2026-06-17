@@ -1,14 +1,14 @@
 import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
 import type {
-    DriverDeliveryStop,
-    DriverRouteInfo,
-    DriverShipment,
-    ManagerOrderShipment,
-    ManagerOrderShipmentSearchRequest,
-    ManagerShipment,
-    ManagerShipmentAddEditRequest,
-    ManagerShipmentSearchRequest
+  DriverDeliveryStop,
+  DriverRouteInfo,
+  DriverShipment, GetOrdersByShipmentIdManagerResponse,
+  ManagerOrderShipment,
+  ManagerOrderShipmentSearchRequest,
+  ManagerShipment,
+  ManagerShipmentAddEditRequest,
+  ManagerShipmentSearchRequest
 } from "../types/shipment";
 import type {SearchRequest} from "../types/request";
 import {axiosExport} from "./exportClient";
@@ -91,7 +91,7 @@ const shipmentApi = {
   },
 
   async getManagerOrdersByShipmentId(id: number, params: ManagerOrderShipmentSearchRequest) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerOrderShipment>>>(`/manager/shipments/${id}`, { params });
+    const res = await axiosClient.get<ApiResponse<GetOrdersByShipmentIdManagerResponse>>(`/manager/shipments/${id}`, { params });
     return res;
   },
 

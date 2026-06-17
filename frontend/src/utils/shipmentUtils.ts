@@ -8,6 +8,11 @@ export const canEditManagerShipment = (value: string) => {
   return ["PENDING"].includes(value)
 };
 
+// Status có thể change orders in Shipment của Manager
+export const canEditOrdersManagerShipment = (value: string) => {
+  return ["PENDING"].includes(value)
+};
+
 export const SHIPMENT_STATUSES = ['PENDING', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED'] as const;
 export const translateShipmentStatus = (value: string): string => {
   switch (value) {
