@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Button,
@@ -12,7 +12,6 @@ import {
   Row,
   Select,
   Space,
-  Tag,
   Typography,
   message,
 } from "antd";
@@ -23,7 +22,7 @@ import type {
   ShipperVehicleType,
 } from "../../types/shipperVehicle";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface VehicleFormValues {
   vehicleType: ShipperVehicleType;
@@ -58,12 +57,6 @@ const ShipperVehicleSettingPage: React.FC = () => {
   const weightPercent = maxWeightKg > 0 ? Math.min(100, Math.round((currentWeightKg / maxWeightKg) * 100)) : 0;
 
   const showBattery = isElectric && batteryLevel != null;
-
-  const statusColor = useMemo(() => {
-    if (status === "ACTIVE") return "green";
-    if (status === "MAINTENANCE") return "orange";
-    return "red";
-  }, [status]);
 
   const loadData = async () => {
     try {

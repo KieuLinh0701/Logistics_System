@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Typography, message, Modal, Radio, Card } from "antd";
+import { Form, Input, Button, Typography, message, Modal, Radio } from "antd";
 import { UserOutlined, LockOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import bg1 from "../../assets/images/bg-1.jpg";

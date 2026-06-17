@@ -181,8 +181,8 @@ const ShippingRequestsPage: React.FC = () => {
             data={filteredRequests}
             getStatusColor={() => "default"}
             getTypeColor={() => "default"}
-            formatStatus={translateShippingRequestStatus}
-            formatType={translateShippingRequestType}
+            formatStatus={(v) => translateShippingRequestStatus(v || "")}
+            formatType={(v) => translateShippingRequestType(v || "")}
             onView={handleView}
             onAssign={handleAssignOpen}
           />
@@ -192,8 +192,8 @@ const ShippingRequestsPage: React.FC = () => {
       <ShippingRequestDetailsModal
         open={detailOpen}
         request={selectedRequest}
-        typeText={translateShippingRequestType}
-        statusText={translateShippingRequestStatus}
+        typeText={(v) => translateShippingRequestType(v || "")}
+        statusText={(v) => translateShippingRequestStatus(v || "")}
         onClose={() => {
           setDetailOpen(false);
           setSelectedRequest(null);

@@ -39,8 +39,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
     const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isUserChangingCity = useRef(false);
-
     const selectedCity = Form.useWatch([prefix, "cityCode"], form);
     const [currentCityCode, setCurrentCityCode] = useState<number | undefined>(initialCity);
     const skipNextWardSet = useRef(false);

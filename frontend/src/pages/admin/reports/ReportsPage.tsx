@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, DatePicker, Row, Table, Tabs, Typography } from 'antd';
+import { Button, Card, Col, DatePicker, Row, Table, Tabs } from 'antd';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, CartesianGrid,
 } from 'recharts';
@@ -61,7 +61,6 @@ export default function ReportsPage() {
   const [fees, setFees] = useState<any[]>([]);
   const [operations, setOperations] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
-  const [shops, setShops] = useState<any[]>([]);
   const [overview, setOverview] = useState<any | null>(null);
   const [financeReport, setFinanceReport] = useState<any | null>(null);
 
@@ -91,7 +90,7 @@ export default function ReportsPage() {
         resFees,
         resOperations,
         resOffices,
-        resShops,
+        _resShops,
         resOverview,
         resFinance
       ] = await Promise.all([
@@ -112,7 +111,6 @@ export default function ReportsPage() {
       setFees(resFees || []);
       setOperations(resOperations || []);
       setOffices(resOffices || []);
-      setShops(resShops || []);
       setOverview(resOverview || null);
       setFinanceReport(resFinance || null);
     } catch (error) {
@@ -586,7 +584,7 @@ export default function ReportsPage() {
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = filename;
+                      a.download = filename || 'report.xlsx';
                       document.body.appendChild(a);
                       a.click();
                       a.remove();

@@ -209,11 +209,11 @@ const ManagerWaybillPrint: React.FC = () => {
                 <div className="waybill-print-contact-column">
                   <div className="waybill-print-section-title">TỪ</div>
                   <ContactInfo
-                    name={order.senderName}
-                    detail={order.senderDetail}
-                    wardCode={order.senderWardCode}
-                    cityCode={order.senderCityCode}
-                    phone={order.senderPhone}
+                    name={order.senderAddress.name}
+                    detail={order.senderAddress.detail}
+                    wardCode={order.senderAddress.wardCode}
+                    cityCode={order.senderAddress.cityCode}
+                    phone={order.senderAddress.phoneNumber}
                   />
                 </div>
                 <div className="waybill-print-contact-column">

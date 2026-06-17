@@ -29,7 +29,7 @@ const ManagerShipments: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [shipment, setShipment] = useState<Partial<ManagerShipment>>({});
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const detailModalVisible = false;
 
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState("ALL");

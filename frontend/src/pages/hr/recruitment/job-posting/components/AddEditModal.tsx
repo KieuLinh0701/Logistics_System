@@ -38,8 +38,6 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
   React.useEffect(() => {
     if (open) {
       try {
-        const fv = form.getFieldValue("officeId");
-
         // Nếu đang chỉnh sửa tin tuyển dụng, điền các giá trị vào form sau khi component mount
         if (editingJob) {
           setTimeout(() => {

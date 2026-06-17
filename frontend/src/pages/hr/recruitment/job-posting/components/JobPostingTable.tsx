@@ -1,15 +1,15 @@
 import React, { useMemo } from "react";
-import { Table, Tag } from "antd";
+import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { JobPosting, JobPostingStatus, RecruitmentRoleType } from "../../../../../types/recruitment";
-import { postingStatusColorMap, postingStatusLabelMap, roleTypeLabelMap } from "../../../../common/recruitment/recruitmentHelpers";
+import { postingStatusLabelMap, roleTypeLabelMap } from "../../../../common/recruitment/recruitmentHelpers";
 import { shiftLabel } from "../../../../../utils/recruitmentHelpers";
 import Actions from "./Actions";
 
 interface JobPostingTableProps {
   data: JobPosting[];
   loading: boolean;
-  actionLoading: boolean;
+  actionLoading?: boolean;
   currentPage: number;
   pageSize: number;
   total: number;
@@ -22,7 +22,6 @@ interface JobPostingTableProps {
 const JobPostingTable: React.FC<JobPostingTableProps> = ({
   data,
   loading,
-  actionLoading,
   currentPage,
   pageSize,
   total,
@@ -66,7 +65,6 @@ const JobPostingTable: React.FC<JobPostingTableProps> = ({
         render: (_, record) => (
           <Actions
             record={record}
-            actionLoading={actionLoading}
             onEdit={onEdit}
             onToggleStatus={onToggleStatus}
             onDelete={onDelete}
@@ -74,7 +72,7 @@ const JobPostingTable: React.FC<JobPostingTableProps> = ({
         ),
       },
     ],
-    [actionLoading, onDelete, onEdit, onToggleStatus]
+    [onDelete, onEdit, onToggleStatus]
   );
 
   return (

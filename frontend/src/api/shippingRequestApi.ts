@@ -59,13 +59,13 @@ async listManagerShippingRequests(
   },
 
   async getManagerShippingRequestById(id: number) {
-    return axiosClient.get<ShippingRequest>(
+    return axiosClient.get<ApiResponse<ShippingRequest>>(
       `/manager/shipping-requests/${id}`
     );
   },
 
   async processingManagerShippingRequest(id: number, data: FormData) {
-    return axiosClient.put<boolean>(
+    return axiosClient.put<ApiResponse<boolean>>(
       `/manager/shipping-requests/${id}`,
       data
     );

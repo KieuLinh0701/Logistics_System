@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { Segmented, Table, Tag } from "antd";
-import { RightOutlined } from '@ant-design/icons';
 import type { UserTopProductItem } from "../../../../types/dashboard";
 
 interface Props {

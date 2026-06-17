@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import { GoogleMap, InfoWindowF, Marker } from "@react-google-maps/api";
+import { GoogleMap, InfoWindowF } from "@react-google-maps/api";
 import type { AiRouteStop, AiShipperRoute } from "../../../../types/aiRoute";
 import RouteStopMarker from "./RouteStopMarker";
 import {

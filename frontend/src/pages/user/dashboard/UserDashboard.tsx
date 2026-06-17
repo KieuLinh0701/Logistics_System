@@ -18,11 +18,8 @@ const UserDashboard: React.FC = () => {
   const [data2, setData2] = useState<UserDashboardChartResponse | null>(null);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>([dayjs().subtract(7, "day"), dayjs()]);
   const [loading, setLoading] = useState(true);
-  const [loadingChart, setLoadingChart] = useState(true);
 
   const fetchChart = async () => {
-    setLoadingChart(true);
-
     const params: SearchRequest = {
     };
     if (dateRange) {
@@ -36,8 +33,6 @@ const UserDashboard: React.FC = () => {
       else message.warning(result.message || "Không thể tải dữ liệu biểu đồ. Vui lòng thử lại sau.");
     } catch (error: any) {
       message.error(error.message || "Đã xảy ra lỗi hệ thống. Vui lòng thử lại.");
-    } finally {
-      setLoadingChart(false);
     }
   };
 

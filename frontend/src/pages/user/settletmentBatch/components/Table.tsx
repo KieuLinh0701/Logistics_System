@@ -31,7 +31,6 @@ const DataTable: React.FC<Props> = ({
   loading,
   onSelectionChange,
   selectedIds,
-  onSelectAllAction,
 }) => {
   const tableData = datas.map((o) => ({ ...o, key: String(o.id) }));
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -50,7 +49,7 @@ const DataTable: React.FC<Props> = ({
   const rowSelection = {
     selectedRowKeys,
     onChange: onSelectChange,
-    onSelectAll: (selected: boolean, selectedRows: SettlementBatch[], changeRows: SettlementBatch[]) => {
+    onSelectAll: (selected: boolean, selectedRows: SettlementBatch[], _changeRows: SettlementBatch[]) => {
       if (!selected) {
         if (onSelectionChange) onSelectionChange([]);
         setSelectedRowKeys([]);

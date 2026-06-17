@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Button, Card, Col, Empty, Input, Row, Select, Space, Spin, Table, Tag, Typography, message } from "antd";
+import { Button, Card, Empty, Input, Space, Spin, Table, Tag, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { ReloadOutlined, SearchOutlined, EyeOutlined, InboxOutlined } from "@ant-design/icons";
+import { ReloadOutlined, SearchOutlined, InboxOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import orderApi, { type ShipperOrder } from "../../api/orderApi";
 import { translateOrderStatus } from "../../utils/orderUtils";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const FailedDeliveryOrders: React.FC = () => {
   const navigate = useNavigate();

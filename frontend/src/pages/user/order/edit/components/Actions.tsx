@@ -21,26 +21,20 @@ const Actions: React.FC<Props> = ({
   userLocked
 }) => {
   const [isOn, setIsOn] = useState(status === "PENDING");
-  const [tempStatus, setTempStatus] = useState<"DRAFT" | "PENDING">(
-    status === "PENDING" ? "PENDING" : "DRAFT"
-  );
 
   useEffect(() => {
     setIsOn(status === "PENDING");
-    setTempStatus(status === "PENDING" ? "PENDING" : "DRAFT");
   }, [status]);
 
   const handleToggle = (checked: boolean) => {
     if (userLocked) {
       setIsOn(false);
-      setTempStatus("DRAFT");
       onStatusChange("DRAFT");
       return;
     }
 
     setIsOn(checked);
     const newStatus = checked ? "PENDING" : "DRAFT";
-    setTempStatus(newStatus);
     onStatusChange(newStatus);
   };
 

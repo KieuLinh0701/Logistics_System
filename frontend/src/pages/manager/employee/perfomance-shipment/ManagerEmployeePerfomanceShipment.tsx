@@ -16,8 +16,6 @@ const ManagerEmployeePerfomanceShipment = () => {
   const navigate = useNavigate();
   const latestRequestRef = useRef(0);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = useState(false);
-
   const { employeeId } = useParams<{ employeeId: string }>();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,7 +28,7 @@ const ManagerEmployeePerfomanceShipment = () => {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   const [shipments, setShipments] = useState<ManagerShipment[] | []>([]);
-  const [exportShipments, setExportShipments] = useState<ManagerShipment[] | []>([]);
+
 
   const updateURL = () => {
     const params: any = {};
@@ -70,7 +68,6 @@ const ManagerEmployeePerfomanceShipment = () => {
 
   const fetchShipments = async (page = currentPage) => {
     try {
-      setLoading(true);
       const requestId = ++latestRequestRef.current;
       if (!employeeId) return;
 
@@ -100,8 +97,6 @@ const ManagerEmployeePerfomanceShipment = () => {
       }
     } catch (error: any) {
       message.error(error.message || "Lỗi khi lấy danh sách chuyến hàng của nhân viên");
-    } finally {
-      setLoading(false);
     }
   };
 

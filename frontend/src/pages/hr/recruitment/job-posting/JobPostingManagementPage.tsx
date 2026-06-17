@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Alert, Form, message } from "antd";
-import { PlusOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+import { UsergroupAddOutlined } from "@ant-design/icons";
 import { roleTypeLabelMap } from "../../../common/recruitment/recruitmentHelpers";
 import officeApi from "../../../../api/officeApi";
 import recruitmentApi from "../../../../api/recruitmentApi";
@@ -19,14 +19,7 @@ interface OfficeOption {
   value: string;
 }
 
-interface OfficeItem {
-  id: number;
-  name: string;
-}
 
-interface OfficeListPayload {
-  data?: OfficeItem[];
-}
 
 const JobPostingManagementPage: React.FC = () => {
   const [form] = Form.useForm();

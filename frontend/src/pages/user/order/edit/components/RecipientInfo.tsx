@@ -185,7 +185,7 @@ const RecipientInfo = forwardRef<RecipientInfoRef, Props>(({
 
     const fetchSuggestion = useCallback(async (phone: string) => {
         try {
-            const result = await recipientAddressApi.getUserSuggestion({phone});
+            const result = await recipientAddressApi.getUserSuggestion({phone: Number(phone)});
             if (result.success && result.data) {
                 setSuggestionList(result.data.addresses ?? []);
                 setSuggestionType(result.data.type);

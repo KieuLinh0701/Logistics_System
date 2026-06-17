@@ -8,7 +8,6 @@ import {
   Typography,
 } from "antd";
 import dayjs from "dayjs";
-import { useNavigate } from "react-router-dom";
 import type { ManagerPaymentSubmissionBatch } from "../../../../types/paymentSubmissionBatch";
 import { getAllowedManagerStatuses, translatePaymentSubmissionBatchStatus } from "../../../../utils/paymentSubmissionBatchUtils";
 
@@ -31,7 +30,6 @@ const ProcessPaymentSubmissionModal: React.FC<Props> = ({
   loading
 }) => {
   const [form] = Form.useForm();
-  const navigate = useNavigate();
   const mismatch = batch?.totalSystemAmount !== batch?.totalActualAmount;
 
   useEffect(() => {

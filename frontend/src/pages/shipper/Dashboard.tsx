@@ -4,7 +4,6 @@ import {
   TruckOutlined,
   BoxPlotOutlined,
   DollarOutlined,
-  ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   BellOutlined,
@@ -159,7 +158,7 @@ const ShipperDashboard: React.FC = () => {
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string, record: ShipperOrder) => (
+      render: (text: string, _record: ShipperOrder) => (
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
         </Space>

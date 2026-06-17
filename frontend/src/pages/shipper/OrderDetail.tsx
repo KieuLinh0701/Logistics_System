@@ -56,7 +56,6 @@ const ShipperOrderDetail: React.FC = () => {
   // Có thể bật nút xác nhận hay không
   const [canSubmit, setCanSubmit] = useState(false);
   const [partialModalOpen, setPartialModalOpen] = useState(false);
-  const [codAfterFinish, setCodAfterFinish] = useState(false);
   const [paymentSubmissionResponse, setPaymentSubmissionResponse] = useState<any | null>(null);
 
   const getCodPreviewItems = () => {
@@ -205,7 +204,6 @@ const fetchOrderDetail = async () => {
       message.success("Đã thu COD thành công");
       setCodModal(false);
       fetchOrderDetail();
-      setCodAfterFinish(false);
     } catch (error: any) {
       message.error(error?.response?.data?.message || "Lỗi khi thu COD");
     } finally {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Col, Form, Row, Space, Tag, message } from "antd";
+import { Button, Col, Row, Space, Tag, message } from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import SubmissionTable from "./components/Table";
@@ -45,7 +45,6 @@ const UserSettlementBatchs = () => {
   const [selectedSettlementBatch, setSelectedSettlementBatch] = useState<SettlementBatch | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
   const [allTotalAmount, setAllTotalAmount] = useState(0);
 
 

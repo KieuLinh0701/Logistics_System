@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import { Button, Col, Form, InputNumber, message, Row, Tooltip } from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
@@ -34,7 +34,7 @@ import ConfirmModal from "../../../common/ConfirmModal";
 import { canEditUserOrderField } from "../../../../utils/userOrderEditRules";
 import userApi from "../../../../api/userApi";
 import {geocodeAddress} from "../../../../service/mapsService.ts";
-import type {RecipientInfoRef} from "../create/components/RecipientInfo.tsx";
+
 
 const UserOrderEdit: React.FC = () => {
     const { trackingNumber, orderId } = useParams();
@@ -165,7 +165,7 @@ const UserOrderEdit: React.FC = () => {
 
             const lockRes = await userApi.checkUserLocked();
             if (lockRes.success && lockRes.data != null) {
-                setUserLocked(lockRes.data);
+                setUserLocked(!!lockRes.data);
             } else {
                 message.error(lockRes.message || "Lỗi khi kiểm tra trạng thái khóa");
             }
@@ -1421,7 +1421,9 @@ const UserOrderEdit: React.FC = () => {
                     phoneNumber: '',
                     detail: '',
                     wardCode: 0,
+                    wardName: '',
                     cityCode: 0,
+                    cityName: '',
                     isDefault: addresses.length === 0
                 }}
                 onOk={handleSaveAddress}

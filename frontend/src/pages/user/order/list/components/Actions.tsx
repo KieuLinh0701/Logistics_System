@@ -1,6 +1,6 @@
 import React from "react";
 import { Space, Button } from "antd";
-import { PlusOutlined, PrinterOutlined, TruckOutlined } from "@ant-design/icons";
+import { PlusOutlined, PrinterOutlined } from "@ant-design/icons";
 
 interface Props {
   onAdd: () => void;

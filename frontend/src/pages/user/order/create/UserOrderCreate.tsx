@@ -249,7 +249,7 @@ const UserOrderCreate: React.FC = () => {
             setLoadingBank(true);
             const response = await bankAccountApi.existUserBankAccounts();
             if (response.success && response.data) {
-                setExistBankAccount(response.data);
+                setExistBankAccount(!!response.data);
             }
         } catch (error: any) {
             message.error(error.message || "Error fetching Addresses:", error);
@@ -263,7 +263,7 @@ const UserOrderCreate: React.FC = () => {
         try {
             const response = await userApi.checkUserLocked();
             if (response.success && response.data) {
-                setUserLocked(response.data);
+                setUserLocked(!!response.data);
             }
         } catch (error: any) {
             message.error(error.message || "Lỗi khi kiểm tra trạng thái của người dùng");
@@ -1320,7 +1320,9 @@ const UserOrderCreate: React.FC = () => {
                     phoneNumber: '',
                     detail: '',
                     wardCode: 0,
+                    wardName: '',
                     cityCode: 0,
+                    cityName: '',
                     isDefault: addresses.length === 0
                 }}
                 onOk={handleSaveAddress}

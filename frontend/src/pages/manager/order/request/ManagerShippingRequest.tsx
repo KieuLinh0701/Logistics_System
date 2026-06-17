@@ -27,7 +27,6 @@ const ManagerShippingRequests: React.FC = () => {
 
   const [hover, setHover] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [newRequest, setNewRequest] = useState<Partial<ShippingRequest>>({});
 
   const [searchText, setSearchText] = useState('');
@@ -149,7 +148,6 @@ const ManagerShippingRequests: React.FC = () => {
 
   // Handler mở edit từ detail modal
   const handleEditFromDetail = (request: ShippingRequest) => {
-    setModalMode('edit');
     setNewRequest(request);
     setIsModalOpen(true);
 
@@ -196,7 +194,6 @@ const ManagerShippingRequests: React.FC = () => {
       const result = await shippingRequestApi.getManagerShippingRequestById(requestId);
       if (result.success && result.data) {
         setNewRequest(result.data);
-        setModalMode('edit');
         setIsModalOpen(true);
         form.setFieldsValue(result.data);
       } else {

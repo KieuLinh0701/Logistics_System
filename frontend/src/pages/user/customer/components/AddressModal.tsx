@@ -11,7 +11,7 @@ interface AddressModalProps {
   onCancel: () => void;
   onAddressChange: (address: RecipientAddressRequest) => void;
   form: any;
-  total: number;
+  total?: number;
   loading: boolean;
 }
 
@@ -23,7 +23,6 @@ const AddressModal: React.FC<AddressModalProps> = ({
   onCancel,
   onAddressChange,
   form,
-  total,
   loading,
 }) => {
 

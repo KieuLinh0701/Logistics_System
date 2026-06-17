@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Typography, Card, Row, Col, message, Select } from "antd";
 import { SendOutlined, PhoneOutlined, MailOutlined, EnvironmentOutlined } from "@ant-design/icons";
-import axios from "axios";
 import "./ContactForm.css";
 import contactFormImage from "../../../assets/images/contactForm.jpg";
 import HeaderHome from "../../../components/common/HeaderHome";

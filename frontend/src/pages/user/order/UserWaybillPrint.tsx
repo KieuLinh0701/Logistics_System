@@ -6,6 +6,8 @@ import type { OrderPrint } from "../../../types/order";
 import orderApi from "../../../api/orderApi";
 import "./UserWaybillPrint.css";
 
+const { Option } = Select;
+
 
 const ContactInfo: React.FC<{
   name: string;

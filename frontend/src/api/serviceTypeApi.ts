@@ -1,4 +1,4 @@
-import type { ApiResponse, ListResponse } from "../types/response";
+import type { ApiResponse } from "../types/response";
 import type { ServiceType, ServiceTypeWithShippingRatesResponse, AdminServiceType, CreateServiceTypePayload, UpdateServiceTypePayload } from "../types/serviceType";
 import axiosClient from "./axiosClient";
 

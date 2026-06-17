@@ -1,10 +1,8 @@
 import React from 'react';
-import { Input, Select, DatePicker, Button, Row, Col } from 'antd';
+import { Input, Select, Button, Row, Col } from 'antd';
 import { CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ServiceType } from '../../../../types/serviceType';
 import { translateWarehouseFilterSort, WAREHOUSE_FILTER_SORT } from '../../../../utils/warehouseUtils';
-
-const { Option } = Select;
 
 interface SearchFiltersProps {
   searchText: string;

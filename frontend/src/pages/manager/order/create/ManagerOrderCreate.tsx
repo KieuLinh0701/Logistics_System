@@ -21,7 +21,7 @@ const ManagerOrderCreate: React.FC = () => {
     const [loadingOrder, setLoadingOrder] = useState(false);
     const [officeCityCode, setOfficeCityCode] = useState<number | undefined>(undefined);
 
-    const [loadingOffice, setLoadingOffice] = useState(false);
+
 
     // Dịch vụ vận chuyển đang hoạt động
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
@@ -87,7 +87,7 @@ const ManagerOrderCreate: React.FC = () => {
         const hasLocalOffices = async () => {
             if (recipientData.cityCode === 0) return;
 
-            setLoadingOffice(true);
+
             try {
                 const result = await officeApi.hasLocalOffice(recipientData.cityCode);
                 if (result.success) {
@@ -103,7 +103,6 @@ const ManagerOrderCreate: React.FC = () => {
             } catch (error: any) {
                 message.error(error.message || "Không thể kiểm tra có bưu cục trong khu vực đã chọn");
             } finally {
-                setLoadingOffice(false);
             }
         }
 
@@ -115,7 +114,6 @@ const ManagerOrderCreate: React.FC = () => {
     useEffect(() => {
         const fetchOfficeCityCode = async () => {
             try {
-                setLoadingOffice(true);
                 const response = await officeApi.getManagerOfficeCityCode();
                 if (response.success && response.data) {
                     setOfficeCityCode(response.data);
@@ -125,7 +123,6 @@ const ManagerOrderCreate: React.FC = () => {
             } catch (error: any) {
                 message.error(error.message || "Lỗi khi lấy địa chỉ của bưu cục");
             } finally {
-                setLoadingOffice(false);
             }
         };
 
