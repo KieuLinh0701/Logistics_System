@@ -22,6 +22,7 @@ import com.logistics.request.manager.shipment.ManagerShipmentSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
+import com.logistics.response.manager.GetOrdersByShipmentIdManagerResponse;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShipmentSpecification;
 import com.logistics.utils.AddressUtils;
@@ -125,7 +126,7 @@ public class ShipmentManagerService {
         }
     }
 
-    public ApiResponse<ListResponse<ManagerShipmentDetailDto>> getOrdersByShipmentId(
+    public ApiResponse<GetOrdersByShipmentIdManagerResponse> getOrdersByShipmentId(
             int userId,
             int shipmentId,
             ManagerOrdersShipmentSearchRequest request) {
@@ -159,7 +160,12 @@ public class ShipmentManagerService {
             data.setList(pagedList);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách đơn hàng của chuyến hàng thành công", data);
+            GetOrdersByShipmentIdManagerResponse response = GetOrdersByShipmentIdManagerResponse.builder()
+                    .orders(data)
+                    .status(shipment.getStatus())
+                    .build();
+
+            return new ApiResponse<>(true, "Lấy danh sách đơn hàng của chuyến hàng thành công", response);
 
         } catch (Exception e) {
             return new ApiResponse<>(false, "Đã xảy ra lỗi: " + e.getMessage(), null);

@@ -9,6 +9,7 @@ import com.logistics.request.manager.shipment.ManagerShipmentSearchRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
+import com.logistics.response.manager.GetOrdersByShipmentIdManagerResponse;
 import com.logistics.service.manager.ShipmentManagerService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,13 +41,13 @@ public class ShipmentManagerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ListResponse<ManagerShipmentDetailDto>>> getOrdersByShipmentId(
+    public ResponseEntity<ApiResponse<GetOrdersByShipmentIdManagerResponse>> getOrdersByShipmentId(
             @PathVariable Integer id,
             @Valid ManagerOrdersShipmentSearchRequest searchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerShipmentDetailDto>> result = service.getOrdersByShipmentId(userId, id,
+        ApiResponse<GetOrdersByShipmentIdManagerResponse> result = service.getOrdersByShipmentId(userId, id,
                 searchRequest);
         return ResponseEntity.ok(result);
     }
