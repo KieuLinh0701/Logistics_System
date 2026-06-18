@@ -67,6 +67,6 @@ public class ShipperPickupController {
                 failReason,
                 request.getNote());
 
-        return ResponseEntity.ok(new ApiResponse<>(true, "Ghi nhận lần lấy hàng thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận lần lấy hàng thành công", data));
     }
 }

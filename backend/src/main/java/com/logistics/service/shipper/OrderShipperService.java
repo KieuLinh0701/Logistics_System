@@ -37,6 +37,12 @@ import com.logistics.request.shipper.DeliverOriginRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.response.NotificationResponse;
+import com.logistics.exception.AppException;
+import com.logistics.exception.EmployeeErrorCode;
+import com.logistics.exception.ErrorCode;
+import com.logistics.exception.IncidentReportErrorCode;
+import com.logistics.exception.OrderErrorCode;
+import com.logistics.exception.ProductErrorCode;
 import com.logistics.utils.SecurityUtils;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.ConfigService;
@@ -128,7 +134,7 @@ public class OrderShipperService {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
         List<Employee> employees = employeeRepository.findByUserId(userId);
         if (employees == null || employees.isEmpty()) {
-            throw new RuntimeException("Không tìm thấy thông tin nhân viên (shipper)");
+            throw new AppException(EmployeeErrorCode.NOT_FOUND);
         }
         return employees.get(0);
     }
@@ -210,7 +216,7 @@ public class OrderShipperService {
         shipperVehicleRepository.save(vehicle);
     }
 
-    public ApiResponse<Map<String, Object>> getDashboard() {
+    public Map<String, Object> getDashboard() {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
@@ -296,7 +302,9 @@ public class OrderShipperService {
                     return m;
                 }).toList();
             }
-        } catch (Exception e) { throw new RuntimeException(e); }
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+        }
 
         Map<String, Object> data = new HashMap<>();
         Map<String, Object> stats = new HashMap<>();
@@ -310,10 +318,10 @@ public class OrderShipperService {
         data.put("todayOrders", todayOrderSummaries);
         data.put("notifications", notificationMaps);
 
-        return new ApiResponse<>(true, "Lấy dashboard shipper thành công", data);
+        return data;
     }
 
-    public ApiResponse<Map<String, Object>> listOrders(int page, int limit, String status, String search) {
+    public Map<String, Object> listOrders(int page, int limit, String status, String search) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
@@ -377,10 +385,10 @@ public class OrderShipperService {
         result.put("orders", orders);
         result.put("pagination", pagination);
 
-        return new ApiResponse<>(true, "Lấy danh sách đơn hàng shipper thành công", result);
+        return result;
     }
 
-    public ApiResponse<Map<String, Object>> listUnassignedOrders(int page, int limit) {
+    public Map<String, Object> listUnassignedOrders(int page, int limit) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
@@ -416,12 +424,12 @@ public class OrderShipperService {
         result.put("orders", orders);
         result.put("pagination", pagination);
 
-        return new ApiResponse<>(true, "Lấy danh sách đơn chưa gán thành công", result);
+        return result;
     }
 
     // Mới: lấy danh sách các đơn mà người dùng chọn Yêu cầu lấy hàng (PICKUP_BY_COURIER)
     // và đã đánh dấu SẴN SÀNG LẤY (READY_FOR_PICKUP), chưa có shipper gán.
-    public ApiResponse<Map<String, Object>> listPickupByCourierRequests(int page, int limit) {
+    public Map<String, Object> listPickupByCourierRequests(int page, int limit) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
@@ -455,8 +463,8 @@ public class OrderShipperService {
                 Predicate fromOfficeMatch = cb.equal(root.get("fromOffice").get("id"), officeId);
                 availablePreds.add(fromOfficeMatch);
                 assignedPreds.add(fromOfficeMatch);
-            } catch (Exception e) { 
-                throw new RuntimeException(e); 
+            } catch (Exception e) {
+                throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
             }
             // nếu không có fromOffice, bỏ qua điều kiện
 
@@ -484,12 +492,12 @@ public class OrderShipperService {
         result.put("orders", orders);
         result.put("pagination", pagination);
 
-        return new ApiResponse<>(true, "Lấy danh sách yêu cầu lấy hàng thành công", result);
+        return result;
     }
 
-    public ApiResponse<Map<String, Object>> getOrderById(Integer id) {
+    public Map<String, Object> getOrderById(Integer id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
@@ -502,15 +510,15 @@ public class OrderShipperService {
         }
 
         if (!allowed) {
-            return new ApiResponse<>(false, "Không có quyền xem đơn hàng này", null);
+            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
         }
 
-        return new ApiResponse<>(true, "Lấy thông tin đơn hàng thành công", mapOrderDetail(order));
+        return mapOrderDetail(order);
     }
 
-    public ApiResponse<Map<String, Object>> getOrderByTrackingNumber(String trackingNumber) {
+    public Map<String, Object> getOrderByTrackingNumber(String trackingNumber) {
         Order order = orderRepository.findByTrackingNumber(trackingNumber)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
@@ -523,13 +531,13 @@ public class OrderShipperService {
         }
 
         if (!allowed) {
-            return new ApiResponse<>(false, "Không có quyền xem đơn hàng này", null);
+            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
         }
 
         Map<String, Object> data = new HashMap<>();
         data.put("id", order.getId());
         data.put("trackingNumber", order.getTrackingNumber());
-        return new ApiResponse<>(true, "Lấy đơn hàng theo mã vận đơn thành công", data);
+        return data;
     }
 
     public Map<String, Object> buildOrderDetail(Order order) {
@@ -538,13 +546,13 @@ public class OrderShipperService {
     
     //Bắt đầu luồng giao 1 phần: trả về danh sách sản phẩm và số lượng còn lại/đã giao/đã trả
     @Transactional
-    public ApiResponse<Map<String, Object>> startPartialDelivery(Integer orderId) {
+    public Map<String, Object> startPartialDelivery(Integer orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác giao 1 phần", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
 
         List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(orderId);
@@ -565,64 +573,61 @@ public class OrderShipperService {
         Map<String, Object> data = new HashMap<>();
         data.put("orderId", orderId);
         data.put("products", items);
-        return new ApiResponse<>(true, "Bắt đầu giao 1 phần", data);
+        return data;
     }
 
     @Transactional
-    public ApiResponse<String> markProductDelivered(Integer orderProductId, Integer deliveredQuantity) {
+    public void markProductDelivered(Integer orderProductId, Integer deliveredQuantity) {
         throw new UnsupportedOperationException("markProductDelivered is not supported. Use markProductDeliveredAtomic(...) which is atomic and concurrency-safe.");
     }
 
     @Transactional
-    public ApiResponse<String> markProductDeliveredAtomic(Integer orderProductId, Integer deliveredQuantity) {
+    public void markProductDeliveredAtomic(Integer orderProductId, Integer deliveredQuantity) {
         if (deliveredQuantity == null || deliveredQuantity <= 0) {
-            return new ApiResponse<>(false, "Số lượng giao không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_QUANTITY);
         }
 
         OrderProduct op = orderProductRepository.findById(orderProductId)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm đơn hàng"));
+            .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
 
         Order order = op.getOrder();
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
 
         int affected = orderProductRepository.incrementDelivered(orderProductId, deliveredQuantity);
         if (affected == 0) {
-            return new ApiResponse<>(false, "Số lượng giao vượt quá số lượng còn lại hoặc đã có thay đổi", null);
+            throw new AppException(OrderErrorCode.QUANTITY_EXCEEDED);
         }
 
-        // reload to get updated quantities for history
         OrderProduct updated = orderProductRepository.findById(orderProductId).orElse(op);
         saveHistory(order, OrderHistoryActionType.PARTIAL_DELIVERY,
                 "Giao " + deliveredQuantity + " x " + (updated.getProduct() != null ? updated.getProduct().getName() : "sản phẩm"));
-
-        return new ApiResponse<>(true, "Cập nhật số lượng đã giao cho sản phẩm thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> markProductReturned(Integer orderProductId, Integer returnedQuantity, String reason) {
+    public void markProductReturned(Integer orderProductId, Integer returnedQuantity, String reason) {
         throw new UnsupportedOperationException("markProductReturned is not supported. Use markProductReturnedAtomic(...) which is atomic and concurrency-safe.");
     }
 
     @Transactional
-    public ApiResponse<String> markProductReturnedAtomic(Integer orderProductId, Integer returnedQuantity, String reason) {
+    public void markProductReturnedAtomic(Integer orderProductId, Integer returnedQuantity, String reason) {
         if (returnedQuantity == null || returnedQuantity <= 0) {
-            return new ApiResponse<>(false, "Số lượng trả lại không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_QUANTITY);
         }
         OrderProduct op = orderProductRepository.findById(orderProductId)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm đơn hàng"));
+            .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
 
         Order order = op.getOrder();
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
 
         int affected = orderProductRepository.incrementReturned(orderProductId, returnedQuantity);
         if (affected == 0) {
-            return new ApiResponse<>(false, "Số lượng trả vượt quá số lượng còn lại hoặc đã có thay đổi", null);
+            throw new AppException(OrderErrorCode.QUANTITY_EXCEEDED);
         }
 
         OrderProduct updated = orderProductRepository.findById(orderProductId).orElse(op);
@@ -630,19 +635,16 @@ public class OrderShipperService {
         String note = "Trả lại " + returnedQuantity + " x " + (updated.getProduct() != null ? updated.getProduct().getName() : "sản phẩm");
         if (reason != null && !reason.isBlank()) note += ": " + reason;
         saveHistory(order, OrderHistoryActionType.PARTIAL_RETURN, note);
-
-        return new ApiResponse<>(true, "Cập nhật số lượng trả lại cho sản phẩm thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> finishPartialDelivery(Integer orderId) {
+    public void finishPartialDelivery(Integer orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
-        // logging removed
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
 
         List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(orderId);
@@ -655,17 +657,17 @@ public class OrderShipperService {
             orderRepository.save(order);
             applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
             saveHistory(order, OrderHistoryActionType.DELIVERED, "Đã giao toàn bộ đơn hàng");
-            // Nếu có COD, tạo submission COD (tính toán từ delivered products)
             try {
                 User shipperUser = employee.getUser();
                 if (order.getCod() != null && order.getCod() > 0 && !hasExistingCodSubmission(order)) {
                     createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
                 }
-            } catch (Exception e) { throw new RuntimeException(e); }
-            return new ApiResponse<>(true, "Đơn hàng đã được giao hoàn tất", null);
+            } catch (Exception e) {
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+        }
+            return;
         }
 
-        // Determine final status for partial delivery/return
         if (totalDelivered > 0) {
             order.setStatus(OrderStatus.PARTIAL_DELIVERY);
         } else if (totalReturned > 0) {
@@ -681,11 +683,9 @@ public class OrderShipperService {
             saveHistory(order, OrderHistoryActionType.PARTIAL_DELIVERY, "Giao 1 phần: đã giao " + totalDelivered + " / " + totalQty);
         }
         if (totalReturned > 0 && totalDelivered == 0) {
-            // only log PARTIAL_RETURN when no delivered items in this session
             saveHistory(order, OrderHistoryActionType.PARTIAL_RETURN, "Trả 1 phần: trả " + totalReturned + " / " + totalQty);
         }
 
-        // Trigger COD submission when there is delivered quantity (partial financial event)
         if (totalDelivered > 0) {
             try {
                 User shipperUser = employee.getUser();
@@ -695,94 +695,83 @@ public class OrderShipperService {
                     orderRepository.save(order);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
             }
         }
-
-        return new ApiResponse<>(true, "Hoàn tất xử lý giao 1 phần (cập nhật trạng thái và lịch sử)", null);
     }
 
         @Transactional
-    public ApiResponse<String> claimOrderRequest(Integer id) {
+    public void claimOrderRequest(Integer id) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
-        // Kiểm tra quyền theo bưu cục: nếu là đơn lấy tại nhà thì so với fromOffice, ngược lại so với toOffice
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
-                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
             }
         } else {
             if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
             }
         }
 
         if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
+            throw new AppException(OrderErrorCode.INVALID_CLAIM_STATUS);
         }
 
-        // Khi shipper nhận yêu cầu lấy hàng tại nhà, gán shipper và chuyển trạng thái sang PICKING_UP
         order.setStatus(OrderStatus.PICKING_UP);
-        // Gán employee hiện tại khi shipper nhận đơn
         order.setEmployee(employee);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper nhận yêu cầu lấy hàng (bắt đầu lấy)");
-        return new ApiResponse<>(true, "Nhận đơn thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> claimOrder(Integer id) {
+    public void claimOrder(Integer id) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
         }
 
         if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            return new ApiResponse<>(false, "Chỉ có thể nhận đơn đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy", null);
+            throw new AppException(OrderErrorCode.INVALID_CLAIM_STATUS);
         }
 
-        // Khi shipper nhận đơn từ danh sách chưa gán, đặt trạng thái là READY_FOR_PICKUP
         order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        // Gán employee hiện tại khi shipper nhận đơn
         order.setEmployee(employee);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.READY_FOR_PICKUP, "Shipper nhận đơn (sẵn sàng lấy)");
-        return new ApiResponse<>(true, "Nhận đơn thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> unclaimOrder(Integer id) {
+    public void unclaimOrder(Integer id) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
-        // Nếu đây là đơn PICKUP_BY_COURIER thì kiểm tra dựa trên fromOffice
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
-                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
             }
         } else {
             if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-                return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
             }
         }
 
         if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP && order.getStatus() != OrderStatus.PICKING_UP) {
-            return new ApiResponse<>(false, "Chỉ có thể hủy nhận đơn ở trạng thái đã lấy hàng hoặc sẵn sàng lấy hoặc đang lấy", null);
+            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
         }
 
-        // Trả về trạng thái trước đó: nếu là đơn lấy tại nhà, quay lại READY_FOR_PICKUP
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             order.setStatus(OrderStatus.READY_FOR_PICKUP);
         } else {
@@ -798,65 +787,65 @@ public class OrderShipperService {
         if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
             try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception ignored) {}
         }
-        return new ApiResponse<>(true, "Hủy nhận đơn thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> recordDeliveryAttempt(Integer id, UpdateDeliveryStatusRequest request) {
+    public void recordDeliveryAttempt(Integer id, UpdateDeliveryStatusRequest request) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
         }
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
         if (order.getStatus() == OrderStatus.PARTIAL_DELIVERY || order.getStatus() == OrderStatus.PARTIAL_RETURN) {
-            return new ApiResponse<>(false, "Đơn đang giao 1 phần, không đi qua luồng delivery retry", null);
+            throw new AppException(OrderErrorCode.PARTIAL_DELIVERY_INVALID);
         }
         if (order.getStatus() != OrderStatus.DELIVERING) {
-            return new ApiResponse<>(false, "Chỉ có thể báo khi đơn đang giao", null);
+            throw new AppException(OrderErrorCode.NOT_DELIVERING);
         }
         if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.RETURNING || order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.DELIVERY_FAILED_FINAL) {
-            return new ApiResponse<>(false, "Trạng thái đơn hàng không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
         }
 
         String status = request != null && request.getStatus() != null ? request.getStatus().trim().toUpperCase() : null;
         if (status == null || status.isBlank()) {
-            return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
         }
 
         if ("SUCCESS".equals(status)) {
-            return handleDeliverySuccess(order, employee, employee.getUser(), request);
+            handleDeliverySuccess(order, employee, employee.getUser(), request);
+            return;
         }
         if (!"FAILED".equals(status)) {
-            return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
         }
         if (request.getFailReason() == null || request.getFailReason().isBlank()) {
-            return new ApiResponse<>(false, "failReason là bắt buộc", null);
+            throw new AppException(OrderErrorCode.MISSING_FAIL_REASON);
         }
 
-        return handleDeliveryFailure(order, employee, employee.getUser(), request);
+        handleDeliveryFailure(order, employee, employee.getUser(), request);
     }
 
     @Transactional
-    public ApiResponse<String> updateDeliveryStatus(Integer id, UpdateDeliveryStatusRequest request) {
+    public void updateDeliveryStatus(Integer id, UpdateDeliveryStatusRequest request) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            return new ApiResponse<>(false, "Đơn hàng không thuộc bưu cục của bạn", null);
+            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
         }
 
         if (request.getStatus() == null || request.getStatus().isBlank()) {
-            return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
         }
 
         OrderStatus newStatus;
@@ -867,25 +856,26 @@ public class OrderShipperService {
             }
             newStatus = OrderStatus.valueOf(rawStatus);
         } catch (IllegalArgumentException e) {
-            return new ApiResponse<>(false, "Trạng thái không hợp lệ", null);
+            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
         }
 
         User shipperUser = employee.getUser();
 
         if (request.getStatus() != null && request.getStatus().equalsIgnoreCase("DELIVERY_FAILED_FINAL")) {
-            return handleDeliveryFailedFinal(order, employee, shipperUser, request);
+            handleDeliveryFailedFinal(order, employee, shipperUser, request);
+            return;
         }
 
-        // Luồng cơ bản: PICKED_UP -> DELIVERING -> DELIVERED / DELIVERY_RETRY
         if (newStatus == OrderStatus.DELIVERED) {
-            return handleDeliverySuccess(order, employee, shipperUser, request);
+            handleDeliverySuccess(order, employee, shipperUser, request);
+            return;
         }
 
         if (newStatus == OrderStatus.DELIVERY_RETRY) {
-            return handleDeliveryFailure(order, employee, shipperUser, request);
+            handleDeliveryFailure(order, employee, shipperUser, request);
+            return;
         }
 
-        // Các trạng thái còn lại giữ hành vi cũ
         order.setStatus(newStatus);
         if (request.getNotes() != null) {
             order.setNotes(request.getNotes());
@@ -918,27 +908,25 @@ public class OrderShipperService {
             default -> {
             }
         }
-
-        return new ApiResponse<>(true, "Cập nhật trạng thái giao hàng thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> markPickedUp(Integer id, PickedUpRequest request) {
+    public void markPickedUp(Integer id, PickedUpRequest request) {
         Employee employee = getCurrentEmployee();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         // Chỉ shipper đã nhận (employee) mới có thể đánh dấu đã lấy
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể xác nhận đã lấy hàng", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
 
         // Kiểm tra trạng thái phù hợp (đang lấy hàng)
         if (order.getStatus() != OrderStatus.PICKING_UP
                 && order.getStatus() != OrderStatus.READY_FOR_PICKUP
                 && order.getStatus() != OrderStatus.PICKUP_SUCCESS) {
-            return new ApiResponse<>(false, "Chỉ có thể xác nhận đã lấy khi đơn ở trạng thái đang lấy, sẵn sàng lấy hoặc đã ghi nhận lấy hàng", null);
+            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
         }
 
         order.setStatus(OrderStatus.PICKED_UP);
@@ -972,25 +960,23 @@ public class OrderShipperService {
         try {
             notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
         } catch (Exception e) { throw e; }
-
-        return new ApiResponse<>(true, "Xác nhận đã lấy hàng thành công", null);
     }
 
     @Transactional
-    public ApiResponse<String> deliverToOrigin(Integer id, DeliverOriginRequest request) {
+    public void deliverToOrigin(Integer id, DeliverOriginRequest request) {
         Employee employee = getCurrentEmployee();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         // Kiểm tra shipper được gán
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể xác nhận giao tới bưu cục", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
 
         // Chỉ hợp lệ nếu đã pick up
         if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.PICKING_UP) {
-            return new ApiResponse<>(false, "Chỉ có thể nộp hàng vào bưu cục khi trạng thái là ĐÃ LẤY hoặc ĐANG LẤY", null);
+            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
         }
 
         // Nếu request chỉ định officeId thì dùng office đó
@@ -1010,11 +996,9 @@ public class OrderShipperService {
         try {
             notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
         } catch (Exception e) { throw e; }
-
-        return new ApiResponse<>(true, "Đã nộp hàng tại bưu cục", null);
     }
 
-    public ApiResponse<Map<String, Object>> getDeliveryHistory(int page, int limit, String status) {
+    public Map<String, Object> getDeliveryHistory(int page, int limit, String status) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
         Integer shipperUserId = employee.getUser().getId();
@@ -1132,16 +1116,16 @@ public class OrderShipperService {
         result.put("pagination", pagination);
         result.put("stats", stats);
 
-        return new ApiResponse<>(true, "Lấy lịch sử giao hàng thành công", result);
+        return result;
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> createIncidentReport(CreateIncidentReportRequest request) {
+    public Map<String, Object> createIncidentReport(CreateIncidentReportRequest request) {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
         Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         IncidentReport incident = new IncidentReport();
         incident.setOrder(order);
@@ -1189,16 +1173,16 @@ public class OrderShipperService {
         Map<String, Object> data = new HashMap<>();
         data.put("id", saved.getId());
 
-        return new ApiResponse<>(true, "Tạo báo cáo sự cố thành công", data);
+        return data;
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> createIncidentReport(Integer orderId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
+    public Map<String, Object> createIncidentReport(Integer orderId, String incidentType, String title, String description, String priority, org.springframework.web.multipart.MultipartFile[] images) {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         IncidentReport incident = new IncidentReport();
         incident.setOrder(order);
@@ -1274,10 +1258,10 @@ public class OrderShipperService {
         Map<String, Object> data = new HashMap<>();
         data.put("id", saved.getId());
 
-        return new ApiResponse<>(true, "Tạo báo cáo sự cố thành công", data);
+        return data;
     }
 
-    public ApiResponse<List<Map<String, Object>>> listIncidentReports() {
+    public List<Map<String, Object>> listIncidentReports() {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
@@ -1290,21 +1274,21 @@ public class OrderShipperService {
                 .map(this::mapIncident)
                 .toList();
 
-        return new ApiResponse<>(true, "Lấy danh sách báo cáo sự cố thành công", data);
+        return data;
     }
 
-    public ApiResponse<Map<String, Object>> getIncidentDetail(Integer id) {
+    public Map<String, Object> getIncidentDetail(Integer id) {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
         IncidentReport incident = incidentReportRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy báo cáo sự cố"));
+                .orElseThrow(() -> new AppException(IncidentReportErrorCode.NOT_FOUND));
 
         if (incident.getShipper() == null || !Objects.equals(incident.getShipper().getId(), shipperUser.getId())) {
-            return new ApiResponse<>(false, "Không có quyền xem báo cáo này", null);
+            throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        return new ApiResponse<>(true, "Lấy chi tiết báo cáo sự cố thành công", mapIncident(incident));
+        return mapIncident(incident);
     }
 
     private Map<String, Object> mapOrderSummary(Order order) {
@@ -1723,7 +1707,7 @@ public class OrderShipperService {
         return sb.toString();
     }
 
-    private ApiResponse<String> handleDeliverySuccess(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
+    private void handleDeliverySuccess(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
         order.setStatus(OrderStatus.DELIVERED);
         order.setDeliveredAt(LocalDateTime.now());
         orderRepository.save(order);
@@ -1756,12 +1740,11 @@ public class OrderShipperService {
                 order.getTrackingNumber()
         );
         saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
-        return new ApiResponse<>(true, "Cập nhật trạng thái giao hàng thành công", null);
     }
 
-    private ApiResponse<String> handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
+    private void handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
         if (order.getStatus() != OrderStatus.DELIVERING) {
-            return new ApiResponse<>(false, "Chỉ có thể báo giao thất bại khi đơn đang giao", null);
+            throw new AppException(OrderErrorCode.NOT_DELIVERING);
         }
         int maxAttempts = getMaxDeliveryAttempts();
         long failedCountBefore = countFailedDeliveryAttempts(order.getId());
@@ -1771,7 +1754,7 @@ public class OrderShipperService {
         String reason = request.getFailReason();
         String note = request.getNotes();
         if (reason == null || reason.isBlank()) {
-            return new ApiResponse<>(false, "failReason là bắt buộc", null);
+            throw new AppException(OrderErrorCode.MISSING_FAIL_REASON);
         }
 
         DeliveryAttempt attempt = new DeliveryAttempt();
@@ -1787,26 +1770,25 @@ public class OrderShipperService {
             order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
             orderRepository.save(order);
             saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
-            return new ApiResponse<>(true, "Đã ghi nhận giao thất bại cuối cùng", null);
+            return;
         }
 
         order.setStatus(OrderStatus.DELIVERY_RETRY);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.DELIVERY_RETRY, buildDeliveryAttemptNote(reason, note, attemptNumber, maxAttempts));
-        return new ApiResponse<>(true, "Đã ghi nhận giao thất bại", null);
     }
 
     @Transactional
-    public ApiResponse<String> returnFailedToOffice(Integer id) {
+    public void returnFailedToOffice(Integer id) {
         Employee employee = getCurrentEmployee();
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
 
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
         if (order.getStatus() != OrderStatus.DELIVERY_RETRY) {
-            return new ApiResponse<>(false, "Chỉ có thể nộp hàng về bưu cục khi đơn ở trạng thái chờ giao lại", null);
+            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
         }
 
         applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_RETRY);
@@ -1814,21 +1796,18 @@ public class OrderShipperService {
         order.setEmployee(null);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.AT_DEST_OFFICE, "Shipper đã nộp hàng giao thất bại về bưu cục đích");
-
-        return new ApiResponse<>(true, "Đã nộp hàng thất bại về bưu cục", null);
     }
 
-    private ApiResponse<String> handleDeliveryFailedFinal(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
+    private void handleDeliveryFailedFinal(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            return new ApiResponse<>(false, "Chỉ shipper được gán mới có thể thao tác", null);
+            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
         }
         if (order.getStatus() != OrderStatus.DELIVERING && order.getStatus() != OrderStatus.DELIVERY_FAILED_FINAL) {
-            return new ApiResponse<>(false, "Chỉ có thể báo giao thất bại cuối cùng khi đơn đang giao", null);
+            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
         }
         order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
-        return new ApiResponse<>(true, "Đã ghi nhận giao thất bại cuối cùng", null);
     }
 
     private String resolveSenderFullAddress(Order order) {
@@ -1864,13 +1843,13 @@ public class OrderShipperService {
     }
 
     // Lộ trình giao hàng (ưu tiên tuyến AI đã xác nhận)
-    public ApiResponse<Map<String, Object>> getDeliveryRoute() {
+    public Map<String, Object> getDeliveryRoute() {
         Employee employee = getCurrentEmployee();
 
         List<AiRoutePlanRoute> aiRoutes = aiRoutePlanRouteRepository.findConfirmedRoutesForShipper(
                 employee.getId(), AiRoutePlanStatus.CONFIRMED);
         if (!aiRoutes.isEmpty()) {
-            return buildAiDeliveryRouteResponse(employee, aiRoutes.get(0));
+            return buildAiDeliveryRouteResponseData(employee, aiRoutes.get(0));
         }
 
         Integer officeId = employee.getOffice().getId();
@@ -1924,10 +1903,10 @@ public class OrderShipperService {
         result.put("routeInfo", routeInfo);
         result.put("deliveryStops", deliveryStops);
 
-        return new ApiResponse<>(true, "Lấy lộ trình giao hàng thành công", result);
+        return result;
     }
 
-    private ApiResponse<Map<String, Object>> buildAiDeliveryRouteResponse(Employee employee, AiRoutePlanRoute aiRoute) {
+    private Map<String, Object> buildAiDeliveryRouteResponseData(Employee employee, AiRoutePlanRoute aiRoute) {
         List<AiRoutePlanStop> stops = aiRoute.getStops();
         if (stops != null) {
             stops.sort(Comparator.comparing(AiRoutePlanStop::getStopSequence));
@@ -1993,12 +1972,10 @@ public class OrderShipperService {
         result.put("deliveryStops", deliveryStops);
         result.put("office", officeMap);
 
-        return new ApiResponse<>(true, "Lấy lộ trình AI đã tối ưu thành công", result);
+        return result;
     }
 
-    public ApiResponse<String> startRoute(Integer routeId) {
-        // TODO: Implement logic để đánh dấu route đã bắt đầu
-        return new ApiResponse<>(true, "Đã bắt đầu tuyến giao hàng", null);
+    public void startRoute(Integer routeId) {
     }
 }
 

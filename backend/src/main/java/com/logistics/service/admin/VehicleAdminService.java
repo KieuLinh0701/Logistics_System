@@ -20,9 +20,11 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Vehicle;
 import com.logistics.enums.VehicleStatus;
 import com.logistics.enums.VehicleType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.VehicleErrorCode;
+import com.logistics.exception.OfficeErrorCode;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.VehicleRepository;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.repository.VehicleTrackingRepository;
 
@@ -34,127 +36,106 @@ public class VehicleAdminService {
 
     @Autowired
     private OfficeRepository officeRepository;
-    
+
     @Autowired
     private VehicleTrackingRepository vehicleTrackingRepository;
 
-    public ApiResponse<Map<String, Object>> listVehicles(int page, int limit, String search, String type, String status) {
-        try {
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-            Specification<Vehicle> spec = Specification.where(null);
+    public Map<String, Object> listVehicles(int page, int limit, String search, String type, String status) {
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Specification<Vehicle> spec = Specification.where(null);
 
-            if (search != null && !search.trim().isEmpty()) {
-                String q = "%" + search.trim().toLowerCase() + "%";
-                spec = spec.and((root, query, cb) -> cb.or(
-                        cb.like(cb.lower(root.get("licensePlate")), q),
-                        cb.like(cb.lower(root.get("description")), q),
-                        cb.like(cb.lower(root.get("office").get("name")), q)
-                ));
-            }
-
-            if (type != null && !type.trim().isEmpty()) {
-                try {
-                    VehicleType vt = VehicleType.valueOf(type);
-                    spec = spec.and((root, query, cb) -> cb.equal(root.get("type"), vt));
-                } catch (IllegalArgumentException ex) {
-                    // ignore invalid type filter
-                }
-            }
-
-            if (status != null && !status.trim().isEmpty()) {
-                try {
-                    VehicleStatus vs = VehicleStatus.valueOf(status);
-                    spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), vs));
-                } catch (IllegalArgumentException ex) {
-                    // ignore invalid status filter
-                }
-            }
-
-            Page<Vehicle> vehiclePage = vehicleRepository.findAll(spec, pageable);
-
-            List<Map<String, Object>> vehicles = vehiclePage.getContent().stream()
-                    .map(this::mapVehicle)
-                    .collect(Collectors.toList());
-
-                Pagination pagination = new Pagination(
-                    (int) vehiclePage.getTotalElements(),
-                    page,
-                    limit,
-                    vehiclePage.getTotalPages());
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("data", vehicles);
-            result.put("pagination", pagination);
-
-            return new ApiResponse<>(true, "Lấy danh sách phương tiện thành công", result);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        if (search != null && !search.trim().isEmpty()) {
+            String q = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("licensePlate")), q),
+                    cb.like(cb.lower(root.get("description")), q),
+                    cb.like(cb.lower(root.get("office").get("name")), q)
+            ));
         }
+
+        if (type != null && !type.trim().isEmpty()) {
+            try {
+                VehicleType vt = VehicleType.valueOf(type);
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("type"), vt));
+            } catch (IllegalArgumentException ex) {
+                // ignore invalid type filter
+            }
+        }
+
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                VehicleStatus vs = VehicleStatus.valueOf(status);
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), vs));
+            } catch (IllegalArgumentException ex) {
+                // ignore invalid status filter
+            }
+        }
+
+        Page<Vehicle> vehiclePage = vehicleRepository.findAll(spec, pageable);
+
+        List<Map<String, Object>> vehicles = vehiclePage.getContent().stream()
+                .map(this::mapVehicle)
+                .collect(Collectors.toList());
+
+            Pagination pagination = new Pagination(
+                (int) vehiclePage.getTotalElements(),
+                page,
+                limit,
+                vehiclePage.getTotalPages());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", vehicles);
+        result.put("pagination", pagination);
+
+        return result;
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> createVehicle(CreateVehicleRequest request) {
-        try {
-            if (vehicleRepository.existsByLicensePlate(request.getLicensePlate())) {
-                return new ApiResponse<>(false, "Biển số xe đã tồn tại", null);
-            }
+    public void createVehicle(CreateVehicleRequest request) {
+        if (vehicleRepository.existsByLicensePlate(request.getLicensePlate())) {
+            throw new AppException(VehicleErrorCode.LICENSE_PLATE_EXISTED);
+        }
 
-            Office office = officeRepository.findById(request.getOfficeId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy bưu cục"));
+        Office office = officeRepository.findById(request.getOfficeId())
+                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
 
-            Vehicle vehicle = new Vehicle();
-            vehicle.setLicensePlate(request.getLicensePlate());
+        Vehicle vehicle = new Vehicle();
+        vehicle.setLicensePlate(request.getLicensePlate());
+        vehicle.setType(VehicleType.valueOf(request.getType()));
+        vehicle.setCapacity(request.getCapacity());
+        vehicle.setStatus(VehicleStatus.valueOf(request.getStatus()));
+        vehicle.setDescription(request.getDescription());
+        vehicle.setOffice(office);
+        vehicle = vehicleRepository.save(vehicle);
+    }
+
+    @Transactional
+    public void updateVehicle(Integer vehicleId, UpdateVehicleRequest request) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new AppException(VehicleErrorCode.NOT_FOUND));
+
+        if (request.getType() != null)
             vehicle.setType(VehicleType.valueOf(request.getType()));
+        if (request.getCapacity() != null)
             vehicle.setCapacity(request.getCapacity());
+        if (request.getStatus() != null)
             vehicle.setStatus(VehicleStatus.valueOf(request.getStatus()));
+        if (request.getDescription() != null)
             vehicle.setDescription(request.getDescription());
+        if (request.getOfficeId() != null) {
+            Office office = officeRepository.findById(request.getOfficeId())
+                    .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
             vehicle.setOffice(office);
-            vehicle = vehicleRepository.save(vehicle);
-
-            return new ApiResponse<>(true, "Tạo phương tiện thành công", mapVehicle(vehicle));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
         }
+        vehicle = vehicleRepository.save(vehicle);
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> updateVehicle(Integer vehicleId, UpdateVehicleRequest request) {
-        try {
-            Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện"));
+    public void deleteVehicle(Integer vehicleId) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new AppException(VehicleErrorCode.NOT_FOUND));
 
-            if (request.getType() != null)
-                vehicle.setType(VehicleType.valueOf(request.getType()));
-            if (request.getCapacity() != null)
-                vehicle.setCapacity(request.getCapacity());
-            if (request.getStatus() != null)
-                vehicle.setStatus(VehicleStatus.valueOf(request.getStatus()));
-            if (request.getDescription() != null)
-                vehicle.setDescription(request.getDescription());
-            if (request.getOfficeId() != null) {
-                Office office = officeRepository.findById(request.getOfficeId())
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy bưu cục"));
-                vehicle.setOffice(office);
-            }
-            vehicle = vehicleRepository.save(vehicle);
-
-            return new ApiResponse<>(true, "Cập nhật phương tiện thành công", mapVehicle(vehicle));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
-    }
-
-    @Transactional
-    public ApiResponse<String> deleteVehicle(Integer vehicleId) {
-        try {
-            Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện"));
-
-            vehicleRepository.delete(vehicle);
-            return new ApiResponse<>(true, "Xóa phương tiện thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        vehicleRepository.delete(vehicle);
     }
 
     private Map<String, Object> mapVehicle(Vehicle vehicle) {
@@ -187,37 +168,27 @@ public class VehicleAdminService {
         return vehicleMap;
     }
 
-    public ApiResponse<Map<String, Object>> getVehicleById(Integer vehicleId) {
-        try {
-            Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phương tiện"));
-            return new ApiResponse<>(true, "Lấy thông tin phương tiện thành công", mapVehicle(vehicle));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+    public Map<String, Object> getVehicleById(Integer vehicleId) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new AppException(VehicleErrorCode.NOT_FOUND));
+        return mapVehicle(vehicle);
     }
 
-    public ApiResponse<Map<String, Object>> getVehicleTrackings(Integer vehicleId) {
-        try {
-            java.util.List<com.logistics.entity.VehicleTracking> trackings = vehicleTrackingRepository.findByVehicleId(vehicleId);
-            java.util.List<Map<String, Object>> list = trackings.stream().map(t -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", t.getId());
-                m.put("latitude", t.getLatitude());
-                m.put("longitude", t.getLongitude());
-                m.put("speed", t.getSpeed());
-                m.put("recordedAt", t.getRecordedAt());
-                m.put("shipmentId", t.getShipment() != null ? t.getShipment().getId() : null);
-                return m;
-            }).collect(Collectors.toList());
+    public Map<String, Object> getVehicleTrackings(Integer vehicleId) {
+        java.util.List<com.logistics.entity.VehicleTracking> trackings = vehicleTrackingRepository.findByVehicleId(vehicleId);
+        java.util.List<Map<String, Object>> list = trackings.stream().map(t -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", t.getId());
+            m.put("latitude", t.getLatitude());
+            m.put("longitude", t.getLongitude());
+            m.put("speed", t.getSpeed());
+            m.put("recordedAt", t.getRecordedAt());
+            m.put("shipmentId", t.getShipment() != null ? t.getShipment().getId() : null);
+            return m;
+        }).collect(Collectors.toList());
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("data", list);
-            return new ApiResponse<>(true, "Lấy lịch sử hành trình thành công", result);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", list);
+        return result;
     }
 }
-
-

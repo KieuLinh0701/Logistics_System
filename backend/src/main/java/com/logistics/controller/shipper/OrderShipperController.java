@@ -31,7 +31,7 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.getDashboard());
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getDashboard()));
     }
 
     @GetMapping("/orders")
@@ -45,7 +45,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.listOrders(page, limit, status, search));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.listOrders(page, limit, status, search)));
     }
 
     @GetMapping("/orders-unassigned")
@@ -57,7 +57,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.listUnassignedOrders(page, limit));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.listUnassignedOrders(page, limit)));
     }
 
     @GetMapping("/pickup-requests")
@@ -69,7 +69,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.listPickupByCourierRequests(page, limit));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.listPickupByCourierRequests(page, limit)));
     }
 
     @GetMapping("/orders/{id}")
@@ -77,7 +77,7 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.getOrderById(id));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getOrderById(id)));
     }
 
     @GetMapping("/orders/tracking/{trackingNumber}")
@@ -85,7 +85,7 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.getOrderByTrackingNumber(trackingNumber));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getOrderByTrackingNumber(trackingNumber)));
     }
 
     @PostMapping("/orders/{id}/claim")
@@ -93,7 +93,8 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.claimOrder(id));
+        shipperService.claimOrder(id);
+        return ResponseEntity.ok(ApiResponse.success("Nhận đơn thành công"));
     }
 
     @PostMapping("/orders/{id}/claim-request")
@@ -101,7 +102,8 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.claimOrderRequest(id));
+        shipperService.claimOrderRequest(id);
+        return ResponseEntity.ok(ApiResponse.success("Yêu cầu nhận đơn thành công"));
     }
 
     @PostMapping("/orders/{id}/unclaim")
@@ -109,7 +111,8 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.unclaimOrder(id));
+        shipperService.unclaimOrder(id);
+        return ResponseEntity.ok(ApiResponse.success("Hủy nhận đơn thành công"));
     }
 
     @PutMapping("/orders/{id}/status")
@@ -121,7 +124,8 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.updateDeliveryStatus(id, request));
+        shipperService.updateDeliveryStatus(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thành công"));
     }
 
     @PostMapping("/orders/{id}/delivery-attempt")
@@ -133,7 +137,8 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.recordDeliveryAttempt(id, request));
+        shipperService.recordDeliveryAttempt(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận lần giao thành công"));
     }
 
     @PostMapping("/orders/{id}/return-failed-to-office")
@@ -142,7 +147,8 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.returnFailedToOffice(id));
+        shipperService.returnFailedToOffice(id);
+        return ResponseEntity.ok(ApiResponse.success("Trả hàng về bưu cục thành công"));
     }
 
     @GetMapping("/history")
@@ -155,7 +161,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.getDeliveryHistory(page, limit, status));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getDeliveryHistory(page, limit, status)));
     }
 
         @PostMapping(value = "/incident", consumes = {"multipart/form-data"})
@@ -171,7 +177,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.createIncidentReport(orderId, incidentType, title, description, priority, images));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.createIncidentReport(orderId, incidentType, title, description, priority, images)));
     }
 
     @PostMapping("/orders/{id}/picked-up")
@@ -179,7 +185,8 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.markPickedUp(id, request));
+        shipperService.markPickedUp(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Đã xác nhận lấy hàng"));
     }
 
     @GetMapping("/orders/{id}/partial-start")
@@ -187,7 +194,7 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.startPartialDelivery(id));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.startPartialDelivery(id)));
     }
 
     @PostMapping("/order-products/{orderProductId}/delivered")
@@ -196,8 +203,8 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
         Integer qty = payload.get("deliveredQuantity") instanceof Number ? ((Number) payload.get("deliveredQuantity")).intValue() : null;
-        // Use atomic delivery update to avoid race conditions
-        return ResponseEntity.ok(shipperService.markProductDeliveredAtomic(orderProductId, qty));
+        shipperService.markProductDeliveredAtomic(orderProductId, qty);
+        return ResponseEntity.ok(ApiResponse.success("Đã giao sản phẩm"));
     }
 
     @PostMapping("/order-products/{orderProductId}/returned")
@@ -207,8 +214,8 @@ public class OrderShipperController {
         }
         Integer qty = payload.get("returnedQuantity") instanceof Number ? ((Number) payload.get("returnedQuantity")).intValue() : null;
         String reason = payload.get("reason") != null ? String.valueOf(payload.get("reason")) : null;
-        // Forward to service implementation (atomic, concurrency-safe)
-        return ResponseEntity.ok(shipperService.markProductReturnedAtomic(orderProductId, qty, reason));
+        shipperService.markProductReturnedAtomic(orderProductId, qty, reason);
+        return ResponseEntity.ok(ApiResponse.success("Đã trả sản phẩm"));
     }
 
     @PostMapping("/orders/{id}/partial-finish")
@@ -223,7 +230,8 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.finishPartialDelivery(id));
+        shipperService.finishPartialDelivery(id);
+        return ResponseEntity.ok(ApiResponse.success("Hoàn tất giao một phần"));
     }
 
     @PostMapping("/orders/{id}/deliver-origin")
@@ -231,7 +239,8 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.deliverToOrigin(id, request));
+        shipperService.deliverToOrigin(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Đã trả hàng về kho gốc"));
     }
 
     @GetMapping("/incidents")
@@ -240,7 +249,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.listIncidentReports());
+        return ResponseEntity.ok(ApiResponse.success(shipperService.listIncidentReports()));
     }
 
     @GetMapping("/incidents/{id}")
@@ -249,7 +258,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipperService.getIncidentDetail(id));
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getIncidentDetail(id)));
     }
 
     @GetMapping("/route")
@@ -257,7 +266,7 @@ public class OrderShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperService.getDeliveryRoute());
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getDeliveryRoute()));
     }
 
     @PostMapping("/route/start")
@@ -266,6 +275,7 @@ public class OrderShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
         Integer routeId = (Integer) request.get("routeId");
-        return ResponseEntity.ok(shipperService.startRoute(routeId));
+        shipperService.startRoute(routeId);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu lộ trình"));
     }
 }

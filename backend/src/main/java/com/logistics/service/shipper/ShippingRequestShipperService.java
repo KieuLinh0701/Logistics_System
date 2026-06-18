@@ -12,7 +12,6 @@ import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.entity.Employee;
-import com.logistics.response.ApiResponse;
 import com.logistics.service.common.NotificationService;
 import com.logistics.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,6 @@ public class ShippingRequestShipperService {
     private NotificationService notificationService;
 
     public List<ShippingRequest> listForCurrentShipper() {
-        // Trả về tất cả yêu cầu nhắc lấy hàng đang chờ để shipper có thể tự nhận
         List<ShippingRequest> all = shippingRequestRepo.findAll();
         if (all != null) {
             for (ShippingRequest r : all) {
@@ -66,19 +64,23 @@ public class ShippingRequestShipperService {
     }
 
     @Transactional
-    public ApiResponse<Boolean> accept(Integer requestId) {
+    public void accept(Integer requestId) {
         Integer shipperUserId = SecurityUtils.getAuthenticatedUserId();
 
         ShippingRequest req = shippingRequestRepo.findByIdWithOrder(requestId)
                 .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại"));
 
-        if (req.getRequestType() != ShippingRequestType.PICKUP_REMINDER) return new ApiResponse<>(false, "Không phải yêu cầu lấy hàng", false);
-        if (req.getStatus() != ShippingRequestStatus.PENDING) return new ApiResponse<>(false, "Yêu cầu đã được xử lý", false);
+        if (req.getRequestType() != ShippingRequestType.PICKUP_REMINDER) {
+            throw new RuntimeException("Không phải yêu cầu lấy hàng");
+        }
+        if (req.getStatus() != ShippingRequestStatus.PENDING) {
+            throw new RuntimeException("Yêu cầu đã được xử lý");
+        }
 
         Order order = req.getOrder();
-        if (order == null) return new ApiResponse<>(false, "Order liên quan không tồn tại", false);
-
-        // Cho phép shipper nhận yêu cầu nhắc lấy mà không cần kiểm tra phân công shipper trước đó
+        if (order == null) {
+            throw new RuntimeException("Order liên quan không tồn tại");
+        }
 
         User shipper = userRepository.findById(shipperUserId).orElseThrow(() -> new RuntimeException("Shipper not found"));
 
@@ -86,7 +88,6 @@ public class ShippingRequestShipperService {
         req.setStatus(ShippingRequestStatus.PROCESSING);
         shippingRequestRepo.save(req);
 
-        // Ánh xạ shipper (User) sang Employee (ưu tiên Employee cùng bưu cục)
         List<Employee> empList = employeeRepository.findByUserId(shipperUserId);
         if (empList != null && !empList.isEmpty()) {
             Employee selected = null;
@@ -113,7 +114,6 @@ public class ShippingRequestShipperService {
                 order.getTrackingNumber()
         );
 
-        // Thông báo cho người yêu cầu (user) nếu có
         if (req.getUser() != null && req.getUser().getId() != null) {
             notificationService.create(
                 "Yêu cầu đã được nhận",
@@ -125,7 +125,5 @@ public class ShippingRequestShipperService {
                 order.getTrackingNumber()
             );
         }
-
-        return new ApiResponse<>(true, "Đã nhận yêu cầu", true);
     }
 }

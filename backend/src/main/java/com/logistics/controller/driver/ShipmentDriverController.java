@@ -27,14 +27,16 @@ public class ShipmentDriverController {
         if (isNotDriver()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipmentDriverService.startShipment(id));
+        shipmentDriverService.startShipment(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu vận chuyển"));
     }
     @PostMapping("/finish")
     public ResponseEntity<ApiResponse<String>> finishShipment(@RequestBody FinishShipmentRequest request) {
         if (isNotDriver()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipmentDriverService.finishShipment(request));
+        shipmentDriverService.finishShipment(request);
+        return ResponseEntity.ok(ApiResponse.success("Đã hoàn tất chuyến hàng"));
     }
 
     @GetMapping
@@ -46,7 +48,7 @@ public class ShipmentDriverController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipmentDriverService.getShipments(page, limit));
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getShipments(page, limit)));
     }
 
     @GetMapping("/route")
@@ -54,7 +56,7 @@ public class ShipmentDriverController {
         if (isNotDriver()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipmentDriverService.getRoute());
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getRoute()));
     }
 
     @GetMapping("/history")
@@ -66,7 +68,7 @@ public class ShipmentDriverController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(shipmentDriverService.getHistory(page, limit));
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getHistory(page, limit)));
     }
 
     @PostMapping("/tracking")
@@ -74,7 +76,8 @@ public class ShipmentDriverController {
         if (isNotDriver()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipmentDriverService.updateVehicleTracking(request));
+        shipmentDriverService.updateVehicleTracking(request);
+        return ResponseEntity.ok(ApiResponse.success("Đã cập nhật vị trí"));
     }
 
     @GetMapping("/{id}/tracking")
@@ -82,10 +85,6 @@ public class ShipmentDriverController {
         if (isNotDriver()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipmentDriverService.getVehicleTracking(id));
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getVehicleTracking(id)));
     }
 }
-
-
-
-

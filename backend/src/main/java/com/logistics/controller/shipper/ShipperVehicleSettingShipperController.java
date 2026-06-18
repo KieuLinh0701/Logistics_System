@@ -26,7 +26,7 @@ public class ShipperVehicleSettingShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperVehicleSettingService.getMyVehicleSetting());
+        return ResponseEntity.ok(ApiResponse.success(shipperVehicleSettingService.getMyVehicleSetting()));
     }
 
     @PutMapping
@@ -35,7 +35,7 @@ public class ShipperVehicleSettingShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperVehicleSettingService.updateMyVehicleSetting(request));
+        return ResponseEntity.ok(ApiResponse.success(shipperVehicleSettingService.updateMyVehicleSetting(request)));
     }
 
     @PutMapping("/status")
@@ -44,6 +44,6 @@ public class ShipperVehicleSettingShipperController {
         if (isNotShipper()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(shipperVehicleSettingService.updateMyVehicleStatus(request));
+        return ResponseEntity.ok(ApiResponse.success(shipperVehicleSettingService.updateMyVehicleStatus(request)));
     }
 }

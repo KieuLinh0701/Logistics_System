@@ -3,9 +3,11 @@ package com.logistics.service.admin;
 import com.logistics.entity.Office;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.ShippingRequestErrorCode;
+import com.logistics.exception.OfficeErrorCode;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.ShippingRequestRepository;
-import com.logistics.response.ApiResponse;
 import com.logistics.service.common.NotificationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +21,7 @@ import java.util.HashMap;
 
 @Service
 public class ShippingRequestAdminService {
-    
+
     @Autowired
     private ShippingRequestRepository shippingRequestRepository;
     @Autowired
@@ -27,9 +29,8 @@ public class ShippingRequestAdminService {
     @Autowired
     private NotificationService notificationService;
 
-    public ApiResponse<List<Map<String, Object>>> listAll() {
+    public List<Map<String, Object>> listAll() {
         List<ShippingRequest> list = shippingRequestRepository.findAll();
-        
 
         List<Map<String, Object>> out = new ArrayList<>();
         if (list != null) {
@@ -73,33 +74,29 @@ public class ShippingRequestAdminService {
             }
         }
 
-        return new ApiResponse<>(true, "Lấy danh sách yêu cầu hỗ trợ thành công", out);
+        return out;
     }
 
-    public ApiResponse<ShippingRequest> detail(Integer id) {
+    public ShippingRequest detail(Integer id) {
         Optional<ShippingRequest> req = shippingRequestRepository.findById(id);
-        return req.map(r -> new ApiResponse<>(true, "OK", r))
-                .orElseGet(() -> new ApiResponse<>(false, "Không tìm thấy yêu cầu", null));
+        return req.orElseThrow(() -> new AppException(ShippingRequestErrorCode.NOT_FOUND));
     }
 
-    public ApiResponse<String> assignOffice(Integer requestId, Integer officeId) {
+    public void assignOffice(Integer requestId, Integer officeId) {
         ShippingRequest req = shippingRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.NOT_FOUND));
         Office office = officeRepository.findById(officeId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bưu cục"));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
         req.setOffice(office);
         req.setStatus(ShippingRequestStatus.PROCESSING);
         shippingRequestRepository.save(req);
-        // Gửi notification cho manager của office
         notificationService.notifyOfficeManagerOnShippingRequestAssigned(office, req);
-        return new ApiResponse<>(true, "Đã phân công cho bưu cục", null);
     }
 
-    public ApiResponse<String> updateStatus(Integer requestId, ShippingRequestStatus status) {
+    public void updateStatus(Integer requestId, ShippingRequestStatus status) {
         ShippingRequest req = shippingRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.NOT_FOUND));
         req.setStatus(status);
         shippingRequestRepository.save(req);
-        return new ApiResponse<>(true, "Đã cập nhật trạng thái", null);
     }
 }

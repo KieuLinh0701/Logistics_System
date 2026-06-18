@@ -7,9 +7,10 @@ import com.logistics.entity.Employee;
 import com.logistics.entity.ShipperVehicle;
 import com.logistics.enums.ShipperVehicleStatus;
 import com.logistics.enums.ShipperVehicleType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.ErrorCode;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.ShipperVehicleRepository;
-import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,16 +26,16 @@ public class ShipperVehicleSettingService {
     private final ShipperVehicleRepository shipperVehicleRepository;
 
     @Transactional
-    public ApiResponse<ShipperVehicleSettingResponseDto> getMyVehicleSetting() {
+    public ShipperVehicleSettingResponseDto getMyVehicleSetting() {
         Employee shipper = getCurrentShipperEmployee();
         ShipperVehicle vehicle = getOrCreateDefaultVehicle(shipper);
-        return new ApiResponse<>(true, "Lấy cấu hình phương tiện thành công", toResponse(vehicle));
+        return toResponse(vehicle);
     }
 
     @Transactional
-    public ApiResponse<ShipperVehicleSettingResponseDto> updateMyVehicleSetting(ShipperVehicleSettingRequestDto request) {
+    public ShipperVehicleSettingResponseDto updateMyVehicleSetting(ShipperVehicleSettingRequestDto request) {
         if (request == null) {
-            return new ApiResponse<>(false, "Dữ liệu cập nhật không hợp lệ", null);
+            throw new AppException(ErrorCode.BAD_REQUEST);
         }
 
         Employee shipper = getCurrentShipperEmployee();
@@ -53,7 +54,7 @@ public class ShipperVehicleSettingService {
 
         String validationError = validate(targetType, maxOrders, maxWeightKg, batteryLevel);
         if (validationError != null) {
-            return new ApiResponse<>(false, validationError, null);
+            throw new AppException(ErrorCode.BAD_REQUEST);
         }
 
         vehicle.setVehicleType(targetType);
@@ -67,13 +68,13 @@ public class ShipperVehicleSettingService {
         }
 
         ShipperVehicle saved = shipperVehicleRepository.save(vehicle);
-        return new ApiResponse<>(true, "Cập nhật cấu hình phương tiện thành công", toResponse(saved));
+        return toResponse(saved);
     }
 
     @Transactional
-    public ApiResponse<ShipperVehicleSettingResponseDto> updateMyVehicleStatus(ShipperVehicleStatusUpdateRequestDto request) {
+    public ShipperVehicleSettingResponseDto updateMyVehicleStatus(ShipperVehicleStatusUpdateRequestDto request) {
         if (request == null || request.getStatus() == null) {
-            return new ApiResponse<>(false, "Trạng thái phương tiện không hợp lệ", null);
+            throw new AppException(ErrorCode.BAD_REQUEST);
         }
 
         Employee shipper = getCurrentShipperEmployee();
@@ -81,7 +82,7 @@ public class ShipperVehicleSettingService {
         vehicle.setStatus(request.getStatus());
 
         ShipperVehicle saved = shipperVehicleRepository.save(vehicle);
-        return new ApiResponse<>(true, "Cập nhật trạng thái phương tiện thành công", toResponse(saved));
+        return toResponse(saved);
     }
 
     private Employee getCurrentShipperEmployee() {

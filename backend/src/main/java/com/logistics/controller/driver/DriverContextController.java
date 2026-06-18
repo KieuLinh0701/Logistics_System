@@ -56,7 +56,7 @@ public class DriverContextController {
                 )));
             }
 
-            return ResponseEntity.ok(new ApiResponse<>(true, "Thành công", data));
+            return ResponseEntity.ok(ApiResponse.success("Thành công", data));
         } catch (Exception e) {
             return ResponseEntity.ok(new ApiResponse<>(false, e.getMessage(), null));
         }

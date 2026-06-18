@@ -35,7 +35,7 @@ public class FeeConfigurationAdminController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(feeConfigurationAdminService.listFeeConfigurations(page, limit, search, feeType, serviceTypeId, active));
+        return ResponseEntity.ok(ApiResponse.success(feeConfigurationAdminService.listFeeConfigurations(page, limit, search, feeType, serviceTypeId, active)));
     }
 
     @GetMapping("/{id}")
@@ -44,39 +44,29 @@ public class FeeConfigurationAdminController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<Map<String, Object>> response = feeConfigurationAdminService.getFeeConfigurationById(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(feeConfigurationAdminService.getFeeConfigurationById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createFeeConfiguration(@RequestBody CreateFeeConfigurationRequest request) {
+    public ResponseEntity<ApiResponse<String>> createFeeConfiguration(@RequestBody CreateFeeConfigurationRequest request) {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<Map<String, Object>> response = feeConfigurationAdminService.createFeeConfiguration(request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.status(201).body(response);
+        feeConfigurationAdminService.createFeeConfiguration(request);
+        return ResponseEntity.status(201).body(ApiResponse.success("Tạo cấu hình phí thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateFeeConfiguration(
+    public ResponseEntity<ApiResponse<String>> updateFeeConfiguration(
             @PathVariable Integer id,
             @RequestBody UpdateFeeConfigurationRequest request) {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<Map<String, Object>> response = feeConfigurationAdminService.updateFeeConfiguration(id, request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.ok(response);
+        feeConfigurationAdminService.updateFeeConfiguration(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật cấu hình phí thành công"));
     }
 
     @DeleteMapping("/{id}")
@@ -85,12 +75,7 @@ public class FeeConfigurationAdminController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<String> response = feeConfigurationAdminService.deleteFeeConfiguration(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        feeConfigurationAdminService.deleteFeeConfiguration(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa cấu hình phí thành công"));
     }
 }
-
-

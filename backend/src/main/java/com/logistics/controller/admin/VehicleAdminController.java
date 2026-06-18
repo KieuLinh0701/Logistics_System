@@ -22,8 +22,8 @@ public class VehicleAdminController {
         return !SecurityUtils.hasRole("admin");
     }
 
-        @GetMapping
-        public ResponseEntity<ApiResponse<Map<String, Object>>> listVehicles(
+    @GetMapping
+    public ResponseEntity<ApiResponse<Map<String, Object>>> listVehicles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String search,
@@ -34,35 +34,29 @@ public class VehicleAdminController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(vehicleAdminService.listVehicles(page, limit, search, type, status));
+        return ResponseEntity.ok(ApiResponse.success(vehicleAdminService.listVehicles(page, limit, search, type, status)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createVehicle(@RequestBody CreateVehicleRequest request) {
+    public ResponseEntity<ApiResponse<String>> createVehicle(@RequestBody CreateVehicleRequest request) {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<Map<String, Object>> response = vehicleAdminService.createVehicle(request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.status(201).body(response);
+        vehicleAdminService.createVehicle(request);
+        return ResponseEntity.status(201).body(ApiResponse.success("Tạo phương tiện thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateVehicle(
+    public ResponseEntity<ApiResponse<String>> updateVehicle(
             @PathVariable Integer id,
             @RequestBody UpdateVehicleRequest request) {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<Map<String, Object>> response = vehicleAdminService.updateVehicle(id, request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.ok(response);
+        vehicleAdminService.updateVehicle(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật phương tiện thành công"));
     }
 
     @DeleteMapping("/{id}")
@@ -71,11 +65,8 @@ public class VehicleAdminController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        ApiResponse<String> response = vehicleAdminService.deleteVehicle(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        vehicleAdminService.deleteVehicle(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa phương tiện thành công"));
     }
 
     @GetMapping("/{id}")
@@ -83,11 +74,7 @@ public class VehicleAdminController {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        ApiResponse<Map<String, Object>> response = vehicleAdminService.getVehicleById(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(vehicleAdminService.getVehicleById(id)));
     }
 
     @GetMapping("/{id}/trackings")
@@ -95,12 +82,6 @@ public class VehicleAdminController {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        ApiResponse<Map<String, Object>> response = vehicleAdminService.getVehicleTrackings(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(vehicleAdminService.getVehicleTrackings(id)));
     }
 }
-
-

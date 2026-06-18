@@ -34,7 +34,7 @@ public class CODShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(codShipperService.getCODTransactions(page, limit, status, dateFrom, dateTo));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODTransactions(page, limit, status, dateFrom, dateTo)));
     }
 
     @PostMapping("/collect")
@@ -43,7 +43,7 @@ public class CODShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(codShipperService.collectCOD(request));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.collectCOD(request)));
     }
 
     @PostMapping("/submit")
@@ -52,7 +52,7 @@ public class CODShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(codShipperService.submitCOD(request));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.submitCOD(request)));
     }
 
     @GetMapping("/history")
@@ -67,6 +67,6 @@ public class CODShipperController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(codShipperService.getCODSubmissionHistory(page, limit, status, dateFrom, dateTo));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODSubmissionHistory(page, limit, status, dateFrom, dateTo)));
     }
 }

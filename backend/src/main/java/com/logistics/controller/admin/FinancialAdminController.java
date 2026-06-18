@@ -35,11 +35,11 @@ public class FinancialAdminController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
 
-        return ResponseEntity.ok(service.listSubmissions(status));
+        return ResponseEntity.ok(ApiResponse.success(service.listSubmissions(status)));
     }
 
     @PutMapping("/submissions/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> processSubmission(
+    public ResponseEntity<ApiResponse<String>> processSubmission(
             @PathVariable Integer id,
             @RequestBody CreatePaymentSubmissionRequest form) {
         if (isNotAdmin()) {
@@ -47,20 +47,18 @@ public class FinancialAdminController {
         }
 
         Integer adminId = SecurityUtils.getAuthenticatedUserId();
-        ApiResponse<Boolean> resp = service.processSubmission(adminId, id, form);
-        if (!resp.isSuccess()) return ResponseEntity.status(400).body(resp);
-        return ResponseEntity.ok(resp);
+        service.processSubmission(adminId, id, form);
+        return ResponseEntity.ok(ApiResponse.success("Xử lý đối soát thành công"));
     }
 
     @PostMapping("/batches/{id}/complete")
-    public ResponseEntity<ApiResponse<Boolean>> completeBatch(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<String>> completeBatch(@PathVariable Integer id) {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
         Integer adminId = SecurityUtils.getAuthenticatedUserId();
-        ApiResponse<Boolean> resp = service.completeBatch(adminId, id);
-        if (!resp.isSuccess()) return ResponseEntity.status(400).body(resp);
-        return ResponseEntity.ok(resp);
+        service.completeBatch(adminId, id);
+        return ResponseEntity.ok(ApiResponse.success("Hoàn thành đợt đối soát thành công"));
     }
 
     @GetMapping("/batches")
@@ -73,7 +71,7 @@ public class FinancialAdminController {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(service.listBatches(page, limit, search, status, shipperId));
+        return ResponseEntity.ok(ApiResponse.success(service.listBatches(page, limit, search, status, shipperId)));
     }
 
     @GetMapping("/pending")
@@ -81,7 +79,7 @@ public class FinancialAdminController {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(service.listPendingGroupedByShipper());
+        return ResponseEntity.ok(ApiResponse.success(service.listPendingGroupedByShipper()));
     }
 
     @GetMapping("/batches/{id}")
@@ -89,7 +87,7 @@ public class FinancialAdminController {
         if (isNotAdmin()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
         }
-        return ResponseEntity.ok(service.getBatchById(id));
+        return ResponseEntity.ok(ApiResponse.success(service.getBatchById(id)));
     }
 
     @GetMapping("/batches/export")
