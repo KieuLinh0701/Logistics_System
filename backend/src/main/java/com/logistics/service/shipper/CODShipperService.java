@@ -10,10 +10,10 @@ import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.EmployeeErrorCode;
-import com.logistics.exception.ErrorCode;
-import com.logistics.exception.OrderErrorCode;
-import com.logistics.exception.SettlementErrorCode;
+import com.logistics.exception.enums.EmployeeErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.OrderErrorCode;
+import com.logistics.exception.enums.SettlementErrorCode;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
@@ -59,7 +59,7 @@ public class CODShipperService {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
         List<Employee> employees = employeeRepository.findByUserId(userId);
         if (employees == null || employees.isEmpty()) {
-            throw new AppException(EmployeeErrorCode.NOT_FOUND);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
         }
         return employees.get(0).getUser();
     }
@@ -136,7 +136,7 @@ public class CODShipperService {
         User shipperUser = getCurrentShipperUser();
 
         Order order = orderRepository.findByIdForUpdate(request.getOrderId())
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
         for (PaymentSubmission ex : existing) {
@@ -173,7 +173,7 @@ public class CODShipperService {
         int codAmount = codSum.intValue();
 
         if (codAmount <= 0) {
-            throw new AppException(SettlementErrorCode.NO_COD);
+            throw new AppException(SettlementErrorCode.SETTLEMENT_NO_COD);
         }
 
         PaymentSubmission submission = new PaymentSubmission();
@@ -211,24 +211,24 @@ public class CODShipperService {
         User shipperUser = getCurrentShipperUser();
 
         if (request.getTotalAmount() == null || request.getTotalAmount() <= 0) {
-            throw new AppException(OrderErrorCode.INVALID_QUANTITY);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_QUANTITY);
         }
 
         PaymentSubmissionBatch batch =
                 paymentSubmissionBatchRepository.findByShipperIdAndStatus(
                         shipperUser.getId(),
                         PaymentSubmissionBatchStatus.OPEN)
-                .orElseThrow(() -> new AppException(SettlementErrorCode.NO_OPEN_BATCH));
+                .orElseThrow(() -> new AppException(SettlementErrorCode.SETTLEMENT_NO_OPEN_BATCH));
 
         if (batch.getSubmissions() == null || batch.getSubmissions().isEmpty()) {
-            throw new AppException(SettlementErrorCode.NO_SUBMISSION);
+            throw new AppException(SettlementErrorCode.SETTLEMENT_NO_SUBMISSION);
         }
 
         BigDecimal provided = BigDecimal.valueOf(request.getTotalAmount());
         BigDecimal expected = batch.getTotalSystemAmount();
 
         if (provided.compareTo(expected) > 0) {
-            throw new AppException(SettlementErrorCode.AMOUNT_EXCEEDED);
+            throw new AppException(SettlementErrorCode.SETTLEMENT_AMOUNT_EXCEEDED);
         }
 
         for (PaymentSubmission submission : batch.getSubmissions()) {

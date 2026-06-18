@@ -4,8 +4,8 @@ import com.logistics.entity.Office;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ShippingRequestErrorCode;
-import com.logistics.exception.OfficeErrorCode;
+import com.logistics.exception.enums.ShippingRequestErrorCode;
+import com.logistics.exception.enums.OfficeErrorCode;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.service.common.NotificationService;
@@ -79,14 +79,14 @@ public class ShippingRequestAdminService {
 
     public ShippingRequest detail(Integer id) {
         Optional<ShippingRequest> req = shippingRequestRepository.findById(id);
-        return req.orElseThrow(() -> new AppException(ShippingRequestErrorCode.NOT_FOUND));
+        return req.orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
     }
 
     public void assignOffice(Integer requestId, Integer officeId) {
         ShippingRequest req = shippingRequestRepository.findById(requestId)
-                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
         Office office = officeRepository.findById(officeId)
-                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
         req.setOffice(office);
         req.setStatus(ShippingRequestStatus.PROCESSING);
         shippingRequestRepository.save(req);
@@ -95,7 +95,7 @@ public class ShippingRequestAdminService {
 
     public void updateStatus(Integer requestId, ShippingRequestStatus status) {
         ShippingRequest req = shippingRequestRepository.findById(requestId)
-                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
         req.setStatus(status);
         shippingRequestRepository.save(req);
     }

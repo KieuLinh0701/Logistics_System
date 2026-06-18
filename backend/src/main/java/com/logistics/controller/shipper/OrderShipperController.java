@@ -6,6 +6,8 @@ import com.logistics.request.shipper.DeliverOriginRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +31,7 @@ public class OrderShipperController {
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboard() {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.getDashboard()));
     }
@@ -42,7 +44,7 @@ public class OrderShipperController {
             @RequestParam(required = false) String search) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.listOrders(page, limit, status, search)));
@@ -54,7 +56,7 @@ public class OrderShipperController {
             @RequestParam(defaultValue = "10") int limit) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.listUnassignedOrders(page, limit)));
@@ -66,7 +68,7 @@ public class OrderShipperController {
             @RequestParam(defaultValue = "10") int limit) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.listPickupByCourierRequests(page, limit)));
@@ -75,7 +77,7 @@ public class OrderShipperController {
     @GetMapping("/orders/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOrder(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.getOrderById(id)));
     }
@@ -83,7 +85,7 @@ public class OrderShipperController {
     @GetMapping("/orders/tracking/{trackingNumber}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOrderByTrackingNumber(@PathVariable String trackingNumber) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.getOrderByTrackingNumber(trackingNumber)));
     }
@@ -91,7 +93,7 @@ public class OrderShipperController {
     @PostMapping("/orders/{id}/claim")
     public ResponseEntity<ApiResponse<String>> claimOrder(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         shipperService.claimOrder(id);
         return ResponseEntity.ok(ApiResponse.success("Nhận đơn thành công"));
@@ -100,7 +102,7 @@ public class OrderShipperController {
     @PostMapping("/orders/{id}/claim-request")
     public ResponseEntity<ApiResponse<String>> claimOrderRequest(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         shipperService.claimOrderRequest(id);
         return ResponseEntity.ok(ApiResponse.success("Yêu cầu nhận đơn thành công"));
@@ -109,7 +111,7 @@ public class OrderShipperController {
     @PostMapping("/orders/{id}/unclaim")
     public ResponseEntity<ApiResponse<String>> unclaimOrder(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         shipperService.unclaimOrder(id);
         return ResponseEntity.ok(ApiResponse.success("Hủy nhận đơn thành công"));
@@ -121,7 +123,7 @@ public class OrderShipperController {
             @RequestBody UpdateDeliveryStatusRequest request) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         shipperService.updateDeliveryStatus(id, request);
@@ -134,7 +136,7 @@ public class OrderShipperController {
             @RequestBody UpdateDeliveryStatusRequest request) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         shipperService.recordDeliveryAttempt(id, request);
@@ -144,7 +146,7 @@ public class OrderShipperController {
     @PostMapping("/orders/{id}/return-failed-to-office")
     public ResponseEntity<ApiResponse<String>> returnFailedToOffice(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         shipperService.returnFailedToOffice(id);
@@ -158,7 +160,7 @@ public class OrderShipperController {
             @RequestParam(required = false) String status) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.getDeliveryHistory(page, limit, status)));
@@ -174,7 +176,7 @@ public class OrderShipperController {
             @RequestParam(required = false) MultipartFile[] images) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.createIncidentReport(orderId, incidentType, title, description, priority, images)));
@@ -183,7 +185,7 @@ public class OrderShipperController {
     @PostMapping("/orders/{id}/picked-up")
     public ResponseEntity<ApiResponse<String>> markPickedUp(@PathVariable Integer id, @RequestBody PickedUpRequest request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         shipperService.markPickedUp(id, request);
         return ResponseEntity.ok(ApiResponse.success("Đã xác nhận lấy hàng"));
@@ -192,7 +194,7 @@ public class OrderShipperController {
     @GetMapping("/orders/{id}/partial-start")
     public ResponseEntity<ApiResponse<Map<String, Object>>> startPartialDelivery(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.startPartialDelivery(id)));
     }
@@ -200,7 +202,7 @@ public class OrderShipperController {
     @PostMapping("/order-products/{orderProductId}/delivered")
     public ResponseEntity<ApiResponse<String>> markProductDelivered(@PathVariable Integer orderProductId, @RequestBody Map<String, Object> payload) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer qty = payload.get("deliveredQuantity") instanceof Number ? ((Number) payload.get("deliveredQuantity")).intValue() : null;
         shipperService.markProductDeliveredAtomic(orderProductId, qty);
@@ -210,7 +212,7 @@ public class OrderShipperController {
     @PostMapping("/order-products/{orderProductId}/returned")
     public ResponseEntity<ApiResponse<String>> markProductReturned(@PathVariable Integer orderProductId, @RequestBody Map<String, Object> payload) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer qty = payload.get("returnedQuantity") instanceof Number ? ((Number) payload.get("returnedQuantity")).intValue() : null;
         String reason = payload.get("reason") != null ? String.valueOf(payload.get("reason")) : null;
@@ -228,7 +230,7 @@ public class OrderShipperController {
         }
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         shipperService.finishPartialDelivery(id);
         return ResponseEntity.ok(ApiResponse.success("Hoàn tất giao một phần"));
@@ -237,7 +239,7 @@ public class OrderShipperController {
     @PostMapping("/orders/{id}/deliver-origin")
     public ResponseEntity<ApiResponse<String>> deliverToOrigin(@PathVariable Integer id, @RequestBody(required = false) DeliverOriginRequest request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         shipperService.deliverToOrigin(id, request);
         return ResponseEntity.ok(ApiResponse.success("Đã trả hàng về kho gốc"));
@@ -246,7 +248,7 @@ public class OrderShipperController {
     @GetMapping("/incidents")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> listIncidents() {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.listIncidentReports()));
@@ -255,7 +257,7 @@ public class OrderShipperController {
     @GetMapping("/incidents/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getIncident(@PathVariable Integer id) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.getIncidentDetail(id)));
@@ -264,7 +266,7 @@ public class OrderShipperController {
     @GetMapping("/route")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDeliveryRoute() {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.getDeliveryRoute()));
     }
@@ -272,7 +274,7 @@ public class OrderShipperController {
     @PostMapping("/route/start")
     public ResponseEntity<ApiResponse<String>> startRoute(@RequestBody Map<String, Object> request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer routeId = (Integer) request.get("routeId");
         shipperService.startRoute(routeId);

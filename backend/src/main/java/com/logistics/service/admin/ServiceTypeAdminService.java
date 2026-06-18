@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.logistics.entity.ServiceType;
 import com.logistics.enums.ServiceTypeStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ServiceTypeErrorCode;
+import com.logistics.exception.enums.ServiceTypeErrorCode;
 import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.request.admin.CreateServiceTypeRequest;
 import com.logistics.request.admin.UpdateServiceTypeRequest;
@@ -58,14 +58,14 @@ public class ServiceTypeAdminService {
 
     public Map<String, Object> getServiceTypeById(Integer id) {
         ServiceType serviceType = serviceTypeRepository.findById(id)
-                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
         return mapServiceType(serviceType);
     }
 
     @Transactional
     public void createServiceType(CreateServiceTypeRequest request) {
         if (request.getName() == null || request.getName().isBlank()) {
-            throw new AppException(ServiceTypeErrorCode.NAME_REQUIRED);
+            throw new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NAME_REQUIRED);
         }
 
         ServiceType serviceType = new ServiceType();
@@ -79,7 +79,7 @@ public class ServiceTypeAdminService {
     @Transactional
     public void updateServiceType(Integer id, UpdateServiceTypeRequest request) {
         ServiceType serviceType = serviceTypeRepository.findById(id)
-                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
 
         if (request.getName() != null) serviceType.setName(request.getName());
         if (request.getDescription() != null) serviceType.setDescription(request.getDescription());
@@ -96,7 +96,7 @@ public class ServiceTypeAdminService {
     @Transactional
     public void deleteServiceType(Integer id) {
         ServiceType serviceType = serviceTypeRepository.findById(id)
-                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
         serviceTypeRepository.delete(serviceType);
     }
 

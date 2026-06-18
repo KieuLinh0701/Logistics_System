@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdateVehicleRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.VehicleAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +33,7 @@ public class VehicleAdminController {
             @RequestParam(required = false) String status) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(vehicleAdminService.listVehicles(page, limit, search, type, status)));
@@ -40,7 +42,7 @@ public class VehicleAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<String>> createVehicle(@RequestBody CreateVehicleRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         vehicleAdminService.createVehicle(request);
@@ -52,7 +54,7 @@ public class VehicleAdminController {
             @PathVariable Integer id,
             @RequestBody UpdateVehicleRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         vehicleAdminService.updateVehicle(id, request);
@@ -62,7 +64,7 @@ public class VehicleAdminController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteVehicle(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         vehicleAdminService.deleteVehicle(id);
@@ -72,7 +74,7 @@ public class VehicleAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getVehicleById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(vehicleAdminService.getVehicleById(id)));
     }
@@ -80,7 +82,7 @@ public class VehicleAdminController {
     @GetMapping("/{id}/trackings")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getVehicleTrackings(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(vehicleAdminService.getVehicleTrackings(id)));
     }

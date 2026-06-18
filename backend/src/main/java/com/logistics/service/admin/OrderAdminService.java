@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.logistics.entity.Order;
 import com.logistics.enums.OrderStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.OrderErrorCode;
+import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
@@ -71,7 +71,7 @@ public class OrderAdminService {
 
     public ManagerOrderDetailDto getOrderById(Integer orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         List<OrderHistory> orderHistories = orderHistoryRepository.findByOrderIdOrderByActionTimeDesc(order.getId());
         List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
@@ -83,7 +83,7 @@ public class OrderAdminService {
     @Transactional
     public void deleteOrder(Integer orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         orderRepository.delete(order);
     }

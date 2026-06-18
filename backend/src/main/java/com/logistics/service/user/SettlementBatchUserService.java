@@ -7,9 +7,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
-import com.logistics.entity.ShippingRequest;
-import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
-import com.logistics.specification.ShippingRequestSpecification;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.SettlementBatchErrorCode;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
@@ -43,7 +43,6 @@ import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SettlementBatchRepository;
 import com.logistics.repository.SettlementTransactionRepository;
 import com.logistics.request.SearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.OrderSpecification;
@@ -57,8 +56,6 @@ import static com.logistics.utils.OrderUtils.translateOrderStatus;
 import static com.logistics.utils.SettlementBatchUtils.translateSettlementBatchStatus;
 import static com.logistics.utils.SettlementTransactionUtils.translateSettlementTransactionStatus;
 import static com.logistics.utils.SettlementTransactionUtils.translateSettlementTransactionType;
-import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
-import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -74,67 +71,57 @@ public class SettlementBatchUserService {
 
     private final UserUserService userService;
 
-    public ApiResponse<UserSettlementSummaryResponse> getSummary(Integer userId) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+    public UserSettlementSummaryResponse getSummary(Integer userId) {
+        Integer shopId = userService.getShopId(userId);
 
-            List<SettlementBatch> batches = batchRepository.findByShop_Id(shopId);
+        List<SettlementBatch> batches = batchRepository.findByShop_Id(shopId);
 
-            BigDecimal received = batches.stream()
-                    .filter(b -> b.getStatus() == SettlementStatus.COMPLETED
-                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
-                    .map(SettlementBatch::getBalanceAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal received = batches.stream()
+                .filter(b -> b.getStatus() == SettlementStatus.COMPLETED
+                        && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
+                .map(SettlementBatch::getBalanceAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal pending = batches.stream()
-                    .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
-                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
-                    .map(SettlementBatch::getBalanceAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal pending = batches.stream()
+                .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
+                        && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
+                .map(SettlementBatch::getBalanceAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal debt = batches.stream()
-                    .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
-                            && b.getBalanceAmount().compareTo(BigDecimal.ZERO) < 0)
-                    .map(b -> b.getBalanceAmount().abs().subtract(b.getPaidAmount()))
-                    .filter(r -> r.compareTo(BigDecimal.ZERO) > 0)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal debt = batches.stream()
+                .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
+                        && b.getBalanceAmount().compareTo(BigDecimal.ZERO) < 0)
+                .map(b -> b.getBalanceAmount().abs().subtract(b.getPaidAmount()))
+                .filter(r -> r.compareTo(BigDecimal.ZERO) > 0)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            return new ApiResponse<>(true, "Lấy tổng quan đối soát thành công",
-                    new UserSettlementSummaryResponse(received, pending, debt));
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return new UserSettlementSummaryResponse(received, pending, debt);
     }
 
-    public ApiResponse<ListResponse<UserSettlementBatchListDto>> list(
+    public ListResponse<UserSettlementBatchListDto> list(
             Integer userId, SearchRequest request) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+        Integer shopId = userService.getShopId(userId);
 
-            Sort sort = buildSort(request.getSort());
-            Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
-            Page<SettlementBatch> pageData = getSettlementBatchs(shopId, request, pageable);
+        Sort sort = buildSort(request.getSort());
+        Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
+        Page<SettlementBatch> pageData = getSettlementBatchs(shopId, request, pageable);
 
-            List<UserSettlementBatchListDto> list = pageData.getContent()
-                    .stream()
-                    .map(SettlementBatchMapper::toListDtos)
-                    .toList();
+        List<UserSettlementBatchListDto> list = pageData.getContent()
+                .stream()
+                .map(SettlementBatchMapper::toListDtos)
+                .toList();
 
-            Pagination pagination = new Pagination(
-                    (int) pageData.getTotalElements(),
-                    request.getPage(),
-                    request.getLimit(),
-                    pageData.getTotalPages());
+        Pagination pagination = new Pagination(
+                (int) pageData.getTotalElements(),
+                request.getPage(),
+                request.getLimit(),
+                pageData.getTotalPages());
 
-            ListResponse<UserSettlementBatchListDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<UserSettlementBatchListDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách phiên đối soát thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return data;
     }
 
     private Page<SettlementBatch> getSettlementBatchs(
@@ -170,110 +157,92 @@ public class SettlementBatchUserService {
         return (s != null && !s.isBlank()) ? LocalDateTime.parse(s) : null;
     }
 
-    public ApiResponse<ListResponse<UserSettlementOrderDto>> getOrdersBySettlementBatchId(int userId, Integer batchId,
+    public ListResponse<UserSettlementOrderDto> getOrdersBySettlementBatchId(
+            int userId,
+            Integer batchId,
             SearchRequest request) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+        Integer shopId = userService.getShopId(userId);
 
-            int page = request.getPage();
-            int limit = request.getLimit();
-            String search = request.getSearch();
-            String status = request.getStatus();
-            String sort = request.getSort();
-            String cod = request.getCod();
-            String payer = request.getPayer();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String search = request.getSearch();
+        String status = request.getStatus();
+        String sort = request.getSort();
+        String cod = request.getCod();
+        String payer = request.getPayer();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Specification<Order> spec = OrderSpecification.unrestrictedOrder()
-                    .and(OrderSpecification.settlementBatchId(batchId))
-                    .and(OrderSpecification.userId(shopId))
-                    .and(OrderSpecification.settlementSearch(search))
-                    .and(OrderSpecification.payer(payer))
-                    .and(OrderSpecification.status(status))
-                    .and(OrderSpecification.cod(cod))
-                    .and(OrderSpecification.createdAtBetween(startDate, endDate));
+        Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.settlementBatchId(batchId))
+                .and(OrderSpecification.userId(shopId))
+                .and(OrderSpecification.settlementSearch(search))
+                .and(OrderSpecification.payer(payer))
+                .and(OrderSpecification.status(status))
+                .and(OrderSpecification.cod(cod))
+                .and(OrderSpecification.createdAtBetween(startDate, endDate));
 
-            Sort sortOpt = switch (sort.toLowerCase()) {
-                case "newest" -> Sort.by("createdAt").descending();
-                case "oldest" -> Sort.by("createdAt").ascending();
-                case "cod_high" -> Sort.by("cod").descending();
-                case "cod_low" -> Sort.by("cod").ascending();
-                case "fee_high" -> Sort.by("totalFee").descending();
-                case "fee_low" -> Sort.by("totalFee").ascending();
-                default -> Sort.unsorted();
-            };
+        Sort sortOpt = switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            case "cod_high" -> Sort.by("cod").descending();
+            case "cod_low" -> Sort.by("cod").ascending();
+            case "fee_high" -> Sort.by("totalFee").descending();
+            case "fee_low" -> Sort.by("totalFee").ascending();
+            default -> Sort.unsorted();
+        };
 
-            Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
-            Page<Order> pageData = orderRepository.findAll(spec, pageable);
+        Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
+        Page<Order> pageData = orderRepository.findAll(spec, pageable);
 
-            List<UserSettlementOrderDto> list = pageData.getContent()
-                    .stream()
-                    .map(order -> OrderMapper.toUserSettlementOrderDto(order))
-                    .toList();
+        List<UserSettlementOrderDto> list = pageData.getContent()
+                .stream()
+                .map(OrderMapper::toUserSettlementOrderDto)
+                .toList();
 
-            int total = (int) pageData.getTotalElements();
+        int total = (int) pageData.getTotalElements();
 
-            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+        Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-            ListResponse<UserSettlementOrderDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<UserSettlementOrderDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách đơn hàng thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return data;
     }
 
-    public ApiResponse<List<UserSettlementTransactionDto>> getSettlementTransactionsBySettlementBatchId(
+    public List<UserSettlementTransactionDto> getSettlementTransactionsBySettlementBatchId(
             Integer userId, Integer batchId) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+        Integer shopId = userService.getShopId(userId);
 
-            Sort sort = Sort.by(Sort.Direction.DESC, "paidAt");
+        Sort sort = Sort.by(Sort.Direction.DESC, "paidAt");
 
-            SettlementBatch batch = batchRepository
-                    .findByIdAndShop_Id(batchId, shopId)
-                    .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
+        batchRepository
+                .findByIdAndShop_Id(batchId, shopId)
+                .orElseThrow(() -> new AppException(SettlementBatchErrorCode.SETTLEMENT_BATCH_ACCESS_DENIED));
 
-            List<SettlementTransaction> transactions = transactionRepository.findBySettlementBatchId(batchId, sort);
+        List<SettlementTransaction> transactions = transactionRepository.findBySettlementBatchId(batchId, sort);
 
-            List<UserSettlementTransactionDto> list = transactions.stream()
-                    .map(tx -> SettlementTransactionMapper.toUserSettlementTransactionDto(tx))
-                    .toList();
-
-            return new ApiResponse<>(
-                    true,
-                    "Lấy danh sách giao dịch đối soát thành công",
-                    list);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return transactions.stream()
+                .map(SettlementTransactionMapper::toUserSettlementTransactionDto)
+                .toList();
     }
 
-    public ApiResponse<UserSettlementBatchListDto> getBySettlementBatchId(Integer userId, Integer batchId) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+    public UserSettlementBatchListDto getBySettlementBatchId(Integer userId, Integer batchId) {
+        Integer shopId = userService.getShopId(userId);
 
-            SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, shopId)
-                    .orElse(null);
+        SettlementBatch batch = batchRepository.findByIdAndShop_Id(batchId, shopId)
+                .orElse(null);
 
-            if (batch == null) {
-                return new ApiResponse<>(false, "Không tìm thấy phiên đối soát của bạn", null);
-            }
-            UserSettlementBatchListDto dto = SettlementBatchMapper.toListDtos(batch);
-
-            return new ApiResponse<>(true, "Lấy thông tin phiên đối soát thành công", dto);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        if (batch == null) {
+            throw  new AppException(SettlementBatchErrorCode.SETTLEMENT_BATCH_NOT_FOUND);
         }
+        return SettlementBatchMapper.toListDtos(batch);
     }
 
     public UserRevenueStatsDTO getUserRevenueStats(Integer userId) {
@@ -359,7 +328,7 @@ public class SettlementBatchUserService {
 
                 String type = (b.getBalanceAmount().compareTo(BigDecimal.ZERO) == 0) ? "Hòa"
                         : (b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0) ? "Shop trả hệ thống"
-                                : "Hệ thống trả shop";
+                        : "Hệ thống trả shop";
                 row.createCell(2).setCellValue(type);
 
                 row.createCell(3).setCellValue(b.getBalanceAmount().doubleValue());
@@ -376,7 +345,7 @@ public class SettlementBatchUserService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -384,9 +353,9 @@ public class SettlementBatchUserService {
         Integer shopId = userService.getShopId(userId);
 
         // Lấy thông tin batch
-        SettlementBatch batch = batchRepository
+        batchRepository
                 .findByIdAndShop_Id(settlementBatchId, shopId)
-                .orElseThrow(() -> new RuntimeException("Không có quyền truy cập"));
+                .orElseThrow(() -> new AppException(SettlementBatchErrorCode.SETTLEMENT_BATCH_ACCESS_DENIED));
 
         // Lấy toàn bộ đơn hàng của batch (không filter)
         Specification<Order> orderSpec = OrderSpecification.unrestrictedOrder()
@@ -497,7 +466,7 @@ public class SettlementBatchUserService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 }

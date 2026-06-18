@@ -6,6 +6,8 @@ import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShipperAssignmentRepository;
 import com.logistics.repository.ShippingRequestRepository;
@@ -45,16 +47,6 @@ public class ShippingRequestShipperService {
 
     public List<ShippingRequest> listForCurrentShipper() {
         List<ShippingRequest> all = shippingRequestRepo.findAll();
-        if (all != null) {
-            for (ShippingRequest r : all) {
-                String rt = r.getRequestType() == null ? "null" : r.getRequestType().name();
-                String st = r.getStatus() == null ? "null" : r.getStatus().name();
-                Integer oid = r.getOrder() == null ? null : r.getOrder().getId();
-                String ostatus = "null";
-                try { if (r.getOrder() != null && r.getOrder().getStatus() != null) ostatus = r.getOrder().getStatus().name(); } catch (Exception e) { throw new RuntimeException(e); }
-            }
-        }
-
         List<ShippingRequest> filtered = all.stream()
             .filter(r -> r.getRequestType() == ShippingRequestType.PICKUP_REMINDER)
             .filter(r -> r.getStatus() == ShippingRequestStatus.PENDING)
@@ -68,21 +60,22 @@ public class ShippingRequestShipperService {
         Integer shipperUserId = SecurityUtils.getAuthenticatedUserId();
 
         ShippingRequest req = shippingRequestRepo.findByIdWithOrder(requestId)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
         if (req.getRequestType() != ShippingRequestType.PICKUP_REMINDER) {
-            throw new RuntimeException("Không phải yêu cầu lấy hàng");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_TYPE);
         }
         if (req.getStatus() != ShippingRequestStatus.PENDING) {
-            throw new RuntimeException("Yêu cầu đã được xử lý");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_ALREADY_PROCESSED);
         }
 
         Order order = req.getOrder();
         if (order == null) {
-            throw new RuntimeException("Order liên quan không tồn tại");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_ORDER_NOT_FOUND);
         }
 
-        User shipper = userRepository.findById(shipperUserId).orElseThrow(() -> new RuntimeException("Shipper not found"));
+        User shipper = userRepository.findById(shipperUserId)
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_SHIPPER_NOT_FOUND));
 
         req.setHandler(shipper);
         req.setStatus(ShippingRequestStatus.PROCESSING);

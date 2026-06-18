@@ -1,12 +1,10 @@
 package com.logistics.service.user;
 
-import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.enums.AddressType;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,23 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
-import com.logistics.exception.PaymentErrorCode;
-import com.logistics.exception.ProductErrorCode;
-import com.logistics.exception.OrderErrorCode;
-import com.logistics.exception.ServiceTypeErrorCode;
-import com.logistics.exception.PromotionErrorCode;
-import com.logistics.exception.BankAccountErrorCode;
-import com.logistics.request.SearchRequest;
+import com.logistics.exception.enums.*;
 import com.logistics.utils.AddressUtils;
 import com.logistics.utils.OrderFieldUtils;
-import com.logistics.utils.PaymentSubmissionBatchUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -277,21 +266,21 @@ public class OrderUserService {
 
             User user = userUserService.getUser(shopId);
             if (user.getLocked()) {
-                throw new AppException(PaymentErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
+                throw new AppException(AccountErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
             }
 
             if (!addressUserService.checkAddressBelongsToUser(request.getSenderAddressId(), shopId)) {
-                throw new AppException(OrderErrorCode.SENDER_ADDRESS_NOT_BELONG);
+                throw new AppException(OrderErrorCode.ORDER_SENDER_ADDRESS_NOT_BELONG);
             }
 
             if (request.getFromOfficeId() != null) {
                 if (!officePublicService.isSameCity(request.getSenderAddressId(), request.getFromOfficeId())) {
-                    throw  new AppException(OrderErrorCode.OFFICE_CITY_MISMATCH);
+                    throw  new AppException(OrderErrorCode.ORDER_OFFICE_CITY_MISMATCH);
                 }
             }
 
             if (!serviceTypeUserService.serviceTypeExists(request.getServiceTypeId())) {
-                throw new AppException(ServiceTypeErrorCode.NOT_FOUND);
+                throw new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND);
             }
 
             if (request.getOrderProducts() != null && !request.getOrderProducts()
@@ -303,7 +292,7 @@ public class OrderUserService {
                             request.getSenderAddressId(),
                             shopId,
                             AddressType.SENDER)
-                    .orElseThrow(() -> new AppException(OrderErrorCode.RECIPIENT_ADDRESS_NOT_FOUND));
+                    .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_RECIPIENT_ADDRESS_NOT_FOUND));
 
             BigDecimal weight = calculateWeight(
                     request.getOrderProducts(),
@@ -313,12 +302,12 @@ public class OrderUserService {
                     request.getWidth());
 
             if (weight.compareTo(request.getWeight()) != 0 && request.getWeight() != null) {
-                throw new AppException(OrderErrorCode.PRODUCT_INFO_CHANGED);
+                throw new AppException(OrderErrorCode.ORDER_PRODUCT_INFO_CHANGED);
             }
 
             Integer orderValue = calculateOrderValue(request.getOrderProducts(), request.getOrderValue());
             if (!orderValue.equals(request.getOrderValue()) && request.getOrderValue() != null) {
-                throw new AppException(OrderErrorCode.PRODUCT_INFO_CHANGED);
+                throw new AppException(OrderErrorCode.ORDER_PRODUCT_INFO_CHANGED);
             }
 
             Integer serviceFee = feeService.calculateTotalFee(weight, request.getServiceTypeId(),
@@ -330,7 +319,7 @@ public class OrderUserService {
 
             if (request.getPromotionId() != null && request.getPromotionId() > 0) {
                 promotion = promotionUserService.findById(request.getPromotionId())
-                        .orElseThrow(() -> new AppException(PromotionErrorCode.NOT_FOUND));
+                        .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
 
                 if (!promotionUserService.canUsePromotion(
                         shopId,
@@ -338,18 +327,18 @@ public class OrderUserService {
                         request.getServiceTypeId(),
                         serviceFee,
                         weight)) {
-                    throw new AppException(PromotionErrorCode.NOT_ELIGIBLE);
+                    throw new AppException(PromotionErrorCode.PROMOTION_NOT_ELIGIBLE);
                 }
 
                 discountAmount = promotionUserService.calculateDiscount(promotion, serviceFee);
             }
 
             if (request.getDiscountAmount() != null && !discountAmount.equals(request.getDiscountAmount())) {
-                throw new AppException(PromotionErrorCode.EXPIRED);
+                throw new AppException(PromotionErrorCode.PROMOTION_EXPIRED);
             }
 
             ServiceType serviceType = serviceTypeUserService.findById(request.getServiceTypeId())
-                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
 
             Office fromOffice = null;
             if (request.getFromOfficeId() != null) {
@@ -378,7 +367,7 @@ public class OrderUserService {
 
             boolean existBankAcc = existBankAccount(shopId);
             if (!existBankAcc) {
-                throw new AppException(BankAccountErrorCode.REQUIRED);
+                throw new AppException(BankAccountErrorCode.BANK_ACCOUNT_REQUIRED);
             }
 
             Integer shippingFee = feeService.calculateShippingFee(
@@ -389,7 +378,7 @@ public class OrderUserService {
             System.out.println("Sys" + shippingFee);
 
             if (request.getShippingFee() != null && !shippingFee.equals(request.getShippingFee())) {
-                throw new AppException(OrderErrorCode.SHIPPING_FEE_CHANGED);
+                throw new AppException(OrderErrorCode.ORDER_SHIPPING_FEE_CHANGED);
             }
 
             Integer totalFee = serviceFee - discountAmount;
@@ -502,7 +491,7 @@ public class OrderUserService {
                                 request.getRecipientAddressId(),
                                 shopId,
                                 AddressType.RECIPIENT)
-                        .orElseThrow(() -> new AppException(OrderErrorCode.RECIPIENT_ADDRESS_NOT_FOUND));
+                        .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_RECIPIENT_ADDRESS_NOT_FOUND));
             }
 
             order.setRecipientName(
@@ -597,7 +586,7 @@ public class OrderUserService {
     public UserOrderDetailDto getOrderByTrackingNumber(int userId, String trackingNumber) {
             Integer shopId = userUserService.getShopId(userId);
             Order order = repository.findByTrackingNumberAndUserId(trackingNumber, shopId)
-                    .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
             List<OrderHistory> orderHistories = orderHistoryRepository
                     .findByOrderIdOrderByActionTimeDesc(order.getId());
@@ -627,23 +616,23 @@ public class OrderUserService {
 
             User user = userUserService.getUser(shopId);
             if (user.getLocked()) {
-                throw new AppException(PaymentErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
+                throw new AppException(AccountErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
             }
 
             Order order = getOrderByIdAndUserId(orderId, shopId);
 
             if (!OrderUtils.canMoveToPending(order.getStatus())) {
-                throw new AppException(OrderErrorCode.INVALID_STATUS_TRANSITION, order.getStatus(), OrderStatus.PENDING);
+                throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, order.getStatus(), OrderStatus.PENDING);
             }
 
             List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
             for (OrderProduct op : orderProducts) {
                 Product product = op.getProduct();
                 if (product.getStatus() != ProductStatus.ACTIVE) {
-                    throw new AppException(OrderErrorCode.PRODUCT_INACTIVE, product.getName());
+                    throw new AppException(OrderErrorCode.ORDER_PRODUCT_INACTIVE, product.getName());
                 }
                 if (product.getStock() < op.getQuantity()) {
-                    throw new AppException(ProductErrorCode.INSUFFICIENT_STOCK, product.getName(),product.getStock());
+                    throw new AppException(ProductErrorCode.PRODUCT_INSUFFICIENT_STOCK, product.getName(),product.getStock());
                 }
             }
 
@@ -657,7 +646,7 @@ public class OrderUserService {
                         order.getShippingFee(),
                         order.getWeight());
                 if (!canUse) {
-                    throw new AppException(PromotionErrorCode.NOT_ELIGIBLE);
+                    throw new AppException(PromotionErrorCode.PROMOTION_NOT_ELIGIBLE);
                 }
             }
 
@@ -690,7 +679,7 @@ public class OrderUserService {
             Order order = getOrderByIdAndUserId(orderId, shopId);
 
             if (!OrderUtils.canUserCancel(order.getStatus())) {
-                throw new AppException(OrderErrorCode.CANNOT_CANCEL);
+                throw new AppException(OrderErrorCode.ORDER_CANNOT_CANCEL);
             }
 
             order.setStatus(OrderStatus.CANCELLED);
@@ -719,12 +708,12 @@ public class OrderUserService {
             Order order = getOrderByIdAndUserId(orderId, shopId);
 
             if (!OrderUtils.canUserSetReady(order.getStatus())) {
-                throw new AppException(OrderErrorCode.INVALID_STATUS_TRANSITION, translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.READY_FOR_PICKUP));
+                throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.READY_FOR_PICKUP));
             }
 
             if (!order.getPickupType()
                     .equals(OrderPickupType.PICKUP_BY_COURIER)) {
-                throw new AppException(OrderErrorCode.PICKUP_TYPE_INVALID);
+                throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
             }
 
             order.setStatus(OrderStatus.READY_FOR_PICKUP);
@@ -746,7 +735,7 @@ public class OrderUserService {
             Order order = getOrderByIdAndUserId(orderId, shopId);
 
             if (!OrderUtils.canUserDelete(order.getStatus())) {
-                throw new AppException(OrderErrorCode.CANNOT_DELETE);
+                throw new AppException(OrderErrorCode.ORDER_CANNOT_DELETE);
             }
 
             List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
@@ -769,7 +758,7 @@ public class OrderUserService {
             List<Order> orders = repository.findByUserIdAndIdIn(shopId, orderIds);
 
             if (orders.isEmpty()) {
-                throw new AppException(OrderErrorCode.NOT_FOUND_TO_PRINT);
+                throw new AppException(OrderErrorCode.ORDER_NOT_FOUND_TO_PRINT);
             }
 
             // Lọc chỉ những đơn có thể in
@@ -778,7 +767,7 @@ public class OrderUserService {
                     .toList();
 
             if (printableOrders.isEmpty()) {
-                throw new AppException(OrderErrorCode.NOT_FOUND_TO_PRINT);
+                throw new AppException(OrderErrorCode.ORDER_NOT_FOUND_TO_PRINT);
             }
 
             // Chuyển sang DTO
@@ -803,7 +792,7 @@ public class OrderUserService {
             Order order = getOrderByIdAndUserId(orderId, shopId);
 
             if (!UserOrderEditRuleUtils.canEditUserOrder(order.getStatus())) {
-                throw new AppException(OrderErrorCode.CANNOT_EDIT);
+                throw new AppException(OrderErrorCode.ORDER_CANNOT_EDIT);
             }
 
             OrderStatus currentStatus = order.getStatus();
@@ -826,7 +815,7 @@ public class OrderUserService {
                     productRepository.save(product);
                 }
             } else if (currentStatus != newStatus) {
-                throw new AppException(OrderErrorCode.INVALID_STATUS_TRANSITION, currentStatus, newStatus);
+                throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, currentStatus, newStatus);
             }
 
             // 4. Cập nhật các field theo rule
@@ -837,7 +826,7 @@ public class OrderUserService {
                                 request.getSenderAddressId(),
                                 shopId,
                                 AddressType.SENDER)
-                        .orElseThrow(() -> new AppException(OrderErrorCode.SENDER_ADDRESS_NOT_FOUND));
+                        .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_SENDER_ADDRESS_NOT_FOUND));
 
                 // Cập nhật toàn bộ object senderAddress
                 updateFieldIfEditable("senderAddress", sender, reqSenderAddress,
@@ -892,7 +881,7 @@ public class OrderUserService {
                                 shopId,
                                 AddressType.RECIPIENT)
                         .orElseThrow(() ->
-                                new AppException(OrderErrorCode.RECIPIENT_ADDRESS_NOT_FOUND));
+                                new AppException(OrderErrorCode.ORDER_RECIPIENT_ADDRESS_NOT_FOUND));
 
             } else {
 
@@ -1157,12 +1146,12 @@ public class OrderUserService {
 
                 if (newPromotionId != null) {
                     Promotion promotion = promotionUserService.findById(newPromotionId)
-                            .orElseThrow(() -> new AppException(PromotionErrorCode.NOT_FOUND));
+                            .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
 
                     if (!promotionUserService.canUsePromotion(shopId, promotion.getId(), order.getServiceType()
                                     .getId(),
                             order.getShippingFee(), order.getWeight())) {
-                        throw new AppException(PromotionErrorCode.NOT_ELIGIBLE);
+                        throw new AppException(PromotionErrorCode.PROMOTION_NOT_ELIGIBLE);
                     }
 
                     order.setPromotion(promotion);
@@ -1361,7 +1350,7 @@ public class OrderUserService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR, e);
         }
     }
 
@@ -1393,22 +1382,22 @@ public class OrderUserService {
 
         for (var item : items) {
             Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
             if (!product.getUser()
                     .getId()
                     .equals(shopId))
-                throw new AppException(ProductErrorCode.NOT_OWNED,product.getName());
+                throw new AppException(ProductErrorCode.PRODUCT_NOT_OWNED,product.getName());
 
             if (product.getStatus() != ProductStatus.ACTIVE)
-                throw new AppException(ProductErrorCode.INACTIVE, product.getName());
+                throw new AppException(ProductErrorCode.PRODUCT_INACTIVE, product.getName());
 
             OrderProduct existing = existingMap.get(product.getId());
             int oldQty = existing != null ? existing.getQuantity() : 0;
             int stockAvailable = product.getStock() + (adjustStock && existing != null ? oldQty : 0);
 
             if (item.getQuantity() > stockAvailable)
-                throw new AppException(ProductErrorCode.INSUFFICIENT_STOCK, product.getName(), stockAvailable);
+                throw new AppException(ProductErrorCode.PRODUCT_INSUFFICIENT_STOCK, product.getName(), stockAvailable);
 
             if (adjustStock) {
                 int delta = item.getQuantity() - oldQty;
@@ -1454,14 +1443,14 @@ public class OrderUserService {
                 // Nếu nonEditableStatuses chứa currentStatus → không được sửa
                 if (rule.getNonEditableStatuses() != null && !rule.getNonEditableStatuses().isEmpty()) {
                     if (rule.getNonEditableStatuses().contains(currentStatus)) {
-                        throw new AppException(OrderErrorCode.FIELD_UPDATE_DENIED, fieldName, currentStatus);
+                        throw new AppException(OrderErrorCode.ORDER_FIELD_UPDATE_DENIED, fieldName, currentStatus);
                     }
                 }
 
                 // Nếu editableStatuses != null → chỉ cho phép những trạng thái đó
                 if (rule.getEditableStatuses() != null && !rule.getEditableStatuses().isEmpty()) {
                     if (!rule.getEditableStatuses().contains(currentStatus)) {
-                        throw new AppException(OrderErrorCode.FIELD_UPDATE_DENIED, fieldName, currentStatus);
+                        throw new AppException(OrderErrorCode.ORDER_FIELD_UPDATE_DENIED, fieldName, currentStatus);
                     }
                 }
             }
@@ -1474,7 +1463,7 @@ public class OrderUserService {
 
         User user = userUserService.getUser(userId);
         if (user.getLocked()) {
-            throw new AppException(PaymentErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
+            throw new AppException(AccountErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
         }
 
         // Kiểm tra các field bắt buộc
@@ -1489,7 +1478,7 @@ public class OrderUserService {
         // Kiểm tra promotion nếu có
         if (request.getPromotionId() != null) {
             Promotion promotion = promotionUserService.findById(request.getPromotionId())
-                    .orElseThrow(() -> new AppException(PromotionErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
 
             if (!promotionUserService.canUsePromotion(
                     userId,
@@ -1502,7 +1491,7 @@ public class OrderUserService {
                             request.getHeight(),
                             request.getLength(),
                             request.getWidth()))) {
-                throw new AppException(PromotionErrorCode.NOT_ELIGIBLE);
+                throw new AppException(PromotionErrorCode.PROMOTION_NOT_ELIGIBLE);
             }
         }
     }
@@ -1545,7 +1534,7 @@ public class OrderUserService {
             missing.add("Người trả phí");
 
         if (!missing.isEmpty()) {
-            throw new AppException(ErrorCode.MISSING_REQUIRED_FIELDS, missing);
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, missing);
         }
 
         boolean isNewRecipient = request.getRecipientAddressId() == null;
@@ -1568,35 +1557,35 @@ public class OrderUserService {
         try {
             OrderStatus.valueOf(request.getStatus());
         } catch (Exception e) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         try {
             OrderPickupType.valueOf(request.getPickupType());
         } catch (Exception e) {
-            throw new AppException(OrderErrorCode.INVALID_PICKUP_TYPE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_PICKUP_TYPE);
         }
 
         try {
             OrderPayerType.valueOf(request.getPayer());
         } catch (Exception e) {
-            throw new AppException(OrderErrorCode.INVALID_PAYER);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_PAYER);
         }
 
         if (request.getSenderAddressId() != null && request.getSenderAddressId() <= 0)
-            throw new AppException(OrderErrorCode.SENDER_ADDRESS_INVALID);
+            throw new AppException(OrderErrorCode.ORDER_SENDER_ADDRESS_INVALID);
 
         if (!isNewRecipient && request.getRecipientAddressId() != null && request.getRecipientAddressId() <= 0)
-            throw new AppException(OrderErrorCode.RECIPIENT_ADDRESS_INVALID);
+            throw new AppException(OrderErrorCode.ORDER_RECIPIENT_ADDRESS_INVALID);
 
         if (!request.getRecipientPhone()
                 .matches("\\d{10}"))
-            throw new AppException(OrderErrorCode.INVALID_RECIPIENT_PHONE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_PHONE);
 
         if (isNewRecipient && request.getRecipientCityCode() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_RECIPIENT_CITY_CODE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_CITY_CODE);
         if (isNewRecipient && request.getRecipientWardCode() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_RECIPIENT_WARD_CODE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_WARD_CODE);
 
         if (isNewRecipient) {
             Double lat = request.getRecipientLatitude();
@@ -1605,59 +1594,59 @@ public class OrderUserService {
             if (lat == null || lng == null
                     || lat < -90 || lat > 90
                     || lng < -180 || lng > 180) {
-                throw new AppException(OrderErrorCode.INVALID_RECIPIENT_COORDINATES);
+                throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_COORDINATES);
             }
         }
 
         if (request.getWeight()
                 .doubleValue() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_WEIGHT);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_WEIGHT);
 
         if (request.getOriginalWeight()
                 .doubleValue() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_WEIGHT);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_WEIGHT);
 
         if (request.getHeight()
                 .doubleValue() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_HEIGHT);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_HEIGHT);
 
         if (request.getLength()
                 .doubleValue() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_LENGTH);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_LENGTH);
 
         if (request.getWidth()
                 .doubleValue() <= 0)
-            throw new AppException(OrderErrorCode.INVALID_WIDTH);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_WIDTH);
 
         if (request.getServiceTypeId() <= 0)
-            throw new AppException(ServiceTypeErrorCode.INVALID);
+            throw new AppException(ServiceTypeErrorCode.SERVICE_TYPE_INVALID);
 
         if (request.getCod() < 0)
-            throw new AppException(OrderErrorCode.INVALID_COD_VALUE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_COD_VALUE);
 
         if (request.getOrderValue() != null && request.getOrderValue() < 0)
-            throw new AppException(OrderErrorCode.INVALID_ORDER_VALUE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_VALUE);
 
         if (request.getNotes() != null && request.getNotes()
                 .length() > 1000)
-            throw new AppException(OrderErrorCode.NOTE_TOO_LONG);
+            throw new AppException(OrderErrorCode.ORDER_NOTE_TOO_LONG);
 
         if (request.getPromotionId() != null && request.getPromotionId() <= 0)
-            throw new AppException(PromotionErrorCode.INVALID);
+            throw new AppException(PromotionErrorCode.PROMOTION_INVALID);
 
         if (OrderPickupType.AT_OFFICE.name()
                 .equals(request.getPickupType())) {
             if (request.getFromOfficeId() == null)
-                throw new AppException(OrderErrorCode.FROM_OFFICE_REQUIRED);
+                throw new AppException(OrderErrorCode.ORDER_FROM_OFFICE_REQUIRED);
         }
 
         if (request.getOrderProducts() != null) {
             int index = 1;
             for (var op : request.getOrderProducts()) {
                 if (op.getProductId() == null || op.getProductId() <= 0)
-                    throw new AppException(OrderErrorCode.INVALID_PRODUCT);
+                    throw new AppException(OrderErrorCode.ORDER_INVALID_PRODUCT);
                 if (op.getQuantity() == null || op.getQuantity() <= 0)
-                    throw new AppException(OrderErrorCode.INVALID_PRODUCT_QUANTITY);
+                    throw new AppException(OrderErrorCode.ORDER_INVALID_PRODUCT_QUANTITY);
                 index++;
             }
         }
@@ -1671,24 +1660,24 @@ public class OrderUserService {
         for (var item : items) {
 
             Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
             if (!product.getUser()
                     .getId()
                     .equals(userId)) {
-                throw new AppException(ProductErrorCode.NOT_OWNED);
+                throw new AppException(ProductErrorCode.PRODUCT_NOT_OWNED);
             }
 
             if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new AppException(ProductErrorCode.INACTIVE, product.getName());
+                throw new AppException(ProductErrorCode.PRODUCT_INACTIVE, product.getName());
             }
 
             if (product.getStock() <= 0) {
-                throw new AppException(ProductErrorCode.OUT_OF_STOCK, product.getName());
+                throw new AppException(ProductErrorCode.PRODUCT_OUT_OF_STOCK, product.getName());
             }
 
             if (item.getQuantity() > product.getStock()) {
-                throw new AppException(ProductErrorCode.INSUFFICIENT_STOCK, product.getName(), product.getStock());
+                throw new AppException(ProductErrorCode.PRODUCT_INSUFFICIENT_STOCK, product.getName(), product.getStock());
             }
         }
     }
@@ -1767,12 +1756,12 @@ public class OrderUserService {
 
         for (var item : items) {
             Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
             if (!isDraft) {
                 int newStock = product.getStock() - item.getQuantity();
                 if (newStock < 0)
-                    throw new AppException(ProductErrorCode.INSUFFICIENT_STOCK, product.getName(), product.getStock());
+                    throw new AppException(ProductErrorCode.PRODUCT_INSUFFICIENT_STOCK, product.getName(), product.getStock());
                 product.setStock(newStock);
                 product.setSoldQuantity(product.getSoldQuantity() + item.getQuantity());
                 productRepository.save(product);
@@ -1789,6 +1778,6 @@ public class OrderUserService {
 
     private Order getOrderByIdAndUserId(Integer id, Integer shopId) {
         return repository.findByIdAndUserId(id, shopId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
     }
 }

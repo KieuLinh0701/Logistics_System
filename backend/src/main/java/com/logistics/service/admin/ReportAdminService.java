@@ -6,7 +6,7 @@ import com.logistics.dto.admin.AdminOfficeReportDto;
 import com.logistics.dto.admin.AdminShopReportDto;
 import com.logistics.dto.admin.AdminOverviewDto;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.repository.ReportRepository;
 
 import java.math.BigDecimal;
@@ -122,7 +122,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -148,7 +148,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -176,7 +176,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -226,7 +226,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -263,7 +263,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -300,7 +300,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -357,7 +357,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.EXPORT_EXCEL_ERROR);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 

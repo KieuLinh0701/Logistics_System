@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdateFeeConfigurationRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.FeeConfigurationAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +34,7 @@ public class FeeConfigurationAdminController {
             @RequestParam(required = false) Boolean active) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(feeConfigurationAdminService.listFeeConfigurations(page, limit, search, feeType, serviceTypeId, active)));
@@ -41,7 +43,7 @@ public class FeeConfigurationAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getFeeConfigurationById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(feeConfigurationAdminService.getFeeConfigurationById(id)));
@@ -50,7 +52,7 @@ public class FeeConfigurationAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<String>> createFeeConfiguration(@RequestBody CreateFeeConfigurationRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         feeConfigurationAdminService.createFeeConfiguration(request);
@@ -62,7 +64,7 @@ public class FeeConfigurationAdminController {
             @PathVariable Integer id,
             @RequestBody UpdateFeeConfigurationRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         feeConfigurationAdminService.updateFeeConfiguration(id, request);
@@ -72,7 +74,7 @@ public class FeeConfigurationAdminController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteFeeConfiguration(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         feeConfigurationAdminService.deleteFeeConfiguration(id);

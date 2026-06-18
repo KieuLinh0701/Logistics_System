@@ -13,9 +13,9 @@ import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.VehicleStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.EmployeeErrorCode;
-import com.logistics.exception.OrderErrorCode;
-import com.logistics.exception.ShipmentErrorCode;
+import com.logistics.exception.enums.EmployeeErrorCode;
+import com.logistics.exception.enums.OrderErrorCode;
+import com.logistics.exception.enums.ShipmentErrorCode;
 import com.logistics.repository.*;
 import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
@@ -74,7 +74,7 @@ public class ShipmentDriverService {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
         List<Employee> employees = employeeRepository.findByUserId(userId);
         if (employees == null || employees.isEmpty()) {
-            throw new AppException(EmployeeErrorCode.NOT_FOUND);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
         }
         return employees.get(0);
     }
@@ -84,14 +84,14 @@ public class ShipmentDriverService {
         Employee employee = getCurrentEmployee();
 
         Shipment shipment = shipmentRepository.findById(shipmentId)
-                .orElseThrow(() -> new AppException(ShipmentErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
         if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
-            throw new AppException(EmployeeErrorCode.PERMISSION_DENIED);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_PERMISSION_DENIED);
         }
 
         if (shipment.getStatus() != ShipmentStatus.PENDING) {
-            throw new AppException(ShipmentErrorCode.NOT_PENDING);
+            throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_PENDING);
         }
 
         // Lấy danh sách orders cho shipment và cập nhật shipment -> IN_TRANSIT
@@ -123,15 +123,15 @@ public class ShipmentDriverService {
         Employee employee = getCurrentEmployee();
 
         Shipment shipment = shipmentRepository.findById(request.getShipmentId())
-                .orElseThrow(() -> new AppException(ShipmentErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
         if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
-            throw new AppException(EmployeeErrorCode.PERMISSION_DENIED);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_PERMISSION_DENIED);
         }
 
         ShipmentStatus newStatus = request.getStatus();
         if (newStatus != ShipmentStatus.COMPLETED && newStatus != ShipmentStatus.CANCELLED) {
-            throw new AppException(ShipmentErrorCode.INVALID_STATUS);
+            throw new AppException(ShipmentErrorCode.SHIPMENT_INVALID_STATUS);
         }
 
         shipment.setStatus(newStatus);
@@ -162,7 +162,7 @@ public class ShipmentDriverService {
             if (newStatus == ShipmentStatus.COMPLETED) {
                 // Kiểm tra đơn hàng phải ở trạng thái IN_TRANSIT
                 if (order.getStatus() != OrderStatus.IN_TRANSIT) {
-                    throw new AppException(OrderErrorCode.NOT_IN_TRANSIT, order.getTrackingNumber());
+                    throw new AppException(OrderErrorCode.ORDER_NOT_IN_TRANSIT, order.getTrackingNumber());
                 }
                 history.setAction(OrderHistoryActionType.IMPORTED);
                 history.setNote("Đơn đã đến bưu cục đích");
@@ -485,14 +485,14 @@ public class ShipmentDriverService {
         Employee employee = getCurrentEmployee();
 
         Shipment shipment = shipmentRepository.findById(request.getShipmentId())
-                .orElseThrow(() -> new AppException(ShipmentErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
         if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
-            throw new AppException(EmployeeErrorCode.PERMISSION_DENIED);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_PERMISSION_DENIED);
         }
 
         if (shipment.getVehicle() == null) {
-            throw new AppException(ShipmentErrorCode.NOT_FOUND, "Chuyến hàng không có phương tiện");
+            throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND, "Chuyến hàng không có phương tiện");
         }
 
         // Cập nhật bản ghi tracking gần nhất cho shipment này (nếu có)
@@ -526,10 +526,10 @@ public class ShipmentDriverService {
         Employee employee = getCurrentEmployee();
 
         Shipment shipment = shipmentRepository.findById(shipmentId)
-                .orElseThrow(() -> new AppException(ShipmentErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
         if (shipment.getEmployee() == null || !shipment.getEmployee().getId().equals(employee.getId())) {
-            throw new AppException(EmployeeErrorCode.PERMISSION_DENIED);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_PERMISSION_DENIED);
         }
 
         List<VehicleTracking> trackings = vehicleTrackingRepository.findByShipmentIdOrderByRecordedAtDesc(shipmentId);

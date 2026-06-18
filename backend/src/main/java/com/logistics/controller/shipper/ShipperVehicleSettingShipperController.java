@@ -6,6 +6,8 @@ import com.logistics.dto.shipper.vehicle.ShipperVehicleStatusUpdateRequestDto;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.ShipperVehicleSettingService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +26,7 @@ public class ShipperVehicleSettingShipperController {
     @GetMapping
     public ResponseEntity<ApiResponse<ShipperVehicleSettingResponseDto>> getVehicleSetting() {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperVehicleSettingService.getMyVehicleSetting()));
     }
@@ -33,7 +35,7 @@ public class ShipperVehicleSettingShipperController {
     public ResponseEntity<ApiResponse<ShipperVehicleSettingResponseDto>> updateVehicleSetting(
             @RequestBody(required = false) ShipperVehicleSettingRequestDto request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperVehicleSettingService.updateMyVehicleSetting(request)));
     }
@@ -42,7 +44,7 @@ public class ShipperVehicleSettingShipperController {
     public ResponseEntity<ApiResponse<ShipperVehicleSettingResponseDto>> updateVehicleStatus(
             @RequestBody(required = false) ShipperVehicleStatusUpdateRequestDto request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperVehicleSettingService.updateMyVehicleStatus(request)));
     }

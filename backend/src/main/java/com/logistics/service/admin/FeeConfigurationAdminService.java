@@ -19,8 +19,8 @@ import com.logistics.entity.ServiceType;
 import com.logistics.enums.CodFeeType;
 import com.logistics.enums.FeeType;
 import com.logistics.exception.AppException;
-import com.logistics.exception.FeeConfigurationErrorCode;
-import com.logistics.exception.ServiceTypeErrorCode;
+import com.logistics.exception.enums.FeeConfigurationErrorCode;
+import com.logistics.exception.enums.ServiceTypeErrorCode;
 import com.logistics.repository.FeeConfigurationRepository;
 import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.request.admin.CreateFeeConfigurationRequest;
@@ -87,22 +87,22 @@ public class FeeConfigurationAdminService {
 
     public Map<String, Object> getFeeConfigurationById(Integer id) {
         FeeConfiguration feeConfig = feeConfigurationRepository.findById(id)
-                .orElseThrow(() -> new AppException(FeeConfigurationErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(FeeConfigurationErrorCode.FEE_CONFIG_NOT_FOUND));
         return mapFeeConfiguration(feeConfig);
     }
 
     @Transactional
     public void createFeeConfiguration(CreateFeeConfigurationRequest request) {
         if (request.getFeeType() == null || request.getFeeType().isBlank()) {
-            throw new AppException(FeeConfigurationErrorCode.FEE_TYPE_REQUIRED);
+            throw new AppException(FeeConfigurationErrorCode.FEE_CONFIG_FEE_TYPE_REQUIRED);
         }
 
         if (request.getCalculationType() == null || request.getCalculationType().isBlank()) {
-            throw new AppException(FeeConfigurationErrorCode.CALCULATION_TYPE_REQUIRED);
+            throw new AppException(FeeConfigurationErrorCode.FEE_CONFIG_CALCULATION_TYPE_REQUIRED);
         }
 
         if (request.getFeeValue() == null) {
-            throw new AppException(FeeConfigurationErrorCode.FEE_VALUE_REQUIRED);
+            throw new AppException(FeeConfigurationErrorCode.FEE_CONFIG_FEE_VALUE_REQUIRED);
         }
 
         FeeConfiguration feeConfig = new FeeConfiguration();
@@ -116,7 +116,7 @@ public class FeeConfigurationAdminService {
 
         if (request.getServiceTypeId() != null) {
             ServiceType serviceType = serviceTypeRepository.findById(request.getServiceTypeId())
-                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
             feeConfig.setServiceType(serviceType);
         }
 
@@ -126,7 +126,7 @@ public class FeeConfigurationAdminService {
     @Transactional
     public void updateFeeConfiguration(Integer id, UpdateFeeConfigurationRequest request) {
         FeeConfiguration feeConfig = feeConfigurationRepository.findById(id)
-                .orElseThrow(() -> new AppException(FeeConfigurationErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(FeeConfigurationErrorCode.FEE_CONFIG_NOT_FOUND));
 
         if (request.getFeeType() != null) {
             feeConfig.setFeeType(FeeType.valueOf(request.getFeeType().toUpperCase()));
@@ -152,17 +152,17 @@ public class FeeConfigurationAdminService {
 
         if (request.getServiceTypeId() != null) {
             ServiceType serviceType = serviceTypeRepository.findById(request.getServiceTypeId())
-                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
             feeConfig.setServiceType(serviceType);
         }
-
+        
         feeConfig = feeConfigurationRepository.save(feeConfig);
     }
 
     @Transactional
     public void deleteFeeConfiguration(Integer id) {
         FeeConfiguration feeConfig = feeConfigurationRepository.findById(id)
-                .orElseThrow(() -> new AppException(FeeConfigurationErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(FeeConfigurationErrorCode.FEE_CONFIG_NOT_FOUND));
         feeConfigurationRepository.delete(feeConfig);
     }
 

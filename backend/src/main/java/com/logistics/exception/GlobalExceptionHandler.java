@@ -1,5 +1,7 @@
 package com.logistics.exception;
 
+import com.logistics.exception.enums.BaseErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.response.ApiResponse;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +30,7 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .body(
             ApiResponse.failure(
-                ErrorCode.VALIDATION_ERROR.getMessage() + ": " + String.join(", ", errors)));
+                CommonErrorCode.VALIDATION_ERROR.getMessage() + ": " + String.join(", ", errors)));
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -38,11 +40,11 @@ public class GlobalExceptionHandler {
 
     if (cause instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-          .body(ApiResponse.failure(ErrorCode.INVALID_ENUM_VALUE.getMessage()));
+          .body(ApiResponse.failure(CommonErrorCode.INVALID_ENUM_VALUE.getMessage()));
     }
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        .body(ApiResponse.failure(ErrorCode.BAD_REQUEST.getMessage()));
+        .body(ApiResponse.failure(CommonErrorCode.BAD_REQUEST.getMessage()));
   }
 
   @ExceptionHandler(AppException.class)
@@ -55,6 +57,6 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(ApiResponse.failure(ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
+        .body(ApiResponse.failure(CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
   }
 }

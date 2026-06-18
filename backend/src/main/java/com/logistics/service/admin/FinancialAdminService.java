@@ -33,7 +33,7 @@ import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.PaymentErrorCode;
+import com.logistics.exception.enums.PaymentErrorCode;
 import com.logistics.mapper.PaymentSubmissionMapper;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
@@ -113,7 +113,7 @@ public class FinancialAdminService {
     @Transactional
     public void processSubmission(Integer adminId, Integer submissionId, CreatePaymentSubmissionRequest form) {
         PaymentSubmission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new AppException(PaymentErrorCode.SUBMISSION_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_SUBMISSION_NOT_FOUND));
 
         if (form.getActualAmount() != null) {
             submission.setActualAmount(form.getActualAmount());
@@ -135,7 +135,7 @@ public class FinancialAdminService {
 
     public PaymentSubmissionBatch getBatchById(Integer id) {
         PaymentSubmissionBatch batch = batchRepository.findById(id).orElse(null);
-        if (batch == null) throw new AppException(PaymentErrorCode.BATCH_NOT_FOUND);
+        if (batch == null) throw new AppException(PaymentErrorCode.PAYMENT_BATCH_NOT_FOUND);
         return batch;
     }
 
@@ -180,7 +180,7 @@ public class FinancialAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(PaymentErrorCode.BATCH_EXPORT_ERROR);
+            throw new AppException(PaymentErrorCode.PAYMENT_BATCH_EXPORT_ERROR);
         }
     }
 
@@ -226,14 +226,14 @@ public class FinancialAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new AppException(PaymentErrorCode.SUBMISSION_EXPORT_ERROR);
+            throw new AppException(PaymentErrorCode.PAYMENT_SUBMISSION_EXPORT_ERROR);
         }
     }
 
     @Transactional
     public void completeBatch(Integer adminId, Integer batchId) {
         PaymentSubmissionBatch batch = batchRepository.findById(batchId)
-                .orElseThrow(() -> new AppException(PaymentErrorCode.BATCH_NOT_FOUND));
+                .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_BATCH_NOT_FOUND));
 
         batch.setStatus(PaymentSubmissionBatchStatus.COMPLETED);
         batch.setCheckedAt(LocalDateTime.now());

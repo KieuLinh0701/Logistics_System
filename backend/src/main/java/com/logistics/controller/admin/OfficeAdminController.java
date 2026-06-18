@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdateOfficeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.OfficeAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +31,7 @@ public class OfficeAdminController {
             @RequestParam(required = false) String search) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(officeAdminService.listOffices(page, limit, search)));
@@ -38,7 +40,7 @@ public class OfficeAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOfficeById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         Map<String, Object> result = officeAdminService.getOfficeById(id);
@@ -48,7 +50,7 @@ public class OfficeAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<String>> createOffice(@RequestBody CreateOfficeRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         officeAdminService.createOffice(request);
@@ -60,7 +62,7 @@ public class OfficeAdminController {
             @PathVariable Integer id,
             @RequestBody UpdateOfficeRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         officeAdminService.updateOffice(id, request);
@@ -70,7 +72,7 @@ public class OfficeAdminController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteOffice(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         officeAdminService.deleteOffice(id);

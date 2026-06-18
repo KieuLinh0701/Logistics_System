@@ -20,8 +20,8 @@ import com.logistics.entity.Office;
 import com.logistics.enums.OfficeStatus;
 import com.logistics.enums.OfficeType;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
-import com.logistics.exception.OfficeErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.OfficeErrorCode;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.response.Pagination;
 
@@ -61,7 +61,7 @@ public class OfficeAdminService {
 
     public Map<String, Object> getOfficeById(Integer officeId) {
         Office office = officeRepository.findById(officeId)
-                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
         return mapOffice(office);
     }
 
@@ -69,23 +69,23 @@ public class OfficeAdminService {
     public void createOffice(CreateOfficeRequest request) {
         String normalizedCode = normalizeCode(request.getCode());
         if (normalizedCode == null || normalizedCode.isBlank()) {
-            throw new AppException(ErrorCode.BAD_REQUEST, "Mã bưu cục không được để trống");
+            throw new AppException(CommonErrorCode.BAD_REQUEST, "Mã bưu cục không được để trống");
         }
 
         if (officeRepository.existsByCode(normalizedCode)) {
-            throw new AppException(OfficeErrorCode.CODE_EXISTED);
+            throw new AppException(OfficeErrorCode.OFFICE_CODE_EXISTED);
         }
 
         if (request.getPhoneNumber() != null && officeRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new AppException(OfficeErrorCode.PHONE_EXISTED);
+            throw new AppException(OfficeErrorCode.OFFICE_PHONE_EXISTED);
         }
 
         if (request.getWardCode() == null || request.getCityCode() == null || request.getDetailAddress() == null) {
-            throw new AppException(OfficeErrorCode.ADDRESS_REQUIRED);
+            throw new AppException(OfficeErrorCode.OFFICE_ADDRESS_REQUIRED);
         }
 
         if (request.getLatitude() == null || request.getLongitude() == null) {
-            throw new AppException(OfficeErrorCode.COORDINATES_REQUIRED);
+            throw new AppException(OfficeErrorCode.OFFICE_COORDINATES_REQUIRED);
         }
 
         Office office = new Office();
@@ -116,20 +116,20 @@ public class OfficeAdminService {
     @Transactional
     public void updateOffice(Integer officeId, UpdateOfficeRequest request) {
         Office office = officeRepository.findById(officeId)
-                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
 
         if (request.getCode() != null) {
             String normalizedCode = normalizeCode(request.getCode());
             if (!normalizedCode.equalsIgnoreCase(office.getCode())
                     && officeRepository.existsByCode(normalizedCode)) {
-                throw new AppException(OfficeErrorCode.CODE_EXISTED);
+                throw new AppException(OfficeErrorCode.OFFICE_CODE_EXISTED);
             }
             office.setCode(normalizedCode);
         }
 
         if (request.getPhoneNumber() != null && !request.getPhoneNumber().equalsIgnoreCase(office.getPhoneNumber())
                 && officeRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new AppException(OfficeErrorCode.PHONE_EXISTED);
+            throw new AppException(OfficeErrorCode.OFFICE_PHONE_EXISTED);
         }
 
         if (request.getPostalCode() != null)
@@ -170,7 +170,7 @@ public class OfficeAdminService {
     @Transactional
     public void deleteOffice(Integer officeId) {
         Office office = officeRepository.findById(officeId)
-                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
 
         officeRepository.delete(office);
     }

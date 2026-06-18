@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdatePromotionRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.PromotionAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +33,7 @@ public class PromotionAdminController {
             @RequestParam(required = false) Boolean isGlobal) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(promotionAdminService.listPromotions(page, limit, search, status, isGlobal)));
@@ -40,7 +42,7 @@ public class PromotionAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPromotionById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(promotionAdminService.getPromotionById(id)));
@@ -49,7 +51,7 @@ public class PromotionAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<String>> createPromotion(@RequestBody CreatePromotionRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         promotionAdminService.createPromotion(request);
@@ -61,7 +63,7 @@ public class PromotionAdminController {
             @PathVariable Integer id,
             @RequestBody UpdatePromotionRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         promotionAdminService.updatePromotion(id, request);
@@ -71,7 +73,7 @@ public class PromotionAdminController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deletePromotion(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         promotionAdminService.deletePromotion(id);

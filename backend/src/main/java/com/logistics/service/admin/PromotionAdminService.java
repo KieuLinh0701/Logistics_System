@@ -22,7 +22,7 @@ import com.logistics.entity.UserPromotion;
 import com.logistics.enums.PromotionDiscountType;
 import com.logistics.enums.PromotionStatus;
 import com.logistics.exception.AppException;
-import com.logistics.exception.PromotionErrorCode;
+import com.logistics.exception.enums.PromotionErrorCode;
 import com.logistics.repository.PromotionRepository;
 import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.repository.UserPromotionRepository;
@@ -96,24 +96,24 @@ public class PromotionAdminService {
 
     public Map<String, Object> getPromotionById(Integer promotionId) {
         Promotion promotion = promotionRepository.findById(promotionId)
-                .orElseThrow(() -> new AppException(PromotionErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
         return mapPromotion(promotion);
     }
 
     @Transactional
     public void createPromotion(CreatePromotionRequest request) {
         if (request.getCode() == null || request.getCode().isBlank()) {
-            throw new AppException(PromotionErrorCode.CODE_REQUIRED);
+            throw new AppException(PromotionErrorCode.PROMOTION_CODE_REQUIRED);
         }
 
         String normalizedCode = request.getCode().toUpperCase().trim();
         if (promotionRepository.existsByCode(normalizedCode)) {
-            throw new AppException(PromotionErrorCode.CODE_EXISTED);
+            throw new AppException(PromotionErrorCode.PROMOTION_CODE_EXISTED);
         }
 
         if (request.getStartDate() != null && request.getEndDate() != null
                 && request.getEndDate().isBefore(request.getStartDate())) {
-            throw new AppException(PromotionErrorCode.INVALID_DATE_RANGE);
+            throw new AppException(PromotionErrorCode.PROMOTION_INVALID_DATE_RANGE);
         }
 
         Promotion promotion = new Promotion();
@@ -181,19 +181,19 @@ public class PromotionAdminService {
     @Transactional
     public void updatePromotion(Integer promotionId, UpdatePromotionRequest request) {
         Promotion promotion = promotionRepository.findById(promotionId)
-                .orElseThrow(() -> new AppException(PromotionErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
 
         if (request.getCode() != null && !request.getCode().trim().isEmpty()) {
             String normalizedCode = request.getCode().toUpperCase().trim();
             if (!normalizedCode.equals(promotion.getCode()) && promotionRepository.existsByCode(normalizedCode)) {
-                throw new AppException(PromotionErrorCode.CODE_EXISTED);
+                throw new AppException(PromotionErrorCode.PROMOTION_CODE_EXISTED);
             }
             promotion.setCode(normalizedCode);
         }
 
         if (request.getStartDate() != null && request.getEndDate() != null
                 && request.getEndDate().isBefore(request.getStartDate())) {
-            throw new AppException(PromotionErrorCode.INVALID_DATE_RANGE);
+            throw new AppException(PromotionErrorCode.PROMOTION_INVALID_DATE_RANGE);
         }
 
         if (request.getTitle() != null) promotion.setTitle(request.getTitle());
@@ -263,7 +263,7 @@ public class PromotionAdminService {
     @Transactional
     public void deletePromotion(Integer promotionId) {
         Promotion promotion = promotionRepository.findById(promotionId)
-                .orElseThrow(() -> new AppException(PromotionErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
         promotionRepository.delete(promotion);
     }
 

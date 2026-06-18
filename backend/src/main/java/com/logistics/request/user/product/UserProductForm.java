@@ -2,22 +2,30 @@ package com.logistics.request.user.product;
 
 import java.math.BigDecimal;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.multipart.MultipartFile;
 
-import lombok.*;
+public record UserProductForm (
+        Integer id,
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserProductForm { 
-    private Integer id;
-    private String name;
-    private BigDecimal weight;
-    private Integer price;
-    private String type;
-    private String status;
-    private Integer stock;
+        @NotBlank(message = "Tên sản phẩm không được để trống")
+        String name,
 
-    private MultipartFile imageFile;
-}
+        @NotNull(message = "Trọng lượng không được để trống")
+        @DecimalMin(value = "0.0", inclusive = false, message = "Trọng lượng phải lớn hơn 0")
+        BigDecimal weight,
+
+        @NotNull(message = "Giá không được để trống")
+        @Min(value = 0, message = "Giá không được âm")
+        Integer price,
+
+        @NotBlank(message = "Loại sản phẩm không được để trống")
+        String type,
+
+        String status,
+        Integer stock,
+        MultipartFile imageFile
+) {}

@@ -6,6 +6,8 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.UserAdminService;
 import com.logistics.utils.SecurityUtils;
 import com.logistics.repository.RoleRepository;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +37,7 @@ public class UserAdminController {
             @RequestParam(required = false) String role) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(userAdminService.listUsers(page, limit, search, status, role)));
@@ -44,7 +46,7 @@ public class UserAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getUserById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(userAdminService.getUserById(id)));
@@ -53,7 +55,7 @@ public class UserAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<String>> createUser(@RequestBody CreateUserRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         userAdminService.createUser(request);
@@ -65,7 +67,7 @@ public class UserAdminController {
             @PathVariable Integer id,
             @RequestBody UpdateUserRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         userAdminService.updateUser(id, request);
@@ -75,7 +77,7 @@ public class UserAdminController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         userAdminService.deleteUser(id);
@@ -85,7 +87,7 @@ public class UserAdminController {
     @GetMapping("/roles")
     public ResponseEntity<ApiResponse<java.util.List<java.util.Map<String, Object>>>> listRoles() {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         var roles = roleRepository.findAll().stream()

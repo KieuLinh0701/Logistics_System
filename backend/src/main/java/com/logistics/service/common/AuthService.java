@@ -61,7 +61,6 @@ public class AuthService {
 
     public ApiResponse<String> register(RegisterRequest request) {
         try {
-            System.out.println("hello");
             Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
 
             if (existingAccountOpt.isPresent()) {

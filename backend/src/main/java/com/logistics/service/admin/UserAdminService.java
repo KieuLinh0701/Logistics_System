@@ -21,7 +21,7 @@ import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import com.logistics.entity.AccountRole;
 import com.logistics.exception.AppException;
-import com.logistics.exception.UserErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
@@ -76,10 +76,10 @@ public class UserAdminService {
 
     public Map<String, Object> getUserById(Integer userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(UserErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
         Account account = accountRepository.findByUser(user)
-                .orElseThrow(() -> new AppException(UserErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_ACCOUNT_NOT_FOUND));
 
         return mapAccount(account);
     }
@@ -87,11 +87,11 @@ public class UserAdminService {
     @Transactional
     public void createUser(CreateUserRequest request) {
         if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new AppException(UserErrorCode.EMAIL_EXISTED);
+            throw new AppException(UserErrorCode.USER_EMAIL_EXISTED);
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new AppException(UserErrorCode.PHONE_EXISTED);
+            throw new AppException(UserErrorCode.USER_PHONE_EXISTED);
         }
 
             Account account = new Account();
@@ -102,7 +102,7 @@ public class UserAdminService {
             if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
                 for (Integer rid : request.getRoleIds()) {
                     Role role = roleRepository.findById(rid)
-                            .orElseThrow(() -> new AppException(UserErrorCode.ROLE_NOT_FOUND, rid));
+                            .orElseThrow(() -> new AppException(UserErrorCode.USER_ROLE_NOT_FOUND, rid));
                     AccountRole ar = new AccountRole();
                     ar.setAccount(account);
                     ar.setRole(role);
@@ -127,10 +127,10 @@ public class UserAdminService {
     @Transactional
     public void updateUser(Integer userId, UpdateUserRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(UserErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
         Account account = accountRepository.findByUser(user)
-                .orElseThrow(() -> new AppException(UserErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_ACCOUNT_NOT_FOUND));
 
         if (request.getFirstName() != null)
             user.setFirstName(request.getFirstName());
@@ -139,7 +139,7 @@ public class UserAdminService {
         if (request.getPhoneNumber() != null) {
             if (!user.getPhoneNumber().equals(request.getPhoneNumber())
                     && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                throw new AppException(UserErrorCode.PHONE_EXISTED);
+                throw new AppException(UserErrorCode.USER_PHONE_EXISTED);
             }
             user.setPhoneNumber(request.getPhoneNumber());
         }
@@ -177,7 +177,7 @@ public class UserAdminService {
                 }
                 if (!exists) {
                     Role role = roleRepository.findById(rid)
-                            .orElseThrow(() -> new AppException(UserErrorCode.ROLE_NOT_FOUND, rid));
+                            .orElseThrow(() -> new AppException(UserErrorCode.USER_ROLE_NOT_FOUND, rid));
                     AccountRole newAr = new AccountRole();
                     newAr.setAccount(account);
                     newAr.setRole(role);
@@ -195,10 +195,10 @@ public class UserAdminService {
     @Transactional
     public void deleteUser(Integer userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(UserErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
         Account account = accountRepository.findByUser(user)
-                .orElseThrow(() -> new AppException(UserErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_ACCOUNT_NOT_FOUND));
 
         userRepository.delete(user);
         accountRepository.delete(account);

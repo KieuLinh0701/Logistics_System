@@ -38,11 +38,11 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.response.NotificationResponse;
 import com.logistics.exception.AppException;
-import com.logistics.exception.EmployeeErrorCode;
-import com.logistics.exception.ErrorCode;
-import com.logistics.exception.IncidentReportErrorCode;
-import com.logistics.exception.OrderErrorCode;
-import com.logistics.exception.ProductErrorCode;
+import com.logistics.exception.enums.EmployeeErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.IncidentReportErrorCode;
+import com.logistics.exception.enums.OrderErrorCode;
+import com.logistics.exception.enums.ProductErrorCode;
 import com.logistics.utils.SecurityUtils;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.ConfigService;
@@ -134,7 +134,7 @@ public class OrderShipperService {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
         List<Employee> employees = employeeRepository.findByUserId(userId);
         if (employees == null || employees.isEmpty()) {
-            throw new AppException(EmployeeErrorCode.NOT_FOUND);
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
         }
         return employees.get(0);
     }
@@ -303,7 +303,7 @@ public class OrderShipperService {
                 }).toList();
             }
         } catch (Exception e) {
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+            throw new AppException(CommonErrorCode.INTERNAL_SERVER_ERROR, e);
         }
 
         Map<String, Object> data = new HashMap<>();
@@ -464,7 +464,7 @@ public class OrderShipperService {
                 availablePreds.add(fromOfficeMatch);
                 assignedPreds.add(fromOfficeMatch);
             } catch (Exception e) {
-                throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+                throw new AppException(CommonErrorCode.INTERNAL_SERVER_ERROR, e);
             }
             // nếu không có fromOffice, bỏ qua điều kiện
 
@@ -497,7 +497,7 @@ public class OrderShipperService {
 
     public Map<String, Object> getOrderById(Integer id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
@@ -510,7 +510,7 @@ public class OrderShipperService {
         }
 
         if (!allowed) {
-            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+            throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
         }
 
         return mapOrderDetail(order);
@@ -518,7 +518,7 @@ public class OrderShipperService {
 
     public Map<String, Object> getOrderByTrackingNumber(String trackingNumber) {
         Order order = orderRepository.findByTrackingNumber(trackingNumber)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
@@ -531,7 +531,7 @@ public class OrderShipperService {
         }
 
         if (!allowed) {
-            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+            throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
         }
 
         Map<String, Object> data = new HashMap<>();
@@ -548,11 +548,11 @@ public class OrderShipperService {
     @Transactional
     public Map<String, Object> startPartialDelivery(Integer orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
         List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(orderId);
@@ -584,21 +584,21 @@ public class OrderShipperService {
     @Transactional
     public void markProductDeliveredAtomic(Integer orderProductId, Integer deliveredQuantity) {
         if (deliveredQuantity == null || deliveredQuantity <= 0) {
-            throw new AppException(OrderErrorCode.INVALID_QUANTITY);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_QUANTITY);
         }
 
         OrderProduct op = orderProductRepository.findById(orderProductId)
-            .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
+            .orElseThrow(() -> new AppException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         Order order = op.getOrder();
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
         int affected = orderProductRepository.incrementDelivered(orderProductId, deliveredQuantity);
         if (affected == 0) {
-            throw new AppException(OrderErrorCode.QUANTITY_EXCEEDED);
+            throw new AppException(OrderErrorCode.ORDER_QUANTITY_EXCEEDED);
         }
 
         OrderProduct updated = orderProductRepository.findById(orderProductId).orElse(op);
@@ -614,20 +614,20 @@ public class OrderShipperService {
     @Transactional
     public void markProductReturnedAtomic(Integer orderProductId, Integer returnedQuantity, String reason) {
         if (returnedQuantity == null || returnedQuantity <= 0) {
-            throw new AppException(OrderErrorCode.INVALID_QUANTITY);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_QUANTITY);
         }
         OrderProduct op = orderProductRepository.findById(orderProductId)
-            .orElseThrow(() -> new AppException(ProductErrorCode.NOT_FOUND));
+            .orElseThrow(() -> new AppException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         Order order = op.getOrder();
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
         int affected = orderProductRepository.incrementReturned(orderProductId, returnedQuantity);
         if (affected == 0) {
-            throw new AppException(OrderErrorCode.QUANTITY_EXCEEDED);
+            throw new AppException(OrderErrorCode.ORDER_QUANTITY_EXCEEDED);
         }
 
         OrderProduct updated = orderProductRepository.findById(orderProductId).orElse(op);
@@ -640,11 +640,11 @@ public class OrderShipperService {
     @Transactional
     public void finishPartialDelivery(Integer orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         Employee employee = getCurrentEmployee();
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
         List<OrderProduct> products = orderProductRepository.findByOrderIdWithProduct(orderId);
@@ -663,7 +663,7 @@ public class OrderShipperService {
                     createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
                 }
             } catch (Exception e) {
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+            throw new AppException(CommonErrorCode.INTERNAL_SERVER_ERROR, e);
         }
             return;
         }
@@ -695,7 +695,7 @@ public class OrderShipperService {
                     orderRepository.save(order);
                 }
             } catch (Exception e) {
-                throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, e);
+                throw new AppException(CommonErrorCode.INTERNAL_SERVER_ERROR, e);
             }
         }
     }
@@ -706,20 +706,20 @@ public class OrderShipperService {
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
-                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+                throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
             }
         } else {
             if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+                throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
             }
         }
 
         if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            throw new AppException(OrderErrorCode.INVALID_CLAIM_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_CLAIM_STATUS);
         }
 
         order.setStatus(OrderStatus.PICKING_UP);
@@ -734,14 +734,14 @@ public class OrderShipperService {
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+            throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
         }
 
         if (order.getStatus() != OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
-            throw new AppException(OrderErrorCode.INVALID_CLAIM_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_CLAIM_STATUS);
         }
 
         order.setStatus(OrderStatus.READY_FOR_PICKUP);
@@ -756,20 +756,20 @@ public class OrderShipperService {
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
-                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+                throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
             }
         } else {
             if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-                throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+                throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
             }
         }
 
         if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP && order.getStatus() != OrderStatus.PICKING_UP) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
@@ -795,27 +795,27 @@ public class OrderShipperService {
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+            throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
         }
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
         if (order.getStatus() == OrderStatus.PARTIAL_DELIVERY || order.getStatus() == OrderStatus.PARTIAL_RETURN) {
-            throw new AppException(OrderErrorCode.PARTIAL_DELIVERY_INVALID);
+            throw new AppException(OrderErrorCode.ORDER_PARTIAL_DELIVERY_INVALID);
         }
         if (order.getStatus() != OrderStatus.DELIVERING) {
-            throw new AppException(OrderErrorCode.NOT_DELIVERING);
+            throw new AppException(OrderErrorCode.ORDER_NOT_DELIVERING);
         }
         if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.RETURNING || order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.DELIVERY_FAILED_FINAL) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         String status = request != null && request.getStatus() != null ? request.getStatus().trim().toUpperCase() : null;
         if (status == null || status.isBlank()) {
-            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_DELIVERY_STATUS);
         }
 
         if ("SUCCESS".equals(status)) {
@@ -823,10 +823,10 @@ public class OrderShipperService {
             return;
         }
         if (!"FAILED".equals(status)) {
-            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_DELIVERY_STATUS);
         }
         if (request.getFailReason() == null || request.getFailReason().isBlank()) {
-            throw new AppException(OrderErrorCode.MISSING_FAIL_REASON);
+            throw new AppException(OrderErrorCode.ORDER_MISSING_FAIL_REASON);
         }
 
         handleDeliveryFailure(order, employee, employee.getUser(), request);
@@ -838,14 +838,14 @@ public class OrderShipperService {
         Integer officeId = employee.getOffice().getId();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
-            throw new AppException(OrderErrorCode.OFFICE_MISMATCH);
+            throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
         }
 
         if (request.getStatus() == null || request.getStatus().isBlank()) {
-            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_DELIVERY_STATUS);
         }
 
         OrderStatus newStatus;
@@ -856,7 +856,7 @@ public class OrderShipperService {
             }
             newStatus = OrderStatus.valueOf(rawStatus);
         } catch (IllegalArgumentException e) {
-            throw new AppException(OrderErrorCode.INVALID_DELIVERY_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_DELIVERY_STATUS);
         }
 
         User shipperUser = employee.getUser();
@@ -915,18 +915,18 @@ public class OrderShipperService {
         Employee employee = getCurrentEmployee();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         // Chỉ shipper đã nhận (employee) mới có thể đánh dấu đã lấy
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
         // Kiểm tra trạng thái phù hợp (đang lấy hàng)
         if (order.getStatus() != OrderStatus.PICKING_UP
                 && order.getStatus() != OrderStatus.READY_FOR_PICKUP
                 && order.getStatus() != OrderStatus.PICKUP_SUCCESS) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         order.setStatus(OrderStatus.PICKED_UP);
@@ -967,16 +967,16 @@ public class OrderShipperService {
         Employee employee = getCurrentEmployee();
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         // Kiểm tra shipper được gán
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
         // Chỉ hợp lệ nếu đã pick up
         if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.PICKING_UP) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         // Nếu request chỉ định officeId thì dùng office đó
@@ -1125,7 +1125,7 @@ public class OrderShipperService {
         User shipperUser = employee.getUser();
 
         Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         IncidentReport incident = new IncidentReport();
         incident.setOrder(order);
@@ -1182,7 +1182,7 @@ public class OrderShipperService {
         User shipperUser = employee.getUser();
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         IncidentReport incident = new IncidentReport();
         incident.setOrder(order);
@@ -1282,10 +1282,10 @@ public class OrderShipperService {
         User shipperUser = employee.getUser();
 
         IncidentReport incident = incidentReportRepository.findById(id)
-                .orElseThrow(() -> new AppException(IncidentReportErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(IncidentReportErrorCode.INCIDENT_REPORT_NOT_FOUND));
 
         if (incident.getShipper() == null || !Objects.equals(incident.getShipper().getId(), shipperUser.getId())) {
-            throw new AppException(ErrorCode.FORBIDDEN);
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return mapIncident(incident);
@@ -1744,7 +1744,7 @@ public class OrderShipperService {
 
     private void handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
         if (order.getStatus() != OrderStatus.DELIVERING) {
-            throw new AppException(OrderErrorCode.NOT_DELIVERING);
+            throw new AppException(OrderErrorCode.ORDER_NOT_DELIVERING);
         }
         int maxAttempts = getMaxDeliveryAttempts();
         long failedCountBefore = countFailedDeliveryAttempts(order.getId());
@@ -1754,7 +1754,7 @@ public class OrderShipperService {
         String reason = request.getFailReason();
         String note = request.getNotes();
         if (reason == null || reason.isBlank()) {
-            throw new AppException(OrderErrorCode.MISSING_FAIL_REASON);
+            throw new AppException(OrderErrorCode.ORDER_MISSING_FAIL_REASON);
         }
 
         DeliveryAttempt attempt = new DeliveryAttempt();
@@ -1782,13 +1782,13 @@ public class OrderShipperService {
     public void returnFailedToOffice(Integer id) {
         Employee employee = getCurrentEmployee();
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(OrderErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
         if (order.getStatus() != OrderStatus.DELIVERY_RETRY) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_RETRY);
@@ -1800,10 +1800,10 @@ public class OrderShipperService {
 
     private void handleDeliveryFailedFinal(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
-            throw new AppException(OrderErrorCode.NOT_ASSIGNED);
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
         if (order.getStatus() != OrderStatus.DELIVERING && order.getStatus() != OrderStatus.DELIVERY_FAILED_FINAL) {
-            throw new AppException(OrderErrorCode.INVALID_ORDER_STATUS);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
         order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
         orderRepository.save(order);

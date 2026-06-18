@@ -8,7 +8,8 @@ import com.logistics.entity.ShipperVehicle;
 import com.logistics.enums.ShipperVehicleStatus;
 import com.logistics.enums.ShipperVehicleType;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.ShipperVehicleRepository;
 import com.logistics.utils.SecurityUtils;
@@ -35,7 +36,7 @@ public class ShipperVehicleSettingService {
     @Transactional
     public ShipperVehicleSettingResponseDto updateMyVehicleSetting(ShipperVehicleSettingRequestDto request) {
         if (request == null) {
-            throw new AppException(ErrorCode.BAD_REQUEST);
+            throw new AppException(CommonErrorCode.BAD_REQUEST);
         }
 
         Employee shipper = getCurrentShipperEmployee();
@@ -54,7 +55,7 @@ public class ShipperVehicleSettingService {
 
         String validationError = validate(targetType, maxOrders, maxWeightKg, batteryLevel);
         if (validationError != null) {
-            throw new AppException(ErrorCode.BAD_REQUEST);
+            throw new AppException(CommonErrorCode.BAD_REQUEST);
         }
 
         vehicle.setVehicleType(targetType);
@@ -74,7 +75,7 @@ public class ShipperVehicleSettingService {
     @Transactional
     public ShipperVehicleSettingResponseDto updateMyVehicleStatus(ShipperVehicleStatusUpdateRequestDto request) {
         if (request == null || request.getStatus() == null) {
-            throw new AppException(ErrorCode.BAD_REQUEST);
+            throw new AppException(CommonErrorCode.BAD_REQUEST);
         }
 
         Employee shipper = getCurrentShipperEmployee();
@@ -89,7 +90,7 @@ public class ShipperVehicleSettingService {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
         return employeeRepository.findByUserId(userId).stream()
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin nhân viên shipper"));
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
     }
 
     private ShipperVehicle getOrCreateDefaultVehicle(Employee shipper) {

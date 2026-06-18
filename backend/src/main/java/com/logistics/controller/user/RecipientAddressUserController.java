@@ -44,7 +44,7 @@ public class RecipientAddressUserController {
             @Valid UserRecipientAddressSearchRequest userRecipientAddressSearchRequest) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, userRecipientAddressSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, userRecipientAddressSearchRequest)));
     }
 
     @PostMapping
@@ -53,7 +53,7 @@ public class RecipientAddressUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, recipientAddressUserRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.create(userId, recipientAddressUserRequest)));
     }
 
     @PutMapping("/{id}")
@@ -63,16 +63,17 @@ public class RecipientAddressUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.update(userId, id, recipientAddressUserRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.update(userId, id, recipientAddressUserRequest)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> delete(
+    public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable int id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.delete(userId, id));
+        service.delete(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/suggestion")
@@ -83,7 +84,7 @@ public class RecipientAddressUserController {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getRecipientSuggestion(userId, recipientSuggestionRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.getRecipientSuggestion(userId, recipientSuggestionRequest)));
     }
 
     @GetMapping("/export")

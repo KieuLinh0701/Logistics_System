@@ -12,6 +12,9 @@ import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.PickupAttemptStatus;
 import com.logistics.enums.PickupFailReason;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.OrderErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.repository.UserRepository;
@@ -37,10 +40,10 @@ public class PickupAttemptService {
             String note) {
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         User shipper = userRepository.findById(shipperId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy shipper"));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
         Integer nextAttempt = 1;
         var recent = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(orderId);

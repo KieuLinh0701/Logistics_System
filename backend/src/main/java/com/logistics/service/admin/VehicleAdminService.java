@@ -21,8 +21,8 @@ import com.logistics.entity.Vehicle;
 import com.logistics.enums.VehicleStatus;
 import com.logistics.enums.VehicleType;
 import com.logistics.exception.AppException;
-import com.logistics.exception.VehicleErrorCode;
-import com.logistics.exception.OfficeErrorCode;
+import com.logistics.exception.enums.VehicleErrorCode;
+import com.logistics.exception.enums.OfficeErrorCode;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.VehicleRepository;
 import com.logistics.response.Pagination;
@@ -93,11 +93,11 @@ public class VehicleAdminService {
     @Transactional
     public void createVehicle(CreateVehicleRequest request) {
         if (vehicleRepository.existsByLicensePlate(request.getLicensePlate())) {
-            throw new AppException(VehicleErrorCode.LICENSE_PLATE_EXISTED);
+            throw new AppException(VehicleErrorCode.VEHICLE_LICENSE_PLATE_EXISTED);
         }
 
         Office office = officeRepository.findById(request.getOfficeId())
-                .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
 
         Vehicle vehicle = new Vehicle();
         vehicle.setLicensePlate(request.getLicensePlate());
@@ -112,7 +112,7 @@ public class VehicleAdminService {
     @Transactional
     public void updateVehicle(Integer vehicleId, UpdateVehicleRequest request) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> new AppException(VehicleErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
 
         if (request.getType() != null)
             vehicle.setType(VehicleType.valueOf(request.getType()));
@@ -124,7 +124,7 @@ public class VehicleAdminService {
             vehicle.setDescription(request.getDescription());
         if (request.getOfficeId() != null) {
             Office office = officeRepository.findById(request.getOfficeId())
-                    .orElseThrow(() -> new AppException(OfficeErrorCode.NOT_FOUND));
+                    .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
             vehicle.setOffice(office);
         }
         vehicle = vehicleRepository.save(vehicle);
@@ -133,7 +133,7 @@ public class VehicleAdminService {
     @Transactional
     public void deleteVehicle(Integer vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> new AppException(VehicleErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
 
         vehicleRepository.delete(vehicle);
     }
@@ -170,7 +170,7 @@ public class VehicleAdminService {
 
     public Map<String, Object> getVehicleById(Integer vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> new AppException(VehicleErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
         return mapVehicle(vehicle);
     }
 

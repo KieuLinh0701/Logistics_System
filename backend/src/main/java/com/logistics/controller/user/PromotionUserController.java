@@ -29,7 +29,7 @@ public class PromotionUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         
-        ApiResponse<ListResponse<UserPromotionDto>> result = service.getActiveUserPromotions(userId, promotionUserRequest);
-        return ResponseEntity.ok(result);
+        ListResponse<UserPromotionDto> result = service.getActiveUserPromotions(userId, promotionUserRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

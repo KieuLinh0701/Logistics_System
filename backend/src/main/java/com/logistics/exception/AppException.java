@@ -1,5 +1,6 @@
 package com.logistics.exception;
 
+import com.logistics.exception.enums.BaseErrorCode;
 import lombok.Getter;
 
 @Getter

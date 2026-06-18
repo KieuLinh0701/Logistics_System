@@ -4,6 +4,8 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.OrderAdminService;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +31,7 @@ public class OrderAdminController {
             @RequestParam(required = false) String status) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(orderAdminService.listOrders(page, limit, search, status)));
@@ -38,7 +40,7 @@ public class OrderAdminController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteOrder(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         orderAdminService.deleteOrder(id);
@@ -48,7 +50,7 @@ public class OrderAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ManagerOrderDetailDto>> getOrderDetail(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         return ResponseEntity.ok(ApiResponse.success(orderAdminService.getOrderById(id)));
