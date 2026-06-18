@@ -1,6 +1,7 @@
 package com.logistics.utils;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,6 +21,7 @@ public class EmailService {
 
     private final String LOGIN_URL = allowedOrigins + "/login";
 
+    @Async
     public void sendOTPEmail(String to, String otp, String subject) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -35,6 +37,7 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    @Async
     public void sendAlertEmail(String to, String subject, String alertMessage) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -50,6 +53,7 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    @Async
     public void sendNewEmployeeAccountEmail(String to, String tempPassword, String firstName, String lastName) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -68,6 +72,7 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    @Async
     public void sendRecruitmentAccountEmail(String to, String tempPassword, String firstName, String lastName, String jobTitle, String officeName, String shift, String startDate) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
@@ -133,7 +138,8 @@ public class EmailService {
         message.setText(content);
         mailSender.send(message);
     }
-    
+
+    @Async
     public void sendRecruitmentRejectionEmail(String to) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
