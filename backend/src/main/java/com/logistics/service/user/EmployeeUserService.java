@@ -9,7 +9,7 @@ import com.logistics.entity.Role;
 import com.logistics.entity.ShopWorkHistory;
 import com.logistics.entity.User;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.mapper.UserMapper;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
@@ -21,13 +21,11 @@ import com.logistics.request.user.employee.EmployeeSearchUserRequest;
 import com.logistics.request.user.employee.ShopWorkHistorySearchUserRequest;
 import com.logistics.request.user.employee.UpdateEmployeeUserRequest;
 import com.logistics.request.user.employee.UpdateIsActiveUserRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.PasswordUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.aop.framework.AopConfigException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -165,7 +163,7 @@ public class EmployeeUserService {
         AccountRole accountRole = accountRoleRepository
                 .findByAccountIdAndRoleId(targetUser.getAccount()
                         .getId(), request.getRoleId())
-                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_ROLE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_EMPLOYEE_ROLE_NOT_FOUND));
 
         Integer shopId = userUserService.getShopId(currentUser);
 
@@ -242,7 +240,7 @@ public class EmployeeUserService {
 
             // Đã thuộc shop khác rồi
             if (targetUser.getCurrentShop() != null) {
-                throw new AppException(ErrorCode.EMPLOYEE_ALREADY_IN_ANOTHER_SHOP);
+                throw new AppException(UserErrorCode.USER_EMPLOYEE_ALREADY_IN_ANOTHER_SHOP);
             }
 
             // Gán vào shop
@@ -252,7 +250,7 @@ public class EmployeeUserService {
         } else {
             // Kiểm tra sđt trùng
             if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                throw new AppException(ErrorCode.EMPLOYEE_PHONE_NUMBER_EXISTED);
+                throw new AppException(UserErrorCode.USER_EMPLOYEE_PHONE_NUMBER_EXISTED);
             }
 
             // Generate password
@@ -314,7 +312,7 @@ public class EmployeeUserService {
         // Kiểm tra sđt trùng nếu thay đổi
         if (!targetUser.getPhoneNumber().equals(request.getPhoneNumber())
                 && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new AppException(ErrorCode.EMPLOYEE_PHONE_NUMBER_EXISTED);
+            throw new AppException(UserErrorCode.USER_EMPLOYEE_PHONE_NUMBER_EXISTED);
         }
 
         targetUser.setFirstName(request.getFirstName());
@@ -375,7 +373,7 @@ public class EmployeeUserService {
 
     private User getUser(int userId) {
         return userRepository.findByIdWithRoles(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
     }
 
     private void checkShopPermission(User currentUser, User targetUser) {
@@ -390,7 +388,7 @@ public class EmployeeUserService {
                 : null;
 
         if (targetShopId == null || !targetShopId.equals(currentShopId)) {
-            throw new AppException(ErrorCode.EMPLOYEE_PERMISSION_DENIED);
+            throw new AppException(UserErrorCode.USER_EMPLOYEE_PERMISSION_DENIED);
         }
     }
 
@@ -404,7 +402,7 @@ public class EmployeeUserService {
                         .getUserOwner() != null);
 
         if (hasActiveShopRole) {
-            throw new AppException(ErrorCode.EMPLOYEE_HAS_ACTIVE_ROLE);
+            throw new AppException(UserErrorCode.USER_EMPLOYEE_HAS_ACTIVE_ROLE);
         }
     }
 }

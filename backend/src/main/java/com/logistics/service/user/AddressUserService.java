@@ -5,12 +5,12 @@ import com.logistics.enums.AddressType;
 import com.logistics.entity.Address;
 import com.logistics.entity.User;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
+import com.logistics.exception.enums.AddressErrorCode;
+import com.logistics.exception.enums.BaseErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.mapper.AddressMapper;
 import com.logistics.repository.AddressRepository;
-import com.logistics.repository.UserRepository;
 import com.logistics.request.user.address.AddressUserRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.utils.AddressUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class AddressUserService {
                     shopId,
                     AddressType.SENDER);
             if (count >= 10) {
-                throw new AppException(ErrorCode.MAX_ADDRESS_LIMIT_REACHED);
+                throw new AppException(AddressErrorCode.ADDRESS_MAX_LIMIT_REACHED);
             }
 
             String fullAddress = AddressUtils.buildFullAddress(
@@ -88,7 +88,7 @@ public class AddressUserService {
             Integer shopId = userService.getShopId(userId);
 
             Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
-                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
+                    .orElseThrow(() -> new AppException(AddressErrorCode.ADDRESS_NOT_FOUND));
 
             String fullAddress = AddressUtils.buildFullAddress(
                     request.getDetail(),
@@ -121,10 +121,10 @@ public class AddressUserService {
             Integer shopId = userService.getShopId(userId);
 
             Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
-                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
+                    .orElseThrow(() -> new AppException(AddressErrorCode.ADDRESS_NOT_FOUND));
 
             if (Boolean.TRUE.equals(address.getIsDefault())) {
-                throw new AppException(ErrorCode.ADDRESS_IS_DEFAULT);
+                throw new AppException(AddressErrorCode.ADDRESS_IS_DEFAULT);
             }
 
             delete(address);
@@ -135,7 +135,7 @@ public class AddressUserService {
             Integer shopId = userService.getShopId(userId);
 
             Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
-                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
+                    .orElseThrow(() -> new AppException(AddressErrorCode.ADDRESS_NOT_FOUND));
 
             addressRepository.clearDefaultExcept(shopId, id, AddressType.SENDER);
             address.setIsDefault(true);

@@ -54,7 +54,7 @@ public class EmployeeUserController {
     @PatchMapping("/{id}/active")
     public ResponseEntity<ApiResponse<Void>> updateIsActive(
             @PathVariable Integer id,
-            @RequestBody UpdateIsActiveUserRequest updateIsActiveUserRequest,
+            @Valid @RequestBody UpdateIsActiveUserRequest updateIsActiveUserRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 

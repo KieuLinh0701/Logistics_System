@@ -1,7 +1,6 @@
 package com.logistics.service.user;
 
 import java.io.ByteArrayOutputStream;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -10,8 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.logistics.entity.ShippingRequest;
-import com.logistics.specification.ShippingRequestSpecification;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.ProductErrorCode;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
@@ -44,8 +44,6 @@ import com.logistics.enums.ProductStatus;
 import com.logistics.enums.ProductType;
 import com.logistics.mapper.ProductMapper;
 import com.logistics.repository.ProductRepository;
-import com.logistics.repository.UserRepository;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
@@ -56,8 +54,6 @@ import lombok.RequiredArgsConstructor;
 
 import static com.logistics.utils.ProductUtils.translateProductStatus;
 import static com.logistics.utils.ProductUtils.translateProductType;
-import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
-import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -67,12 +63,9 @@ public class ProductUserService {
 
     private final ProductRepository repository;
 
-    private final UserRepository userRepository;
-
     private final UserUserService userService;
 
-    public ApiResponse<ListResponse<ProductDto>> list(int userId, UserProductSearchRequest request) {
-        try {
+    public ListResponse<ProductDto> list(int userId, UserProductSearchRequest request) {
             Integer shopId = userService.getShopId(userId);
 
             int page = request.getPage();
@@ -126,22 +119,19 @@ public class ProductUserService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách sản phẩm thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     private void checkUserPermission(int userId, Product product) {
         if (product.getUser() == null || !product.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Không có quyền thực hiện thao tác này");
+            throw new AppException(ProductErrorCode.PRODUCT_PERMISSION_DENIED);
         }
     }
 
     private void checkDuplicateName(int userId, String name) {
         boolean exists = repository.existsByUserIdAndName(userId, name.trim());
         if (exists) {
-            throw new RuntimeException("Sản phẩm với tên này đã tồn tại");
+            throw new AppException(ProductErrorCode.PRODUCT_NAME_EXISTS);
         }
     }
 
@@ -153,42 +143,28 @@ public class ProductUserService {
                     ObjectUtils.asMap("folder", "products", "resource_type", "image"));
             return result.get("secure_url").toString();
         } catch (Exception e) {
-            throw new RuntimeException("Upload ảnh thất bại: " + e.getMessage());
+            throw new AppException(CommonErrorCode.CLOUDINARY_UPLOAD_FAILED);
         }
     }
 
     private ProductDto createProduct(int userId, UserProductForm request) {
 
-        if (request.getName() == null || request.getName().isBlank()) {
-            throw new RuntimeException("Tên sản phẩm không được để trống");
-        }
-        if (request.getPrice() == null || request.getPrice() < 0) {
-            throw new RuntimeException("Giá sản phẩm không được để trống hoặc âm");
-        }
-        if (request.getWeight() == null || request.getWeight().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Trọng lượng sản phẩm phải lớn hơn 0");
-        }
-        if (request.getType() == null || request.getType().isBlank()) {
-            throw new RuntimeException("Loại sản phẩm không được để trống");
-        }
+        checkDuplicateName(userId, request.name());
 
-        checkDuplicateName(userId, request.getName());
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        User user = userService.getUser(userId);
 
         Product product = new Product();
         product.setUser(user);
-        product.setName(request.getName());
-        product.setWeight(request.getWeight());
-        product.setPrice(request.getPrice());
-        product.setType(ProductType.valueOf(request.getType()));
+        product.setName(request.name());
+        product.setWeight(request.weight());
+        product.setPrice(request.price());
+        product.setType(ProductType.valueOf(request.type()));
         product.setStatus(
-                request.getStatus() != null ? ProductStatus.valueOf(request.getStatus()) : ProductStatus.ACTIVE);
-        product.setStock(request.getStock() != null ? request.getStock() : 0);
+                request.status() != null ? ProductStatus.valueOf(request.status()) : ProductStatus.ACTIVE);
+        product.setStock(request.stock() != null ? request.stock() : 0);
 
-        if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-            product.setImage(uploadImage(request.getImageFile()));
+        if (request.imageFile() != null && !request.imageFile().isEmpty()) {
+            product.setImage(uploadImage(request.imageFile()));
         }
 
         product = repository.save(product);
@@ -196,70 +172,55 @@ public class ProductUserService {
         return ProductMapper.toDto(product);
     }
 
-    public ApiResponse<ProductDto> create(int userId, UserProductForm request) {
-        try {
+    public ProductDto create(int userId, UserProductForm request) {
             Integer shopId = userService.getShopId(userId);
 
-            ProductDto dto = createProduct(shopId, request);
-            return new ApiResponse<>(true, "Thêm sản phẩm thành công", dto);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+            return createProduct(shopId, request);
     }
 
-    public ApiResponse<ProductDto> update(int userId, UserProductForm request) {
-        try {
+    public ProductDto update(int userId, UserProductForm request) {
             Integer shopId = userService.getShopId(userId);
 
-            Product product = repository.findById(request.getId())
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+            Product product = getProduct(request.id());
 
             checkUserPermission(shopId, product);
 
-            if (request.getName() != null && !request.getName().equals(product.getName())) {
-                checkDuplicateName(shopId, request.getName());
-                product.setName(request.getName());
+            if (request.name() != null && !request.name().equals(product.getName())) {
+                checkDuplicateName(shopId, request.name());
+                product.setName(request.name());
             }
 
-            product.setWeight(request.getWeight() != null ? request.getWeight() : product.getWeight());
-            product.setPrice(request.getPrice() != null ? request.getPrice() : product.getPrice());
-            product.setType(request.getType() != null ? ProductType.valueOf(request.getType()) : product.getType());
+            product.setWeight(request.weight() != null ? request.weight() : product.getWeight());
+            product.setPrice(request.price() != null ? request.price() : product.getPrice());
+            product.setType(request.type() != null ? ProductType.valueOf(request.type()) : product.getType());
             product.setStatus(
-                    request.getStatus() != null ? ProductStatus.valueOf(request.getStatus()) : product.getStatus());
-            product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
+                    request.status() != null ? ProductStatus.valueOf(request.status()) : product.getStatus());
+            product.setStock(request.stock() != null ? request.stock() : product.getStock());
 
-            if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
-                product.setImage(uploadImage(request.getImageFile()));
+            if (request.imageFile() != null && !request.imageFile().isEmpty()) {
+                product.setImage(uploadImage(request.imageFile()));
             }
 
             repository.save(product);
 
-            return new ApiResponse<>(true, "Cập nhật sản phẩm thành công", ProductMapper.toDto(product));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+            return ProductMapper.toDto(product);
     }
 
-    public ApiResponse<ProductDto> delete(int userId, @NonNull Integer productId) {
-        try {
+    public ProductDto delete(int userId, @NonNull Integer productId) {
             Integer shopId = userService.getShopId(userId);
 
-            Product product = repository.findById(productId)
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+            Product product = getProduct(productId);
 
             checkUserPermission(shopId, product);
 
             if (product.getSoldQuantity() > 0
                     || (product.getOrderProducts() != null && !product.getOrderProducts().isEmpty())) {
-                return new ApiResponse<>(false, "Sản phẩm đã có đơn hàng, không thể xóa", null);
+                throw new AppException(ProductErrorCode.PRODUCT_HAS_ORDER);
             }
 
             repository.delete(product);
 
-            return new ApiResponse<>(true, "Xóa sản phẩm thành công", ProductMapper.toDto(product));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+            return ProductMapper.toDto(product);
     }
 
     @Transactional
@@ -272,7 +233,7 @@ public class ProductUserService {
 
         for (UserProductForm form : request.getProducts()) {
 
-            String trimmedName = form.getName() != null ? form.getName().trim() : "";
+            String trimmedName = form.name() != null ? form.name().trim() : "";
 
             BulkResponse.BulkResult<ProductDto> result = new BulkResponse.BulkResult<>();
             result.setName(trimmedName);
@@ -280,11 +241,11 @@ public class ProductUserService {
             List<String> missing = new ArrayList<>();
             if (trimmedName.isEmpty())
                 missing.add("tên");
-            if (form.getWeight() == null)
+            if (form.weight() == null)
                 missing.add("trọng lượng");
-            if (form.getPrice() == null)
+            if (form.price() == null)
                 missing.add("giá");
-            if (form.getType() == null)
+            if (form.type() == null)
                 missing.add("loại");
 
             if (!missing.isEmpty()) {
@@ -336,9 +297,8 @@ public class ProductUserService {
         return response;
     }
 
-    public ApiResponse<ListResponse<ProductDto>> getActiveAndInstockUserProducts(int userId,
+    public ListResponse<ProductDto> getActiveAndInstockUserProducts(int userId,
             UserProductSearchRequest request) {
-        try {
             Integer shopId = userService.getShopId(userId);
 
             int page = request.getPage();
@@ -370,10 +330,7 @@ public class ProductUserService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách sản phẩm đang bán được thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     @Transactional
@@ -482,7 +439,12 @@ public class ProductUserService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR, e);
         }
+    }
+
+    private Product getProduct(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new AppException(ProductErrorCode.PRODUCT_NOT_FOUND));
     }
 }

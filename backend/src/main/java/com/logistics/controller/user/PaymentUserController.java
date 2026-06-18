@@ -1,5 +1,6 @@
 package com.logistics.controller.user;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +24,7 @@ public class PaymentUserController {
 
     @PostMapping("/vnpay/check")
     public ResponseEntity<ApiResponse<Void>> vnPayReturn(
-            @RequestBody UserPaymentCheck paymentCheck) {
+            @Valid @RequestBody UserPaymentCheck paymentCheck) {
 
         if (service.handleVNPayReturn(paymentCheck)) {
             return ResponseEntity.ok(ApiResponse.success("Thanh toán thành công", null));

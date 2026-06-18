@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
 import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -27,17 +28,17 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user/settlement-batchs")
 public class SettlementBatchUserController {
 
-    @Autowired
-    private SettlementBatchUserService service;
+    private final SettlementBatchUserService service;
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<UserSettlementSummaryResponse>> getSummary(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.getSummary(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.getSummary(userId)));
     }
 
     @GetMapping()
@@ -46,9 +47,8 @@ public class SettlementBatchUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<UserSettlementBatchListDto>> result = service.list(userId,
-                searchRequest);
-        return ResponseEntity.ok(result);
+        ListResponse<UserSettlementBatchListDto> result = service.list(userId, searchRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}")
@@ -57,10 +57,10 @@ public class SettlementBatchUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<UserSettlementBatchListDto> result = service.getBySettlementBatchId(
+        UserSettlementBatchListDto result = service.getBySettlementBatchId(
                 userId,
                 id);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}/orders")
@@ -70,11 +70,11 @@ public class SettlementBatchUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<UserSettlementOrderDto>> result = service.getOrdersBySettlementBatchId(
+        ListResponse<UserSettlementOrderDto> result = service.getOrdersBySettlementBatchId(
                 userId,
                 id,
                 searchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}/transactions")
@@ -83,11 +83,11 @@ public class SettlementBatchUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<List<UserSettlementTransactionDto>> result = service
+        List<UserSettlementTransactionDto> result = service
                 .getSettlementTransactionsBySettlementBatchId(
                         userId,
                         id);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/export")

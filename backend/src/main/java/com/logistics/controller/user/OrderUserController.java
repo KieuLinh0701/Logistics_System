@@ -60,7 +60,7 @@ public class OrderUserController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderCreateSuccess>> create(
-            @RequestBody UserOrderCreateRequest userOrderCreateRequest,
+            @Valid @RequestBody UserOrderCreateRequest userOrderCreateRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
@@ -70,7 +70,7 @@ public class OrderUserController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Integer id,
-            @RequestBody UserOrderCreateRequest userOrderCreateRequest,
+            @Valid @RequestBody UserOrderCreateRequest userOrderCreateRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
@@ -88,7 +88,8 @@ public class OrderUserController {
     }
 
     @GetMapping("/id/{id}")
-    public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderById(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<UserOrderDetailDto>> getOrderById(
+            @PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 

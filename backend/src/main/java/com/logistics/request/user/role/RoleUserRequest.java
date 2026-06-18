@@ -1,19 +1,17 @@
 package com.logistics.request.user.role;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class RoleUserRequest {
-    private String name;
-    private String description;
-    private List<Integer> permissionGroupIds;
-}
+public record RoleUserRequest(
+
+        @NotBlank(message = "Tên nhóm quyền không được để trống")
+        String name,
+
+        @NotBlank(message = "Mô tả nhóm quyền không được để trống")
+        String description,
+
+        @NotEmpty(message = "Phải chọn ít nhất một nhóm quyền")
+        List<Integer> permissionGroupIds
+) {}

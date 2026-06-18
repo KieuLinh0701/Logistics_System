@@ -27,6 +27,6 @@ public class PermissionModuleUserController {
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<List<PermissionModuleDto>>> activeList() {
 
-        return ResponseEntity.ok(service.activeList());
+        return ResponseEntity.ok(ApiResponse.success(service.activeList()));
     }
 }

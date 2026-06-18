@@ -35,7 +35,7 @@ public class RoleUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, roleSearchUserRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, roleSearchUserRequest)));
     }
 
     @GetMapping("/all")
@@ -43,7 +43,7 @@ public class RoleUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.findAll(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.findAll(userId)));
     }
 
     @GetMapping("/{id}")
@@ -52,7 +52,7 @@ public class RoleUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.detail(userId, id));
+        return ResponseEntity.ok(ApiResponse.success(service.detail(userId, id)));
     }
 
     @PostMapping
@@ -61,7 +61,8 @@ public class RoleUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, roleUserRequest));
+        service.create(userId, roleUserRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PutMapping("/{id}")
@@ -70,7 +71,8 @@ public class RoleUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.update(userId, id, roleUserRequest));
+        service.update(userId, id, roleUserRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @DeleteMapping("/{id}")
@@ -78,6 +80,7 @@ public class RoleUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.delete(userId, id));
+        service.delete(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
