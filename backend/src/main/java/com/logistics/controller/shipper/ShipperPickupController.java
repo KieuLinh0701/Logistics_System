@@ -15,6 +15,8 @@ import com.logistics.request.shipper.PickupAttemptRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.PickupAttemptService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,14 +37,14 @@ public class ShipperPickupController {
             @RequestBody PickupAttemptRequest request) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         PickupAttemptStatus status;
         try {
             status = PickupAttemptStatus.valueOf(request.getStatus().toUpperCase());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Trạng thái không hợp lệ", null));
+            throw new AppException(CommonErrorCode.INVALID_ENUM_VALUE);
         }
 
         PickupFailReason failReason = null;
@@ -50,12 +52,12 @@ public class ShipperPickupController {
             try {
                 failReason = PickupFailReason.valueOf(request.getFailReason().toUpperCase());
             } catch (Exception e) {
-                return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Lý do thất bại không hợp lệ", null));
+                throw new AppException(CommonErrorCode.INVALID_ENUM_VALUE);
             }
         }
 
         if (status == PickupAttemptStatus.FAILED && failReason == null) {
-            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng chọn lý do thất bại", null));
+            throw new AppException(CommonErrorCode.VALIDATION_ERROR);
         }
 
         Integer shipperId = SecurityUtils.getAuthenticatedUserId();
@@ -67,6 +69,6 @@ public class ShipperPickupController {
                 failReason,
                 request.getNote());
 
-        return ResponseEntity.ok(new ApiResponse<>(true, "Ghi nhận lần lấy hàng thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận lần lấy hàng thành công", data));
     }
 }

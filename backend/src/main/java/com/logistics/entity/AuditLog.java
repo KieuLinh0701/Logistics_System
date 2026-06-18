@@ -39,7 +39,7 @@ public class AuditLog {
 
     // Nhân viên thuộc bưu cục
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "offfice_id")
+    @JoinColumn(name = "office_id")
     private Office office;
 
     @ManyToOne(fetch = FetchType.LAZY)

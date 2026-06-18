@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdateServiceTypeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ServiceTypeAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,66 +31,50 @@ public class ServiceTypeAdminController {
             @RequestParam(required = false) String search) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(serviceTypeAdminService.listServiceTypes(page, limit, search));
+        return ResponseEntity.ok(ApiResponse.success(serviceTypeAdminService.listServiceTypes(page, limit, search)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getServiceTypeById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<Map<String, Object>> response = serviceTypeAdminService.getServiceTypeById(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(serviceTypeAdminService.getServiceTypeById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createServiceType(@RequestBody CreateServiceTypeRequest request) {
+    public ResponseEntity<ApiResponse<String>> createServiceType(@RequestBody CreateServiceTypeRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<Map<String, Object>> response = serviceTypeAdminService.createServiceType(request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.status(201).body(response);
+        serviceTypeAdminService.createServiceType(request);
+        return ResponseEntity.status(201).body(ApiResponse.success("Tạo loại dịch vụ thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updateServiceType(
+    public ResponseEntity<ApiResponse<String>> updateServiceType(
             @PathVariable Integer id,
             @RequestBody UpdateServiceTypeRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<Map<String, Object>> response = serviceTypeAdminService.updateServiceType(id, request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.ok(response);
+        serviceTypeAdminService.updateServiceType(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật loại dịch vụ thành công"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteServiceType(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<String> response = serviceTypeAdminService.deleteServiceType(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        serviceTypeAdminService.deleteServiceType(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa loại dịch vụ thành công"));
     }
 }
-
-
-

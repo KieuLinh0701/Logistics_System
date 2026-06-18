@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/shipping-requests")
@@ -22,22 +23,24 @@ public class ShippingRequestAdminController {
     private NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<java.util.Map<String, Object>>>> list() {
-        return ResponseEntity.ok(shippingRequestAdminService.listAll());
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list() {
+        return ResponseEntity.ok(ApiResponse.success(shippingRequestAdminService.listAll()));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ShippingRequest>> detail(@PathVariable Integer id) {
-        return ResponseEntity.ok(shippingRequestAdminService.detail(id));
+        return ResponseEntity.ok(ApiResponse.success(shippingRequestAdminService.detail(id)));
     }
 
     @PatchMapping("/{id}/assign")
     public ResponseEntity<ApiResponse<String>> assignOffice(@PathVariable Integer id, @RequestParam Integer officeId) {
-        return ResponseEntity.ok(shippingRequestAdminService.assignOffice(id, officeId));
+        shippingRequestAdminService.assignOffice(id, officeId);
+        return ResponseEntity.ok(ApiResponse.success("Đã phân công cho bưu cục"));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<String>> updateStatus(@PathVariable Integer id, @RequestParam ShippingRequestStatus status) {
-        return ResponseEntity.ok(shippingRequestAdminService.updateStatus(id, status));
+        shippingRequestAdminService.updateStatus(id, status);
+        return ResponseEntity.ok(ApiResponse.success("Đã cập nhật trạng thái"));
     }
 }

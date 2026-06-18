@@ -5,6 +5,8 @@ import com.logistics.request.shipper.SubmitCODRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.CODShipperService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,28 +33,28 @@ public class CODShipperController {
             @RequestParam(required = false) String dateTo) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(codShipperService.getCODTransactions(page, limit, status, dateFrom, dateTo));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODTransactions(page, limit, status, dateFrom, dateTo)));
     }
 
     @PostMapping("/collect")
     public ResponseEntity<ApiResponse<Map<String, Object>>> collectCOD(@RequestBody CollectCODRequest request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(codShipperService.collectCOD(request));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.collectCOD(request)));
     }
 
     @PostMapping("/submit")
     public ResponseEntity<ApiResponse<Map<String, Object>>> submitCOD(@RequestBody SubmitCODRequest request) {
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(codShipperService.submitCOD(request));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.submitCOD(request)));
     }
 
     @GetMapping("/history")
@@ -64,9 +66,9 @@ public class CODShipperController {
             @RequestParam(required = false) String dateTo) {
 
         if (isNotShipper()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(codShipperService.getCODSubmissionHistory(page, limit, status, dateFrom, dateTo));
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODSubmissionHistory(page, limit, status, dateFrom, dateTo)));
     }
 }

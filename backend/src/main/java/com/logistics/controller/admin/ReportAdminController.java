@@ -5,6 +5,7 @@ import com.logistics.dto.admin.AdminShipperReportDto;
 import com.logistics.dto.admin.AdminOfficeReportDto;
 import com.logistics.dto.admin.AdminShopReportDto;
 import com.logistics.dto.admin.AdminOverviewDto;
+import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ReportAdminService;
 
 import java.time.LocalDate;
@@ -36,57 +37,57 @@ public class ReportAdminController {
     }
 
     @GetMapping("/financial")
-    public ResponseEntity<List<AdminFinancialPoint>> financial(
+    public ResponseEntity<ApiResponse<List<AdminFinancialPoint>>> financial(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<com.logistics.dto.admin.AdminFinancialPoint> points = reportService.getFinancialByDate(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(points);
+        return ResponseEntity.ok(ApiResponse.success(points));
     }
 
     @GetMapping("/shipper")
-    public ResponseEntity<List<AdminShipperReportDto>> shippersSummary(
+    public ResponseEntity<ApiResponse<List<AdminShipperReportDto>>> shippersSummary(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<AdminShipperReportDto> list = reportService.getShipperReport(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(ApiResponse.success(list));
     }
 
     @GetMapping("/shipper/{shipperId}")
-    public ResponseEntity<AdminShipperReportDto> shipperDetail(@PathVariable Integer shipperId,
+    public ResponseEntity<ApiResponse<AdminShipperReportDto>> shipperDetail(@PathVariable Integer shipperId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<AdminShipperReportDto> list = reportService.getShipperReport(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(list.stream().filter(it -> it.getShipperId().equals(shipperId)).findFirst().orElse(null));
+        return ResponseEntity.ok(ApiResponse.success(list.stream().filter(it -> it.getShipperId().equals(shipperId)).findFirst().orElse(null)));
     }
 
     @GetMapping("/transferred")
-    public ResponseEntity<List<AdminFinancialPoint>> transferred(
+    public ResponseEntity<ApiResponse<List<AdminFinancialPoint>>> transferred(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<AdminFinancialPoint> points = reportService.getTransferredByDate(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(points);
+        return ResponseEntity.ok(ApiResponse.success(points));
     }
 
     @GetMapping("/fees")
-    public ResponseEntity<List<AdminFinancialPoint>> fees(
+    public ResponseEntity<ApiResponse<List<AdminFinancialPoint>>> fees(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<AdminFinancialPoint> points = reportService.getShippingFeeByDate(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(points);
+        return ResponseEntity.ok(ApiResponse.success(points));
     }
 
     @GetMapping("/operations")
-    public ResponseEntity<List<Map<String, Object>>> operations(
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> operations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
@@ -108,47 +109,47 @@ public class ReportAdminController {
             m.put("returnRate", returnRate);
             return m;
         }).toList();
-        return ResponseEntity.ok(out);
+        return ResponseEntity.ok(ApiResponse.success(out));
     }
 
     @GetMapping("/overview")
-    public ResponseEntity<AdminOverviewDto> overview(
+    public ResponseEntity<ApiResponse<AdminOverviewDto>> overview(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         AdminOverviewDto dto = reportService.getOverview(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
     @GetMapping("/offices")
-    public ResponseEntity<List<java.util.Map<String, Object>>> offices(
+    public ResponseEntity<ApiResponse<List<java.util.Map<String, Object>>>> offices(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<java.util.Map<String, Object>> list = reportService.getOfficeReportDetailed(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(ApiResponse.success(list));
     }
 
     @GetMapping("/shippers")
-    public ResponseEntity<List<java.util.Map<String, Object>>> shippers(
+    public ResponseEntity<ApiResponse<List<java.util.Map<String, Object>>>> shippers(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         List<java.util.Map<String, Object>> list = reportService.getShipperReportDetailed(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(ApiResponse.success(list));
     }
 
     @GetMapping("/finance")
-    public ResponseEntity<java.util.Map<String, Object>> finance(
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> finance(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         java.util.Map<String, Object> report = reportService.getFinanceReport(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(report);
+        return ResponseEntity.ok(ApiResponse.success(report));
     }
 
     @GetMapping("/operations/export")
@@ -217,21 +218,21 @@ public class ReportAdminController {
         }
 
     @GetMapping("/office")
-    public ResponseEntity<List<AdminOfficeReportDto>> officeReport(
+    public ResponseEntity<ApiResponse<List<AdminOfficeReportDto>>> officeReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
-        return ResponseEntity.ok(reportService.getOfficeReport(s.atStartOfDay(), e.atTime(LocalTime.MAX)));
+        return ResponseEntity.ok(ApiResponse.success(reportService.getOfficeReport(s.atStartOfDay(), e.atTime(LocalTime.MAX))));
     }
 
     @GetMapping("/shop")
-    public ResponseEntity<List<AdminShopReportDto>> shopReport(
+    public ResponseEntity<ApiResponse<List<AdminShopReportDto>>> shopReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
-        return ResponseEntity.ok(reportService.getShopReport(s.atStartOfDay(), e.atTime(LocalTime.MAX)));
+        return ResponseEntity.ok(ApiResponse.success(reportService.getShopReport(s.atStartOfDay(), e.atTime(LocalTime.MAX))));
     }
 
     @GetMapping("/office/export")

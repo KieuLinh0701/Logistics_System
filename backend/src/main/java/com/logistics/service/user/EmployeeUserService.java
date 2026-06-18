@@ -8,6 +8,7 @@ import com.logistics.entity.AccountRole;
 import com.logistics.entity.Role;
 import com.logistics.entity.ShopWorkHistory;
 import com.logistics.entity.User;
+import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.mapper.UserMapper;

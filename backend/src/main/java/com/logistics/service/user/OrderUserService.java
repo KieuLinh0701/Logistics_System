@@ -758,7 +758,7 @@ public class OrderUserService {
             List<Order> orders = repository.findByUserIdAndIdIn(shopId, orderIds);
 
             if (orders.isEmpty()) {
-                throw new AppException(OrderErrorCode.ORDERS_NOT_FOUND_TO_PRINT);
+                throw new AppException(OrderErrorCode.ORDER_NOT_FOUND_TO_PRINT);
             }
 
             // Lọc chỉ những đơn có thể in
@@ -767,7 +767,7 @@ public class OrderUserService {
                     .toList();
 
             if (printableOrders.isEmpty()) {
-                throw new AppException(OrderErrorCode.ORDERS_NOT_FOUND_TO_PRINT);
+                throw new AppException(OrderErrorCode.ORDER_NOT_FOUND_TO_PRINT);
             }
 
             // Chuyển sang DTO

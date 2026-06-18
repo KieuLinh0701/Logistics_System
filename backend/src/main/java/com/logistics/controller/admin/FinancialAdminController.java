@@ -8,6 +8,8 @@ import com.logistics.dto.admin.AdminPaymentSubmissionListDto;
 import com.logistics.entity.PaymentSubmissionBatch;
 import com.logistics.service.admin.FinancialAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,35 +34,33 @@ public class FinancialAdminController {
     public ResponseEntity<ApiResponse<ListResponse<AdminPaymentSubmissionListDto>>> listSubmissions(
             @RequestParam(required = false) String status) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(service.listSubmissions(status));
+        return ResponseEntity.ok(ApiResponse.success(service.listSubmissions(status)));
     }
 
     @PutMapping("/submissions/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> processSubmission(
+    public ResponseEntity<ApiResponse<String>> processSubmission(
             @PathVariable Integer id,
             @RequestBody CreatePaymentSubmissionRequest form) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
         Integer adminId = SecurityUtils.getAuthenticatedUserId();
-        ApiResponse<Boolean> resp = service.processSubmission(adminId, id, form);
-        if (!resp.isSuccess()) return ResponseEntity.status(400).body(resp);
-        return ResponseEntity.ok(resp);
+        service.processSubmission(adminId, id, form);
+        return ResponseEntity.ok(ApiResponse.success("Xử lý đối soát thành công"));
     }
 
     @PostMapping("/batches/{id}/complete")
-    public ResponseEntity<ApiResponse<Boolean>> completeBatch(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<String>> completeBatch(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer adminId = SecurityUtils.getAuthenticatedUserId();
-        ApiResponse<Boolean> resp = service.completeBatch(adminId, id);
-        if (!resp.isSuccess()) return ResponseEntity.status(400).body(resp);
-        return ResponseEntity.ok(resp);
+        service.completeBatch(adminId, id);
+        return ResponseEntity.ok(ApiResponse.success("Hoàn thành đợt đối soát thành công"));
     }
 
     @GetMapping("/batches")
@@ -71,25 +71,25 @@ public class FinancialAdminController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer shipperId) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(service.listBatches(page, limit, search, status, shipperId));
+        return ResponseEntity.ok(ApiResponse.success(service.listBatches(page, limit, search, status, shipperId)));
     }
 
     @GetMapping("/pending")
     public ResponseEntity<ApiResponse<Map<Integer, List<AdminPaymentSubmissionListDto>>>> pendingByShipper() {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(service.listPendingGroupedByShipper());
+        return ResponseEntity.ok(ApiResponse.success(service.listPendingGroupedByShipper()));
     }
 
     @GetMapping("/batches/{id}")
     public ResponseEntity<ApiResponse<PaymentSubmissionBatch>> getBatch(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(service.getBatchById(id));
+        return ResponseEntity.ok(ApiResponse.success(service.getBatchById(id)));
     }
 
     @GetMapping("/batches/export")

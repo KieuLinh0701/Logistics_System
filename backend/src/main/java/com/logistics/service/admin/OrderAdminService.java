@@ -15,13 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.logistics.entity.Order;
 import com.logistics.enums.OrderStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.OrderProduct;
@@ -32,7 +33,6 @@ public class OrderAdminService {
     @Autowired
     private OrderRepository orderRepository;
 
-
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
 
@@ -42,65 +42,50 @@ public class OrderAdminService {
     @Autowired
     private PickupAttemptRepository pickupAttemptRepository;
 
-    public ApiResponse<Map<String, Object>> listOrders(int page, int limit, String search, String status) {
-        try {
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-            Page<Order> orderPage;
+    public Map<String, Object> listOrders(int page, int limit, String search, String status) {
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Page<Order> orderPage;
 
-            if (status != null && !status.trim().isEmpty()) {
-                orderPage = orderRepository.findByStatus(OrderStatus.valueOf(status), pageable);
-            } else {
-                orderPage = orderRepository.findAll(pageable);
-            }
-
-            List<Map<String, Object>> orders = orderPage.getContent().stream()
-                    .map(this::mapOrder)
-                    .collect(Collectors.toList());
-
-            Pagination pagination = new Pagination(
-                    (int) orderPage.getTotalElements(),
-                    page,
-                    limit,
-                    orderPage.getTotalPages());
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("data", orders);
-            result.put("pagination", pagination);
-
-            return new ApiResponse<>(true, "Lấy danh sách đơn hàng thành công", result);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        if (status != null && !status.trim().isEmpty()) {
+            orderPage = orderRepository.findByStatus(OrderStatus.valueOf(status), pageable);
+        } else {
+            orderPage = orderRepository.findAll(pageable);
         }
+
+        List<Map<String, Object>> orders = orderPage.getContent().stream()
+                .map(this::mapOrder)
+                .collect(Collectors.toList());
+
+        Pagination pagination = new Pagination(
+                (int) orderPage.getTotalElements(),
+                page,
+                limit,
+                orderPage.getTotalPages());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", orders);
+        result.put("pagination", pagination);
+
+        return result;
     }
 
-    public ApiResponse<ManagerOrderDetailDto> getOrderById(Integer orderId) {
-        try {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public ManagerOrderDetailDto getOrderById(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
-            List<OrderHistory> orderHistories = orderHistoryRepository.findByOrderIdOrderByActionTimeDesc(order.getId());
-            List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-            var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
+        List<OrderHistory> orderHistories = orderHistoryRepository.findByOrderIdOrderByActionTimeDesc(order.getId());
+        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+        var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-            ManagerOrderDetailDto dto = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
-
-            return new ApiResponse<>(true, "Lấy chi tiết đơn hàng thành công", dto);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        return OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
     }
 
     @Transactional
-    public ApiResponse<String> deleteOrder(Integer orderId) {
-        try {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public void deleteOrder(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
-            orderRepository.delete(order);
-            return new ApiResponse<>(true, "Xóa đơn hàng thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        orderRepository.delete(order);
     }
 
     private Map<String, Object> mapOrder(Order order) {
@@ -115,5 +100,3 @@ public class OrderAdminService {
         return orderMap;
     }
 }
-
-
