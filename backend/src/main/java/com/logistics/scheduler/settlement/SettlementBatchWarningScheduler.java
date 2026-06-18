@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.logistics.constants.PaymentConstant;
-import com.logistics.constants.SettlementBatchConstant;
+import com.logistics.config.properties.PaymentProperties;
+import com.logistics.config.properties.SettlementProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +26,8 @@ public class SettlementBatchWarningScheduler {
     private final SettlementBatchRepository batchRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final SettlementProperties settlementProperties;
+    private final PaymentProperties paymentProperties;
 
     @Scheduled(cron = "0 0 20 * * ?")
     // @Scheduled(cron = "0 * * * * ?")
@@ -37,7 +39,7 @@ public class SettlementBatchWarningScheduler {
         LocalDateTime now = LocalDateTime.now();
 
         // 48h: CẢNH BÁO
-        LocalDateTime warningTime = now.minusHours(SettlementBatchConstant.WARNING_HOURS);
+        LocalDateTime warningTime = now.minusHours(settlementProperties.getWarningOverHours());
         // LocalDateTime warningTime = now.minusMinutes(1);
 
         List<SettlementBatch> warningBatches = batchRepository.findByStatusInAndCreatedAtBefore(
@@ -52,7 +54,7 @@ public class SettlementBatchWarningScheduler {
 
                 BigDecimal totalRemain = getTotalRemain(shop.getId());
 
-                if (totalRemain.compareTo(BigDecimal.valueOf(PaymentConstant.MIN_PAYMENT_AMOUNT)) < 0) {
+                if (totalRemain.compareTo(BigDecimal.valueOf(paymentProperties.getMinAmount())) < 0) {
                     // Nợ quá nhỏ, không thể thanh toán VNPay → thông báo nhẹ, không cảnh báo
                     notificationService.create(
                             "Thông báo đối soát",
@@ -93,7 +95,7 @@ public class SettlementBatchWarningScheduler {
         }
 
         // 72h: KHÓA TÀI KHOẢN
-        LocalDateTime lockTime = now.minusHours(SettlementBatchConstant.LOCK_HOURS);
+        LocalDateTime lockTime = now.minusHours(settlementProperties.getLockOverHours());
         // LocalDateTime lockTime = now.minusMinutes(2);
 
         List<SettlementBatch> lockBatches = batchRepository.findByStatusInAndCreatedAtBefore(
@@ -109,7 +111,7 @@ public class SettlementBatchWarningScheduler {
                 // Tính tổng nợ thực tế
                 BigDecimal totalRemain = getTotalRemain(shop.getId());
 
-                if (totalRemain.compareTo(BigDecimal.valueOf(PaymentConstant.MIN_PAYMENT_AMOUNT)) < 0) {
+                if (totalRemain.compareTo(BigDecimal.valueOf(paymentProperties.getMinAmount())) < 0) {
                     batch.setLockedSent(true);
                     batchRepository.save(batch);
                     continue;

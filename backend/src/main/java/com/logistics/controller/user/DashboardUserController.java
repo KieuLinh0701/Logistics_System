@@ -29,7 +29,7 @@ public class DashboardUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getOverviewProducts(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.getOverviewProducts(userId)));
     }
 
     @GetMapping("/overview/orders")
@@ -37,7 +37,7 @@ public class DashboardUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getOverviewOrders(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.getOverviewOrders(userId)));
     }
 
     @GetMapping("/overview/revenue")
@@ -45,7 +45,7 @@ public class DashboardUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getOverviewRevenue(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.getOverviewRevenue(userId)));
     }
 
     @GetMapping("/chart/products")
@@ -54,7 +54,7 @@ public class DashboardUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getChartProducts(userId, searchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.getChartProducts(userId, searchRequest)));
     }
 
     @GetMapping("/chart/orders")
@@ -63,6 +63,6 @@ public class DashboardUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getChartOrders(userId, searchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.getChartOrders(userId, searchRequest)));
     }
 }

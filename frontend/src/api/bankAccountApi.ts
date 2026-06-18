@@ -27,7 +27,7 @@ const bankAccountApi = {
   },
 
   async deleteUserBankAccount(id: number) {
-    const res = await axiosClient.delete<ApiResponse<string>>(`/user/bank-accounts/${id}`);
+    const res = await axiosClient.delete<ApiResponse<null>>(`/user/bank-accounts/${id}`);
     return res;
   },
 
@@ -37,7 +37,7 @@ const bankAccountApi = {
   },
 
   async existUserBankAccounts() {
-    const res = await axiosClient.get<ApiResponse<Boolean>>("/user/bank-accounts/exists");
+    const res = await axiosClient.get<ApiResponse<boolean>>("/user/bank-accounts/exists");
     return res;
   },
 };

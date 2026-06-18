@@ -22,18 +22,20 @@ public class AddressUserController {
     private AddressUserService service;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AddressDto>>> list(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<List<AddressDto>>> list(
+            HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         
-        return ResponseEntity.ok(service.list(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<AddressDto>> create(@Valid @RequestBody AddressUserRequest addressRequest,
+    public ResponseEntity<ApiResponse<AddressDto>> create(
+            @Valid @RequestBody AddressUserRequest addressRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, addressRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.create(userId, addressRequest)));
     }
 
     @PutMapping("/{id}")
@@ -42,22 +44,26 @@ public class AddressUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         
-        return ResponseEntity.ok(service.update(userId, id, addressRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.update(userId, id, addressRequest)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> delete(@PathVariable int id,
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable int id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        return ResponseEntity.ok(service.delete(userId, id));
+
+        service.delete(userId, id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/default")
-    public ResponseEntity<ApiResponse<Boolean>> setDefault(@PathVariable int id,
+    public ResponseEntity<ApiResponse<Void>> setDefault(
+            @PathVariable int id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        return ResponseEntity.ok(service.setDefault(userId, id));
+
+        service.setDefault(userId, id);
+        return ResponseEntity.noContent().build();
     }
 }

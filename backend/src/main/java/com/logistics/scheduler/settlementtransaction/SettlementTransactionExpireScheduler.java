@@ -1,6 +1,6 @@
 package com.logistics.scheduler.settlementtransaction;
 
-import com.logistics.constants.PaymentConstant;
+import com.logistics.config.properties.PaymentProperties;
 import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.enums.SettlementTransactionType;
 import com.logistics.repository.SettlementTransactionRepository;
@@ -18,6 +18,7 @@ import com.logistics.entity.SettlementTransaction;
 public class SettlementTransactionExpireScheduler {
 
     private final SettlementTransactionRepository transactionRepository;
+    private final PaymentProperties paymentProperties;
 
     // Chạy mỗi 5 phút
     @Scheduled(cron = "0 */5 * * * ?")
@@ -26,7 +27,7 @@ public class SettlementTransactionExpireScheduler {
         System.out.println("Scanning stale transactions: " + LocalDateTime.now());
 
         // Transaction PENDING quá n phút → FAILED
-        LocalDateTime expiredBefore = LocalDateTime.now().minusMinutes(PaymentConstant.TRANSACTION_EXPIRE_MINUTES);
+        LocalDateTime expiredBefore = LocalDateTime.now().minusMinutes(paymentProperties.getExpireMinutes());
 
         List<SettlementTransaction> stale = transactionRepository
                 .findByStatusAndTypeAndCreatedAtBefore(

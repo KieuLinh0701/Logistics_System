@@ -17,7 +17,8 @@ public class RecruitmentExceptionHandler {
     @ExceptionHandler(RecruitmentException.class)
     public ResponseEntity<ApiResponse<Object>> handleRecruitmentException(RecruitmentException ex) {
         return ResponseEntity.status(ex.getStatus())
-                .body(new ApiResponse<>(false, ex.getMessage(), null));
+                .body(
+                        new ApiResponse<>(false, ex.getMessage(), null));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

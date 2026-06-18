@@ -2,6 +2,7 @@ package com.logistics.controller.user;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,48 +33,54 @@ public class BankAccountUserController {
     public ResponseEntity<ApiResponse<List<BankAccountDto>>> list(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<BankAccountDto>> create(@RequestBody BankAccountRequest bankAccountRequest,
+    public ResponseEntity<ApiResponse<BankAccountDto>> create(
+            @Valid @RequestBody BankAccountRequest bankAccountRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, bankAccountRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.create(userId, bankAccountRequest)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<BankAccountDto>> update(@PathVariable Integer id,
-            @RequestBody BankAccountRequest bankAccountRequest,
+    public ResponseEntity<ApiResponse<BankAccountDto>> update(
+            @PathVariable Integer id,
+            @Valid @RequestBody BankAccountRequest bankAccountRequest,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.update(userId, id, bankAccountRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.update(userId, id, bankAccountRequest)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> delete(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.delete(userId, id));
+        service.delete(userId, id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/default")
-    public ResponseEntity<ApiResponse<Boolean>> setDefault(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> setDefault(
+            @PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.setDefault(userId, id));
+        service.setDefault(userId, id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/exists")
     public ResponseEntity<ApiResponse<Boolean>> hasBankAccount(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         
-        return ResponseEntity.ok(service.hasBankAccount(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.hasBankAccount(userId)));
     }
 
 }

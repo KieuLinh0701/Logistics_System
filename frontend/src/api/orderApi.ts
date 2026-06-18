@@ -69,7 +69,7 @@ const orderApi = {
     },
 
     async updateUserOrder(id: number, params: UserOrderRequest) {
-        const res = await axiosClient.put<ApiResponse<boolean>>(`/user/orders/${id}`, params);
+        const res = await axiosClient.put<ApiResponse<void>>(`/user/orders/${id}`, params);
         return res;
     },
 
@@ -89,12 +89,12 @@ const orderApi = {
     },
 
     async cancelUserOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/orders/${id}/cancel`);
+        const res = await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/cancel`);
         return res;
     },
 
     async deleteUserOrder(id: number) {
-        const res = await axiosClient.delete<ApiResponse<boolean>>(`/user/orders/${id}`);
+        const res = await axiosClient.delete<ApiResponse<void>>(`/user/orders/${id}`);
         return res;
     },
 
@@ -105,7 +105,7 @@ const orderApi = {
     },
 
     async setUserOrderReadyForPickup(id: number) {
-        const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/orders/${id}/ready`);
+        const res = await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/ready`);
         return res;
     },
 
