@@ -8,6 +8,8 @@ import com.logistics.entity.AccountRole;
 import com.logistics.entity.Role;
 import com.logistics.entity.ShopWorkHistory;
 import com.logistics.entity.User;
+import com.logistics.exception.AppException;
+import com.logistics.exception.ErrorCode;
 import com.logistics.mapper.UserMapper;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
@@ -25,6 +27,7 @@ import com.logistics.response.Pagination;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.PasswordUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.aop.framework.AopConfigException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -51,360 +54,328 @@ public class EmployeeUserService {
     private final EmailService emailService;
     private final UserUserService userUserService;
 
-    public ApiResponse<ListResponse<EmployeeByRoleIdListUserDto>> listByRoleId(
+    public ListResponse<EmployeeByRoleIdListUserDto> listByRoleId(
             int userId,
             int roleId,
             EmployeeByRoleIdSearchUserRequest request) {
-        try {
-            User user = getUser(userId);
-            Role role = roleUserService.getRole(roleId);
-            roleUserService.checkOwnerPermission(user, role);
+        User user = getUser(userId);
+        Role role = roleUserService.getRole(roleId);
+        roleUserService.checkOwnerPermission(user, role);
 
-            int page = request.getPage();
-            int limit = request.getLimit();
-            String search = request.getSearch();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String search = request.getSearch();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Integer shopId = userUserService.getShopId(user);
+        Integer shopId = userUserService.getShopId(user);
 
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt")
-                    .descending());
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt")
+                .descending());
 
-            Page<User> pageData = repository.findAllByShopIdWithLatestWorkHistory(
-                    shopId,
-                    roleId,
-                    search,
-                    null,
-                    startDate,
-                    endDate,
-                    pageable);
+        Page<User> pageData = repository.findAllByShopIdWithLatestWorkHistory(
+                shopId,
+                roleId,
+                search,
+                null,
+                startDate,
+                endDate,
+                pageable);
 
-            List<EmployeeByRoleIdListUserDto> list = UserMapper.toEmployeeListUserDto(pageData.getContent(), roleId);
+        List<EmployeeByRoleIdListUserDto> list = UserMapper.toEmployeeListUserDto(pageData.getContent(), roleId);
 
-            int total = (int) pageData.getTotalElements();
-            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+        int total = (int) pageData.getTotalElements();
+        Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-            ListResponse<EmployeeByRoleIdListUserDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<EmployeeByRoleIdListUserDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách nhân viên thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return data;
     }
 
-    public ApiResponse<ListResponse<EmployeeListUserDto>> list(
+    public ListResponse<EmployeeListUserDto> list(
             int userId,
             EmployeeSearchUserRequest request) {
-        try {
-            User user = getUser(userId);
-            Integer shopId = userUserService.getShopId(user);
+        User user = getUser(userId);
+        Integer shopId = userUserService.getShopId(user);
 
-            int page = request.getPage();
-            int limit = request.getLimit();
-            String search = request.getSearch();
-            String sort = request.getSort();
-            Integer roleId = request.getRoleId();
-            Boolean active = request.getActive();
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String search = request.getSearch();
+        String sort = request.getSort();
+        Integer roleId = request.getRoleId();
+        Boolean active = request.getActive();
 
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Sort sortOrder = "OLDEST".equalsIgnoreCase(sort)
-                    ? Sort.by("createdAt").ascending()
-                    : Sort.by("createdAt").descending();
+        Sort sortOrder = "OLDEST".equalsIgnoreCase(sort)
+                ? Sort.by("createdAt").ascending()
+                : Sort.by("createdAt").descending();
 
-            Pageable pageable = PageRequest.of(page - 1, limit, sortOrder);
+        Pageable pageable = PageRequest.of(page - 1, limit, sortOrder);
 
-            Page<User> pageData = repository.findAllByShopIdWithLatestWorkHistory(
-                    shopId,
-                    roleId,
-                    search,
-                    active,
-                    startDate,
-                    endDate,
-                    pageable);
+        Page<User> pageData = repository.findAllByShopIdWithLatestWorkHistory(
+                shopId,
+                roleId,
+                search,
+                active,
+                startDate,
+                endDate,
+                pageable);
 
-            List<EmployeeListUserDto> list = UserMapper.toEmployeeListDto(pageData.getContent());
+        List<EmployeeListUserDto> list = UserMapper.toEmployeeListDto(pageData.getContent());
 
-            int total = (int) pageData.getTotalElements();
-            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+        int total = (int) pageData.getTotalElements();
+        Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-            ListResponse<EmployeeListUserDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<EmployeeListUserDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách nhân viên thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return data;
     }
 
     @Transactional
-    public ApiResponse<Void> updateIsActive(
+    public void updateIsActive(
             int userId,
             int id,
             UpdateIsActiveUserRequest request) {
-        try {
-            User currentUser = getUser(userId);
-            User targetUser = getUser(id);
+        User currentUser = getUser(userId);
+        User targetUser = getUser(id);
 
-            checkShopPermission(currentUser, targetUser);
+        checkShopPermission(currentUser, targetUser);
 
-            Role role = roleUserService.getRole(request.getRoleId());
-            roleUserService.checkOwnerPermission(currentUser, role);
+        Role role = roleUserService.getRole(request.getRoleId());
+        roleUserService.checkOwnerPermission(currentUser, role);
 
-            AccountRole accountRole = accountRoleRepository
-                    .findByAccountIdAndRoleId(targetUser.getAccount()
-                            .getId(), request.getRoleId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin phân quyền"));
+        AccountRole accountRole = accountRoleRepository
+                .findByAccountIdAndRoleId(targetUser.getAccount()
+                        .getId(), request.getRoleId())
+                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_ROLE_NOT_FOUND));
 
-            Integer shopId = userUserService.getShopId(currentUser);
+        Integer shopId = userUserService.getShopId(currentUser);
 
-            if (request.getIsActive()) {
-                validateNoActiveShopRole(targetUser, shopId);
+        if (request.getIsActive()) {
+            validateNoActiveShopRole(targetUser, shopId);
 
-                accountRole.setIsActive(true);
-                accountRoleRepository.save(accountRole);
-
-                targetUser.getAccount()
-                        .setIsActive(true);
-                accountRepository.save(targetUser.getAccount());
-
-                shopWorkHistoryRepository.findByUserIdAndIsCurrentTrue(targetUser.getId())
-                        .forEach(wh -> {
-                            wh.setIsCurrent(false);
-                            wh.setLeftAt(LocalDateTime.now());
-                            shopWorkHistoryRepository.save(wh);
-                        });
-
-                ShopWorkHistory newWorkHistory = new ShopWorkHistory();
-                newWorkHistory.setUser(targetUser);
-                newWorkHistory.setShop(currentUser.getCurrentShop() != null
-                        ? currentUser.getCurrentShop()
-                        : currentUser);
-                newWorkHistory.setRole(role);
-                newWorkHistory.setIsCurrent(true);
-                newWorkHistory.setJoinedAt(LocalDateTime.now());
-                shopWorkHistoryRepository.save(newWorkHistory);
-
-            } else {
-                accountRole.setIsActive(false);
-                accountRoleRepository.save(accountRole);
-
-                boolean hasOtherActiveRole = targetUser.getAccount()
-                        .getAccountRoles()
-                        .stream()
-                        .anyMatch(ar -> !ar.getId()
-                                .equals(accountRole.getId())
-                                && ar.getIsActive());
-
-                if (!hasOtherActiveRole) {
-                    targetUser.getAccount()
-                            .setIsActive(false);
-                    accountRepository.save(targetUser.getAccount());
-                }
-
-                shopWorkHistoryRepository
-                        .findByUserIdAndRoleIdAndIsCurrentTrue(targetUser.getId(), role.getId())
-                        .ifPresent(wh -> {
-                            wh.setIsCurrent(false);
-                            wh.setLeftAt(LocalDateTime.now());
-                            shopWorkHistoryRepository.save(wh);
-                        });
-            }
-
-            return new ApiResponse<>(true,
-                    request.getIsActive() ? "Gán quyền thành công" : "Thu hồi quyền thành công",
-                    null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
-    }
-
-    @Transactional
-    public ApiResponse<Void> createEmployee(int userId, CreateEmployeeUserRequest request) {
-        try {
-            User currentUser = getUser(userId);
-            Role role = roleUserService.getRole(request.getRoleId());
-            roleUserService.checkOwnerPermission(currentUser, role);
-
-            Integer shopId = userUserService.getShopId(currentUser);
-            User shopOwner = getUser(shopId);
-
-            Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
-            Account account;
-            User targetUser;
-
-            if (existingAccountOpt.isPresent()) {
-                account = existingAccountOpt.get();
-                targetUser = account.getUser();
-
-                // Đã thuộc shop khác rồi
-                if (targetUser.getCurrentShop() != null) {
-                    throw new RuntimeException("Tài khoản này đã thuộc một cửa hàng khác");
-                }
-
-                // Gán vào shop
-                targetUser.setCurrentShop(shopOwner);
-                userRepository.save(targetUser);
-
-            } else {
-                // Kiểm tra sđt trùng
-                if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                    throw new RuntimeException("Số điện thoại đã được sử dụng");
-                }
-
-                // Generate password
-                String rawPassword = PasswordUtils.generateTempPassword();
-                String hashedPassword = passwordEncoder.encode(rawPassword);
-
-                // Tạo Account
-                account = new Account();
-                account.setEmail(request.getEmail());
-                account.setPassword(hashedPassword);
-                account.setIsVerified(true);
-                account.setIsActive(true);
-                accountRepository.save(account);
-
-                // Tạo User
-                targetUser = new User();
-                targetUser.setFirstName(request.getFirstName());
-                targetUser.setLastName(request.getLastName());
-                targetUser.setPhoneNumber(request.getPhoneNumber());
-                targetUser.setAccount(account);
-                targetUser.setCurrentShop(shopOwner);
-                userRepository.save(targetUser);
-
-                // Gửi mail thông báo tài khoản
-                emailService.sendNewEmployeeAccountEmail(
-                        request.getEmail(),
-                        rawPassword,
-                        request.getFirstName(),
-                        request.getLastName());
-            }
-
-            // Tạo AccountRole
-            AccountRole accountRole = new AccountRole();
-            accountRole.setAccount(account);
-            accountRole.setRole(role);
             accountRole.setIsActive(true);
             accountRoleRepository.save(accountRole);
 
-            // Tạo ShopWorkHistory
-            ShopWorkHistory workHistory = new ShopWorkHistory();
-            workHistory.setUser(targetUser);
-            workHistory.setShop(shopOwner);
-            workHistory.setRole(role);
-            workHistory.setIsCurrent(true);
-            workHistory.setJoinedAt(LocalDateTime.now());
-            shopWorkHistoryRepository.save(workHistory);
+            targetUser.getAccount()
+                    .setIsActive(true);
+            accountRepository.save(targetUser.getAccount());
 
-            return new ApiResponse<>(true, "Thêm nhân viên thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
+            shopWorkHistoryRepository.findByUserIdAndIsCurrentTrue(targetUser.getId())
+                    .forEach(wh -> {
+                        wh.setIsCurrent(false);
+                        wh.setLeftAt(LocalDateTime.now());
+                        shopWorkHistoryRepository.save(wh);
+                    });
+
+            ShopWorkHistory newWorkHistory = new ShopWorkHistory();
+            newWorkHistory.setUser(targetUser);
+            newWorkHistory.setShop(currentUser.getCurrentShop() != null
+                    ? currentUser.getCurrentShop()
+                    : currentUser);
+            newWorkHistory.setRole(role);
+            newWorkHistory.setIsCurrent(true);
+            newWorkHistory.setJoinedAt(LocalDateTime.now());
+            shopWorkHistoryRepository.save(newWorkHistory);
+
+        } else {
+            accountRole.setIsActive(false);
+            accountRoleRepository.save(accountRole);
+
+            boolean hasOtherActiveRole = targetUser.getAccount()
+                    .getAccountRoles()
+                    .stream()
+                    .anyMatch(ar -> !ar.getId()
+                            .equals(accountRole.getId())
+                            && ar.getIsActive());
+
+            if (!hasOtherActiveRole) {
+                targetUser.getAccount()
+                        .setIsActive(false);
+                accountRepository.save(targetUser.getAccount());
+            }
+
+            shopWorkHistoryRepository
+                    .findByUserIdAndRoleIdAndIsCurrentTrue(targetUser.getId(), role.getId())
+                    .ifPresent(wh -> {
+                        wh.setIsCurrent(false);
+                        wh.setLeftAt(LocalDateTime.now());
+                        shopWorkHistoryRepository.save(wh);
+                    });
         }
     }
 
     @Transactional
-    public ApiResponse<Void> updateEmployee(
-            int userId,
-            int id,
-            UpdateEmployeeUserRequest request) {
-        try {
-            User currentUser = getUser(userId);
-            User targetUser = getUser(id);
+    public void createEmployee(int userId, CreateEmployeeUserRequest request) {
+        User currentUser = getUser(userId);
+        Role role = roleUserService.getRole(request.getRoleId());
+        roleUserService.checkOwnerPermission(currentUser, role);
 
-            checkShopPermission(currentUser, targetUser);
+        Integer shopId = userUserService.getShopId(currentUser);
+        User shopOwner = getUser(shopId);
 
-            // Kiểm tra sđt trùng nếu thay đổi
-            if (!targetUser.getPhoneNumber().equals(request.getPhoneNumber())
-                    && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                throw new RuntimeException("Số điện thoại đã được sử dụng");
+        Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
+        Account account;
+        User targetUser;
+
+        if (existingAccountOpt.isPresent()) {
+            account = existingAccountOpt.get();
+            targetUser = account.getUser();
+
+            // Đã thuộc shop khác rồi
+            if (targetUser.getCurrentShop() != null) {
+                throw new AppException(ErrorCode.EMPLOYEE_ALREADY_IN_ANOTHER_SHOP);
             }
 
+            // Gán vào shop
+            targetUser.setCurrentShop(shopOwner);
+            userRepository.save(targetUser);
+
+        } else {
+            // Kiểm tra sđt trùng
+            if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                throw new AppException(ErrorCode.EMPLOYEE_PHONE_NUMBER_EXISTED);
+            }
+
+            // Generate password
+            String rawPassword = PasswordUtils.generateTempPassword();
+            String hashedPassword = passwordEncoder.encode(rawPassword);
+
+            // Tạo Account
+            account = new Account();
+            account.setEmail(request.getEmail());
+            account.setPassword(hashedPassword);
+            account.setIsVerified(true);
+            account.setIsActive(true);
+            accountRepository.save(account);
+
+            // Tạo User
+            targetUser = new User();
             targetUser.setFirstName(request.getFirstName());
             targetUser.setLastName(request.getLastName());
             targetUser.setPhoneNumber(request.getPhoneNumber());
+            targetUser.setAccount(account);
+            targetUser.setCurrentShop(shopOwner);
             userRepository.save(targetUser);
 
-            return new ApiResponse<>(true, "Cập nhật thông tin nhân viên thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
+            // Gửi mail thông báo tài khoản
+            emailService.sendNewEmployeeAccountEmail(
+                    request.getEmail(),
+                    rawPassword,
+                    request.getFirstName(),
+                    request.getLastName());
         }
+
+        // Tạo AccountRole
+        AccountRole accountRole = new AccountRole();
+        accountRole.setAccount(account);
+        accountRole.setRole(role);
+        accountRole.setIsActive(true);
+        accountRoleRepository.save(accountRole);
+
+        // Tạo ShopWorkHistory
+        ShopWorkHistory workHistory = new ShopWorkHistory();
+        workHistory.setUser(targetUser);
+        workHistory.setShop(shopOwner);
+        workHistory.setRole(role);
+        workHistory.setIsCurrent(true);
+        workHistory.setJoinedAt(LocalDateTime.now());
+        shopWorkHistoryRepository.save(workHistory);
     }
 
-    public ApiResponse<ListResponse<ShopWorkHistoryListUserDto>> listWorkHistory(
+    @Transactional
+    public void updateEmployee(
+            int userId,
+            int id,
+            UpdateEmployeeUserRequest request) {
+        User currentUser = getUser(userId);
+        User targetUser = getUser(id);
+
+        checkShopPermission(currentUser, targetUser);
+
+        // Kiểm tra sđt trùng nếu thay đổi
+        if (!targetUser.getPhoneNumber().equals(request.getPhoneNumber())
+                && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new AppException(ErrorCode.EMPLOYEE_PHONE_NUMBER_EXISTED);
+        }
+
+        targetUser.setFirstName(request.getFirstName());
+        targetUser.setLastName(request.getLastName());
+        targetUser.setPhoneNumber(request.getPhoneNumber());
+        userRepository.save(targetUser);
+    }
+
+    public ListResponse<ShopWorkHistoryListUserDto> listWorkHistory(
             int userId,
             int targetUserId,
             ShopWorkHistorySearchUserRequest request) {
-        try {
-            User currentUser = getUser(userId);
-            User targetUser = getUser(targetUserId);
+        User currentUser = getUser(userId);
+        User targetUser = getUser(targetUserId);
 
-            checkShopPermission(currentUser, targetUser);
+        checkShopPermission(currentUser, targetUser);
 
-            int page = request.getPage();
-            int limit = request.getLimit();
-            String search = request.getSearch();
-            Boolean isCurrent = request.getIsCurrent();
-            String sort = request.getSort();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String search = request.getSearch();
+        Boolean isCurrent = request.getIsCurrent();
+        String sort = request.getSort();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Sort sortOrder = "OLDEST".equalsIgnoreCase(sort)
-                    ? Sort.by("joinedAt").ascending()
-                    : Sort.by("joinedAt").descending();
+        Sort sortOrder = "OLDEST".equalsIgnoreCase(sort)
+                ? Sort.by("joinedAt").ascending()
+                : Sort.by("joinedAt").descending();
 
-            Pageable pageable = PageRequest.of(page - 1, limit, sortOrder);
+        Pageable pageable = PageRequest.of(page - 1, limit, sortOrder);
 
-            Page<ShopWorkHistory> pageData = shopWorkHistoryRepository.findAllByUserIdWithFilter(
-                    targetUserId,
-                    isCurrent,
-                    search,
-                    startDate,
-                    endDate,
-                    pageable);
+        Page<ShopWorkHistory> pageData = shopWorkHistoryRepository.findAllByUserIdWithFilter(
+                targetUserId,
+                isCurrent,
+                search,
+                startDate,
+                endDate,
+                pageable);
 
-            List<ShopWorkHistoryListUserDto> list = UserMapper.toShopWorkHistoryListDto(pageData.getContent());
+        List<ShopWorkHistoryListUserDto> list = UserMapper.toShopWorkHistoryListDto(pageData.getContent());
 
-            int total = (int) pageData.getTotalElements();
-            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+        int total = (int) pageData.getTotalElements();
+        Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-            ListResponse<ShopWorkHistoryListUserDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<ShopWorkHistoryListUserDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy lịch sử làm việc thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        return data;
     }
 
     private User getUser(int userId) {
         return userRepository.findByIdWithRoles(userId)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
     private void checkShopPermission(User currentUser, User targetUser) {
@@ -419,7 +390,7 @@ public class EmployeeUserService {
                 : null;
 
         if (targetShopId == null || !targetShopId.equals(currentShopId)) {
-            throw new RuntimeException("Bạn không có quyền thao tác trên nhân viên này");
+            throw new AppException(ErrorCode.EMPLOYEE_PERMISSION_DENIED);
         }
     }
 
@@ -433,8 +404,7 @@ public class EmployeeUserService {
                         .getUserOwner() != null);
 
         if (hasActiveShopRole) {
-            throw new RuntimeException(
-                    "Nhân viên này đang có quyền khác, vui lòng thu hồi trước khi gán quyền mới");
+            throw new AppException(ErrorCode.EMPLOYEE_HAS_ACTIVE_ROLE);
         }
     }
 }

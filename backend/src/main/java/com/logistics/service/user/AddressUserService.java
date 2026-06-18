@@ -4,6 +4,8 @@ import com.logistics.dto.AddressDto;
 import com.logistics.enums.AddressType;
 import com.logistics.entity.Address;
 import com.logistics.entity.User;
+import com.logistics.exception.AppException;
+import com.logistics.exception.ErrorCode;
 import com.logistics.mapper.AddressMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.UserRepository;
@@ -24,26 +26,19 @@ public class AddressUserService {
     private final AddressRepository addressRepository;
     private final UserUserService userService;
 
-    public ApiResponse<List<AddressDto>> list(int userId) {
-        try {
+    public List<AddressDto> list(int userId) {
             Integer shopId = userService.getShopId(userId);
 
             List<Address> addresses = addressRepository.findByUserIdAndTypeOrderByCreatedAtDesc(
                     shopId,
                     AddressType.SENDER);
-            List<AddressDto> data = addresses.stream()
+            return addresses.stream()
                     .map(AddressMapper::toDto)
                     .toList();
-            return new ApiResponse<>(true, "Lấy danh sách thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
     }
 
     @Transactional
-    public ApiResponse<AddressDto> create(int userId, AddressUserRequest request) {
-        try {
-            validateForm(request);
+    public AddressDto create(int userId, AddressUserRequest request) {
 
             Integer shopId = userService.getShopId(userId);
             User user = userService.getUser(shopId);
@@ -52,7 +47,7 @@ public class AddressUserService {
                     shopId,
                     AddressType.SENDER);
             if (count >= 10) {
-                return new ApiResponse<>(false, "Chỉ được tạo tối đa 10 địa chỉ", null);
+                throw new AppException(ErrorCode.MAX_ADDRESS_LIMIT_REACHED);
             }
 
             String fullAddress = AddressUtils.buildFullAddress(
@@ -85,21 +80,15 @@ public class AddressUserService {
             }
 
             save(address);
-            return new ApiResponse<>(true, "Thêm địa chỉ thành công", AddressMapper.toDto(address));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+            return AddressMapper.toDto(address);
     }
 
     @Transactional
-    public ApiResponse<AddressDto> update(int userId, int id, AddressUserRequest request) {
-        try {
-            validateForm(request);
-
+    public AddressDto update(int userId, int id, AddressUserRequest request) {
             Integer shopId = userService.getShopId(userId);
 
             Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
+                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
 
             String fullAddress = AddressUtils.buildFullAddress(
                     request.getDetail(),
@@ -125,74 +114,32 @@ public class AddressUserService {
             }
 
             save(address);
-            return new ApiResponse<>(true, "Cập nhật địa chỉ thành công", AddressMapper.toDto(address));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+            return AddressMapper.toDto(address);
     }
 
-    public ApiResponse<Boolean> delete(int userId, int id) {
-        try {
+    public void delete(int userId, int id) {
             Integer shopId = userService.getShopId(userId);
 
             Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
+                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
 
             if (Boolean.TRUE.equals(address.getIsDefault())) {
-                return new ApiResponse<>(false, "Vui lòng chọn địa chỉ mặc định khác trước khi xóa", false);
+                throw new AppException(ErrorCode.ADDRESS_IS_DEFAULT);
             }
 
             delete(address);
-            return new ApiResponse<>(true, "Xóa địa chỉ thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), false);
-        }
     }
 
     @Transactional
-    public ApiResponse<Boolean> setDefault(int userId, int id) {
-        try {
+    public void setDefault(int userId, int id) {
             Integer shopId = userService.getShopId(userId);
 
             Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.SENDER)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
+                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
 
             addressRepository.clearDefaultExcept(shopId, id, AddressType.SENDER);
             address.setIsDefault(true);
             save(address);
-
-            return new ApiResponse<>(true, "Đặt địa chỉ mặc định thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), false);
-        }
-    }
-
-    // Validate dữ liệu nhập
-    private void validateForm(AddressUserRequest request) {
-        StringBuilder missing = new StringBuilder();
-        if (request.getDetail() == null || request.getDetail().isBlank())
-            missing.append("Chi tiết địa chỉ, ");
-        if (request.getCityCode() <= 0)
-            missing.append("Mã thành phố, ");
-        if (request.getWardCode() <= 0)
-            missing.append("Mã phường/xã, ");
-        if (request.getLatitude() <= 0)
-            missing.append("Vĩ độ ");
-        if (request.getLongitude() <= 0)
-            missing.append("Kinh độ, ");
-        if (request.getCityName() == null || request.getCityName().isBlank())
-            missing.append("Tên thành phố, ");
-        if (request.getWardName() == null || request.getWardName().isBlank())
-            missing.append("Tên phường/xã, ");
-        if (request.getName() == null || request.getName().isBlank())
-            missing.append("Tên, ");
-        if (request.getPhoneNumber() == null || request.getPhoneNumber().isBlank())
-            missing.append("Số điện thoại, ");
-
-        if (missing.length() > 0) {
-            // Bỏ dấu phẩy cuối
-            throw new RuntimeException("Thiếu hoặc không hợp lệ: " + missing.substring(0, missing.length() - 2));
-        }
     }
 
     public boolean checkAddressBelongsToUser(Integer senderAddressId, Integer userId) {

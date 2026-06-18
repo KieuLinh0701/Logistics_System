@@ -39,7 +39,7 @@ public class EmployeeUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.listByRoleId(userId, roleId, employeeByRoleIdSearchUserRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.listByRoleId(userId, roleId, employeeByRoleIdSearchUserRequest)));
     }
 
     @GetMapping
@@ -48,7 +48,7 @@ public class EmployeeUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, employeeSearchUserRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, employeeSearchUserRequest)));
     }
 
     @PatchMapping("/{id}/active")
@@ -58,7 +58,8 @@ public class EmployeeUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.updateIsActive(userId, id, updateIsActiveUserRequest));
+        service.updateIsActive(userId, id, updateIsActiveUserRequest);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping
@@ -67,7 +68,8 @@ public class EmployeeUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.createEmployee(userId, createEmployeeUserRequest));
+        service.createEmployee(userId, createEmployeeUserRequest);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")
@@ -76,7 +78,8 @@ public class EmployeeUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.updateEmployee(userId, id, updateEmployeeUserRequest));
+        service.updateEmployee(userId, id, updateEmployeeUserRequest);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/work-history")
@@ -86,6 +89,6 @@ public class EmployeeUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.listWorkHistory(userId, id, searchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.listWorkHistory(userId, id, searchRequest)));
     }
 }
