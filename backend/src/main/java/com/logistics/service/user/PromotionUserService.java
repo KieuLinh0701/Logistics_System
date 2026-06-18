@@ -7,6 +7,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PromotionErrorCode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +28,6 @@ import com.logistics.repository.PromotionRepository;
 import com.logistics.repository.UserPromotionRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.request.user.promotion.PromotionUserRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.PromotionSpecification;
@@ -45,9 +46,8 @@ public class PromotionUserService {
     private final UserRepository userRepo;
     private final UserUserService userService;
 
-    public ApiResponse<ListResponse<UserPromotionDto>> getActiveUserPromotions(@NonNull Integer userId,
+    public ListResponse<UserPromotionDto> getActiveUserPromotions(@NonNull Integer userId,
             PromotionUserRequest req) {
-        try {
             Integer shopId = userService.getShopId(userId);
 
             int page = req.getPage() != null ? req.getPage() - 1 : 0;
@@ -76,12 +76,7 @@ public class PromotionUserService {
                     limit,
                     promotionsPage.getTotalPages());
 
-            return new ApiResponse<>(true, "Lấy danh sách khuyến mãi thành công",
-                    new ListResponse<>(result, pagination));
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return new ListResponse<>(result, pagination);
     }
 
     private boolean filterBySearch(Promotion p, String search) {
@@ -225,7 +220,7 @@ public class PromotionUserService {
             return;
 
         Promotion promotion = promotionRepo.findById(promotionId)
-                .orElseThrow(() -> new RuntimeException("Promotion không tồn tại: " + promotionId));
+                .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
 
         promotion.setUsedCount(promotion.getUsedCount() + 1);
         promotionRepo.save(promotion);
@@ -233,7 +228,7 @@ public class PromotionUserService {
         if (Boolean.FALSE.equals(promotion.getIsGlobal()) && userId != null) {
             UserPromotion up = userPromotionRepo.findByUserIdAndPromotionId(userId, promotionId);
             if (up == null)
-                throw new RuntimeException("UserPromotion không tồn tại cho user: " + userId);
+                throw new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND);
 
             up.setUsedCount(up.getUsedCount() + 1);
             userPromotionRepo.save(up);
@@ -246,7 +241,7 @@ public class PromotionUserService {
             return;
 
         Promotion promotion = promotionRepo.findById(promotionId)
-                .orElseThrow(() -> new RuntimeException("Promotion không tồn tại: " + promotionId));
+                .orElseThrow(() -> new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND));
 
         int newUsedCount = Math.max(0, promotion.getUsedCount() - 1);
         promotion.setUsedCount(newUsedCount);
@@ -255,7 +250,7 @@ public class PromotionUserService {
         if (Boolean.FALSE.equals(promotion.getIsGlobal()) && userId != null) {
             UserPromotion up = userPromotionRepo.findByUserIdAndPromotionId(userId, promotionId);
             if (up == null)
-                throw new RuntimeException("UserPromotion không tồn tại cho user: " + userId);
+                throw new AppException(PromotionErrorCode.PROMOTION_NOT_FOUND);
 
             int newUserUsed = Math.max(0, up.getUsedCount() - 1);
             up.setUsedCount(newUserUsed);

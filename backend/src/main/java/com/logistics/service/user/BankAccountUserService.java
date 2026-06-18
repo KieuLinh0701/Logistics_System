@@ -4,7 +4,8 @@ import com.logistics.dto.BankAccountDto;
 import com.logistics.entity.BankAccount;
 import com.logistics.entity.User;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
+import com.logistics.exception.enums.BankAccountErrorCode;
+import com.logistics.exception.enums.BaseErrorCode;
 import com.logistics.mapper.BankAccountMapper;
 import com.logistics.repository.BankAccountRepository;
 import com.logistics.request.user.bankAccount.BankAccountRequest;
@@ -37,7 +38,7 @@ public class BankAccountUserService {
 
         long count = repository.countByUserId(shopId);
         if (count >= 5) {
-            throw new AppException(ErrorCode.BANK_ACCOUNT_LIMIT_REACHED);
+            throw new AppException(BankAccountErrorCode.BANK_ACCOUNT_LIMIT_REACHED);
         }
         User user = userService.getUser(shopId);
 
@@ -85,7 +86,7 @@ public class BankAccountUserService {
         BankAccount account = getBankAccount(id, shopId);
 
         if (account.getIsDefault()) {
-            throw new AppException(ErrorCode.BANK_ACCOUNT_IS_DEFAULT);
+            throw new AppException(BankAccountErrorCode.BANK_ACCOUNT_IS_DEFAULT);
         }
 
         repository.delete(account);
@@ -109,6 +110,6 @@ public class BankAccountUserService {
 
     private BankAccount getBankAccount(Integer id, Integer shopId) {
         return repository.findByIdAndUserId(id, shopId)
-                .orElseThrow(() -> new AppException(ErrorCode.BANK_ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new AppException(BankAccountErrorCode.BANK_ACCOUNT_NOT_FOUND));
     }
 }

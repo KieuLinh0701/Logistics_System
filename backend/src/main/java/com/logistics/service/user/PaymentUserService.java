@@ -9,7 +9,9 @@ import java.util.List;
 import com.logistics.config.properties.PaymentProperties;
 import com.logistics.config.properties.SettlementProperties;
 import com.logistics.exception.AppException;
-import com.logistics.exception.ErrorCode;
+import com.logistics.exception.enums.BaseErrorCode;
+import com.logistics.exception.enums.SettlementBatchErrorCode;
+import com.logistics.exception.enums.SettlementTransactionErrorCode;
 import org.springframework.stereotype.Service;
 
 import com.logistics.entity.SettlementBatch;
@@ -68,7 +70,7 @@ public class PaymentUserService {
         String vnp_IpAddr = VNPayUtils.getClientIp(request);
 
         if (debtBatches.isEmpty()) {
-            throw new AppException(ErrorCode.SETTLEMENT_NO_PENDING_DEBT);
+            throw new AppException(SettlementBatchErrorCode.SETTLEMENT_NO_PENDING_DEBT);
         }
 
         // Tính tổng còn nợ thực tế sau khấu trừ
@@ -78,13 +80,13 @@ public class PaymentUserService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (totalRemain.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new AppException(ErrorCode.SETTLEMENT_NO_PENDING_DEBT);
+            throw new AppException(SettlementBatchErrorCode.SETTLEMENT_NO_PENDING_DEBT);
         }
 
         long minPaymentAmount = paymentProperties.getMinAmount();
         if (totalRemain.compareTo(BigDecimal.valueOf(minPaymentAmount)) < 0) {
             String formattedAmount = String.format("%,d", minPaymentAmount);
-            throw new AppException(ErrorCode.SETTLEMENT_MIN_PAYMENT_REQUIRED, formattedAmount);
+            throw new AppException(SettlementBatchErrorCode.SETTLEMENT_MIN_PAYMENT_REQUIRED, formattedAmount);
         }
 
         // List để lưu transaction code và settlement code
@@ -125,7 +127,7 @@ public class PaymentUserService {
                 .toList();
 
         if (codes.isEmpty()) {
-            throw new AppException(ErrorCode.TRANSACTION_PROCESSING_ERROR);
+            throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_PROCESSING_ERROR);
         }
 
         // Lấy tất cả transaction cùng lúc
@@ -139,13 +141,13 @@ public class PaymentUserService {
             List<String> missing = codes.stream()
                     .filter(c -> !foundCodes.contains(c))
                     .toList();
-            throw new AppException(ErrorCode.TRANSACTION_NOT_FOUND, String.join(", ", missing), false);
+            throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_NOT_FOUND, String.join(", ", missing), false);
         }
 
         // Verify chữ ký
         boolean isValidSignature = vnPayUtils.verifySignature(paymentCheck);
         if (!isValidSignature) {
-            throw new AppException(ErrorCode.TRANSACTION_INVALID_SIGNATURE);
+            throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_INVALID_SIGNATURE);
         }
 
         boolean isSuccess = "00".equals(paymentCheck.getResponseCode());

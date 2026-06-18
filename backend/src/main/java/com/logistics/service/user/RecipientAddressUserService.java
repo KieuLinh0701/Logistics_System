@@ -2,20 +2,19 @@ package com.logistics.service.user;
 
 import com.logistics.entity.Address;
 import com.logistics.entity.Order;
-import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.enums.AddressType;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.RecipientAddressType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AddressErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.mapper.AddressMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.OrderRepository;
-import com.logistics.repository.UserRepository;
 import com.logistics.request.user.recipientaddress.RecipientAddressUserRequest;
 import com.logistics.request.user.recipientaddress.RecipientSuggestionRequest;
 import com.logistics.request.user.recipientaddress.UserRecipientAddressSearchRequest;
-import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.response.user.recipientaddress.RecipientAddress;
@@ -24,7 +23,6 @@ import com.logistics.response.user.recipientaddress.RecipientAddressWithStats;
 import com.logistics.response.user.recipientaddress.RecipientStats;
 import com.logistics.response.user.recipientaddress.RecipientSuggestionAddressResponse;
 import com.logistics.specification.RecipientAddressSpecification;
-import com.logistics.specification.ShippingRequestSpecification;
 import com.logistics.utils.AddressUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
@@ -47,13 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-
-import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
-import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;
 
 @Service
 @RequiredArgsConstructor
@@ -61,243 +54,216 @@ public class RecipientAddressUserService {
 
     private final OrderRepository orderRepository;
     private final AddressRepository addressRepository;
-    private final UserRepository userRepository;
     private final UserUserService userService;
 
-    public ApiResponse<ListResponse<RecipientAddressResponse>> list(int userId, UserRecipientAddressSearchRequest request) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+    public ListResponse<RecipientAddressResponse> list(int userId, UserRecipientAddressSearchRequest request) {
+        Integer shopId = userService.getShopId(userId);
 
-            int page = request.getPage();
-            int limit = request.getLimit();
-            String keyword = request.getSearch();
-            String sort = request.getSort() != null ? request.getSort().toLowerCase() : "newest";
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String keyword = request.getSearch();
+        String sort = request.getSort() != null ? request.getSort().toLowerCase() : "newest";
 
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-                    ? LocalDateTime.parse(request.getStartDate()) : null;
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-                    ? LocalDateTime.parse(request.getEndDate()) : null;
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
 
-            boolean isStatSort = List.of(
-                    "total_orders_high", "total_orders_low",
-                    "success_rate_high", "success_rate_low",
-                    "return_rate_high", "return_rate_low"
-            ).contains(sort);
+        boolean isStatSort = List.of(
+                "total_orders_high", "total_orders_low",
+                "success_rate_high", "success_rate_low",
+                "return_rate_high", "return_rate_low"
+        ).contains(sort);
 
-            Specification<Address> spec = Specification
-                    .where(RecipientAddressSpecification.userId(shopId))
-                    .and(RecipientAddressSpecification.type(AddressType.RECIPIENT))
-                    .and(RecipientAddressSpecification.keyword(keyword))
-                    .and(RecipientAddressSpecification.createdAtBetween(startDate, endDate));
+        Specification<Address> spec = Specification
+                .where(RecipientAddressSpecification.userId(shopId))
+                .and(RecipientAddressSpecification.type(AddressType.RECIPIENT))
+                .and(RecipientAddressSpecification.keyword(keyword))
+                .and(RecipientAddressSpecification.createdAtBetween(startDate, endDate));
 
-            List<RecipientAddressResponse> mappedList;
+        List<RecipientAddressResponse> mappedList;
 
-            if (isStatSort) {
-                List<Address> all = addressRepository.findAll(spec);
+        if (isStatSort) {
+            List<Address> all = addressRepository.findAll(spec);
 
-                mappedList = all.stream()
-                        .map(address -> buildResponse(shopId, address))
-                        .sorted(statComparator(sort))
-                        .toList();
+            mappedList = all.stream()
+                    .map(address -> buildResponse(shopId, address))
+                    .sorted(statComparator(sort))
+                    .toList();
 
-                int total = mappedList.size();
-                int fromIndex = Math.min((page - 1) * limit, total);
-                int toIndex = Math.min(fromIndex + limit, total);
-                List<RecipientAddressResponse> paged = mappedList.subList(fromIndex, toIndex);
+            int total = mappedList.size();
+            int fromIndex = Math.min((page - 1) * limit, total);
+            int toIndex = Math.min(fromIndex + limit, total);
+            List<RecipientAddressResponse> paged = mappedList.subList(fromIndex, toIndex);
 
-                int totalPages = (int) Math.ceil((double) total / limit);
-                Pagination pagination = new Pagination(total, page, limit, totalPages);
+            int totalPages = (int) Math.ceil((double) total / limit);
+            Pagination pagination = new Pagination(total, page, limit, totalPages);
 
-                ListResponse<RecipientAddressResponse> data = new ListResponse<>();
-                data.setList(paged);
-                data.setPagination(pagination);
+            ListResponse<RecipientAddressResponse> data = new ListResponse<>();
+            data.setList(paged);
+            data.setPagination(pagination);
 
-                return new ApiResponse<>(true, "Lấy danh sách thành công", data);
+            return data;
 
-            } else {
-                Sort sortOpt = switch (sort) {
-                    case "oldest" -> Sort.by("createdAt").ascending();
-                    default -> Sort.by("createdAt").descending(); // newest
-                };
+        } else {
+            Sort sortOpt = switch (sort) {
+                case "oldest" -> Sort.by("createdAt").ascending();
+                default -> Sort.by("createdAt").descending(); // newest
+            };
 
-                Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
-                Page<Address> pageData = addressRepository.findAll(spec, pageable);
+            Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
+            Page<Address> pageData = addressRepository.findAll(spec, pageable);
 
-                mappedList = pageData.getContent()
-                        .stream()
-                        .map(address -> buildResponse(shopId, address))
-                        .toList();
+            mappedList = pageData.getContent()
+                    .stream()
+                    .map(address -> buildResponse(shopId, address))
+                    .toList();
 
-                int total = (int) pageData.getTotalElements();
-                Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+            int total = (int) pageData.getTotalElements();
+            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-                ListResponse<RecipientAddressResponse> data = new ListResponse<>();
-                data.setList(mappedList);
-                data.setPagination(pagination);
+            ListResponse<RecipientAddressResponse> data = new ListResponse<>();
+            data.setList(mappedList);
+            data.setPagination(pagination);
 
-                return new ApiResponse<>(true, "Lấy danh sách thành công", data);
-            }
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+            return data;
         }
     }
 
     @Transactional
-    public ApiResponse<RecipientAddressResponse> create(int userId, RecipientAddressUserRequest request) {
-        try {
-            validateForm(request);
+    public RecipientAddressResponse create(int userId, RecipientAddressUserRequest request) {
+        validateForm(request);
 
-            Integer shopId = userService.getShopId(userId);
+        Integer shopId = userService.getShopId(userId);
 
-            User user = userService.getUser(shopId);
+        User user = userService.getUser(shopId);
 
-            String fullAddress = AddressUtils.buildFullAddress(
-                    request.getDetail(),
-                    request.getWardName(),
-                    request.getCityName());
+        String fullAddress = AddressUtils.buildFullAddress(
+                request.getDetail(),
+                request.getWardName(),
+                request.getCityName());
 
-            boolean exists = addressRepository.existsByUserIdAndPhoneNumberAndFullAddressAndType(
-                    shopId, request.getPhoneNumber(), fullAddress, AddressType.RECIPIENT);
-            if (exists) {
-                return new ApiResponse<>(false, "Địa chỉ này đã tồn tại", null);
-            }
-
-            Address address = new Address();
-            address.setUser(user);
-            address.setCityCode(request.getCityCode());
-            address.setWardCode(request.getWardCode());
-            address.setDetail(request.getDetail());
-            address.setName(request.getName());
-            address.setPhoneNumber(request.getPhoneNumber());
-            address.setType(AddressType.RECIPIENT);
-            address.setFullAddress(fullAddress);
-            address.setCityName(request.getCityName());
-            address.setWardName(request.getWardName());
-            address.setLatitude(request.getLatitude());
-            address.setLongitude(request.getLongitude());
-
-            addressRepository.save(address);
-
-            LocalDateTime latestOrderDate = orderRepository
-                    .findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(shopId, request.getPhoneNumber())
-                    .map(Order::getCreatedAt)
-                    .orElse(null);
-
-            RecipientStats stats = buildStatsForShop(
-                    shopId,
-                    request.getPhoneNumber(),
-                    fullAddress,
-                    new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
-
-            return new ApiResponse<>(true, "Thêm địa chỉ thành công", RecipientAddressResponse.builder()
-                    .address(buildAddressFromSaved(address))
-                    .recipientStats(stats)
-                    .build());
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
+        boolean exists = addressRepository.existsByUserIdAndPhoneNumberAndFullAddressAndType(
+                shopId, request.getPhoneNumber(), fullAddress, AddressType.RECIPIENT);
+        if (exists) {
+            throw new AppException(AddressErrorCode.ADDRESS_ALREADY_EXISTS);
         }
+
+        Address address = new Address();
+        address.setUser(user);
+        address.setCityCode(request.getCityCode());
+        address.setWardCode(request.getWardCode());
+        address.setDetail(request.getDetail());
+        address.setName(request.getName());
+        address.setPhoneNumber(request.getPhoneNumber());
+        address.setType(AddressType.RECIPIENT);
+        address.setFullAddress(fullAddress);
+        address.setCityName(request.getCityName());
+        address.setWardName(request.getWardName());
+        address.setLatitude(request.getLatitude());
+        address.setLongitude(request.getLongitude());
+
+        addressRepository.save(address);
+
+        LocalDateTime latestOrderDate = orderRepository
+                .findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(shopId, request.getPhoneNumber())
+                .map(Order::getCreatedAt)
+                .orElse(null);
+
+        RecipientStats stats = buildStatsForShop(
+                shopId,
+                request.getPhoneNumber(),
+                fullAddress,
+                new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
+
+        return RecipientAddressResponse.builder()
+                .address(buildAddressFromSaved(address))
+                .recipientStats(stats)
+                .build();
     }
 
     @Transactional
-    public ApiResponse<RecipientAddressResponse> update(int userId, int id, RecipientAddressUserRequest request) {
-        try {
-            validateForm(request);
+    public RecipientAddressResponse update(int userId, int id, RecipientAddressUserRequest request) {
+        validateForm(request);
 
-            Integer shopId = userService.getShopId(userId);
+        Integer shopId = userService.getShopId(userId);
 
-            Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.RECIPIENT)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
+        Address address = getRecipientAddress(id, shopId);
 
-            String fullAddress = AddressUtils.buildFullAddress(
-                    request.getDetail(),
-                    request.getWardName(),
-                    request.getCityName());
+        String fullAddress = AddressUtils.buildFullAddress(
+                request.getDetail(),
+                request.getWardName(),
+                request.getCityName());
 
-            boolean exists = addressRepository.existsByUserIdAndPhoneNumberAndFullAddressAndTypeAndIdNot(
-                    shopId, request.getPhoneNumber(), fullAddress, AddressType.RECIPIENT, id);
-            if (exists) {
-                return new ApiResponse<>(false, "Địa chỉ này đã tồn tại", null);
-            }
-
-            address.setCityCode(request.getCityCode());
-            address.setWardCode(request.getWardCode());
-            address.setCityName(request.getCityName());
-            address.setWardName(request.getWardName());
-            address.setFullAddress(fullAddress);
-            address.setLongitude(request.getLongitude());
-            address.setLatitude(request.getLatitude());
-            address.setDetail(request.getDetail());
-            address.setName(request.getName());
-            address.setPhoneNumber(request.getPhoneNumber());
-
-            addressRepository.save(address);
-
-            LocalDateTime latestOrderDate = orderRepository
-                    .findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(shopId, request.getPhoneNumber())
-                    .map(Order::getCreatedAt)
-                    .orElse(null);
-
-            RecipientStats stats = buildStatsForShop(
-                    shopId,
-                    request.getPhoneNumber(),
-                    fullAddress,
-                    new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
-
-            return new ApiResponse<>(true, "Cập nhật địa chỉ thành công", RecipientAddressResponse.builder()
-                    .address(buildAddressFromSaved(address))
-                    .recipientStats(stats)
-                    .build());
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
+        boolean exists = addressRepository.existsByUserIdAndPhoneNumberAndFullAddressAndTypeAndIdNot(
+                shopId, request.getPhoneNumber(), fullAddress, AddressType.RECIPIENT, id);
+        if (exists) {
+            throw new AppException(AddressErrorCode.ADDRESS_ALREADY_EXISTS);
         }
+
+        address.setCityCode(request.getCityCode());
+        address.setWardCode(request.getWardCode());
+        address.setCityName(request.getCityName());
+        address.setWardName(request.getWardName());
+        address.setFullAddress(fullAddress);
+        address.setLongitude(request.getLongitude());
+        address.setLatitude(request.getLatitude());
+        address.setDetail(request.getDetail());
+        address.setName(request.getName());
+        address.setPhoneNumber(request.getPhoneNumber());
+
+        addressRepository.save(address);
+
+        LocalDateTime latestOrderDate = orderRepository
+                .findFirstByUserIdAndRecipientPhoneOrderByCreatedAtDesc(shopId, request.getPhoneNumber())
+                .map(Order::getCreatedAt)
+                .orElse(null);
+
+        RecipientStats stats = buildStatsForShop(
+                shopId,
+                request.getPhoneNumber(),
+                fullAddress,
+                new RecipientAddressResult(null, latestOrderDate, RecipientAddressType.NONE));
+
+        return RecipientAddressResponse.builder()
+                .address(buildAddressFromSaved(address))
+                .recipientStats(stats)
+                .build();
     }
 
-    public ApiResponse<Boolean> delete(int userId, int id) {
-        try {
-            Integer shopId = userService.getShopId(userId);
+    public void delete(int userId, int id) {
+        Integer shopId = userService.getShopId(userId);
 
-            Address address = addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.RECIPIENT)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ"));
+        Address address = getRecipientAddress(id, shopId);
 
-            if (Boolean.TRUE.equals(address.getIsDefault())) {
-                return new ApiResponse<>(false, "Vui lòng chọn địa chỉ mặc định khác trước khi xóa", false);
-            }
-
-            addressRepository.delete(address);
-            return new ApiResponse<>(true, "Xóa địa chỉ thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), false);
+        if (Boolean.TRUE.equals(address.getIsDefault())) {
+            throw new AppException(AddressErrorCode.ADDRESS_IS_DEFAULT);
         }
+
+        addressRepository.delete(address);
     }
 
-    public ApiResponse<RecipientSuggestionAddressResponse> getRecipientSuggestion(
+    public RecipientSuggestionAddressResponse getRecipientSuggestion(
             Integer userId,
             RecipientSuggestionRequest request
     ) {
-        try {
-            String phone = request.getPhone();
+        String phone = request.getPhone();
 
-            Integer shopId = userService.getShopId(userId);
+        Integer shopId = userService.getShopId(userId);
 
-            List<RecipientAddressSuggestionItem> items = resolveAddressSuggestions(shopId, phone);
-            RecipientAddressType type = items.isEmpty() ? RecipientAddressType.NONE
-                    : items.get(0).type();
+        List<RecipientAddressSuggestionItem> items = resolveAddressSuggestions(shopId, phone);
+        RecipientAddressType type = items.isEmpty() ? RecipientAddressType.NONE
+                : items.getFirst().type();
 
-            RecipientSuggestionAddressResponse data = RecipientSuggestionAddressResponse.builder()
-                    .addresses(items.stream()
-                            .map(i -> RecipientAddressWithStats.builder()
-                                    .address(i.address())
-                                    .recipientStats(i.stats())
-                                    .build())
-                            .toList())
-                    .type(type)
-                    .build();
-
-            return new ApiResponse<>(true, "Lấy địa chỉ gợi ý thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return RecipientSuggestionAddressResponse.builder()
+                .addresses(items.stream()
+                        .map(i -> RecipientAddressWithStats.builder()
+                                .address(i.address())
+                                .recipientStats(i.stats())
+                                .build())
+                        .toList())
+                .type(type)
+                .build();
     }
 
     public byte[] export(Integer userId, UserRecipientAddressSearchRequest request) {
@@ -392,7 +358,7 @@ public class RecipientAddressUserService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -571,20 +537,27 @@ public class RecipientAddressUserService {
         if (request.getPhoneNumber() == null || request.getPhoneNumber().isBlank())
             missing.append("Số điện thoại, ");
 
-        if (missing.length() > 0) {
-            throw new RuntimeException("Thiếu hoặc không hợp lệ: " + missing.substring(0, missing.length() - 2));
+        if (!missing.isEmpty()) {
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, missing.substring(0, missing.length() - 2));
         }
+    }
+
+    private Address getRecipientAddress(Integer id, Integer shopId) {
+        return addressRepository.findByIdAndUserIdAndType(id, shopId, AddressType.RECIPIENT)
+                .orElseThrow(() -> new AppException(AddressErrorCode.ADDRESS_NOT_FOUND));
     }
 
     private record RecipientAddressResult(
             RecipientAddress address,
             LocalDateTime latestOrderDate,
             RecipientAddressType type
-    ) {}
+    ) {
+    }
 
     private record RecipientAddressSuggestionItem(
             RecipientAddress address,
             RecipientStats stats,
             RecipientAddressType type
-    ) {}
+    ) {
+    }
 }

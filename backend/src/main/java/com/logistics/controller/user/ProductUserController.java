@@ -12,6 +12,7 @@ import com.logistics.service.user.ProductUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,11 +23,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/products")
 public class ProductUserController {
 
-    @Autowired
-    private ProductUserService service;
+    private final ProductUserService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<ProductDto>>> list(
@@ -34,23 +35,25 @@ public class ProductUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, userProductSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, userProductSearchRequest)));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<ProductDto>> create(@ModelAttribute UserProductForm userProductForm,
+    public ResponseEntity<ApiResponse<ProductDto>> create(
+            @Valid @ModelAttribute UserProductForm userProductForm,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, userProductForm));
+        return ResponseEntity.ok(ApiResponse.success(service.create(userId, userProductForm)));
     }
 
     @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<ProductDto>> update(@ModelAttribute UserProductForm userProductForm,
+    public ResponseEntity<ApiResponse<ProductDto>> update(
+            @Valid @ModelAttribute UserProductForm userProductForm,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.update(userId, userProductForm));
+        return ResponseEntity.ok(ApiResponse.success(service.update(userId, userProductForm)));
     }
 
     @DeleteMapping("/{id}")
@@ -58,11 +61,12 @@ public class ProductUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.delete(userId, id));
+        return ResponseEntity.ok(ApiResponse.success(service.delete(userId, id)));
     }
 
     @PostMapping(value = "/bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BulkResponse<ProductDto>> createBulk(@ModelAttribute UserBulkProductForm userBulkProductForm,
+    public ResponseEntity<BulkResponse<ProductDto>> createBulk(
+            @Valid @ModelAttribute UserBulkProductForm userBulkProductForm,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
@@ -76,7 +80,7 @@ public class ProductUserController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getActiveAndInstockUserProducts(userId, userProductSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.getActiveAndInstockUserProducts(userId, userProductSearchRequest)));
     }
 
     @GetMapping("/export")
