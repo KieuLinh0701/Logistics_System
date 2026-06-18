@@ -13,6 +13,10 @@ public enum ShippingRequestErrorCode implements BaseErrorCode {
     SHIPPING_REQUEST_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "Yêu cầu không thể hủy ở trạng thái hiện tại"),
     SHIPPING_REQUEST_EDIT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "Không thể thay đổi loại yêu cầu hoặc đơn hàng khi chỉnh sửa"),
 
+    SHIPPING_REQUEST_INVALID_TYPE(HttpStatus.BAD_REQUEST, "Yêu cầu không hợp lệ"),
+    SHIPPING_REQUEST_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "Yêu cầu đã được xử lý"),
+    SHIPPING_REQUEST_ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "Đơn hàng liên quan không tồn tại"),
+    SHIPPING_REQUEST_SHIPPER_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin shipper"),
     ;
 
     private final HttpStatus httpStatus;
