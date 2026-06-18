@@ -5,7 +5,7 @@ import type {PaymentCheck} from "../types/payment";
 const paymentApi = {
     // User
     async checkPaymentVPN(param: PaymentCheck) {
-        const res = await axiosClient.post<ApiResponse<boolean>>("/user/payment/vnpay/check", param);
+        const res = await axiosClient.post<ApiResponse<void>>("/user/payment/vnpay/check", param);
         return res;
     },
 

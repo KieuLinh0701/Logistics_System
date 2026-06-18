@@ -20,7 +20,7 @@ const addressApi = {
   },
 
   async deleteUserAddress(id: number) {
-    const res = await axiosClient.delete<ApiResponse<string>>(`/user/addresses/${id}`);
+    const res = await axiosClient.delete<ApiResponse<null>>(`/user/addresses/${id}`);
     return res;
   },
 
