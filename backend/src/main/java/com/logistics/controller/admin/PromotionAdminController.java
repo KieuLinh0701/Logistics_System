@@ -5,6 +5,8 @@ import com.logistics.request.admin.UpdatePromotionRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.PromotionAdminService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,65 +33,50 @@ public class PromotionAdminController {
             @RequestParam(required = false) Boolean isGlobal) {
 
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(promotionAdminService.listPromotions(page, limit, search, status, isGlobal));
+        return ResponseEntity.ok(ApiResponse.success(promotionAdminService.listPromotions(page, limit, search, status, isGlobal)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPromotionById(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<Map<String, Object>> response = promotionAdminService.getPromotionById(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(promotionAdminService.getPromotionById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createPromotion(@RequestBody CreatePromotionRequest request) {
+    public ResponseEntity<ApiResponse<String>> createPromotion(@RequestBody CreatePromotionRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<Map<String, Object>> response = promotionAdminService.createPromotion(request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.status(201).body(response);
+        promotionAdminService.createPromotion(request);
+        return ResponseEntity.status(201).body(ApiResponse.success("Tạo khuyến mãi thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> updatePromotion(
+    public ResponseEntity<ApiResponse<String>> updatePromotion(
             @PathVariable Integer id,
             @RequestBody UpdatePromotionRequest request) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<Map<String, Object>> response = promotionAdminService.updatePromotion(id, request);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(400).body(response);
-        }
-        return ResponseEntity.ok(response);
+        promotionAdminService.updatePromotion(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật khuyến mãi thành công"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deletePromotion(@PathVariable Integer id) {
         if (isNotAdmin()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        ApiResponse<String> response = promotionAdminService.deletePromotion(id);
-        if (!response.isSuccess()) {
-            return ResponseEntity.status(404).body(response);
-        }
-        return ResponseEntity.ok(response);
+        promotionAdminService.deletePromotion(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa khuyến mãi thành công"));
     }
 }
-
-

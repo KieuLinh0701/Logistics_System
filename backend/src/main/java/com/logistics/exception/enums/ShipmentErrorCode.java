@@ -15,7 +15,10 @@ public enum ShipmentErrorCode implements BaseErrorCode {
     SHIPMENT_INVALID_TRANSFER_TYPE(HttpStatus.BAD_REQUEST, "Loại chuyến là chuyến giao hàng không cần chọn xe!"),
     SHIPMENT_DELIVERY_INVALID_OFFICE_DESTINATION(HttpStatus.BAD_REQUEST, "Loại chuyến là chuyến giao hàng không cần chọn bưu cục đến!"),
     SHIPMENT_INVALID_OFFICE_DESTINATION(HttpStatus.BAD_REQUEST, "Bưu cục đến không được trùng với bưu cục xuất phát!"),
-    SHIPMENT_ORDER_OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST,"Một số đơn không nằm trong khu vực phân công của nhân viên giao hàng.");
+    SHIPMENT_ORDER_OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST,"Một số đơn không nằm trong khu vực phân công của nhân viên giao hàng."),
+    SHIPMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "Chuyến hàng không ở trạng thái PENDING"),
+    SHIPMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "Trạng thái chuyến hàng không hợp lệ"),
+    ;
 
     private final HttpStatus httpStatus;
     private final String message;

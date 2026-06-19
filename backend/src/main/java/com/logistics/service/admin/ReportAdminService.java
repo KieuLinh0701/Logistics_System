@@ -5,6 +5,8 @@ import com.logistics.dto.admin.AdminShipperReportDto;
 import com.logistics.dto.admin.AdminOfficeReportDto;
 import com.logistics.dto.admin.AdminShopReportDto;
 import com.logistics.dto.admin.AdminOverviewDto;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.repository.ReportRepository;
 
 import java.math.BigDecimal;
@@ -62,7 +64,6 @@ public class ReportAdminService {
 
     public AdminOverviewDto getOverview(LocalDateTime start, LocalDateTime end) {
         Object[] r = reportRepo.overviewSummary(start, end);
-        // mapping fields carefully, database may return BigDecimal/Number
         Long totalOffices = r[0] == null ? 0L : ((Number) r[0]).longValue();
         Long totalEmployees = r[1] == null ? 0L : ((Number) r[1]).longValue();
         Long totalShippers = r[2] == null ? 0L : ((Number) r[2]).longValue();
@@ -121,7 +122,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export operations xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -147,7 +148,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export office xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -175,7 +176,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export shop xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -225,7 +226,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export overview xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -262,7 +263,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export offices detailed xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -299,7 +300,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export shippers detailed xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -317,7 +318,6 @@ public class ReportAdminService {
             rangeRow.createCell(2).setCellValue("Đến ngày");
             rangeRow.createCell(3).setCellValue(end.toLocalDate().toString());
 
-            // Summary
             Row h = sheet.createRow(rIdx++);
             h.createCell(0).setCellValue("Key"); h.createCell(1).setCellValue("Value");
             Map<String, Object> codSummary = (Map<String, Object>) report.getOrDefault("codSummary", new HashMap<>());
@@ -336,7 +336,6 @@ public class ReportAdminService {
                 else row.createCell(1).setCellValue(v == null ? "" : v.toString());
             }
 
-            // codByDay table
             rIdx++;
             Row cdh = sheet.createRow(rIdx++);
             String[] dayHeaders = new String[] {"Date","ShippingRevenue","CODCollected","CODSubmittedToCompany","CODTransferredToShop","CODHeldByCompany"};
@@ -358,7 +357,7 @@ public class ReportAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Export finance xlsx failed: " + e.getMessage(), e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -447,7 +446,6 @@ public class ReportAdminService {
             return m;
         }).toList();
 
-        // Summaries
         BigDecimal totalShippingRevenue = byDay.stream().map(r -> r[1] == null ? BigDecimal.ZERO : new BigDecimal(r[1].toString())).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCodCollected = byDay.stream().map(r -> r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString())).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalCodTransferred = byDay.stream().map(r -> r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString())).reduce(BigDecimal.ZERO, BigDecimal::add);

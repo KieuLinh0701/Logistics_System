@@ -5,6 +5,8 @@ import com.logistics.request.driver.UpdateVehicleTrackingRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.driver.ShipmentDriverService;
 import com.logistics.utils.SecurityUtils;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,16 +27,18 @@ public class ShipmentDriverController {
     @PostMapping("/{id}/start")
     public ResponseEntity<ApiResponse<String>> startShipment(@PathVariable Integer id) {
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(shipmentDriverService.startShipment(id));
+        shipmentDriverService.startShipment(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu vận chuyển"));
     }
     @PostMapping("/finish")
     public ResponseEntity<ApiResponse<String>> finishShipment(@RequestBody FinishShipmentRequest request) {
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(shipmentDriverService.finishShipment(request));
+        shipmentDriverService.finishShipment(request);
+        return ResponseEntity.ok(ApiResponse.success("Đã hoàn tất chuyến hàng"));
     }
 
     @GetMapping
@@ -43,18 +47,18 @@ public class ShipmentDriverController {
             @RequestParam(defaultValue = "10") int limit) {
 
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(shipmentDriverService.getShipments(page, limit));
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getShipments(page, limit)));
     }
 
     @GetMapping("/route")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getRoute() {
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(shipmentDriverService.getRoute());
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getRoute()));
     }
 
     @GetMapping("/history")
@@ -63,29 +67,26 @@ public class ShipmentDriverController {
             @RequestParam(defaultValue = "10") int limit) {
 
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(shipmentDriverService.getHistory(page, limit));
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getHistory(page, limit)));
     }
 
     @PostMapping("/tracking")
     public ResponseEntity<ApiResponse<String>> updateVehicleTracking(@RequestBody UpdateVehicleTrackingRequest request) {
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(shipmentDriverService.updateVehicleTracking(request));
+        shipmentDriverService.updateVehicleTracking(request);
+        return ResponseEntity.ok(ApiResponse.success("Đã cập nhật vị trí"));
     }
 
     @GetMapping("/{id}/tracking")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getVehicleTracking(@PathVariable Integer id) {
         if (isNotDriver()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Không có quyền truy cập", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        return ResponseEntity.ok(shipmentDriverService.getVehicleTracking(id));
+        return ResponseEntity.ok(ApiResponse.success(shipmentDriverService.getVehicleTracking(id)));
     }
 }
-
-
-
-

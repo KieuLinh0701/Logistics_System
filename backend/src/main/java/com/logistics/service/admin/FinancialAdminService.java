@@ -30,18 +30,17 @@ import com.logistics.entity.Order;
 import com.logistics.entity.PaymentSubmission;
 import com.logistics.entity.PaymentSubmissionBatch;
 import com.logistics.enums.OrderCodStatus;
-import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PaymentErrorCode;
 import com.logistics.mapper.PaymentSubmissionMapper;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.service.financial.FinancialValidationService;
-import com.logistics.request.admin.CreateBatchRequest;
 import com.logistics.request.admin.CreatePaymentSubmissionRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -56,109 +55,88 @@ public class FinancialAdminService {
     private final UserRepository userRepository;
     private final FinancialValidationService financialValidationService;
 
-    public ApiResponse<ListResponse<AdminPaymentSubmissionListDto>> listSubmissions(String status) {
-        try {
-            List<PaymentSubmission> subs;
-            if (status == null || status.isBlank()) {
-                subs = submissionRepository.findAll();
-            } else {
-                PaymentSubmissionStatus s = PaymentSubmissionStatus.valueOf(status);
-                subs = submissionRepository.findByStatus(s);
-            }
-
-                List<AdminPaymentSubmissionListDto> list = subs.stream()
-                    .map(PaymentSubmissionMapper::toAdminDto)
-                    .collect(Collectors.toList());
-
-            ListResponse<AdminPaymentSubmissionListDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(null);
-
-            return new ApiResponse<>(true, "Lấy danh sách nộp tiền thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+    public ListResponse<AdminPaymentSubmissionListDto> listSubmissions(String status) {
+        List<PaymentSubmission> subs;
+        if (status == null || status.isBlank()) {
+            subs = submissionRepository.findAll();
+        } else {
+            PaymentSubmissionStatus s = PaymentSubmissionStatus.valueOf(status);
+            subs = submissionRepository.findByStatus(s);
         }
+
+            List<AdminPaymentSubmissionListDto> list = subs.stream()
+                .map(PaymentSubmissionMapper::toAdminDto)
+                .collect(Collectors.toList());
+
+        ListResponse<AdminPaymentSubmissionListDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(null);
+
+        return data;
     }
 
-    public ApiResponse<ListResponse<PaymentSubmissionBatch>> listBatches() {
+    public ListResponse<PaymentSubmissionBatch> listBatches() {
         return listBatches(1, 50, null, null, null);
     }
 
-    public ApiResponse<ListResponse<PaymentSubmissionBatch>> listBatches(int page, int limit, String search, String status, Integer shipperId) {
-        try {
-            Pageable pageable = PageRequest.of(Math.max(0, page - 1), limit, Sort.by("createdAt").descending());
+    public ListResponse<PaymentSubmissionBatch> listBatches(int page, int limit, String search, String status, Integer shipperId) {
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), limit, Sort.by("createdAt").descending());
 
-            Specification<PaymentSubmissionBatch> spec = PaymentSubmissonBatchSpecification.unrestricted()
-                    .and(PaymentSubmissonBatchSpecification.search(search))
-                    .and(PaymentSubmissonBatchSpecification.status(status))
-                    .and(PaymentSubmissonBatchSpecification.officeId(null));
+        Specification<PaymentSubmissionBatch> spec = PaymentSubmissonBatchSpecification.unrestricted()
+                .and(PaymentSubmissonBatchSpecification.search(search))
+                .and(PaymentSubmissonBatchSpecification.status(status))
+                .and(PaymentSubmissonBatchSpecification.officeId(null));
 
-            Page<PaymentSubmissionBatch> pageResult = batchRepository.findAll(spec, pageable);
+        Page<PaymentSubmissionBatch> pageResult = batchRepository.findAll(spec, pageable);
 
-            List<PaymentSubmissionBatch> list = pageResult.getContent();
+        List<PaymentSubmissionBatch> list = pageResult.getContent();
 
-            Pagination pagination = new Pagination((int) pageResult.getTotalElements(), page, limit, pageResult.getTotalPages());
-            ListResponse<PaymentSubmissionBatch> resp = new ListResponse<>();
-            resp.setList(list);
-            resp.setPagination(pagination);
+        Pagination pagination = new Pagination((int) pageResult.getTotalElements(), page, limit, pageResult.getTotalPages());
+        ListResponse<PaymentSubmissionBatch> resp = new ListResponse<>();
+        resp.setList(list);
+        resp.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách batch thành công", resp);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return resp;
     }
 
-    public ApiResponse<Map<Integer, List<AdminPaymentSubmissionListDto>>> listPendingGroupedByShipper() {
-        try {
-            List<PaymentSubmissionStatus> statuses = List.of(PaymentSubmissionStatus.PENDING);
-            List<PaymentSubmission> subs = submissionRepository.findByBatchIsNullAndStatusIn(statuses);
+    public Map<Integer, List<AdminPaymentSubmissionListDto>> listPendingGroupedByShipper() {
+        List<PaymentSubmissionStatus> statuses = List.of(PaymentSubmissionStatus.PENDING);
+        List<PaymentSubmission> subs = submissionRepository.findByBatchIsNullAndStatusIn(statuses);
 
-            Map<Integer, List<AdminPaymentSubmissionListDto>> grouped = subs.stream()
-                    .collect(Collectors.groupingBy(s -> s.getShipper().getId(),
-                            Collectors.mapping(PaymentSubmissionMapper::toAdminDto, Collectors.toList())));
+        Map<Integer, List<AdminPaymentSubmissionListDto>> grouped = subs.stream()
+                .collect(Collectors.groupingBy(s -> s.getShipper().getId(),
+                        Collectors.mapping(PaymentSubmissionMapper::toAdminDto, Collectors.toList())));
 
-            return new ApiResponse<>(true, "Lấy danh sách COD chưa nộp theo shipper", grouped);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return grouped;
     }
 
     @Transactional
-    public ApiResponse<Boolean> processSubmission(Integer adminId, Integer submissionId, CreatePaymentSubmissionRequest form) {
-        try {
-            PaymentSubmission submission = submissionRepository.findById(submissionId)
-                    .orElseThrow(() -> new RuntimeException("Nộp tiền không tồn tại"));
+    public void processSubmission(Integer adminId, Integer submissionId, CreatePaymentSubmissionRequest form) {
+        PaymentSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_SUBMISSION_NOT_FOUND));
 
-            if (form.getActualAmount() != null) {
-                submission.setActualAmount(form.getActualAmount());
-            }
-
-            if (!isBlank(form.getStatus())) {
-                PaymentSubmissionStatus newStatus = PaymentSubmissionStatus.valueOf(form.getStatus());
-                submission.setStatus(newStatus);
-            }
-
-            submission.setNotes(form.getNotes());
-            submission.setCheckedAt(LocalDateTime.now());
-            if (adminId != null) {
-                userRepository.findById(adminId).ifPresent(submission::setCheckedBy);
-            }
-
-            submissionRepository.save(submission);
-            return new ApiResponse<>(true, "Xử lý nộp tiền thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        if (form.getActualAmount() != null) {
+            submission.setActualAmount(form.getActualAmount());
         }
+
+        if (!isBlank(form.getStatus())) {
+            PaymentSubmissionStatus newStatus = PaymentSubmissionStatus.valueOf(form.getStatus());
+            submission.setStatus(newStatus);
+        }
+
+        submission.setNotes(form.getNotes());
+        submission.setCheckedAt(LocalDateTime.now());
+        if (adminId != null) {
+            userRepository.findById(adminId).ifPresent(submission::setCheckedBy);
+        }
+
+        submissionRepository.save(submission);
     }
 
-    public ApiResponse<PaymentSubmissionBatch> getBatchById(Integer id) {
-        try {
-            PaymentSubmissionBatch batch = batchRepository.findById(id).orElse(null);
-            if (batch == null) return new ApiResponse<>(false, "Phiên đối soát không tồn tại", null);
-            return new ApiResponse<>(true, "OK", batch);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+    public PaymentSubmissionBatch getBatchById(Integer id) {
+        PaymentSubmissionBatch batch = batchRepository.findById(id).orElse(null);
+        if (batch == null) throw new AppException(PaymentErrorCode.PAYMENT_BATCH_NOT_FOUND);
+        return batch;
     }
 
     public byte[] exportBatches(int page, int limit, String search, String status, Integer shipperId) {
@@ -202,111 +180,93 @@ public class FinancialAdminService {
                 return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất batch xlsx: " + e.getMessage(), e);
+            throw new AppException(PaymentErrorCode.PAYMENT_BATCH_EXPORT_ERROR);
         }
     }
 
     public byte[] exportSubmissions(String status, String search) {
-        try {
-            try (Workbook workbook = new XSSFWorkbook()) {
-                Sheet sheet = workbook.createSheet("Submissions");
-                String[] headers = new String[] { "Code", "Order", "Shipper", "System Amount", "Actual Amount", "Status", "Paid At", "Checked At", "Notes" };
-                Row header = sheet.createRow(0);
-                for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Submissions");
+            String[] headers = new String[] { "Code", "Order", "Shipper", "System Amount", "Actual Amount", "Status", "Paid At", "Checked At", "Notes" };
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
 
-                Specification<PaymentSubmission> spec = PaymentSubmissonSpecification.unrestricted()
-                        .and(PaymentSubmissonSpecification.status(status))
-                        .and(PaymentSubmissonSpecification.search(search));
+            Specification<PaymentSubmission> spec = PaymentSubmissonSpecification.unrestricted()
+                    .and(PaymentSubmissonSpecification.status(status))
+                    .and(PaymentSubmissonSpecification.search(search));
 
-                List<PaymentSubmission> submissions = submissionRepository.findAll(spec, Sort.by("paidAt").descending());
+            List<PaymentSubmission> submissions = submissionRepository.findAll(spec, Sort.by("paidAt").descending());
 
-                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                int rowIdx = 1;
-                for (PaymentSubmission s : submissions) {
-                    Row row = sheet.createRow(rowIdx++);
-                    String orderCode = s.getOrder() != null ? s.getOrder().getTrackingNumber() : "";
-                    String shipper = s.getShipper() != null ? (s.getShipper().getLastName() + " " + s.getShipper().getFirstName()) : "";
-                    String paid = s.getPaidAt() != null ? dtf.format(s.getPaidAt()) : "";
-                    String checked = s.getCheckedAt() != null ? dtf.format(s.getCheckedAt()) : "";
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            int rowIdx = 1;
+            for (PaymentSubmission s : submissions) {
+                Row row = sheet.createRow(rowIdx++);
+                String orderCode = s.getOrder() != null ? s.getOrder().getTrackingNumber() : "";
+                String shipper = s.getShipper() != null ? (s.getShipper().getLastName() + " " + s.getShipper().getFirstName()) : "";
+                String paid = s.getPaidAt() != null ? dtf.format(s.getPaidAt()) : "";
+                String checked = s.getCheckedAt() != null ? dtf.format(s.getCheckedAt()) : "";
 
-                    row.createCell(0).setCellValue(s.getCode() != null ? s.getCode() : "");
-                    row.createCell(1).setCellValue(orderCode);
-                    row.createCell(2).setCellValue(shipper);
-                    Cell cellSys = row.createCell(3);
-                    Cell cellAct = row.createCell(4);
-                    if (s.getSystemAmount() != null) cellSys.setCellValue(s.getSystemAmount().doubleValue()); else cellSys.setCellValue(0);
-                    if (s.getActualAmount() != null) cellAct.setCellValue(s.getActualAmount().doubleValue()); else cellAct.setCellValue(0);
-                    row.createCell(5).setCellValue(s.getStatus() != null ? s.getStatus().name() : "");
-                    row.createCell(6).setCellValue(paid);
-                    row.createCell(7).setCellValue(checked);
-                    row.createCell(8).setCellValue(s.getNotes() != null ? s.getNotes() : "");
-                }
+                row.createCell(0).setCellValue(s.getCode() != null ? s.getCode() : "");
+                row.createCell(1).setCellValue(orderCode);
+                row.createCell(2).setCellValue(shipper);
+                Cell cellSys = row.createCell(3);
+                Cell cellAct = row.createCell(4);
+                if (s.getSystemAmount() != null) cellSys.setCellValue(s.getSystemAmount().doubleValue()); else cellSys.setCellValue(0);
+                if (s.getActualAmount() != null) cellAct.setCellValue(s.getActualAmount().doubleValue()); else cellAct.setCellValue(0);
+                row.createCell(5).setCellValue(s.getStatus() != null ? s.getStatus().name() : "");
+                row.createCell(6).setCellValue(paid);
+                row.createCell(7).setCellValue(checked);
+                row.createCell(8).setCellValue(s.getNotes() != null ? s.getNotes() : "");
+            }
 
-                for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
 
-                try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                    workbook.write(out);
-                    return out.toByteArray();
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Lỗi khi xuất submissions xlsx: " + e.getMessage(), e);
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                workbook.write(out);
+                return out.toByteArray();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất submissions: " + e.getMessage(), e);
+            throw new AppException(PaymentErrorCode.PAYMENT_SUBMISSION_EXPORT_ERROR);
         }
-    }
-
-    private String escapeCsv(String s) {
-        if (s == null) return "";
-        String out = s.replace("\"", "\"\"");
-        if (out.contains(",") || out.contains("\n")) {
-            return "\"" + out + "\"";
-        }
-        return out;
     }
 
     @Transactional
-    public ApiResponse<Boolean> completeBatch(Integer adminId, Integer batchId) {
-        try {
-            PaymentSubmissionBatch batch = batchRepository.findById(batchId)
-                    .orElseThrow(() -> new RuntimeException("Phiên đối soát không tồn tại"));
+    public void completeBatch(Integer adminId, Integer batchId) {
+        PaymentSubmissionBatch batch = batchRepository.findById(batchId)
+                .orElseThrow(() -> new AppException(PaymentErrorCode.PAYMENT_BATCH_NOT_FOUND));
 
-            // đánh dấu hoàn tất
-            batch.setStatus(PaymentSubmissionBatchStatus.COMPLETED);
-            batch.setCheckedAt(LocalDateTime.now());
-            if (adminId != null) userRepository.findById(adminId).ifPresent(batch::setCheckedBy);
+        batch.setStatus(PaymentSubmissionBatchStatus.COMPLETED);
+        batch.setCheckedAt(LocalDateTime.now());
+        if (adminId != null) userRepository.findById(adminId).ifPresent(batch::setCheckedBy);
 
-            // cập nhật trạng thái đơn hàng trong các nộp tiền
-            if (batch.getSubmissions() != null) {
-                for (PaymentSubmission s : batch.getSubmissions()) {
-                    Order o = s.getOrder();
-                    if (o != null) {
-                        o.setCodStatus(OrderCodStatus.TRANSFERRED);
+        if (batch.getSubmissions() != null) {
+            for (PaymentSubmission s : batch.getSubmissions()) {
+                Order o = s.getOrder();
+                if (o != null) {
+                    o.setCodStatus(OrderCodStatus.TRANSFERRED);
+                    try {
                         try {
-                            try {
-                                Optional<Order> locked = orderRepository.findByIdForUpdate(o.getId());
-                                if (locked.isPresent()) {
-                                    financialValidationService.markOrderPaidIfEligible(locked.get());
-                                } else {
-                                    financialValidationService.markOrderPaidIfEligible(o);
-                                }
-                            } catch (Exception lockEx) {
+                            Optional<Order> locked = orderRepository.findByIdForUpdate(o.getId());
+                            if (locked.isPresent()) {
+                                financialValidationService.markOrderPaidIfEligible(locked.get());
+                            } else {
                                 financialValidationService.markOrderPaidIfEligible(o);
                             }
-                        } catch (Exception ex) {
-                            System.err.println("Error while validating payment for recipientaddress " + o.getId() + ": " + ex.getMessage());
+                        } catch (Exception lockEx) {
+                            // Row-level lock failed, proceed without lock
+                            financialValidationService.markOrderPaidIfEligible(o);
                         }
-                        orderRepository.save(o);
+                    } catch (Exception ex) {
+                        // Non-critical secondary error; order status already updated above
+                        System.err.println("Error while validating payment for recipientaddress " + o.getId() + ": " + ex.getMessage());
                     }
+                    orderRepository.save(o);
                 }
             }
-
-            batchRepository.save(batch);
-
-            return new ApiResponse<>(true, "Hoàn tất phiên đối soát", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
         }
+
+        batchRepository.save(batch);
+
     }
 
     private boolean isBlank(String s) {

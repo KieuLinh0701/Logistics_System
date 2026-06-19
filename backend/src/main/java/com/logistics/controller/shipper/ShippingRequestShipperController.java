@@ -21,14 +21,13 @@ public class ShippingRequestShipperController {
     private ShippingRequestShipperService service;
 
     @GetMapping
-    public ResponseEntity<List<ShippingRequest>> list() {
-        List<ShippingRequest> list = service.listForCurrentShipper();
-        return ResponseEntity.ok(list);
+    public ResponseEntity<ApiResponse<List<ShippingRequest>>> list() {
+        return ResponseEntity.ok(ApiResponse.success(service.listForCurrentShipper()));
     }
 
     @PostMapping("/{id}/accept")
-    public ResponseEntity<ApiResponse<Boolean>> accept(@PathVariable Integer id) {
-        ApiResponse<Boolean> res = service.accept(id);
-        return ResponseEntity.status(res.isSuccess() ? 200 : 400).body(res);
+    public ResponseEntity<ApiResponse<Void>> accept(@PathVariable Integer id) {
+        service.accept(id);
+        return ResponseEntity.ok(ApiResponse.success("Yêu cầu đã được chấp nhận", null));
     }
 }

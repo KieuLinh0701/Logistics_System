@@ -20,10 +20,11 @@ import com.logistics.entity.Account;
 import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import com.logistics.entity.AccountRole;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.Pagination;
 import com.logistics.utils.PasswordUtils;
 
@@ -39,195 +40,168 @@ public class UserAdminService {
     @Autowired
     private RoleRepository roleRepository;
 
-    public ApiResponse<Map<String, Object>> listUsers(int page, int limit, String search, String status, String roleName) {
-        try {
-            Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
-            Page<Account> accountPage;
+    public Map<String, Object> listUsers(int page, int limit, String search, String status, String roleName) {
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Page<Account> accountPage;
 
-            Boolean statusBool = null;
-            if (status != null) {
-                if ("ACTIVE".equalsIgnoreCase(status)) statusBool = true;
-                else if ("INACTIVE".equalsIgnoreCase(status)) statusBool = false;
-            }
-
-            if ((search != null && !search.trim().isEmpty()) || roleName != null || statusBool != null) {
-                String searchParam = (search != null && !search.trim().isEmpty()) ? search : null;
-                accountPage = accountRepository.findBySearchAndRoleAndStatus(searchParam, roleName, statusBool, pageable);
-            } else {
-                accountPage = accountRepository.findAll(pageable);
-            }
-
-                List<Map<String, Object>> users = accountPage.getContent().stream()
-                    .map(acc -> mapAccount(acc, roleName))
-                    .collect(Collectors.toList());
-
-            Pagination pagination = new Pagination(
-                    (int) accountPage.getTotalElements(),
-                    page,
-                    limit,
-                    accountPage.getTotalPages());
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("data", users);
-            result.put("pagination", pagination);
-
-            return new ApiResponse<>(true, "Lấy danh sách người dùng thành công", result);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        Boolean statusBool = null;
+        if (status != null) {
+            if ("ACTIVE".equalsIgnoreCase(status)) statusBool = true;
+            else if ("INACTIVE".equalsIgnoreCase(status)) statusBool = false;
         }
+
+        if ((search != null && !search.trim().isEmpty()) || roleName != null || statusBool != null) {
+            String searchParam = (search != null && !search.trim().isEmpty()) ? search : null;
+            accountPage = accountRepository.findBySearchAndRoleAndStatus(searchParam, roleName, statusBool, pageable);
+        } else {
+            accountPage = accountRepository.findAll(pageable);
+        }
+
+            List<Map<String, Object>> users = accountPage.getContent().stream()
+                .map(acc -> mapAccount(acc, roleName))
+                .collect(Collectors.toList());
+
+        Pagination pagination = new Pagination(
+                (int) accountPage.getTotalElements(),
+                page,
+                limit,
+                accountPage.getTotalPages());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", users);
+        result.put("pagination", pagination);
+
+        return result;
     }
 
-    public ApiResponse<Map<String, Object>> getUserById(Integer userId) {
-        try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+    public Map<String, Object> getUserById(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
-            Account account = accountRepository.findByUser(user)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+        Account account = accountRepository.findByUser(user)
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_ACCOUNT_NOT_FOUND));
 
-            return new ApiResponse<>(true, "Lấy thông tin người dùng thành công", mapAccount(account));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return mapAccount(account);
     }
 
     @Transactional
-    public ApiResponse<Map<String, Object>> createUser(CreateUserRequest request) {
-        try {
-            if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
-                return new ApiResponse<>(false, "Email đã tồn tại", null);
-            }
+    public void createUser(CreateUserRequest request) {
+        if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new AppException(UserErrorCode.USER_EMAIL_EXISTED);
+        }
 
-            if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                return new ApiResponse<>(false, "Số điện thoại đã tồn tại", null);
-            }
+        if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new AppException(UserErrorCode.USER_PHONE_EXISTED);
+        }
 
-                Account account = new Account();
-                account.setEmail(request.getEmail());
-                account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
+            Account account = new Account();
+            account.setEmail(request.getEmail());
+            account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
 
-                // Tạo AccountRole liên kết account <-> roles (hỗ trợ nhiều role)
-                List<AccountRole> ars = new ArrayList<>();
-                if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
-                    for (Integer rid : request.getRoleIds()) {
-                        Role role = roleRepository.findById(rid)
-                                .orElseThrow(() -> new RuntimeException("Không tìm thấy role id=" + rid));
-                        AccountRole ar = new AccountRole();
-                        ar.setAccount(account);
-                        ar.setRole(role);
-                        ar.setIsActive(true);
-                        ars.add(ar);
-                    }
+            List<AccountRole> ars = new ArrayList<>();
+            if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
+                for (Integer rid : request.getRoleIds()) {
+                    Role role = roleRepository.findById(rid)
+                            .orElseThrow(() -> new AppException(UserErrorCode.USER_ROLE_NOT_FOUND, rid));
+                    AccountRole ar = new AccountRole();
+                    ar.setAccount(account);
+                    ar.setRole(role);
+                    ar.setIsActive(true);
+                    ars.add(ar);
                 }
-                account.setAccountRoles(ars);
+            }
+            account.setAccountRoles(ars);
 
-                account.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
-                account.setIsVerified(false);
-                account = accountRepository.save(account);
+            account.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+            account.setIsVerified(false);
+            account = accountRepository.save(account);
 
-            User user = new User();
-            user.setAccount(account);
+        User user = new User();
+        user.setAccount(account);
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user = userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateUser(Integer userId, UpdateUserRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
+
+        Account account = accountRepository.findByUser(user)
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_ACCOUNT_NOT_FOUND));
+
+        if (request.getFirstName() != null)
             user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null)
             user.setLastName(request.getLastName());
+        if (request.getPhoneNumber() != null) {
+            if (!user.getPhoneNumber().equals(request.getPhoneNumber())
+                    && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                throw new AppException(UserErrorCode.USER_PHONE_EXISTED);
+            }
             user.setPhoneNumber(request.getPhoneNumber());
-            user = userRepository.save(user);
-
-            return new ApiResponse<>(true, "Tạo người dùng thành công", mapAccount(account));
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
         }
-    }
+        userRepository.save(user);
 
-    @Transactional
-    public ApiResponse<Map<String, Object>> updateUser(Integer userId, UpdateUserRequest request) {
-        try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-            Account account = accountRepository.findByUser(user)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
-
-            if (request.getFirstName() != null)
-                user.setFirstName(request.getFirstName());
-            if (request.getLastName() != null)
-                user.setLastName(request.getLastName());
-            if (request.getPhoneNumber() != null) {
-                if (!user.getPhoneNumber().equals(request.getPhoneNumber())
-                        && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                    return new ApiResponse<>(false, "Số điện thoại đã tồn tại", null);
-                }
-                user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
+        }
+        if (request.getRoleIds() != null) {
+            List<Integer> target = request.getRoleIds();
+            List<AccountRole> current = account.getAccountRoles();
+            if (current == null) {
+                current = new ArrayList<>();
+                account.setAccountRoles(current);
             }
-            userRepository.save(user);
 
-            if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-                account.setPassword(PasswordUtils.hashPassword(request.getPassword()));
-            }
-            if (request.getRoleIds() != null) {
-                List<Integer> target = request.getRoleIds();
-                List<AccountRole> current = account.getAccountRoles();
-                if (current == null) {
-                    current = new ArrayList<>();
-                    account.setAccountRoles(current);
+            for (AccountRole ar : current) {
+                if (ar != null && ar.getRole() != null && ar.getRole().getId() != null) {
+                    if (target.contains(ar.getRole().getId())) {
+                        ar.setIsActive(true);
+                    } else {
+                        ar.setIsActive(false);
+                    }
                 }
+            }
 
+            for (Integer rid : target) {
+                boolean exists = false;
                 for (AccountRole ar : current) {
-                    if (ar != null && ar.getRole() != null && ar.getRole().getId() != null) {
-                        if (target.contains(ar.getRole().getId())) {
-                            ar.setIsActive(true);
-                        } else {
-                            ar.setIsActive(false);
-                        }
+                    if (ar != null && ar.getRole() != null && ar.getRole().getId() != null
+                            && ar.getRole().getId().equals(rid)) {
+                        exists = true;
+                        break;
                     }
                 }
-
-                for (Integer rid : target) {
-                    boolean exists = false;
-                    for (AccountRole ar : current) {
-                        if (ar != null && ar.getRole() != null && ar.getRole().getId() != null
-                                && ar.getRole().getId().equals(rid)) {
-                            exists = true;
-                            break;
-                        }
-                    }
-                    if (!exists) {
-                        Role role = roleRepository.findById(rid)
-                                .orElseThrow(() -> new RuntimeException("Không tìm thấy role id=" + rid));
-                        AccountRole newAr = new AccountRole();
-                        newAr.setAccount(account);
-                        newAr.setRole(role);
-                        newAr.setIsActive(true);
-                        current.add(newAr);
-                    }
+                if (!exists) {
+                    Role role = roleRepository.findById(rid)
+                            .orElseThrow(() -> new AppException(UserErrorCode.USER_ROLE_NOT_FOUND, rid));
+                    AccountRole newAr = new AccountRole();
+                    newAr.setAccount(account);
+                    newAr.setRole(role);
+                    newAr.setIsActive(true);
+                    current.add(newAr);
                 }
             }
-            if (request.getIsActive() != null) {
-                account.setIsActive(request.getIsActive());
-            }
-            accountRepository.save(account);
-
-            return new ApiResponse<>(true, "Cập nhật người dùng thành công", mapAccount(account));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
+        if (request.getIsActive() != null) {
+            account.setIsActive(request.getIsActive());
+        }
+        accountRepository.save(account);
     }
 
     @Transactional
-    public ApiResponse<String> deleteUser(Integer userId) {
-        try {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+    public void deleteUser(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
-            Account account = accountRepository.findByUser(user)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+        Account account = accountRepository.findByUser(user)
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_ACCOUNT_NOT_FOUND));
 
-            userRepository.delete(user);
-            accountRepository.delete(account);
-
-            return new ApiResponse<>(true, "Xóa người dùng thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
+        userRepository.delete(user);
+        accountRepository.delete(account);
     }
 
     private Map<String, Object> mapAccount(Account account) {
@@ -249,7 +223,6 @@ public class UserAdminService {
 
         Role chosenRole = null;
         if (account.getAccountRoles() != null) {
-            // Lọc theo role
             if (preferredRoleName != null) {
                 for (AccountRole ar : account.getAccountRoles()) {
                     if (ar != null && ar.getRole() != null && preferredRoleName.equals(ar.getRole().getName())) {
