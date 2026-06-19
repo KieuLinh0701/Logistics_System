@@ -12,6 +12,9 @@ import com.logistics.entity.ShippingRequestAttachment;
 import com.logistics.entity.User;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.mapper.ShippingRequestMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.ShippingRequestAttachmentRepository;
@@ -71,9 +74,9 @@ public class ShippingRequestManagerService {
 
     private final NotificationService notificationService;
 
-    public ApiResponse<ListResponse<ManagerShippingRequestListDto>> list(int userId,
+    public ListResponse<ManagerShippingRequestListDto> list(
+            int userId,
             ManagerShippingRequestSearchRequest request) {
-        try {
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -145,10 +148,7 @@ public class ShippingRequestManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách yêu cầu thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     public byte[] export(int userId, ManagerShippingRequestSearchRequest request) {
@@ -266,36 +266,29 @@ public class ShippingRequestManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
-
-    private boolean checkPermission(int userId, ShippingRequest request) {
-        if (request == null) {
-            return false;
+    
+    private void checkPermission(int userId, ShippingRequest request) {
+        if (request == null || request.getOffice() == null || request.getOffice().getId() == null) {
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_ACCESS_DENIED);
         }
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
         if (userOffice == null) {
-            return false;
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_ACCESS_DENIED);
         }
 
-        if (request.getOffice() == null || request.getOffice().getId() == null) {
-            return false;
+        if (!request.getOffice().getId().equals(userOffice.getId())) {
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_ACCESS_DENIED);
         }
-
-        return request.getOffice().getId().equals(userOffice.getId());
     }
 
-    public ApiResponse<ManagerShippingRequestDetailDto> getShippingRequestById(int userId, int id) {
-        try {
-            ShippingRequest request = repository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+    public ManagerShippingRequestDetailDto getShippingRequestById(int userId, int id) {
+            ShippingRequest request = getShippingRequestById(id);
 
-            if (!checkPermission(userId, request)) {
-                return new ApiResponse<>(false, "Không có quyền xem yêu cầu này", null);
-            }
+            checkPermission(userId, request);
 
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.REQUEST);
@@ -303,26 +296,17 @@ public class ShippingRequestManagerService {
             List<ShippingRequestAttachment> responseAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.RESPONSE);
 
-            ManagerShippingRequestDetailDto data = ShippingRequestMapper.toManagerShippingRequestDetailDto(
+            return ShippingRequestMapper.toManagerShippingRequestDetailDto(
                     request,
                     requestAttachments,
                     responseAttachments);
-
-            return new ApiResponse<>(true, "Lấy chi tiết yêu cầu theo id thành công", data);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<Boolean> processing(int userId, int id, ManagerShippingRequestForm request) {
+    public void processing(int userId, int id, ManagerShippingRequestForm request) {
 
-        ShippingRequest shippingRequest = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại"));
+        ShippingRequest shippingRequest = getShippingRequestById(id);
 
-        if (!checkPermission(userId, shippingRequest)) {
-            return new ApiResponse<>(false, "Không có quyền phản hồi yêu cầu này", null);
-        }
+        checkPermission(userId, shippingRequest);
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
@@ -334,7 +318,7 @@ public class ShippingRequestManagerService {
 
         if (!ShippingRequestUtils.canManagerChangeStatus(shippingRequest.getStatus(), newStatus)
                 && isBlank(request.getStatus())) {
-            throw new RuntimeException("Trạng thái yêu cầu chuyển không hợp lệ");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_STATUS);
         }
 
         String oldAttachmentsStr = request.getOldAttachments();
@@ -347,7 +331,7 @@ public class ShippingRequestManagerService {
                         oldAttachmentsStr,
                         mapper.getTypeFactory().constructCollectionType(List.class, Integer.class));
             } catch (Exception e) {
-                throw new RuntimeException("Parse oldAttachments thất bại", e);
+                throw new AppException(CommonErrorCode.PARSE_ATTACHMENTS_FAILED);
             }
         }
 
@@ -369,8 +353,6 @@ public class ShippingRequestManagerService {
         if (shippingRequest.getUser() != null && shippingRequest.getUser().getId() != null) {
             sendShippingRequestNotification(shippingRequest);
         }
-
-        return new ApiResponse<>(true, "Phản hồi yêu cầu thành công", true);
     }
 
     private void sendShippingRequestNotification(ShippingRequest shippingRequest) {
@@ -463,7 +445,7 @@ public class ShippingRequestManagerService {
 
             return result.get("secure_url").toString();
         } catch (Exception e) {
-            throw new RuntimeException("Upload file thất bại: " + e.getMessage());
+            throw new AppException(CommonErrorCode.CLOUDINARY_UPLOAD_FAILED);
         }
     }
 
@@ -474,18 +456,23 @@ public class ShippingRequestManagerService {
             missing.add("Trạng thái");
 
         if (!missing.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
 
         ShippingRequestStatus status;
         try {
             status = ShippingRequestStatus.valueOf(request.getStatus());
         } catch (Exception e) {
-            throw new RuntimeException("Trạng thái yêu cầu không hợp lệ");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_STATUS);
         }
 
         if (!isBlank(request.getResponse()) && request.getResponse().length() > 1000) {
-            throw new RuntimeException("Nội dung phản hồi không được vượt quá 1000 ký tự");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_RESPONSE);
         }
+    }
+
+    private ShippingRequest getShippingRequestById(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
     }
 
     private boolean isBlank(String s) {

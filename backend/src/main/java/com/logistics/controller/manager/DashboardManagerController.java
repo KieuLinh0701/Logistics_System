@@ -22,15 +22,6 @@ public class DashboardManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getOverview(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.getOverview(userId)));
     }
-
-    // @GetMapping("/chart")
-    // public ResponseEntity<ApiResponse<UserDashboardChartResponseDTO>> getChart(
-    //         SearchRequest searchRequest,
-    //         HttpServletRequest request) {
-    //     Integer userId = (Integer) request.getAttribute("currentUserId");
-
-    //     return ResponseEntity.ok(service.getChart(userId, searchRequest));
-    // }
 }

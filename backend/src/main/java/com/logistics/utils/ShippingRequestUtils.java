@@ -156,18 +156,6 @@ public class ShippingRequestUtils {
         return REQUEST_TYPE_ALLOWED_CANCEL.contains(value);
     }
 
-    public static String getCancelErrorMessage(ShippingRequestStatus status) {
-        if (status == ShippingRequestStatus.PROCESSING) {
-            return "Yêu cầu không thể hủy vì đang được xử lý";
-        } else if (status == ShippingRequestStatus.RESOLVED) {
-            return "Yêu cầu không thể hủy vì đã hoàn tất xử lý";
-        } else if (status == ShippingRequestStatus.REJECTED) {
-            return "Yêu cầu không thể hủy vì đã bị từ chối";
-        } else {
-            return "Yêu cầu không thể hủy ở trạng thái hiện tại";
-        } 
-    }
-
     // Những yêu cầu mà guest có thể tạo
     private static final Set<ShippingRequestType> REQUEST_TYPE_ALLOWED_GUEST_CREATE = Set.of(
             ShippingRequestType.COMPLAINT,

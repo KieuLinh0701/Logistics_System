@@ -15,6 +15,10 @@ import java.util.stream.Collectors;
 import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.entity.*;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.OrderErrorCode;
+import com.logistics.exception.enums.ServiceTypeErrorCode;
 import com.logistics.request.user.product.UserProductSearchRequest;
 import com.logistics.specification.ProductSpecification;
 import com.logistics.utils.AddressUtils;
@@ -102,89 +106,85 @@ public class OrderManagerService {
 
     private final PickupAttemptRepository pickupAttemptRepository;
 
-    public ApiResponse<ListResponse<ManagerOrderListDto>> list(int userId, UserOrderSearchRequest request) {
-        try {
-            int page = request.getPage();
-            int limit = request.getLimit();
-            String search = request.getSearch();
-            String payer = request.getPayer();
-            String status = request.getStatus();
-            String pickupType = request.getPickupType();
-            Integer serviceTypeId = request.getServiceTypeId();
-            String paymentStatus = request.getPaymentStatus();
-            String cod = request.getCod();
-            String sort = request.getSort();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
+    public ListResponse<ManagerOrderListDto> list(int userId, UserOrderSearchRequest request) {
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String search = request.getSearch();
+        String payer = request.getPayer();
+        String status = request.getStatus();
+        String pickupType = request.getPickupType();
+        Integer serviceTypeId = request.getServiceTypeId();
+        String paymentStatus = request.getPaymentStatus();
+        String cod = request.getCod();
+        String sort = request.getSort();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            Specification<Order> spec = OrderSpecification.unrestrictedOrder()
-                    .and(OrderSpecification.officeId(userOffice.getId()))
-                    .and(OrderSpecification.excludeDraft())
-                    .and(OrderSpecification.searchManager(search))
-                    .and(OrderSpecification.payer(payer))
-                    .and(OrderSpecification.status(status))
-                    .and(OrderSpecification.pickupType(pickupType))
-                    .and(OrderSpecification.serviceTypeId(serviceTypeId))
-                    .and(OrderSpecification.paymentStatus(paymentStatus))
-                    .and(OrderSpecification.cod(cod))
-                    .and(OrderSpecification.createdAtBetween(startDate, endDate));
+        Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.officeId(userOffice.getId()))
+                .and(OrderSpecification.excludeDraft())
+                .and(OrderSpecification.searchManager(search))
+                .and(OrderSpecification.payer(payer))
+                .and(OrderSpecification.status(status))
+                .and(OrderSpecification.pickupType(pickupType))
+                .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                .and(OrderSpecification.paymentStatus(paymentStatus))
+                .and(OrderSpecification.cod(cod))
+                .and(OrderSpecification.createdAtBetween(startDate, endDate));
 
-            Sort sortOpt = switch (sort.toLowerCase()) {
-                case "newest" -> Sort.by("createdAt")
-                        .descending();
-                case "oldest" -> Sort.by("createdAt")
-                        .ascending();
-                case "cod_high" -> Sort.by("cod")
-                        .descending();
-                case "cod_low" -> Sort.by("cod")
-                        .ascending();
-                case "order_value_high" -> Sort.by("orderValue")
-                        .descending();
-                case "order_value_low" -> Sort.by("orderValue")
-                        .ascending();
-                case "fee_high" -> Sort.by("totalFee")
-                        .descending();
-                case "fee_low" -> Sort.by("totalFee")
-                        .ascending();
-                case "weight_high" -> Sort.by("weight")
-                        .descending();
-                case "weight_low" -> Sort.by("weight")
-                        .ascending();
-                default -> Sort.unsorted();
-            };
+        Sort sortOpt = switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt")
+                    .descending();
+            case "oldest" -> Sort.by("createdAt")
+                    .ascending();
+            case "cod_high" -> Sort.by("cod")
+                    .descending();
+            case "cod_low" -> Sort.by("cod")
+                    .ascending();
+            case "order_value_high" -> Sort.by("orderValue")
+                    .descending();
+            case "order_value_low" -> Sort.by("orderValue")
+                    .ascending();
+            case "fee_high" -> Sort.by("totalFee")
+                    .descending();
+            case "fee_low" -> Sort.by("totalFee")
+                    .ascending();
+            case "weight_high" -> Sort.by("weight")
+                    .descending();
+            case "weight_low" -> Sort.by("weight")
+                    .ascending();
+            default -> Sort.unsorted();
+        };
 
-            Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
-            Page<Order> pageData = repository.findAll(spec, pageable);
+        Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
+        Page<Order> pageData = repository.findAll(spec, pageable);
 
-            List<ManagerOrderListDto> list = pageData.getContent()
-                    .stream()
-                    .map(order -> OrderMapper.toManagerOrderListDto(order))
-                    .toList();
+        List<ManagerOrderListDto> list = pageData.getContent()
+                .stream()
+                .map(OrderMapper::toManagerOrderListDto)
+                .toList();
 
-            int total = (int) pageData.getTotalElements();
+        int total = (int) pageData.getTotalElements();
 
-            Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+        Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
 
-            ListResponse<ManagerOrderListDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<ManagerOrderListDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách đơn hàng thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return data;
     }
 
-    public ApiResponse<List<ManagerOrderStatusCountResponse>> getStatusCounts(Integer userId) {
+    public List<ManagerOrderStatusCountResponse> getStatusCounts(Integer userId) {
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         List<Object[]> raw = repository.countByStatusForOffice(userOffice.getId());
@@ -201,95 +201,83 @@ public class OrderManagerService {
                 .sum();
         counts.add(0, new ManagerOrderStatusCountResponse("ALL", total));
 
-        return new ApiResponse<>(true, "Lấy số lượng theo trạng thái thành công", counts);
+        return counts;
     }
 
-    public ApiResponse<List<Integer>> getAllOrderIds(int userId, UserOrderSearchRequest request) {
-        try {
-            String search = request.getSearch();
-            String payer = request.getPayer();
-            String status = request.getStatus();
-            String pickupType = request.getPickupType();
-            Integer serviceTypeId = request.getServiceTypeId();
-            String paymentStatus = request.getPaymentStatus();
-            String cod = request.getCod();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
-                    .isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+    public List<Integer> getAllOrderIds(int userId, UserOrderSearchRequest request) {
+        String search = request.getSearch();
+        String payer = request.getPayer();
+        String status = request.getStatus();
+        String pickupType = request.getPickupType();
+        Integer serviceTypeId = request.getServiceTypeId();
+        String paymentStatus = request.getPaymentStatus();
+        String cod = request.getCod();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            Specification<Order> spec = OrderSpecification.unrestrictedOrder()
-                    .and(OrderSpecification.officeId(userOffice.getId()))
-                    .and(OrderSpecification.excludeDraft())
-                    .and(OrderSpecification.searchManager(search))
-                    .and(OrderSpecification.payer(payer))
-                    .and(OrderSpecification.status(status))
-                    .and(OrderSpecification.pickupType(pickupType))
-                    .and(OrderSpecification.serviceTypeId(serviceTypeId))
-                    .and(OrderSpecification.paymentStatus(paymentStatus))
-                    .and(OrderSpecification.cod(cod))
-                    .and(OrderSpecification.createdAtBetween(startDate, endDate));
+        Specification<Order> spec = OrderSpecification.unrestrictedOrder()
+                .and(OrderSpecification.officeId(userOffice.getId()))
+                .and(OrderSpecification.excludeDraft())
+                .and(OrderSpecification.searchManager(search))
+                .and(OrderSpecification.payer(payer))
+                .and(OrderSpecification.status(status))
+                .and(OrderSpecification.pickupType(pickupType))
+                .and(OrderSpecification.serviceTypeId(serviceTypeId))
+                .and(OrderSpecification.paymentStatus(paymentStatus))
+                .and(OrderSpecification.cod(cod))
+                .and(OrderSpecification.createdAtBetween(startDate, endDate));
 
-            List<Order> orders = repository.findAll(spec);
+        List<Order> orders = repository.findAll(spec);
 
-            List<Integer> orderIds = orders.stream()
-                    .filter(order -> order.getTrackingNumber() != null)
-                    .map(Order::getId)
-                    .toList();
-
-            return new ApiResponse<>(true, "Lấy danh sách ID đơn hàng thành công", orderIds);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return orders.stream()
+                .filter(order -> order.getTrackingNumber() != null)
+                .map(Order::getId)
+                .toList();
     }
 
-    public ApiResponse<ManagerOrderDetailDto> getOrderByTrackingNumber(int userId, String trackingNumber) {
-        try {
-            Order order = repository.findByTrackingNumber(trackingNumber)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public ManagerOrderDetailDto getOrderByTrackingNumber(int userId, String trackingNumber) {
+        Order order = repository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
-            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            boolean hasAccess = (order.getFromOffice() != null
-                    && userOffice.getId()
-                    .equals(order.getFromOffice()
-                            .getId()))
-                    || (order.getToOffice() != null && userOffice.getId()
-                    .equals(order.getToOffice()
-                            .getId()));
+        boolean hasAccess = (order.getFromOffice() != null
+                && userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId()))
+                || (order.getToOffice() != null && userOffice.getId()
+                .equals(order.getToOffice()
+                        .getId()));
 
-            if (!hasAccess) {
-                return new ApiResponse<>(false, "Bạn không có quyền xem đơn hàng này", null);
-            }
-
-            List<OrderHistory> orderHistories = orderHistoryRepository
-                    .findByOrderIdOrderByActionTimeDesc(order.getId());
-
-            List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-                var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
-
-                ManagerOrderDetailDto data = OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
-
-            return new ApiResponse<>(true, "Lấy chi tiết đơn hàng theo mã đơn hàng thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
+        if (!hasAccess) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
         }
+
+        List<OrderHistory> orderHistories = orderHistoryRepository
+                .findByOrderIdOrderByActionTimeDesc(order.getId());
+
+        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+        var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
+
+        return OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
     }
 
     @Transactional
-    public ApiResponse<List<OrderPrintDto>> getOrdersForPrint(Integer userId,
+    public List<OrderPrintDto> getOrdersForPrint(
+            Integer userId,
             List<Integer> orderIds) {
-        try {
             List<Order> orders = repository.findByIdIn(orderIds);
 
             if (orders.isEmpty()) {
-                return new ApiResponse<>(false, "Không tìm thấy đơn hàng nào để in", null);
+                throw new AppException(OrderErrorCode.ORDERS_NOT_FOUND_TO_PRINT);
             }
 
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -310,36 +298,30 @@ public class OrderManagerService {
                     .toList();
 
             if (printableOrders.isEmpty()) {
-                return new ApiResponse<>(false, "Không có đơn nào đủ điều kiện để in", null);
+                throw new AppException(OrderErrorCode.ORDERS_INELIGIBLE_FOR_PRINT);
             }
 
-            List<OrderPrintDto> printDtos = printableOrders.stream()
+            return printableOrders.stream()
                     .map(order -> {
                         List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
                         return OrderPrintMapper.toDto(order, orderProducts);
                     })
                     .toList();
-
-            return new ApiResponse<>(true, "Lấy phiếu vận đơn thành công", printDtos);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy phiếu vận đơn: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<Boolean> cancelOrder(Integer userId, Integer orderId) {
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public void cancelOrder(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         if (!OrderUtils.canManagerCancel(order.getStatus(), order.getCreatedByType())) {
-            throw new RuntimeException("Đơn hàng đã vận chuyển, không thể hủy");
+            throw new AppException(OrderErrorCode.ORDER_CANNOT_CANCEL);
         }
 
         if (order.getFromOffice() == null || !userOffice.getId()
                 .equals(order.getFromOffice()
                         .getId())) {
-            return new ApiResponse<>(false, "Bạn không có quyền hủy đơn hàng này", false);
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
         }
 
         order.setStatus(OrderStatus.CANCELLED);
@@ -381,24 +363,21 @@ public class OrderManagerService {
                     "orders/list",
                     order.getTrackingNumber());
         }
-
-        return new ApiResponse<>(true, "Hủy đơn hàng thành công", true);
     }
 
-    public ApiResponse<Boolean> confirmOrder(Integer userId, Integer orderId) {
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public void confirmOrder(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         if (!OrderUtils.canManagerConfirm(order.getStatus(), order.getPickupType())) {
-            throw new RuntimeException("Trạng thái đơn hàng hoặc hình thức lấy hàng không phù hợp");
+            throw new AppException(OrderErrorCode.ORDER_CANNOT_CONFIRM);
         }
 
         if (order.getFromOffice() == null || !userOffice.getId()
                 .equals(order.getFromOffice()
                         .getId())) {
-            return new ApiResponse<>(false, "Bạn không có quyền xác nhận đơn hàng này", false);
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
         }
 
         order.setStatus(OrderStatus.CONFIRMED);
@@ -417,12 +396,9 @@ public class OrderManagerService {
                     "orders/list",
                     order.getTrackingNumber());
         }
-
-        return new ApiResponse<>(true, "Xác nhận đơn hàng thành công", true);
     }
 
-    public ApiResponse<String> create(Integer userId, ManagerOrderCreateRequest request) {
-        try {
+    public String create(Integer userId, ManagerOrderCreateRequest request) {
             validateCreate(request);
 
             validateWeight(
@@ -448,7 +424,7 @@ public class OrderManagerService {
             Employee currentEmployee = userOffice.getManager();
 
             ServiceType serviceType = serviceTypeUserService.findById(request.getServiceTypeId())
-                    .orElseThrow(() -> new RuntimeException("Dịch vụ vận chuyển không tồn tại"));
+                    .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
 
             Integer shippingFee = feeService.calculateShippingFee(
                     request.getWeight(),
@@ -524,15 +500,11 @@ public class OrderManagerService {
             orderHistoryUserService.save(newOrder, null, userOffice,
                     null, OrderHistoryActionType.IMPORTED, null);
 
-            return new ApiResponse<>(true, "Tạo đơn hàng thành công", newOrder.getTrackingNumber());
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return newOrder.getTrackingNumber();
     }
 
     @Transactional
-    public ApiResponse<Boolean> update(Integer userId, Integer orderId, ManagerOrderCreateRequest request) {
-        try {
+    public void update(Integer userId, Integer orderId, ManagerOrderCreateRequest request) {
             validateCreate(request);
 
             validateWeight(
@@ -542,15 +514,14 @@ public class OrderManagerService {
                     request.getLength(),
                     request.getWidth());
 
-            Order order = repository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+            Order order = getOrderById(orderId);
 
             BigDecimal oldWeight = order.getWeight();
 
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             if (!ManagerOrderEditRuleUtils.canEditManagerOrder(order.getStatus())) {
-                throw new RuntimeException("Đơn hàng đã hoàn thành, không thể chỉnh sửa");
+                throw new AppException(OrderErrorCode.ORDER_CANNOT_EDIT);
             }
 
             if (!((order.getFromOffice() != null && userOffice.getId()
@@ -559,7 +530,7 @@ public class OrderManagerService {
                     || (order.getToOffice() != null && userOffice.getId()
                     .equals(order.getToOffice()
                             .getId())))) {
-                throw new RuntimeException("Bạn không có quyền sửa đơn hàng này");
+                throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
             }
 
             OrderStatus currentStatus = order.getStatus();
@@ -827,11 +798,6 @@ public class OrderManagerService {
                     order::setNotes);
 
             repository.save(order);
-
-            return new ApiResponse<>(true, "Cập nhật đơn hàng thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
     }
 
     public byte[] export(Integer userId, UserOrderSearchRequest request) {
@@ -975,7 +941,7 @@ public class OrderManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -989,8 +955,7 @@ public class OrderManagerService {
 
         if (OrderFieldUtils.isChanged(oldValue, newValue)) {
             if (!ManagerOrderEditRuleUtils.canManagerEditOrderField(fieldName, currentStatus, creatorType)) {
-                throw new RuntimeException(
-                        "Trường '" + fieldName + "' không thể chỉnh sửa ở trạng thái " + currentStatus);
+                throw new AppException(OrderErrorCode.ORDER_FIELD_UPDATE_DENIED, fieldName, currentStatus);
             }
             setter.accept(newValue);
         }
@@ -1056,70 +1021,58 @@ public class OrderManagerService {
             missing.add("Người trả phí");
 
         if (!missing.isEmpty()) {
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
         }
 
         try {
             OrderPayerType.valueOf(request.getPayer());
         } catch (Exception e) {
-            throw new RuntimeException("Người trả phí không hợp lệ");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_PAYER);
         }
 
         if (!request.getSenderPhone()
                 .matches("\\d{10}"))
-            throw new RuntimeException("Số điện thoại người gửi phải gồm đúng 10 chữ số");
-
+            throw new AppException(OrderErrorCode.ORDER_INVALID_SENDER_PHONE);
         if (!request.getRecipientPhone()
                 .matches("\\d{10}"))
-            throw new RuntimeException("Số điện thoại người nhận phải gồm đúng 10 chữ số");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_PHONE);
 
         if (request.getSenderCityCode() <= 0)
-            throw new RuntimeException("Mã Thành phố người gửi không hợp lệ");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_SENDER_CITY_CODE);
         if (request.getSenderWardCode() <= 0)
-            throw new RuntimeException("Mã Phường/Xã người gửi không hợp lệ");
-        if (request.getSenderLatitude() < -90 || request.getSenderLatitude() > 90)
-            throw new RuntimeException("Vĩ độ người gửi không hợp lệ");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_SENDER_WARD_CODE);
+        if (request.getSenderLatitude() < -90 || request.getSenderLatitude() > 90 || request.getSenderLongitude() < -180 || request.getSenderLongitude() > 180)
+            throw new AppException(OrderErrorCode.ORDER_INVALID_SENDER_COORDINATES);
 
-        if (request.getSenderLongitude() < -180 || request.getSenderLongitude() > 180)
-            throw new RuntimeException("Kinh độ người gửi không hợp lệ");
         if (request.getRecipientCityCode() <= 0)
-            throw new RuntimeException("Mã Thành phố người nhận không hợp lệ");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_CITY_CODE);
         if (request.getRecipientWardCode() <= 0)
-            throw new RuntimeException("Mã Phường/Xã người nhận không hợp lệ");
-        if (request.getRecipientLatitude() < -90 || request.getRecipientLatitude() > 90)
-            throw new RuntimeException("Vĩ độ người nhận không hợp lệ");
-        if (request.getRecipientLongitude() < -180 || request.getRecipientLongitude() > 180)
-            throw new RuntimeException("Kinh độ người nhận không hợp lệ");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_WARD_CODE);
 
-        if (request.getWeight()
-                .doubleValue() <= 0)
-            throw new RuntimeException("Khối lượng quy đổi phải lớn hơn 0");
+        if (request.getRecipientLatitude() < -90 || request.getRecipientLatitude() > 90 || request.getRecipientLongitude() < -180 || request.getRecipientLongitude() > 180)
+            throw new AppException(OrderErrorCode.ORDER_INVALID_RECIPIENT_COORDINATES);
 
-        if (request.getOriginalWeight()
-                .doubleValue() <= 0)
-            throw new RuntimeException("Khối lượng thực tế phải lớn hơn 0");
+        if (request.getWeight().doubleValue() <= 0 || request.getOriginalWeight().doubleValue() <= 0)
+            throw new AppException(OrderErrorCode.ORDER_INVALID_WEIGHT);
 
-        if (request.getLength()
-                .doubleValue() <= 0)
-            throw new RuntimeException("Chiều dài phải lớn hơn 0");
+        if (request.getLength().doubleValue() <= 0)
+            throw new AppException(OrderErrorCode.ORDER_INVALID_LENGTH);
 
-        if (request.getWidth()
-                .doubleValue() <= 0)
-            throw new RuntimeException("Chiều rộng phải lớn hơn 0");
+        if (request.getWidth().doubleValue() <= 0)
+            throw new AppException(OrderErrorCode.ORDER_INVALID_WIDTH);
 
-        if (request.getHeight()
-                .doubleValue() <= 0)
-            throw new RuntimeException("Chiều cao phải lớn hơn 0");
+        if (request.getHeight().doubleValue() <= 0)
+            throw new AppException(OrderErrorCode.ORDER_INVALID_HEIGHT);
 
         if (request.getServiceTypeId() <= 0)
-            throw new RuntimeException("Mã dịch vụ không hợp lệ");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_SERVICE_TYPE_ID);
 
         if (request.getOrderValue() != null && request.getOrderValue() < 0)
-            throw new RuntimeException("Giá trị đơn hàng phải lớn hơn hoặc bằng 0");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_VALUE);
 
         if (request.getNotes() != null && request.getNotes()
                 .length() > 1000)
-            throw new RuntimeException("Ghi chú tối đa 1000 ký tự");
+            throw new AppException(OrderErrorCode.ORDER_NOTE_TOO_LONG);
     }
 
     private boolean isBlank(String s) {
@@ -1154,25 +1107,23 @@ public class OrderManagerService {
         return tracking;
     }
 
-    public ApiResponse<Boolean> setOrderAtOriginOffice(Integer userId, Integer orderId) {
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public void setOrderAtOriginOffice(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         if (order.getFromOffice() == null || !userOffice.getId()
                 .equals(order.getFromOffice()
                         .getId())) {
-            return new ApiResponse<>(false, "Bạn không có quyền hủy đơn hàng này", false);
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
         }
 
         if (!OrderUtils.canManagerSetAtOriginOffice(order.getStatus())) {
-            throw new RuntimeException("Trạng thái đơn hàng không hợp lệ để chuyển");
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, order.getStatus(), OrderStatus.AT_ORIGIN_OFFICE);
         }
 
-        if (!order.getPickupType()
-                .equals(OrderPickupType.AT_OFFICE)) {
-            throw new RuntimeException("Hình thức lấy hàng không hợp lệ để chuyển");
+        if (!order.getPickupType().equals(OrderPickupType.AT_OFFICE)) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
         }
 
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
@@ -1199,8 +1150,6 @@ public class OrderManagerService {
                     "orders/tracking",
                     order.getTrackingNumber());
         }
-
-        return new ApiResponse<>(true, "Bàn giao đơn hàng cho đơn vị vận chuyển thành công", true);
     }
 
     private void validateWeight(
@@ -1227,5 +1176,10 @@ public class OrderManagerService {
                     "Khối lượng không khớp với khối lượng đã tính trước đó"
             );
         }
+    }
+
+    private Order getOrderById(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
     }
 }

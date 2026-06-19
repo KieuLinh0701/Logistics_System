@@ -1,10 +1,9 @@
 package com.logistics.service.user;
 
-import com.beust.ah.A;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.cloudinary.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestEditDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
@@ -17,21 +16,21 @@ import com.logistics.entity.User;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.OrderErrorCode;
+import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.mapper.ShippingRequestMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShippingRequestAttachmentRepository;
 import com.logistics.repository.ShippingRequestRepository;
-import com.logistics.repository.UserRepository;
-import com.logistics.request.SearchRequest;
 import com.logistics.request.user.shippingRequest.UserShippingRequestForm;
 import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShippingRequestSpecification;
-import com.logistics.utils.PaymentSubmissionBatchUtils;
 import com.logistics.utils.ShippingRequestUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -55,7 +54,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -84,9 +82,8 @@ public class ShippingRequestUserService {
     private final AddressRepository addressRepository;
     private final UserUserService userService;
 
-    public ApiResponse<ListResponse<UserShippingRequestListDto>> list(int userId,
+    public ListResponse<UserShippingRequestListDto> list(int userId,
             UserShippingRequestSearchRequest request) {
-        try {
             Integer shopId = userService.getShopId(userId);
 
             int page = request.getPage();
@@ -133,14 +130,10 @@ public class ShippingRequestUserService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách yêu cầu thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
-    public ApiResponse<UserShippingRequestDetailDto> getShippingRequestById(int userId, int id) {
-        try {
+    public UserShippingRequestDetailDto getShippingRequestById(int userId, int id) {
             Integer shopId = userService.getShopId(userId);
 
             ShippingRequest request = repository.findByIdAndUserId(id, shopId)
@@ -152,62 +145,49 @@ public class ShippingRequestUserService {
             List<ShippingRequestAttachment> responseAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.RESPONSE);
 
-            UserShippingRequestDetailDto data = ShippingRequestMapper.toUserShippingRequestDetailDto(
+            return ShippingRequestMapper.toUserShippingRequestDetailDto(
                     request,
                     requestAttachments,
                     responseAttachments);
-
-            return new ApiResponse<>(true, "Lấy chi tiết yêu cầu theo id thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<UserShippingRequestEditDto> getShippingRequestByIdForEdit(int userId, int id) {
-        try {
+    public UserShippingRequestEditDto getShippingRequestByIdForEdit(int userId, int id) {
             Integer shopId = userService.getShopId(userId);
 
             ShippingRequest request = repository.findByIdAndUserId(id, shopId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+                    .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.REQUEST);
 
-            UserShippingRequestEditDto data = ShippingRequestMapper.toUserShippingRequestEditDto(
+            return ShippingRequestMapper.toUserShippingRequestEditDto(
                     request,
                     requestAttachments);
-
-            return new ApiResponse<>(true, "Lấy chi tiết yêu cầu cho chỉnh sửa theo id thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<Boolean> create(int userId, UserShippingRequestForm request) {
-
-        validateForm(request);
+    public void create(int userId, UserShippingRequestForm request) {
 
         Integer shopId = userService.getShopId(userId);
 
         User user = userService.getUser(shopId);
 
-        Order order = getOrderByTrackingNumber(user.getId(), request.getTrackingNumber());
+        Order order = getOrderByTrackingNumber(user.getId(), request.trackingNumber());
 
-        ShippingRequestType type = ShippingRequestType.valueOf(request.getRequestType());
+        ShippingRequestType type = request.requestType();
 
         if (!ShippingRequestUtils.canUserEmptyTrackingNumber(type) && order == null) {
-            throw new RuntimeException("Không tìm thấy đơn hàng cần tạo yêu cầu");
+            throw new AppException(OrderErrorCode.ORDER_NOT_FOUND);
         }
 
         if (order != null) {
             boolean valid = ShippingRequestUtils.isValidRequestForOrder(type, order.getStatus());
             if (!valid) {
-                return new ApiResponse<>(false, "Yêu cầu không hợp lệ với trạng thái đơn hàng", false);
+                throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_STATUS);
             }
         }
 
-        if (hasActiveRequest(shopId, type, request.getRequestContent(), order)) {
-            return new ApiResponse<>(false, "Đã có yêu cầu tương tự cho đơn hàng này đang được xử lý", false);
+        if (hasActiveRequest(shopId, type, request.requestContent(), order)) {
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_ALREADY_EXISTS);
         }
 
         Office office = null;
@@ -236,7 +216,7 @@ public class ShippingRequestUserService {
         shippingRequest.setOrder(order);
         shippingRequest.setOffice(office);
         shippingRequest.setRequestType(type);
-        shippingRequest.setRequestContent(request.getRequestContent());
+        shippingRequest.setRequestContent(request.requestContent());
 
         shippingRequest = repository.save(shippingRequest);
 
@@ -244,11 +224,10 @@ public class ShippingRequestUserService {
         shippingRequest.setCode(code);
         repository.save(shippingRequest);
 
-        saveAttachments(shippingRequest, request.getAttachments());
+        saveAttachments(shippingRequest, request.attachments());
 
         if (office != null && office.getManager() != null) {
-            System.out.println("UserId" + office.getManager().getUser().getId());
-                notificationService.create( 
+                notificationService.create(
                         "Yêu cầu hỗ trợ và khiếu nại mới",
                         "Có yêu cầu mới: " + shippingRequest.getCode(),
                         "shipping_request",
@@ -257,23 +236,20 @@ public class ShippingRequestUserService {
                         "supports",
                         shippingRequest.getCode());
             }
-        return new ApiResponse<>(true, "Tạo yêu cầu thành công", true);
     }
 
-    public ApiResponse<Boolean> update(int userId, int id, UserShippingRequestForm request) {
+    public void update(int userId, int id, UserShippingRequestForm request) {
 
         Integer shopId = userService.getShopId(userId);
 
         ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
                 .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
 
-        validateForm(request);
-
         if (!validateEdit(request, shippingRequest)) {
-            return new ApiResponse<>(false, "Không thể thay đổi loại yêu cầu hoặc đơn hàng khi chỉnh sửa", false);
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_EDIT_NOT_ALLOWED);
         }
 
-        String oldAttachmentsStr = request.getOldAttachments();
+        String oldAttachmentsStr = request.oldAttachments();
         List<Integer> oldAttachmentIds = new ArrayList<>();
 
         if (oldAttachmentsStr != null && !oldAttachmentsStr.isBlank()) {
@@ -287,19 +263,17 @@ public class ShippingRequestUserService {
             }
         }
 
-        shippingRequest.setRequestContent(request.getRequestContent());
+        shippingRequest.setRequestContent(request.requestContent());
         shippingRequest = repository.save(shippingRequest);
 
         String code = ShippingRequestUtils.generateRequestCode(shippingRequest.getId());
         shippingRequest.setCode(code);
         repository.save(shippingRequest);
 
-        updateAttachments(shippingRequest, request.getAttachments(), oldAttachmentIds);
-
-        return new ApiResponse<>(true, "Sửa yêu cầu thành công", true);
+        updateAttachments(shippingRequest, request.attachments(), oldAttachmentIds);
     }
 
-    public ApiResponse<Boolean> cancel(int userId, int id) {
+    public void cancel(int userId, int id) {
 
         Integer shopId = userService.getShopId(userId);
 
@@ -307,8 +281,7 @@ public class ShippingRequestUserService {
                 .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
 
         if (!ShippingRequestUtils.canUserCancel(shippingRequest.getStatus())) {
-            String message = ShippingRequestUtils.getCancelErrorMessage(shippingRequest.getStatus());
-            return new ApiResponse<>(false, message, true);
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_CANNOT_CANCEL);
         }
 
         shippingRequest.setStatus(ShippingRequestStatus.CANCELLED);
@@ -325,8 +298,6 @@ public class ShippingRequestUserService {
                     "supports",
                     shippingRequest.getCode());
         }
-
-        return new ApiResponse<>(true, "Hủy yêu cầu thành công", true);
     }
 
     public byte[] export(Integer userId, UserShippingRequestSearchRequest request) {
@@ -416,15 +387,14 @@ public class ShippingRequestUserService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
     private void saveAttachments(ShippingRequest request, List<MultipartFile> files) {
         if (files != null && !files.isEmpty()) {
             String url;
-            for (int i = 0; i < files.size(); i++) {
-                MultipartFile file = files.get(i);
+            for (MultipartFile file : files) {
                 url = uploadFile(file);
 
                 ShippingRequestAttachment attachment = new ShippingRequestAttachment();
@@ -492,12 +462,12 @@ public class ShippingRequestUserService {
 
             return result.get("secure_url").toString();
         } catch (Exception e) {
-            throw new RuntimeException("Upload file thất bại: " + e.getMessage());
+            throw new AppException(CommonErrorCode.CLOUDINARY_UPLOAD_FAILED);
         }
     }
 
     private Order getOrderByTrackingNumber(Integer userId, String trackingNumber) {
-        if (isBlank(trackingNumber))
+        if (StringUtils.isBlank(trackingNumber))
             return null;
 
         return orderRepository.findByTrackingNumberAndUserId(trackingNumber, userId)
@@ -517,50 +487,15 @@ public class ShippingRequestUserService {
     }
 
     private boolean validateEdit(UserShippingRequestForm request, ShippingRequest entity) {
-        ShippingRequestType newType = ShippingRequestType.valueOf(request.getRequestType());
-
-        String newTrackingNumber = request.getTrackingNumber() != null ? request.getTrackingNumber().trim() : "";
+        String newTrackingNumber = request.trackingNumber() != null ? request.trackingNumber().trim() : "";
         String existingTrackingNumber = entity.getOrder() != null && entity.getOrder().getTrackingNumber() != null
                 ? entity.getOrder().getTrackingNumber().trim()
                 : "";
 
-        if (entity.getRequestType() != newType || !existingTrackingNumber.equals(newTrackingNumber)) {
+        if (entity.getRequestType() != request.requestType() || !existingTrackingNumber.equals(newTrackingNumber)) {
             return false;
         }
         return true;
-    }
-
-    private void validateForm(UserShippingRequestForm request) {
-        List<String> missing = new ArrayList<>();
-
-        if (isBlank(request.getRequestType()))
-            missing.add("Loại yêu cầu");
-
-        if (!missing.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
-
-        ShippingRequestType type;
-        try {
-            type = ShippingRequestType.valueOf(request.getRequestType());
-        } catch (Exception e) {
-            throw new RuntimeException("Loại yêu cầu không hợp lệ");
-        }
-
-        if (!isBlank(request.getRequestContent()) && request.getRequestContent().length() > 1000) {
-            throw new RuntimeException("Nội dung yêu cầu không được vượt quá 1000 ký tự");
-        }
-
-        if (!ShippingRequestUtils.canUserEmptyContentRequest(type) && isBlank(request.getRequestContent())) {
-            throw new RuntimeException("Nội dung yêu cầu không được để trống");
-        }
-
-        if (!ShippingRequestUtils.canUserEmptyTrackingNumber(type) && isBlank(request.getTrackingNumber())) {
-            throw new RuntimeException("Mã đơn hàng không được để trống");
-        }
-    }
-
-    private boolean isBlank(String s) {
-        return s == null || s.isBlank();
     }
 
 }

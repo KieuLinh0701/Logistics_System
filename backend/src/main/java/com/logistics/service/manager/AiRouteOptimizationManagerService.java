@@ -5,6 +5,8 @@ import com.logistics.dto.ai.client.*;
 import com.logistics.dto.manager.ai.*;
 import com.logistics.entity.*;
 import com.logistics.enums.*;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AiRouteErrorCode;
 import com.logistics.repository.*;
 import com.logistics.request.manager.ai.ManagerAiOptimizeRequest;
 import com.logistics.response.ApiResponse;
@@ -38,18 +40,18 @@ public class AiRouteOptimizationManagerService {
     private final AiServiceClient aiServiceClient;
     private final AiServiceProperties aiServiceProperties;
 
-    public ApiResponse<Map<String, Object>> previewDeliveryReadyOrders(Integer managerUserId) {
+    public Map<String, Object> previewDeliveryReadyOrders(Integer managerUserId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         List<Order> orders = findDeliveryReadyOrders(office.getId());
         Map<String, Object> data = new HashMap<>();
         data.put("orderCount", orders.size());
         data.put("aiServiceHealthy", aiServiceClient.isHealthy());
         data.put("orders", orders.stream().map(this::toOrderPreview).limit(50).toList());
-        return new ApiResponse<>(true, "Xem trước đơn sẵn sàng tối ưu", data);
+        return data;
     }
 
     @Transactional
-    public ApiResponse<ManagerAiRoutePlanDetailDto> optimize(Integer managerUserId, ManagerAiOptimizeRequest request) {
+    public ManagerAiRoutePlanDetailDto optimize(Integer managerUserId, ManagerAiOptimizeRequest request) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         Employee manager = resolveManagerEmployee(managerUserId, office);
 
@@ -60,12 +62,12 @@ public class AiRouteOptimizationManagerService {
 
         List<Order> orders = findDeliveryReadyOrders(office.getId());
         if (orders.isEmpty()) {
-            return new ApiResponse<>(false, "Không có đơn hàng sẵn sàng để tối ưu tuyến", null);
+            throw new AppException(AiRouteErrorCode.AI_NO_ORDERS_READY);
         }
 
         List<AiShipperInputDto> shippers = buildAvailableShippers(office, capacity, startTime);
         if (shippers.isEmpty()) {
-            return new ApiResponse<>(false, "Không có shipper khả dụng (ACTIVE, có phân công khu vực, không nghỉ phép)", null);
+            throw new AppException(AiRouteErrorCode.AI_NO_AVAILABLE_SHIPPERS);
         }
 
         AiRouteOptimizationRequestDto aiRequest = AiRouteOptimizationRequestDto.builder()
@@ -82,10 +84,10 @@ public class AiRouteOptimizationManagerService {
         AiRouteOptimizationResponseDto aiResponse = aiServiceClient.optimizeRoutes(aiRequest);
         AiRoutePlan plan = persistDraftPlan(office, manager, aiResponse, aiRequest);
 
-        return new ApiResponse<>(true, "AI đã tạo đề xuất tuyến giao hàng", toDetailDto(plan, aiResponse.getUnassignedOrders()));
+        return toDetailDto(plan, aiResponse.getUnassignedOrders());
     }
 
-    public ApiResponse<List<ManagerAiRoutePlanSummaryDto>> listPlans(Integer managerUserId) {
+    public List<ManagerAiRoutePlanSummaryDto> listPlans(Integer managerUserId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         List<ManagerAiRoutePlanSummaryDto> list = new ArrayList<>();
         aiRoutePlanRepository.findByOfficeIdAndStatusOrderByCreatedAtDesc(office.getId(), AiRoutePlanStatus.DRAFT)
@@ -96,40 +98,39 @@ public class AiRouteOptimizationManagerService {
                 .stream()
                 .map(this::toSummaryDto)
                 .forEach(list::add);
-        return new ApiResponse<>(true, "Danh sách kế hoạch AI", list);
+        return list;
     }
 
-    public ApiResponse<ManagerAiRoutePlanDetailDto> getPlan(Integer managerUserId, Long planId) {
+    public ManagerAiRoutePlanDetailDto getPlan(Integer managerUserId, Long planId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy kế hoạch AI"));
+                .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
         plan.getRoutes().forEach(r -> {
             if (r.getStops() != null) {
                 r.getStops().size();
             }
         });
-        return new ApiResponse<>(true, "Chi tiết kế hoạch AI", toDetailDto(plan, List.of()));
+        return toDetailDto(plan, List.of());
     }
 
     @Transactional
-    public ApiResponse<ManagerAiRoutePlanDetailDto> confirmPlan(Integer managerUserId, Long planId) {
+    public ManagerAiRoutePlanDetailDto confirmPlan(Integer managerUserId, Long planId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy kế hoạch AI"));
+                .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
 
         if (plan.getStatus() != AiRoutePlanStatus.DRAFT) {
-            return new ApiResponse<>(false, "Chỉ có thể xác nhận kế hoạch ở trạng thái DRAFT", null);
+            throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS);
         }
 
         for (AiRoutePlanRoute route : plan.getRoutes()) {
             Employee shipperEmployee = employeeRepository.findById(route.getShipperEmployeeId())
-                    .orElseThrow(() -> new RuntimeException("Shipper không tồn tại: " + route.getShipperEmployeeId()));
+                    .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_SHIPPER_NOT_FOUND));
 
             for (AiRoutePlanStop stop : route.getStops()) {
                 Order order = stop.getOrder();
                 if (order.getEmployee() != null && !Objects.equals(order.getEmployee().getId(), shipperEmployee.getId())) {
-                    return new ApiResponse<>(false,
-                            "Đơn " + order.getTrackingNumber() + " đã được gán cho shipper khác", null);
+                    throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER);
                 }
                 order.setEmployee(shipperEmployee);
                 if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
@@ -143,20 +144,19 @@ public class AiRouteOptimizationManagerService {
         plan.setConfirmedAt(LocalDateTime.now());
         aiRoutePlanRepository.save(plan);
 
-        return new ApiResponse<>(true, "Đã xác nhận và gán đơn theo tuyến AI", toDetailDto(plan, List.of()));
+        return toDetailDto(plan, List.of());
     }
 
     @Transactional
-    public ApiResponse<Boolean> cancelPlan(Integer managerUserId, Long planId) {
+    public void cancelPlan(Integer managerUserId, Long planId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy kế hoạch AI"));
+                .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
         if (plan.getStatus() != AiRoutePlanStatus.DRAFT) {
-            return new ApiResponse<>(false, "Chỉ hủy được kế hoạch DRAFT", false);
+            throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS);
         }
         plan.setStatus(AiRoutePlanStatus.CANCELLED);
         aiRoutePlanRepository.save(plan);
-        return new ApiResponse<>(true, "Đã hủy kế hoạch AI", true);
     }
 
     private Employee resolveManagerEmployee(Integer managerUserId, Office office) {
@@ -164,7 +164,7 @@ public class AiRouteOptimizationManagerService {
         return employees.stream()
                 .filter(e -> e.getOffice() != null && Objects.equals(e.getOffice().getId(), office.getId()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên quản lý"));
+                .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_MANAGER_RESOLVE_FAILED));
     }
 
     private List<Order> findDeliveryReadyOrders(Integer officeId) {

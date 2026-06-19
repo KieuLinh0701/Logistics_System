@@ -39,18 +39,19 @@ public class PaymentSubmissionManagerController {
                         HttpServletRequest request) {
                 Integer userId = (Integer) request.getAttribute("currentUserId");
 
-                ApiResponse<ListResponse<ManagerPaymentSubmissionListDto>> result = service.list(userId, id,
+                ListResponse<ManagerPaymentSubmissionListDto> result = service.list(userId, id,
                                 searchRequest);
-                return ResponseEntity.ok(result);
+                return ResponseEntity.ok(ApiResponse.success(result));
         }
 
         @PutMapping("/{id}")
-        public ResponseEntity<ApiResponse<Boolean>> processing(@PathVariable Integer id,
+        public ResponseEntity<ApiResponse<Void>> processing(@PathVariable Integer id,
                         @RequestBody @Valid ManagerPaymentSubmissionForm form,
                         HttpServletRequest request) {
                 Integer userId = (Integer) request.getAttribute("currentUserId");
 
-                return ResponseEntity.ok(service.processing(userId, id, form));
+                service.processing(userId, id, form);
+                return ResponseEntity.ok(ApiResponse.success(null));
         }
 
         @GetMapping("/{id}/export")

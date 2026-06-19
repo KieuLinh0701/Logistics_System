@@ -6,9 +6,9 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum OfficeErrorCode implements BaseErrorCode {
-    OFFICE_NOT_FOUND(HttpStatus.NOT_FOUND, "Bưu cục không tồn tại"),
-            ;
+public enum IncidentErrorCode implements BaseErrorCode {
+    INCIDENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Sự cố không tồn tại"),
+    INCIDENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Bạn không có quyền trên báo cáo này");    ;
 
     private final HttpStatus httpStatus;
     private final String message;

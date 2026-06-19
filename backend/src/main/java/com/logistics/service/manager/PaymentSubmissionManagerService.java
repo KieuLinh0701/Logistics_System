@@ -7,6 +7,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.PaymentSubmissionBatchErrorCode;
+import com.logistics.exception.enums.PaymentSubmissionErrorCode;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
@@ -54,32 +58,28 @@ public class PaymentSubmissionManagerService {
 
     private final PaymentSubmissionBatchRepository batchRepository;
 
-    public ApiResponse<ListResponse<ManagerPaymentSubmissionListDto>> list(
+    public ListResponse<ManagerPaymentSubmissionListDto> list(
             Integer userId, Integer batchId, SearchRequest request) {
-        try {
-            Sort sort = buildSort(request.getSort());
-            Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
-            Page<PaymentSubmission> pageData = getPaymentSubmissionPage(userId, batchId, request, pageable);
+        Sort sort = buildSort(request.getSort());
+        Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
+        Page<PaymentSubmission> pageData = getPaymentSubmissionPage(userId, batchId, request, pageable);
 
-            List<ManagerPaymentSubmissionListDto> list = pageData.getContent()
-                    .stream()
-                    .map(PaymentSubmissionMapper::toDto)
-                    .toList();
+        List<ManagerPaymentSubmissionListDto> list = pageData.getContent()
+                .stream()
+                .map(PaymentSubmissionMapper::toDto)
+                .toList();
 
-            Pagination pagination = new Pagination(
-                    (int) pageData.getTotalElements(),
-                    request.getPage(),
-                    request.getLimit(),
-                    pageData.getTotalPages());
+        Pagination pagination = new Pagination(
+                (int) pageData.getTotalElements(),
+                request.getPage(),
+                request.getLimit(),
+                pageData.getTotalPages());
 
-            ListResponse<ManagerPaymentSubmissionListDto> data = new ListResponse<>();
-            data.setList(list);
-            data.setPagination(pagination);
+        ListResponse<ManagerPaymentSubmissionListDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách đối soát thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return data;
     }
 
     public byte[] export(Integer userId, Integer batchId, SearchRequest request) {
@@ -182,7 +182,7 @@ public class PaymentSubmissionManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -195,10 +195,10 @@ public class PaymentSubmissionManagerService {
         Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
         PaymentSubmissionBatch batch = batchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Phiên đối soát không tồn tại"));
+                .orElseThrow(() -> new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_NOT_FOUND));
 
         if (!batch.getOffice().getId().equals(office.getId())) {
-            throw new RuntimeException("Bạn không có quyền xem batch này");
+            throw new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_ACCESS_DENIED);
         }
 
         Specification<PaymentSubmission> spec = PaymentSubmissonSpecification.unrestricted()
@@ -218,10 +218,10 @@ public class PaymentSubmissionManagerService {
         Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
         PaymentSubmissionBatch batch = batchRepository.findById(batchId)
-                .orElseThrow(() -> new RuntimeException("Phiên đối soát không tồn tại"));
+                .orElseThrow(() -> new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_NOT_FOUND));
 
         if (!batch.getOffice().getId().equals(office.getId())) {
-            throw new RuntimeException("Bạn không có quyền xem batch này");
+            throw new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_ACCESS_DENIED);
         }
 
         Specification<PaymentSubmission> spec = PaymentSubmissonSpecification.unrestricted()
@@ -252,13 +252,13 @@ public class PaymentSubmissionManagerService {
         return (s != null && !s.isBlank()) ? LocalDateTime.parse(s) : null;
     }
 
-    public ApiResponse<Boolean> processing(int userId, int id, ManagerPaymentSubmissionForm request) {
+    public void processing(int userId, int id, ManagerPaymentSubmissionForm request) {
 
         PaymentSubmission submission = paymentSubmissionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Đối soát không tồn tại"));
+                .orElseThrow(() -> new AppException(PaymentSubmissionErrorCode.PAYMENT_SUBMISSION_NOT_FOUND));
 
         if (!checkPermission(userId, submission)) {
-            return new ApiResponse<>(false, "Không có quyền xử lý đối soát này", null);
+            throw new AppException(PaymentSubmissionErrorCode.PAYMENT_SUBMISSION_ACCESS_DENIED);
         }
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -271,7 +271,7 @@ public class PaymentSubmissionManagerService {
 
         if (!PaymentSubmissionUtils.canManagerChangeStatus(submission.getStatus(), newStatus)
                 && isBlank(request.getStatus())) {
-            throw new RuntimeException("Trạng thái yêu cầu chuyển không hợp lệ");
+            throw new AppException(PaymentSubmissionErrorCode.PAYMENT_SUBMISSION_INVALID_STATUS_CHANGE);
         }
 
         submission.setStatus(newStatus);
@@ -279,8 +279,6 @@ public class PaymentSubmissionManagerService {
         submission.setCheckedAt(LocalDateTime.now());
         submission.setCheckedBy(user);
         paymentSubmissionRepository.save(submission);
-
-        return new ApiResponse<>(true, "Đối soát thành công", true);
     }
 
     private boolean checkPermission(int userId, PaymentSubmission submission) {
@@ -309,17 +307,17 @@ public class PaymentSubmissionManagerService {
             missing.add("Trạng thái");
 
         if (!missing.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
 
         PaymentSubmissionStatus status;
         try {
             status = PaymentSubmissionStatus.valueOf(request.getStatus());
         } catch (Exception e) {
-            throw new RuntimeException("Trạng thái yêu cầu không hợp lệ");
+            throw new AppException(PaymentSubmissionErrorCode.PAYMENT_SUBMISSION_INVALID_STATUS);
         }
 
         if (!isBlank(request.getNotes()) && request.getNotes().length() > 255) {
-            throw new RuntimeException("Ghi chú đối soát không được vượt quá 255 ký tự");
+            throw new AppException(PaymentSubmissionErrorCode.PAYMENT_SUBMISSION_INVALID_NOTE);
         }
     }
 

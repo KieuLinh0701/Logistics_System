@@ -4,6 +4,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import com.logistics.request.manager.vehicle.ManagerVehicleSearchRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -33,25 +34,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/employees")
 public class EmployeeManagerController {
 
-    @Autowired
-    private EmployeeManagerService service;
+    private final EmployeeManagerService service;
+    private final ShipmentManagerService shipmentManagerService;
 
-    @Autowired
-    private ShipmentManagerService shipmentManagerService;
-
-    @GetMapping()
+    @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<ManagerEmployeeListDto>>> list(
             @Valid ManagerEmployeeSearchRequest managerShippingRequestSearchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerEmployeeListDto>> result = service.list(userId,
+        ListResponse<ManagerEmployeeListDto> result = service.list(userId,
                 managerShippingRequestSearchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/performance")
@@ -60,28 +59,30 @@ public class EmployeeManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerEmployeePerformanceDto>> result = service.getEmployeePerformance(userId,
+        ListResponse<ManagerEmployeePerformanceDto> result = service.getEmployeePerformance(userId,
                 searchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Boolean>> create(
+    public ResponseEntity<ApiResponse<String>> create(
             @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.createEmployee(userId, managerEmployeeEditRequest));
+        String message = service.createEmployee(userId, managerEmployeeEditRequest);
+        return ResponseEntity.ok(ApiResponse.success(message, null));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> update(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> update(@PathVariable Integer id,
                                                        @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
                                                        HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.updateEmployee(userId, id, managerEmployeeEditRequest));
+        String message = service.updateEmployee(userId, id, managerEmployeeEditRequest);
+        return ResponseEntity.ok(ApiResponse.success(message, null));
     }
 
     @GetMapping("/shippers/active/with-assignments")
@@ -90,10 +91,10 @@ public class EmployeeManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerEmployeeListWithShipperAssignmentDto>> result = service
+        ListResponse<ManagerEmployeeListWithShipperAssignmentDto> result = service
                 .getActiveShippersWithActiveAssignments(userId,
                         managerShippingRequestSearchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/shippers/active")
@@ -102,9 +103,9 @@ public class EmployeeManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerEmployeeListDto>> result = service.getActiveShippers(userId,
+        ListResponse<ManagerEmployeeListDto> result = service.getActiveShippers(userId,
                 managerShippingRequestSearchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/shipment-type")
@@ -112,9 +113,9 @@ public class EmployeeManagerController {
             @Valid SearchRequest searchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        ApiResponse<ListResponse<ManagerEmployeeListDto>> result = service.getActiveEmployeesByShipmentType(userId,
+        ListResponse<ManagerEmployeeListDto> result = service.getActiveEmployeesByShipmentType(userId,
                 searchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}/shipments")
@@ -124,7 +125,7 @@ public class EmployeeManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(shipmentManagerService.getShipmentsByEmployeeId(userId, id, searchRequest));
+        return ResponseEntity.ok(ApiResponse.success(shipmentManagerService.getShipmentsByEmployeeId(userId, id, searchRequest)));
     }
 
     @GetMapping("/{id}/shipments/export")

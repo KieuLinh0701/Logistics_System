@@ -250,7 +250,7 @@ public class EmployeeUserService {
         } else {
             // Kiểm tra sđt trùng
             if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                throw new AppException(UserErrorCode.USER_EMPLOYEE_PHONE_NUMBER_EXISTED);
+                throw new AppException(UserErrorCode.USER_PHONE_NUMBER_EXISTED);
             }
 
             // Generate password
@@ -312,7 +312,7 @@ public class EmployeeUserService {
         // Kiểm tra sđt trùng nếu thay đổi
         if (!targetUser.getPhoneNumber().equals(request.getPhoneNumber())
                 && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new AppException(UserErrorCode.USER_EMPLOYEE_PHONE_NUMBER_EXISTED);
+            throw new AppException(UserErrorCode.USER_PHONE_NUMBER_EXISTED);
         }
 
         targetUser.setFirstName(request.getFirstName());

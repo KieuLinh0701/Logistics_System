@@ -41,26 +41,29 @@ public class ShipperAssignmentManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, editRequest));
+        service.create(userId, editRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> update(
+    public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Long id,
             @RequestBody ManagerShipperAssignmentEditRequest editRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.update(userId, id, editRequest));
+        service.update(userId, id, editRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> deleteFutureAssignment(
+    public ResponseEntity<ApiResponse<Void>> deleteFutureAssignment(
             @PathVariable Long id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.deleteFutureAssignment(userId, id));
+        service.deleteFutureAssignment(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping()
@@ -69,9 +72,8 @@ public class ShipperAssignmentManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerShipperAssignmentListDto>> result = service.list(userId,
-                searchRequest);
-        return ResponseEntity.ok(result);
+        ListResponse<ManagerShipperAssignmentListDto> result = service.list(userId, searchRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/export")

@@ -18,18 +18,19 @@ import jakarta.validation.Valid;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/shipments")
 public class ShipmentManagerController {
 
-    @Autowired
-    private ShipmentManagerService service;
+    private final ShipmentManagerService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<ManagerShipmentListDto>>> list(
@@ -37,7 +38,7 @@ public class ShipmentManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, managerShipmentSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, managerShipmentSearchRequest)));
     }
 
     @GetMapping("/{id}")
@@ -47,9 +48,9 @@ public class ShipmentManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<GetOrdersByShipmentIdManagerResponse> result = service.getOrdersByShipmentId(userId, id,
+        GetOrdersByShipmentIdManagerResponse result = service.getOrdersByShipmentId(userId, id,
                 searchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/employee-performance/{id}/export")
@@ -80,35 +81,38 @@ public class ShipmentManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerShipmentListDto>> result = service.getPendingShipments(userId, searchRequest);
-        return ResponseEntity.ok(result);
+        ListResponse<ManagerShipmentListDto> result = service.getPendingShipments(userId, searchRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse<Boolean>> cancelShipment(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> cancelShipment(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.cancelShipment(userId, id));
+        service.cancelShipment(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Boolean>> create(
+    public ResponseEntity<ApiResponse<Void>> create(
             @RequestBody ManagerShipmentAddEditRequest editRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, editRequest));
+        service.create(userId, editRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> update(
+    public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Integer id,
             @RequestBody ManagerShipmentAddEditRequest editRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.update(userId, id, editRequest));
+        service.update(userId, id, editRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/export")

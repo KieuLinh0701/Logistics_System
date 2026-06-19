@@ -27,7 +27,7 @@ public class UserUserController {
 
                 Integer userId = (Integer) request.getAttribute("currentUserId");
 
-                return ResponseEntity.ok(service.checkLocked(userId));
+                return ResponseEntity.ok(ApiResponse.success(service.checkLocked(userId)));
         }
 
 }

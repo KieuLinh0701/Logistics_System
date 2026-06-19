@@ -6,8 +6,6 @@ import com.logistics.entity.Address;
 import com.logistics.entity.User;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AddressErrorCode;
-import com.logistics.exception.enums.BaseErrorCode;
-import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.mapper.AddressMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.request.user.address.AddressUserRequest;

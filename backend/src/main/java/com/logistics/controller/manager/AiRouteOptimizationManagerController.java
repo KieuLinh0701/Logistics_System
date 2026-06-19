@@ -31,7 +31,7 @@ public class AiRouteOptimizationManagerController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.previewDeliveryReadyOrders(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.previewDeliveryReadyOrders(userId)));
     }
 
     @PostMapping("/optimize")
@@ -42,7 +42,7 @@ public class AiRouteOptimizationManagerController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.optimize(userId, body));
+        return ResponseEntity.ok(ApiResponse.success(service.optimize(userId, body)));
     }
 
     @GetMapping("/plans")
@@ -51,7 +51,7 @@ public class AiRouteOptimizationManagerController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.listPlans(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.listPlans(userId)));
     }
 
     @GetMapping("/plans/{planId}")
@@ -62,7 +62,7 @@ public class AiRouteOptimizationManagerController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.getPlan(userId, planId));
+        return ResponseEntity.ok(ApiResponse.success(service.getPlan(userId, planId)));
     }
 
     @PostMapping("/plans/{planId}/confirm")
@@ -73,17 +73,19 @@ public class AiRouteOptimizationManagerController {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.confirmPlan(userId, planId));
+        return ResponseEntity.ok(ApiResponse.success(service.confirmPlan(userId, planId)));
     }
 
     @PostMapping("/plans/{planId}/cancel")
-    public ResponseEntity<ApiResponse<Boolean>> cancel(
+    public ResponseEntity<ApiResponse<Void>> cancel(
             HttpServletRequest request,
             @PathVariable Long planId) {
         if (denyManager()) {
             return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.cancelPlan(userId, planId));
+
+        service.cancelPlan(userId, planId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
