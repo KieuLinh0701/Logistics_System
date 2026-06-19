@@ -952,7 +952,7 @@ const UserOrderEdit: React.FC = () => {
 
             const result = await orderApi.updateUserOrder(order.id, orderData);
             if (result.success) {
-                message.success(result.message || "Chỉnh sửa đơn hàng thành công")
+                message.success("Chỉnh sửa đơn hàng thành công")
                 if (result.data) {
                     navigate(-1);
                 }

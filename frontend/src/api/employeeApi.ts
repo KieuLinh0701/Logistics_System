@@ -23,12 +23,12 @@ const employeeApi = {
     },
 
     async createManagerEmployee(data: Partial<ManagerEmployee>) {
-        const res = await axiosClient.post<ApiResponse<boolean>>("/manager/employees", data);
+        const res = await axiosClient.post<ApiResponse<void>>("/manager/employees", data);
         return res;
     },
 
     async updateManagerEmployee(id: number, data: Partial<ManagerEmployee>) {
-        const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/employees/${id}`, data);
+        const res = await axiosClient.put<ApiResponse<void>>(`/manager/employees/${id}`, data);
         return res;
     },
 

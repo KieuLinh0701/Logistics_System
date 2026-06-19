@@ -40,9 +40,9 @@ public class ShippingRequestManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerShippingRequestListDto>> result = service.list(userId,
+        ListResponse<ManagerShippingRequestListDto> result = service.list(userId,
                 managerShippingRequestSearchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}")
@@ -51,17 +51,18 @@ public class ShippingRequestManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ManagerShippingRequestDetailDto> result = service.getShippingRequestById(userId, id);
-        return ResponseEntity.ok(result);
+        ManagerShippingRequestDetailDto result = service.getShippingRequestById(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<Boolean>> processing(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> processing(@PathVariable Integer id,
             @ModelAttribute ManagerShippingRequestForm managerShippingRequestForm,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.processing(userId, id, managerShippingRequestForm));
+        service.processing(userId, id, managerShippingRequestForm);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/export")

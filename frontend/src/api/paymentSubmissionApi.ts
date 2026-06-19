@@ -12,7 +12,7 @@ const paymentSubmissionApi = {
   },
 
   async updateManagerPaymentSubmission(id: number, data: ManagerPaymentSubmissionEditRequest) {
-    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/payment-submissions/${id}`, data);
+    const res = await axiosClient.put<ApiResponse<void>>(`/manager/payment-submissions/${id}`, data);
     return res;
   },
 

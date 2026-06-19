@@ -96,7 +96,7 @@ const shipmentApi = {
   },
 
   async cancelManagerShipment(id: number) {
-    const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/shipments/${id}/cancel`);
+    const res = await axiosClient.patch<ApiResponse<void>>(`/manager/shipments/${id}/cancel`);
     return res;
   },
 
@@ -106,13 +106,11 @@ const shipmentApi = {
   },
 
   async createManagerShipment(data: ManagerShipmentAddEditRequest) {
-    const res = await axiosClient.post<ApiResponse<boolean>>("/manager/shipments", data);
-    return res;
+    return await axiosClient.post<ApiResponse<boolean>>("/manager/shipments", data);
   },
 
   async updateManagerShipment(id: number, data: ManagerShipmentAddEditRequest) {
-    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/shipments/${id}`, data);
-    return res;
+    return await axiosClient.put<ApiResponse<void>>(`/manager/shipments/${id}`, data);
   },
 
   async exportManagerShipmentPerformance(id: number, params: SearchRequest) {

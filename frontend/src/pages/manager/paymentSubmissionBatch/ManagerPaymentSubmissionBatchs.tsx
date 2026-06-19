@@ -152,7 +152,7 @@ const ManagerPaymentSubmissionBatchs = () => {
             const result = await paymentSubmissionBatchApi.updateManagerPaymentSubmissionBatch(selectedSubmissionBatch.id, param);
 
             if (result.success) {
-                message.success(result.message || "Cập nhật trạng thái thành công phiên đối soát");
+                message.success("Cập nhật trạng thái thành công phiên đối soát");
                 fetchPaymentSubmissionBatchs(currentPage);
                 setSelectedSubmissionBatch(null);
             } else {

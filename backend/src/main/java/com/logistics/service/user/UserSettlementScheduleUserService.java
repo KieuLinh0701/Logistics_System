@@ -6,6 +6,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.UserErrorCode;
+import com.logistics.exception.enums.UserSettlementScheduleErrorCode;
 import org.springframework.stereotype.Service;
 
 import com.logistics.dto.UserSettlementScheduleDto;
@@ -26,37 +29,28 @@ public class UserSettlementScheduleUserService {
     private final UserSettlementScheduleRepository scheduleRepository;
     private final UserUserService userService;
 
-    public ApiResponse<UserSettlementScheduleDto> getUserSchedule(Integer userId) {
-        try {
+    public UserSettlementScheduleDto getUserSchedule(Integer userId) {
             Integer shopId = userService.getShopId(userId);
 
             UserSettlementSchedule schedule = scheduleRepository.findByUserId(shopId);
 
             if (schedule == null) {
-                return new ApiResponse<>(true, "Người dùng chưa có lịch đối soát", null);
+                throw  new AppException(UserSettlementScheduleErrorCode.SETTLEMENT_SCHEDULE_NOT_FOUND);
             }
 
             UserSettlementScheduleDto dto = new UserSettlementScheduleDto();
             dto.setWeekdays(schedule.getWeekdays());
 
-            return new ApiResponse<>(true, "Lấy lịch thành công", dto);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return dto;
     }
 
     @Transactional
-    public ApiResponse<Boolean> updateUserSchedule(Integer userId, Set<String> weekdays) {
-        try {
+    public void updateUserSchedule(Integer userId, Set<String> weekdays) {
             Integer shopId = userService.getShopId(userId);
             User user = userService.getUser(shopId);
 
-            if (user == null) {
-                return new ApiResponse<>(false, "Người dùng không tồn tại", false);
-            }
-
             if (weekdays == null || weekdays.isEmpty()) {
-                return new ApiResponse<>(false, "Vui lòng chọn ít nhất 1 ngày", false);
+                throw new AppException(UserSettlementScheduleErrorCode.SETTLEMENT_SCHEDULE_INVALID_DAY_COUNT);
             }
 
             Set<WeekDay> weekDaysEnum = new HashSet<>();
@@ -64,7 +58,7 @@ public class UserSettlementScheduleUserService {
                 try {
                     weekDaysEnum.add(WeekDay.valueOf(day));
                 } catch (IllegalArgumentException e) {
-                    return new ApiResponse<>(false, "Ngày không hợp lệ: " + day, false);
+                    throw new AppException(UserSettlementScheduleErrorCode.SETTLEMENT_SCHEDULE_INVALID_DAY_FORMAT);
                 }
             }
 
@@ -76,11 +70,6 @@ public class UserSettlementScheduleUserService {
 
             schedule.setWeekdays(weekDaysEnum);
             scheduleRepository.save(schedule);
-
-            return new ApiResponse<>(true, "Cập nhật lịch thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi cập nhật lịch: " + e.getMessage(), false);
-        }
     }
 
     public String getNextSettlementDate(Integer userId) {
@@ -90,8 +79,7 @@ public class UserSettlementScheduleUserService {
         }
 
         Set<WeekDay> weekdays = schedule.getWeekdays();
-        LocalDate today = LocalDate.now();
-        LocalDate nextSettlement = today;
+        LocalDate nextSettlement = LocalDate.now();
 
         for (int i = 0; i < 7; i++) {
             DayOfWeek dow = nextSettlement.getDayOfWeek();

@@ -13,13 +13,11 @@ const incidentReportApi = {
   },
 
   async getManagerIncidentReportById(id: number) {
-    const res = await axiosClient.get<ApiResponse<Incident>>(`/manager/incident-reports/${id}`);
-    return res;
+    return await axiosClient.get<ApiResponse<Incident>>(`/manager/incident-reports/${id}`);
   },
 
   async processingManagerIncidentReport(id: number, data: ManagerIncidentUpdateRequest) {
-    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/incident-reports/${id}`, data);
-    return res;
+    return await axiosClient.put<ApiResponse<void>>(`/manager/incident-reports/${id}`, data);
   },
 
   async exportManagerIncidentReports(params: SearchRequest) {

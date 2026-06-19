@@ -162,7 +162,7 @@ const ManagerShipments: React.FC = () => {
         try {
             const result = await shipmentApi.cancelManagerShipment(id);
 
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success(result.message || "Hủy chuyến hàng thành công");
                 fetchShipments(page);
                 if (detailModalVisible && selectedShipment) {

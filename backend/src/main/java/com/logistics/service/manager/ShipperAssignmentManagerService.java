@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.EmployeeErrorCode;
+import com.logistics.exception.enums.OfficeErrorCode;
+import com.logistics.exception.enums.ShipperAssignmentErrorCode;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
@@ -62,30 +67,24 @@ public class ShipperAssignmentManagerService {
     private final EmployeeRepository employeeRepository;
 
     @Transactional
-    public ApiResponse<Boolean> create(
+    public void create(
             int userId,
             ManagerShipperAssignmentEditRequest request) {
-
-        try {
             validate(request, false);
 
             // 1. Lấy bưu cục của manager
             Office office = employeeManagerService.getManagedOfficeByUserId(userId);
             if (office == null) {
-                return new ApiResponse<>(false,
-                        "Không xác định được bưu cục của bạn!",
-                        false);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_USER_OFFICE_MISSING);
             }
 
             // 2. Lấy employee được chọn
             Employee employee = employeeRepository.findById(request.getSelectedEmployee())
-                    .orElseThrow(() -> new RuntimeException("Nhân viên được chọn không tồn tại!"));
+                    .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
 
             // 3. Check employee thuộc bưu cục
             if (!office.getId().equals(employee.getOffice().getId())) {
-                return new ApiResponse<>(false,
-                        "Nhân viên được chọn không thuộc bưu cục của bạn!",
-                        false);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_OFFICE_MISMATCH);
             }
 
             // 4. Check role shipper
@@ -93,9 +92,7 @@ public class ShipperAssignmentManagerService {
                     || employee.getAccountRole().getRole() == null
                     || !"shipper".equalsIgnoreCase(
                             employee.getAccountRole().getRole().getName())) {
-                return new ApiResponse<>(false,
-                        "Nhân viên được chọn không phải là nhân viên giao hàng!",
-                        false);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIPPER_INVALID);
             }
 
             LocalDateTime startAt = request.getStartAt();
@@ -111,9 +108,7 @@ public class ShipperAssignmentManagerService {
                     null);
 
             if (existed) {
-                return new ApiResponse<>(false,
-                        "Nhân viên giao hàng đã được phân công khu vực này trong khoảng thời gian đã chọn!",
-                        false);
+                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_CONFLICT);
             }
 
             // 6. Tạo phân công
@@ -138,41 +133,27 @@ public class ShipperAssignmentManagerService {
                         "shipper_assignment",
                         null);
             }
-
-            return new ApiResponse<>(true,
-                    "Tạo phân công giao hàng thành công!",
-                    true);
-
-        } catch (Exception ex) {
-            return new ApiResponse<>(false,
-                    ex.getMessage(),
-                    false);
-        }
     }
 
     @Transactional
-    public ApiResponse<Boolean> update(
+    public void update(
             int userId,
             Long assignmentId,
             ManagerShipperAssignmentEditRequest request) {
-
-        try {
             Office office = employeeManagerService.getManagedOfficeByUserId(userId);
             if (office == null) {
-                return new ApiResponse<>(false, "Không xác định được bưu cục của bạn!", false);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_USER_OFFICE_MISSING);
             }
 
             ShipperAssignment assignment = shipperAssignmentRepository.findById(assignmentId)
-                    .orElseThrow(() -> new RuntimeException("Phân công không tồn tại!"));
+                    .orElseThrow(() -> new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_NOT_FOUND));
 
             LocalDateTime now = LocalDateTime.now();
             boolean isStarted = !assignment.getStartAt().isAfter(now);
             validate(request, isStarted);
 
             if (assignment.getEndAt() != null && assignment.getEndAt().isBefore(now)) {
-                return new ApiResponse<>(false,
-                        "Phân công đã kết thúc, không thể chỉnh sửa!",
-                        false);
+                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_CLOSED);
             }
 
             Employee oldEmployee = assignment.getShipper().getEmployees().stream()
@@ -184,21 +165,17 @@ public class ShipperAssignmentManagerService {
             if (isStarted) {
                 // Nếu đã bắt đầu, chỉ update endAt và notes
                 if (request.getEndAt() == null || request.getEndAt().isBefore(now)) {
-                    return new ApiResponse<>(false,
-                            "Thời gian kết thúc phải >= thời điểm hiện tại!",
-                            false);
+                    throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_END_TIME_INVALID);
                 }
                 assignment.setEndAt(request.getEndAt());
                 assignment.setNotes(request.getNotes());
             } else {
                 // Nếu chưa bắt đầu, có thể đổi nhân viên, thời gian, khu vực
                 Employee employee = employeeRepository.findById(request.getSelectedEmployee())
-                        .orElseThrow(() -> new RuntimeException("Nhân viên không tồn tại!"));
+                        .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
 
                 if (!office.getId().equals(employee.getOffice().getId())) {
-                    return new ApiResponse<>(false,
-                            "Nhân viên không thuộc bưu cục của bạn!",
-                            false);
+                    throw new AppException(EmployeeErrorCode.EMPLOYEE_OFFICE_MISMATCH);
                 }
 
                 boolean existed = shipperAssignmentRepository.existsActiveOverlap(
@@ -210,15 +187,11 @@ public class ShipperAssignmentManagerService {
                         assignment.getId());
 
                 if (existed) {
-                    return new ApiResponse<>(false,
-                            "Nhân viên này đã có phân công giao hàng trùng thời gian tại khu vực này!",
-                            false);
+                    throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_CONFLICT);
                 }
 
                 if (request.getEndAt() != null && request.getEndAt().isBefore(request.getStartAt())) {
-                    return new ApiResponse<>(false,
-                            "Thời gian kết thúc phải sau thời gian bắt đầu!",
-                            false);
+                    throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_INVALID_TIME_RANGE);
                 }
 
                 assignment.setShipper(employee.getUser());
@@ -254,27 +227,16 @@ public class ShipperAssignmentManagerService {
                     null,
                     "shipper_assignment",
                     null);
-
-            return new ApiResponse<>(true,
-                    "Cập nhật phân công giao hàng thành công!",
-                    true);
-
-        } catch (Exception ex) {
-            return new ApiResponse<>(false, ex.getMessage(), false);
-        }
     }
 
     @Transactional
-    public ApiResponse<Boolean> deleteFutureAssignment(int userId, Long assignmentId) {
-        try {
+    public void deleteFutureAssignment(int userId, Long assignmentId) {
             ShipperAssignment assignment = shipperAssignmentRepository.findById(assignmentId)
-                    .orElseThrow(() -> new RuntimeException("Phân công không tồn tại!"));
+                    .orElseThrow(() -> new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_NOT_FOUND));
 
             LocalDateTime now = LocalDateTime.now();
             if (!assignment.getStartAt().isAfter(now)) {
-                return new ApiResponse<>(false,
-                        "Phân công đã bắt đầu hoặc đã kết thúc, không thể xóa!",
-                        false);
+                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_DELETION_FORBIDDEN);
             }
 
             Office office = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -286,16 +248,12 @@ public class ShipperAssignmentManagerService {
                     .findFirst();
 
             if (shipperEmployeeOpt.isEmpty()) {
-                return new ApiResponse<>(false,
-                        "Nhân viên liên quan không phải là nhân viên giao hàng!",
-                        false);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIPPER_INVALID);
             }
 
             Employee shipperEmployee = shipperEmployeeOpt.get();
             if (!office.getId().equals(shipperEmployee.getOffice().getId())) {
-                return new ApiResponse<>(false,
-                        "Bạn không có quyền xóa phân công của nhân viên này!",
-                        false);
+                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_CANNOT_DELETED);
             }
 
             shipperAssignmentRepository.delete(assignment);
@@ -309,14 +267,6 @@ public class ShipperAssignmentManagerService {
                     null,
                     "shipper_assignment",
                     null);
-
-            return new ApiResponse<>(true,
-                    "Xóa phân công thành công!",
-                    true);
-
-        } catch (Exception ex) {
-            return new ApiResponse<>(false, ex.getMessage(), false);
-        }
     }
 
     private void validate(ManagerShipperAssignmentEditRequest request, boolean isStarted) {
@@ -335,55 +285,47 @@ public class ShipperAssignmentManagerService {
         }
 
         if (!missingFields.isEmpty()) {
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missingFields));
         }
 
         LocalDateTime now = LocalDateTime.now();
 
         if (!isStarted && request.getSelectedEmployee() != null && request.getSelectedEmployee() <= 0) {
-            throw new RuntimeException("ID nhân viên phải lớn hơn 0");
+            throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_ID_INVALID);
         }
 
         if (!isStarted && request.getWardCode() != null && request.getWardCode() <= 0) {
-            throw new RuntimeException("Mã phường/xã phải lớn hơn 0");
+            throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_WARD_CODE_INVALID);
         }
 
         if (!isStarted && request.getStartAt() != null && request.getStartAt().isBefore(now)) {
-            throw new RuntimeException("Thời gian bắt đầu phải lớn hơn hoặc bằng thời điểm hiện tại");
+            throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_START_TIME_INVALID);
         }
 
         if (request.getEndAt() != null) {
             if (!isStarted && request.getStartAt() != null && request.getEndAt().isBefore(request.getStartAt())) {
-                throw new RuntimeException("Thời gian kết thúc phải lớn hơn hoặc bằng thời gian bắt đầu");
+                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_INVALID_TIME_RANGE);
             }
             if (request.getEndAt().isBefore(now)) {
-                throw new RuntimeException("Thời gian kết thúc phải lớn hơn thời điểm hiện tại");
+                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_END_TIME_INVALID);
             }
         }
     }
 
-    public ApiResponse<ListResponse<ManagerShipperAssignmentListDto>> list(
+    public ListResponse<ManagerShipperAssignmentListDto> list(
             Integer userId,
             ManagerShipperAssignmentSearchRequest request) {
-
-        try {
             int page = request.getPage();
             int limit = request.getLimit();
             String sort = request.getSort();
 
             Specification<ShipperAssignment> spec = buildSpecification(userId, request);
 
-            Sort sortOpt;
-            switch (sort != null ? sort.toLowerCase() : "") {
-                case "newest":
-                    sortOpt = Sort.by(Sort.Order.desc("createdAt"));
-                    break;
-                case "oldest":
-                    sortOpt = Sort.by(Sort.Order.asc("createdAt"));
-                    break;
-                default:
-                    sortOpt = Sort.unsorted();
-            }
+            Sort sortOpt = switch (sort != null ? sort.toLowerCase() : "") {
+                case "newest" -> Sort.by(Sort.Order.desc("createdAt"));
+                case "oldest" -> Sort.by(Sort.Order.asc("createdAt"));
+                default -> Sort.unsorted();
+            };
 
             Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
             Page<ShipperAssignment> pageData = shipperAssignmentRepository.findAll(spec, pageable);
@@ -397,11 +339,7 @@ public class ShipperAssignmentManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách phân công thành công", data);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     public byte[] exportShipperAssignmentsExcel(Integer userId, ManagerShipperAssignmentSearchRequest request) {
@@ -480,7 +418,7 @@ public class ShipperAssignmentManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 

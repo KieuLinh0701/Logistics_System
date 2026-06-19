@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -27,11 +28,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/orders")
 public class OrderManagerController {
 
-    @Autowired
-    private OrderManagerService service;
+    private final OrderManagerService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<ManagerOrderListDto>>> list(
@@ -39,14 +40,14 @@ public class OrderManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, userOrderSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, userOrderSearchRequest)));
     }
 
     @GetMapping("/status-counts")
     public ResponseEntity<ApiResponse<List<ManagerOrderStatusCountResponse>>> getStatusCounts(
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.getStatusCounts(userId));
+        return ResponseEntity.ok(ApiResponse.success(service.getStatusCounts(userId)));
     }
 
     @GetMapping("/all-ids")
@@ -55,7 +56,7 @@ public class OrderManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getAllOrderIds(userId, userOrderSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.getAllOrderIds(userId, userOrderSearchRequest)));
     }
 
     @GetMapping("/tracking/{trackingNumber}")
@@ -64,7 +65,7 @@ public class OrderManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.getOrderByTrackingNumber(userId, trackingNumber));
+        return ResponseEntity.ok(ApiResponse.success(service.getOrderByTrackingNumber(userId, trackingNumber)));
     }
 
     @GetMapping("/print")
@@ -80,16 +81,16 @@ public class OrderManagerController {
                 .map(Integer::parseInt)
                 .toList();
 
-        return ResponseEntity.ok(service.getOrdersForPrint(userId, orderIds));
+        return ResponseEntity.ok(ApiResponse.success(service.getOrdersForPrint(userId, orderIds)));
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse<Boolean>> cancelOrder(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> cancelOrder(@PathVariable Integer id,
             HttpServletRequest request) {
-        System.out.println("Ba");
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.cancelOrder(userId, id));
+        service.cancelOrder(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping
@@ -98,35 +99,37 @@ public class OrderManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.create(userId, managerOrderCreateRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.create(userId, managerOrderCreateRequest)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> update(
+    public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Integer id,
             @RequestBody ManagerOrderCreateRequest orderRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.update(userId, id, orderRequest));
+        service.update(userId, id, orderRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PatchMapping("/{id}/at-origin-office")
-    public ResponseEntity<ApiResponse<Boolean>> setOrderAtOriginOffice(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> setOrderAtOriginOffice(@PathVariable Integer id,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.setOrderAtOriginOffice(userId, id));
+        service.setOrderAtOriginOffice(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PatchMapping("/{id}/confirm")
-    public ResponseEntity<ApiResponse<Boolean>> confirmOrder(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> confirmOrder(@PathVariable Integer id,
             HttpServletRequest request) {
-        System.out.println("Hi");
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.confirmOrder(userId, id));
+        service.confirmOrder(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/export")

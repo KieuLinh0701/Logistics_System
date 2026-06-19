@@ -1,5 +1,7 @@
 package com.logistics.service.user;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.UserErrorCode;
 import org.springframework.stereotype.Service;
 
 import com.logistics.entity.User;
@@ -12,19 +14,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserUserService {
 
-    private final UserRepository repository; 
+    private final UserRepository repository;
 
-    public User findById(Integer id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-    }
-
-    public ApiResponse<Boolean> checkLocked(Integer id) {
+    public boolean checkLocked(Integer id) {
         Integer shopId = getShopId(id);
 
         User user = getUser(shopId);
-        Boolean checked = user.getLocked();
-        return new ApiResponse<>(true, "Kiểm tra tài khoản bị khóa thành công", checked);
+        return user.getLocked();
     }
 
     public Integer getShopId(User user) {
@@ -44,6 +40,6 @@ public class UserUserService {
 
     public User getUser(int userId) {
         return repository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
     }
 }

@@ -34,23 +34,26 @@ public class VehicleManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        return ResponseEntity.ok(service.list(userId, managerVehicleSearchRequest));
+        return ResponseEntity.ok(ApiResponse.success(service.list(userId, managerVehicleSearchRequest)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> update(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Void>> update(@PathVariable Integer id,
             @Valid @RequestBody ManagerVehicleEditRequest managerVehicleEditRequest,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.update(userId, id, managerVehicleEditRequest));
+
+        service.update(userId, id, managerVehicleEditRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/available")
     public ResponseEntity<ApiResponse<List<VehicleDto>>> getAvailableVehicles(
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.getAvailableVehicles(userId));
+
+        return ResponseEntity.ok(ApiResponse.success(service.getAvailableVehicles(userId)));
     }
 
     @GetMapping("/export")

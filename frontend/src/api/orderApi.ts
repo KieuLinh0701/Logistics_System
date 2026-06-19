@@ -406,18 +406,15 @@ const orderApi = {
     },
 
     async cancelManagerOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/cancel`);
-        return res;
+        return await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/cancel`);
     },
 
     async setManagerOrderAtOriginOffice(id: number) {
-        const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/at-origin-office`);
-        return res;
+         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/at-origin-office`);
     },
 
     async confirmManagerOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/confirm`);
-        return res;
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/confirm`);
     },
 
     // Public

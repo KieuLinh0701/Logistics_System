@@ -4,6 +4,9 @@ import com.logistics.dto.VehicleDto;
 import com.logistics.entity.Office;
 import com.logistics.entity.Vehicle;
 import com.logistics.enums.VehicleStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.VehicleErrorCode;
 import com.logistics.mapper.VehicleMapper;
 import com.logistics.repository.VehicleRepository;
 import com.logistics.request.manager.vehicle.ManagerVehicleEditRequest;
@@ -40,8 +43,7 @@ public class VehicleManagerService {
 
     private final EmployeeManagerService employeeManagerService;
 
-    public ApiResponse<ListResponse<VehicleDto>> list(int userId, ManagerVehicleSearchRequest request) {
-        try {
+    public ListResponse<VehicleDto> list(int userId, ManagerVehicleSearchRequest request) {
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -89,10 +91,7 @@ public class VehicleManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách phương tiện thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     public byte[] export(int userId, ManagerVehicleSearchRequest request) {
@@ -184,20 +183,18 @@ public class VehicleManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
-    public ApiResponse<Boolean> update(int userId, int vehicleId, ManagerVehicleEditRequest request) {
-        try {
-
+    public void update(int userId, int vehicleId, ManagerVehicleEditRequest request) {
             Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                    .orElseThrow(() -> new RuntimeException("Xe không tồn tại"));
+                    .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
 
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             if (!userOffice.getId().equals(vehicle.getOffice().getId())) {
-                throw new RuntimeException("Người dùng không có quyền chỉnh sửa xe tại bưu cục này");
+                throw new AppException(VehicleErrorCode.VEHICLE_ACCESS_DENIED);
             }
 
             if (request.getDescription() != null) {
@@ -214,14 +211,14 @@ public class VehicleManagerService {
 
                     vehicle.setStatus(newStatus);
                 } catch (IllegalArgumentException e) {
-                    throw new RuntimeException("Trạng thái không hợp lệ");
+                    throw new AppException(VehicleErrorCode.VEHICLE_STATUS_INVALID);
                 }
             }
 
             if (request.getNextMaintenanceDue() != null) {
                 LocalDateTime now = LocalDateTime.now();
                 if (request.getNextMaintenanceDue().isBefore(now)) {
-                    throw new RuntimeException("Ngày bảo trì tiếp theo phải lớn hơn hoặc bằng hiện tại");
+                    throw new AppException(VehicleErrorCode.VEHICLE_MAINTENANCE_DATE_INVALID);
                 }
                 vehicle.setNextMaintenanceDue(request.getNextMaintenanceDue());
             }
@@ -231,15 +228,9 @@ public class VehicleManagerService {
             }
 
             vehicleRepository.save(vehicle);
-
-            return new ApiResponse<>(true, "Cập nhật xe thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<List<VehicleDto>> getAvailableVehicles(int userId) {
-        try {
+    public List<VehicleDto> getAvailableVehicles(int userId) {
             Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Specification<Vehicle> spec = VehicleSpecification.unrestrictedVehicle()
@@ -248,13 +239,8 @@ public class VehicleManagerService {
 
             List<Vehicle> vehicles = vehicleRepository.findAll(spec);
 
-            List<VehicleDto> list = vehicles.stream()
+            return vehicles.stream()
                     .map(VehicleMapper::toDto)
                     .toList();
-
-            return new ApiResponse<>(true, "Lấy danh sách phương tiện thành công", list);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
     }
 }

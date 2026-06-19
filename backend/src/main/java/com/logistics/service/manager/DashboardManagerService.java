@@ -20,14 +20,11 @@ import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.VehicleType;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.IncidentReportRepository;
-import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
-import com.logistics.repository.ProductRepository;
 import com.logistics.repository.ShipmentRepository;
 import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.repository.VehicleRepository;
-import com.logistics.response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -46,8 +43,7 @@ public class DashboardManagerService {
 
     private final EmployeeManagerService employeeManagerService;
 
-    public ApiResponse<ManagerDashboardOverviewResponseDTO> getOverview(Integer userId) {
-        try {
+    public ManagerDashboardOverviewResponseDTO getOverview(Integer userId) {
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
             Integer officeId = userOffice.getId();
 
@@ -127,91 +123,6 @@ public class DashboardManagerService {
             data.setOrders(orders);
             data.setEmployeeShiftCounts(employeeShiftCounts);
 
-            return new ApiResponse<>(true, "Lấy thông tin tổng quan thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy tổng quan: " + e.getMessage(), null);
-        }
+            return data;
     }
-
-    // public ApiResponse<UserDashboardChartResponseDTO> getChart(Integer userId,
-    // SearchRequest request) {
-    // try {
-    // LocalDateTime startDate = request.getStartDate() != null &&
-    // !request.getStartDate().isBlank()
-    // ? LocalDateTime.parse(request.getStartDate())
-    // : null;
-
-    // LocalDateTime endDate = request.getEndDate() != null &&
-    // !request.getEndDate().isBlank()
-    // ? LocalDateTime.parse(request.getEndDate())
-    // : null;
-
-    // List<UserTopProductItemDto> topSelling =
-    // orderProductRepository.findTopSellingProducts(
-    // userId,
-    // OrderStatus.DELIVERED,
-    // startDate,
-    // endDate,
-    // PageRequest.of(0, 5));
-
-    // List<UserTopProductItemDto> topReturned =
-    // orderProductRepository.findTopReturnedProducts(
-    // userId,
-    // List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
-    // startDate,
-    // endDate,
-    // PageRequest.of(0, 5));
-
-    // List<UserOrderTimelineDTO> orderTimelineDTOs = getOrderTimeline(userId,
-    // startDate,
-    // endDate);
-
-    // UserDashboardChartResponseDTO data = new UserDashboardChartResponseDTO();
-    // data.setTopSelling(topSelling);
-    // data.setTopReturned(topReturned);
-    // data.setOrderTimelines(orderTimelineDTOs);
-
-    // return new ApiResponse<>(true, "Lấy thông tin biểu đồ thành công", data);
-    // } catch (Exception e) {
-    // return new ApiResponse<>(false, "Lỗi khi lấy biểu đồ: " + e.getMessage(),
-    // null);
-    // }
-    // }
-
-    // public List<UserOrderTimelineDTO> getOrderTimeline(
-    // Integer userId,
-    // LocalDateTime startDate,
-    // LocalDateTime endDate) {
-    // List<UserCreatedOrderCountDTO> createdList =
-    // orderRepository.countCreatedOrdersByDate(userId, startDate,
-    // endDate);
-
-    // List<UserDeliveredOrderCountDTO> deliveredList =
-    // orderRepository.countDeliveredOrdersByDate(userId, startDate,
-    // endDate);
-
-    // Map<LocalDate, UserOrderTimelineDTO> map = new TreeMap<>();
-
-    // for (UserCreatedOrderCountDTO c : createdList) {
-    // LocalDate date = c.getDate().toLocalDate();
-    // map.put(
-    // date,
-    // new UserOrderTimelineDTO(date, c.getCreatedCount(), 0L));
-    // }
-
-    // for (UserDeliveredOrderCountDTO d : deliveredList) {
-    // LocalDate date = d.getDate().toLocalDate();
-    // map.compute(
-    // date,
-    // (k, v) -> {
-    // if (v == null) {
-    // return new UserOrderTimelineDTO(date, 0L, d.getDeliveredCount());
-    // }
-    // v.setDeliveredCount(d.getDeliveredCount());
-    // return v;
-    // });
-    // }
-
-    // return new ArrayList<>(map.values());
-    // }
 }

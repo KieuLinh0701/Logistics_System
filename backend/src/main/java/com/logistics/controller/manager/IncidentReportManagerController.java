@@ -46,9 +46,9 @@ public class IncidentReportManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ListResponse<ManagerIncidentReportListDto>> result = service.list(userId,
+        ListResponse<ManagerIncidentReportListDto> result = service.list(userId,
                 searchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}")
@@ -57,18 +57,19 @@ public class IncidentReportManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<ManagerIncidentReportDetailDto> result = service.getById(userId, id);
-        return ResponseEntity.ok(result);
+        ManagerIncidentReportDetailDto result = service.getById(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Boolean>> processing(
+    public ResponseEntity<ApiResponse<Void>> processing(
             @PathVariable Integer id,
             @RequestBody ManagerIncidentUpdateRequest updateRequest,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(service.processing(userId, id, updateRequest));
+        service.processing(userId, id, updateRequest);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/export")

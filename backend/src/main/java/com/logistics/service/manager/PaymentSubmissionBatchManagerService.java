@@ -1,13 +1,15 @@
 package com.logistics.service.manager;
 
 import java.io.ByteArrayOutputStream;
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.PaymentSubmissionBatchErrorCode;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
@@ -26,7 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.logistics.dto.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchListDto;
-import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.PaymentSubmission;
@@ -36,14 +37,11 @@ import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.mapper.PaymentSubmissionBatchMapper;
-import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PaymentSubmissionBatchRepository;
 import com.logistics.repository.PaymentSubmissionRepository;
 import com.logistics.request.SearchRequest;
-import com.logistics.request.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchCreateForm;
 import com.logistics.request.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchEditForm;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
@@ -67,9 +65,8 @@ public class PaymentSubmissionBatchManagerService {
 
     private final OrderRepository orderRepository;
 
-    public ApiResponse<ListResponse<ManagerPaymentSubmissionBatchListDto>> list(
+    public ListResponse<ManagerPaymentSubmissionBatchListDto> list(
             Integer userId, SearchRequest request) {
-        try {
             Sort sort = buildSort(request.getSort());
             Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sort);
             Page<PaymentSubmissionBatch> pageData = getPaymentSubmissionBatchPage(userId, request, pageable);
@@ -89,10 +86,7 @@ public class PaymentSubmissionBatchManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách phiên đối soát thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     public byte[] export(Integer userId,
@@ -205,7 +199,7 @@ public class PaymentSubmissionBatchManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -260,16 +254,16 @@ public class PaymentSubmissionBatchManagerService {
     }
 
     @Transactional
-    public ApiResponse<Boolean> processing(Integer userId, Integer id, ManagerPaymentSubmissionBatchEditForm request) {
+    public void processing(Integer userId, Integer id, ManagerPaymentSubmissionBatchEditForm request) {
         PaymentSubmissionBatch batch = batchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Phiên đối soát không tồn tại"));
+                .orElseThrow(() -> new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_NOT_FOUND));
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         User user = userOffice.getManager().getUser();
 
         if (batch.getOffice() == null || !userOffice.getId().equals(batch.getOffice().getId())) {
-            return new ApiResponse<>(false, "Không có quyền xử lý phiên đối soát này", null);
+            throw new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_ACCESS_DENIED);
         }
 
         validateForm(request);
@@ -278,7 +272,7 @@ public class PaymentSubmissionBatchManagerService {
 
         if (!PaymentSubmissionBatchUtils.canManagerChangeStatus(batch.getStatus(), newStatus)
                 && isBlank(request.getStatus())) {
-            throw new RuntimeException("Trạng thái yêu cầu chuyển không hợp lệ");
+            throw new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_INVALID_STATUS_CHANGE);
         }
 
         batch.setStatus(newStatus);
@@ -301,8 +295,6 @@ public class PaymentSubmissionBatchManagerService {
                         "settlements",
                         batch.getId().toString());
         }
-
-        return new ApiResponse<>(true, "Cập nhật phiên đối soát thành công", true);
     }
 
     private void syncSubmissionsWithBatch(PaymentSubmissionBatch batch, PaymentSubmissionBatchStatus newStatus,
@@ -352,17 +344,17 @@ public class PaymentSubmissionBatchManagerService {
             missing.add("Trạng thái");
 
         if (!missing.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
 
         PaymentSubmissionBatchStatus status;
         try {
             status = PaymentSubmissionBatchStatus.valueOf(request.getStatus());
         } catch (Exception e) {
-            throw new RuntimeException("Trạng thái yêu cầu không hợp lệ");
+            throw new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_INVALID_STATUS);
         }
 
         if (!isBlank(request.getNotes()) && request.getNotes().length() > 255) {
-            throw new RuntimeException("Ghi chú phiên đối soát không được vượt quá 255 ký tự");
+            throw new AppException(PaymentSubmissionBatchErrorCode.PAYMENT_SUBMISSION_BATCH_INVALID_NOTE);
         }
     }
 

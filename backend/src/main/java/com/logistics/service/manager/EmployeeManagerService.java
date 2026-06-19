@@ -10,6 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.logistics.constants.EmployeeConstant;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.EmployeeErrorCode;
+import com.logistics.exception.enums.RoleErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
 import org.apache.coyote.BadRequestException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
@@ -102,14 +108,14 @@ public class EmployeeManagerService {
                         .getId()
                         .equals(emp.getId()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Bạn không phải quản lý bưu cục hoặc đã nghỉ"));
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_MANAGER_NOT_FOUND));
 
         return managed.getOffice();
     }
 
-    public ApiResponse<ListResponse<ManagerEmployeeListDto>> list(int userId,
-                                                                  ManagerEmployeeSearchRequest request) {
-        try {
+    public ListResponse<ManagerEmployeeListDto> list(
+            int userId,
+            ManagerEmployeeSearchRequest request) {
             Office office = getManagedOfficeByUserId(userId);
 
             int page = request.getPage();
@@ -166,10 +172,7 @@ public class EmployeeManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách nhân viên thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     public byte[] export(int userId, ManagerEmployeeSearchRequest request) {
@@ -276,22 +279,19 @@ public class EmployeeManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
-    public ApiResponse<ListResponse<ManagerEmployeePerformanceDto>> getEmployeePerformance(
+    public ListResponse<ManagerEmployeePerformanceDto> getEmployeePerformance(
             int userId,
             SearchRequest request) {
-
-        try {
             Office office = getManagedOfficeByUserId(userId);
 
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
             String status = request.getStatus();
-            String role = request.getRole();
             String shift = request.getShift();
 
             EmployeeShift employeeShift = null;
@@ -302,7 +302,7 @@ public class EmployeeManagerService {
                     employeeShift = EmployeeShift.valueOf(shift.trim()
                             .toUpperCase());
                 } catch (IllegalArgumentException ex) {
-                    throw new BadRequestException("Ca làm việc không hợp lệ");
+                    throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIFT_INVALID);
                 }
             }
 
@@ -311,7 +311,7 @@ public class EmployeeManagerService {
                     employeeStatus = EmployeeStatus.valueOf(status.trim()
                             .toUpperCase());
                 } catch (IllegalArgumentException ex) {
-                    throw new BadRequestException("Trạng thái làm việc không hợp lệ");
+                    throw new AppException(EmployeeErrorCode.EMPLOYEE_STATUS_INVALID);
                 }
             }
 
@@ -334,15 +334,11 @@ public class EmployeeManagerService {
             data.setList(pageData.getContent());
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy hiệu suất nhân viên thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     @Transactional
-    public ApiResponse<Boolean> createEmployee(int creatorUserId, ManagerEmployeeEditRequest req) {
-        try {
+    public String createEmployee(int creatorUserId, ManagerEmployeeEditRequest req) {
             validateCreate(req);
 
             // 1. Lấy office của người dùng hiện tại
@@ -361,8 +357,7 @@ public class EmployeeManagerService {
             if (optAccount.isEmpty()) {
                 // phone phải unique toàn hệ thống
                 if (userRepository.existsByPhoneNumber(phone)) {
-                    return new ApiResponse<>(false, "Số điện thoại này đã được sử dụng. Vui lòng nhập số khác",
-                            null);
+                    throw new AppException(UserErrorCode.USER_PHONE_NUMBER_EXISTED);
                 }
 
                 String DEFAULT_TEMP_PASSWORD = PasswordUtils.generateTempPassword();
@@ -392,10 +387,7 @@ public class EmployeeManagerService {
                 account.setUser(user);
                 accountRepository.save(account);
 
-                Role role = roleRepository.findByName(req.getUserRole())
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
+                Role role = getSystemRoleByName(req.getUserRole());
 
                 AccountRole accountRole = new AccountRole();
                 accountRole.setAccount(account);
@@ -417,7 +409,7 @@ public class EmployeeManagerService {
                         emp.getId()
                                 .toString());
 
-                return new ApiResponse<>(true, "Thêm nhân viên mới thành công", true);
+                return EmployeeConstant.SUCCESS_ADD_EMPLOYEE_MSG;
             }
 
             // CASE B: Account ĐÃ TỒN TẠI -> xử lý theo rules
@@ -442,8 +434,7 @@ public class EmployeeManagerService {
                     .count();
 
             // role muốn thêm
-            Role wantedRole = roleRepository.findByName(req.getUserRole())
-                    .orElseThrow(() -> new RuntimeException("Role không tồn tại: " + req.getUserRole()));
+            Role wantedRole = getSystemRoleByName(req.getUserRole());
 
             // tìm accountRole hiện có với role này (cả active/inactive)
             Optional<AccountRole> optExistingAr = accountRoleRepository.findByAccountIdAndRoleId(account.getId(),
@@ -464,7 +455,7 @@ public class EmployeeManagerService {
                                     .equals(office.getId())
                                     && e.getStatus() != EmployeeStatus.LEAVE);
                     if (existsActiveOrInactiveHere) {
-                        return new ApiResponse<>(false, "Tài khoản này đã là nhân viên ở bưu cục hiện tại.", null);
+                        throw  new AppException(EmployeeErrorCode.EMPLOYEE_ACCOUNT_IN_OFFICE);
                     }
 
                     // 2. Nếu có employee ACTIVE/INACTIVE ở office khác -> lỗi (một người chỉ làm 1
@@ -475,16 +466,14 @@ public class EmployeeManagerService {
                                     .equals(office.getId())
                                     && e.getStatus() != EmployeeStatus.LEAVE);
                     if (existsActiveOrInactiveElsewhere) {
-                        return new ApiResponse<>(false,
-                                "ài khoản này đang làm việc tại bưu cục khác. Một nhân viên chỉ có thể thuộc 1 bưu cục.",
-                                null);
+                        throw new AppException(EmployeeErrorCode.EMPLOYEE_ACCOUNT_IN_OTHER_OFFICE);
                     }
 
                     // 3. Nếu tới đây => tất cả employee liên quan đều LEAVE (hoặc không có) -> tạo
                     // employee mới
                     Employee newEmp = buildEmployee(account.getUser(), ar, office, req);
                     employeeRepository.save(newEmp);
-                    return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công!", true);
+                    return EmployeeConstant.SUCCESS_ADD_EMPLOYEE_MSG;
                 }
 
                 long totalActiveAfterRestore = activeAccountRoles.size() + 1; // kế hoạch restore ar -> +1
@@ -492,15 +481,11 @@ public class EmployeeManagerService {
                 // active -> max 1
                 if (hasActiveUserRole) {
                     if (totalActiveAfterRestore > 2) {
-                        return new ApiResponse<>(false,
-                                "Không thể thực hiện chức vụ này vì mỗi người chỉ được làm một công việc trong một thời gian, thuộc một bưu cục.",
-                                null);
+                        throw new AppException(EmployeeErrorCode.EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED);
                     }
                 } else {
                     if (totalActiveAfterRestore > 1) {
-                        return new ApiResponse<>(false,
-                                "Không thể kích hoạt chức vụ này vì tài khoản đã có chức vụ đang hoạt động.",
-                                null);
+                        throw new AppException(EmployeeErrorCode.EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED);
                     }
                 }
 
@@ -529,7 +514,7 @@ public class EmployeeManagerService {
                             .toLocalDateTime()
                             : e.getHireDate());
                     employeeRepository.save(e);
-                    return new ApiResponse<>(true, "Nhân viên đã được khôi phục và sẵn sàng làm việc.", true);
+                    return EmployeeConstant.MSG_RESTORED_EMPLOYEE_SUCCESS;
                 }
 
                 // nếu không có employee cùng office:
@@ -538,9 +523,7 @@ public class EmployeeManagerService {
                 boolean existsActiveOrInactiveElsewhere = employees.stream()
                         .anyMatch(e -> e.getStatus() != EmployeeStatus.LEAVE);
                 if (existsActiveOrInactiveElsewhere) {
-                    return new ApiResponse<>(false,
-                            "ài khoản này đang làm việc tại bưu cục khác. Một nhân viên chỉ có thể thuộc 1 bưu cục.",
-                            null);
+                    throw  new AppException(EmployeeErrorCode.EMPLOYEE_ACCOUNT_IN_OTHER_OFFICE);
                 }
 
                 // tạo employee mới
@@ -560,8 +543,7 @@ public class EmployeeManagerService {
                         newEmp.getId()
                                 .toString());
 
-                return new ApiResponse<>(true, "Nhân viên mới đã được tạo thành công sau khi khôi phục chức vụ.",
-                        true);
+                return EmployeeConstant.MSG_RESTORED_EMPLOYEE_SUCCESS;
             }
 
             /*
@@ -574,15 +556,12 @@ public class EmployeeManagerService {
             // nếu không có User active -> chỉ cho phép 1 active total
             if (hasActiveUserRole) {
                 if (activeNonUserRolesCount >= 1) {
-                    return new ApiResponse<>(false,
-                            "Tài khoản đã có 1 chức vụ nhân viên đang active, không thể thêm chức vụ thứ 2", null);
+                    throw new AppException(EmployeeErrorCode.EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED);
                 }
             } else {
                 if (activeNonUserRolesCount >= 1) {
                     // account đã có 1 non-user active và không có user -> không thể thêm nữa
-                    return new ApiResponse<>(false,
-                            "Tài khoản này đã có một chức vụ đang hoạt động. Không thể thêm chức vụ thứ hai.",
-                            null);
+                    throw new AppException(EmployeeErrorCode.EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED);
                 }
             }
 
@@ -603,7 +582,7 @@ public class EmployeeManagerService {
 
             if (existsActiveOrInactiveElsewhere) {
                 // Chặn nếu ACTIVE/INACTIVE ở office khác
-                return new ApiResponse<>(false, "Tài khoản này hiện đang là nhân viên tại bưu cục khác", null);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_ACCOUNT_IN_OTHER_OFFICE);
             }
 
             // Nếu không có employee active/inactive ở office khác -> tạo employee mới bình
@@ -611,27 +590,22 @@ public class EmployeeManagerService {
             Employee emp = buildEmployee(account.getUser(), newAr, office, req);
             employeeRepository.save(emp);
 
-            return new ApiResponse<>(true, "Chức vụ và nhân viên mới đã được tạo thành công!", true);
-        } catch (Exception ex) {
-            return new ApiResponse<>(false, ex.getMessage(), null);
-        }
+            return EmployeeConstant.SUCCESS_ADD_EMPLOYEE_MSG;
     }
 
     @Transactional
-    public ApiResponse<Boolean> updateEmployee(int editorUserId, int employeeId, ManagerEmployeeEditRequest req) {
-        try {
+    public String updateEmployee(int editorUserId, int employeeId, ManagerEmployeeEditRequest req) {
             validateEdit(req);
 
             Office editorOffice = getManagedOfficeByUserId(editorUserId);
 
             Employee emp = employeeRepository.findById(employeeId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên này"));
+                    .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
 
             if (!emp.getOffice()
                     .getId()
                     .equals(editorOffice.getId())) {
-                return new ApiResponse<>(false, "Bạn chỉ có thể chỉnh sửa nhân viên trong bưu cục của mình.",
-                        null);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_MANAGER_ACCESS_DENIED);
             }
 
             Account account = emp.getAccountRole()
@@ -657,15 +631,11 @@ public class EmployeeManagerService {
                                     .getId()));
 
             if (hasOtherOfficeActive) {
-                return new ApiResponse<>(false,
-                        "Nhân viên này đang làm việc tại bưu cục khác. Không thể thay đổi chức vụ hoặc trạng thái.",
-                        null);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_ACCOUNT_IN_OTHER_OFFICE);
             }
 
             // ===== Xử lý role nếu thay đổi =====
-            Role newRole = roleRepository.findByName(req.getUserRole())
-                    .orElseThrow(
-                            () -> new RuntimeException("Chức vụ bạn chọn không hợp lệ. Vui lòng kiểm tra lại."));
+            Role newRole = getSystemRoleByName(req.getUserRole());
             AccountRole currentAR = emp.getAccountRole();
 
             EmployeeStatus newStatus = req.getStatus() != null && !req.getStatus()
@@ -676,9 +646,7 @@ public class EmployeeManagerService {
             if (!currentAR.getRole()
                     .getId()
                     .equals(newRole.getId()) && newStatus == EmployeeStatus.LEAVE) {
-                return new ApiResponse<>(false,
-                        "Không thể thay đổi chức vụ và cho nghỉ cùng lúc. Vui lòng thực hiện riêng từng thao tác.",
-                        null);
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_CANNOT_CHANGE_ROLE_AND_LEAVE_SIMULTANEOUSLY);
             }
 
             if (!currentAR.getRole()
@@ -708,8 +676,7 @@ public class EmployeeManagerService {
                     long totalActiveAfterAdd = activeRoles.size() + 1;
 
                     if (hasUserActive && totalActiveAfterAdd > 2 || !hasUserActive && totalActiveAfterAdd > 1) {
-                        return new ApiResponse<>(false,
-                                "Không thể thêm chức vụ mới vì đã đạt giới hạn chức vụ đang hoạt động.", null);
+                        throw new AppException(EmployeeErrorCode.EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED);
                     }
 
                     newAR = new AccountRole();
@@ -753,9 +720,7 @@ public class EmployeeManagerService {
                 emp.setStatus(EmployeeStatus.LEAVE);
                 employeeRepository.save(emp);
 
-                return new ApiResponse<>(true,
-                        "Chức vụ đã được thay đổi. Nhân viên cũ đã kết thúc công việc, nhân viên mới đã được tạo.",
-                        true);
+                return EmployeeConstant.SUCCESS_ADD_EMPLOYEE_MSG;
             }
 
             // ===== Cập nhật hireDate, shift (chỉ khi nhân viên chưa nghỉ) =====
@@ -868,9 +833,7 @@ public class EmployeeManagerService {
 
                             if (hasUserActive && activeNonUserCount >= 1
                                     || !hasUserActive && activeNonUserCount >= 1) {
-                                return new ApiResponse<>(false,
-                                        "Không thể kích hoạt nhân viên mới vì số lượng chức vụ đang hoạt động đã đạt giới hạn",
-                                        null);
+                                throw new AppException(EmployeeErrorCode.EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED);
                             }
                             ar.setIsActive(true);
                             accountRoleRepository.save(ar);
@@ -896,11 +859,7 @@ public class EmployeeManagerService {
                     emp.getId()
                             .toString());
 
-            return new ApiResponse<>(true, "Thông tin nhân viên đã được cập nhật thành công!", true);
-        } catch (Exception ex) {
-            return new ApiResponse<>(false,
-                    "Đã xảy ra lỗi: " + ex.getMessage() + ". Vui lòng thử lại hoặc liên hệ quản trị viên.", null);
-        }
+            return EmployeeConstant.SUCCESS_UPDATE_EMPLOYEE_MSG;
     }
 
     private Employee buildEmployee(User user, AccountRole accountRole, Office office,
@@ -939,14 +898,14 @@ public class EmployeeManagerService {
             missingFields.add("Chức vụ");
 
         if (!missingFields.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missingFields));
 
         if (request.getShift() != null && !request.getShift()
                 .isBlank()) {
             try {
                 EmployeeShift.valueOf(request.getShift());
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Ca làm việc không hợp lệ: " + request.getShift());
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIFT_INVALID);
             }
         }
         if (request.getStatus() != null && !request.getStatus()
@@ -954,7 +913,7 @@ public class EmployeeManagerService {
             try {
                 EmployeeStatus.valueOf(request.getStatus());
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Trạng thái không hợp lệ: " + request.getStatus());
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_STATUS_INVALID);
             }
         }
     }
@@ -966,14 +925,14 @@ public class EmployeeManagerService {
             missingFields.add("Chức vụ");
 
         if (!missingFields.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missingFields));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missingFields));
 
         if (request.getShift() != null && !request.getShift()
                 .isBlank()) {
             try {
                 EmployeeShift.valueOf(request.getShift());
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Ca làm việc không hợp lệ: " + request.getShift());
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIFT_INVALID);
             }
         }
         if (request.getStatus() != null && !request.getStatus()
@@ -981,15 +940,14 @@ public class EmployeeManagerService {
             try {
                 EmployeeStatus.valueOf(request.getStatus());
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Trạng thái không hợp lệ: " + request.getStatus());
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_STATUS_INVALID);
             }
         }
     }
 
-    public ApiResponse<ListResponse<ManagerEmployeeListWithShipperAssignmentDto>> getActiveShippersWithActiveAssignments(
+    public ListResponse<ManagerEmployeeListWithShipperAssignmentDto> getActiveShippersWithActiveAssignments(
             int userId,
             ManagerEmployeeSearchRequest request) {
-        try {
             Office office = getManagedOfficeByUserId(userId);
 
             int page = request.getPage();
@@ -1043,15 +1001,12 @@ public class EmployeeManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách Shipper đang làm việc thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
-    public ApiResponse<ListResponse<ManagerEmployeeListDto>> getActiveShippers(int userId,
-                                                                               ManagerEmployeeSearchRequest request) {
-        try {
+    public ListResponse<ManagerEmployeeListDto> getActiveShippers(
+            int userId,
+            ManagerEmployeeSearchRequest request) {
             Office office = getManagedOfficeByUserId(userId);
 
             int page = request.getPage();
@@ -1080,16 +1035,12 @@ public class EmployeeManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách nhân viên thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
-    public ApiResponse<ListResponse<ManagerEmployeeListDto>> getActiveEmployeesByShipmentType(
+    public ListResponse<ManagerEmployeeListDto> getActiveEmployeesByShipmentType(
             int userId,
             SearchRequest request) {
-        try {
             String type = request.getType();
             String search = request.getSearch();
             int page = request.getPage();
@@ -1098,7 +1049,7 @@ public class EmployeeManagerService {
             Office office = getManagedOfficeByUserId(userId);
 
             if (type == null || type.isBlank()) {
-                return new ApiResponse<>(false, "Chưa chọn loại chuyến", null);
+                throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, "Loại chuyến");
             }
 
             String role = type.equals(ShipmentType.DELIVERY.name()) ? "Shipper" : "Driver";
@@ -1128,10 +1079,7 @@ public class EmployeeManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách nhân viên " + type + " thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     public byte[] exportPerformance(Integer userId, SearchRequest request) {
@@ -1210,7 +1158,7 @@ public class EmployeeManagerService {
             workbook.write(out);
             return out.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -1372,7 +1320,12 @@ public class EmployeeManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
+    }
+
+    private Role getSystemRoleByName(String name) {
+        return roleRepository.findByNameAndUserOwnerIsNull(name)
+                .orElseThrow(() -> new AppException(RoleErrorCode.ROLE_NOT_FOUND));
     }
 }

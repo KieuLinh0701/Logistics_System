@@ -12,6 +12,8 @@ import com.logistics.enums.IncidentStatus;
 import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.IncidentErrorCode;
 import com.logistics.mapper.IncidentReportMapper;
 import com.logistics.mapper.ShippingRequestMapper;
 import com.logistics.repository.AddressRepository;
@@ -73,9 +75,10 @@ public class IncidentReportManagerService {
 
     private final NotificationService notificationService;
 
-    public ApiResponse<ListResponse<ManagerIncidentReportListDto>> list(int userId,
+    public ListResponse<ManagerIncidentReportListDto> list(
+            int userId,
             SearchRequest request) {
-        try {
+
             int page = request.getPage();
             int limit = request.getLimit();
             String priority = request.getPriority();
@@ -123,52 +126,38 @@ public class IncidentReportManagerService {
             data.setList(list);
             data.setPagination(pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách sự cố thành công", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return data;
     }
 
-    public ApiResponse<ManagerIncidentReportDetailDto> getById(int userId, int id) {
-        try {
+    public ManagerIncidentReportDetailDto getById(int userId, int id) {
             IncidentReport incident = incidentRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sự cố"));
+                    .orElseThrow(() -> new AppException(IncidentErrorCode.INCIDENT_NOT_FOUND));
 
-            if (!checkPermission(userId, incident)) {
-                return new ApiResponse<>(false, "Không có quyền xem sự cố này", null);
-            }
+            checkPermission(userId, incident);
 
-            ManagerIncidentReportDetailDto data = IncidentReportMapper.toDetailDto(incident);
-
-            return new ApiResponse<>(true, "Lấy chi tiết báo cáo thành công", data);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+            return IncidentReportMapper.toDetailDto(incident);
     }
 
-    private boolean checkPermission(int userId, IncidentReport incident) {
-        if (incident == null) {
-            return false;
+    private void checkPermission(int userId, IncidentReport incident) {
+        if (incident == null || incident.getOffice() == null || incident.getOffice().getId() == null) {
+            throw new AppException(IncidentErrorCode.INCIDENT_ACCESS_DENIED);
         }
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
         if (userOffice == null) {
-            return false;
+            throw new AppException(IncidentErrorCode.INCIDENT_ACCESS_DENIED);
         }
 
-        if (incident.getOffice() == null || incident.getOffice().getId() == null) {
-            return false;
+        if (!incident.getOffice().getId().equals(userOffice.getId())) {
+            throw new AppException(IncidentErrorCode.INCIDENT_ACCESS_DENIED);
         }
-
-        return incident.getOffice().getId().equals(userOffice.getId());
     }
 
-    public ApiResponse<Boolean> processing(int userId, int id,
+    public void processing(
+            int userId,
+            int id,
             ManagerIncidentUpdateRequest request) {
 
-        try {
             IncidentReport incident = incidentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Báo cáo sự cố không tồn tại"));
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -181,9 +170,7 @@ public class IncidentReportManagerService {
 
             System.out.println(
                     "Incident office id: " + (incident.getOffice() != null ? incident.getOffice().getId() : "null"));
-            if (!checkPermission(userId, incident)) {
-                return new ApiResponse<>(false, "Không có quyền xử lý báo cáo này", null);
-            }
+            checkPermission(userId, incident);
 
             User user = userOffice.getManager().getUser();
 
@@ -209,11 +196,6 @@ public class IncidentReportManagerService {
             if (incident.getShipper() != null && incident.getShipper().getId() != null) {
                 sendNotification(incident);
             }
-
-            return new ApiResponse<>(true, "Phản hồi yêu cầu thành công", true);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
     }
 
     public byte[] export(int userId, SearchRequest request) {

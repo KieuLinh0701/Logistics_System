@@ -1,6 +1,7 @@
 package com.logistics.controller.user;
 
 import com.logistics.request.SearchRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,49 +31,53 @@ import org.springframework.web.bind.annotation.PutMapping;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user/shipping-requests")
 public class ShippingRequestUserController {
 
-    @Autowired
-    private ShippingRequestUserService service;
+    private final ShippingRequestUserService service;
 
     @GetMapping()
     public ResponseEntity<ApiResponse<ListResponse<UserShippingRequestListDto>>> list(
             @Valid UserShippingRequestSearchRequest userShippingRequestSearchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        ApiResponse<ListResponse<UserShippingRequestListDto>> result = service.list(userId,
+
+        ListResponse<UserShippingRequestListDto> result = service.list(userId,
                 userShippingRequestSearchRequest);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<Boolean>> create(@ModelAttribute UserShippingRequestForm userShippingRequestForm,
+    public ResponseEntity<ApiResponse<Void>> create(
+            @Valid @ModelAttribute UserShippingRequestForm userShippingRequestForm,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        return ResponseEntity.ok(service.create(userId, userShippingRequestForm));
+
+        service.create(userId, userShippingRequestForm);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<Boolean>> update(@PathVariable Integer id,
-            @ModelAttribute UserShippingRequestForm userShippingRequestForm,
+    public ResponseEntity<ApiResponse<Boolean>> update(
+            @PathVariable Integer id,
+            @Valid @ModelAttribute UserShippingRequestForm userShippingRequestForm,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        return ResponseEntity.ok(service.update(userId, id, userShippingRequestForm));
-    } 
+
+        service.update(userId, id, userShippingRequestForm);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserShippingRequestDetailDto>> getShippingRequestById(
             @PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        ApiResponse<UserShippingRequestDetailDto> result = service.getShippingRequestById(userId, id);
-        return ResponseEntity.ok(result);
+
+        UserShippingRequestDetailDto result = service.getShippingRequestById(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/{id}/edit")
@@ -80,19 +85,19 @@ public class ShippingRequestUserController {
             @PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        ApiResponse<UserShippingRequestEditDto> result = service.getShippingRequestByIdForEdit(userId, id);
-        return ResponseEntity.ok(result);
+
+        UserShippingRequestEditDto result = service.getShippingRequestByIdForEdit(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse<Boolean>> cancel(
+    public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        
-        ApiResponse<Boolean> result = service.cancel(userId, id);
-        return ResponseEntity.ok(result);
+
+        service.cancel(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/export")

@@ -1,5 +1,7 @@
 package com.logistics.service.manager;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.ShipmentErrorCode;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
@@ -9,8 +11,6 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.Shipment;
 import com.logistics.entity.ShipmentOrder;
-import com.logistics.entity.ShipperAssignment;
-import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
@@ -192,8 +192,7 @@ public class ShipmentOrderManagerService {
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
             Shipment shipment = shipmentRepository.findById(shipmentId)
                     .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
-                    .orElseThrow(() -> new RuntimeException(
-                            "Chuyến hàng không tồn tại hoặc bạn không có quyền"));
+                    .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
             BigDecimal totalWeight = shipment.getShipmentOrders().stream()
                     .map(so -> so.getOrder().getWeight())
@@ -263,8 +262,7 @@ public class ShipmentOrderManagerService {
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
             Shipment shipment = shipmentRepository.findById(shipmentId)
                     .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
-                    .orElseThrow(() -> new RuntimeException(
-                            "Chuyến hàng không tồn tại hoặc bạn không có quyền"));
+                    .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
             // Xóa các đơn nếu có
             if (removedOrderIds != null && !removedOrderIds.isEmpty()) {

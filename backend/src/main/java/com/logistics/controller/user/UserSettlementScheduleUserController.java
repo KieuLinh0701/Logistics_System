@@ -27,23 +27,24 @@ public class UserSettlementScheduleUserController {
         @Autowired
         private UserSettlementScheduleUserService service;
 
-        @GetMapping()
+        @GetMapping
         public ResponseEntity<ApiResponse<UserSettlementScheduleDto>> getUserSchedule(
                         HttpServletRequest request) {
                 Integer userId = (Integer) request.getAttribute("currentUserId");
 
-                ApiResponse<UserSettlementScheduleDto> result = service.getUserSchedule(userId);
-                return ResponseEntity.ok(result);
+                UserSettlementScheduleDto result = service.getUserSchedule(userId);
+                return ResponseEntity.ok(ApiResponse.success(result));
         }
 
         @PutMapping()
-        public ResponseEntity<ApiResponse<Boolean>> updateUserSchedule(
+        public ResponseEntity<ApiResponse<Void>> updateUserSchedule(
                         HttpServletRequest request,
                         @RequestBody Set<String> weekdays) {
 
                 Integer userId = (Integer) request.getAttribute("currentUserId");
 
-                return ResponseEntity.ok(service.updateUserSchedule(userId, weekdays));
+                service.updateUserSchedule(userId, weekdays);
+                return ResponseEntity.ok(ApiResponse.success(null));
         }
 
 }
