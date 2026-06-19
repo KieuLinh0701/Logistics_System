@@ -136,8 +136,8 @@ const UserShippingRequests: React.FC = () => {
         try {
             const result = await shippingRequestApi.cancelUserShippingRequest(requestId);
 
-            if (result.success && result.data) {
-                message.success(result.message || "Hủy yêu cầu thành công");
+            if (result.success) {
+                message.success("Hủy yêu cầu thành công");
                 fetchRequests(page);
                 if (detailModalVisible && selectedRequest) {
                     setSelectedRequest({
@@ -146,7 +146,7 @@ const UserShippingRequests: React.FC = () => {
                     });
                 }
             } else {
-                message.error(result.message || "Hủy yêu cầu thất bại");
+                message.error("Hủy yêu cầu thất bại");
             }
         } catch (error: any) {
             message.error(error.message || "Lỗi khi hủy yêu cầu:");

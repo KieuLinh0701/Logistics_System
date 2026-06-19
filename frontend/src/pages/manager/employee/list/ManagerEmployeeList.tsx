@@ -166,8 +166,8 @@ const ManagerEmployeeList = () => {
             setLoading(true);
             const result = await employeeApi.updateManagerEmployee(newEmployee.id!, payload);
 
-            if (result.success && result.data) {
-                message.success(result.message || "Thêm nhân viên thành công!");
+            if (result.success) {
+                message.success("Thêm nhân viên thành công!");
                 setIsModalOpen(false);
                 form.resetFields();
                 fetchEmployees(currentPage);
@@ -176,7 +176,7 @@ const ManagerEmployeeList = () => {
             }
 
         } catch (error: any) {
-            message.error(error.message || "Có lỗi khi thêm nhân viên!");
+            message.error("Có lỗi khi thêm nhân viên!");
         } finally {
             setLoading(false);
         }
@@ -202,7 +202,7 @@ const ManagerEmployeeList = () => {
             setLoading(true);
             const result = await employeeApi.createManagerEmployee(payload);
 
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success(result.message || "Thêm nhân viên thành công!");
                 setIsModalOpen(false);
                 form.resetFields();
@@ -212,7 +212,7 @@ const ManagerEmployeeList = () => {
             }
 
         } catch (error: any) {
-            message.error(error.message || "Có lỗi khi thêm nhân viên!");
+            message.error("Có lỗi khi thêm nhân viên!");
         } finally {
             setLoading(false);
         }

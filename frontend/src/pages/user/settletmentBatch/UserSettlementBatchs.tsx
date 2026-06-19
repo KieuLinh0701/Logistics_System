@@ -250,14 +250,14 @@ const UserSettlementBatchs = () => {
             const result = await userSettlementScheduleApi.updateUserSchedule(selectedDays);
 
             if (result.success) {
-                message.success(result.message || "Cập nhật trạng thái thành công phiên đối soát");
+                message.success("Cập nhật phiên đối soát thành công");
                 setUserWeekdays(selectedDays);
                 setModalSettlementScheduleVisible(false);
             } else {
-                message.error(result.message || "Cập nhật trạng thái thất bại phiên đối soát");
+                message.error(result.message || "Cập nhật phiên đối soát thất bại");
             }
         } catch (error: any) {
-            message.error(error.message || "Lỗi khi cập nhật trạng thái phiên đối soát");
+            message.error("Lỗi khi cập nhật phiên đối soát");
         } finally {
             setLoadingSchedule(false);
         }

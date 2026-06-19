@@ -254,7 +254,7 @@ const ManagerShipperAssigns = () => {
             const result = await shipperAssignmentApi.deleteManagerFutureShipperAssignment(selectedDeleteId);
 
             if (result.success) {
-                message.success(result.message || "Xóa phân công giao hàng thành công");
+                message.success("Xóa phân công giao hàng thành công");
                 fetchEmployees(currentPage);
             } else {
                 message.error(result.message || "Có lỗi khi xóa phân công giao hàng!");

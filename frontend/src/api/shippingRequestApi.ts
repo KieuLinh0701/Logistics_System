@@ -16,12 +16,12 @@ const shippingRequestApi = {
     },
 
     async createUserShippingRequest(data: FormData) {
-        const res = await axiosClient.post<ApiResponse<boolean>>("/user/shipping-requests", data);
+        const res = await axiosClient.post<ApiResponse<void>>("/user/shipping-requests", data);
         return res;
     },
 
     async updateUserShippingRequest(id: number, data: FormData) {
-        const res = await axiosClient.put<ApiResponse<boolean>>(`/user/shipping-requests/${id}`, data);
+        const res = await axiosClient.put<ApiResponse<void>>(`/user/shipping-requests/${id}`, data);
         return res;
     },
 
@@ -36,7 +36,7 @@ const shippingRequestApi = {
     },
 
     async cancelUserShippingRequest(id: number) {
-        const res = await axiosClient.patch<ApiResponse<boolean>>(`/user/shipping-requests/${id}/cancel`);
+        const res = await axiosClient.patch<ApiResponse<void>>(`/user/shipping-requests/${id}/cancel`);
         return res;
     },
 
@@ -136,7 +136,7 @@ const shippingRequestApi = {
     },
 
     async processingManagerShippingRequest(id: number, data: FormData) {
-        return axiosClient.put<ApiResponse<boolean>>(
+        return axiosClient.put<ApiResponse<void>>(
             `/manager/shipping-requests/${id}`,
             data
         );

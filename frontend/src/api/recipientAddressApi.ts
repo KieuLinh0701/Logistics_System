@@ -35,7 +35,7 @@ const recipientAddressApi = {
     },
 
     async deleteUserAddress(id: number) {
-        const res = await axiosClient.delete<ApiResponse<string>>(`/user/recipient-addresses/${id}`);
+        const res = await axiosClient.delete<ApiResponse<void>>(`/user/recipient-addresses/${id}`);
         return res;
     },
 

@@ -190,14 +190,14 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     await form.validateFields();
     try {
       const result = await shippingRequestApi.createUserShippingRequest(payload);
-      if (result.success && result.data) {
+      if (result.success) {
         message.success("Tạo yêu cầu thành công!");
         form.resetFields();
         setFileList([]);
         onSuccess();
         onCancel();
       }
-      else message.error(result.message || "Có lỗi khi cập nhật");
+      else message.error(result.message);
 
     } catch (error: any) {
       message.error(error.message || "Có lỗi khi cập nhật");
@@ -218,7 +218,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         onSuccess();
         onCancel();
       }
-      else message.error(result.message || "Có lỗi khi sửa yêu cầu");
+      else message.error("Có lỗi khi sửa yêu cầu");
       form.resetFields();
     } catch (error: any) {
       message.error(error.message || "Có lỗi khi sửa yêu cầu");

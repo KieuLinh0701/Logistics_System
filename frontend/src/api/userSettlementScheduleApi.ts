@@ -5,13 +5,11 @@ import type {UserSettlementSchedule} from "../types/UserSettlementBatch";
 const userSettlementScheduleApi = {
   // User
   async getUserSchedule() {
-    const res = await axiosClient.get<ApiResponse<UserSettlementSchedule>>("/user/user-settlement-batchs");
-    return res;
+    return await axiosClient.get<ApiResponse<UserSettlementSchedule>>("/user/user-settlement-batchs");
   },
 
   async updateUserSchedule(param: string[]) {
-    const res = await axiosClient.put<ApiResponse<Boolean>>("/user/user-settlement-batchs", param);
-    return res;
+    return await axiosClient.put<ApiResponse<void>>("/user/user-settlement-batchs", param);
   },
 
 };

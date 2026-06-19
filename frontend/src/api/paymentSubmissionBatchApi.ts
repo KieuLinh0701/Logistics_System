@@ -10,13 +10,11 @@ import type {
 const paymentSubmissionBatchApi = {
   // Manager
   async listManagerPaymentSubmissionBatchs(params: SearchRequest) {
-    const res = await axiosClient.get<ApiResponse<ListResponse<ManagerPaymentSubmissionBatch>>>("/manager/payment-submission-batchs", { params });
-    return res;
+    return await axiosClient.get<ApiResponse<ListResponse<ManagerPaymentSubmissionBatch>>>("/manager/payment-submission-batchs", { params });
   },
 
   async updateManagerPaymentSubmissionBatch(id: number, data: ManagerPaymentSubmissionBatchEditRequest) {
-    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/payment-submission-batchs/${id}`, data);
-    return res;
+    return await axiosClient.put<ApiResponse<void>>(`/manager/payment-submission-batchs/${id}`, data);
   },
 
   async exportManagerPaymentSubmissionBatchs(params: SearchRequest) {

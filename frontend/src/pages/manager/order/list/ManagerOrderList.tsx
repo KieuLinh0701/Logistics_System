@@ -323,7 +323,7 @@ const ManagerOrderList = () => {
             const result = await orderApi.setManagerOrderAtOriginOffice(orderId);
 
             if (result.success) {
-                message.success(result.message || "Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
+                message.success("Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
                 fetchOrders(page);
                 fetchStatusCounts();
             } else {
@@ -516,7 +516,7 @@ const ManagerOrderList = () => {
             const result = await orderApi.confirmManagerOrder(orderId);
 
             if (result.success) {
-                message.success(result.message || "Xác nhận đơn hàng thành công.");
+                message.success("Xác nhận đơn hàng thành công.");
                 fetchOrders(page);
                 fetchStatusCounts();
             } else {

@@ -151,7 +151,7 @@ const UserOrderDetail: React.FC = () => {
             const result = await orderApi.setManagerOrderAtOriginOffice(order.id);
 
             if (result.success) {
-                message.success(result.message || "Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
+                message.success("Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
                 fetchOrder();
             } else {
                 message.error(result.message || "Có lỗi khi bàn giao đơn hàng cho bưu cục xuất phát!");
@@ -178,7 +178,7 @@ const UserOrderDetail: React.FC = () => {
             const result = await orderApi.confirmManagerOrder(order.id);
 
             if (result.success) {
-                message.success(result.message || "Xác nhận đơn hàng thành công.");
+                message.success("Xác nhận đơn hàng thành công.");
                 fetchOrder();
             } else {
                 message.error(result.message || "Có lỗi khi xác nhận đơn hàng!");

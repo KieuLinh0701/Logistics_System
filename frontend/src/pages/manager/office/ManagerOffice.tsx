@@ -81,7 +81,7 @@ const ManagerOffice = () => {
 
       const result = await officeApi.updateManagerOffice(payload);
 
-      if (result.success && result.data) {
+      if (result.success) {
         message.success("Cập nhật thành công");
 
         setOffice((prev) => {
