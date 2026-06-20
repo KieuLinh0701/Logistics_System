@@ -1,11 +1,12 @@
 package com.logistics.controller.admin;
 
-import com.logistics.response.ApiResponse;
-import com.logistics.service.admin.OrderAdminService;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
-import com.logistics.utils.SecurityUtils;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.response.ApiResponse;
+import com.logistics.service.admin.OrderAdminService;
+import com.logistics.utils.SecurityUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/orders")
+@Tag(name = "Admin - Order", description = "Quản lý đơn hàng")
 public class OrderAdminController {
 
     @Autowired

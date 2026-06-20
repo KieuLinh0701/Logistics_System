@@ -5,7 +5,6 @@ import com.logistics.entity.BankAccount;
 import com.logistics.entity.User;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.BankAccountErrorCode;
-import com.logistics.exception.enums.BaseErrorCode;
 import com.logistics.mapper.BankAccountMapper;
 import com.logistics.repository.BankAccountRepository;
 import com.logistics.request.user.bankAccount.BankAccountRequest;

@@ -1,12 +1,11 @@
 package com.logistics.controller.admin;
 
-import com.logistics.entity.Office;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ShippingRequestAdminService;
 import com.logistics.service.common.NotificationService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/shipping-requests")
+@Tag(name = "Admin - Shipping Request", description = "Quản lý yêu cầu vận chuyển")
 public class ShippingRequestAdminController {
     @Autowired
     private ShippingRequestAdminService shippingRequestAdminService;

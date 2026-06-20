@@ -1,9 +1,8 @@
 package com.logistics.request.recruitment;
 
+import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.JobPostingStatus;
 import com.logistics.enums.RecruitmentRoleType;
-import com.logistics.enums.EmployeeShift;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

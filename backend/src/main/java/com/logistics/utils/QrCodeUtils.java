@@ -8,12 +8,11 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
-
-import javax.imageio.ImageIO;
 
 public class QrCodeUtils {
 

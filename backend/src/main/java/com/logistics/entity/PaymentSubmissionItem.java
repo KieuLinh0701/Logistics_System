@@ -1,11 +1,13 @@
 package com.logistics.entity;
 
 import jakarta.persistence.*;
-import jakarta.persistence.FetchType;
-import lombok.*;
-import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.RelationTargetAuditMode;
+
+import java.math.BigDecimal;
 
 @Audited
 @Entity

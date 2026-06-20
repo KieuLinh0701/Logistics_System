@@ -1,26 +1,17 @@
 package com.logistics.service.common;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.logistics.entity.Account;
+import com.logistics.entity.OTP;
 import com.logistics.entity.Role;
+import com.logistics.entity.User;
+import com.logistics.enums.OTPType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AccountErrorCode;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.OtpErrorCode;
 import com.logistics.exception.enums.UserErrorCode;
-import com.logistics.service.user.RoleUserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-import com.logistics.entity.Account;
-import com.logistics.entity.OTP;
-import com.logistics.entity.User;
-import com.logistics.enums.OTPType;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.OTPRepository;
 import com.logistics.repository.UserRepository;
@@ -28,15 +19,19 @@ import com.logistics.request.common.user.UpdateEmailRequest;
 import com.logistics.request.common.user.UpdatePasswordRequest;
 import com.logistics.request.common.user.UpdateProfileRequest;
 import com.logistics.request.common.user.VerifyEmailUpdateOTPRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.AuthResponse;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
 import com.logistics.utils.PasswordUtils;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor

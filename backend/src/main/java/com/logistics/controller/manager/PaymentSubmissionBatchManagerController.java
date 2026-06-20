@@ -1,36 +1,27 @@
 package com.logistics.controller.manager;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.dto.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchListDto;
 import com.logistics.request.SearchRequest;
-import com.logistics.request.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchCreateForm;
 import com.logistics.request.manager.paymentSubmissionBatch.ManagerPaymentSubmissionBatchEditForm;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.PaymentSubmissionBatchManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/payment-submission-batchs")
+@Tag(name = "Manager - Payment Submission Batch", description = "Quản lý các phiên đối soát thanh toán và xuất báo cáo tại bưu cục")
 public class PaymentSubmissionBatchManagerController {
 
     private final PaymentSubmissionBatchManagerService service;

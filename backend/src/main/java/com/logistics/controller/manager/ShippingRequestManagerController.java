@@ -1,13 +1,5 @@
 package com.logistics.controller.manager;
 
-import com.logistics.request.user.order.UserOrderSearchRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
@@ -15,20 +7,21 @@ import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearc
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.ShippingRequestManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/manager/shipping-requests")
+@Tag(name = "Manager - Shipping Request", description = "Quản lý yêu cầu hỗ trợ và khiếu nại của khách hàng tại bưu cục")
 public class ShippingRequestManagerController {
 
     @Autowired

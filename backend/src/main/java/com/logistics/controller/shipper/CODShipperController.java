@@ -1,12 +1,13 @@
 package com.logistics.controller.shipper;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.CollectCODRequest;
 import com.logistics.request.shipper.SubmitCODRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.CODShipperService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shipper/cod")
+@Tag(name = "Shipper - COD", description = "Quản lý thu hộ (COD), nộp tiền thu hộ và lịch sử đối soát của nhân viên giao hàng")
 public class CODShipperController {
 
     @Autowired

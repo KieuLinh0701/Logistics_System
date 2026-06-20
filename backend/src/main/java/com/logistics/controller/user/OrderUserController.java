@@ -4,30 +4,29 @@ import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
-import com.logistics.request.SearchRequest;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.OrderCreateSuccess;
 import com.logistics.service.user.OrderUserService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/user/orders")
+@Tag(name = "User - Order", description = "Quản lý đơn hàng của người dùng: tạo mới, cập nhật, theo dõi lộ trình, in ấn và xuất báo cáo")
 public class OrderUserController {
 
     @Autowired

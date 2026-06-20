@@ -1,12 +1,13 @@
 package com.logistics.controller.admin;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateServiceTypeRequest;
 import com.logistics.request.admin.UpdateServiceTypeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ServiceTypeAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/service-types")
+@Tag(name = "Admin - Service Type", description = "Quản lý loại dịch vụ vận chuyển")
 public class ServiceTypeAdminController {
 
     @Autowired

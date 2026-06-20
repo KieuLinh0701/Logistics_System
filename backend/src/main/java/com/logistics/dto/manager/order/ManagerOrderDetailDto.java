@@ -1,20 +1,14 @@
 package com.logistics.dto.manager.order;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-
-import com.logistics.dto.AddressDto;
-import com.logistics.dto.OfficeDto;
-import com.logistics.dto.OrderHistoryDto;
-import com.logistics.dto.OrderProductDto;
-import com.logistics.dto.PickupAttemptDto;
-import com.logistics.dto.ServiceTypeDto;
-
+import com.logistics.dto.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter

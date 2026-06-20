@@ -1,10 +1,12 @@
 package com.logistics.request.manager.shippingRequest;
 
-import java.util.List;
-
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
-import lombok.*;
+import java.util.List;
 
 @Getter
 @Setter

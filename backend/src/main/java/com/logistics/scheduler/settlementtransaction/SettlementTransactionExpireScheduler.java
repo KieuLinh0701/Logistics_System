@@ -1,6 +1,7 @@
 package com.logistics.scheduler.settlementtransaction;
 
 import com.logistics.config.properties.PaymentProperties;
+import com.logistics.entity.SettlementTransaction;
 import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.enums.SettlementTransactionType;
 import com.logistics.repository.SettlementTransactionRepository;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.logistics.entity.SettlementTransaction;
 
 @Service
 @RequiredArgsConstructor

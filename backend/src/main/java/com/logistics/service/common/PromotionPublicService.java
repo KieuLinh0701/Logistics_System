@@ -1,24 +1,21 @@
 package com.logistics.service.common;
 
-import java.util.List;
-
+import com.logistics.dto.common.PublicPromotionDto;
+import com.logistics.entity.Promotion;
+import com.logistics.mapper.PromotionMapper;
+import com.logistics.repository.PromotionRepository;
+import com.logistics.request.common.promotion.PromotionPublicRequest;
+import com.logistics.response.ListResponse;
+import com.logistics.response.Pagination;
+import com.logistics.specification.PromotionSpecification;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import com.logistics.dto.common.PublicPromotionDto;
-import com.logistics.entity.Promotion;
-import com.logistics.mapper.PromotionMapper;
-import com.logistics.repository.PromotionRepository;
-import com.logistics.request.common.promotion.PromotionPublicRequest;
-import com.logistics.response.ApiResponse;
-import com.logistics.response.ListResponse;
-import com.logistics.response.Pagination;
-import com.logistics.specification.PromotionSpecification;
-
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

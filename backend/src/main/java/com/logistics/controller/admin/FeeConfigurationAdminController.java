@@ -1,12 +1,13 @@
 package com.logistics.controller.admin;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateFeeConfigurationRequest;
 import com.logistics.request.admin.UpdateFeeConfigurationRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.FeeConfigurationAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/fee-configurations")
+@Tag(name = "Admin - Fee Configuration", description = "Quản lý cấu hình phí")
 public class FeeConfigurationAdminController {
 
     @Autowired

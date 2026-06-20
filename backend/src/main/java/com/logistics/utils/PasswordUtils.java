@@ -1,8 +1,8 @@
 package com.logistics.utils;
 
-import java.security.SecureRandom;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import java.security.SecureRandom;
 
 public class PasswordUtils {
     private static final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();

@@ -3,11 +3,12 @@ package com.logistics.controller.shipper;
 import com.logistics.dto.shipper.vehicle.ShipperVehicleSettingRequestDto;
 import com.logistics.dto.shipper.vehicle.ShipperVehicleSettingResponseDto;
 import com.logistics.dto.shipper.vehicle.ShipperVehicleStatusUpdateRequestDto;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.ShipperVehicleSettingService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/shipper/vehicle-setting")
 @RequiredArgsConstructor
+@Tag(name = "Shipper - Vehicle Setting", description = "Quản lý cài đặt phương tiện và cập nhật trạng thái hoạt động của nhân viên giao hàng")
 public class ShipperVehicleSettingShipperController {
 
     private final ShipperVehicleSettingService shipperVehicleSettingService;

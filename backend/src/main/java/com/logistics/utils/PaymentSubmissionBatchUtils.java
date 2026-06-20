@@ -1,9 +1,9 @@
 package com.logistics.utils;
 
+import com.logistics.enums.PaymentSubmissionBatchStatus;
+
 import java.util.Map;
 import java.util.Set;
-
-import com.logistics.enums.PaymentSubmissionBatchStatus;
 
 public class PaymentSubmissionBatchUtils {
 

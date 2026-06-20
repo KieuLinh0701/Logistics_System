@@ -1,8 +1,9 @@
 package com.logistics.dto.user.dashboard;
 
-import java.sql.Date;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-import lombok.*;
+import java.sql.Date;
 
 @Getter
 @AllArgsConstructor

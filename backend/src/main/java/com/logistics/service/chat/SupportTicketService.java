@@ -1,23 +1,21 @@
 package com.logistics.service.chat;
 
-import java.util.List;
-import java.util.Objects;
-
+import com.logistics.dto.chat.SupportTicketDetailDto;
+import com.logistics.dto.chat.SupportTicketDto;
+import com.logistics.entity.Account;
+import com.logistics.entity.SupportTicket;
+import com.logistics.repository.AccountRepository;
+import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.OrderRepository;
+import com.logistics.repository.SupportTicketRepository;
+import com.logistics.request.chat.CreateSupportTicketRequest;
+import com.logistics.response.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.logistics.entity.Account;
-import com.logistics.repository.AccountRepository;
-import com.logistics.repository.OrderRepository;
-import com.logistics.repository.EmployeeRepository;
-import com.logistics.response.ApiResponse;
-import com.logistics.request.chat.CreateSupportTicketRequest;
-import com.logistics.dto.chat.SupportTicketDetailDto;
-import com.logistics.dto.chat.SupportTicketDto;
-import com.logistics.entity.SupportTicket;
-import com.logistics.repository.SupportTicketRepository;
-
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor

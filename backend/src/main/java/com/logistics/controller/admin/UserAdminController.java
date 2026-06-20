@@ -1,13 +1,14 @@
 package com.logistics.controller.admin;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.repository.RoleRepository;
 import com.logistics.request.admin.CreateUserRequest;
 import com.logistics.request.admin.UpdateUserRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.UserAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.repository.RoleRepository;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/users")
+@Tag(name = "Admin - User", description = "Quản lý người dùng và phân quyền")
 public class UserAdminController {
 
     @Autowired

@@ -1,21 +1,17 @@
 package com.logistics.repository;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.util.Map;
-
+import com.logistics.dto.admin.AdminFinancialPoint;
+import com.logistics.dto.admin.AdminShipperReportDto;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
-
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.logistics.dto.admin.AdminFinancialPoint;
-import com.logistics.dto.admin.AdminShipperReportDto;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public class ReportRepository {

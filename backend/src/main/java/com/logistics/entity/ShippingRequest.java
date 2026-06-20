@@ -1,22 +1,20 @@
 package com.logistics.entity;
 
+import com.logistics.enums.ShippingRequestAttachmentType;
+import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.enums.ShippingRequestType;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.ShippingRequestStatus;
-import com.logistics.enums.ShippingRequestType;
-import com.logistics.enums.ShippingRequestAttachmentType;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Entity
 @Table(name = "shipping_requests")

@@ -1,12 +1,8 @@
 package com.logistics.utils;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import com.logistics.enums.OrderStatus;
+
+import java.util.*;
 
 public class UserOrderEditRuleUtils {
 

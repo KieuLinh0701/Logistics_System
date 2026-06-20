@@ -1,13 +1,12 @@
 package com.logistics.utils;
 
-import com.logistics.entity.PermissionGroup;
-import com.logistics.entity.Role;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import com.logistics.entity.Account;
+import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;

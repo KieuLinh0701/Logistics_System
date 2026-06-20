@@ -1,34 +1,29 @@
 package com.logistics.controller.chat;
 
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.logistics.response.ApiResponse;
-import com.logistics.request.chat.CreateSupportTicketRequest;
-import com.logistics.request.chat.SendSupportMessageRequest;
 import com.logistics.dto.chat.SupportMessageDto;
 import com.logistics.dto.chat.SupportTicketDetailDto;
 import com.logistics.dto.chat.SupportTicketDto;
+import com.logistics.request.chat.CreateSupportTicketRequest;
+import com.logistics.request.chat.SendSupportMessageRequest;
+import com.logistics.response.ApiResponse;
 import com.logistics.service.chat.SupportMessageService;
 import com.logistics.service.chat.SupportTicketService;
 import com.logistics.utils.SecurityUtils;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Objects;
 
 @RestController
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/api/support")
+@Tag(name = "Support", description = "Hỗ trợ khách hàng và trò chuyện trực tuyến")
 public class SupportController {
 
     private final SupportTicketService supportTicketService;

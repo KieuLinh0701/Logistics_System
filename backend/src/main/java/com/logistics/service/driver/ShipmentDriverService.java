@@ -1,15 +1,8 @@
 package com.logistics.service.driver;
 
-import com.logistics.entity.Shipment;
-import com.logistics.entity.ShipmentOrder;
-import com.logistics.entity.Order;
-import com.logistics.entity.OrderHistory;
-import com.logistics.entity.Vehicle;
-import com.logistics.entity.VehicleTracking;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Office;
-import com.logistics.enums.OrderStatus;
+import com.logistics.entity.*;
 import com.logistics.enums.OrderHistoryActionType;
+import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.VehicleStatus;
 import com.logistics.exception.AppException;
@@ -19,9 +12,10 @@ import com.logistics.exception.enums.ShipmentErrorCode;
 import com.logistics.repository.*;
 import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
-import com.logistics.utils.SecurityUtils;
-import com.logistics.service.common.NotificationService;
 import com.logistics.service.assignment.AutoAssignService;
+import com.logistics.service.common.NotificationService;
+import com.logistics.utils.SecurityUtils;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,7 +25,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;

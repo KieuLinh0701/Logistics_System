@@ -1,8 +1,8 @@
 package com.logistics.entity;
 
 import com.logistics.enums.AuditLogAction;
-import com.logistics.enums.EntityType;
 import com.logistics.enums.AuditLogStatus;
+import com.logistics.enums.EntityType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;

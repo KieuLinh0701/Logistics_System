@@ -1,17 +1,15 @@
 package com.logistics.websocket;
 
-import java.security.Principal;
-
+import com.logistics.dto.chat.SupportMessageDto;
+import com.logistics.request.chat.SendSupportMessageRequest;
+import com.logistics.request.chat.SupportChatSendMessagePayload;
+import com.logistics.response.ApiResponse;
+import com.logistics.service.chat.SupportMessageService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
-import com.logistics.response.ApiResponse;
-import com.logistics.request.chat.SendSupportMessageRequest;
-import com.logistics.request.chat.SupportChatSendMessagePayload;
-import com.logistics.dto.chat.SupportMessageDto;
-import com.logistics.service.chat.SupportMessageService;
-
-import lombok.RequiredArgsConstructor;
+import java.security.Principal;
 
 @Controller
 @RequiredArgsConstructor

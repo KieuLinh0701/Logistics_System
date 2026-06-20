@@ -1,13 +1,12 @@
 package com.logistics.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.logistics.entity.SupportMessage;
+import com.logistics.enums.SupportMessageSenderType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.logistics.entity.SupportMessage;
-import com.logistics.enums.SupportMessageSenderType;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SupportMessageRepository extends JpaRepository<SupportMessage, Integer> {

@@ -1,19 +1,16 @@
 package com.logistics.service.common;
 
-import java.util.List;
-
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.OrderErrorCode;
-import org.springframework.stereotype.Service;
-
 import com.logistics.dto.order.OrderFulfillmentSummaryDto;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderProduct;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
-import com.logistics.response.ApiResponse;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

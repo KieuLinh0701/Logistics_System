@@ -1,15 +1,9 @@
 package com.logistics.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import com.logistics.id.ShipmentOrderId;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Data

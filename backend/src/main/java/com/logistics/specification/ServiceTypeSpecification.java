@@ -1,8 +1,8 @@
 package com.logistics.specification;
 
-import org.springframework.data.jpa.domain.Specification;
 import com.logistics.entity.ServiceType;
 import com.logistics.enums.ServiceTypeStatus;
+import org.springframework.data.jpa.domain.Specification;
 
 public class ServiceTypeSpecification {
 

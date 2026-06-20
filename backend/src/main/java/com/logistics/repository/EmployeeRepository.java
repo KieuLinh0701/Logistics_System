@@ -3,9 +3,6 @@ package com.logistics.repository;
 import com.logistics.dto.manager.dashboard.ManagerEmployeeStatsDTO;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.entity.Employee;
-import com.logistics.enums.EmployeeShift;
-import com.logistics.enums.EmployeeStatus;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

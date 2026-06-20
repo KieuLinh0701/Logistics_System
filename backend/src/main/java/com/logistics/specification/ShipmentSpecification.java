@@ -4,13 +4,11 @@ import com.logistics.entity.Employee;
 import com.logistics.entity.Shipment;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
-
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-
-import org.springframework.data.jpa.domain.Specification;
 
 public class ShipmentSpecification {
 

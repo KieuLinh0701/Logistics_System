@@ -1,9 +1,9 @@
 package com.logistics.request.admin;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalTime;
-
-import lombok.Data;
 
 @Data
 public class CreateOfficeRequest {

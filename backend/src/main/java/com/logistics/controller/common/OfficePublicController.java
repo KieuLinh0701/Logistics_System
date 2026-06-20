@@ -1,26 +1,24 @@
 package com.logistics.controller.common;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.dto.common.PublicOfficeInformationDto;
 import com.logistics.dto.common.PublicOfficeSearchDto;
 import com.logistics.request.common.office.PublicOfficeSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.common.OfficePublicService;
-
-import jakarta.servlet.http.HttpServletRequest;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/public/offices")
+@Tag(name = "Public - Office", description = "Tra cứu thông tin bưu cục công khai")
 public class OfficePublicController {
 
     @Autowired

@@ -1,10 +1,10 @@
 package com.logistics.mapper;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
 import com.logistics.entity.SettlementTransaction;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class SettlementTransactionMapper {
 

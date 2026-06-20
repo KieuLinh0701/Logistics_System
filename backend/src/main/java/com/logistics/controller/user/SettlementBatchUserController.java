@@ -1,36 +1,34 @@
 package com.logistics.controller.user;
 
+import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
+import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
+import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
+import com.logistics.request.SearchRequest;
+import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
+import com.logistics.response.ApiResponse;
+import com.logistics.response.ListResponse;
+import com.logistics.service.user.SettlementBatchUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
-import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
-import com.logistics.dto.user.settlement.UserSettlementOrderDto;
-import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
-import com.logistics.request.SearchRequest;
-import com.logistics.response.ApiResponse;
-import com.logistics.response.ListResponse;
-import com.logistics.service.user.SettlementBatchUserService;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user/settlement-batchs")
+@Tag(name = "User - Settlement Batch", description = "Quản lý các đợt đối soát tài chính: xem tổng quan, chi tiết từng phiên, danh sách đơn hàng/giao dịch liên quan và xuất báo cáo đối soát")
 public class SettlementBatchUserController {
 
     private final SettlementBatchUserService service;

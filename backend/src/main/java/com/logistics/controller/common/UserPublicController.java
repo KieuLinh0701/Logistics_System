@@ -2,15 +2,6 @@ package com.logistics.controller.common;
 
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.request.common.user.UpdateEmailRequest;
 import com.logistics.request.common.user.UpdatePasswordRequest;
 import com.logistics.request.common.user.UpdateProfileRequest;
@@ -18,13 +9,16 @@ import com.logistics.request.common.user.VerifyEmailUpdateOTPRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.common.UserPublicService;
 import com.logistics.utils.SecurityUtils;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user")
+@Tag(name = "User", description = "Quản lý thông tin cá nhân, cập nhật mật khẩu và xác thực thay đổi email")
 public class UserPublicController {
 
     @Autowired

@@ -1,15 +1,14 @@
 package com.logistics.dto.recruitment;
 
-import java.time.LocalDateTime;
-
+import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.JobPostingStatus;
 import com.logistics.enums.RecruitmentRoleType;
-import com.logistics.enums.EmployeeShift;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter

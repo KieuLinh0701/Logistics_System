@@ -1,14 +1,13 @@
 package com.logistics.repository;
 
-import java.util.List;
-
+import com.logistics.entity.JobApplication;
+import com.logistics.enums.JobApplicationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.logistics.entity.JobApplication;
-import com.logistics.enums.JobApplicationStatus;
+import java.util.List;
 
 @Repository
 public interface JobApplicationRepository extends JpaRepository<JobApplication, Long> {

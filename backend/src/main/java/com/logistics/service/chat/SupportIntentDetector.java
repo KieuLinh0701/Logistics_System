@@ -1,8 +1,8 @@
 package com.logistics.service.chat;
 
-import java.util.Locale;
-
 import org.springframework.stereotype.Component;
+
+import java.util.Locale;
 
 @Component
 public class SupportIntentDetector {

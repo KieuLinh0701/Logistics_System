@@ -1,8 +1,8 @@
 package com.logistics.specification;
 
-import org.springframework.data.jpa.domain.Specification;
 import com.logistics.entity.Promotion;
 import com.logistics.enums.PromotionStatus;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 

@@ -5,11 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
-import com.logistics.entity.Address;
-import com.logistics.entity.Office;
-import com.logistics.entity.ShippingRequest;
-import com.logistics.entity.ShippingRequestAttachment;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.exception.AppException;
@@ -21,39 +17,30 @@ import com.logistics.repository.ShippingRequestAttachmentRepository;
 import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShippingRequestSpecification;
 import com.logistics.utils.ShippingRequestUtils;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.*;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-
-import java.io.ByteArrayOutputStream;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
-
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.UUID;
+import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
 import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestType;

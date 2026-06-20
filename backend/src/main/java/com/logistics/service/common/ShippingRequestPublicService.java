@@ -7,11 +7,8 @@ import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.request.common.shippingRequest.PublicShippingRequestForm;
-import com.logistics.response.ApiResponse;
 import com.logistics.utils.ShippingRequestUtils;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

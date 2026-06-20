@@ -1,26 +1,23 @@
 package com.logistics.controller.common;
 
-import com.beust.ah.A;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AccountErrorCode;
 import com.logistics.exception.enums.CommonErrorCode;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import com.logistics.request.common.auth.ChooseRoleRequest;
-import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
-import com.logistics.request.common.auth.ForgotPasswordResetRequest;
-import com.logistics.request.common.auth.LoginRequest;
-import com.logistics.request.common.auth.RegisterRequest;
-import com.logistics.request.common.auth.VerifyRegisterOtpRequest;
-import com.logistics.request.common.auth.VerifyResetOtpRequest;
+import com.logistics.request.common.auth.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.AuthResponse;
 import com.logistics.service.common.AuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Xác thực người dùng: Đăng nhập, đăng ký, khôi phục mật khẩu")
 public class AuthController {
 
     @Autowired

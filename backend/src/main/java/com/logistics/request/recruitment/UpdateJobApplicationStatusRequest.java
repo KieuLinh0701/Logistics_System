@@ -1,7 +1,6 @@
 package com.logistics.request.recruitment;
 
 import com.logistics.enums.JobApplicationStatus;
-
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

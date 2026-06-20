@@ -1,8 +1,8 @@
 package com.logistics.service.common;
 
 import com.logistics.dto.NotificationDto;
-import com.logistics.entity.Office;
 import com.logistics.entity.Notification;
+import com.logistics.entity.Office;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.exception.AppException;
@@ -11,21 +11,18 @@ import com.logistics.mapper.NotificationMapper;
 import com.logistics.repository.NotificationRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.request.common.notification.NotificationSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.NotificationResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.NotificationSpecification;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;

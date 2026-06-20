@@ -1,12 +1,11 @@
 package com.logistics.entity;
 
+import com.logistics.enums.OTPType;
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
-
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.OTPType;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "otps")

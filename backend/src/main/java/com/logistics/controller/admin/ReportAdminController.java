@@ -1,33 +1,25 @@
 package com.logistics.controller.admin;
 
-import com.logistics.dto.admin.AdminFinancialPoint;
-import com.logistics.dto.admin.AdminShipperReportDto;
-import com.logistics.dto.admin.AdminOfficeReportDto;
-import com.logistics.dto.admin.AdminShopReportDto;
-import com.logistics.dto.admin.AdminOverviewDto;
+import com.logistics.dto.admin.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ReportAdminService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
+import java.sql.Date;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.sql.Date;
-
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/admin/reports")
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Admin - Report", description = "Báo cáo thống kê và xuất dữ liệu")
 public class ReportAdminController {
 
     private final ReportAdminService reportService;

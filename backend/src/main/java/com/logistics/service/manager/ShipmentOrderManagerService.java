@@ -1,28 +1,23 @@
 package com.logistics.service.manager;
 
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.ShipmentErrorCode;
-import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
-
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Office;
-import com.logistics.entity.Order;
-import com.logistics.entity.Shipment;
-import com.logistics.entity.ShipmentOrder;
+import com.logistics.entity.*;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.ShipmentErrorCode;
 import com.logistics.id.ShipmentOrderId;
 import com.logistics.mapper.OrderMapper;
-import com.logistics.response.BulkResponse;
-import com.logistics.response.BulkResponse.BulkResult;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShipmentRepository;
 import com.logistics.repository.ShipperAssignmentRepository;
+import com.logistics.response.BulkResponse;
+import com.logistics.response.BulkResponse.BulkResult;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.ShipmentOrderUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,9 +1,10 @@
 package com.logistics.entity;
 
-import org.hibernate.envers.Audited;
-
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.envers.Audited;
 
 @Audited
 @Entity

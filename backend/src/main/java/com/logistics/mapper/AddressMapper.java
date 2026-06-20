@@ -3,9 +3,7 @@ package com.logistics.mapper;
 import com.logistics.dto.AddressDto;
 import com.logistics.dto.AddressSummaryDto;
 import com.logistics.entity.Address;
-import com.logistics.request.user.recipientaddress.RecipientAddressUserRequest;
 import com.logistics.response.user.recipientaddress.RecipientAddress;
-import com.logistics.response.user.recipientaddress.RecipientAddressResponse;
 
 public class AddressMapper {
 

@@ -6,6 +6,7 @@ import com.logistics.request.manager.ai.ManagerAiOptimizeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.manager.AiRouteOptimizationManagerService;
 import com.logistics.utils.SecurityUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/manager/ai-routes")
 @RequiredArgsConstructor
+@Tag(name = "Manager - AI Route Optimization", description = "Quản lý tối ưu hóa lộ trình giao hàng bằng AI cho bưu cục")
 public class AiRouteOptimizationManagerController {
 
     private final AiRouteOptimizationManagerService service;

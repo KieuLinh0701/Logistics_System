@@ -1,7 +1,5 @@
 package com.logistics.dto.user.employee;
 
-import com.logistics.dto.user.role.RoleDetailUserDto;
-import com.logistics.dto.user.role.RoleListUserDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
