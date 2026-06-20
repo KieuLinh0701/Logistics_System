@@ -1,11 +1,19 @@
 package com.logistics.service.admin;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
+import com.logistics.entity.Account;
+import com.logistics.entity.AccountRole;
+import com.logistics.entity.Role;
+import com.logistics.entity.User;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AccountErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
+import com.logistics.repository.AccountRepository;
+import com.logistics.repository.RoleRepository;
+import com.logistics.repository.UserRepository;
+import com.logistics.request.admin.CreateUserRequest;
+import com.logistics.request.admin.UpdateUserRequest;
+import com.logistics.response.Pagination;
+import com.logistics.utils.PasswordUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,19 +22,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.logistics.request.admin.CreateUserRequest;
-import com.logistics.request.admin.UpdateUserRequest;
-import com.logistics.entity.Account;
-import com.logistics.entity.Role;
-import com.logistics.entity.User;
-import com.logistics.entity.AccountRole;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.UserErrorCode;
-import com.logistics.repository.AccountRepository;
-import com.logistics.repository.RoleRepository;
-import com.logistics.repository.UserRepository;
-import com.logistics.response.Pagination;
-import com.logistics.utils.PasswordUtils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class UserAdminService {
@@ -87,7 +87,7 @@ public class UserAdminService {
     @Transactional
     public void createUser(CreateUserRequest request) {
         if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new AppException(UserErrorCode.USER_EMAIL_EXISTED);
+            throw new AppException(AccountErrorCode.ACCOUNT_EMAIL_ALREADY_IN_USE);
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {

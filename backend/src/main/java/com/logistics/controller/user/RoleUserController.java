@@ -1,29 +1,28 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.user.role.RoleDetailUserDto;
 import com.logistics.dto.user.role.RoleListUserDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.role.RoleSearchUserRequest;
 import com.logistics.request.user.role.RoleUserRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.RoleUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/roles")
+@Tag(name = "User - Role", description = "Quản lý phân quyền và vai trò người dùng trong hệ thống (thêm, sửa, xóa, liệt kê danh sách vai trò)")
 public class RoleUserController {
 
     @Autowired
@@ -56,6 +55,11 @@ public class RoleUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.ROLE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.ROLE_CREATE
+    )
     public ResponseEntity<ApiResponse<Void>> create(
             @Valid @RequestBody RoleUserRequest roleUserRequest,
             HttpServletRequest request) {
@@ -66,6 +70,12 @@ public class RoleUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.ROLE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ROLE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable int id,
             @Valid @RequestBody RoleUserRequest roleUserRequest,
             HttpServletRequest request) {
@@ -76,6 +86,11 @@ public class RoleUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.ROLE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.ROLE_DELETE
+    )
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable int id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");

@@ -15,15 +15,10 @@ import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.SupportMessage;
 import com.logistics.entity.SupportTicket;
-import com.logistics.enums.OrderCodStatus;
-import com.logistics.enums.OrderHistoryActionType;
-import com.logistics.enums.OrderPaymentStatus;
-import com.logistics.enums.OrderStatus;
-import com.logistics.enums.SupportMessageSenderType;
+import com.logistics.enums.*;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SupportMessageRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service

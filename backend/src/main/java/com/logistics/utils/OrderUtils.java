@@ -1,13 +1,8 @@
 package com.logistics.utils;
 
-import java.util.Set;
+import com.logistics.enums.*;
 
-import com.logistics.enums.OrderCodStatus;
-import com.logistics.enums.OrderCreatorType;
-import com.logistics.enums.OrderPayerType;
-import com.logistics.enums.OrderPaymentStatus;
-import com.logistics.enums.OrderPickupType;
-import com.logistics.enums.OrderStatus;
+import java.util.Set;
 
 public class OrderUtils {
 

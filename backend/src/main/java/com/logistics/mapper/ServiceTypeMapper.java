@@ -1,11 +1,11 @@
 package com.logistics.mapper;
 
-import java.util.List;
-
 import com.logistics.dto.ServiceTypeDto;
 import com.logistics.dto.ServiceTypeWithRateDto;
 import com.logistics.dto.ShippingRateDto;
 import com.logistics.entity.ServiceType;
+
+import java.util.List;
 
 public class ServiceTypeMapper {
 

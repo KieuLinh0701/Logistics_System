@@ -1,15 +1,12 @@
 package com.logistics.request.user.shippingRequest;
 
-import java.util.List;
-
 import com.logistics.enums.ShippingRequestType;
 import com.logistics.utils.ShippingRequestUtils;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
 
-import lombok.*;
+import java.util.List;
 
 public record UserShippingRequestForm (
         @NotNull(message = "Loại yêu cầu không được để trống")

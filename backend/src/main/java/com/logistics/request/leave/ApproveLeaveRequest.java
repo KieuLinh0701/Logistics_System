@@ -1,7 +1,6 @@
 package com.logistics.request.leave;
 
 import com.logistics.enums.LeaveRequestStatus;
-
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,28 +1,21 @@
 package com.logistics.service.shipper;
 
+import com.logistics.entity.Employee;
 import com.logistics.entity.Order;
-import com.logistics.entity.ShipperAssignment;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.ShippingRequestErrorCode;
-import com.logistics.repository.OrderRepository;
-import com.logistics.repository.ShipperAssignmentRepository;
-import com.logistics.repository.ShippingRequestRepository;
-import com.logistics.repository.UserRepository;
-import com.logistics.repository.EmployeeRepository;
-import com.logistics.entity.Employee;
+import com.logistics.repository.*;
 import com.logistics.service.common.NotificationService;
 import com.logistics.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ShippingRequestShipperService {

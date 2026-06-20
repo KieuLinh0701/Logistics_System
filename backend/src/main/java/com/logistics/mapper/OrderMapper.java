@@ -1,21 +1,17 @@
 package com.logistics.mapper;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.logistics.dto.PickupAttemptDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
-import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
-import com.logistics.dto.PickupAttemptDto;
-import com.logistics.entity.Order;
-import com.logistics.entity.OrderHistory;
-import com.logistics.entity.OrderProduct;
-import com.logistics.entity.PickupAttempt;
-import com.logistics.entity.Promotion;
+import com.logistics.dto.user.settlement.UserSettlementOrderDto;
+import com.logistics.entity.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrderMapper {
 

@@ -1,13 +1,12 @@
 package com.logistics.entity;
 
+import com.logistics.enums.ShippingRequestAttachmentType;
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.ShippingRequestAttachmentType;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "shipping_request_attachments")

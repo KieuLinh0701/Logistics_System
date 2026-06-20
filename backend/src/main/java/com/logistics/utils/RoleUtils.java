@@ -1,10 +1,5 @@
 package com.logistics.utils;
 
-import com.logistics.enums.ShipmentStatus;
-import com.logistics.enums.ShipmentType;
-
-import java.util.Set;
-
 public class RoleUtils {
 
     public static String translateSystemRoleName(String value, boolean isSystem) {

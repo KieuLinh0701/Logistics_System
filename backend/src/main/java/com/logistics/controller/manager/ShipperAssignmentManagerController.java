@@ -1,41 +1,41 @@
 package com.logistics.controller.manager;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.shipperAssignment.ManagerShipperAssignmentListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentEditRequest;
 import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.ShipperAssignmentManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/manager/shipper-assignments")
+@Tag(name = "Manager - Shipper Assignment", description = "Quản lý việc phân công khu vực/đơn hàng cho nhân viên giao hàng và xuất báo cáo")
 public class ShipperAssignmentManagerController {
 
     @Autowired
     private ShipperAssignmentManagerService service;
 
     @PostMapping
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_CREATE
+    )
     public ResponseEntity<ApiResponse<Boolean>> create(
             @RequestBody ManagerShipperAssignmentEditRequest editRequest,
             HttpServletRequest request) {
@@ -46,6 +46,12 @@ public class ShipperAssignmentManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Long id,
             @RequestBody ManagerShipperAssignmentEditRequest editRequest,
@@ -57,6 +63,12 @@ public class ShipperAssignmentManagerController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> deleteFutureAssignment(
             @PathVariable Long id,
             HttpServletRequest request) {
@@ -77,6 +89,11 @@ public class ShipperAssignmentManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_EXPORT
+    )
     public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
             ManagerShipperAssignmentSearchRequest searchRequest) throws Exception {
 

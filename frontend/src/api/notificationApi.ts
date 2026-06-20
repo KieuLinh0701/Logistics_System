@@ -9,11 +9,11 @@ const notificationApi = {
     return res;
   },
   markAsRead: async (notificationId: number) => {
-    const res = await axiosClient.put<ApiResponse<NotificationResponse>>(`/notifications/${notificationId}/read`);
+    const res = await axiosClient.put<ApiResponse<void>>(`/notifications/${notificationId}/read`);
     return res;
   },
   markAllAsRead: async () => {
-    const res = await axiosClient.put<ApiResponse<NotificationResponse>>('/notifications/mark-all-read');
+    const res = await axiosClient.put<ApiResponse<void>>('/notifications/mark-all-read');
     return res;
   },
 

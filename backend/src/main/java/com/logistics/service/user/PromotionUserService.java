@@ -1,20 +1,5 @@
 package com.logistics.service.user;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
-
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.PromotionErrorCode;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-
 import com.logistics.dto.user.UserPromotionDto;
 import com.logistics.entity.Promotion;
 import com.logistics.entity.User;
@@ -22,6 +7,8 @@ import com.logistics.entity.UserPromotion;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.PromotionDiscountType;
 import com.logistics.enums.PromotionStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PromotionErrorCode;
 import com.logistics.mapper.PromotionMapper;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PromotionRepository;
@@ -31,10 +18,21 @@ import com.logistics.request.user.promotion.PromotionUserRequest;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.PromotionSpecification;
-
 import jakarta.transaction.Transactional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

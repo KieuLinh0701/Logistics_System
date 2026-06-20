@@ -29,7 +29,7 @@ const recruitmentApi = {
   },
 
   async deleteJob(id: number) {
-    return axiosClient.delete<ApiResponse<string>>(`/jobs/${id}`);
+    return axiosClient.delete<ApiResponse<void>>(`/jobs/${id}`);
   },
 
   async createApplication(payload: CreateApplicationRequest) {

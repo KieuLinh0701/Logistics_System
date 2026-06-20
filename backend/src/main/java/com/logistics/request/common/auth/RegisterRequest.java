@@ -15,4 +15,9 @@ public class RegisterRequest {
     private String firstName;
     private String lastName;
     private String phoneNumber;
+
+    @Override
+    public String toString() {
+        return "RegisterRequest{email='" + email + "', password='******', firstName='" + firstName + "', lastName='" + lastName + "', phoneNumber='" + phoneNumber + "'}";
+    }
 }

@@ -1,8 +1,8 @@
 package com.logistics.entity;
 
 import com.logistics.enums.AuditLogAction;
-import com.logistics.enums.EntityType;
 import com.logistics.enums.AuditLogStatus;
+import com.logistics.enums.EntityType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -17,13 +17,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Table(name = "audit_logs", indexes = {
-        @Index(name = "idx_audit_user_id",      columnList = "user_id"),
-        @Index(name = "idx_audit_office_id",      columnList = "office_id"),
-        @Index(name = "idx_audit_shop_id",      columnList = "shop_id"),
-        @Index(name = "idx_audit_user_id",      columnList = "user_id"),
-        @Index(name = "idx_audit_entity",        columnList = "entity_type, entity_id"),
-        @Index(name = "idx_audit_created_at",    columnList = "created_at"),
-        @Index(name = "idx_audit_module_action", columnList = "module, action")
+        @Index(name = "idx_audit_user_id",     columnList = "user_id"),
+        @Index(name = "idx_audit_office_id",   columnList = "office_id"),
+        @Index(name = "idx_audit_shop_id",     columnList = "shop_id"),
+        @Index(name = "idx_audit_entity",      columnList = "entity_type, entity_id"),
+        @Index(name = "idx_audit_created_at",  columnList = "created_at"),
+        @Index(name = "idx_audit_action",      columnList = "action")
 })
 @EntityListeners(AuditingEntityListener.class)
 public class AuditLog {
@@ -52,12 +51,8 @@ public class AuditLog {
     private EntityType entity;
 
     // id của record bị tác động
-    @Column(length = 50)
+    @Column(length = 255)
     private String entityId;
-
-    // code của record đó
-    @Column(length = 100)
-    private String entityCode;
 
     // Hành động thực hiện
     @Column(length = 50, nullable = false)
@@ -66,11 +61,11 @@ public class AuditLog {
 
     // Nội dung trước khi thay đổi
     @Column(columnDefinition = "NVARCHAR(MAX)")
-    private String payloadBefore;
+    private String payloadRequestBody;
 
     // Nội dung sau khi thay đổi
     @Column(columnDefinition = "NVARCHAR(MAX)")
-    private String payloadAfter;
+    private String payloadResult;
 
     // Mô tả ngắn hiển thị trên UI
     @Column(columnDefinition = "NVARCHAR(500)")

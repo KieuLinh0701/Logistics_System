@@ -1,29 +1,25 @@
 package com.logistics.controller.user;
 
-import java.util.List;
-
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.BankAccountDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.bankAccount.BankAccountRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.BankAccountUserService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/bank-accounts")
+@Tag(name = "User - Bank Account", description = "Quản lý thông tin tài khoản ngân hàng của người dùng để thực hiện giao dịch thanh toán")
 public class BankAccountUserController {
 
     @Autowired
@@ -37,6 +33,11 @@ public class BankAccountUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.BANK_ACCOUNT,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.BANK_ACCOUNT_CREATE
+    )
     public ResponseEntity<ApiResponse<BankAccountDto>> create(
             @Valid @RequestBody BankAccountRequest bankAccountRequest,
             HttpServletRequest request) {
@@ -46,6 +47,12 @@ public class BankAccountUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.BANK_ACCOUNT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.BANK_ACCOUNT_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<BankAccountDto>> update(
             @PathVariable Integer id,
             @Valid @RequestBody BankAccountRequest bankAccountRequest,
@@ -57,6 +64,12 @@ public class BankAccountUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.BANK_ACCOUNT,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.BANK_ACCOUNT_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable Integer id,
             HttpServletRequest request) {
@@ -67,6 +80,12 @@ public class BankAccountUserController {
     }
 
     @PatchMapping("/{id}/default")
+    @Audit(
+            entity = EntityType.BANK_ACCOUNT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.BANK_ACCOUNT_SET_DEFAULT,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> setDefault(
             @PathVariable Integer id,
             HttpServletRequest request) {

@@ -1,38 +1,32 @@
 package com.logistics.controller.user;
 
-import com.logistics.dto.AddressDto;
-import com.logistics.request.user.address.AddressUserRequest;
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.recipientaddress.RecipientAddressUserRequest;
 import com.logistics.request.user.recipientaddress.RecipientSuggestionRequest;
 import com.logistics.request.user.recipientaddress.UserRecipientAddressSearchRequest;
-import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
-import com.logistics.response.user.recipientaddress.RecipientAddress;
 import com.logistics.response.user.recipientaddress.RecipientAddressResponse;
 import com.logistics.response.user.recipientaddress.RecipientSuggestionAddressResponse;
 import com.logistics.service.user.RecipientAddressUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/recipient-addresses")
+@Tag(name = "User - Recipient Address", description = "Quản lý danh bạ khách hàng nhận hàng: thêm, sửa, xóa, gợi ý thông tin và xuất báo cáo dữ liệu khách hàng")
 public class RecipientAddressUserController {
 
     @Autowired
@@ -48,6 +42,11 @@ public class RecipientAddressUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_CREATE
+    )
     public ResponseEntity<ApiResponse<RecipientAddressResponse>> create(
             @Valid @RequestBody RecipientAddressUserRequest recipientAddressUserRequest,
             HttpServletRequest request) {
@@ -57,6 +56,12 @@ public class RecipientAddressUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<RecipientAddressResponse>> update(
             @PathVariable int id,
             @Valid @RequestBody RecipientAddressUserRequest recipientAddressUserRequest,
@@ -67,6 +72,12 @@ public class RecipientAddressUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable int id,
             HttpServletRequest request) {
@@ -88,6 +99,11 @@ public class RecipientAddressUserController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             UserRecipientAddressSearchRequest userRecipientAddressSearchRequest) throws Exception {

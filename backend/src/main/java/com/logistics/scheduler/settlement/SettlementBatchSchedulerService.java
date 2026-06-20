@@ -1,22 +1,22 @@
 package com.logistics.scheduler.settlement;
 
+import com.logistics.entity.*;
+import com.logistics.enums.*;
+import com.logistics.repository.*;
+import com.logistics.service.common.NotificationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.logistics.entity.*;
-import com.logistics.enums.*;
-import com.logistics.repository.*;
-import com.logistics.service.common.NotificationService;
-
-import lombok.RequiredArgsConstructor;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SettlementBatchSchedulerService {
@@ -33,7 +33,7 @@ public class SettlementBatchSchedulerService {
     @Scheduled(cron = "0 0 20 * * ?") // 20:00 mỗi ngày
     @Transactional
     public void createDailySettlementBatch() {
-        System.out.println("Start creating automatic settlement batch: " + LocalDateTime.now());
+        log.info("Start creating automatic settlement batch: " + LocalDateTime.now());
 
         // Lấy tất cả user có lịch đối soát hôm nay
         DayOfWeek today = LocalDate.now().getDayOfWeek();
@@ -234,10 +234,10 @@ public class SettlementBatchSchedulerService {
 
             tryUnlockShop(shop);
 
-            System.out.println("Settlement batch for shop " + shop.getId());
+            log.info("Settlement batch for shop " + shop.getId());
         }
 
-        System.out.println("Finished creating automatic settlement batch.");
+        log.info("Finished creating automatic settlement batch.");
     }
 
     private void updateOrdersCompleted(List<Order> orders) {

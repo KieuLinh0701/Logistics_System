@@ -1,16 +1,15 @@
 package com.logistics.utils;
 
+import com.logistics.entity.Office;
+import com.logistics.enums.OrderStatus;
+import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.enums.ShippingRequestType;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
-
-import com.logistics.entity.Office;
-import com.logistics.enums.OrderCodStatus;
-import com.logistics.enums.OrderStatus;
-import com.logistics.enums.ShippingRequestStatus;
-import com.logistics.enums.ShippingRequestType;
 
 public class ShippingRequestUtils {
 

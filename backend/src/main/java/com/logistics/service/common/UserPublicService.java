@@ -1,21 +1,17 @@
 package com.logistics.service.common;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
-import com.logistics.entity.Role;
-import com.logistics.service.user.RoleUserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.entity.Account;
 import com.logistics.entity.OTP;
+import com.logistics.entity.Role;
 import com.logistics.entity.User;
 import com.logistics.enums.OTPType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AccountErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.OtpErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.OTPRepository;
 import com.logistics.repository.UserRepository;
@@ -23,15 +19,19 @@ import com.logistics.request.common.user.UpdateEmailRequest;
 import com.logistics.request.common.user.UpdatePasswordRequest;
 import com.logistics.request.common.user.UpdateProfileRequest;
 import com.logistics.request.common.user.VerifyEmailUpdateOTPRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.AuthResponse;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
 import com.logistics.utils.PasswordUtils;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -49,13 +49,12 @@ public class UserPublicService {
     private final NotificationService notificationService;
     private final RoleService roleService;
 
-    public ApiResponse<String> updatePassword(@NonNull Integer accountId, UpdatePasswordRequest request) {
-        try {
+    public void updatePassword(@NonNull Integer accountId, UpdatePasswordRequest request) {
             Account account = accountRepository.findById(accountId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
             if (!passwordEncoder.matches(request.getOldPassword(), account.getPassword())) {
-                return new ApiResponse<>(false, "Mật khẩu cũ không chính xác", null);
+                throw  new AppException(AccountErrorCode.ACCOUNT_OLD_PASSWORD_INCORRECT);
             }
 
             account.setPassword(PasswordUtils.hashPassword(request.getNewPassword()));
@@ -75,30 +74,24 @@ public class UserPublicService {
                     account.getEmail(),
                     "Cảnh báo thay đổi mật khẩu",
                     "Mật khẩu của bạn đã được thay đổi thành công.");
-
-            return new ApiResponse<>(true, "Đổi mật khẩu thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi đổi mật khẩu: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<String> sendEmailUpdateOTP(@NonNull Integer accountId, UpdateEmailRequest request) {
-        try {
+    public void sendEmailUpdateOTP(@NonNull Integer accountId, UpdateEmailRequest request) {
             Account account = accountRepository.findById(accountId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
             if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
-                return new ApiResponse<>(false, "Mật khẩu không chính xác", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_PASSWORD_INCORRECT);
             }
 
             if (request.getNewEmail()
                     .equalsIgnoreCase(account.getEmail())) {
-                return new ApiResponse<>(false, "Email mới không được trùng với email hiện tại", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_NEW_EMAIL_DUPLICATE_CURRENT);
             }
 
             if (accountRepository.findByEmail(request.getNewEmail())
                     .isPresent()) {
-                return new ApiResponse<>(false, "Email này đã được sử dụng bởi tài khoản khác", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_EMAIL_ALREADY_IN_USE);
             }
 
             otpRepository.updateIsUsedByEmailAndType(account.getEmail(), OTPType.UPDATE_EMAIL, true);
@@ -130,20 +123,14 @@ public class UserPublicService {
                     account.getEmail(),
                     "Cảnh báo thay đổi email",
                     "Tài khoản của bạn vừa được yêu cầu thay đổi email.");
-
-            return new ApiResponse<>(true, "Mã OTP đã được gửi đến email mới của bạn", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi gửi OTP đổi email: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<AuthResponse> verifyEmailUpdateOTP(
+    public AuthResponse verifyEmailUpdateOTP(
             @NonNull Integer accountId,
             VerifyEmailUpdateOTPRequest request,
             Integer roleId) {
-        try {
             Account account = accountRepository.findById(accountId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
             OTP otpEntity = otpRepository
                     .findByEmailAndOtpAndTypeAndIsUsedFalseAndExpiresAtAfter(
@@ -151,7 +138,7 @@ public class UserPublicService {
                             request.getOtp(),
                             OTPType.UPDATE_EMAIL,
                             LocalDateTime.now())
-                    .orElseThrow(() -> new RuntimeException("Mã OTP không hợp lệ hoặc đã hết hạn"));
+                    .orElseThrow(() -> new AppException(OtpErrorCode.OTP_INVALID_OR_EXPIRED));
 
             account.setEmail(request.getNewEmail());
             accountRepository.save(account);
@@ -192,19 +179,16 @@ public class UserPublicService {
                     user.getPhoneNumber(),
                     user.getImages());
 
-            AuthResponse authResponse = new AuthResponse(token, userResponse);
-
-            return new ApiResponse<>(true, "Thay đổi email thành công", authResponse);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi xác thực OTP đổi email: " + e.getMessage(), null);
-        }
+            return AuthResponse.builder()
+                    .token(token)
+                    .user(userResponse)
+                    .build();
     }
 
     @SuppressWarnings("unchecked")
-    public ApiResponse<String> updateProfile(@NonNull Integer userId, @NonNull UpdateProfileRequest updatedUser) {
-        try {
+    public String updateProfile(@NonNull Integer userId, @NonNull UpdateProfileRequest updatedUser) {
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                    .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
             user.setFirstName(updatedUser.getFirstName());
             user.setLastName(updatedUser.getLastName());
@@ -226,15 +210,12 @@ public class UserPublicService {
                     user.setImages(imageUrl);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return new ApiResponse<>(false, "Upload ảnh thất bại: " + e.getMessage(), null);
+                    throw new AppException(CommonErrorCode.CLOUDINARY_UPLOAD_FAILED);
                 }
             }
 
             userRepository.save(user);
 
-            return new ApiResponse<>(true, "Cập nhật thông tin thành công", user.getImages());
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi cập nhật thông tin: " + e.getMessage(), null);
-        }
+            return user.getImages();
     }
 }

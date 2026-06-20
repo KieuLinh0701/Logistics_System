@@ -12,7 +12,7 @@ const leaveApi = {
   },
 
   async cancelLeave(id: number) {
-    return axiosClient.put<ApiResponse<boolean>>(`/leaves/${id}/cancel`);
+    return axiosClient.put<ApiResponse<void>>(`/leaves/${id}/cancel`);
   },
 
   async getOfficeLeaves() {

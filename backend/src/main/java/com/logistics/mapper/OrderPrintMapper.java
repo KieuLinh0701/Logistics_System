@@ -1,14 +1,14 @@
 package com.logistics.mapper;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderProduct;
 import com.logistics.utils.BarcodeUtils;
 import com.logistics.utils.QrCodeUtils;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrderPrintMapper {
 

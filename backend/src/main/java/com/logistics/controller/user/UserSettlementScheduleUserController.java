@@ -1,27 +1,23 @@
 package com.logistics.controller.user;
 
-import java.util.Set;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.logistics.dto.BankAccountDto;
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.UserSettlementScheduleDto;
-import com.logistics.request.user.bankAccount.BankAccountRequest;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.UserSettlementScheduleUserService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/user/user-settlement-batchs")
+@Tag(name = "User - Settlement Schedule", description = "Quản lý lịch trình đối soát tài chính định kỳ của người dùng theo các ngày trong tuần")
 public class UserSettlementScheduleUserController {
 
         @Autowired
@@ -37,6 +33,11 @@ public class UserSettlementScheduleUserController {
         }
 
         @PutMapping()
+        @Audit(
+                entity = EntityType.USER_SETTLEMENT_SCHEDULE,
+                action = AuditLogAction.UPDATE,
+                description = AuditLogDescriptionConstant.USER_SETTLEMENT_SCHEDULE_UPDATE
+        )
         public ResponseEntity<ApiResponse<Void>> updateUserSchedule(
                         HttpServletRequest request,
                         @RequestBody Set<String> weekdays) {

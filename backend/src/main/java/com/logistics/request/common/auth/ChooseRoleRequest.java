@@ -12,4 +12,9 @@ import lombok.Setter;
 public class ChooseRoleRequest {
     private String tempToken;
     private String roleName;
+
+    @Override
+    public String toString() {
+        return "ChooseRoleRequest{tempToken='******', roleName='" + roleName + "'}";
+    }
 }

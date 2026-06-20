@@ -1,13 +1,11 @@
 package com.logistics.entity;
 
+import com.logistics.enums.RegionName;
 import jakarta.persistence.*;
 import lombok.*;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import com.logistics.enums.RegionName;
 
 import java.time.LocalDateTime;
 

@@ -1,13 +1,18 @@
 package com.logistics.controller.common;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/public/maps")
+@Tag(name = "Public - Maps", description = "Tích hợp Google Maps: Địa điểm, tọa độ, chỉ đường và khoảng cách")
 public class MapsController {
 
     @Value("${google.maps.api.key}")

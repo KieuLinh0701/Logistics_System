@@ -1,22 +1,27 @@
 package com.logistics.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthResponse {
     private String token;
     private UserResponse user;
+    private List<String> roles;
+    private String tempToken;
 
     @Getter
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
+    @Builder
     public static class UserResponse {
         private Integer id;
         private String firstName;

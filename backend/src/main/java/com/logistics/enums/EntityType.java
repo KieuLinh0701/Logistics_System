@@ -5,6 +5,7 @@ public enum EntityType {
     ACCOUNT_ROLE,
     ADDRESS,
     AUDIT_LOG,
+    API_ROUTE_PLAN,
     BANK_ACCOUNT,
     EMPLOYEE,
     EMPLOYEE_LEAVE_REQUEST,

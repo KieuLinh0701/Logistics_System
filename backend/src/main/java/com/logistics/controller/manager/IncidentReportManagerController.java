@@ -1,40 +1,31 @@
 package com.logistics.controller.manager;
 
-import com.logistics.request.user.order.UserOrderSearchRequest;
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.dto.manager.incidentReport.ManagerIncidentReportDetailDto;
+import com.logistics.dto.manager.incidentReport.ManagerIncidentReportListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
+import com.logistics.request.SearchRequest;
+import com.logistics.request.manager.incidentReport.ManagerIncidentUpdateRequest;
+import com.logistics.response.ApiResponse;
+import com.logistics.response.ListResponse;
+import com.logistics.service.manager.IncidentReportManagerService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.logistics.dto.manager.incidentReport.ManagerIncidentReportDetailDto;
-import com.logistics.dto.manager.incidentReport.ManagerIncidentReportListDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
-import com.logistics.request.SearchRequest;
-import com.logistics.request.manager.incidentReport.ManagerIncidentUpdateRequest;
-import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
-import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearchRequest;
-import com.logistics.response.ApiResponse;
-import com.logistics.response.ListResponse;
-import com.logistics.service.manager.IncidentReportManagerService;
-import com.logistics.service.manager.ShippingRequestManagerService;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/manager/incident-reports")
+@Tag(name = "Manager - Incident Report", description = "Quản lý và xử lý các báo cáo sự cố vận hành tại bưu cục")
 public class IncidentReportManagerController {
 
     @Autowired
@@ -62,6 +53,12 @@ public class IncidentReportManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.INCIDENT_REPORT,
+            action = AuditLogAction.PROCESS,
+            description = AuditLogDescriptionConstant.INCIDENT_REPORT_PROCESSING,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> processing(
             @PathVariable Integer id,
             @RequestBody ManagerIncidentUpdateRequest updateRequest,
@@ -73,6 +70,11 @@ public class IncidentReportManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.INCIDENT_REPORT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.INCIDENT_REPORT_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             SearchRequest searchRequest) throws Exception {

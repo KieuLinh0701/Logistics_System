@@ -9,7 +9,6 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AiRouteErrorCode;
 import com.logistics.repository.*;
 import com.logistics.request.manager.ai.ManagerAiOptimizeRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.service.ai.AiServiceClient;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;

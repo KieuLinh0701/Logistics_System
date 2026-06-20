@@ -1,12 +1,17 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateVehicleRequest;
 import com.logistics.request.admin.UpdateVehicleRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.VehicleAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/vehicles")
+@Tag(name = "Admin - Vehicle", description = "Quản lý phương tiện vận chuyển")
 public class VehicleAdminController {
 
     @Autowired
@@ -40,6 +46,11 @@ public class VehicleAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.VEHICLE_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createVehicle(@RequestBody CreateVehicleRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -50,6 +61,12 @@ public class VehicleAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.VEHICLE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateVehicle(
             @PathVariable Integer id,
             @RequestBody UpdateVehicleRequest request) {
@@ -62,6 +79,12 @@ public class VehicleAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.VEHICLE_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteVehicle(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

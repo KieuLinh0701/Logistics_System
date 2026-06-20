@@ -1,13 +1,14 @@
 package com.logistics.controller.shipper;
 
-import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
-import com.logistics.request.shipper.PickedUpRequest;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.DeliverOriginRequest;
+import com.logistics.request.shipper.PickedUpRequest;
+import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/shipper")
+@Tag(name = "Shipper - Order", description = "Quản lý đơn hàng, quy trình giao nhận, xử lý sự cố và lộ trình cho nhân viên giao hàng")
 public class OrderShipperController {
 
     @Autowired

@@ -1,25 +1,24 @@
 package com.logistics.service.common;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-
 import com.logistics.dto.common.PublicOfficeInformationDto;
 import com.logistics.dto.common.PublicOfficeSearchDto;
 import com.logistics.entity.Office;
 import com.logistics.enums.OfficeStatus;
 import com.logistics.enums.OfficeType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.OfficeErrorCode;
 import com.logistics.mapper.OfficeMapper;
 import com.logistics.repository.AddressRepository;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.request.common.office.PublicOfficeSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.specification.OfficeSpecification;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +28,7 @@ public class OfficePublicService {
 
     private final AddressRepository addressRepository;
 
-    public ApiResponse<List<PublicOfficeSearchDto>> searchOffices(PublicOfficeSearchRequest request) {
-        try {
+    public List<PublicOfficeSearchDto> searchOffices(PublicOfficeSearchRequest request) {
             Integer city = request.getCity();
             Integer ward = request.getWard();
             String search = request.getSearch();
@@ -43,18 +41,12 @@ public class OfficePublicService {
 
             List<Office> offices = officeRepository.findAll(spec, Sort.by("name").ascending());
 
-            List<PublicOfficeSearchDto> officeDtos = offices.stream()
+            return offices.stream()
                     .map(OfficeMapper::toPublicOfficeSearchDto)
                     .toList();
-
-            return new ApiResponse<>(true, "Lấy danh sách bưu cục thành công", officeDtos);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy danh sách bưu cục: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<PublicOfficeInformationDto> getHeadOffice() {
-        try {
+    public PublicOfficeInformationDto getHeadOffice() {
             Specification<Office> spec = Specification.<Office>unrestricted()
                     .and(OfficeSpecification.status(OfficeStatus.ACTIVE.name()))
                     .and(OfficeSpecification.type(OfficeType.HEAD_OFFICE.name()));
@@ -64,23 +56,15 @@ public class OfficePublicService {
                     .findFirst();
 
             if (officeOpt.isPresent()) {
-                PublicOfficeInformationDto officeDto = OfficeMapper.toPublicOfficeInformationDto(officeOpt.get());
-                return new ApiResponse<>(true, "Lấy bưu cục chính thành công", officeDto);
+                return OfficeMapper.toPublicOfficeInformationDto(officeOpt.get());
             } else {
-                return new ApiResponse<>(false, "Không tìm thấy bưu cục chính", null);
+                throw new AppException(OfficeErrorCode.OFFICE_HEAD_NOT_FOUND);
             }
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy bưu cục chính: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<List<PublicOfficeInformationDto>> listLocalOffices(PublicOfficeSearchRequest request) {
-        try {
+    public List<PublicOfficeInformationDto> listLocalOffices(PublicOfficeSearchRequest request) {
             Integer city = request.getCity();
             Integer ward = request.getWard();
-
-            System.out.println("city" + city);
-            System.out.println("ward" + ward);
 
             List<Office> offices;
 
@@ -109,25 +93,13 @@ public class OfficePublicService {
                 offices = List.of();
             }
 
-            List<PublicOfficeInformationDto> officeDtos = offices.stream()
+            return offices.stream()
                     .map(OfficeMapper::toPublicOfficeInformationDto)
                     .toList();
-
-            return new ApiResponse<>(true, "Lấy danh sách bưu cục thành công", officeDtos);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy danh sách bưu cục: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<Boolean> checkLocalOffices(int cityCode) {
-        try {
-            boolean exists = hasLocalOffices(cityCode);
-            return new ApiResponse<>(true, "Kiểm tra bưu cục thành công", exists);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi kiểm tra bưu cục: " + e.getMessage(), false);
-        }
+    public Boolean checkLocalOffices(int cityCode) {
+            return hasLocalOffices(cityCode);
     }
 
     public boolean hasLocalOffices(int cityCode) {

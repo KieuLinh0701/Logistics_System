@@ -3,18 +3,16 @@ package com.logistics.controller.shipper;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.ShippingRequestShipperService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/shipper/shipping-requests")
+@Tag(name = "Shipper - Shipping Request", description = "Quản lý các yêu cầu hỗ trợ và khiếu nại được phân công cho nhân viên giao hàng")
 public class ShippingRequestShipperController {
 
     @Autowired

@@ -1,7 +1,7 @@
 package com.logistics.specification;
 
 import com.logistics.entity.Notification;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 public class NotificationSpecification {

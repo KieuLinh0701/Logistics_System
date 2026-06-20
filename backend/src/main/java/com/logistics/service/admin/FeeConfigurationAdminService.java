@@ -1,19 +1,5 @@
 package com.logistics.service.admin;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.entity.FeeConfiguration;
 import com.logistics.entity.ServiceType;
 import com.logistics.enums.CodFeeType;
@@ -26,6 +12,19 @@ import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.request.admin.CreateFeeConfigurationRequest;
 import com.logistics.request.admin.UpdateFeeConfigurationRequest;
 import com.logistics.response.Pagination;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class FeeConfigurationAdminService {

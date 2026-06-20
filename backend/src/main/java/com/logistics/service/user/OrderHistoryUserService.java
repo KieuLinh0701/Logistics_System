@@ -1,15 +1,13 @@
 package com.logistics.service.user;
 
-import org.springframework.stereotype.Service;
-
 import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.Shipment;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.repository.OrderHistoryRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor

@@ -1,11 +1,11 @@
 package com.logistics.mapper;
 
+import com.logistics.dto.OrderHistoryDto;
+import com.logistics.entity.OrderHistory;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.logistics.dto.OrderHistoryDto;
-import com.logistics.entity.OrderHistory;
 
 public class OrderHistoryMapper {
 

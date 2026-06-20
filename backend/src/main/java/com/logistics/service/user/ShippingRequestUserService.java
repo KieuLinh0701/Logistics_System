@@ -7,12 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestEditDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
-import com.logistics.entity.Address;
-import com.logistics.entity.Office;
-import com.logistics.entity.Order;
-import com.logistics.entity.ShippingRequest;
-import com.logistics.entity.ShippingRequestAttachment;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
@@ -32,15 +27,8 @@ import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShippingRequestSpecification;
 import com.logistics.utils.ShippingRequestUtils;
-
 import lombok.RequiredArgsConstructor;
-
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
@@ -56,11 +44,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.logistics.utils.ShippingRequestUtils.translateShippingRequestStatus;
@@ -137,7 +121,7 @@ public class ShippingRequestUserService {
             Integer shopId = userService.getShopId(userId);
 
             ShippingRequest request = repository.findByIdAndUserId(id, shopId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+                    .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.REQUEST);
@@ -243,7 +227,7 @@ public class ShippingRequestUserService {
         Integer shopId = userService.getShopId(userId);
 
         ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
         if (!validateEdit(request, shippingRequest)) {
             throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_EDIT_NOT_ALLOWED);
@@ -259,7 +243,7 @@ public class ShippingRequestUserService {
                         oldAttachmentsStr,
                         mapper.getTypeFactory().constructCollectionType(List.class, Integer.class));
             } catch (Exception e) {
-                throw new RuntimeException("Parse oldAttachments thất bại", e);
+                throw new AppException(CommonErrorCode.PARSE_ATTACHMENTS_FAILED);
             }
         }
 
@@ -278,7 +262,7 @@ public class ShippingRequestUserService {
         Integer shopId = userService.getShopId(userId);
 
         ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
         if (!ShippingRequestUtils.canUserCancel(shippingRequest.getStatus())) {
             throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_CANNOT_CANCEL);
@@ -288,7 +272,6 @@ public class ShippingRequestUserService {
         repository.save(shippingRequest);
 
         if (shippingRequest.getOffice() != null && shippingRequest.getOffice().getManager() != null) {
-            System.out.println("UserId" + shippingRequest.getOffice().getManager().getUser().getId());
             notificationService.create(
                     "Yêu cầu hỗ trợ và khiếu nại đã bị hủy",
                     "Yêu cầu mã " + shippingRequest.getCode() + " đã bị khách hàng hủy.",

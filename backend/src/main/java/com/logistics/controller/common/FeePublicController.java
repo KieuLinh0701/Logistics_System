@@ -2,15 +2,19 @@ package com.logistics.controller.common;
 
 import com.logistics.response.ApiResponse;
 import com.logistics.service.common.FeePublicService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/public/fees")
+@Tag(name = "Public - Fee", description = "Tính toán cước phí vận chuyển và quy đổi khối lượng")
 public class FeePublicController {
 
     @Autowired
@@ -24,9 +28,7 @@ public class FeePublicController {
             @RequestParam Integer recipientCodeCity
     ) {
         Integer shippingFee = feeService.calculateShippingFee(weight, serviceTypeId, senderCodeCity, recipientCodeCity);
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính phí vận chuyển thành công", shippingFee)
-        );
+        return ResponseEntity.ok(ApiResponse.success(shippingFee));
     }
 
     @GetMapping("/total")
@@ -48,7 +50,7 @@ public class FeePublicController {
         );
 
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
+                ApiResponse.success("Tính tổng phí vận chuyển thành công", totalFee));
     }
 
     @GetMapping("/total-manager")
@@ -69,8 +71,7 @@ public class FeePublicController {
                 cod
         );
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
+        return ResponseEntity.ok(ApiResponse.success(totalFee));
     }
 
     @GetMapping("/weight")
@@ -87,7 +88,6 @@ public class FeePublicController {
                 width
         );
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính khối lượng thành công", weight));
+        return ResponseEntity.ok(ApiResponse.success(weight));
     }
 }

@@ -12,4 +12,9 @@ import lombok.Setter;
 public class ForgotPasswordResetRequest {
     private String email;
     private String newPassword;
+
+    @Override
+    public String toString() {
+        return "ForgotPasswordResetRequest{email='" + email + "', newPassword='******'}";
+    }
 }

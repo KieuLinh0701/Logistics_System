@@ -1,32 +1,25 @@
 package com.logistics.controller.user;
 
-import com.logistics.request.SearchRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestEditDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.shippingRequest.UserShippingRequestForm;
 import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.ShippingRequestUserService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user/shipping-requests")
+@Tag(name = "User - Shipping Request", description = "Quản lý các yêu cầu hỗ trợ và khiếu nại đơn hàng của người dùng: tạo mới, cập nhật, theo dõi trạng thái và xuất báo cáo")
 public class ShippingRequestUserController {
 
     private final ShippingRequestUserService service;
@@ -50,6 +44,11 @@ public class ShippingRequestUserController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_CREATE
+    )
     public ResponseEntity<ApiResponse<Void>> create(
             @Valid @ModelAttribute UserShippingRequestForm userShippingRequestForm,
             HttpServletRequest request) {
@@ -60,6 +59,12 @@ public class ShippingRequestUserController {
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Boolean>> update(
             @PathVariable Integer id,
             @Valid @ModelAttribute UserShippingRequestForm userShippingRequestForm,
@@ -91,6 +96,12 @@ public class ShippingRequestUserController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_CANCEL,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable Integer id,
             HttpServletRequest request) {
@@ -101,6 +112,11 @@ public class ShippingRequestUserController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             UserShippingRequestSearchRequest userShippingRequestSearchRequest) throws Exception {

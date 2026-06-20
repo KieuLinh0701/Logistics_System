@@ -1,8 +1,8 @@
 package com.logistics.config;
 
-import java.security.Principal;
-import java.util.List;
-
+import com.logistics.entity.SupportTicket;
+import com.logistics.repository.AccountRepository;
+import com.logistics.repository.SupportTicketRepository;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -11,9 +11,8 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 
-import com.logistics.entity.SupportTicket;
-import com.logistics.repository.AccountRepository;
-import com.logistics.repository.SupportTicketRepository;
+import java.security.Principal;
+import java.util.List;
 
 @Component
 public class UserChannelInterceptor implements ChannelInterceptor {

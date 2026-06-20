@@ -1,42 +1,24 @@
 package com.logistics.service.manager;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportDetailDto;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportListDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
-import com.logistics.entity.*;
+import com.logistics.entity.IncidentReport;
+import com.logistics.entity.Office;
+import com.logistics.entity.User;
 import com.logistics.enums.IncidentStatus;
-import com.logistics.enums.OrderCreatorType;
-import com.logistics.enums.ShippingRequestAttachmentType;
-import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.IncidentErrorCode;
 import com.logistics.mapper.IncidentReportMapper;
-import com.logistics.mapper.ShippingRequestMapper;
-import com.logistics.repository.AddressRepository;
 import com.logistics.repository.IncidentReportRepository;
-import com.logistics.repository.ShippingRequestAttachmentRepository;
-import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.incidentReport.ManagerIncidentUpdateRequest;
-import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
-import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearchRequest;
-import com.logistics.request.user.order.UserOrderSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.IncidentReportSpecification;
-import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.IncidentReportUtils;
-import com.logistics.utils.OrderUtils;
-import com.logistics.utils.ShippingRequestUtils;
-
 import lombok.RequiredArgsConstructor;
-
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
@@ -48,22 +30,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.logistics.utils.IncidentReportUtils.*;
-import static com.logistics.utils.OrderUtils.*;
-import static com.logistics.utils.OrderUtils.translateOrderCreatorType;
 
 @Service
 @RequiredArgsConstructor
@@ -159,23 +133,11 @@ public class IncidentReportManagerService {
             ManagerIncidentUpdateRequest request) {
 
             IncidentReport incident = incidentRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Báo cáo sự cố không tồn tại"));
+                    .orElseThrow(() -> new AppException(IncidentErrorCode.INCIDENT_NOT_FOUND));
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
-            System.out.println("status" + request.getStatus());
-            System.out.println("resi" + request.getResolution());
-            System.out.println("UserId: " + userId);
-            System.out.println("Office id: " + userOffice.getId());
-            System.out.println("Manager id: " + userOffice.getManager().getUser().getId());
-
-            System.out.println(
-                    "Incident office id: " + (incident.getOffice() != null ? incident.getOffice().getId() : "null"));
             checkPermission(userId, incident);
 
             User user = userOffice.getManager().getUser();
-
-            System.out.println("Incident current status: " + incident.getStatus());
-            System.out.println("Requested status: " + request.getStatus());
 
             validateForm(request);
 
@@ -184,7 +146,7 @@ public class IncidentReportManagerService {
             if (!IncidentReportUtils.canManagerChangeStatus(incident.getStatus(),
                     newStatus)
                     && isBlank(request.getStatus())) {
-                throw new RuntimeException("Trạng thái yêu cầu chuyển không hợp lệ");
+                throw new AppException(IncidentErrorCode.INCIDENT_INVALID_TRANSFER_REQUEST_STATUS);
             }
 
             incident.setStatus(newStatus);
@@ -288,7 +250,7 @@ public class IncidentReportManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -336,18 +298,18 @@ public class IncidentReportManagerService {
         }
 
         if (!missing.isEmpty()) {
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
         }
 
         IncidentStatus status;
         try {
             status = IncidentStatus.valueOf(request.getStatus());
         } catch (Exception e) {
-            throw new RuntimeException("Trạng thái báo cáo không hợp lệ");
+            throw new AppException(IncidentErrorCode.INCIDENT_INVALID_STATUS);
         }
 
         if (!isBlank(request.getResolution()) && request.getResolution().length() > 1000) {
-            throw new RuntimeException("Nội dung xử lý không được vượt quá 1000 ký tự");
+            throw new AppException(IncidentErrorCode.INCIDENT_INVALID_RESPONSE);
         }
     }
 

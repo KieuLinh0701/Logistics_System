@@ -1,11 +1,12 @@
 package com.logistics.dto.user.dashboard;
 
-import java.util.List;
-import java.util.Map;
-
 import com.logistics.enums.ProductType;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import lombok.*;
+import java.util.Map;
 
 @Getter
 @Setter

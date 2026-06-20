@@ -1,12 +1,12 @@
 package com.logistics.request.user.product;
 
-import java.math.BigDecimal;
-
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.math.BigDecimal;
 
 public record UserProductForm (
         Integer id,

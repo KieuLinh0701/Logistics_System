@@ -1,8 +1,7 @@
 package com.logistics.specification;
 
-import org.springframework.data.jpa.domain.Specification;
-
 import com.logistics.entity.Office;
+import org.springframework.data.jpa.domain.Specification;
 
 public class OfficeSpecification {
     public static Specification<Office> status(String status) {

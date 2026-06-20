@@ -18,6 +18,8 @@ public enum PaymentErrorCode implements BaseErrorCode {
     PAYMENT_TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy giao dịch: %s"),
     PAYMENT_TRANSACTION_INVALID_SIGNATURE(HttpStatus.BAD_REQUEST, "Chữ ký không hợp lệ"),
     PAYMENT_TRANSACTION_PROCESSING_ERROR(HttpStatus.BAD_REQUEST, "Không có giao dịch để xử lý"),
+    PAYMENT_SIGNATURE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi ký dữ liệu thanh toán"),
+    PAYMENT_VNPAY_LINK_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Không thể tạo link thanh toán VNPay"),
     ;
 
     private final HttpStatus httpStatus;

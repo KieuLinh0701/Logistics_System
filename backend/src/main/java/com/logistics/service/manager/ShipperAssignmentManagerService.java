@@ -1,26 +1,28 @@
 package com.logistics.service.manager;
 
-import java.io.ByteArrayOutputStream;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
+import com.logistics.dto.manager.shipperAssignment.ManagerShipperAssignmentListDto;
+import com.logistics.entity.Employee;
+import com.logistics.entity.Office;
+import com.logistics.entity.ShipperAssignment;
+import com.logistics.entity.User;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.EmployeeErrorCode;
-import com.logistics.exception.enums.OfficeErrorCode;
 import com.logistics.exception.enums.ShipperAssignmentErrorCode;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import com.logistics.mapper.ShipperAssignmentMapper;
+import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.ShipperAssignmentRepository;
+import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentEditRequest;
+import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentSearchRequest;
+import com.logistics.response.ListResponse;
+import com.logistics.response.Pagination;
+import com.logistics.service.common.NotificationService;
+import com.logistics.utils.LocationUtils;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -32,27 +34,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.logistics.dto.manager.shipperAssignment.ManagerShipperAssignmentListDto;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Office;
-import com.logistics.entity.ShipperAssignment;
-import com.logistics.entity.User;
-import com.logistics.mapper.ShipperAssignmentMapper;
-import com.logistics.repository.EmployeeRepository;
-import com.logistics.repository.ShipperAssignmentRepository;
-import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentEditRequest;
-import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentSearchRequest;
-import com.logistics.response.ApiResponse;
-import com.logistics.response.ListResponse;
-import com.logistics.response.Pagination;
-import com.logistics.service.common.NotificationService;
-import com.logistics.utils.LocationUtils;
-
-import ch.qos.logback.core.util.LocationUtil;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
-import lombok.RequiredArgsConstructor;
+import java.io.ByteArrayOutputStream;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

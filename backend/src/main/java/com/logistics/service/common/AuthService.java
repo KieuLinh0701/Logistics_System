@@ -1,47 +1,28 @@
 package com.logistics.service.common;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import com.logistics.entity.PermissionGroup;
-import com.logistics.repository.PermissionGroupRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import com.logistics.entity.Account;
-import com.logistics.entity.AccountRole;
-import com.logistics.entity.OTP;
-import com.logistics.entity.Role;
-import com.logistics.entity.User;
-import com.logistics.entity.UserSettlementSchedule;
+import com.logistics.entity.*;
 import com.logistics.enums.OTPType;
 import com.logistics.enums.WeekDay;
-import com.logistics.repository.AccountRepository;
-import com.logistics.repository.AccountRoleRepository;
-import com.logistics.repository.OTPRepository;
-import com.logistics.repository.RoleRepository;
-import com.logistics.repository.UserRepository;
-import com.logistics.repository.UserSettlementScheduleRepository;
-import com.logistics.request.common.auth.ChooseRoleRequest;
-import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
-import com.logistics.request.common.auth.ForgotPasswordResetRequest;
-import com.logistics.request.common.auth.LoginRequest;
-import com.logistics.request.common.auth.RegisterRequest;
-import com.logistics.request.common.auth.VerifyRegisterOtpRequest;
-import com.logistics.request.common.auth.VerifyResetOtpRequest;
-import com.logistics.response.ApiResponse;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AccountErrorCode;
+import com.logistics.exception.enums.OtpErrorCode;
+import com.logistics.exception.enums.RoleErrorCode;
+import com.logistics.exception.enums.UserErrorCode;
+import com.logistics.repository.*;
+import com.logistics.request.common.auth.*;
 import com.logistics.response.AuthResponse;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
 import com.logistics.utils.PasswordUtils;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -59,8 +40,7 @@ public class AuthService {
     private final UserSettlementScheduleRepository scheduleRepository;
     private final RoleService roleService;
 
-    public ApiResponse<String> register(RegisterRequest request) {
-        try {
+    public void register(RegisterRequest request) {
             Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
 
             if (existingAccountOpt.isPresent()) {
@@ -73,11 +53,11 @@ public class AuthService {
                                         && ar.getRole().getUserOwner() != null);
 
                 if (hasUserRole) {
-                    return new ApiResponse<>(false, "Email đã được sử dụng", null);
+                    throw new AppException(AccountErrorCode.ACCOUNT_EMAIL_ALREADY_IN_USE);
                 }
             } else {
                 if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-                    return new ApiResponse<>(false, "Số điện thoại đã được sử dụng", null);
+                    throw new AppException(UserErrorCode.USER_PHONE_EXISTED);
                 }
             }
 
@@ -93,29 +73,22 @@ public class AuthService {
             otpRepository.save(otpEntity);
 
             emailService.sendOTPEmail(request.getEmail(), otp, "Xác thực đăng ký");
-
-            return new ApiResponse<>(true, "Mã OTP đã được gửi đến email của bạn", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi đăng ký: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<AuthResponse> verifyAndRegisterUser(VerifyRegisterOtpRequest request) {
-        try {
+    public AuthResponse verifyAndRegisterUser(VerifyRegisterOtpRequest request) {
             OTP otpEntity = otpRepository
                     .findByEmailAndOtpAndTypeAndIsUsedFalseAndExpiresAtAfter(
                             request.getEmail(),
                             request.getOtp(),
                             OTPType.REGISTER,
                             LocalDateTime.now())
-                    .orElseThrow(() -> new RuntimeException("Mã OTP không hợp lệ hoặc đã hết hạn"));
+                    .orElseThrow(() -> new AppException(OtpErrorCode.OTP_INVALID_OR_EXPIRED));
 
             String hashed = PasswordUtils.hashPassword(request.getPassword());
 
             Role userRole = roleRepository
                     .findByNameAndUserOwnerIsNull("User")
-                    .orElseThrow(() -> new RuntimeException(
-                            "Không tìm thấy role User thuộc hệ thống."));
+                    .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
             Optional<Account> existingAccountOpt = accountRepository.findByEmail(request.getEmail());
             Account account;
@@ -200,41 +173,37 @@ public class AuthService {
                     user.getPhoneNumber(),
                     user.getImages());
 
-            AuthResponse authResponse = new AuthResponse(token, userResponse);
-
-            return new ApiResponse<>(true, "Đăng ký thành công", authResponse);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi xác thực và đăng ký: " + e.getMessage(), null);
-        }
+        return AuthResponse.builder()
+                .token(token)
+                .user(userResponse)
+                .build();
     }
 
-    public ApiResponse<?> login(LoginRequest request) {
-        try {
+    public AuthResponse login(LoginRequest request) {
             Optional<Account> optionalAccount = accountRepository.findByEmail(request.getEmail());
             if (optionalAccount.isEmpty()) {
-                return new ApiResponse<>(false, "Email hoặc mật khẩu không đúng", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_LOGIN_FAILED);
             }
 
             Account account = optionalAccount.get();
 
             if (!account.getIsActive()) {
-                return new ApiResponse<>(false, "Tài khoản đã bị khóa", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_LOCKED);
             }
 
             if (!account.getIsVerified()) {
-                return new ApiResponse<>(false, "Tài khoản chưa được xác thực", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_NOT_VERIFIED);
             }
 
             if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
-                return new ApiResponse<>(false, "Email hoặc mật khẩu không đúng", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_LOGIN_FAILED);
             }
 
             account.setLastLoginAt(LocalDateTime.now());
             accountRepository.save(account);
 
             User user = userRepository.findByAccountId(account.getId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "User chưa được tạo cho tài khoản này"));
+                    .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
             List<AccountRole> roles = accountRoleRepository.findByAccountId(account.getId())
                     .stream()
@@ -242,11 +211,11 @@ public class AuthService {
                     .toList();
 
             if (roles.isEmpty()) {
-                return new ApiResponse<>(false, "Tài khoản không có role nào hợp lệ", null);
+                throw new AppException(AccountErrorCode.ACCOUNT_NO_VALID_ROLE);
             }
 
             if (roles.size() == 1) {
-                Role role = roles.get(0).getRole();
+                Role role = roles.getFirst().getRole();
 
                 String token = jwtUtils.generateToken(
                         account,
@@ -254,12 +223,18 @@ public class AuthService {
                         role,
                         roleService.getPermissionGroupCodes(role));
 
-                AuthResponse.UserResponse userResponse = new AuthResponse.UserResponse(
-                        user.getId(), user.getFirstName(), user.getLastName(),
-                        user.getPhoneNumber(), user.getImages());
+                AuthResponse.UserResponse userResponse = AuthResponse.UserResponse.builder()
+                        .id(user.getId())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .phoneNumber(user.getPhoneNumber())
+                        .images(user.getImages())
+                        .build();
 
-                AuthResponse authResponse = new AuthResponse(token, userResponse);
-                return new ApiResponse<>(true, "Đăng nhập thành công", authResponse);
+                return AuthResponse.builder()
+                        .token(token)
+                        .user(userResponse)
+                        .build();
             }
 
             String tempToken = jwtUtils.generateTempToken(account);
@@ -268,14 +243,10 @@ public class AuthService {
                             .getName())
                     .toList();
 
-            Map<String, Object> data = new HashMap<>();
-            data.put("roles", roleNames);
-            data.put("tempToken", tempToken);
-
-            return new ApiResponse<>(true, "Chọn role để đăng nhập", data);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi đăng nhập: " + e.getMessage(), null);
-        }
+        return AuthResponse.builder()
+                .roles(roleNames)
+                .tempToken(tempToken)
+                .build();
     }
 
     public AuthResponse chooseRole(ChooseRoleRequest request) {
@@ -283,14 +254,14 @@ public class AuthService {
         Integer accountId = jwtUtils.getAccountIdFromTempToken(tempToken);
 
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account không tồn tại"));
+                .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
         User user = userRepository.findByAccountId(account.getId())
-                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+                .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
 
         AccountRole accountRole = accountRoleRepository
                 .findByAccountIdAndRoleName(account.getId(), request.getRoleName())
-                .orElseThrow(() -> new RuntimeException("Role không hợp lệ"));
+                .orElseThrow(() -> new AppException(RoleErrorCode.ROLE_NOT_FOUND));
 
         Role selectedRole = accountRole.getRole();
         String token = jwtUtils.generateToken(
@@ -304,16 +275,17 @@ public class AuthService {
                 user.getId(), user.getFirstName(), user.getLastName(),
                 user.getPhoneNumber(), user.getImages());
 
-        return new AuthResponse(token, userResponse);
+        return AuthResponse.builder()
+                .token(token)
+                .user(userResponse)
+                .build();
     }
 
-    public ApiResponse<String> forgotPasswordEmail(ForgotPasswordEmailRequest request) {
-        try {
+    public void forgotPasswordEmail(ForgotPasswordEmailRequest request) {
             String email = request.getEmail();
 
             Account account = accountRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException(
-                            "Không tìm thấy tài khoản với email này"));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
             otpRepository.updateIsUsedByEmailAndType(account.getEmail(), OTPType.RESET, true);
 
@@ -330,37 +302,23 @@ public class AuthService {
             otpRepository.save(otpEntity);
 
             emailService.sendOTPEmail(account.getEmail(), otp, "Xác thực quên mật khẩu");
-
-            return new ApiResponse<>(true, "Mã OTP đã được gửi đến email của bạn", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi gửi OTP quên mật khẩu: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<String> verifyResetOtp(VerifyResetOtpRequest request) {
-        try {
+    public void verifyResetOtp(VerifyResetOtpRequest request) {
             Account account = accountRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Không tìm thấy tài khoản với email này"));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
             OTP otpEntity = otpRepository.findByEmailAndOtpAndTypeAndIsUsedFalseAndExpiresAtAfter(
                             account.getEmail(), request.getOtp(), OTPType.RESET, LocalDateTime.now())
-                    .orElseThrow(() -> new RuntimeException("Mã OTP không hợp lệ hoặc đã hết hạn"));
+                    .orElseThrow(() -> new AppException(OtpErrorCode.OTP_INVALID_OR_EXPIRED));
 
             otpEntity.setIsUsed(true);
             otpRepository.save(otpEntity);
-
-            return new ApiResponse<>(true, "Xác thực OTP thành công, bạn có thể đặt lại mật khẩu.", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi xác thực OTP: " + e.getMessage(), null);
-        }
     }
 
-    public ApiResponse<String> forgotPasswordReset(ForgotPasswordResetRequest request) {
-        try {
+    public void forgotPasswordReset(ForgotPasswordResetRequest request) {
             Account account = accountRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Không tìm thấy tài khoản để đặt lại mật khẩu"));
+                    .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
             String hashedPassword = PasswordUtils.hashPassword(request.getNewPassword());
             account.setPassword(hashedPassword);
@@ -383,9 +341,5 @@ public class AuthService {
                     "Cảnh báo thay đổi mật khẩu",
                     "Mật khẩu của bạn đã được thay đổi thành công.");
 
-            return new ApiResponse<>(true, "Đặt lại mật khẩu thành công", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi đặt lại mật khẩu: " + e.getMessage(), null);
-        }
     }
 }

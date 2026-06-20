@@ -1,41 +1,36 @@
 package com.logistics.service.shipper;
 
-import com.logistics.entity.Employee;
-import com.logistics.entity.Order;
-import com.logistics.entity.PaymentSubmission;
-import com.logistics.entity.PaymentSubmissionBatch;
-import com.logistics.entity.PaymentSubmissionItem;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.EmployeeErrorCode;
-import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.exception.enums.SettlementErrorCode;
-import com.logistics.repository.EmployeeRepository;
-import com.logistics.repository.OrderProductRepository;
-import com.logistics.repository.OrderRepository;
-import com.logistics.repository.PaymentSubmissionBatchRepository;
-import com.logistics.repository.PaymentSubmissionRepository;
+import com.logistics.repository.*;
 import com.logistics.request.shipper.CollectCODRequest;
 import com.logistics.request.shipper.SubmitCODRequest;
 import com.logistics.response.Pagination;
 import com.logistics.utils.SecurityUtils;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import com.logistics.entity.OrderProduct;
 
 @Service
 public class CODShipperService {

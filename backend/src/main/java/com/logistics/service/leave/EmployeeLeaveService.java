@@ -1,13 +1,5 @@
 package com.logistics.service.leave;
 
-import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.dto.leave.EmployeeLeaveDto;
 import com.logistics.entity.Employee;
 import com.logistics.entity.EmployeeLeaveRequest;
@@ -15,16 +7,23 @@ import com.logistics.entity.Office;
 import com.logistics.enums.EmployeeStatus;
 import com.logistics.enums.LeaveReasonType;
 import com.logistics.enums.LeaveRequestStatus;
-import com.logistics.exception.LeaveException;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.EmployeeErrorCode;
+import com.logistics.exception.enums.EmployeeLeaveRequestErrorCode;
 import com.logistics.repository.EmployeeLeaveRequestRepository;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.request.leave.ApproveLeaveRequest;
 import com.logistics.request.leave.CreateLeaveRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.service.manager.EmployeeManagerService;
 import com.logistics.utils.SecurityUtils;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -35,14 +34,13 @@ public class EmployeeLeaveService {
     private final EmployeeManagerService employeeManagerService;
 
     @Transactional
-    public ApiResponse<EmployeeLeaveDto> createLeave(CreateLeaveRequest request) {
-        try {
+    public EmployeeLeaveDto createLeave(CreateLeaveRequest request) {
             Employee employee = getCurrentEmployeeForDriverOrShipper();
             validateLeaveInput(request);
 
             Office office = employee.getOffice();
             if (office == null) {
-                throw new LeaveException("Nhân viên chưa được gán bưu cục");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_MISSING_OFFICE);
             }
 
             EmployeeLeaveRequest leave = new EmployeeLeaveRequest();
@@ -56,118 +54,84 @@ public class EmployeeLeaveService {
             leave.setStatus(LeaveRequestStatus.PENDING);
 
             EmployeeLeaveRequest saved = leaveRepository.save(leave);
-            return new ApiResponse<>(true, "Gửi đơn xin nghỉ thành công", toDto(saved));
-        } catch (LeaveException e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Gửi đơn xin nghỉ thất bại: " + e.getMessage(), null);
-        }
+            return toDto(saved);
     }
 
-    public ApiResponse<List<EmployeeLeaveDto>> getMyLeaves() {
-        try {
+    public List<EmployeeLeaveDto> getMyLeaves() {
             Employee employee = getCurrentEmployeeForDriverOrShipper();
 
-            List<EmployeeLeaveDto> data = leaveRepository.findByEmployeeId(employee.getId())
+            return leaveRepository.findByEmployeeId(employee.getId())
                     .stream()
                     .sorted(Comparator.comparing(EmployeeLeaveRequest::getCreatedAt,
                             Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                     .map(this::toDto)
                     .toList();
 
-            return new ApiResponse<>(true, "Lấy danh sách đơn nghỉ phép thành công", data);
-        } catch (LeaveException e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lấy danh sách đơn nghỉ phép thất bại: " + e.getMessage(), null);
-        }
     }
 
     @Transactional
-    public ApiResponse<Boolean> cancelLeave(Integer leaveId) {
-        try {
+    public void cancelLeave(Integer leaveId) {
             Employee employee = getCurrentEmployeeForDriverOrShipper();
 
             EmployeeLeaveRequest leave = leaveRepository.findById(leaveId)
-                    .orElseThrow(() -> new LeaveException("Không tìm thấy đơn xin nghỉ"));
+                    .orElseThrow(() -> new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_LEAVE_REQUEST_NOT_FOUND));
 
             if (!leave.getEmployee().getId().equals(employee.getId())) {
-                throw new LeaveException("Bạn không có quyền hủy đơn nghỉ phép này");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_UNAUTHORIZED_CANCEL);
             }
 
             if (leave.getStatus() != LeaveRequestStatus.PENDING) {
-                throw new LeaveException("Chỉ có thể hủy đơn ở trạng thái chờ duyệt");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_INVALID_LEAVE_STATUS);
             }
 
             leave.setStatus(LeaveRequestStatus.CANCELLED);
             leaveRepository.save(leave);
-
-            return new ApiResponse<>(true, "Hủy đơn nghỉ phép thành công", true);
-        } catch (LeaveException e) {
-            return new ApiResponse<>(false, e.getMessage(), false);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Hủy đơn nghỉ phép thất bại: " + e.getMessage(), false);
-        }
     }
 
-    public ApiResponse<List<EmployeeLeaveDto>> getOfficeLeaves() {
-        try {
+    public List<EmployeeLeaveDto> getOfficeLeaves() {
             Office office = getManagedOffice();
 
-            List<EmployeeLeaveDto> data = leaveRepository.findByOfficeId(office.getId())
+            return leaveRepository.findByOfficeId(office.getId())
                     .stream()
                     .sorted(Comparator.comparing(EmployeeLeaveRequest::getCreatedAt,
                             Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                     .map(this::toDto)
                     .toList();
-
-            return new ApiResponse<>(true, "Lấy danh sách đơn nghỉ phép của bưu cục thành công", data);
-        } catch (LeaveException e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lấy danh sách đơn nghỉ phép thất bại: " + e.getMessage(), null);
-        }
     }
 
     @Transactional
-    public ApiResponse<EmployeeLeaveDto> approveLeave(Integer leaveId, ApproveLeaveRequest request) {
-        try {
+    public EmployeeLeaveDto approveLeave(Integer leaveId, ApproveLeaveRequest request) {
             Office office = getManagedOffice();
             Employee managerEmployee = getCurrentManagerEmployeeInOffice(office.getId());
 
             EmployeeLeaveRequest leave = leaveRepository.findById(leaveId)
-                    .orElseThrow(() -> new LeaveException("Không tìm thấy đơn xin nghỉ"));
+                    .orElseThrow(() -> new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_LEAVE_REQUEST_NOT_FOUND));
 
             if (leave.getOffice() == null || !leave.getOffice().getId().equals(office.getId())) {
-                throw new LeaveException("Bạn không có quyền duyệt đơn nghỉ phép của bưu cục khác");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_UNAUTHORIZED_APPROVE);
             }
 
             if (leave.getStatus() != LeaveRequestStatus.PENDING) {
-                throw new LeaveException("Chỉ có thể duyệt/từ chối đơn ở trạng thái chờ duyệt");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_INVALID_LEAVE_STATUS);
             }
 
             if (request.getStatus() != LeaveRequestStatus.APPROVED
                     && request.getStatus() != LeaveRequestStatus.REJECTED) {
-                throw new LeaveException("Trạng thái duyệt chỉ được là APPROVED hoặc REJECTED");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_INVALID_APPROVAL_STATUS);
             }
 
             leave.setStatus(request.getStatus());
             leave.setApprovedBy(managerEmployee);
 
             EmployeeLeaveRequest saved = leaveRepository.save(leave);
-            return new ApiResponse<>(true, "Cập nhật trạng thái đơn nghỉ phép thành công", toDto(saved));
-        } catch (LeaveException e) {
-            return new ApiResponse<>(false, e.getMessage(), null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Duyệt đơn nghỉ phép thất bại: " + e.getMessage(), null);
-        }
+            return toDto(saved);
     }
 
     private Employee getCurrentEmployeeForDriverOrShipper() {
         String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
                 .getName();
         if (!"Driver".equalsIgnoreCase(roleName) && !"Shipper".equalsIgnoreCase(roleName)) {
-            throw new LeaveException("Chỉ tài xế hoặc shipper mới được thao tác đơn nghỉ phép");
+            throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_ROLE_REQUIRED_DRIVER_OR_SHIPPER);
         }
 
         Integer userId = SecurityUtils.getAuthenticatedUserId();
@@ -175,22 +139,18 @@ public class EmployeeLeaveService {
                 .stream()
                 .filter(e -> e.getStatus() != EmployeeStatus.LEAVE)
                 .findFirst()
-                .orElseThrow(() -> new LeaveException("Không tìm thấy hồ sơ nhân viên hiện tại"));
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
     }
 
     private Office getManagedOffice() {
         String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
                 .getName();
         if (!"Manager".equalsIgnoreCase(roleName)) {
-            throw new LeaveException("Chỉ quản lý bưu cục mới được thao tác chức năng này");
+            throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_ROLE_REQUIRED_MANAGER);
         }
 
         Integer userId = SecurityUtils.getAuthenticatedUserId();
-        try {
-            return employeeManagerService.getManagedOfficeByUserId(userId);
-        } catch (RuntimeException e) {
-            throw new LeaveException(e.getMessage());
-        }
+        return employeeManagerService.getManagedOfficeByUserId(userId);
     }
 
     private Employee getCurrentManagerEmployeeInOffice(Integer officeId) {
@@ -200,22 +160,22 @@ public class EmployeeLeaveService {
                 .stream()
                 .filter(e -> e.getOffice() != null && e.getOffice().getId().equals(officeId))
                 .findFirst()
-                .orElseThrow(() -> new LeaveException("Không tìm thấy hồ sơ quản lý hiện tại"));
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
     }
 
     private void validateLeaveInput(CreateLeaveRequest request) {
         if (request.getLeaveDate() == null) {
-            throw new LeaveException("Ngày nghỉ không được để trống");
+            throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_LEAVE_DATE_REQUIRED);
         }
 
         if (request.getLeaveDate().isBefore(LocalDate.now())) {
-            throw new LeaveException("Ngày nghỉ không được nhỏ hơn ngày hiện tại");
+            throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_INVALID_LEAVE_DATE);
         }
 
         if (request.getReasonType() == LeaveReasonType.OTHER) {
             String customReason = cleanText(request.getCustomReason());
             if (customReason == null || customReason.isBlank()) {
-                throw new LeaveException("Vui lòng nhập lý do riêng khi chọn OTHER");
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_MISSING_CUSTOM_REASON);
             }
         }
     }

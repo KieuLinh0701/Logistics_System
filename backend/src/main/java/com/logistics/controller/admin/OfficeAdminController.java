@@ -1,12 +1,17 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateOfficeRequest;
 import com.logistics.request.admin.UpdateOfficeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.OfficeAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/offices")
+@Tag(name = "Admin - Office", description = "Quản lý bưu cục")
 public class OfficeAdminController {
 
     @Autowired
@@ -48,6 +54,11 @@ public class OfficeAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.OFFICE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.OFFICE_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createOffice(@RequestBody CreateOfficeRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -58,6 +69,12 @@ public class OfficeAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.OFFICE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.OFFICE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateOffice(
             @PathVariable Integer id,
             @RequestBody UpdateOfficeRequest request) {
@@ -70,6 +87,12 @@ public class OfficeAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.OFFICE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.OFFICE_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteOffice(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

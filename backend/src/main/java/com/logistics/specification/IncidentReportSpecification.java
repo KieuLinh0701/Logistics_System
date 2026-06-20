@@ -1,12 +1,10 @@
 package com.logistics.specification;
 
 import com.logistics.entity.IncidentReport;
-
 import jakarta.persistence.criteria.JoinType;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-
-import org.springframework.data.jpa.domain.Specification;
 
 public class IncidentReportSpecification {
 

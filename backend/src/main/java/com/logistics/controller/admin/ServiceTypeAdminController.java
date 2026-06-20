@@ -1,12 +1,17 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateServiceTypeRequest;
 import com.logistics.request.admin.UpdateServiceTypeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ServiceTypeAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/service-types")
+@Tag(name = "Admin - Service Type", description = "Quản lý loại dịch vụ vận chuyển")
 public class ServiceTypeAdminController {
 
     @Autowired
@@ -47,6 +53,11 @@ public class ServiceTypeAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.SERVICE_TYPE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SERVICE_TYPE_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createServiceType(@RequestBody CreateServiceTypeRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -57,6 +68,12 @@ public class ServiceTypeAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.SERVICE_TYPE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SERVICE_TYPE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateServiceType(
             @PathVariable Integer id,
             @RequestBody UpdateServiceTypeRequest request) {
@@ -69,6 +86,12 @@ public class ServiceTypeAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.SERVICE_TYPE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.SERVICE_TYPE_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteServiceType(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

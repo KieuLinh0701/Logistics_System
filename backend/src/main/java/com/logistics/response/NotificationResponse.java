@@ -1,13 +1,12 @@
 package com.logistics.response;
 
-import java.util.List;
-
 import com.logistics.dto.NotificationDto;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter

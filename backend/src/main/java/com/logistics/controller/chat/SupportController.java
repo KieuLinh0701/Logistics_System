@@ -25,7 +25,7 @@ import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.service.chat.SupportMessageService;
 import com.logistics.service.chat.SupportTicketService;
 import com.logistics.utils.SecurityUtils;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/api/support")
+@Tag(name = "Support", description = "Hỗ trợ khách hàng và trò chuyện trực tuyến")
 public class SupportController {
 
     private final SupportTicketService supportTicketService;

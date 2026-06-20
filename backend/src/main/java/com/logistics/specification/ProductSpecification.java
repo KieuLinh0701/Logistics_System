@@ -1,10 +1,9 @@
 package com.logistics.specification;
 
 import com.logistics.entity.Product;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-
-import org.springframework.data.jpa.domain.Specification;
 
 public class ProductSpecification {
 

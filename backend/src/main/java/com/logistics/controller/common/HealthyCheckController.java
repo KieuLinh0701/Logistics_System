@@ -1,22 +1,16 @@
 package com.logistics.controller.common;
 
-import com.logistics.request.common.user.UpdateEmailRequest;
-import com.logistics.request.common.user.UpdatePasswordRequest;
-import com.logistics.request.common.user.UpdateProfileRequest;
-import com.logistics.request.common.user.VerifyEmailUpdateOTPRequest;
-import com.logistics.response.ApiResponse;
-import com.logistics.service.common.UserPublicService;
-import com.logistics.utils.SecurityUtils;
-import jakarta.servlet.http.HttpServletRequest;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/health")
+@Tag(name = "Health Check", description = "Kiểm tra trạng thái hoạt động của hệ thống")
 public class HealthyCheckController {
 
     @GetMapping

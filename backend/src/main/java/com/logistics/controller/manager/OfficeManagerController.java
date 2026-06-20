@@ -1,20 +1,23 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.OfficeDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.ManagerOfficeEditRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.manager.OfficeManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/offices")
+@Tag(name = "Manager - Office", description = "Quản lý thông tin bưu cục của quản lý")
 public class OfficeManagerController {
 
     private final OfficeManagerService service;
@@ -26,6 +29,11 @@ public class OfficeManagerController {
     }
 
     @PutMapping("/me")
+    @Audit(
+            entity = EntityType.OFFICE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.OFFICE_UPDATE
+    )
     public ResponseEntity<ApiResponse<Boolean>> updateMyOffice(HttpServletRequest request,
     @RequestBody ManagerOfficeEditRequest managerOfficeEditRequest
     ) {

@@ -1,14 +1,13 @@
 package com.logistics.dto.chat;
 
-import java.time.LocalDateTime;
-
 import com.logistics.enums.SupportMessageSenderType;
 import com.logistics.enums.SupportMessageType;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter

@@ -1,14 +1,13 @@
 // Khi tạo 1 promotion nếu không phải isGlobal có thể nhập và gán cho nhiều user hoặc 1 user nha
 package com.logistics.entity;
 
+import com.logistics.enums.PromotionDiscountType;
+import com.logistics.enums.PromotionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import com.logistics.enums.PromotionDiscountType;
-import com.logistics.enums.PromotionStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
