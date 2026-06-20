@@ -18,7 +18,8 @@ public enum AccountErrorCode implements BaseErrorCode {
     ACCOUNT_NOT_VERIFIED(HttpStatus.FORBIDDEN, "Tài khoản chưa được xác thực"),
     ACCOUNT_NO_VALID_ROLE(HttpStatus.FORBIDDEN, "Tài khoản không có role nào hợp lệ"),
     ACCOUNT_PASSWORD_TOO_SHORT(HttpStatus.BAD_REQUEST, "Mật khẩu phải có ít nhất 6 ký tự"),
-    ACCOUNT_PASSWORD_POLICY_VIOLATION(HttpStatus.BAD_REQUEST, "Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt")
+    ACCOUNT_PASSWORD_POLICY_VIOLATION(HttpStatus.BAD_REQUEST, "Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt"),
+    ACCOUNT_UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "Người dùng chưa đăng nhập hoặc phiên làm việc đã hết hạn");
     ;
 
     private final HttpStatus httpStatus;

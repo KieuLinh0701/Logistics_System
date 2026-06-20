@@ -341,7 +341,7 @@ public class OrderUserService {
             Office fromOffice = null;
             if (request.getFromOfficeId() != null) {
                 fromOffice = officePublicService.findById(request.getFromOfficeId())
-                        .orElseThrow(() -> new RuntimeException("Bưu cục không tồn tại"));
+                        .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
             } else if (OrderPickupType.PICKUP_BY_COURIER.name().equals(request.getPickupType())) {
                 try {
                     Integer senderCity = senderAddress.getCityCode();
@@ -359,7 +359,7 @@ public class OrderUserService {
                         fromOffice = officePublicService.findById(officeId).orElse(null);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("Không thể tự động gán bưu cục xuất");
+                    throw new AppException(OrderErrorCode.ORDER_AUTO_ASSIGN_OFFICE_FAILED);
                 }
             }
 

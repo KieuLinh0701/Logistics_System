@@ -1,5 +1,7 @@
 package com.logistics.controller.common;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +35,7 @@ public class UserPublicController {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
 
         if (request.getNewPassword() == null || request.getOldPassword() == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.failure(null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
         userService.updatePassword(accountId, request);
@@ -45,8 +47,7 @@ public class UserPublicController {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
 
         if (request.getNewEmail() == null || request.getPassword() == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.failure("Vui lòng nhập đầy đủ thông tin"));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
         userService.sendEmailUpdateOTP(accountId, request);
@@ -56,17 +57,11 @@ public class UserPublicController {
     @PostMapping("/email/verify-otp")
     public ResponseEntity<?> verifyEmailUpdateOTP(@RequestBody VerifyEmailUpdateOTPRequest verifyEmailUpdateOTPRequest,
                                                   HttpServletRequest request) {
-        Integer accountId;
-        try {
-            accountId = SecurityUtils.getAuthenticatedAccountId();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(ApiResponse.failure(e.getMessage()));
-        }
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
         Integer roleId = (Integer) request.getAttribute("currentRoleId");
 
         if (verifyEmailUpdateOTPRequest.getOtp() == null || verifyEmailUpdateOTPRequest.getNewEmail() == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.failure("Vui lòng nhập đầy đủ thông tin"));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
         return ResponseEntity.ok(ApiResponse.success(userService.verifyEmailUpdateOTP(accountId, verifyEmailUpdateOTPRequest, roleId)));
@@ -74,16 +69,10 @@ public class UserPublicController {
 
     @PutMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateProfile(@ModelAttribute UpdateProfileRequest request) {
-        Integer userId;
-        try {
-            userId = SecurityUtils.getAuthenticatedUserId();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(ApiResponse.failure(e.getMessage()));
-        }
+        Integer userId = SecurityUtils.getAuthenticatedUserId();
 
         if (request.getFirstName() == null || request.getLastName() == null || request.getPhoneNumber() == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.failure("Vui lòng nhập đầy đủ thông tin"));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
         return ResponseEntity.ok(ApiResponse.success(userService.updateProfile(userId, request)));

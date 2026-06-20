@@ -2,6 +2,8 @@ package com.logistics.service.common;
 
 import java.util.List;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.OrderErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -25,7 +27,7 @@ public class OrderPublicService {
     public List<OrderHistoryDto> getOrderHistoriesByTrackingNumber(
             @PathVariable String trackingNumber) {
         Order order = repository.findByTrackingNumber(trackingNumber)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         List<OrderHistory> orderHistories = historyRepository
                 .findByOrderIdOrderByActionTimeDesc(order.getId());

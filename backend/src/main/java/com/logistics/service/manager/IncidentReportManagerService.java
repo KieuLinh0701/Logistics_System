@@ -13,7 +13,9 @@ import com.logistics.enums.OrderCreatorType;
 import com.logistics.enums.ShippingRequestAttachmentType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.IncidentErrorCode;
+import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.mapper.IncidentReportMapper;
 import com.logistics.mapper.ShippingRequestMapper;
 import com.logistics.repository.AddressRepository;
@@ -159,7 +161,7 @@ public class IncidentReportManagerService {
             ManagerIncidentUpdateRequest request) {
 
             IncidentReport incident = incidentRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Báo cáo sự cố không tồn tại"));
+                    .orElseThrow(() -> new AppException(IncidentErrorCode.INCIDENT_NOT_FOUND));
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
             System.out.println("status" + request.getStatus());
@@ -184,7 +186,7 @@ public class IncidentReportManagerService {
             if (!IncidentReportUtils.canManagerChangeStatus(incident.getStatus(),
                     newStatus)
                     && isBlank(request.getStatus())) {
-                throw new RuntimeException("Trạng thái yêu cầu chuyển không hợp lệ");
+                throw new AppException(IncidentErrorCode.INCIDENT_INVALID_TRANSFER_REQUEST_STATUS);
             }
 
             incident.setStatus(newStatus);
@@ -288,7 +290,7 @@ public class IncidentReportManagerService {
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xuất Excel", e);
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
         }
     }
 
@@ -336,18 +338,18 @@ public class IncidentReportManagerService {
         }
 
         if (!missing.isEmpty()) {
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
         }
 
         IncidentStatus status;
         try {
             status = IncidentStatus.valueOf(request.getStatus());
         } catch (Exception e) {
-            throw new RuntimeException("Trạng thái báo cáo không hợp lệ");
+            throw new AppException(IncidentErrorCode.INCIDENT_INVALID_STATUS);
         }
 
         if (!isBlank(request.getResolution()) && request.getResolution().length() > 1000) {
-            throw new RuntimeException("Nội dung xử lý không được vượt quá 1000 ký tự");
+            throw new AppException(IncidentErrorCode.INCIDENT_INVALID_RESPONSE);
         }
     }
 

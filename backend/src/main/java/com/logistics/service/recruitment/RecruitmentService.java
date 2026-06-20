@@ -424,7 +424,7 @@ public class RecruitmentService {
             if (!allowed) {
                 throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
             }
-        } catch (RuntimeException ex) {
+        } catch (.RuntimeException ex) {
             return;
         }
     }

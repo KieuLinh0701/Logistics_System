@@ -51,22 +51,22 @@ public class ShippingRequestPublicService {
         List<String> missing = new ArrayList<>();
 
         if (isBlank(request.getContactName())) {
-            throw new RuntimeException("Tên");
+            missing.add("Tên");
         }
 
         if (isBlank(request.getContactEmail())) {
-            throw new RuntimeException("Email");
+            missing.add("Email");
         }
 
         if (isBlank(request.getContactPhoneNumber())) {
-            throw new RuntimeException("Số điện thoại");
+            missing.add("Số điện thoại");
         }
 
         if (isBlank(request.getRequestType()))
             missing.add("Loại yêu cầu");
 
         if (isBlank(request.getRequestContent())) {
-            throw new RuntimeException("Nội dung");
+            missing.add("Nội dung");
         }
 
         if (!missing.isEmpty())

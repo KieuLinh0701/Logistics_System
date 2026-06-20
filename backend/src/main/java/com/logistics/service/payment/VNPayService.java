@@ -1,6 +1,8 @@
 package com.logistics.service.payment;
 
 import com.logistics.config.VNPayConfig;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PaymentErrorCode;
 import com.logistics.utils.VNPayUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -93,7 +95,7 @@ public class VNPayService {
                     + secureHash;
 
         } catch (Exception e) {
-            throw new RuntimeException("Không tạo được link VNPay", e);
+            throw new AppException(PaymentErrorCode.PAYMENT_VNPAY_LINK_GENERATION_FAILED);
         }
     }
 }

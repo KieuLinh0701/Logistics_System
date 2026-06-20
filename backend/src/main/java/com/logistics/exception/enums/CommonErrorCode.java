@@ -19,6 +19,11 @@ public enum CommonErrorCode implements BaseErrorCode {
     PARSE_ATTACHMENTS_FAILED(HttpStatus.BAD_REQUEST, "Có lỗi xảy ra khi phân tích dữ liệu"),
     ROLE_INVALID(HttpStatus.UNAUTHORIZED, "Không xác định được role hiện tại"),
     MISSING_REQUIRED_FIELD(HttpStatus.BAD_REQUEST, "Vui lòng điền đầy đủ thông tin"),
+    BARCODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"Không thể tạo barcode"),
+    QRCODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"Không thể tạo qrcode"),
+
+    CONFIG_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy cấu hình: %s"),
+    CONFIG_VALUE_INVALID(HttpStatus.BAD_REQUEST, "Giá trị cấu hình không hợp lệ: %s"),
 
     // Cloudinary
     CLOUDINARY_FOLDER_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "Cloudinary folder not found for key: %s"),
