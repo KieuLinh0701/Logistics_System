@@ -39,7 +39,12 @@ public class AuditAspect {
 
     @Around("@annotation(audit)")
     public Object around(ProceedingJoinPoint pjp, Audit audit) throws Throwable {
-        Integer userId = SecurityUtils.getAuthenticatedUserId();
+        Integer userId = null;
+
+        try {
+            userId = SecurityUtils.getAuthenticatedUserId();
+        } catch (Exception e) {
+        }
 
         String payloadRequestBody = extractRequestBody(pjp);
 

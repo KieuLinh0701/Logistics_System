@@ -29,9 +29,9 @@ import java.nio.charset.StandardCharsets;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/manager/employees")
+@RequestMapping("/api/manager/logs")
 @Tag(name = "Manager - Employee", description = "Quản lý nhân sự, theo dõi hiệu suất và xuất báo cáo vận hành")
-public class EmployeeManagerController {
+public class AuditLogManagerController {
 
     private final EmployeeManagerService service;
     private final ShipmentManagerService shipmentManagerService;
@@ -239,17 +239,5 @@ public class EmployeeManagerController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(data);
-    }
-
-    @GetMapping("/{id}/logs")
-    public ResponseEntity<ApiResponse<ListResponse<ManagerEmployeeListDto>>> getLogsByEmployeeId(
-            @Valid ManagerEmployeeSearchRequest managerShippingRequestSearchRequest,
-            HttpServletRequest request) {
-        Integer userId = (Integer) request.getAttribute("currentUserId");
-
-        ListResponse<ManagerEmployeeListDto> result = service.list(
-                userId,
-                managerShippingRequestSearchRequest);
-        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }
