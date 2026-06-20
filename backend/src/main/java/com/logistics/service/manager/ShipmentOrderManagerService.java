@@ -7,7 +7,7 @@ import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.ShipmentErrorCode;
-import com.logistics.id.ShipmentOrderId;
+import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShipmentRepository;

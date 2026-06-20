@@ -12,4 +12,9 @@ public class VerifyRegisterOtpRequest {
     private String firstName;
     private String lastName;
     private String phoneNumber;
+
+    @Override
+    public String toString() {
+        return "VerifyRegisterOtpRequest{email='" + email + "', otp='" + otp + "', password='******', firstName='" + firstName + "', lastName='" + lastName + "', phoneNumber='" + phoneNumber + "'}";
+    }
 }

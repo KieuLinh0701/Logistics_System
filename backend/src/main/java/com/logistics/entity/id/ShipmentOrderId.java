@@ -1,4 +1,4 @@
-package com.logistics.id;
+package com.logistics.entity.id;
 
 import jakarta.persistence.Embeddable;
 import lombok.*;

@@ -93,7 +93,6 @@ public class AuthController {
 
     @PostMapping("/password/reset")
     public ResponseEntity<ApiResponse<Void>> forgotPasswordReset(@RequestBody ForgotPasswordResetRequest request) {
-        System.out.println("Debug message");
         if (request.getNewPassword() == null) {
             throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }

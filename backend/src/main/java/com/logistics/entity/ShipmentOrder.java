@@ -1,6 +1,6 @@
 package com.logistics.entity;
 
-import com.logistics.id.ShipmentOrderId;
+import com.logistics.entity.id.ShipmentOrderId;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;

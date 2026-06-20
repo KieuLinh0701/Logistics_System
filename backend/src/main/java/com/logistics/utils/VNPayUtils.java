@@ -81,12 +81,6 @@ public class VNPayUtils {
         vnp_Params.put("vnp_TransactionStatus", check.getTransactionStatus());
         vnp_Params.put("vnp_TxnRef", check.getTransactionCode());
 
-        System.out.println("===== PARAMS FOR HASHING =====");
-        for (Map.Entry<String, String> entry : vnp_Params.entrySet()) {
-            System.out.println(entry.getKey() + "=" + entry.getValue());
-        }
-        System.out.println("==============================");
-
         // --- tính hash từ map đúng
         String calculatedHash = hashAllFields(vnp_Params);
 

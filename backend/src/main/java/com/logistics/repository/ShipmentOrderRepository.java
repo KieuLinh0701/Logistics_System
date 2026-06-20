@@ -1,7 +1,7 @@
 package com.logistics.repository;
 
 import com.logistics.entity.ShipmentOrder;
-import com.logistics.id.ShipmentOrderId;
+import com.logistics.entity.id.ShipmentOrderId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

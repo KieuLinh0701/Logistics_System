@@ -135,21 +135,9 @@ public class IncidentReportManagerService {
             IncidentReport incident = incidentRepository.findById(id)
                     .orElseThrow(() -> new AppException(IncidentErrorCode.INCIDENT_NOT_FOUND));
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-
-            System.out.println("status" + request.getStatus());
-            System.out.println("resi" + request.getResolution());
-            System.out.println("UserId: " + userId);
-            System.out.println("Office id: " + userOffice.getId());
-            System.out.println("Manager id: " + userOffice.getManager().getUser().getId());
-
-            System.out.println(
-                    "Incident office id: " + (incident.getOffice() != null ? incident.getOffice().getId() : "null"));
             checkPermission(userId, incident);
 
             User user = userOffice.getManager().getUser();
-
-            System.out.println("Incident current status: " + incident.getStatus());
-            System.out.println("Requested status: " + request.getStatus());
 
             validateForm(request);
 

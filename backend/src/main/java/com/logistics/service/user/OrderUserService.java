@@ -332,9 +332,6 @@ public class OrderUserService {
                     weight, request.getServiceTypeId(),
                     senderAddress.getCityCode(), request.getRecipientCityCode());
 
-            System.out.println("reSys" + request.getShippingFee());
-            System.out.println("Sys" + shippingFee);
-
             if (request.getShippingFee() != null && !shippingFee.equals(request.getShippingFee())) {
                 throw new AppException(OrderErrorCode.ORDER_SHIPPING_FEE_CHANGED);
             }
@@ -873,9 +870,6 @@ public class OrderUserService {
                                 request.getRecipientPhone(),
                                 currentStatus,
                                 newRecipientAddress::setPhoneNumber);
-
-                        System.out.println("hello");
-
 
                         updateFieldIfEditable("recipientCityCode",
                                 newRecipientAddress.getCityCode(),
