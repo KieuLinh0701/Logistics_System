@@ -29,58 +29,47 @@ public class UserPublicController {
     private UserPublicService userService;
 
     @PostMapping("/password/update")
-    public ResponseEntity<ApiResponse<String>> updatePassword(@RequestBody UpdatePasswordRequest request) {
-        Integer accountId;
-        try {
-            accountId = SecurityUtils.getAuthenticatedAccountId();
-        } catch (RuntimeException e) {
-            ApiResponse<String> response = new ApiResponse<>(false, e.getMessage(), null);
-            return ResponseEntity.status(401).body(response);
-        }
+    public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody UpdatePasswordRequest request) {
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
 
         if (request.getNewPassword() == null || request.getOldPassword() == null) {
-            ApiResponse<String> response = new ApiResponse<>(false, "Vui lòng nhập đầy đủ thông tin", null);
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(ApiResponse.failure(null));
         }
 
-        ApiResponse<String> response = userService.updatePassword(accountId, request);
-        return ResponseEntity.ok(response);
+        userService.updatePassword(accountId, request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("/email/update")
     public ResponseEntity<?> sendEmailUpdateOTP(@RequestBody UpdateEmailRequest request) {
-        Integer accountId;
-        try {
-            accountId = SecurityUtils.getAuthenticatedAccountId();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(new ApiResponse<>(false, e.getMessage(), null));
-        }
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
 
         if (request.getNewEmail() == null || request.getPassword() == null) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập đầy đủ thông tin", null));
+                    .body(ApiResponse.failure("Vui lòng nhập đầy đủ thông tin"));
         }
 
-        return ResponseEntity.ok(userService.sendEmailUpdateOTP(accountId, request));
+        userService.sendEmailUpdateOTP(accountId, request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("/email/verify-otp")
     public ResponseEntity<?> verifyEmailUpdateOTP(@RequestBody VerifyEmailUpdateOTPRequest verifyEmailUpdateOTPRequest,
-    HttpServletRequest request) {
+                                                  HttpServletRequest request) {
         Integer accountId;
         try {
             accountId = SecurityUtils.getAuthenticatedAccountId();
         } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(new ApiResponse<>(false, e.getMessage(), null));
+            return ResponseEntity.status(401).body(ApiResponse.failure(e.getMessage()));
         }
         Integer roleId = (Integer) request.getAttribute("currentRoleId");
 
         if (verifyEmailUpdateOTPRequest.getOtp() == null || verifyEmailUpdateOTPRequest.getNewEmail() == null) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập đầy đủ thông tin", null));
+                    .body(ApiResponse.failure("Vui lòng nhập đầy đủ thông tin"));
         }
 
-        return ResponseEntity.ok(userService.verifyEmailUpdateOTP(accountId, verifyEmailUpdateOTPRequest, roleId));
+        return ResponseEntity.ok(ApiResponse.success(userService.verifyEmailUpdateOTP(accountId, verifyEmailUpdateOTPRequest, roleId)));
     }
 
     @PutMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -89,14 +78,14 @@ public class UserPublicController {
         try {
             userId = SecurityUtils.getAuthenticatedUserId();
         } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(new ApiResponse<>(false, e.getMessage(), null));
+            return ResponseEntity.status(401).body(ApiResponse.failure(e.getMessage()));
         }
 
         if (request.getFirstName() == null || request.getLastName() == null || request.getPhoneNumber() == null) {
             return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập đầy đủ thông tin", null));
+                    .body(ApiResponse.failure("Vui lòng nhập đầy đủ thông tin"));
         }
 
-        return ResponseEntity.ok(userService.updateProfile(userId, request));
+        return ResponseEntity.ok(ApiResponse.success(userService.updateProfile(userId, request)));
     }
 }

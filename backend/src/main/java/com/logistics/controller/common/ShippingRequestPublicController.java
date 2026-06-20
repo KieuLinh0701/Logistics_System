@@ -22,9 +22,10 @@ public class ShippingRequestPublicController {
     private ShippingRequestPublicService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Boolean>> create(
+    public ResponseEntity<ApiResponse<Void>> create(
         @Valid @RequestBody PublicShippingRequestForm requestForm) {
-        
-        return ResponseEntity.ok(service.create(requestForm));
+
+        service.create(requestForm);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

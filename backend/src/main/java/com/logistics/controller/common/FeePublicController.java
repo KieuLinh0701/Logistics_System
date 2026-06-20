@@ -24,9 +24,7 @@ public class FeePublicController {
             @RequestParam Integer recipientCodeCity
     ) {
         Integer shippingFee = feeService.calculateShippingFee(weight, serviceTypeId, senderCodeCity, recipientCodeCity);
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính phí vận chuyển thành công", shippingFee)
-        );
+        return ResponseEntity.ok(ApiResponse.success(shippingFee));
     }
 
     @GetMapping("/total")
@@ -48,7 +46,7 @@ public class FeePublicController {
         );
 
         return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
+                ApiResponse.success("Tính tổng phí vận chuyển thành công", totalFee));
     }
 
     @GetMapping("/total-manager")
@@ -69,8 +67,7 @@ public class FeePublicController {
                 cod
         );
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính tổng phí vận chuyển thành công", totalFee));
+        return ResponseEntity.ok(ApiResponse.success(totalFee));
     }
 
     @GetMapping("/weight")
@@ -87,7 +84,6 @@ public class FeePublicController {
                 width
         );
 
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Tính khối lượng thành công", weight));
+        return ResponseEntity.ok(ApiResponse.success(weight));
     }
 }

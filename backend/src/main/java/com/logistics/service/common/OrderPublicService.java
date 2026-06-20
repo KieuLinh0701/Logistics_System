@@ -22,21 +22,14 @@ public class OrderPublicService {
     private final OrderRepository repository;
     private final OrderHistoryRepository historyRepository;
 
-    public ApiResponse<List<OrderHistoryDto>> getOrderHistoriesByTrackingNumber(
+    public List<OrderHistoryDto> getOrderHistoriesByTrackingNumber(
             @PathVariable String trackingNumber) {
+        Order order = repository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        try {
-            Order order = repository.findByTrackingNumber(trackingNumber)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+        List<OrderHistory> orderHistories = historyRepository
+                .findByOrderIdOrderByActionTimeDesc(order.getId());
 
-            List<OrderHistory> orderHistories = historyRepository
-                    .findByOrderIdOrderByActionTimeDesc(order.getId());
-
-            List<OrderHistoryDto> dtos = OrderHistoryMapper.toDtoList(orderHistories);
-
-            return new ApiResponse<>(true, "Lấy lịch sử đơn hàng theo mã đơn hàng thành công", dtos);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi: " + e.getMessage(), null);
-        }
+        return OrderHistoryMapper.toDtoList(orderHistories);
     }
 }

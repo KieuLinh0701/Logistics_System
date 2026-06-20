@@ -26,8 +26,7 @@ public class PromotionPublicService {
 
     private final PromotionRepository repository;
 
-    public ApiResponse<ListResponse<PublicPromotionDto>> getActivePromotions(PromotionPublicRequest request) {
-        try {
+    public ListResponse<PublicPromotionDto> getActivePromotions(PromotionPublicRequest request) {
             int page = request.getPage() != null && request.getPage() > 0 ? request.getPage() - 1 : 0;
             int limit = request.getLimit() != null && request.getLimit() > 0 ? request.getLimit() : 5;
 
@@ -47,10 +46,6 @@ public class PromotionPublicService {
 
             ListResponse<PublicPromotionDto> response = new ListResponse<PublicPromotionDto>(promotionDtos, pagination);
 
-            return new ApiResponse<>(true, "Lấy danh sách khuyến mãi còn hiệu lực thành công", response);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy danh sách khuyến mãi: " + e.getMessage(), null);
-        }
+            return response;
     }
 }

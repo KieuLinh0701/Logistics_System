@@ -2,6 +2,9 @@ package com.logistics.service.common;
 
 import com.logistics.entity.ShippingRequest;
 import com.logistics.enums.ShippingRequestType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
+import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.request.common.shippingRequest.PublicShippingRequestForm;
 import com.logistics.response.ApiResponse;
@@ -20,14 +23,14 @@ public class ShippingRequestPublicService {
 
     private final ShippingRequestRepository repository;
 
-    public ApiResponse<Boolean> create(PublicShippingRequestForm request) {
+    public void create(PublicShippingRequestForm request) {
 
         validateForm(request);
 
         ShippingRequestType type = ShippingRequestType.valueOf(request.getRequestType());
 
         if (!ShippingRequestUtils.canGuestCreateShippingRequest(type)) {
-            return new ApiResponse<>(false, "Loại yêu cầu không hợp lệ", null);
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_TYPE);
         }
 
         ShippingRequest shippingRequest = new ShippingRequest();
@@ -42,8 +45,6 @@ public class ShippingRequestPublicService {
         String code = ShippingRequestUtils.generateRequestCode(shippingRequest.getId());
         shippingRequest.setCode(code);
         repository.save(shippingRequest);
-
-        return new ApiResponse<>(true, "Gửi liên hệ thành công", true);
     }
 
     private void validateForm(PublicShippingRequestForm request) {
@@ -69,17 +70,17 @@ public class ShippingRequestPublicService {
         }
 
         if (!missing.isEmpty())
-            throw new RuntimeException("Thiếu thông tin: " + String.join(", ", missing));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missing));
 
         ShippingRequestType type;
         try {
             type = ShippingRequestType.valueOf(request.getRequestType());
         } catch (Exception e) {
-            throw new RuntimeException("Loại yêu cầu không hợp lệ");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_TYPE);
         }
 
         if (!isBlank(request.getRequestContent()) && request.getRequestContent().length() > 1000) {
-            throw new RuntimeException("Nội dung yêu cầu không được vượt quá 1000 ký tự");
+            throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_INVALID_REQUEST);
         }
 
     }

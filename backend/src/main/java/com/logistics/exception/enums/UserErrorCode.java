@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 public enum UserErrorCode implements BaseErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "Người dùng không tồn tại"),
     USER_PHONE_NUMBER_EXISTED(HttpStatus.BAD_REQUEST, "Số điện thoại đã được sử dụng"),
-    USER_EMAIL_EXISTED(HttpStatus.BAD_REQUEST, "Email đã tồn tại"),
     USER_PHONE_EXISTED(HttpStatus.BAD_REQUEST, "Số điện thoại đã tồn tại"),
     USER_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản"),
     USER_ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy role id=%d"),

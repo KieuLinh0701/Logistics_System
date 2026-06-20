@@ -28,27 +28,27 @@ public class OfficePublicController {
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<PublicOfficeSearchDto>>> searchOffices(@Valid PublicOfficeSearchRequest request) {
-        ApiResponse<List<PublicOfficeSearchDto>> result = service.searchOffices(request);
-        return ResponseEntity.ok(result);
+        List<PublicOfficeSearchDto> result = service.searchOffices(request);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/head-office")
     public ResponseEntity<ApiResponse<PublicOfficeInformationDto>> getHeadOffice() {
-        ApiResponse<PublicOfficeInformationDto> result = service.getHeadOffice();
-        return ResponseEntity.ok(result); 
+        PublicOfficeInformationDto result = service.getHeadOffice();
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/region")
-    public ResponseEntity<ApiResponse<List<PublicOfficeInformationDto>>> listLocalOffices(@Valid PublicOfficeSearchRequest officeSearchRequest,
-    HttpServletRequest request) {
-        ApiResponse<List<PublicOfficeInformationDto>> result = service.listLocalOffices(officeSearchRequest);
-        return ResponseEntity.ok(result);
+    public ResponseEntity<ApiResponse<List<PublicOfficeInformationDto>>> listLocalOffices(
+            @Valid PublicOfficeSearchRequest officeSearchRequest) {
+        List<PublicOfficeInformationDto> result = service.listLocalOffices(officeSearchRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/region/{cityCode}/check")
-    public ResponseEntity<ApiResponse<Boolean>> checkLocalOffices(@PathVariable int cityCode,
-    HttpServletRequest request) {
-        ApiResponse<Boolean> result = service.checkLocalOffices(cityCode);
-        return ResponseEntity.ok(result);
+    public ResponseEntity<ApiResponse<Boolean>> checkLocalOffices(
+            @PathVariable int cityCode) {
+        Boolean result = service.checkLocalOffices(cityCode);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

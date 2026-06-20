@@ -21,6 +21,6 @@ public class OrderPublicController {
     public ResponseEntity<ApiResponse<List<OrderHistoryDto>>> getOrderHistoriesByTrackingNumber(
             @PathVariable String trackingNumber) {
 
-        return ResponseEntity.ok(service.getOrderHistoriesByTrackingNumber(trackingNumber));
+        return ResponseEntity.ok(ApiResponse.success(service.getOrderHistoriesByTrackingNumber(trackingNumber)));
     }
 }

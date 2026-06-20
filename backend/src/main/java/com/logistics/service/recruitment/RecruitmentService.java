@@ -8,6 +8,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,7 +33,6 @@ import com.logistics.enums.EmployeeStatus;
 import com.logistics.enums.JobApplicationStatus;
 import com.logistics.enums.JobPostingStatus;
 import com.logistics.enums.RecruitmentRoleType;
-import com.logistics.exception.RecruitmentException;
 import com.logistics.mapper.RecruitmentMapper;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
@@ -83,14 +84,14 @@ public class RecruitmentService {
     @Autowired
     private com.logistics.utils.EmailService emailService;
 
-    public ApiResponse<JobPostingDto> createJob(CreateJobPostingRequest request) {
+    public JobPostingDto createJob(CreateJobPostingRequest request) {
         assertCanManageJobPosting();
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
         Account createdBy = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản tạo tin"));
+                .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
         Office office = officeRepository.findById(request.getOfficeId())
-                .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND, "Không tìm thấy bưu cục"));
+                .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
 
         JobPosting entity = new JobPosting();
         entity.setTitle(request.getTitle().trim());
@@ -100,20 +101,20 @@ public class RecruitmentService {
         entity.setStatus(request.getStatus() == null ? JobPostingStatus.OPEN : request.getStatus());
         // validate new fields
         if (request.getQuantityNeeded() == null || request.getQuantityNeeded() <= 0) {
-            throw new RecruitmentException(HttpStatus.BAD_REQUEST, "Số lượng cần tuyển phải lớn hơn 0");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_JOB_POSTING_QUANTITY_INVALID);
         }
         if (request.getShift() == null) {
-            throw new RecruitmentException(HttpStatus.BAD_REQUEST, "Ca làm việc không được để trống");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_JOB_POSTING_SHIFT_REQUIRED);
         }
         entity.setQuantityNeeded(request.getQuantityNeeded());
         entity.setShift(request.getShift());
         entity.setCreatedBy(createdBy);
 
         JobPosting saved = jobPostingRepository.save(entity);
-        return new ApiResponse<>(true, "Tạo tin tuyển dụng thành công", RecruitmentMapper.toJobPostingDto(saved));
+        return RecruitmentMapper.toJobPostingDto(saved);
     }
 
-    public ApiResponse<ListResponse<JobPostingDto>> listJobs(int page, int limit, JobPostingStatus status, Integer officeId) {
+    public ListResponse<JobPostingDto> listJobs(int page, int limit, JobPostingStatus status, Integer officeId) {
         assertCanViewJobs();
 
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(limit, 1));
@@ -132,17 +133,17 @@ public class RecruitmentService {
         List<JobPostingDto> list = data.getContent().stream().map(RecruitmentMapper::toJobPostingDto).toList();
         Pagination pagination = new Pagination((int) data.getTotalElements(), page, limit, data.getTotalPages());
 
-        return new ApiResponse<>(true, "Lấy danh sách tin tuyển dụng thành công", new ListResponse<>(list, pagination));
+        return new ListResponse<>(list, pagination);
     }
 
-    public ApiResponse<JobPostingDto> getJobById(Long id) {
+    public JobPostingDto getJobById(Long id) {
         assertCanViewJobs();
 
         JobPosting posting = findJobPosting(id);
-        return new ApiResponse<>(true, "Lấy chi tiết tin tuyển dụng thành công", RecruitmentMapper.toJobPostingDto(posting));
+        return RecruitmentMapper.toJobPostingDto(posting);
     }
 
-    public ApiResponse<JobPostingDto> updateJob(Long id, UpdateJobPostingRequest request) {
+    public JobPostingDto updateJob(Long id, UpdateJobPostingRequest request) {
         assertCanManageJobPosting();
 
         JobPosting posting = findJobPosting(id);
@@ -158,7 +159,7 @@ public class RecruitmentService {
         }
         if (request.getOfficeId() != null) {
             Office office = officeRepository.findById(request.getOfficeId())
-                    .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND, "Không tìm thấy bưu cục"));
+                    .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
             posting.setOffice(office);
         }
         if (request.getStatus() != null) {
@@ -166,7 +167,7 @@ public class RecruitmentService {
         }
         if (request.getQuantityNeeded() != null) {
             if (request.getQuantityNeeded() <= 0) {
-                throw new RecruitmentException(HttpStatus.BAD_REQUEST, "Số lượng cần tuyển phải lớn hơn 0");
+                throw new AppException(RecruitmentErrorCode.RECRUITMENT_JOB_POSTING_QUANTITY_INVALID);
             }
             posting.setQuantityNeeded(request.getQuantityNeeded());
         }
@@ -175,27 +176,26 @@ public class RecruitmentService {
         }
 
         JobPosting saved = jobPostingRepository.save(posting);
-        return new ApiResponse<>(true, "Cập nhật tin tuyển dụng thành công", RecruitmentMapper.toJobPostingDto(saved));
+        return RecruitmentMapper.toJobPostingDto(saved);
     }
 
-    public ApiResponse<String> deleteJob(Long id) {
+    public void deleteJob(Long id) {
         assertCanManageJobPosting();
 
         JobPosting posting = findJobPosting(id);
         jobPostingRepository.delete(posting);
-        return new ApiResponse<>(true, "Xóa tin tuyển dụng thành công", null);
     }
 
-    public ApiResponse<JobApplicationDto> createApplication(CreateJobApplicationRequest request) {
+    public JobApplicationDto createApplication(CreateJobApplicationRequest request) {
         JobPosting posting = findJobPosting(request.getJobPostingId());
         if (posting.getStatus() != JobPostingStatus.OPEN) {
-            throw new RecruitmentException(HttpStatus.BAD_REQUEST, "Tin tuyển dụng đã đóng");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_JOB_POSTING_CLOSED);
         }
 
         boolean exists = jobApplicationRepository.existsByEmailAndJobPostingId(request.getEmail().trim(),
                 request.getJobPostingId());
         if (exists) {
-            throw new RecruitmentException(HttpStatus.CONFLICT, "Email này đã nộp hồ sơ cho tin tuyển dụng này");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_APPLICATION_EMAIL_DUPLICATED);
         }
 
         JobApplication entity = new JobApplication();
@@ -208,10 +208,10 @@ public class RecruitmentService {
         entity.setStatus(JobApplicationStatus.PENDING);
 
         JobApplication saved = jobApplicationRepository.save(entity);
-        return new ApiResponse<>(true, "Nộp hồ sơ thành công", RecruitmentMapper.toJobApplicationDto(saved));
+        return RecruitmentMapper.toJobApplicationDto(saved);
     }
 
-    public ApiResponse<ListResponse<JobApplicationDto>> listApplications(
+    public ListResponse<JobApplicationDto> listApplications(
             int page,
             int limit,
             Long jobPostingId,
@@ -222,7 +222,7 @@ public class RecruitmentService {
         boolean branchManager = hasRole(role, "manager") || hasRole(role, "branch manager") || hasRole(role, "branch_manager");
 
         if (!adminOrManager && !branchManager) {
-            throw new RecruitmentException(HttpStatus.FORBIDDEN, "Không có quyền xem hồ sơ tuyển dụng");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
         }
 
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(limit, 1));
@@ -253,10 +253,10 @@ public class RecruitmentService {
         List<JobApplicationDto> list = data.getContent().stream().map(RecruitmentMapper::toJobApplicationDto).toList();
         Pagination pagination = new Pagination((int) data.getTotalElements(), page, limit, data.getTotalPages());
 
-        return new ApiResponse<>(true, "Lấy danh sách hồ sơ thành công", new ListResponse<>(list, pagination));
+        return new ListResponse<>(list, pagination);
     }
 
-    public ApiResponse<JobApplicationDto> getApplicationById(Long id) {
+    public JobApplicationDto getApplicationById(Long id) {
         JobApplication application = findJobApplication(id);
 
         String role = getCurrentRoleOrThrow();
@@ -264,22 +264,22 @@ public class RecruitmentService {
         boolean branchManager = hasRole(role, "manager") || hasRole(role, "branch manager") || hasRole(role, "branch_manager");
 
         if (!adminOrManager && !branchManager) {
-            throw new RecruitmentException(HttpStatus.FORBIDDEN, "Không có quyền xem hồ sơ tuyển dụng");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
         }
 
         if (branchManager) {
             Integer officeId = resolveCurrentManagerOfficeId();
             Integer applicationOfficeId = application.getJobPosting().getOffice().getId();
             if (!officeId.equals(applicationOfficeId)) {
-                throw new RecruitmentException(HttpStatus.FORBIDDEN, "Chỉ được xem hồ sơ thuộc bưu cục của bạn");
+                throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
             }
         }
 
-        return new ApiResponse<>(true, "Lấy chi tiết hồ sơ thành công", RecruitmentMapper.toJobApplicationDto(application));
+        return RecruitmentMapper.toJobApplicationDto(application);
     }
 
     @Transactional
-    public ApiResponse<JobApplicationDto> updateApplicationStatus(Long id, UpdateJobApplicationStatusRequest request) {
+    public JobApplicationDto updateApplicationStatus(Long id, UpdateJobApplicationStatusRequest request) {
         assertCanReviewApplications();
 
         JobApplication application = findJobApplication(id);
@@ -294,21 +294,17 @@ public class RecruitmentService {
         if (next == JobApplicationStatus.APPROVED) {
             approveApplication(saved.getId());
         } else if (next == JobApplicationStatus.REJECTED) {
-            try {
-                emailService.sendRecruitmentRejectionEmail(saved.getEmail());
-            } catch (Exception ex) {
-                
-            }
+            emailService.sendRecruitmentRejectionEmail(saved.getEmail());
         }
 
-        return new ApiResponse<>(true, "Cập nhật trạng thái hồ sơ thành công", RecruitmentMapper.toJobApplicationDto(saved));
+        return RecruitmentMapper.toJobApplicationDto(saved);
     }
 
     @Transactional
     public void approveApplication(Long applicationId) {
         JobApplication application = findJobApplication(applicationId);
         if (application.getStatus() != JobApplicationStatus.APPROVED) {
-            throw new RecruitmentException(HttpStatus.BAD_REQUEST, "Hồ sơ chưa ở trạng thái APPROVED");
+            throw new AppException(RecruitmentErrorCode.RECRUITMENT_APPLICATION_NOT_APPROVED);
         }
 
         JobPosting posting = application.getJobPosting();
@@ -316,9 +312,7 @@ public class RecruitmentService {
         String targetRoleName = mapRecruitmentRoleToRoleName(posting.getRoleType());
 
         Role role = roleRepository.findByNameAndUserOwnerIsNull(targetRoleName)
-                .or(() -> roleRepository.findByName(targetRoleName))
-                .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND,
-                        "Không tìm thấy role hệ thống: " + targetRoleName));
+                .orElseThrow(() -> new AppException(RoleErrorCode.ROLE_NOT_FOUND));
 
         String tempPassword = null;
         Account account = accountRepository.findByEmail(application.getEmail().toLowerCase(Locale.ROOT)).orElse(null);
@@ -404,8 +398,7 @@ public class RecruitmentService {
             return;
         }
 
-        throw new RecruitmentException(HttpStatus.BAD_REQUEST,
-                "Chuyển trạng thái không hợp lệ: " + current + " -> " + next);
+        throw new AppException(RecruitmentErrorCode.RECRUITMENT_APPLICATION_INVALID_STATUS_TRANSITION);
     }
 
     private void assertCanManageJobPosting() {
@@ -413,7 +406,7 @@ public class RecruitmentService {
         if (hasRole(role, "admin") || hasRole(role, "manager")) {
             return;
         }
-        throw new RecruitmentException(HttpStatus.FORBIDDEN, "Bạn không có quyền quản lý tin tuyển dụng");
+        throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
     }
 
     private void assertCanReviewApplications() {
@@ -421,7 +414,7 @@ public class RecruitmentService {
         if (hasRole(role, "admin") || hasRole(role, "manager")) {
             return;
         }
-        throw new RecruitmentException(HttpStatus.FORBIDDEN, "Bạn không có quyền duyệt hồ sơ");
+        throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
     }
 
     private void assertCanViewJobs() {
@@ -429,7 +422,7 @@ public class RecruitmentService {
             String role = getCurrentRoleOrThrow();
             boolean allowed = hasRole(role, "admin") || hasRole(role, "manager") || hasRole(role, "branch manager") || hasRole(role, "branch_manager");
             if (!allowed) {
-                throw new RecruitmentException(HttpStatus.FORBIDDEN, "Bạn không có quyền xem tin tuyển dụng");
+                throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
             }
         } catch (RuntimeException ex) {
             return;
@@ -440,7 +433,7 @@ public class RecruitmentService {
         String role = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
                 .getName();
         if (role == null || role.isBlank()) {
-            throw new RecruitmentException(HttpStatus.UNAUTHORIZED, "Không xác định được role hiện tại");
+            throw new AppException(CommonErrorCode.ROLE_INVALID);
         }
         return role;
     }
@@ -451,22 +444,21 @@ public class RecruitmentService {
 
     private JobPosting findJobPosting(Long id) {
         return jobPostingRepository.findById(id)
-                .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND, "Không tìm thấy tin tuyển dụng"));
+                .orElseThrow(() -> new AppException(RecruitmentErrorCode.RECRUITMENT_JOB_POSTING_NOT_FOUND));
     }
 
     private JobApplication findJobApplication(Long id) {
         return jobApplicationRepository.findById(id)
-                .orElseThrow(() -> new RecruitmentException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ ứng tuyển"));
+                .orElseThrow(() -> new AppException(RecruitmentErrorCode.RECRUITMENT_APPLICATION_NOT_FOUND));
     }
 
     private Integer resolveCurrentManagerOfficeId() {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
         List<Employee> employees = employeeRepository.findAllByAccountId(accountId);
-        if (employees.isEmpty() || employees.get(0).getOffice() == null) {
-            throw new RecruitmentException(HttpStatus.BAD_REQUEST,
-                    "Không xác định được bưu cục của Branch Manager hiện tại");
+        if (employees.isEmpty() || employees.getFirst().getOffice() == null) {
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_USER_OFFICE_MISSING);
         }
-        return employees.get(0).getOffice().getId();
+        return employees.getFirst().getOffice().getId();
     }
 
     private String mapRecruitmentRoleToRoleName(RecruitmentRoleType roleType) {
@@ -504,8 +496,7 @@ public class RecruitmentService {
             User existing = account.getUser();
             if (existing.getPhoneNumber() == null || existing.getPhoneNumber().isBlank()) {
                 if (userRepository.existsByPhoneNumber(application.getPhone())) {
-                    throw new RecruitmentException(HttpStatus.CONFLICT,
-                            "Số điện thoại đã được sử dụng bởi người dùng khác");
+                    throw new AppException(UserErrorCode.USER_PHONE_NUMBER_EXISTED);
                 }
                 existing.setPhoneNumber(application.getPhone());
             }
@@ -518,8 +509,7 @@ public class RecruitmentService {
         }
 
         if (userRepository.existsByPhoneNumber(application.getPhone())) {
-            throw new RecruitmentException(HttpStatus.CONFLICT,
-                    "Số điện thoại đã được sử dụng, không thể tạo user mới");
+            throw new AppException(UserErrorCode.USER_PHONE_NUMBER_EXISTED);
         }
 
         NameParts parts = splitFullName(application.getFullName());

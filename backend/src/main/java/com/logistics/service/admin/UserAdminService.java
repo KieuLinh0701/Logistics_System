@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
+import com.logistics.exception.enums.AccountErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -87,7 +88,7 @@ public class UserAdminService {
     @Transactional
     public void createUser(CreateUserRequest request) {
         if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new AppException(UserErrorCode.USER_EMAIL_EXISTED);
+            throw new AppException(AccountErrorCode.ACCOUNT_EMAIL_ALREADY_IN_USE);
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {

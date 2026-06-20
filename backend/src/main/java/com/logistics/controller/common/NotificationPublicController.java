@@ -24,8 +24,8 @@ public class NotificationPublicController {
     HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<NotificationResponse> result = notificationService.getNotifications(userId, notificationSearchRequest);
-        return ResponseEntity.ok(result);
+        NotificationResponse result = notificationService.getNotifications(userId, notificationSearchRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PutMapping("/{notificationId}/read")
@@ -33,15 +33,15 @@ public class NotificationPublicController {
     HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<NotificationResponse> result = notificationService.markAsRead(userId, notificationId);
-        return ResponseEntity.ok(result);
+        notificationService.markAsRead(userId, notificationId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PutMapping("/mark-all-read")
-    public ResponseEntity<ApiResponse<NotificationResponse>> markAllAsRead(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> markAllAsRead(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ApiResponse<NotificationResponse> result = notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok(result);
+        notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

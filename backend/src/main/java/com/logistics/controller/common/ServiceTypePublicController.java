@@ -24,13 +24,13 @@ public class ServiceTypePublicController {
 
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<List<ServiceTypeDto>>> getActiveServiceTypes() {
-        ApiResponse<List<ServiceTypeDto>> result = service.getServicesByStatus(ServiceTypeStatus.ACTIVE);
-        return ResponseEntity.ok(result);
+        List<ServiceTypeDto> result = service.getServicesByStatus(ServiceTypeStatus.ACTIVE);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/active-with-rates")
     public ResponseEntity<ApiResponse<List<ServiceTypeWithRateDto>>> getActiveServicesWithRates() {
-        ApiResponse<List<ServiceTypeWithRateDto>> result = service.getActiveServicesWithRates();
-        return ResponseEntity.ok(result);
+        List<ServiceTypeWithRateDto> result = service.getActiveServicesWithRates();
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }
