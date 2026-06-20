@@ -1,7 +1,11 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.user.role.RoleDetailUserDto;
 import com.logistics.dto.user.role.RoleListUserDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.role.RoleSearchUserRequest;
 import com.logistics.request.user.role.RoleUserRequest;
 import com.logistics.response.ApiResponse;
@@ -51,6 +55,11 @@ public class RoleUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.ROLE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.ROLE_CREATE
+    )
     public ResponseEntity<ApiResponse<Void>> create(
             @Valid @RequestBody RoleUserRequest roleUserRequest,
             HttpServletRequest request) {
@@ -61,6 +70,12 @@ public class RoleUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.ROLE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ROLE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable int id,
             @Valid @RequestBody RoleUserRequest roleUserRequest,
             HttpServletRequest request) {
@@ -71,6 +86,11 @@ public class RoleUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.ROLE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.ROLE_DELETE
+    )
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable int id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");

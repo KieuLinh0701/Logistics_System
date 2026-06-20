@@ -1,6 +1,10 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.shipmentOrder.SaveShipmentOrdersRequest;
 import com.logistics.response.BulkResponse;
 import com.logistics.service.manager.ShipmentOrderManagerService;
@@ -38,6 +42,12 @@ public class ShipmentOrderManagerController {
         }
 
         @PostMapping("/{id}/save-orders")
+        @Audit(
+                entity = EntityType.SHIPMENT_ORDER,
+                action = AuditLogAction.CREATE,
+                description = AuditLogDescriptionConstant.SHIPMENT_ORDER_SAVE,
+                params = {"id"}
+        )
         public ResponseEntity<BulkResponse<String>> saveShipmentOrders(
                         @PathVariable Integer id,
                         @RequestBody SaveShipmentOrdersRequest requestBody,

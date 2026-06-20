@@ -1,6 +1,10 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.VehicleDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.vehicle.ManagerVehicleEditRequest;
 import com.logistics.request.manager.vehicle.ManagerVehicleSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -37,6 +41,12 @@ public class VehicleManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.VEHICLE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable Integer id,
             @Valid @RequestBody ManagerVehicleEditRequest managerVehicleEditRequest,
             HttpServletRequest request) {
@@ -56,6 +66,11 @@ public class VehicleManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.VEHICLE_EXPORT
+    )
     public ResponseEntity<byte[]> export(HttpServletRequest request,
                                          ManagerVehicleSearchRequest managerVehicleSearchRequest) throws Exception {
 

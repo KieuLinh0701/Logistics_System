@@ -1,9 +1,13 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -66,6 +70,12 @@ public class OrderManagerController {
     }
 
     @GetMapping("/print")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.PRINT,
+            description = AuditLogDescriptionConstant.ORDER_PRINT,
+            params = {"orderIds"}
+    )
     public ResponseEntity<ApiResponse<List<OrderPrintDto>>> getOrdersForPrint(
             @RequestParam(name = "orderIds") String orderIdsStr,
             HttpServletRequest request) {
@@ -82,6 +92,12 @@ public class OrderManagerController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.ORDER_CANCEL,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> cancelOrder(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
@@ -91,6 +107,11 @@ public class OrderManagerController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.ORDER_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> create(
             @RequestBody ManagerOrderCreateRequest managerOrderCreateRequest,
             HttpServletRequest request) {
@@ -100,6 +121,12 @@ public class OrderManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ORDER_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Integer id,
             @RequestBody ManagerOrderCreateRequest orderRequest,
@@ -111,6 +138,12 @@ public class OrderManagerController {
     }
 
     @PatchMapping("/{id}/at-origin-office")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_SET_AT_ORIGIN_OFFICE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> setOrderAtOriginOffice(@PathVariable Integer id,
             HttpServletRequest request) {
 
@@ -121,6 +154,12 @@ public class OrderManagerController {
     }
 
     @PatchMapping("/{id}/confirm")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> confirmOrder(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
@@ -130,6 +169,11 @@ public class OrderManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.ORDER_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             UserOrderSearchRequest userOrderSearchRequest) throws Exception {

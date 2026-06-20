@@ -1,9 +1,13 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.user.settlement.UserSettlementBatchListDto;
 import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.dto.user.settlement.UserSettlementSummaryResponse;
 import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -89,6 +93,11 @@ public class SettlementBatchUserController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SETTLEMENT_BATCH,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SETTLEMENT_EXPORT_LIST
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             SearchRequest searchRequest) throws Exception {
@@ -111,10 +120,15 @@ public class SettlementBatchUserController {
     }
 
     @GetMapping("/export/{id}")
+    @Audit(
+            entity = EntityType.SETTLEMENT_BATCH,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SETTLEMENT_EXPORT_DETAIL,
+            params = {"id"}
+    )
     public ResponseEntity<byte[]> exportById(
             HttpServletRequest request,
-            @PathVariable Integer id,
-            UserShippingRequestSearchRequest userShippingRequestSearchRequest) throws Exception {
+            @PathVariable Integer id) throws Exception {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
         byte[] data = service.exportById(userId, id);

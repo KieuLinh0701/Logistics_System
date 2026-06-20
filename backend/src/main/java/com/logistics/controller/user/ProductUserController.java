@@ -1,6 +1,10 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.ProductDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.product.UserBulkProductForm;
 import com.logistics.request.user.product.UserProductForm;
 import com.logistics.request.user.product.UserProductSearchRequest;
@@ -38,6 +42,11 @@ public class ProductUserController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.PRODUCT,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.PRODUCT_CREATE
+    )
     public ResponseEntity<ApiResponse<ProductDto>> create(
             @Valid @ModelAttribute UserProductForm userProductForm,
             HttpServletRequest request) {
@@ -47,6 +56,11 @@ public class ProductUserController {
     }
 
     @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.PRODUCT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.PRODUCT_UPDATE
+    )
     public ResponseEntity<ApiResponse<ProductDto>> update(
             @Valid @ModelAttribute UserProductForm userProductForm,
             HttpServletRequest request) {
@@ -56,6 +70,12 @@ public class ProductUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.PRODUCT,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.PRODUCT_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<ProductDto>> delete(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
@@ -63,6 +83,11 @@ public class ProductUserController {
         return ResponseEntity.ok(ApiResponse.success(service.delete(userId, id)));
     }
 
+    @Audit(
+            entity = EntityType.PRODUCT,
+            action = AuditLogAction.IMPORT,
+            description = AuditLogDescriptionConstant.PRODUCT_CREATE_BULK
+    )
     @PostMapping(value = "/bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BulkResponse<ProductDto>> createBulk(
             @Valid @ModelAttribute UserBulkProductForm userBulkProductForm,
@@ -83,6 +108,11 @@ public class ProductUserController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.PRODUCT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.PRODUCT_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             UserProductSearchRequest userProductSearchRequest) throws Exception {

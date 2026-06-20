@@ -1,6 +1,10 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.UserSettlementScheduleDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.UserSettlementScheduleUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +33,11 @@ public class UserSettlementScheduleUserController {
         }
 
         @PutMapping()
+        @Audit(
+                entity = EntityType.USER_SETTLEMENT_SCHEDULE,
+                action = AuditLogAction.UPDATE,
+                description = AuditLogDescriptionConstant.USER_SETTLEMENT_SCHEDULE_UPDATE
+        )
         public ResponseEntity<ApiResponse<Void>> updateUserSchedule(
                         HttpServletRequest request,
                         @RequestBody Set<String> weekdays) {

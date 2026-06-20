@@ -1,6 +1,10 @@
 package com.logistics.controller.leave;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.leave.EmployeeLeaveDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.leave.ApproveLeaveRequest;
 import com.logistics.request.leave.CreateLeaveRequest;
 import com.logistics.response.ApiResponse;
@@ -25,6 +29,11 @@ public class EmployeeLeaveController {
 
     // Shipper, Driver
     @PostMapping("/api/leaves")
+    @Audit(
+            entity = EntityType.EMPLOYEE_LEAVE_REQUEST,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_LEAVE_REQUEST_CREATE
+    )
     public ResponseEntity<ApiResponse<EmployeeLeaveDto>> createLeave(@Valid @RequestBody CreateLeaveRequest request) {
         return ResponseEntity.ok(ApiResponse.success(leaveService.createLeave(request)));
     }
@@ -35,6 +44,12 @@ public class EmployeeLeaveController {
     }
 
     @PutMapping("/api/leaves/{id}/cancel")
+    @Audit(
+            entity = EntityType.EMPLOYEE_LEAVE_REQUEST,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.EMPLOYEE_LEAVE_REQUEST_CANCEL,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Boolean>> cancelLeave(@PathVariable Integer id) {
         leaveService.cancelLeave(id);
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -47,6 +62,12 @@ public class EmployeeLeaveController {
     }
 
     @PutMapping("/api/manager/leaves/{id}/approve")
+    @Audit(
+            entity = EntityType.EMPLOYEE_LEAVE_REQUEST,
+            action = AuditLogAction.APPROVE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_LEAVE_REQUEST_APPROVE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<EmployeeLeaveDto>> approveLeave(
             @PathVariable Integer id,
             @Valid @RequestBody ApproveLeaveRequest request) {

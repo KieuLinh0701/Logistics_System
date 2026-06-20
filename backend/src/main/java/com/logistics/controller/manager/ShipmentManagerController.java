@@ -1,6 +1,10 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.shipment.ManagerOrdersShipmentSearchRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentAddEditRequest;
@@ -51,6 +55,12 @@ public class ShipmentManagerController {
     }
 
     @GetMapping("/employee-performance/{id}/export")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPMENT_EXPORT_PERFORMANCE,
+            params = {"id"}
+    )
     public ResponseEntity<byte[]> exportShipmentPerformance(HttpServletRequest request,
             @PathVariable Integer id,
             SearchRequest searchRequest) throws Exception {
@@ -83,6 +93,12 @@ public class ShipmentManagerController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.SHIPMENT_CANCEL,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> cancelShipment(@PathVariable Integer id,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
@@ -92,6 +108,11 @@ public class ShipmentManagerController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SHIPMENT_CREATE
+    )
     public ResponseEntity<ApiResponse<Void>> create(
             @RequestBody ManagerShipmentAddEditRequest editRequest,
             HttpServletRequest request) {
@@ -102,6 +123,12 @@ public class ShipmentManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SHIPMENT_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Integer id,
             @RequestBody ManagerShipmentAddEditRequest editRequest,
@@ -113,6 +140,11 @@ public class ShipmentManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPMENT_EXPORT_LIST
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             ManagerShipmentSearchRequest managerShipmentSearchRequest) throws Exception {
@@ -135,6 +167,12 @@ public class ShipmentManagerController {
     }
 
     @GetMapping("/{id}/export")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPMENT_EXPORT_ORDERS,
+            params = {"id"}
+    )
     public ResponseEntity<byte[]> exportOrdersByShipmentId(HttpServletRequest request,
                                                             @PathVariable Integer id,
                                                             ManagerOrdersShipmentSearchRequest managerOrdersShipmentSearchRequest) throws Exception {

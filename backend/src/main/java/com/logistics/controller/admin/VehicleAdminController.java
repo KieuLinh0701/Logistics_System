@@ -1,5 +1,9 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateVehicleRequest;
@@ -42,6 +46,11 @@ public class VehicleAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.VEHICLE_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createVehicle(@RequestBody CreateVehicleRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -52,6 +61,12 @@ public class VehicleAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.VEHICLE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateVehicle(
             @PathVariable Integer id,
             @RequestBody UpdateVehicleRequest request) {
@@ -64,6 +79,12 @@ public class VehicleAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.VEHICLE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.VEHICLE_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteVehicle(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

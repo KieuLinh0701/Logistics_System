@@ -1,5 +1,9 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.repository.RoleRepository;
@@ -55,6 +59,11 @@ public class UserAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.USER_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createUser(@RequestBody CreateUserRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -65,6 +74,12 @@ public class UserAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.USER_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateUser(
             @PathVariable Integer id,
             @RequestBody UpdateUserRequest request) {
@@ -77,6 +92,12 @@ public class UserAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.USER_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

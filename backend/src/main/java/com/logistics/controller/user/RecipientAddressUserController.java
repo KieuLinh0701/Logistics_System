@@ -1,5 +1,9 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.recipientaddress.RecipientAddressUserRequest;
 import com.logistics.request.user.recipientaddress.RecipientSuggestionRequest;
 import com.logistics.request.user.recipientaddress.UserRecipientAddressSearchRequest;
@@ -38,6 +42,11 @@ public class RecipientAddressUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_CREATE
+    )
     public ResponseEntity<ApiResponse<RecipientAddressResponse>> create(
             @Valid @RequestBody RecipientAddressUserRequest recipientAddressUserRequest,
             HttpServletRequest request) {
@@ -47,6 +56,12 @@ public class RecipientAddressUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<RecipientAddressResponse>> update(
             @PathVariable int id,
             @Valid @RequestBody RecipientAddressUserRequest recipientAddressUserRequest,
@@ -57,6 +72,12 @@ public class RecipientAddressUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable int id,
             HttpServletRequest request) {
@@ -78,6 +99,11 @@ public class RecipientAddressUserController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.RECIPIENT_ADDRESS_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             UserRecipientAddressSearchRequest userRecipientAddressSearchRequest) throws Exception {

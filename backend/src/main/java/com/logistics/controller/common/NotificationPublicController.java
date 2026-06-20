@@ -1,5 +1,9 @@
 package com.logistics.controller.common;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.NotificationResponse;
@@ -29,6 +33,11 @@ public class NotificationPublicController {
     }
 
     @PutMapping("/{notificationId}/read")
+    @Audit(
+            entity = EntityType.NOTIFICATION,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.NOTIFICATION_MARK_AS_READ
+    )
     public ResponseEntity<ApiResponse<NotificationResponse>> markAsRead(@PathVariable Integer notificationId,
     HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
@@ -38,6 +47,11 @@ public class NotificationPublicController {
     }
 
     @PutMapping("/mark-all-read")
+    @Audit(
+            entity = EntityType.NOTIFICATION,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.NOTIFICATION_MARK_ALL_AS_READ
+    )
     public ResponseEntity<ApiResponse<Void>> markAllAsRead(HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 

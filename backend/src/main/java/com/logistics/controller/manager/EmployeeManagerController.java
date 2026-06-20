@@ -1,9 +1,13 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
@@ -55,6 +59,11 @@ public class EmployeeManagerController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.EMPLOYEE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> create(
             @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
             HttpServletRequest request) {
@@ -65,6 +74,12 @@ public class EmployeeManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.EMPLOYEE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable Integer id,
                                                        @RequestBody ManagerEmployeeEditRequest managerEmployeeEditRequest,
                                                        HttpServletRequest request) {
@@ -119,6 +134,12 @@ public class EmployeeManagerController {
     }
 
     @GetMapping("/{id}/shipments/export")
+    @Audit(
+            entity = EntityType.EMPLOYEE,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.EMPLOYEE_EXPORT_SHIPMENTS,
+            params = {"id"}
+    )
     public ResponseEntity<byte[]> export(
             @PathVariable Integer id,
             HttpServletRequest request,
@@ -142,13 +163,18 @@ public class EmployeeManagerController {
     }
 
     @GetMapping("/performance/export")
+    @Audit(
+            entity = EntityType.EMPLOYEE,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.EMPLOYEE_EXPORT_PERFORMANCE
+    )
     public ResponseEntity<byte[]> exportPerformance(HttpServletRequest request,
                                                     SearchRequest searchRequest) throws Exception {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
         byte[] data = service.exportPerformance(userId, searchRequest);
 
-        String fileName = "UTE Logistics_Báo cáo hiệu suất nhân viên.xlsx";
+        String fileName = "UTE Logistics_Báo cáo hiệu suất giao hàng của nhân viên.xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
                 .replaceAll("\\+", "%20");
 
@@ -163,6 +189,11 @@ public class EmployeeManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.EMPLOYEE,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.EMPLOYEE_EXPORT
+    )
     public ResponseEntity<byte[]> export(HttpServletRequest request,
                                          ManagerEmployeeSearchRequest managerEmployeeSearchRequest) throws Exception {
 
@@ -184,6 +215,11 @@ public class EmployeeManagerController {
     }
 
     @GetMapping("/shipper-assignments/export")
+    @Audit(
+            entity = EntityType.EMPLOYEE,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.EMPLOYEE_EXPORT_ASSIGNMENTS
+    )
     public ResponseEntity<byte[]> exportActiveShippersWithActiveAssignments(
             HttpServletRequest request,
             ManagerEmployeeSearchRequest managerShippingRequestSearchRequest) throws Exception {

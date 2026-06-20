@@ -35,6 +35,12 @@ public class UserUserService {
                 : user.getId();
     }
 
+    public User getShop(User user) {
+        Integer shopId = getShopId(user);
+
+        return getUser(shopId);
+    }
+
     public User getUser(int userId) {
         return repository.findById(userId)
                 .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));

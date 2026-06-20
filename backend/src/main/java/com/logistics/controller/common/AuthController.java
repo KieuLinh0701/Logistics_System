@@ -1,5 +1,9 @@
 package com.logistics.controller.common;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AccountErrorCode;
 import com.logistics.exception.enums.CommonErrorCode;
@@ -24,6 +28,11 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
+    @Audit(
+            entity = EntityType.ACCOUNT,
+            action = AuditLogAction.REGISTER,
+            description = AuditLogDescriptionConstant.AUTH_REGISTER
+    )
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         if (request.getEmail() == null || request.getPassword() == null ||
                 request.getFirstName() == null || request.getLastName() == null || request.getPhoneNumber() == null) {
@@ -57,6 +66,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Audit(
+            entity = EntityType.ACCOUNT,
+            action = AuditLogAction.LOGIN,
+            description = AuditLogDescriptionConstant.AUTH_LOGIN
+    )
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequest request) {
         if (request.getEmail() == null || request.getPassword() == null) {
             throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
@@ -92,6 +106,11 @@ public class AuthController {
     }
 
     @PostMapping("/password/reset")
+    @Audit(
+            entity = EntityType.ACCOUNT,
+            action = AuditLogAction.PASSWORD_RESET,
+            description = AuditLogDescriptionConstant.AUTH_PASSWORD_RESET
+    )
     public ResponseEntity<ApiResponse<Void>> forgotPasswordReset(@RequestBody ForgotPasswordResetRequest request) {
         if (request.getNewPassword() == null) {
             throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);

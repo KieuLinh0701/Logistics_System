@@ -3,8 +3,10 @@ package com.logistics.repository;
 import com.logistics.dto.manager.dashboard.ManagerEmployeeStatsDTO;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.entity.Employee;
+import com.logistics.enums.EmployeeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -147,4 +149,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
             @Param("search") String search,
             @Param("shift") String shift,
             @Param("status") String status);
+
+    @EntityGraph(attributePaths = {"office"})
+    Optional<Employee> findByUserIdAndStatus(Integer userId, EmployeeStatus status);
 }

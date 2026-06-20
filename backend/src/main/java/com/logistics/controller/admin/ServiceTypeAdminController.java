@@ -1,5 +1,9 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreateServiceTypeRequest;
@@ -49,6 +53,11 @@ public class ServiceTypeAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.SERVICE_TYPE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SERVICE_TYPE_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createServiceType(@RequestBody CreateServiceTypeRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -59,6 +68,12 @@ public class ServiceTypeAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.SERVICE_TYPE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SERVICE_TYPE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateServiceType(
             @PathVariable Integer id,
             @RequestBody UpdateServiceTypeRequest request) {
@@ -71,6 +86,12 @@ public class ServiceTypeAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.SERVICE_TYPE,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.SERVICE_TYPE_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteServiceType(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

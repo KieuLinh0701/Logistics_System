@@ -1,7 +1,11 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.admin.AdminPaymentSubmissionListDto;
 import com.logistics.entity.PaymentSubmissionBatch;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreatePaymentSubmissionRequest;
@@ -42,6 +46,12 @@ public class FinancialAdminController {
     }
 
     @PutMapping("/submissions/{id}")
+    @Audit(
+            entity = EntityType.PAYMENT_SUBMISSION,
+            action = AuditLogAction.PROCESS,
+            description = AuditLogDescriptionConstant.PAYMENT_SUBMISSION_PROCESSING,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> processSubmission(
             @PathVariable Integer id,
             @RequestBody CreatePaymentSubmissionRequest form) {
@@ -55,6 +65,12 @@ public class FinancialAdminController {
     }
 
     @PostMapping("/batches/{id}/complete")
+    @Audit(
+            entity = EntityType.PAYMENT_SUBMISSION,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.PAYMENT_SUBMISSION_BATCH_COMPLETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> completeBatch(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -94,6 +110,11 @@ public class FinancialAdminController {
     }
 
     @GetMapping("/batches/export")
+    @Audit(
+            entity = EntityType.PAYMENT_SUBMISSION_BATCH,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.PAYMENT_SUBMISSION_BATCH_EXPORT
+    )
     public ResponseEntity<byte[]> exportBatches(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int limit,
@@ -112,6 +133,11 @@ public class FinancialAdminController {
     }
 
     @GetMapping("/submissions/export")
+    @Audit(
+            entity = EntityType.PAYMENT_SUBMISSION,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.PAYMENT_SUBMISSION_EXPORT
+    )
     public ResponseEntity<byte[]> exportSubmissions(@RequestParam(required = false) String status,
                                                     @RequestParam(required = false) String search) {
         if (isNotAdmin()) {
