@@ -1,5 +1,7 @@
 package com.logistics.service.common;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.stereotype.Service;
 
 import com.logistics.repository.SystemConfigRepository;
@@ -15,11 +17,11 @@ public class ConfigService {
     public int getInt(String key) {
         String value = repository.findById(key)
             .map(cfg -> cfg.getValue())
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy cấu hình: " + key));
+            .orElseThrow(() -> new AppException(CommonErrorCode.CONFIG_NOT_FOUND, key));
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            throw new RuntimeException("Giá trị cấu hình không hợp lệ: " + key);
+            throw new AppException(CommonErrorCode.CONFIG_VALUE_INVALID, key);
         }
     }
 

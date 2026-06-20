@@ -5,6 +5,8 @@ import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -25,7 +27,7 @@ public class QrCodeUtils {
             ImageIO.write(qrImage, "png", baos);
             return Base64.getEncoder().encodeToString(baos.toByteArray());
         } catch (WriterException | IOException e) {
-            throw new RuntimeException("Không thể tạo QR code cho đơn hàng: " + text, e);
+            throw new AppException(CommonErrorCode.QRCODE_GENERATION_FAILED);
         }
     }
 }

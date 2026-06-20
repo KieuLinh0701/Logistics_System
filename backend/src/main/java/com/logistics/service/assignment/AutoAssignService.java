@@ -6,6 +6,8 @@ import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShippingRequestStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShipperAssignmentRepository;
 import com.logistics.repository.ShippingRequestRepository;
@@ -52,7 +54,7 @@ public class AutoAssignService {
     public Optional<User> autoAssignOnArrival(Integer orderId) {
         if (!autoAssignEnabled) return Optional.empty();
         Order order = orderRepository.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getStatus() != OrderStatus.AT_DEST_OFFICE) return Optional.empty();
 
@@ -162,7 +164,7 @@ public class AutoAssignService {
     @Transactional
     public Optional<User> autoAssignPickupRequest(Integer orderId) {
         Order order = orderRepository.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         if (order.getPickupType() != com.logistics.enums.OrderPickupType.PICKUP_BY_COURIER) return Optional.empty();
         // Cho phép khi admin vừa xác nhận (CONFIRMED), đang ở trạng thái PENDING, hoặc đã được đánh dấu READY_FOR_PICKUP

@@ -2,12 +2,13 @@ package com.logistics.utils;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets; 
-import java.security.MessageDigest;
 import java.util.*;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PaymentErrorCode;
 import org.springframework.stereotype.Component;
 
 import com.logistics.config.VNPayConfig;
@@ -64,7 +65,7 @@ public class VNPayUtils {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new RuntimeException("VNPay HmacSHA512 error", e);
+            throw new AppException(PaymentErrorCode.PAYMENT_SIGNATURE_ERROR);
         }
     }
 
@@ -96,12 +97,6 @@ public class VNPayUtils {
         return calculatedHash.equalsIgnoreCase(check.getSecureHash());
     }
 
-    // --- Lấy IP client
-    public String getIpAddress(HttpServletRequest request) {
-        String ip = request.getHeader("X-FORWARDED-FOR");
-        return ip != null ? ip : request.getRemoteAddr();
-    }
-
     public static String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
 
@@ -126,41 +121,5 @@ public class VNPayUtils {
         }
 
         return ip;
-    }
-
-    // --- Hàm sinh random number
-    public String getRandomNumber(int len) {
-        Random rnd = new Random();
-        String chars = "0123456789";
-        StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len; i++) {
-            sb.append(chars.charAt(rnd.nextInt(chars.length())));
-        }
-        return sb.toString();
-    }
-
-    public String encodeRFC3986(String value) {
-        try {
-            return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
-                    .replace("+", "%20")
-                    .replace("*", "%2A")
-                    .replace("%7E", "~");
-        } catch (Exception e) {
-            return value;
-        }
-    }
-
-    // --- SHA256 (giữ nguyên)
-    public String sha256(String message) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(message.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash)
-                sb.append(String.format("%02x", b));
-            return sb.toString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

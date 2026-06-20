@@ -9,6 +9,8 @@ import com.logistics.entity.User;
 import com.logistics.entity.UserSettlementSchedule;
 import com.logistics.enums.OTPType;
 import com.logistics.enums.WeekDay;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PermissionGroupErrorCode;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.AccountRoleRepository;
 import com.logistics.repository.OTPRepository;
@@ -52,7 +54,7 @@ public class RoleService {
     @Transactional(readOnly = true)
     public Role findByIdWithPermissionGroups(Integer roleId) {
         return roleRepository.findByIdWithPermissionGroups(roleId)
-                .orElseThrow(() -> new RuntimeException("Nhóm quyền không tồn tại"));
+                .orElseThrow(() -> new AppException(PermissionGroupErrorCode.PERMISSION_GROUP_NOT_FOUND));
     }
 
     public List<String> getPermissionGroupCodes(Role role) {

@@ -137,7 +137,7 @@ public class ShippingRequestUserService {
             Integer shopId = userService.getShopId(userId);
 
             ShippingRequest request = repository.findByIdAndUserId(id, shopId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+                    .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
             List<ShippingRequestAttachment> requestAttachments = shippingRequestAttachmentRepository
                     .findByShippingRequestIdAndType(id, ShippingRequestAttachmentType.REQUEST);
@@ -243,7 +243,7 @@ public class ShippingRequestUserService {
         Integer shopId = userService.getShopId(userId);
 
         ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
         if (!validateEdit(request, shippingRequest)) {
             throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_EDIT_NOT_ALLOWED);
@@ -259,7 +259,7 @@ public class ShippingRequestUserService {
                         oldAttachmentsStr,
                         mapper.getTypeFactory().constructCollectionType(List.class, Integer.class));
             } catch (Exception e) {
-                throw new RuntimeException("Parse oldAttachments thất bại", e);
+                throw new AppException(CommonErrorCode.PARSE_ATTACHMENTS_FAILED);
             }
         }
 
@@ -278,7 +278,7 @@ public class ShippingRequestUserService {
         Integer shopId = userService.getShopId(userId);
 
         ShippingRequest shippingRequest = repository.findByIdAndUserId(id, shopId)
-                .orElseThrow(() -> new RuntimeException("Yêu cầu không tồn tại hoặc không thuộc về bạn"));
+                .orElseThrow(() -> new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_NOT_FOUND));
 
         if (!ShippingRequestUtils.canUserCancel(shippingRequest.getStatus())) {
             throw new AppException(ShippingRequestErrorCode.SHIPPING_REQUEST_CANNOT_CANCEL);

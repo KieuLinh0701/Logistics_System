@@ -1,10 +1,11 @@
 package com.logistics.utils;
 
 import com.logistics.entity.Role;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AccountErrorCode;
 import com.logistics.security.UserPrincipal;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -24,7 +25,7 @@ public class SecurityUtils {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
-            throw new RuntimeException("Người dùng chưa đăng nhập");
+            throw new AppException(AccountErrorCode.ACCOUNT_UNAUTHORIZED_ACCESS);
         }
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
@@ -38,7 +39,7 @@ public class SecurityUtils {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
-            throw new RuntimeException("Người dùng chưa đăng nhập");
+            throw new AppException(AccountErrorCode.ACCOUNT_UNAUTHORIZED_ACCESS);
         }
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
@@ -52,7 +53,7 @@ public class SecurityUtils {
 
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
-            throw new RuntimeException("Người dùng chưa đăng nhập");
+            throw new AppException(AccountErrorCode.ACCOUNT_UNAUTHORIZED_ACCESS);
         }
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
