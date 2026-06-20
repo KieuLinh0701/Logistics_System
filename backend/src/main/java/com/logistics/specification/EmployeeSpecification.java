@@ -1,18 +1,12 @@
 package com.logistics.specification;
 
-import com.logistics.entity.Account;
-import com.logistics.entity.AccountRole;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Role;
-import com.logistics.entity.User;
-
+import com.logistics.entity.*;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-
-import org.springframework.data.jpa.domain.Specification;
 
 public class EmployeeSpecification {
 

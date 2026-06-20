@@ -1,33 +1,30 @@
 package com.logistics.controller.manager;
 
-import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.shipment.ManagerOrdersShipmentSearchRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentAddEditRequest;
 import com.logistics.request.manager.shipment.ManagerShipmentSearchRequest;
-import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.manager.GetOrdersByShipmentIdManagerResponse;
 import com.logistics.service.manager.ShipmentManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/shipments")
+@Tag(name = "Manager - Shipment", description = "Quản lý các chuyến hàng, tạo/cập nhật lộ trình và xuất báo cáo vận hành tại bưu cục")
 public class ShipmentManagerController {
 
     private final ShipmentManagerService service;

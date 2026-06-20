@@ -2,15 +2,19 @@ package com.logistics.controller.common;
 
 import com.logistics.response.ApiResponse;
 import com.logistics.service.common.FeePublicService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/public/fees")
+@Tag(name = "Public - Fee", description = "Tính toán cước phí vận chuyển và quy đổi khối lượng")
 public class FeePublicController {
 
     @Autowired

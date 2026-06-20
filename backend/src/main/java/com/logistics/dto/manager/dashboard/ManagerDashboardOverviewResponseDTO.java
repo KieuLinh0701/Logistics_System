@@ -1,11 +1,13 @@
 package com.logistics.dto.manager.dashboard;
 
-import java.util.Map;
-
 import com.logistics.enums.EmployeeShift;
 import com.logistics.enums.VehicleType;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import lombok.*;
+import java.util.Map;
 
 @Getter
 @Setter

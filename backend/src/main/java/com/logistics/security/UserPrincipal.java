@@ -1,9 +1,8 @@
 package com.logistics.security;
 
-import com.logistics.entity.User;
 import com.logistics.entity.Account;
 import com.logistics.entity.Role;
-
+import com.logistics.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

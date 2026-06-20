@@ -3,12 +3,13 @@ package com.logistics.controller.driver;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
 import com.logistics.entity.Vehicle;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.VehicleRepository;
 import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.EmployeeErrorCode;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/driver")
+@Tag(name = "Driver", description = "Quản lý thông tin ngữ cảnh của tài xế: bưu cục làm việc và phương tiện")
 public class DriverContextController {
 
     @Autowired

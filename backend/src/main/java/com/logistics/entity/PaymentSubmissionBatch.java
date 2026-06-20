@@ -1,20 +1,18 @@
 package com.logistics.entity;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
+import com.logistics.enums.PaymentSubmissionBatchStatus;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.PaymentSubmissionBatchStatus;
-
-import jakarta.persistence.*;
-import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Entity
 @Table(name = "payment_submission_batches")

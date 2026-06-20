@@ -1,14 +1,9 @@
 package com.logistics.controller.user;
 
 import com.logistics.dto.user.role.PermissionModuleDto;
-import com.logistics.dto.user.role.RoleListUserDto;
-import com.logistics.request.user.role.RoleSearchUserRequest;
 import com.logistics.response.ApiResponse;
-import com.logistics.response.ListResponse;
 import com.logistics.service.user.PermissionModuleUserService;
-import com.logistics.service.user.RoleUserService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/user/permission-modules")
+@Tag(name = "User - Permission Module", description = "Quản lý và truy xuất danh sách các module quyền hạn khả dụng trong hệ thống")
 public class PermissionModuleUserController {
 
     @Autowired

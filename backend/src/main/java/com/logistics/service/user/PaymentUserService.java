@@ -1,19 +1,7 @@
 package com.logistics.service.user;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import com.logistics.config.properties.PaymentProperties;
 import com.logistics.config.properties.SettlementProperties;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.BaseErrorCode;
-import com.logistics.exception.enums.SettlementBatchErrorCode;
-import com.logistics.exception.enums.SettlementTransactionErrorCode;
-import org.springframework.stereotype.Service;
-
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.entity.User;
@@ -21,6 +9,9 @@ import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.SettlementStatus;
 import com.logistics.enums.SettlementTransactionStatus;
 import com.logistics.enums.SettlementTransactionType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.SettlementBatchErrorCode;
+import com.logistics.exception.enums.SettlementTransactionErrorCode;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SettlementBatchRepository;
 import com.logistics.repository.SettlementTransactionRepository;
@@ -29,10 +20,16 @@ import com.logistics.request.user.payment.UserPaymentCheck;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.payment.VNPayService;
 import com.logistics.utils.VNPayUtils;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

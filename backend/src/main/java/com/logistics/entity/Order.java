@@ -1,8 +1,10 @@
 package com.logistics.entity;
 
+import com.logistics.enums.*;
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.envers.Audited;
@@ -11,15 +13,9 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.OrderStatus;
-import com.logistics.enums.OrderCodStatus;
-import com.logistics.enums.OrderCreatorType;
-import com.logistics.enums.OrderPayerType;
-import com.logistics.enums.OrderPaymentStatus;
-import com.logistics.enums.OrderPickupType;
-import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter

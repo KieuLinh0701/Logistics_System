@@ -1,14 +1,12 @@
 package com.logistics.entity;
 
+import com.logistics.enums.OrderHistoryActionType;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.logistics.enums.OrderHistoryActionType;
+import java.time.LocalDateTime;
 
 @Builder
 @Entity

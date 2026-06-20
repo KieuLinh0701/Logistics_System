@@ -1,9 +1,9 @@
 package com.logistics.service.user;
 
 import com.logistics.dto.AddressDto;
-import com.logistics.enums.AddressType;
 import com.logistics.entity.Address;
 import com.logistics.entity.User;
+import com.logistics.enums.AddressType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AddressErrorCode;
 import com.logistics.mapper.AddressMapper;

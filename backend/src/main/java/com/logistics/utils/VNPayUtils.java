@@ -1,20 +1,17 @@
 package com.logistics.utils;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets; 
-import java.util.*;
+import com.logistics.config.VNPayConfig;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.PaymentErrorCode;
+import com.logistics.request.user.payment.UserPaymentCheck;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.PaymentErrorCode;
-import org.springframework.stereotype.Component;
-
-import com.logistics.config.VNPayConfig;
-import com.logistics.request.user.payment.UserPaymentCheck;
-
-import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Component
 public class VNPayUtils {

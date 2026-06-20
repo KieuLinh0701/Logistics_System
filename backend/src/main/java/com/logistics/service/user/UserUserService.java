@@ -1,14 +1,11 @@
 package com.logistics.service.user;
 
+import com.logistics.entity.User;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.UserErrorCode;
-import org.springframework.stereotype.Service;
-
-import com.logistics.entity.User;
 import com.logistics.repository.UserRepository;
-import com.logistics.response.ApiResponse;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor

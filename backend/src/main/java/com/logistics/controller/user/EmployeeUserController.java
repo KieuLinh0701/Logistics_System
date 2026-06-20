@@ -3,30 +3,20 @@ package com.logistics.controller.user;
 import com.logistics.dto.user.employee.EmployeeByRoleIdListUserDto;
 import com.logistics.dto.user.employee.EmployeeListUserDto;
 import com.logistics.dto.user.employee.ShopWorkHistoryListUserDto;
-import com.logistics.request.user.employee.CreateEmployeeUserRequest;
-import com.logistics.request.user.employee.EmployeeByRoleIdSearchUserRequest;
-import com.logistics.request.user.employee.EmployeeSearchUserRequest;
-import com.logistics.request.user.employee.ShopWorkHistorySearchUserRequest;
-import com.logistics.request.user.employee.UpdateEmployeeUserRequest;
-import com.logistics.request.user.employee.UpdateIsActiveUserRequest;
+import com.logistics.request.user.employee.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.EmployeeUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user/employees")
+@Tag(name = "User - Employee", description = "Quản lý nhân sự, cập nhật trạng thái, thông tin công việc và lịch sử làm việc của nhân viên tại bưu cục")
 public class EmployeeUserController {
 
     @Autowired

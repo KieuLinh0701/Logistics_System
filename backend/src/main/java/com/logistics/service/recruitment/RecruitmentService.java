@@ -1,55 +1,34 @@
 package com.logistics.service.recruitment;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.UUID;
-
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.dto.recruitment.JobApplicationDto;
 import com.logistics.dto.recruitment.JobPostingDto;
-import com.logistics.entity.Account;
-import com.logistics.entity.AccountRole;
-import com.logistics.entity.Employee;
-import com.logistics.entity.JobApplication;
-import com.logistics.entity.JobPosting;
-import com.logistics.entity.Office;
-import com.logistics.entity.Role;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.EmployeeStatus;
 import com.logistics.enums.JobApplicationStatus;
 import com.logistics.enums.JobPostingStatus;
 import com.logistics.enums.RecruitmentRoleType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.*;
 import com.logistics.mapper.RecruitmentMapper;
-import com.logistics.repository.AccountRepository;
-import com.logistics.repository.AccountRoleRepository;
-import com.logistics.repository.EmployeeRepository;
-import com.logistics.repository.JobApplicationRepository;
-import com.logistics.repository.JobPostingRepository;
-import com.logistics.repository.OfficeRepository;
-import com.logistics.repository.RoleRepository;
-import com.logistics.repository.UserRepository;
+import com.logistics.repository.*;
 import com.logistics.request.recruitment.CreateJobApplicationRequest;
 import com.logistics.request.recruitment.CreateJobPostingRequest;
 import com.logistics.request.recruitment.UpdateJobApplicationStatusRequest;
 import com.logistics.request.recruitment.UpdateJobPostingRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.utils.SecurityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class RecruitmentService {
@@ -424,7 +403,7 @@ public class RecruitmentService {
             if (!allowed) {
                 throw new AppException(RecruitmentErrorCode.RECRUITMENT_ACCESS_DENIED);
             }
-        } catch (.RuntimeException ex) {
+        } catch (RuntimeException ex) {
             return;
         }
     }

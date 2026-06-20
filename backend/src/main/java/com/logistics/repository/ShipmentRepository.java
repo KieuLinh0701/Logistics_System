@@ -3,7 +3,6 @@ package com.logistics.repository;
 import com.logistics.dto.manager.dashboard.ManagerShipmentStatsDTO;
 import com.logistics.entity.Shipment;
 import com.logistics.enums.ShipmentStatus;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;

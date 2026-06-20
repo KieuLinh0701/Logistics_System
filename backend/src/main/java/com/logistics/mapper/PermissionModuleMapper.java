@@ -2,10 +2,7 @@ package com.logistics.mapper;
 
 import com.logistics.dto.user.role.PermissionGroupDto;
 import com.logistics.dto.user.role.PermissionModuleDto;
-import com.logistics.dto.user.role.RoleListUserDto;
-import com.logistics.entity.PermissionGroup;
 import com.logistics.entity.PermissionModule;
-import com.logistics.entity.Role;
 
 import java.util.List;
 import java.util.stream.Collectors;

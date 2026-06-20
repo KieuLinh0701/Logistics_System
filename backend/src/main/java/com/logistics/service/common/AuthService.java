@@ -1,52 +1,28 @@
 package com.logistics.service.common;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import com.logistics.entity.PermissionGroup;
+import com.logistics.entity.*;
+import com.logistics.enums.OTPType;
+import com.logistics.enums.WeekDay;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AccountErrorCode;
 import com.logistics.exception.enums.OtpErrorCode;
 import com.logistics.exception.enums.RoleErrorCode;
 import com.logistics.exception.enums.UserErrorCode;
-import com.logistics.repository.PermissionGroupRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import com.logistics.entity.Account;
-import com.logistics.entity.AccountRole;
-import com.logistics.entity.OTP;
-import com.logistics.entity.Role;
-import com.logistics.entity.User;
-import com.logistics.entity.UserSettlementSchedule;
-import com.logistics.enums.OTPType;
-import com.logistics.enums.WeekDay;
-import com.logistics.repository.AccountRepository;
-import com.logistics.repository.AccountRoleRepository;
-import com.logistics.repository.OTPRepository;
-import com.logistics.repository.RoleRepository;
-import com.logistics.repository.UserRepository;
-import com.logistics.repository.UserSettlementScheduleRepository;
-import com.logistics.request.common.auth.ChooseRoleRequest;
-import com.logistics.request.common.auth.ForgotPasswordEmailRequest;
-import com.logistics.request.common.auth.ForgotPasswordResetRequest;
-import com.logistics.request.common.auth.LoginRequest;
-import com.logistics.request.common.auth.RegisterRequest;
-import com.logistics.request.common.auth.VerifyRegisterOtpRequest;
-import com.logistics.request.common.auth.VerifyResetOtpRequest;
-import com.logistics.response.ApiResponse;
+import com.logistics.repository.*;
+import com.logistics.request.common.auth.*;
 import com.logistics.response.AuthResponse;
 import com.logistics.utils.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
 import com.logistics.utils.PasswordUtils;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor

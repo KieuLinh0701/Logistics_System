@@ -2,11 +2,9 @@ package com.logistics.service.common;
 
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
-import org.springframework.stereotype.Service;
-
 import com.logistics.repository.SystemConfigRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor

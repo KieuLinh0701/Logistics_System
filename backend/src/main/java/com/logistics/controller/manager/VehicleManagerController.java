@@ -1,28 +1,27 @@
 package com.logistics.controller.manager;
 
 import com.logistics.dto.VehicleDto;
-import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.request.manager.vehicle.ManagerVehicleEditRequest;
 import com.logistics.request.manager.vehicle.ManagerVehicleSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.VehicleManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/manager/vehicles")
+@Tag(name = "Manager - Vehicle", description = "Quản lý phương tiện vận tải, trạng thái khả dụng và xuất báo cáo tại bưu cục")
 public class VehicleManagerController {
 
     @Autowired

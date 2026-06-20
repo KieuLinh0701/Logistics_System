@@ -1,8 +1,8 @@
 package com.logistics.utils;
 
-import java.util.Set;
-
 import com.logistics.enums.OrderStatus;
+
+import java.util.Set;
 
 public class ShipmentOrderUtils {
 

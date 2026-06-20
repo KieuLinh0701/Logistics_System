@@ -1,18 +1,12 @@
 package com.logistics.specification;
 
-import com.logistics.entity.Account;
-import com.logistics.entity.Address;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Order;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.OrderStatus;
-
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-
-import org.springframework.data.jpa.domain.Specification;
 
 public class OrderSpecification {
 

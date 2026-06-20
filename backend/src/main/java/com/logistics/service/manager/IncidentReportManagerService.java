@@ -1,44 +1,24 @@
 package com.logistics.service.manager;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportDetailDto;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportListDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
-import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
-import com.logistics.entity.*;
+import com.logistics.entity.IncidentReport;
+import com.logistics.entity.Office;
+import com.logistics.entity.User;
 import com.logistics.enums.IncidentStatus;
-import com.logistics.enums.OrderCreatorType;
-import com.logistics.enums.ShippingRequestAttachmentType;
-import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.IncidentErrorCode;
-import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.mapper.IncidentReportMapper;
-import com.logistics.mapper.ShippingRequestMapper;
-import com.logistics.repository.AddressRepository;
 import com.logistics.repository.IncidentReportRepository;
-import com.logistics.repository.ShippingRequestAttachmentRepository;
-import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.incidentReport.ManagerIncidentUpdateRequest;
-import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
-import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearchRequest;
-import com.logistics.request.user.order.UserOrderSearchRequest;
-import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.IncidentReportSpecification;
-import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.IncidentReportUtils;
-import com.logistics.utils.OrderUtils;
-import com.logistics.utils.ShippingRequestUtils;
-
 import lombok.RequiredArgsConstructor;
-
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
@@ -50,22 +30,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.logistics.utils.IncidentReportUtils.*;
-import static com.logistics.utils.OrderUtils.*;
-import static com.logistics.utils.OrderUtils.translateOrderCreatorType;
 
 @Service
 @RequiredArgsConstructor

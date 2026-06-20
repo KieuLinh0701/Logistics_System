@@ -1,15 +1,14 @@
 package com.logistics.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.logistics.entity.BankAccount;
+import com.logistics.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.logistics.entity.BankAccount;
-import com.logistics.entity.User;
+import java.util.List;
+import java.util.Optional;
 
 public interface BankAccountRepository extends JpaRepository<BankAccount, Integer> {
 

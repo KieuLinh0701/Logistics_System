@@ -1,7 +1,5 @@
 package com.logistics.mapper;
 
-import java.util.List;
-
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
@@ -10,6 +8,8 @@ import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
 import com.logistics.entity.Address;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.ShippingRequestAttachment;
+
+import java.util.List;
 
 public class ShippingRequestMapper {
 

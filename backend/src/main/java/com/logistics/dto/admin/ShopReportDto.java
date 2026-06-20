@@ -1,9 +1,10 @@
 package com.logistics.dto.admin;
 
-import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 /**
  * @deprecated Use {@link com.logistics.dto.admin.AdminShopReportDto} instead.

@@ -8,12 +8,10 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.ProductUserService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/user/products")
+@Tag(name = "User - Product", description = "Quản lý danh mục sản phẩm của người dùng: thêm, sửa, xóa, nhập liệu hàng loạt và xuất báo cáo kho hàng")
 public class ProductUserController {
 
     private final ProductUserService service;

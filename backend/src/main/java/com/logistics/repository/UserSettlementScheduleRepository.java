@@ -1,13 +1,12 @@
 package com.logistics.repository;
 
-import java.util.List;
-
+import com.logistics.entity.UserSettlementSchedule;
+import com.logistics.enums.WeekDay;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import com.logistics.entity.UserSettlementSchedule;
-import com.logistics.enums.WeekDay;
+import java.util.List;
 
 @Repository
 public interface UserSettlementScheduleRepository extends JpaRepository<UserSettlementSchedule, Integer> {

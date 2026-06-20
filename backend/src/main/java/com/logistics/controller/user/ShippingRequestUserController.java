@@ -1,14 +1,5 @@
 package com.logistics.controller.user;
 
-import com.logistics.request.SearchRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestEditDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
@@ -17,16 +8,14 @@ import com.logistics.request.user.shippingRequest.UserShippingRequestSearchReque
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.ShippingRequestUserService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/user/shipping-requests")
+@Tag(name = "User - Shipping Request", description = "Quản lý các yêu cầu hỗ trợ và khiếu nại đơn hàng của người dùng: tạo mới, cập nhật, theo dõi trạng thái và xuất báo cáo")
 public class ShippingRequestUserController {
 
     private final ShippingRequestUserService service;

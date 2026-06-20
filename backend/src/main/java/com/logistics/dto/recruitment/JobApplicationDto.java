@@ -1,13 +1,12 @@
 package com.logistics.dto.recruitment;
 
-import java.time.LocalDateTime;
-
 import com.logistics.enums.JobApplicationStatus;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter

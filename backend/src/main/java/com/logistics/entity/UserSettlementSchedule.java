@@ -1,11 +1,11 @@
 // Bảng sắp xếp lịch đối soát của người dùng chọn
 package com.logistics.entity;
 
+import com.logistics.enums.WeekDay;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.Set;
 
-import com.logistics.enums.WeekDay;
+import java.util.Set;
 
 @Entity
 @Table(name = "user_settlement_schedules")

@@ -1,13 +1,11 @@
 package com.logistics.config;
 
+import com.logistics.entity.SystemConfig;
+import com.logistics.repository.SystemConfigRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
-
-import com.logistics.entity.SystemConfig;
-import com.logistics.repository.SystemConfigRepository;
-
-import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor

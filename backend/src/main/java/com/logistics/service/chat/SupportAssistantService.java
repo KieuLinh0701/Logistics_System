@@ -1,31 +1,23 @@
 package com.logistics.service.chat;
 
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.SupportMessage;
 import com.logistics.entity.SupportTicket;
-import com.logistics.enums.OrderCodStatus;
-import com.logistics.enums.OrderHistoryActionType;
-import com.logistics.enums.OrderPaymentStatus;
-import com.logistics.enums.OrderStatus;
-import com.logistics.enums.SupportMessageSenderType;
+import com.logistics.enums.*;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SupportMessageRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

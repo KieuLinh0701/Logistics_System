@@ -4,16 +4,16 @@ import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.NotificationResponse;
 import com.logistics.service.common.NotificationService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/notifications")
+@Tag(name = "Notification", description = "Quản lý thông báo người dùng")
 public class NotificationPublicController {
 
     @Autowired

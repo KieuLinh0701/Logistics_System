@@ -1,18 +1,5 @@
 package com.logistics.controller.recruitment;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.dto.recruitment.JobApplicationDto;
 import com.logistics.dto.recruitment.JobPostingDto;
 import com.logistics.enums.JobApplicationStatus;
@@ -24,10 +11,13 @@ import com.logistics.request.recruitment.UpdateJobPostingRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.recruitment.RecruitmentService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Validated

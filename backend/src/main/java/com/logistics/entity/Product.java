@@ -1,16 +1,14 @@
 package com.logistics.entity;
 
+import com.logistics.enums.ProductStatus;
+import com.logistics.enums.ProductType;
 import jakarta.persistence.*;
 import lombok.*;
-
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import com.logistics.enums.ProductStatus;
-import com.logistics.enums.ProductType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

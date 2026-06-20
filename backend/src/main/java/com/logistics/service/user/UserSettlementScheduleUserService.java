@@ -1,26 +1,21 @@
 package com.logistics.service.user;
 
+import com.logistics.dto.UserSettlementScheduleDto;
+import com.logistics.entity.User;
+import com.logistics.entity.UserSettlementSchedule;
+import com.logistics.enums.WeekDay;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.UserSettlementScheduleErrorCode;
+import com.logistics.repository.UserSettlementScheduleRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
-
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.UserErrorCode;
-import com.logistics.exception.enums.UserSettlementScheduleErrorCode;
-import org.springframework.stereotype.Service;
-
-import com.logistics.dto.UserSettlementScheduleDto;
-import com.logistics.entity.User;
-import com.logistics.entity.UserSettlementSchedule;
-import com.logistics.enums.WeekDay;
-import com.logistics.repository.UserRepository;
-import com.logistics.repository.UserSettlementScheduleRepository;
-import com.logistics.response.ApiResponse;
-
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

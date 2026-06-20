@@ -3,11 +3,7 @@ package com.logistics.mapper;
 import com.logistics.dto.user.employee.EmployeeByRoleIdListUserDto;
 import com.logistics.dto.user.employee.EmployeeListUserDto;
 import com.logistics.dto.user.employee.ShopWorkHistoryListUserDto;
-import com.logistics.entity.Account;
-import com.logistics.entity.AccountRole;
-import com.logistics.entity.Role;
-import com.logistics.entity.ShopWorkHistory;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 
 import java.util.List;
 import java.util.stream.Collectors;

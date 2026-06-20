@@ -1,36 +1,21 @@
 package com.logistics.service.user;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import com.logistics.dto.user.dashboard.UserDashboardChartProductResponseDTO;
-import com.logistics.dto.user.dashboard.UserDashboardOverviewProductsResponseDTO;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.logistics.dto.user.dashboard.UserCreatedOrderCountDTO;
-import com.logistics.dto.user.dashboard.UserDeliveredOrderCountDTO;
-import com.logistics.dto.user.dashboard.UserOrderStatsDTO;
-import com.logistics.dto.user.dashboard.UserOrderTimelineDTO;
-import com.logistics.dto.user.dashboard.UserProductStatsDTO;
-import com.logistics.dto.user.dashboard.UserRevenueStatsDTO;
-import com.logistics.dto.user.dashboard.UserTopProductItemDto;
+import com.logistics.dto.user.dashboard.*;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ProductType;
 import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ProductRepository;
 import com.logistics.request.SearchRequest;
-import com.logistics.response.ApiResponse;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor

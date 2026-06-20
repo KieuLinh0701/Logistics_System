@@ -1,7 +1,6 @@
 package com.logistics.repository;
 
 import com.logistics.entity.PermissionGroup;
-import com.logistics.entity.PermissionModule;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

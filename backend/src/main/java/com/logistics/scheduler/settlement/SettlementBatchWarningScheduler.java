@@ -1,23 +1,21 @@
 package com.logistics.scheduler.settlement;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-
 import com.logistics.config.properties.PaymentProperties;
 import com.logistics.config.properties.SettlementProperties;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.User;
 import com.logistics.enums.SettlementStatus;
 import com.logistics.repository.SettlementBatchRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.service.common.NotificationService;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

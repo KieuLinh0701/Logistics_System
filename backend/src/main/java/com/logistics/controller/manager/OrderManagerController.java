@@ -4,32 +4,29 @@ import com.logistics.dto.OrderPrintDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.order.ManagerOrderStatusCountResponse;
-import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
-import com.logistics.request.user.product.UserProductSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.OrderManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/manager/orders")
+@Tag(name = "Manager - Order", description = "Quản lý đơn hàng, cập nhật trạng thái và xuất báo cáo tại bưu cục")
 public class OrderManagerController {
 
     private final OrderManagerService service;

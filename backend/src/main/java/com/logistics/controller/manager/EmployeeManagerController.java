@@ -1,17 +1,5 @@
 package com.logistics.controller.manager;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
-import com.logistics.request.manager.vehicle.ManagerVehicleSearchRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
@@ -23,20 +11,22 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.EmployeeManagerService;
 import com.logistics.service.manager.ShipmentManagerService;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/employees")
+@Tag(name = "Manager - Employee", description = "Quản lý nhân sự, theo dõi hiệu suất và xuất báo cáo vận hành")
 public class EmployeeManagerController {
 
     private final EmployeeManagerService service;

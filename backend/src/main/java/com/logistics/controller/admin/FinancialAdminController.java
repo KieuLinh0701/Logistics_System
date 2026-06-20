@@ -1,26 +1,27 @@
 package com.logistics.controller.admin;
 
-import com.logistics.request.admin.CreateBatchRequest;
+import com.logistics.dto.admin.AdminPaymentSubmissionListDto;
+import com.logistics.entity.PaymentSubmissionBatch;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreatePaymentSubmissionRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
-import com.logistics.dto.admin.AdminPaymentSubmissionListDto;
-import com.logistics.entity.PaymentSubmissionBatch;
 import com.logistics.service.admin.FinancialAdminService;
 import com.logistics.utils.SecurityUtils;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.CommonErrorCode;
-
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/financial")
+@Tag(name = "Admin - Financial", description = "Quản lý đối soát và thanh toán")
 public class FinancialAdminController {
 
     @Autowired
