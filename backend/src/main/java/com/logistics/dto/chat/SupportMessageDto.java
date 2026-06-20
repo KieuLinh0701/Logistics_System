@@ -26,4 +26,5 @@ public class SupportMessageDto {
     private LocalDateTime createdAt;
     private String senderName;
     private String senderImage;
+    private Boolean isRead;
 }

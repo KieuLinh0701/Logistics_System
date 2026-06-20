@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.logistics.enums.SupportTicketStatus;
 import java.util.List;
 
 @Repository
@@ -14,7 +15,7 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, In
 
     List<SupportTicket> findAllByOrderByUpdatedAtDesc();
 
-        List<SupportTicket> findByAssignedToAccountId(Integer assignedToAccountId);
+    List<SupportTicket> findByAssignedToAccountId(Integer assignedToAccountId);
 
     List<SupportTicket> findByAssignedToAccountIdOrderByUpdatedAtDesc(Integer assignedToAccountId);
 
@@ -29,6 +30,13 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, In
     """)
     List<SupportTicket> findByOrderOfficeId(@Param("officeId") Integer officeId);
 
-        List<SupportTicket> findByCreatedByAccountId(Integer createdByAccountId);
+    List<SupportTicket> findByCreatedByAccountId(Integer createdByAccountId);
 
+    List<SupportTicket> findByCreatedByAccountIdOrderByCreatedAtDesc(Integer createdByAccountId);
+
+    List<SupportTicket> findByStatusOrderByUpdatedAtDesc(SupportTicketStatus status);
+
+    List<SupportTicket> findByOfficeIdOrderByUpdatedAtDesc(Integer officeId);
+
+    long countByStatus(SupportTicketStatus status);
 }

@@ -1,16 +1,15 @@
-package com.logistics.websocket;
-
-import com.logistics.dto.chat.SupportMessageDto;
-import com.logistics.request.chat.SendSupportMessageRequest;
-import com.logistics.request.chat.SupportChatSendMessagePayload;
-import com.logistics.response.ApiResponse;
-import com.logistics.service.chat.SupportMessageService;
-import lombok.RequiredArgsConstructor;
+package com.logistics.controller.chat;
 
 import java.security.Principal;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
+
+import com.logistics.request.chat.SendSupportMessageRequest;
+import com.logistics.request.chat.SupportChatSendMessagePayload;
+import com.logistics.service.chat.SupportMessageService;
+
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
@@ -43,7 +42,6 @@ public class SupportChatWebSocketController {
                 payload.getMessage(),
                 payload.getMessageType(),
                 payload.getIsInternalNote());
-
 
         try {
             supportMessageService.sendMessage(
