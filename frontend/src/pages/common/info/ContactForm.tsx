@@ -63,7 +63,7 @@ const ContactForm: React.FC = () => {
     try {
       const response = await shippingRequestApi.createPublicShippingRequest(values);
       if (response.success) {
-        message.success(response.message || "Gửi liên hệ thành công");
+        message.success("Gửi liên hệ thành công");
         form.resetFields();
       } else {
         message.error(response.message || "Có lỗi xảy ra khi gửi liên hệ");

@@ -32,29 +32,30 @@ public class EmployeeLeaveController {
     // Shipper, Driver
     @PostMapping("/api/leaves")
     public ResponseEntity<ApiResponse<EmployeeLeaveDto>> createLeave(@Valid @RequestBody CreateLeaveRequest request) {
-        return ResponseEntity.ok(leaveService.createLeave(request));
+        return ResponseEntity.ok(ApiResponse.success(leaveService.createLeave(request)));
     }
 
     @GetMapping("/api/leaves/my")
     public ResponseEntity<ApiResponse<List<EmployeeLeaveDto>>> getMyLeaves() {
-        return ResponseEntity.ok(leaveService.getMyLeaves());
+        return ResponseEntity.ok(ApiResponse.success(leaveService.getMyLeaves()));
     }
 
     @PutMapping("/api/leaves/{id}/cancel")
     public ResponseEntity<ApiResponse<Boolean>> cancelLeave(@PathVariable Integer id) {
-        return ResponseEntity.ok(leaveService.cancelLeave(id));
+        leaveService.cancelLeave(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     // Manager
     @GetMapping("/api/manager/leaves/office")
     public ResponseEntity<ApiResponse<List<EmployeeLeaveDto>>> getOfficeLeaves() {
-        return ResponseEntity.ok(leaveService.getOfficeLeaves());
+        return ResponseEntity.ok(ApiResponse.success(leaveService.getOfficeLeaves()));
     }
 
     @PutMapping("/api/manager/leaves/{id}/approve")
     public ResponseEntity<ApiResponse<EmployeeLeaveDto>> approveLeave(
             @PathVariable Integer id,
             @Valid @RequestBody ApproveLeaveRequest request) {
-        return ResponseEntity.ok(leaveService.approveLeave(id, request));
+        return ResponseEntity.ok(ApiResponse.success(leaveService.approveLeave(id, request)));
     }
 }

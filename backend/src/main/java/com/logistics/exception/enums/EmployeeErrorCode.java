@@ -18,7 +18,7 @@ public enum EmployeeErrorCode implements BaseErrorCode {
     EMPLOYEE_CANNOT_CHANGE_ROLE_AND_LEAVE_SIMULTANEOUSLY(HttpStatus.BAD_REQUEST, "Không thể thay đổi chức vụ và cho nghỉ cùng lúc"),
     EMPLOYEE_LIMIT_ACTIVE_ROLES_REACHED(HttpStatus.BAD_REQUEST, "Đã đạt giới hạn chức vụ đang hoạt động"),
     EMPLOYEE_ACCOUNT_IN_OFFICE(HttpStatus.CONFLICT, "Tài khoản này đã là nhân viên ở bưu cục hiện tại"),
-    EMPLOYEE_USER_OFFICE_MISSING(HttpStatus.BAD_REQUEST, "Không xác định được bưu cục của bạn!"),
+    EMPLOYEE_USER_OFFICE_MISSING(HttpStatus.BAD_REQUEST, "Không xác định được bưu cục của nhân viên!"),
     EMPLOYEE_OFFICE_MISMATCH(HttpStatus.FORBIDDEN, "Nhân viên không thuộc bưu cục của bạn!"),
     EMPLOYEE_SHIPPER_INVALID(HttpStatus.BAD_REQUEST, "Nhân viên không phải là nhân viên giao hàng!"),
     EMPLOYEE_DRIVER_INVALID(HttpStatus.BAD_REQUEST, "Nhân viên không phải là tài xế!"),

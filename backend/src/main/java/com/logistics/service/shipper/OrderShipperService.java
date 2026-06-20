@@ -288,9 +288,9 @@ public class OrderShipperService {
         List<Map<String, Object>> notificationMaps = Collections.emptyList();
         try {
             NotificationSearchRequest nreq = new NotificationSearchRequest(1, 5, null, null);
-            ApiResponse<NotificationResponse> nres = notificationService.getNotifications(employee.getUser().getId(), nreq);
-            if (nres != null && nres.isSuccess() && nres.getData() != null) {
-                notificationMaps = nres.getData().getNotifications().stream().map(dto -> {
+            NotificationResponse nres = notificationService.getNotifications(employee.getUser().getId(), nreq);
+            if (nres != null) {
+                notificationMaps = nres.getNotifications().stream().map(dto -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", dto.getId());
                     m.put("title", dto.getTitle());

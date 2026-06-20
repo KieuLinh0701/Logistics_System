@@ -5,6 +5,8 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Notification;
 import com.logistics.entity.ShippingRequest;
 import com.logistics.entity.User;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.NotificationErrorCode;
 import com.logistics.mapper.NotificationMapper;
 import com.logistics.repository.NotificationRepository;
 import com.logistics.repository.UserRepository;
@@ -74,8 +76,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public ApiResponse<NotificationResponse> getNotifications(Integer userId, NotificationSearchRequest request) {
-        try {
+    public NotificationResponse getNotifications(Integer userId, NotificationSearchRequest request) {
             int page = request.getPage();
             int limit = request.getLimit();
             String search = request.getSearch();
@@ -106,39 +107,23 @@ public class NotificationService {
             data.setPagination(pagination);
             data.setUnreadCount(unreadCount);
 
-            return new ApiResponse<>(true, "Lấy danh sách thông báo thành công", data);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi lấy danh sách thông báo: " + e.getMessage(), null);
-        }
+            return data;
     }
 
     @Transactional
-    public ApiResponse<NotificationResponse> markAsRead(Integer userId, Integer notificationId) {
-        try {
+    public void markAsRead(Integer userId, Integer notificationId) {
             Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId);
             if (notification == null) {
-                return new ApiResponse<>(false, "Không tìm thấy thông báo", null);
+                throw  new AppException(NotificationErrorCode.NOTIFICATION_NOT_FOUND);
             }
 
             notification.setIsRead(true);
             notificationRepository.save(notification);
-
-            return new ApiResponse<>(true, "Đã đánh dấu thông báo đã đọc", null);
-
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi đánh dấu thông báo đã đọc: " + e.getMessage(), null);
-        }
     }
 
     @Transactional
-    public ApiResponse<NotificationResponse> markAllAsRead(Integer userId) {
-        try {
+    public void markAllAsRead(Integer userId) {
             notificationRepository.markAllAsReadByUserId(userId);
-            return new ApiResponse<>(true, "Đã đánh dấu tất cả thông báo đã đọc", null);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Lỗi khi đánh dấu tất cả thông báo đã đọc: " + e.getMessage(), null);
-        }
     }
 
     public void notifyOfficeManagerOnShippingRequestAssigned(Office office, ShippingRequest req) {

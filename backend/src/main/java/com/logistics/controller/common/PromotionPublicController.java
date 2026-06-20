@@ -24,7 +24,7 @@ public class PromotionPublicController {
 
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<ListResponse<PublicPromotionDto>>> getActivePromotions(@Valid PromotionPublicRequest request) {
-        ApiResponse<ListResponse<PublicPromotionDto>> result = service.getActivePromotions(request);
-        return ResponseEntity.ok(result);
+        ListResponse<PublicPromotionDto> result = service.getActivePromotions(request);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

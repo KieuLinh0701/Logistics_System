@@ -23,9 +23,8 @@ public class OrderFulfillmentController {
     public ResponseEntity<ApiResponse<OrderFulfillmentSummaryDto>>
     getFulfillmentSummary(@PathVariable Integer id) {
 
-        ApiResponse<OrderFulfillmentSummaryDto> result =
-                orderFulfillmentService.getFulfillmentSummary(id.longValue());
+        OrderFulfillmentSummaryDto result = orderFulfillmentService.getFulfillmentSummary(id.longValue());
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 }

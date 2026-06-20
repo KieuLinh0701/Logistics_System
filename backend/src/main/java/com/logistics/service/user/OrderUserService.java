@@ -251,12 +251,10 @@ public class OrderUserService {
 
             List<Order> orders = repository.findAll(spec);
 
-            List<Integer> orderIds = orders.stream()
+           return orders.stream()
                     .filter(order -> order.getTrackingNumber() != null)
                     .map(Order::getId)
                     .toList();
-
-            return orderIds;
     }
 
     public OrderCreateSuccess create(Integer userId, UserOrderCreateRequest request) {
@@ -349,15 +347,15 @@ public class OrderUserService {
                     Integer senderCity = senderAddress.getCityCode();
                     Integer senderWard = senderAddress.getWardCode();
                     PublicOfficeSearchRequest officeReq = new PublicOfficeSearchRequest(senderCity, senderWard, null, null, null);
-                    ApiResponse<List<com.logistics.dto.common.PublicOfficeInformationDto>> res = officePublicService.listLocalOffices(officeReq);
+                    List<com.logistics.dto.common.PublicOfficeInformationDto> res = officePublicService.listLocalOffices(officeReq);
 
-                    if (res == null || !res.isSuccess() || res.getData() == null || res.getData().isEmpty()) {
+                    if (res == null) {
                         PublicOfficeSearchRequest fallbackReq = new PublicOfficeSearchRequest(senderCity, null, null, null, null);
                         res = officePublicService.listLocalOffices(fallbackReq);
                     }
 
-                    if (res != null && res.isSuccess() && res.getData() != null && !res.getData().isEmpty()) {
-                        Integer officeId = res.getData().get(0).getId();
+                    if (res != null) {
+                        Integer officeId = res.getFirst().getId();
                         fromOffice = officePublicService.findById(officeId).orElse(null);
                     }
                 } catch (Exception e) {

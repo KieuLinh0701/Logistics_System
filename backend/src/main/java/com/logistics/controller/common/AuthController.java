@@ -1,5 +1,9 @@
 package com.logistics.controller.common;
 
+import com.beust.ah.A;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AccountErrorCode;
+import com.logistics.exception.enums.CommonErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,25 +30,22 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         if (request.getEmail() == null || request.getPassword() == null ||
                 request.getFirstName() == null || request.getLastName() == null || request.getPhoneNumber() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng điền đầy đủ thông tin", null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
         String password = request.getPassword();
 
         if (password.length() < 6) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Mật khẩu phải có ít nhất 6 ký tự", null));
+            throw new AppException(AccountErrorCode.ACCOUNT_PASSWORD_TOO_SHORT);
         }
 
         String passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&.])[A-Za-z\\d@$!%*?&.]{6,}$";
         if (!password.matches(passwordPattern)) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false,
-                            "Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt", null));
+            throw new AppException(AccountErrorCode.ACCOUNT_PASSWORD_POLICY_VIOLATION);
         }
 
-        return ResponseEntity.ok(authService.register(request));
+        authService.register(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("/register/verify-otp")
@@ -52,58 +53,55 @@ public class AuthController {
         if (request.getEmail() == null || request.getOtp() == null ||
                 request.getPassword() == null || request.getFirstName() == null ||
                 request.getLastName() == null || request.getPhoneNumber() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng điền đầy đủ thông tin", null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
-        return ResponseEntity.ok(authService.verifyAndRegisterUser(request));
+        return ResponseEntity.ok(ApiResponse.success(authService.verifyAndRegisterUser(request)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequest request) {
         if (request.getEmail() == null || request.getPassword() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập email", null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
-        return ResponseEntity.ok(authService.login(request));
+        return ResponseEntity.ok(ApiResponse.success(authService.login(request)));
     }
 
     @PostMapping("/choose-role")
     public ResponseEntity<?> chooseRole(@RequestBody ChooseRoleRequest request) {
-        try {
             AuthResponse authResponse = authService.chooseRole(request);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Đăng nhập với role thành công", authResponse));
-        } catch (Exception e) {
-            return ResponseEntity.ok(new ApiResponse<>(false, "Lỗi khi chọn role: " + e.getMessage(), null));
-        }
+            return ResponseEntity.ok(ApiResponse.success(authResponse));
     }
 
     @PostMapping("/password/forgot")
     public ResponseEntity<?> forgotPasswordEmail(@RequestBody ForgotPasswordEmailRequest request) {
         if (request.getEmail() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ApiResponse<>(false, "Vui lòng nhập email", null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
-        return ResponseEntity.ok(authService.forgotPasswordEmail(request));
+
+        authService.forgotPasswordEmail(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("/password/verify-otp")
-    public ResponseEntity<?> verifyResetOtp(@RequestBody VerifyResetOtpRequest request) {
+    public ResponseEntity<ApiResponse<Void>> verifyResetOtp(@RequestBody VerifyResetOtpRequest request) {
         if (request.getOtp() == null) {
-            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng nhập mã OTP", null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
-        return ResponseEntity.ok(authService.verifyResetOtp(request));
+        authService.verifyResetOtp(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("/password/reset")
-    public ResponseEntity<?> forgotPasswordReset(@RequestBody ForgotPasswordResetRequest request) {
+    public ResponseEntity<ApiResponse<Void>> forgotPasswordReset(@RequestBody ForgotPasswordResetRequest request) {
         System.out.println("Debug message");
         if (request.getNewPassword() == null) {
-            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Vui lòng nhập mật khẩu", null));
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
         }
 
-        return ResponseEntity.ok(authService.forgotPasswordReset(request));
+        authService.forgotPasswordReset(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

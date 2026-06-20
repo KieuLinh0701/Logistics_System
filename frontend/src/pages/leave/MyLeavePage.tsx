@@ -106,7 +106,7 @@ const MyLeavePage: React.FC = () => {
         message.error(res.message || "Gửi đơn xin nghỉ thất bại");
         return;
       }
-      message.success(res.message || "Gửi đơn xin nghỉ thành công");
+      message.success("Gửi đơn xin nghỉ thành công");
       setOpenModal(false);
       await fetchData();
     } catch {
@@ -124,7 +124,7 @@ const MyLeavePage: React.FC = () => {
         message.error(res.message || "Hủy đơn xin nghỉ thất bại");
         return;
       }
-      message.success(res.message || "Hủy đơn xin nghỉ thành công");
+      message.success("Hủy đơn xin nghỉ thành công");
       await fetchData();
     } catch {
       message.error("Hủy đơn xin nghỉ thất bại");

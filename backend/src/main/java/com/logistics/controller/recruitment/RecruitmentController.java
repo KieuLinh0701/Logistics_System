@@ -41,8 +41,8 @@ public class RecruitmentController {
     @PostMapping("/api/jobs")
     @Operation(summary = "Tạo tin tuyển dụng", description = "Admin hoặc Manager tạo mới tin tuyển dụng")
     public ResponseEntity<ApiResponse<JobPostingDto>> createJob(@Valid @RequestBody CreateJobPostingRequest request) {
-        ApiResponse<JobPostingDto> response = recruitmentService.createJob(request);
-        return ResponseEntity.status(201).body(response);
+        JobPostingDto response = recruitmentService.createJob(request);
+        return ResponseEntity.status(201).body(ApiResponse.success(response));
     }
 
     @GetMapping("/api/jobs")
@@ -52,13 +52,13 @@ public class RecruitmentController {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) JobPostingStatus status,
             @RequestParam(required = false) Integer officeId) {
-        return ResponseEntity.ok(recruitmentService.listJobs(page, limit, status, officeId));
+        return ResponseEntity.ok(ApiResponse.success(recruitmentService.listJobs(page, limit, status, officeId)));
     }
 
     @GetMapping("/api/jobs/{id}")
     @Operation(summary = "Chi tiết tin tuyển dụng")
     public ResponseEntity<ApiResponse<JobPostingDto>> getJob(@PathVariable Long id) {
-        return ResponseEntity.ok(recruitmentService.getJobById(id));
+        return ResponseEntity.ok(ApiResponse.success(recruitmentService.getJobById(id)));
     }
 
     @PutMapping("/api/jobs/{id}")
@@ -66,21 +66,23 @@ public class RecruitmentController {
     public ResponseEntity<ApiResponse<JobPostingDto>> updateJob(
             @PathVariable Long id,
             @Valid @RequestBody UpdateJobPostingRequest request) {
-        return ResponseEntity.ok(recruitmentService.updateJob(id, request));
+        return ResponseEntity.ok(ApiResponse.success(recruitmentService.updateJob(id, request)));
     }
 
     @DeleteMapping("/api/jobs/{id}")
     @Operation(summary = "Xóa tin tuyển dụng")
-    public ResponseEntity<ApiResponse<String>> deleteJob(@PathVariable Long id) {
-        return ResponseEntity.ok(recruitmentService.deleteJob(id));
+    public ResponseEntity<ApiResponse<Void>> deleteJob(@PathVariable Long id) {
+
+        recruitmentService.deleteJob(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("/api/job-applications")
     @Operation(summary = "Ứng viên nộp hồ sơ", description = "Public user nộp hồ sơ ứng tuyển")
     public ResponseEntity<ApiResponse<JobApplicationDto>> createApplication(
             @Valid @RequestBody CreateJobApplicationRequest request) {
-        ApiResponse<JobApplicationDto> response = recruitmentService.createApplication(request);
-        return ResponseEntity.status(201).body(response);
+        JobApplicationDto response = recruitmentService.createApplication(request);
+        return ResponseEntity.status(201).body(ApiResponse.success(response));
     }
 
     @GetMapping("/api/job-applications")
@@ -90,13 +92,13 @@ public class RecruitmentController {
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) Long jobPostingId,
             @RequestParam(required = false) JobApplicationStatus status) {
-        return ResponseEntity.ok(recruitmentService.listApplications(page, limit, jobPostingId, status));
+        return ResponseEntity.ok(ApiResponse.success(recruitmentService.listApplications(page, limit, jobPostingId, status)));
     }
 
     @GetMapping("/api/job-applications/{id}")
     @Operation(summary = "Chi tiết hồ sơ ứng tuyển")
     public ResponseEntity<ApiResponse<JobApplicationDto>> getApplication(@PathVariable Long id) {
-        return ResponseEntity.ok(recruitmentService.getApplicationById(id));
+        return ResponseEntity.ok(ApiResponse.success(recruitmentService.getApplicationById(id)));
     }
 
     @PutMapping("/api/job-applications/{id}/status")
@@ -104,6 +106,6 @@ public class RecruitmentController {
     public ResponseEntity<ApiResponse<JobApplicationDto>> updateApplicationStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdateJobApplicationStatusRequest request) {
-        return ResponseEntity.ok(recruitmentService.updateApplicationStatus(id, request));
+        return ResponseEntity.ok(ApiResponse.success(recruitmentService.updateApplicationStatus(id, request)));
     }
 }
