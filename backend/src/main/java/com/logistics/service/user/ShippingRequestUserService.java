@@ -272,7 +272,6 @@ public class ShippingRequestUserService {
         repository.save(shippingRequest);
 
         if (shippingRequest.getOffice() != null && shippingRequest.getOffice().getManager() != null) {
-            System.out.println("UserId" + shippingRequest.getOffice().getManager().getUser().getId());
             notificationService.create(
                     "Yêu cầu hỗ trợ và khiếu nại đã bị hủy",
                     "Yêu cầu mã " + shippingRequest.getCode() + " đã bị khách hàng hủy.",

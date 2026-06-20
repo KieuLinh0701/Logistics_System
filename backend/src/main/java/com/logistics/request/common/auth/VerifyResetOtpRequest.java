@@ -12,4 +12,9 @@ import lombok.Setter;
 public class VerifyResetOtpRequest {
     private String email;
     private String otp;
+
+    @Override
+    public String toString() {
+        return "VerifyResetOtpRequest{email='" + email + "', otp='******'}";
+    }
 }

@@ -7,12 +7,14 @@ import com.logistics.enums.SettlementTransactionType;
 import com.logistics.repository.SettlementTransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SettlementTransactionExpireScheduler {
@@ -24,7 +26,7 @@ public class SettlementTransactionExpireScheduler {
     @Scheduled(cron = "0 */5 * * * ?")
     @Transactional
     public void expireStaleTransactions() {
-        System.out.println("Scanning stale transactions: " + LocalDateTime.now());
+        log.info("Scanning stale transactions: " + LocalDateTime.now());
 
         // Transaction PENDING quá n phút → FAILED
         LocalDateTime expiredBefore = LocalDateTime.now().minusMinutes(paymentProperties.getExpireMinutes());
@@ -36,17 +38,17 @@ public class SettlementTransactionExpireScheduler {
                         expiredBefore);
 
         if (stale.isEmpty()) {
-            System.out.println("No stale transactions found.");
+            log.info("No stale transactions found.");
             return;
         }
 
         stale.forEach(t -> {
             t.setStatus(SettlementTransactionStatus.FAILED);
-            System.out.println("Expired transaction: " + t.getCode());
+            log.info("Expired transaction: " + t.getCode());
         });
 
         transactionRepository.saveAll(stale);
 
-        System.out.println("Expired " + stale.size() + " transactions.");
+        log.info("Expired " + stale.size() + " transactions.");
     }
 }
