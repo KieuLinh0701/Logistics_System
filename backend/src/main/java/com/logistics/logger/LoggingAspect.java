@@ -1,5 +1,6 @@
 package com.logistics.logger;
 
+import com.logistics.utils.SecurityUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -19,12 +20,18 @@ public class LoggingAspect {
 
         String className = joinPoint.getTarget().getClass().getSimpleName();
         String methodName = joinPoint.getSignature().getName();
-        Object[] args = joinPoint.getArgs();
 
         long startTime = System.currentTimeMillis();
 
+        String accountId;
+        try {
+            accountId = String.valueOf(SecurityUtils.getAuthenticatedAccountId());
+        } catch (Exception e) {
+            accountId = "anonymous";
+        }
+
         // START LOG
-        log.info("START {}.{}() with args={}", className, methodName, getMaskedArgs(joinPoint));
+        log.info("Account {} | START {}.{}() with args={}", accountId, className, methodName, getMaskedArgs(joinPoint));
 
         Object result;
         try {
