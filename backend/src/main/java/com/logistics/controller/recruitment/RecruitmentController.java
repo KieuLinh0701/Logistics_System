@@ -1,7 +1,11 @@
 package com.logistics.controller.recruitment;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.recruitment.JobApplicationDto;
 import com.logistics.dto.recruitment.JobPostingDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.enums.JobApplicationStatus;
 import com.logistics.enums.JobPostingStatus;
 import com.logistics.request.recruitment.CreateJobApplicationRequest;
@@ -29,6 +33,11 @@ public class RecruitmentController {
     private RecruitmentService recruitmentService;
 
     @PostMapping("/api/jobs")
+    @Audit(
+            entity = EntityType.JOB_POSTING,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.JOB_POSTING_CREATE
+    )
     @Operation(summary = "Tạo tin tuyển dụng", description = "Admin hoặc Manager tạo mới tin tuyển dụng")
     public ResponseEntity<ApiResponse<JobPostingDto>> createJob(@Valid @RequestBody CreateJobPostingRequest request) {
         JobPostingDto response = recruitmentService.createJob(request);
@@ -52,6 +61,12 @@ public class RecruitmentController {
     }
 
     @PutMapping("/api/jobs/{id}")
+    @Audit(
+            entity = EntityType.JOB_APPLICATION,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.JOB_POSTING_UPDATE,
+            params = {"id"}
+    )
     @Operation(summary = "Cập nhật tin tuyển dụng")
     public ResponseEntity<ApiResponse<JobPostingDto>> updateJob(
             @PathVariable Long id,
@@ -60,6 +75,12 @@ public class RecruitmentController {
     }
 
     @DeleteMapping("/api/jobs/{id}")
+    @Audit(
+            entity = EntityType.JOB_APPLICATION,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.JOB_POSTING_DELETE,
+            params = {"id"}
+    )
     @Operation(summary = "Xóa tin tuyển dụng")
     public ResponseEntity<ApiResponse<Void>> deleteJob(@PathVariable Long id) {
 
@@ -68,6 +89,11 @@ public class RecruitmentController {
     }
 
     @PostMapping("/api/job-applications")
+    @Audit(
+            entity = EntityType.JOB_APPLICATION,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.JOB_APPLICATION_CREATE
+    )
     @Operation(summary = "Ứng viên nộp hồ sơ", description = "Public user nộp hồ sơ ứng tuyển")
     public ResponseEntity<ApiResponse<JobApplicationDto>> createApplication(
             @Valid @RequestBody CreateJobApplicationRequest request) {
@@ -92,6 +118,12 @@ public class RecruitmentController {
     }
 
     @PutMapping("/api/job-applications/{id}/status")
+    @Audit(
+            entity = EntityType.JOB_APPLICATION,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.JOB_APPLICATION_UPDATE_STATUS,
+            params = {"id"}
+    )
     @Operation(summary = "Duyệt trạng thái hồ sơ", description = "PENDING -> REVIEWING -> APPROVED/REJECTED")
     public ResponseEntity<ApiResponse<JobApplicationDto>> updateApplicationStatus(
             @PathVariable Long id,

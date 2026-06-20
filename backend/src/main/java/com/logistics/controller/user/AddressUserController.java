@@ -1,6 +1,10 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.AddressDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.address.AddressUserRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.AddressUserService;
@@ -30,6 +34,11 @@ public class AddressUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.ADDRESS_CREATE
+    )
     public ResponseEntity<ApiResponse<AddressDto>> create(
             @Valid @RequestBody AddressUserRequest addressRequest,
             HttpServletRequest request) {
@@ -39,6 +48,12 @@ public class AddressUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ADDRESS_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<AddressDto>> update(@PathVariable int id,
             @Valid @RequestBody AddressUserRequest addressRequest,
             HttpServletRequest request) {
@@ -48,6 +63,12 @@ public class AddressUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.ADDRESS_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable int id,
             HttpServletRequest request) {
@@ -58,6 +79,12 @@ public class AddressUserController {
     }
 
     @PatchMapping("/{id}/default")
+    @Audit(
+            entity = EntityType.ADDRESS,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ADDRESS_SET_DEFAULT,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> setDefault(
             @PathVariable int id,
             HttpServletRequest request) {

@@ -1,5 +1,9 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.payment.UserPaymentCheck;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.user.PaymentUserService;
@@ -34,6 +38,11 @@ public class PaymentUserController {
     }
 
     @PostMapping("/vnpay/settlements")
+    @Audit(
+            entity = EntityType.SETTLEMENT_BATCH,
+            action = AuditLogAction.PAY,
+            description = AuditLogDescriptionConstant.PAYMENT_VNPAY_CREATE_SETTLEMENT
+    )
     public ResponseEntity<ApiResponse<String>> createVNPayURLForSettlements(
             HttpServletRequest request) {
 

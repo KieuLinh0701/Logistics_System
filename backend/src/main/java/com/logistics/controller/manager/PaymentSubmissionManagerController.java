@@ -1,6 +1,10 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.paymentSubmission.ManagerPaymentSubmissionListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.ManagerPaymentSubmissionForm;
 import com.logistics.response.ApiResponse;
@@ -39,6 +43,12 @@ public class PaymentSubmissionManagerController {
         }
 
         @PutMapping("/{id}")
+        @Audit(
+                entity = EntityType.PAYMENT_SUBMISSION,
+                action = AuditLogAction.PROCESS,
+                description = AuditLogDescriptionConstant.PAYMENT_SUBMISSION_PROCESSING,
+                params = {"id"}
+        )
         public ResponseEntity<ApiResponse<Void>> processing(@PathVariable Integer id,
                         @RequestBody @Valid ManagerPaymentSubmissionForm form,
                         HttpServletRequest request) {
@@ -49,6 +59,11 @@ public class PaymentSubmissionManagerController {
         }
 
         @GetMapping("/{id}/export")
+        @Audit(
+                entity = EntityType.PAYMENT_SUBMISSION,
+                action = AuditLogAction.EXPORT,
+                description = AuditLogDescriptionConstant.PAYMENT_SUBMISSION_EXPORT
+        )
         public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
                         @PathVariable Integer id,
                         SearchRequest searchRequest) throws Exception {

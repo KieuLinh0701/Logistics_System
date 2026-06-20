@@ -1,8 +1,12 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestDetailDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestEditDto;
 import com.logistics.dto.user.shippingRequest.UserShippingRequestListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.shippingRequest.UserShippingRequestForm;
 import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -40,6 +44,11 @@ public class ShippingRequestUserController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_CREATE
+    )
     public ResponseEntity<ApiResponse<Void>> create(
             @Valid @ModelAttribute UserShippingRequestForm userShippingRequestForm,
             HttpServletRequest request) {
@@ -50,6 +59,12 @@ public class ShippingRequestUserController {
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Boolean>> update(
             @PathVariable Integer id,
             @Valid @ModelAttribute UserShippingRequestForm userShippingRequestForm,
@@ -81,6 +96,12 @@ public class ShippingRequestUserController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_CANCEL,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> cancel(
             @PathVariable Integer id,
             HttpServletRequest request) {
@@ -91,6 +112,11 @@ public class ShippingRequestUserController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             UserShippingRequestSearchRequest userShippingRequestSearchRequest) throws Exception {

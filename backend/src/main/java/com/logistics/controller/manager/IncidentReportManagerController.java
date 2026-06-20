@@ -1,7 +1,11 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportDetailDto;
 import com.logistics.dto.manager.incidentReport.ManagerIncidentReportListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
 import com.logistics.request.manager.incidentReport.ManagerIncidentUpdateRequest;
 import com.logistics.response.ApiResponse;
@@ -49,6 +53,12 @@ public class IncidentReportManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.INCIDENT_REPORT,
+            action = AuditLogAction.PROCESS,
+            description = AuditLogDescriptionConstant.INCIDENT_REPORT_PROCESSING,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> processing(
             @PathVariable Integer id,
             @RequestBody ManagerIncidentUpdateRequest updateRequest,
@@ -60,6 +70,11 @@ public class IncidentReportManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.INCIDENT_REPORT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.INCIDENT_REPORT_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             SearchRequest searchRequest) throws Exception {

@@ -1,6 +1,10 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.shipperAssignment.ManagerShipperAssignmentListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentEditRequest;
 import com.logistics.request.manager.shipperAssignment.ManagerShipperAssignmentSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -27,6 +31,11 @@ public class ShipperAssignmentManagerController {
     private ShipperAssignmentManagerService service;
 
     @PostMapping
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_CREATE
+    )
     public ResponseEntity<ApiResponse<Boolean>> create(
             @RequestBody ManagerShipperAssignmentEditRequest editRequest,
             HttpServletRequest request) {
@@ -37,6 +46,12 @@ public class ShipperAssignmentManagerController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(
             @PathVariable Long id,
             @RequestBody ManagerShipperAssignmentEditRequest editRequest,
@@ -48,6 +63,12 @@ public class ShipperAssignmentManagerController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> deleteFutureAssignment(
             @PathVariable Long id,
             HttpServletRequest request) {
@@ -68,6 +89,11 @@ public class ShipperAssignmentManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SHIPPER_ASSIGNMENT,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPPER_ASSIGNMENT_EXPORT
+    )
     public ResponseEntity<byte[]> exportExcel(HttpServletRequest request,
             ManagerShipperAssignmentSearchRequest searchRequest) throws Exception {
 

@@ -1,8 +1,12 @@
 package com.logistics.controller.user;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.user.employee.EmployeeByRoleIdListUserDto;
 import com.logistics.dto.user.employee.EmployeeListUserDto;
 import com.logistics.dto.user.employee.ShopWorkHistoryListUserDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.user.employee.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
@@ -16,7 +20,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user/employees")
-@Tag(name = "User - Employee", description = "Quản lý nhân sự, cập nhật trạng thái, thông tin công việc và lịch sử làm việc của nhân viên tại bưu cục")
+@Tag(
+        name = "User - Employee",
+        description = "Quản lý nhân sự, cập nhật trạng thái, thông tin công việc và lịch sử làm việc của nhân viên tại bưu cục"
+)
 public class EmployeeUserController {
 
     @Autowired
@@ -42,6 +49,12 @@ public class EmployeeUserController {
     }
 
     @PatchMapping("/{id}/active")
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_UPDATE_STATUS,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> updateIsActive(
             @PathVariable Integer id,
             @Valid @RequestBody UpdateIsActiveUserRequest updateIsActiveUserRequest,
@@ -53,6 +66,11 @@ public class EmployeeUserController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_CREATE
+    )
     public ResponseEntity<ApiResponse<Void>> create(
             @Valid @RequestBody CreateEmployeeUserRequest createEmployeeUserRequest,
             HttpServletRequest request) {
@@ -63,6 +81,12 @@ public class EmployeeUserController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.EMPLOYEE_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> update(@PathVariable int id,
             @Valid @RequestBody UpdateEmployeeUserRequest updateEmployeeUserRequest,
             HttpServletRequest request) {

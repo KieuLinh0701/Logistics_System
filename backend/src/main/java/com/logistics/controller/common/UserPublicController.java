@@ -1,5 +1,9 @@
 package com.logistics.controller.common;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.common.user.UpdateEmailRequest;
@@ -25,6 +29,11 @@ public class UserPublicController {
     private UserPublicService userService;
 
     @PostMapping("/password/update")
+    @Audit(
+            entity = EntityType.ACCOUNT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.USER_PASSWORD_UPDATE
+    )
     public ResponseEntity<ApiResponse<Void>> updatePassword(@RequestBody UpdatePasswordRequest request) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
 
@@ -37,6 +46,11 @@ public class UserPublicController {
     }
 
     @PostMapping("/email/update")
+    @Audit(
+            entity = EntityType.ACCOUNT,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.USER_EMAIL_UPDATE
+    )
     public ResponseEntity<?> sendEmailUpdateOTP(@RequestBody UpdateEmailRequest request) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
 
@@ -62,6 +76,11 @@ public class UserPublicController {
     }
 
     @PutMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.USER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.USER_PROFILE_UPDATE
+    )
     public ResponseEntity<?> updateProfile(@ModelAttribute UpdateProfileRequest request) {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
 

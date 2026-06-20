@@ -1,5 +1,9 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.admin.CreatePromotionRequest;
@@ -51,6 +55,11 @@ public class PromotionAdminController {
     }
 
     @PostMapping
+    @Audit(
+            entity = EntityType.PROMOTION,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.PROMOTION_CREATE
+    )
     public ResponseEntity<ApiResponse<String>> createPromotion(@RequestBody CreatePromotionRequest request) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -61,6 +70,12 @@ public class PromotionAdminController {
     }
 
     @PutMapping("/{id}")
+    @Audit(
+            entity = EntityType.PROMOTION,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.PROMOTION_UPDATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updatePromotion(
             @PathVariable Integer id,
             @RequestBody UpdatePromotionRequest request) {
@@ -73,6 +88,12 @@ public class PromotionAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.PROMOTION,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.PROMOTION_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deletePromotion(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

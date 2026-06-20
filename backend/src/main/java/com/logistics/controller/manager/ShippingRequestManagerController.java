@@ -1,7 +1,11 @@
 package com.logistics.controller.manager;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestDetailDto;
 import com.logistics.dto.manager.shippingRequest.ManagerShippingRequestListDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestForm;
 import com.logistics.request.manager.shippingRequest.ManagerShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -49,6 +53,12 @@ public class ShippingRequestManagerController {
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.PROCESS,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_PROCESSING,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<Void>> processing(@PathVariable Integer id,
             @ModelAttribute ManagerShippingRequestForm managerShippingRequestForm,
             HttpServletRequest request) {
@@ -59,6 +69,11 @@ public class ShippingRequestManagerController {
     }
 
     @GetMapping("/export")
+    @Audit(
+            entity = EntityType.SHIPPING_REQUEST,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.SHIPPING_REQUEST_EXPORT
+    )
     public ResponseEntity<byte[]> export(
             HttpServletRequest request,
             ManagerShippingRequestSearchRequest managerShippingRequestSearchRequest) throws Exception {

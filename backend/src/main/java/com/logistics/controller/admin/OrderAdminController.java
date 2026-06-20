@@ -1,6 +1,10 @@
 package com.logistics.controller.admin;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.response.ApiResponse;
@@ -40,6 +44,12 @@ public class OrderAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.ORDER_DELETE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deleteOrder(@PathVariable Integer id) {
         if (isNotAdmin()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
