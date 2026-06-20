@@ -4,6 +4,7 @@ import com.logistics.dto.manager.dashboard.ManagerOrderStatsDTO;
 import com.logistics.dto.user.dashboard.UserCreatedOrderCountDTO;
 import com.logistics.dto.user.dashboard.UserDeliveredOrderCountDTO;
 import com.logistics.dto.user.dashboard.UserOrderStatsDTO;
+import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
@@ -49,6 +50,8 @@ public interface OrderRepository
     Optional<Order> findByTrackingNumberAndUserId(String trackingNumber, int userId);
 
     Optional<Order> findByIdAndUserId(Integer id, int userId);
+
+    Optional<Order> findByTrackingNumberIgnoreCase(String trackingNumber);
 
     List<Order> findByUserIdAndIdIn(Integer userId, List<Integer> orderIds);
 
@@ -227,4 +230,16 @@ public interface OrderRepository
 
     long countByUserIdAndRecipientPhoneAndRecipientFullAddressAndStatusIn(
             int userId, String phone, String fullAddress, List<OrderStatus> statuses);
+
+    @Query("""
+            SELECT DISTINCT o.fromOffice FROM Order o
+            WHERE o.user.id = :userId AND o.fromOffice IS NOT NULL
+            """)
+    List<Office> findDistinctFromOfficesByUserId(@Param("userId") Integer userId);
+
+    @Query("""
+            SELECT DISTINCT o.toOffice FROM Order o
+            WHERE o.user.id = :userId AND o.toOffice IS NOT NULL
+            """)
+    List<Office> findDistinctToOfficesByUserId(@Param("userId") Integer userId);
 }

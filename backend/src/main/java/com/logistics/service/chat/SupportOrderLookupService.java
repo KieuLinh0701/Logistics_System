@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SupportOrderLookupService {
 
-    private static final Pattern TRACKING_PATTERN = Pattern.compile("\\b([A-Za-z]{2,6}[-_ ]?\\d{4,}|\\d{6,})\\b");
+    private static final Pattern TRACKING_PATTERN = Pattern.compile("(?i)\\b([a-z]{2,6})[-_ ]?(\\d{3,})\\b");
 
     private final OrderRepository orderRepository;
     private final SupportTicketRepository supportTicketRepository;
@@ -63,7 +63,16 @@ public class SupportOrderLookupService {
         if (trackingNumber == null || trackingNumber.isBlank()) {
             return Optional.empty();
         }
-        return orderRepository.findByTrackingNumberAndUserId(normalizeTrackingNumber(trackingNumber), accountId);
+
+        String normalized = normalizeTrackingNumber(trackingNumber);
+
+        // Nếu accountId == null, tìm đơn theo trackingNumber không filter user
+        if (accountId == null) {
+            return orderRepository.findByTrackingNumberIgnoreCase(normalized);
+        }
+
+        // Nếu có accountId, filter theo user để bảo mật trong ticket
+        return orderRepository.findByTrackingNumberAndUserId(normalized, accountId);
     }
 
     public String extractTrackingNumber(String message) {
@@ -71,12 +80,14 @@ public class SupportOrderLookupService {
             return null;
         }
 
-        Matcher matcher = TRACKING_PATTERN.matcher(message.trim().replaceAll("\\s+", " "));
+        Matcher matcher = TRACKING_PATTERN.matcher(message);
         if (!matcher.find()) {
             return null;
         }
 
-        return normalizeTrackingNumber(matcher.group(1));
+        String prefix = matcher.group(1).toUpperCase();
+        String number = matcher.group(2);
+        return prefix + number;
     }
 
     public boolean hasTrackingNumber(String message) {

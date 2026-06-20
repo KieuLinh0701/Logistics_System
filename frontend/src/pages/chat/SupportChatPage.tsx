@@ -1,23 +1,85 @@
 import { connectSupportSocket, type SupportSocketClient } from "../../socket/supportSocket";
-import { Avatar, Badge, Empty, Input, List, Spin, Tag, Typography, message } from "antd";
-import { UserOutlined, SendOutlined } from "@ant-design/icons";
+import {
+  Avatar,
+  Badge,
+  Empty,
+  Input,
+  List,
+  Spin,
+  Tag,
+  Typography,
+  message,
+  Select,
+  Button,
+  Popconfirm,
+  Alert,
+} from "antd";
+import {
+  UserOutlined,
+  SendOutlined,
+  UserSwitchOutlined,
+  CheckCircleOutlined,
+  RedoOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getUserId } from "../../utils/authUtils";
+import { getUserId, getUserRole } from "../../utils/authUtils";
 import supportApi from "../../api/supportApi";
-import type { SupportMessage, SupportTicket } from "../../types/support";
+import type { SupportMessage, SupportTicket, SupportTicketStatus } from "../../types/support";
+import TicketAssignModal from "../../components/chat/TicketAssignModal";
+import CloseTicketModal from "../../components/chat/CloseTicketModal";
 import "./SupportChatPage.css";
 
+dayjs.extend(relativeTime);
+
 const { Text, Title } = Typography;
+const { TextArea } = Input;
 
 type MessageMap = Record<number, SupportMessage[]>;
-type UnreadMap = Record<number, number>;
+
+const statusConfig: Record<string, { color: string; label: string }> = {
+  OPEN: { color: "blue", label: "Mới" },
+  PENDING: { color: "orange", label: "Chờ xử lý" },
+  ASSIGNED: { color: "cyan", label: "Đã phân công" },
+  RESOLVED: { color: "green", label: "Đã giải quyết" },
+  CLOSED: { color: "default", label: "Đã đóng" },
+};
+
+const filterOptions = [
+  { value: "ALL", label: "Tất cả" },
+  { value: "OPEN", label: "Đang mở" },
+  { value: "ASSIGNED", label: "Đã phân công" },
+  { value: "RESOLVED", label: "Đã giải quyết" },
+  { value: "CLOSED", label: "Đã đóng" },
+  { value: "MY", label: "Của tôi" },
+];
+
+const getSenderDisplayLabel = (msg: SupportMessage): string => {
+  if (msg.senderType === "ADMIN") {
+    return `${msg.senderName || "Admin"} (Admin)`;
+  }
+  if (msg.senderType === "MANAGER") {
+    return `${msg.senderName || "Manager"} (Manager)`;
+  }
+  if (msg.senderType === "BOT") {
+    return "Trợ lý Logistics";
+  }
+  if (msg.senderType === "SYSTEM") {
+    return "Hệ thống";
+  }
+  // USER
+  return `${msg.senderName || "Shop"} (Shop)`;
+};
 
 const SupportChatPage: React.FC = () => {
   const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
   const accountId = getUserId() || 0;
+  const userRole = getUserRole() || "";
+  const isAdmin = userRole.toLowerCase() === "admin";
+  const isManager = userRole.toLowerCase() === "manager";
 
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -25,9 +87,16 @@ const SupportChatPage: React.FC = () => {
   const [connected, setConnected] = useState(false);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [messagesByTicket, setMessagesByTicket] = useState<MessageMap>({});
-  const [unreadByTicket, setUnreadByTicket] = useState<UnreadMap>({});
+  const [unreadByTicket, setUnreadByTicket] = useState<Record<number, number>>({});
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [searchText, setSearchText] = useState("");
+
+  // Modal states
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [closeModalOpen, setCloseModalOpen] = useState(false);
+  const [reopenLoading, setReopenLoading] = useState(false);
 
   const selectedTicketIdRef = useRef<number | null>(null);
   const socketClientsRef = useRef<Map<number, SupportSocketClient>>(new Map());
@@ -45,17 +114,40 @@ const SupportChatPage: React.FC = () => {
     });
   }, []);
 
+  const filterTickets = useCallback((list: SupportTicket[]) => {
+    let filtered = list;
+
+    if (filterStatus === "MY") {
+      filtered = filtered.filter((t) => t.assignedToAccountId === accountId);
+    } else if (filterStatus !== "ALL") {
+      filtered = filtered.filter((t) => t.status === filterStatus);
+    }
+
+    if (searchText.trim()) {
+      const search = searchText.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.code?.toLowerCase().includes(search) ||
+          t.subject?.toLowerCase().includes(search) ||
+          t.latestMessage?.toLowerCase().includes(search) ||
+          t.createdByName?.toLowerCase().includes(search),
+      );
+    }
+
+    return filtered;
+  }, [filterStatus, searchText, accountId]);
+
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true);
     try {
       const res = await supportApi.getMyTickets();
       if (!res.success) {
-        message.error(res.message || "Không thể tải conversation");
+        message.error(res.message || "Không thể tải danh sách ticket");
         return;
       }
       setTickets(sortTickets(res.data || []));
     } catch {
-      message.error("Không thể tải conversation");
+      message.error("Không thể tải danh sách ticket");
     } finally {
       setLoadingTickets(false);
     }
@@ -95,6 +187,18 @@ const SupportChatPage: React.FC = () => {
     },
     [fetchMessages, messagesByTicket, navigate],
   );
+
+  const upsertTicket = useCallback((updatedTicket: SupportTicket) => {
+    setTickets((prev) => {
+      const idx = prev.findIndex((t) => t.id === updatedTicket.id);
+      if (idx === -1) {
+        return sortTickets([...prev, updatedTicket]);
+      }
+      const next = [...prev];
+      next[idx] = updatedTicket;
+      return sortTickets(next);
+    });
+  }, [sortTickets]);
 
   const upsertTicketPreview = useCallback((incoming: SupportMessage) => {
     setTickets((prev) => {
@@ -149,15 +253,13 @@ const SupportChatPage: React.FC = () => {
     [accountId, upsertTicketPreview],
   );
 
-  // Các subscription realtime được xử lý bởi `connectSupportSocket` trong lớp socket
-
   useEffect(() => {
-    fetchTickets();
+    void fetchTickets();
   }, [fetchTickets]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      fetchTickets();
+      void fetchTickets();
     }, 15000);
 
     return () => window.clearInterval(timer);
@@ -167,10 +269,8 @@ const SupportChatPage: React.FC = () => {
     if (!accountId) return;
 
     const clients = socketClientsRef.current;
-
     const ticketIds = new Set(tickets.map((t) => t.id));
 
-    // ngắt kết nối các client cho những ticket không còn tồn tại
     for (const [id, client] of clients.entries()) {
       if (!ticketIds.has(id)) {
         try {
@@ -182,7 +282,6 @@ const SupportChatPage: React.FC = () => {
       }
     }
 
-    // đảm bảo có một client cho mỗi ticket
     tickets.forEach((ticket) => {
       if (clients.has(ticket.id)) return;
       const client = connectSupportSocket({
@@ -195,11 +294,10 @@ const SupportChatPage: React.FC = () => {
     });
 
     return () => {
-      // không làm gì ở đây; việc dọn dẹp cuối cùng sẽ xảy ra khi component unmount
+      // cleanup handled in unmount
     };
   }, [accountId, tickets, handleIncomingMessage]);
 
-  // Đồng bộ trạng thái `connected` với bất kỳ client socket nào
   useEffect(() => {
     const sync = () => {
       const clients = Array.from(socketClientsRef.current.values());
@@ -212,12 +310,8 @@ const SupportChatPage: React.FC = () => {
     return () => window.clearInterval(id);
   }, [tickets]);
 
-  // Các subscription được quản lý bởi lớp socket
-
   useEffect(() => {
-    if (!tickets.length) {
-      return;
-    }
+    if (!tickets.length) return;
 
     const routeTicketId = Number(params.id);
     if (params.id && Number.isFinite(routeTicketId) && tickets.some((t) => t.id === routeTicketId)) {
@@ -232,7 +326,6 @@ const SupportChatPage: React.FC = () => {
     }
   }, [params.id, selectTicket, selectedTicketId, tickets]);
 
-  // Ngắt kết nối tất cả các client socket khi component unmount
   useEffect(() => {
     return () => {
       socketClientsRef.current.forEach((c) => {
@@ -253,14 +346,18 @@ const SupportChatPage: React.FC = () => {
     el.scrollTop = el.scrollHeight;
   }, [selectedTicketId, messagesByTicket]);
 
-  
-
   const selectedTicket = useMemo(
     () => tickets.find((ticket) => ticket.id === selectedTicketId) || null,
     [selectedTicketId, tickets],
   );
 
   const selectedMessages = selectedTicketId ? messagesByTicket[selectedTicketId] || [] : [];
+
+  const filteredTickets = useMemo(() => filterTickets(tickets), [tickets, filterTickets]);
+
+  // Status checks
+  const isClosed = selectedTicket?.status === "CLOSED";
+  const isResolved = selectedTicket?.status === "RESOLVED";
 
   const onSend = async () => {
     const text = inputValue.trim();
@@ -303,46 +400,121 @@ const SupportChatPage: React.FC = () => {
     }
   };
 
+  const handleAssignSuccess = (updatedTicket: SupportTicket) => {
+    setAssignModalOpen(false);
+    upsertTicket(updatedTicket);
+    if (selectedTicketId === updatedTicket.id) {
+      void fetchMessages(updatedTicket.id);
+    }
+  };
+
+  const handleCloseSuccess = (updatedTicket: SupportTicket) => {
+    setCloseModalOpen(false);
+    upsertTicket(updatedTicket);
+    if (selectedTicketId === updatedTicket.id) {
+      void fetchMessages(updatedTicket.id);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!selectedTicket) return;
+
+    setReopenLoading(true);
+    try {
+      const res = await supportApi.reopenTicket(selectedTicket.id);
+      if (!res.success || !res.data) {
+        message.error(res.message || "Không thể mở lại ticket");
+        return;
+      }
+      message.success("Đã mở lại ticket");
+      upsertTicket(res.data);
+      void fetchMessages(selectedTicket.id);
+    } catch {
+      message.error("Không thể mở lại ticket");
+    } finally {
+      setReopenLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status?: SupportTicketStatus) => {
+    if (!status) return null;
+    const config = statusConfig[status] || { color: "default", label: status };
+    return <Tag color={config.color}>{config.label}</Tag>;
+  };
+
+  // Permission checks
+  const canAssign = isAdmin;
+  const canClose = (isAdmin || (isManager && selectedTicket?.assignedToAccountId === accountId)) && !isClosed;
+  const canReopen = isAdmin || selectedTicket?.createdByAccountId === accountId;
+
+  // Can send message: not CLOSED
+  // Note: RESOLVED ticket allows sending (backend handles reopening)
+  const canSendMessage = !isClosed;
+
   return (
     <div className="support-chat-page">
+      {/* Sidebar */}
       <div className="support-chat-sidebar">
         <div className="support-chat-sidebar-header">
           <Title level={4} style={{ margin: 0 }}>CSKH Chat</Title>
           <Tag color={connected ? "green" : "default"}>{connected ? "Trực tuyến" : "Ngoại tuyến"}</Tag>
         </div>
 
+        {/* Filter & Search */}
+        <div style={{ padding: "8px 12px", borderBottom: "1px solid #f0f0f0" }}>
+          <Select
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={filterOptions}
+            style={{ width: "100%", marginBottom: 8 }}
+            size="small"
+          />
+          <Input
+            placeholder="Tìm kiếm..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            allowClear
+            size="small"
+          />
+        </div>
+
+        {/* Ticket List */}
         <Spin spinning={loadingTickets}>
-          {tickets.length === 0 ? (
+          {filteredTickets.length === 0 ? (
             <div className="support-chat-empty-wrap">
-              <Empty description="Chưa có cuộc trò chuyện" />
+              <Empty description="Không có ticket" />
             </div>
           ) : (
             <List
-              dataSource={tickets}
+              dataSource={filteredTickets}
               renderItem={(ticket) => {
                 const isActive = ticket.id === selectedTicketId;
                 const unread = unreadByTicket[ticket.id] || 0;
+
                 return (
                   <List.Item
                     className={`support-chat-conversation ${isActive ? "active" : ""}`}
                     onClick={() => selectTicket(ticket.id)}
                   >
                     <List.Item.Meta
-                      avatar={<Avatar src={ticket.createdByImage || undefined} icon={<UserOutlined />} />}
+                      avatar={
+                        <Badge dot={unread > 0} offset={[-4, 4]}>
+                          <Avatar src={ticket.createdByImage || undefined} icon={<UserOutlined />} />
+                        </Badge>
+                      }
                       title={
                         <div className="support-chat-conversation-title">
-                          <Text strong>{ticket.createdByName ? ticket.createdByName : (ticket.code ? ticket.code : `User #${ticket.createdByAccountId}`)}</Text>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {ticket.latestMessageAt ? dayjs(ticket.latestMessageAt).format("DD/MM HH:mm") : ""}
+                          <Text strong style={{ fontSize: 13 }}>
+                            {ticket.code}
                           </Text>
+                          {getStatusBadge(ticket.status)}
                         </div>
                       }
                       description={
                         <div className="support-chat-conversation-desc">
-                          <Text ellipsis className="support-chat-preview">
-                            {ticket.latestMessage || "(Chưa có tin nhắn)"}
+                          <Text ellipsis className="support-chat-preview" style={{ fontSize: 12 }}>
+                            {ticket.subject || ticket.latestMessage || "(Không có nội dung)"}
                           </Text>
-                          {unread > 0 ? <Badge count={unread} /> : null}
                         </div>
                       }
                     />
@@ -354,29 +526,95 @@ const SupportChatPage: React.FC = () => {
         </Spin>
       </div>
 
+      {/* Main Chat Area */}
       <div ref={messagesContainerRef} className="support-chat-main">
         {!selectedTicket ? (
           <div className="support-chat-empty-wrap">
-            <Empty description="Chọn cuộc trò chuyện để bắt đầu" />
+            <Empty description="Chọn ticket để bắt đầu" />
           </div>
         ) : (
           <>
+            {/* Header */}
             <div className="support-chat-main-header">
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
                 <Avatar src={selectedTicket.createdByImage || undefined} icon={<UserOutlined />} />
-                <div>
-                  <Title level={5} style={{ margin: 0 }}>
-                    {selectedTicket.createdByName ? selectedTicket.createdByName : (selectedTicket.code ? selectedTicket.code : `User #${selectedTicket.createdByAccountId}`)}
-                    <span style={{ marginLeft: 8, color: "#666", fontSize: 12 }}>(USER)</span>
-                  </Title>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <Title level={5} style={{ margin: 0 }}>
+                      {selectedTicket.createdByName || selectedTicket.code}
+                    </Title>
+                    {getStatusBadge(selectedTicket.status)}
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {selectedTicket.subject || "Không có tiêu đề"}
+                    {selectedTicket.isAssigned && selectedTicket.assignedToName
+                      ? ` → ${selectedTicket.assignedToName} phụ trách`
+                      : " → Chưa phân công"}
+                  </Text>
                 </div>
               </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                {canAssign && (
+                  <Button
+                    icon={<UserSwitchOutlined />}
+                    onClick={() => setAssignModalOpen(true)}
+                  >
+                    {selectedTicket.isAssigned ? "Chuyển" : "Phân công"}
+                  </Button>
+                )}
+
+                {canClose && !isResolved && (
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    onClick={() => setCloseModalOpen(true)}
+                  >
+                    Đánh dấu đã giải quyết
+                  </Button>
+                )}
+
+                {canReopen && (isClosed || isResolved) && (
+                  <Popconfirm
+                    title="Mở lại ticket này?"
+                    onConfirm={() => void handleReopen()}
+                    okText="Mở lại"
+                    cancelText="Hủy"
+                  >
+                    <Button icon={<RedoOutlined />} loading={reopenLoading}>
+                      Mở lại
+                    </Button>
+                  </Popconfirm>
+                )}
+              </div>
             </div>
+
+            {/* Messages */}
             <div className="support-chat-message-wrap">
               <Spin spinning={loadingMessages}>
                 <div className="support-chat-messages">
                   {selectedMessages.map((msg) => {
                     const isBot = msg.isBotMessage === true || msg.senderType === "BOT";
+                    const isSystem =
+                      (msg.messageType === "SYSTEM" && !isBot) || msg.senderType === "SYSTEM";
+
+                    // System message style
+                    if (isSystem) {
+                      return (
+                        <div key={msg.id} className="support-chat-system-message">
+                          <div className="support-chat-system-bubble">
+                            <Text type="secondary" style={{ fontSize: 12, fontStyle: "italic" }}>
+                              {msg.message}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 10, display: "block", textAlign: "center", marginTop: 2 }}>
+                              {dayjs(msg.createdAt).format("DD/MM HH:mm")}
+                            </Text>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const isMine = msg.senderAccountId === accountId;
                     const alignRight = isMine && !isBot;
                     const bubbleStyle = isBot
@@ -389,10 +627,10 @@ const SupportChatPage: React.FC = () => {
 
                     return (
                       <div key={msg.id} className={`support-chat-bubble-row ${alignRight ? "mine" : "their"}`}>
-                        {(!alignRight || isBot) ? (
+                        {!alignRight || isBot ? (
                           <div style={{ marginRight: 8 }}>
                             <Avatar
-                              src={isBot ? undefined : (msg.senderImage || undefined)}
+                              src={isBot ? undefined : msg.senderImage || undefined}
                               icon={isBot ? <span style={{ fontSize: 14 }}>🤖</span> : <UserOutlined />}
                               style={isBot ? { background: "#1677ff" } : undefined}
                             />
@@ -414,7 +652,18 @@ const SupportChatPage: React.FC = () => {
                             </div>
                           ) : null}
 
-                          <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.message}</div>
+                          {/* Show sender name + role for all messages (except own messages) */}
+                          {!isBot && !isMine && (
+                            <div style={{ marginBottom: 4 }}>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {getSenderDisplayLabel(msg)}
+                              </Text>
+                            </div>
+                          )}
+
+                          <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                            {msg.message}
+                          </div>
                           <Text type="secondary" style={{ fontSize: 11 }}>
                             {dayjs(msg.createdAt).format("DD/MM HH:mm")}
                           </Text>
@@ -428,39 +677,85 @@ const SupportChatPage: React.FC = () => {
                       </div>
                     );
                   })}
-                 
                 </div>
               </Spin>
             </div>
 
+            {/* Input */}
             <div className="support-chat-input-wrap">
-              <Input.TextArea
-                rows={2}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Nhập tin nhắn..."
-                onPressEnter={(e) => {
-                  if (!e.shiftKey) {
-                    e.preventDefault();
-                    onSend();
-                  }
-                }}
-                style={{ flex: 1, minWidth: 0 }}
-              />
+              <div className="support-chat-input-content">
+                {/* Show info for resolved ticket */}
+                {isResolved && (
+                  <Alert
+                    message="Yêu cầu đã được đánh dấu giải quyết. Nếu vẫn cần hỗ trợ, bạn có thể nhắn tiếp để mở lại."
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 8, fontSize: 12 }}
+                  />
+                )}
 
-              <button
-                type="button"
-                className="support-chat-send-btn"
-                aria-label="Gửi"
-                disabled={sending || !inputValue.trim()}
-                onClick={onSend}
-              >
-                <SendOutlined />
-              </button>
+                {/* Show warning for closed ticket */}
+                {isClosed && (
+                  <Alert
+                    message="Ticket đã đóng, không thể gửi tin nhắn."
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 8 }}
+                  />
+                )}
+
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <TextArea
+                    rows={2}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={isClosed ? "Ticket đã đóng" : "Nhập tin nhắn..."}
+                    disabled={!canSendMessage}
+                    onPressEnter={(e) => {
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        if (canSendMessage) {
+                          void onSend();
+                        }
+                      }
+                    }}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+
+                  <button
+                    type="button"
+                    className="support-chat-send-btn"
+                    aria-label="Gửi"
+                    disabled={sending || !inputValue.trim() || !canSendMessage}
+                    onClick={() => {
+                      if (canSendMessage) {
+                        void onSend();
+                      }
+                    }}
+                  >
+                    <SendOutlined />
+                  </button>
+                </div>
+              </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Modals */}
+      <TicketAssignModal
+        open={assignModalOpen}
+        ticket={selectedTicket}
+        onCancel={() => setAssignModalOpen(false)}
+        onSuccess={handleAssignSuccess}
+      />
+
+      <CloseTicketModal
+        open={closeModalOpen}
+        ticket={selectedTicket}
+        onCancel={() => setCloseModalOpen(false)}
+        onSuccess={handleCloseSuccess}
+      />
     </div>
   );
 };

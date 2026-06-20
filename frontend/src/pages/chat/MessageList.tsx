@@ -1,21 +1,39 @@
-import {Avatar, Tag, Typography} from "antd";
-import {UserOutlined} from "@ant-design/icons";
+import { Avatar, Spin, Tag, Typography } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import {useEffect, useRef} from "react";
-import type {SupportMessage} from "../../types/support";
+import { useEffect, useRef } from "react";
+import type { SupportMessage } from "../../types/support";
 
 const { Text } = Typography;
 
 type Props = {
   messages: SupportMessage[];
   currentAccountId: number;
+  loading?: boolean;
 };
 
 const isBotMessage = (item: SupportMessage) => {
   return item.isBotMessage === true || item.senderType === "BOT";
 };
 
-const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
+const getSenderDisplayLabel = (msg: SupportMessage): string => {
+  if (msg.senderType === "ADMIN") {
+    return `${msg.senderName || "Admin"} (Admin)`;
+  }
+  if (msg.senderType === "MANAGER") {
+    return `${msg.senderName || "Manager"} (Manager)`;
+  }
+  if (msg.senderType === "BOT") {
+    return "Trợ lý Logistics";
+  }
+  if (msg.senderType === "SYSTEM") {
+    return "Hệ thống";
+  }
+  // USER - display as Shop
+  return `${msg.senderName || "Shop"} (Shop)`;
+};
+
+const MessageList: React.FC<Props> = ({ messages, currentAccountId, loading }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -26,16 +44,74 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
   }, [messages]);
 
   return (
-    <div ref={containerRef} className="chat-modal-message-list" style={{ height: "100%", overflowY: "auto", padding: 12, paddingBottom: 32, background: "#fff" }}>
+    <div
+      ref={containerRef}
+      className="chat-modal-message-list"
+      style={{
+        height: "100%",
+        overflowY: "auto",
+        padding: 12,
+        paddingBottom: 32,
+        background: "#fff",
+        position: "relative",
+      }}
+    >
+      {loading && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255,255,255,0.7)",
+            zIndex: 10,
+          }}
+        >
+          <Spin />
+        </div>
+      )}
+
       {messages.map((item) => {
         const bot = isBotMessage(item);
         const isMine = item.senderAccountId === currentAccountId;
-        const isSystem = item.messageType === "SYSTEM" && !bot;
+        const isSystem =
+          (item.messageType === "SYSTEM" && !bot) || item.senderType === "SYSTEM";
 
         if (isSystem) {
           return (
-            <div key={item.id} style={{ textAlign: "center", marginBottom: 8 }}>
-              <Tag color="default">{item.message}</Tag>
+            <div
+              key={item.id}
+              style={{
+                textAlign: "center",
+                marginBottom: 8,
+                padding: "4px 16px",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-block",
+                  background: "#f5f5f5",
+                  borderRadius: 12,
+                  padding: "6px 12px",
+                  maxWidth: "85%",
+                }}
+              >
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, fontStyle: "italic" }}
+                >
+                  {item.message}
+                </Text>
+                <div style={{ textAlign: "center", marginTop: 2 }}>
+                  <Text type="secondary" style={{ fontSize: 10 }}>
+                    {dayjs(item.createdAt).format("DD/MM HH:mm")}
+                  </Text>
+                </div>
+              </div>
             </div>
           );
         }
@@ -47,7 +123,9 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
             : "#f5f5f5";
 
         const borderColor = bot ? "#91caff" : "transparent";
-        const label = bot ? (item.senderLabel || "Trợ lý logistics") : item.senderLabel || item.senderName;
+        const label = bot
+          ? item.senderLabel || "Trợ lý logistics"
+          : item.senderLabel || item.senderName;
 
         return (
           <div
@@ -59,10 +137,10 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
               alignItems: "flex-end",
             }}
           >
-            {(!isMine || bot) ? (
+            {!isMine || bot ? (
               <div style={{ marginRight: 8 }}>
                 <Avatar
-                  src={bot ? undefined : (item.senderImage || undefined)}
+                  src={bot ? undefined : item.senderImage || undefined}
                   icon={bot ? <span style={{ fontSize: 14 }}>🤖</span> : <UserOutlined />}
                   style={bot ? { background: "#1677ff" } : undefined}
                 />
@@ -81,7 +159,9 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
               }}
             >
               {bot ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}
+                >
                   <Tag color="processing" style={{ marginInlineEnd: 0 }}>
                     Trợ lý logistics
                   </Tag>
@@ -91,15 +171,17 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
                 </div>
               ) : null}
 
-              {!bot && label ? (
+              {!bot && !isMine && (
                 <div style={{ marginBottom: 4 }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {label}
+                    {getSenderDisplayLabel(item)}
                   </Text>
                 </div>
-              ) : null}
+              )}
 
-              <Text style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{item.message}</Text>
+              <Text style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                {item.message}
+              </Text>
               <div style={{ marginTop: 4, textAlign: "right" }}>
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   {dayjs(item.createdAt).format("DD/MM HH:mm")}
@@ -109,14 +191,16 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId }) => {
 
             {isMine && !bot ? (
               <div style={{ marginLeft: 8 }}>
-                <Avatar src={item.senderImage || undefined} icon={<UserOutlined />} />
+                <Avatar
+                  src={item.senderImage || undefined}
+                  icon={<UserOutlined />}
+                />
               </div>
             ) : null}
           </div>
         );
       })}
       <div style={{ height: 10, flexShrink: 0 }} />
-      
     </div>
   );
 };

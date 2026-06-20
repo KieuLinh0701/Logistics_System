@@ -1,7 +1,7 @@
 package com.logistics.controller.chat;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -12,12 +12,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.logistics.exception.AppException;
 import com.logistics.response.ApiResponse;
+import com.logistics.request.chat.AssignTicketRequest;
+import com.logistics.request.chat.CloseTicketRequest;
 import com.logistics.request.chat.CreateSupportTicketRequest;
 import com.logistics.request.chat.SendSupportMessageRequest;
 import com.logistics.dto.chat.SupportMessageDto;
 import com.logistics.dto.chat.SupportTicketDetailDto;
 import com.logistics.dto.chat.SupportTicketDto;
+import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.service.chat.SupportMessageService;
 import com.logistics.service.chat.SupportTicketService;
 import com.logistics.utils.SecurityUtils;
@@ -36,40 +40,103 @@ public class SupportController {
 
     @PostMapping("/tickets")
     public ResponseEntity<ApiResponse<SupportTicketDto>> createTicket(@Valid @RequestBody CreateSupportTicketRequest request) {
+        if (!SecurityUtils.hasRole("user")) {
+            throw new AppException(SupportTicketErrorCode.SUPPORT_CREATE_TICKET_DENIED);
+        }
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
-                .getName();
-        return ResponseEntity.ok(supportTicketService.createTicket(accountId, roleName, request));
+        SupportTicketDto dto = supportTicketService.createTicket(accountId, request);
+        return ResponseEntity.ok(ApiResponse.success("Tạo ticket thành công", dto));
     }
 
     @GetMapping("/tickets/my")
     public ResponseEntity<ApiResponse<List<SupportTicketDto>>> getMyTickets() {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
-                .getName();
-        return ResponseEntity.ok(supportTicketService.getMyTickets(accountId, roleName));
+        String roleName = SecurityUtils.getAuthenticatedUserRole() != null
+                ? SecurityUtils.getAuthenticatedUserRole().getName() : null;
+        List<SupportTicketDto> dto = supportTicketService.getMyTickets(accountId, roleName);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ticket thành công", dto));
     }
 
     @GetMapping("/tickets/{id}")
     public ResponseEntity<ApiResponse<SupportTicketDetailDto>> getTicketDetail(@PathVariable Integer id) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
-                .getName();
-        return ResponseEntity.ok(supportTicketService.getTicketDetail(id, accountId, roleName));
+        String roleName = SecurityUtils.getAuthenticatedUserRole() != null
+                ? SecurityUtils.getAuthenticatedUserRole().getName() : null;
+        SupportTicketDetailDto dto = supportTicketService.getTicketDetail(id, accountId, roleName);
+        return ResponseEntity.ok(ApiResponse.success("Lấy chi tiết ticket thành công", dto));
     }
 
     @GetMapping("/tickets/{id}/messages")
     public ResponseEntity<ApiResponse<List<SupportMessageDto>>> getMessages(@PathVariable Integer id) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        String roleName = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
-                .getName();
-        return ResponseEntity.ok(supportMessageService.getMessages(id, accountId, roleName));
+        String roleName = SecurityUtils.getAuthenticatedUserRole() != null
+                ? SecurityUtils.getAuthenticatedUserRole().getName() : null;
+        List<SupportMessageDto> dto = supportMessageService.getMessages(id, accountId, roleName);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách tin nhắn thành công", dto));
     }
 
     @PostMapping("/tickets/{id}/messages")
     public ResponseEntity<ApiResponse<SupportMessageDto>> sendMessage(@PathVariable Integer id, @Valid @RequestBody SendSupportMessageRequest request) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        return ResponseEntity.ok(supportMessageService.sendMessage(id, accountId, request));
+        SupportMessageDto dto = supportMessageService.sendMessage(id, accountId, request);
+        return ResponseEntity.ok(ApiResponse.success("Gửi tin nhắn thành công", dto));
     }
 
+    @PostMapping("/tickets/{id}/assign")
+    public ResponseEntity<ApiResponse<SupportTicketDto>> assignTicket(
+            @PathVariable Integer id,
+            @Valid @RequestBody AssignTicketRequest request) {
+        if (!SecurityUtils.hasRole("admin")) {
+            throw new AppException(SupportTicketErrorCode.SUPPORT_ASSIGN_DENIED);
+        }
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        SupportTicketDto dto = supportTicketService.assignTicket(id, accountId, request);
+        return ResponseEntity.ok(ApiResponse.success("Phân công ticket thành công", dto));
+    }
+
+    @PostMapping("/tickets/{id}/close")
+    public ResponseEntity<ApiResponse<SupportTicketDto>> closeTicket(
+            @PathVariable Integer id,
+            @RequestBody(required = false) CloseTicketRequest request) {
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        String roleName = SecurityUtils.getAuthenticatedUserRole() != null
+                ? SecurityUtils.getAuthenticatedUserRole().getName() : null;
+        SupportTicketDto dto = supportTicketService.closeTicket(id, accountId, roleName, request);
+        return ResponseEntity.ok(ApiResponse.success("Đã đánh dấu giải quyết ticket", dto));
+    }
+
+    @PostMapping("/tickets/{id}/force-close")
+    public ResponseEntity<ApiResponse<SupportTicketDto>> forceCloseTicket(
+            @PathVariable Integer id,
+            @RequestBody(required = false) CloseTicketRequest request) {
+        if (!SecurityUtils.hasRole("admin")) {
+            throw new AppException(SupportTicketErrorCode.SUPPORT_FORCE_CLOSE_DENIED);
+        }
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        SupportTicketDto dto = supportTicketService.forceCloseTicket(id, accountId, request);
+        return ResponseEntity.ok(ApiResponse.success("Đã đóng ticket thành công", dto));
+    }
+
+    @PostMapping("/tickets/{id}/reopen")
+    public ResponseEntity<ApiResponse<SupportTicketDto>> reopenTicket(@PathVariable Integer id) {
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        String roleName = SecurityUtils.getAuthenticatedUserRole() != null
+                ? SecurityUtils.getAuthenticatedUserRole().getName() : null;
+        SupportTicketDto dto = supportTicketService.reopenTicket(id, accountId, roleName);
+        return ResponseEntity.ok(ApiResponse.success("Đã mở lại ticket", dto));
+    }
+
+    @PostMapping("/messages/mark-read")
+    public ResponseEntity<ApiResponse<Void>> markMessagesRead(@RequestBody Map<String, Integer> body) {
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        Integer ticketId = body != null ? body.get("ticketId") : null;
+
+        if (ticketId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.failure("ticketId là bắt buộc"));
+        }
+
+        supportMessageService.markMessagesAsRead(ticketId, accountId);
+        return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));
+    }
 }

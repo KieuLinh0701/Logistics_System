@@ -2,16 +2,15 @@ package com.logistics.service.chat;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.logistics.dto.chat.BotPreviewResponse;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
 import com.logistics.entity.SupportMessage;
@@ -31,11 +30,22 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SupportAssistantService {
 
+    private static final String GREETING_MESSAGE = "Xin chào bạn 👋\n\nMình có thể hỗ trợ tra cứu đơn hàng, COD, lịch sử vận chuyển hoặc thông tin người giao hàng.\n\nBạn gửi mã vận đơn hoặc câu hỏi cần hỗ trợ nhé.";
+
+    private static final String THANK_YOU_MESSAGE = "Cảm ơn bạn 😊 Nếu cần hỗ trợ thêm, bạn cứ nhắn cho mình nhé.";
+
     private static final String FALLBACK_HUMAN_MESSAGE = "Mình đã ghi nhận yêu cầu của bạn.\n\nNhân viên CSKH sẽ tiếp nhận và hỗ trợ bạn trong cuộc trò chuyện này trong thời gian sớm nhất.";
-    private static final String ASK_TRACKING_MESSAGE = "Bạn vui lòng gửi mã vận đơn để mình kiểm tra giúp nhé.";
-    private static final String ORDER_NOT_FOUND_MESSAGE = "Mình chưa tìm thấy vận đơn này hoặc bạn không có quyền xem thông tin của vận đơn đó.";
+
+    private static final String ORDER_NOT_FOUND_MESSAGE = "Mình chưa tìm thấy vận đơn này hoặc bạn không có quyền xem thông tin của vận đơn đó. Bạn hãy kiểm tra lại mã vận đơn hoặc tạo yêu cầu hỗ trợ để CSKH kiểm tra.";
+
+    private static final String ASK_TRACKING_FOR_ORDER_MESSAGE = "Bạn vui lòng nhập mã vận đơn để mình kiểm tra thông tin đơn hàng. Ví dụ: HCM006.";
+
+    private static final String ASK_TRACKING_FOR_COD_MESSAGE = "Bạn vui lòng nhập mã vận đơn để mình kiểm tra thông tin COD. Ví dụ: HCM006.";
+
+    private static final String UNKNOWN_MESSAGE = "Mình chưa hiểu rõ yêu cầu của bạn. Bạn có thể nhập mã vận đơn, hỏi về COD hoặc tạo yêu cầu hỗ trợ.";
+
     private static final String NO_HISTORY_MESSAGE = "Hiện đơn hàng này chưa có lịch sử vận chuyển.";
-    private static final String NO_SHIPPER_MESSAGE = "Đơn hàng hiện chưa được phân công nhân viên giao hàng.";
+
     private static final DateTimeFormatter HISTORY_TIME_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final SupportIntentDetector supportIntentDetector;
@@ -55,6 +65,7 @@ public class SupportAssistantService {
             return;
         }
 
+        // Bỏ qua nếu đã có tin nhắn của Manager/Admin trong 30 phút gần nhất
         Optional<SupportMessage> lastManagerOrAdminMessage = supportMessageRepository
                 .findTopByTicketIdAndSenderTypeInOrderByCreatedAtDesc(ticket.getId(),
                         List.of(SupportMessageSenderType.MANAGER, SupportMessageSenderType.ADMIN));
@@ -74,12 +85,12 @@ public class SupportAssistantService {
         }
 
         if (intent == SupportIntentDetector.Intent.GREETING) {
-            supportBotMessageService.createBotMessage(ticket.getId(), "Xin chào bạn 👋\n\nMình có thể hỗ trợ tra cứu đơn hàng, COD, lịch sử vận chuyển hoặc thông tin người giao hàng.\n\nBạn gửi mã vận đơn hoặc câu hỏi cần hỗ trợ nhé.");
+            supportBotMessageService.createBotMessage(ticket.getId(), GREETING_MESSAGE);
             return;
         }
 
         if (intent == SupportIntentDetector.Intent.THANK_YOU) {
-            supportBotMessageService.createBotMessage(ticket.getId(), "Cảm ơn bạn. Nếu cần hỗ trợ thêm, bạn cứ nhắn cho mình nhé 😊");
+            supportBotMessageService.createBotMessage(ticket.getId(), THANK_YOU_MESSAGE);
             return;
         }
 
@@ -243,11 +254,12 @@ public class SupportAssistantService {
             return "Chưa có thông tin";
         }
         return switch (status) {
+            case NONE -> "Không có COD";
             case EXPECTED -> "Chờ thu COD";
-            case PENDING -> "Chờ xử lý COD";
-            case SUBMITTED -> "Đã nộp COD";
+            case PENDING -> "Shipper đang giữ tiền";
+            case SUBMITTED -> "Đã đưa vào phiên nộp tiền";
             case RECEIVED -> "Đã đối soát COD";
-            default -> status.name();
+            case TRANSFERRED -> "Đã chuyển tiền COD";
         };
     }
 
@@ -268,15 +280,23 @@ public class SupportAssistantService {
             return "Chưa có thông tin";
         }
         return switch (action) {
+            case PENDING -> "Chờ xử lý";
+            case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
+            case PICKING_UP -> "Đang lấy hàng";
+            case PICKED_UP -> "Đã lấy hàng";
             case IMPORTED -> "Đã nhập hàng";
+            case EXPORTED -> "Đã xuất hàng";
             case AT_DEST_OFFICE -> "Tại bưu cục đích";
             case DELIVERING -> "Đang giao hàng";
+            case DELIVERED -> "Đã giao thành công";
+            case PARTIAL_DELIVERY -> "Giao một phần";
+            case PARTIAL_RETURN -> "Hoàn một phần";
+            case FAILED_DELIVERY -> "Giao thất bại";
             case DELIVERY_RETRY -> "Chờ giao lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
-            case DELIVERED -> "Đã giao thành công";
             case RETURNING -> "Đang hoàn hàng";
             case RETURNED -> "Đã hoàn hàng";
-            default -> action.name();
+            case CANCELLED -> "Đã hủy";
         };
     }
 
@@ -329,5 +349,84 @@ public class SupportAssistantService {
 
     private String nullSafe(String value) {
         return value == null || value.isBlank() ? "N/A" : value;
+    }
+
+    public BotPreviewResponse previewMessage(String message) {
+        // Nếu message blank
+        if (message == null || message.isBlank()) {
+            return new BotPreviewResponse("NONE",
+                    "Bạn vui lòng nhập mã vận đơn hoặc nội dung cần hỗ trợ.",
+                    false, false);
+        }
+
+        SupportIntentDetector.Intent intent = supportIntentDetector.detect(message);
+
+        // Extract tracking number trước
+        String trackingNumber = supportOrderLookupService.extractTrackingNumber(message);
+
+        // Nếu có trackingNumber - thử tìm đơn
+        if (trackingNumber != null) {
+            Optional<Order> order = supportOrderLookupService.resolveByTrackingNumber(null, trackingNumber);
+            if (order.isPresent()) {
+                Order o = order.get();
+                String reply;
+                String intentName = intent.name();
+
+                switch (intent) {
+                    case COD_INFO:
+                        reply = buildCodInfoText(o);
+                        break;
+                    case ORDER_DETAIL:
+                        reply = buildOrderDetailText(o);
+                        break;
+                    case ORDER_HISTORY:
+                        reply = buildOrderHistoryText(o);
+                        break;
+                    case SHIPPER_INFO:
+                        reply = buildShipperInfoText(o);
+                        break;
+                    case NONE:
+                    case ORDER_STATUS:
+                    default:
+                        reply = buildOrderStatusText(o);
+                        if (intent == SupportIntentDetector.Intent.NONE) {
+                            intentName = "ORDER_STATUS";
+                        }
+                        break;
+                }
+
+                return new BotPreviewResponse(intentName, reply, false, false);
+            } else {
+                // Không tìm thấy đơn
+                return new BotPreviewResponse("ORDER_STATUS", ORDER_NOT_FOUND_MESSAGE, true, true);
+            }
+        }
+
+        // E. Không có trackingNumber
+        switch (intent) {
+            case GREETING:
+                return new BotPreviewResponse("GREETING", GREETING_MESSAGE, false, false);
+
+            case THANK_YOU:
+                return new BotPreviewResponse("THANK_YOU", THANK_YOU_MESSAGE, false, false);
+
+            case COD_INFO:
+                return new BotPreviewResponse("COD_INFO", ASK_TRACKING_FOR_COD_MESSAGE, false, false);
+
+            case ORDER_STATUS:
+            case ORDER_DETAIL:
+            case ORDER_HISTORY:
+            case SHIPPER_INFO:
+                return new BotPreviewResponse(intent.name(), ASK_TRACKING_FOR_ORDER_MESSAGE, false, false);
+
+            case FALLBACK_TO_HUMAN:
+                return new BotPreviewResponse("FALLBACK_TO_HUMAN",
+                        "Vấn đề này cần CSKH tiếp nhận. " + FALLBACK_HUMAN_MESSAGE,
+                        true, false);
+
+            case NONE:
+            default:
+                return new BotPreviewResponse("NONE", UNKNOWN_MESSAGE, true, true);
+        }
     }
 }

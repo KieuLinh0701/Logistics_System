@@ -55,6 +55,9 @@ public class SupportMessage {
     @Column(name = "is_internal_note", nullable = false)
     private Boolean isInternalNote = false;
 
+    @Column(name = "is_read")
+    private Boolean isRead = false;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

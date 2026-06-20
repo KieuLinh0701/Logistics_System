@@ -150,4 +150,16 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
             @Param("search") String search,
             @Param("shift") String shift,
             @Param("status") String status);
+
+    @Query("""
+            SELECT e FROM Employee e
+            JOIN e.accountRole ar
+            JOIN ar.role r
+            JOIN ar.account a
+            WHERE e.office.id = :officeId
+            AND e.status = com.logistics.enums.EmployeeStatus.ACTIVE
+            AND ar.isActive = true
+            AND LOWER(r.name) = LOWER('Manager')
+            """)
+    List<Employee> findActiveManagersByOfficeId(@Param("officeId") Integer officeId);
 }

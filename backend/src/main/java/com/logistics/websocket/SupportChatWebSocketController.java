@@ -5,7 +5,6 @@ import java.security.Principal;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
-import com.logistics.response.ApiResponse;
 import com.logistics.request.chat.SendSupportMessageRequest;
 import com.logistics.request.chat.SupportChatSendMessagePayload;
 import com.logistics.dto.chat.SupportMessageDto;
@@ -45,13 +44,14 @@ public class SupportChatWebSocketController {
                 payload.getMessageType(),
                 payload.getIsInternalNote());
 
-        ApiResponse<SupportMessageDto> response = supportMessageService.sendMessage(
-                payload.getTicketId(),
-                payload.getSenderAccountId(),
-                request);
 
-        if (!response.isSuccess()) {
-            // Keep silent for websocket send
+        try {
+            supportMessageService.sendMessage(
+                    payload.getTicketId(),
+                    payload.getSenderAccountId(),
+                    request);
+        } catch (Exception e) {
+            //
         }
     }
 }

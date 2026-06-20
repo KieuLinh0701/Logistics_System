@@ -2,6 +2,8 @@ package com.logistics.dto.chat;
 
 import java.time.LocalDateTime;
 
+import com.logistics.enums.SupportTicketStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,4 +28,13 @@ public class SupportTicketDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    private SupportTicketStatus status;
+    private String subject;
+    private String priority;
+    private Integer officeId;
+    private String officeName;
+    private Integer unreadCount;
+    private Boolean isAssigned;
+    private LocalDateTime closedAt;
+    private String closedByName;
 }

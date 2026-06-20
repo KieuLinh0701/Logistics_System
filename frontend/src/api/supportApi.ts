@@ -1,14 +1,23 @@
 import axiosClient from "./axiosClient";
 import type {ApiResponse} from "../types/response";
 import type {
+    BotPreviewResponse,
     CreateSupportTicketPayload,
     SendSupportMessagePayload,
     SupportMessage,
     SupportTicket,
     SupportTicketDetail,
+    AssignTicketPayload,
+    CloseTicketPayload,
+    SupportAssignOptionsResponse,
+    SupportAssignManagerOption,
 } from "../types/support";
 
 const supportApi = {
+  async previewBotMessage(message: string) {
+    return axiosClient.post<ApiResponse<BotPreviewResponse>>("/support/bot/preview", { message });
+  },
+
   async createTicket(payload: CreateSupportTicketPayload) {
     return axiosClient.post<ApiResponse<SupportTicket>>("/support/tickets", payload);
   },
@@ -31,6 +40,26 @@ const supportApi = {
 
   async markMessagesRead(ticketId: number) {
     return axiosClient.post<ApiResponse<null>>(`/support/messages/mark-read`, { ticketId });
+  },
+
+  async assignTicket(id: number, payload: AssignTicketPayload) {
+    return axiosClient.post<ApiResponse<SupportTicket>>(`/support/tickets/${id}/assign`, payload);
+  },
+
+  async closeTicket(id: number, payload?: CloseTicketPayload) {
+    return axiosClient.post<ApiResponse<SupportTicket>>(`/support/tickets/${id}/close`, payload || {});
+  },
+
+  async reopenTicket(id: number) {
+    return axiosClient.post<ApiResponse<SupportTicket>>(`/support/tickets/${id}/reopen`);
+  },
+
+  async getAssignOptions(ticketId: number) {
+    return axiosClient.get<ApiResponse<SupportAssignOptionsResponse>>(`/support/tickets/${ticketId}/assign-options`);
+  },
+
+  async getManagersByOffice(officeId: number) {
+    return axiosClient.get<ApiResponse<SupportAssignManagerOption[]>>(`/support/offices/${officeId}/managers`);
   },
 };
 

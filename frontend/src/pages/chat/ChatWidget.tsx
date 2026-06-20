@@ -1,12 +1,30 @@
-import {message} from "antd";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import { message } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CloseOutlined, CustomerServiceOutlined, ArrowLeftOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import { Button, Typography, Alert } from "antd";
 import supportApi from "../../api/supportApi";
-import type {SupportMessage, SupportTicket} from "../../types/support";
-import {chatStore} from "../../hooks/chatStore";
-import {useChatSocket} from "../../hooks/useChatSocket";
-import {getUserId, getUserRole} from "../../utils/authUtils";
+import type { SupportMessage, SupportTicket } from "../../types/support";
+import { chatStore } from "../../hooks/chatStore";
+import { useChatSocket } from "../../hooks/useChatSocket";
+import { getUserId, getUserRole } from "../../utils/authUtils";
 import ChatBubble from "./ChatBubble.tsx";
-import ChatModal from "./ChatModal.tsx";
+import ChatHome from "./ChatHome.tsx";
+import TicketListView from "./TicketListView.tsx";
+import MessageList from "./MessageList";
+import MessageInput from "./MessageInput";
+
+const { Text } = Typography;
+
+const statusLabel = (status?: string) => {
+  switch (status) {
+    case "OPEN": return "Mới";
+    case "PENDING": return "Chờ xử lý";
+    case "ASSIGNED": return "Đã phân công";
+    case "RESOLVED": return "Đã giải quyết";
+    case "CLOSED": return "Đã đóng";
+    default: return status || "";
+  }
+};
 
 const ChatWidget: React.FC = () => {
   const [role, setRole] = useState<string | null>(getUserRole());
@@ -52,66 +70,22 @@ const ChatWidget: React.FC = () => {
     };
   }, []);
 
+  const shouldConnectSocket = state.currentView === "ticket-detail" && state.ticketId;
+
   const { send: sendRealtime, connected } = useChatSocket({
-    ticketId: state.ticketId,
+    ticketId: shouldConnectSocket ? state.ticketId : null,
     accountId: accountId || 0,
     onIncoming: (incoming) => {
       chatStore.appendMessage(incoming);
 
-      if (incoming.senderAccountId !== accountId && chatStore.getState().chatState === "MINIMIZED") {
+      if (
+        incoming.senderAccountId !== accountId &&
+        chatStore.getState().chatState === "MINIMIZED"
+      ) {
         chatStore.incrementUnread();
       }
     },
   });
-
-  const hydrateTicket = useCallback(async (ticket: SupportTicket) => {
-    chatStore.setTicketId(ticket.id);
-
-    const msgRes = await supportApi.getMessages(ticket.id);
-    if (msgRes.success && msgRes.data) {
-      chatStore.setMessages(msgRes.data as SupportMessage[]);
-      return;
-    }
-    chatStore.setMessages([]);
-  }, []);
-
-  useEffect(() => {
-    if (!canUseWidget || !accountId) {
-      return;
-    }
-
-    let mounted = true;
-
-    const initConversation = async () => {
-      try {
-        const ticketsRes = await supportApi.getMyTickets();
-        if (!mounted) {
-          return;
-        }
-
-        if (!ticketsRes.success || !ticketsRes.data || ticketsRes.data.length === 0) {
-          chatStore.setTicketId(null);
-          chatStore.setMessages([]);
-          return;
-        }
-
-        const list = ticketsRes.data;
-        const activeTicket = list[0];
-        if (activeTicket) {
-          await hydrateTicket(activeTicket);
-        }
-      } catch {
-        chatStore.setTicketId(null);
-        chatStore.setMessages([]);
-      }
-    };
-
-    void initConversation();
-
-    return () => {
-      mounted = false;
-    };
-  }, [canUseWidget, accountId, hydrateTicket]);
 
   const openChat = useCallback(async () => {
     chatStore.setChatState("OPEN");
@@ -136,13 +110,15 @@ const ChatWidget: React.FC = () => {
     const onOpenFromEvent = (event: Event) => {
       const customEvent = event as CustomEvent<{ ticketId?: number }>;
       const targetTicketId = customEvent.detail?.ticketId;
-      if (targetTicketId && targetTicketId !== chatStore.getState().ticketId) {
+
+      if (targetTicketId) {
         void supportApi.getTicketDetail(targetTicketId).then((ticketRes) => {
           if (!ticketRes.success || !ticketRes.data?.ticket) {
+            chatStore.goHome();
             return;
           }
-          void hydrateTicket(ticketRes.data.ticket);
-          void openChat();
+          chatStore.setCurrentView("ticket-detail");
+          chatStore.goTicketDetail(ticketRes.data.ticket);
         });
         return;
       }
@@ -154,7 +130,7 @@ const ChatWidget: React.FC = () => {
     return () => {
       window.removeEventListener("support-chat-open", onOpenFromEvent as EventListener);
     };
-  }, [canUseWidget, hydrateTicket, state.ticketId, openChat]);
+  }, [canUseWidget, openChat]);
 
   const minimizeChat = () => {
     chatStore.setChatState("MINIMIZED");
@@ -171,29 +147,17 @@ const ChatWidget: React.FC = () => {
       return;
     }
 
+    if (!state.ticketId) {
+      message.error("Vui lòng tạo yêu cầu hỗ trợ trước");
+      return;
+    }
+
     setSending(true);
 
     try {
-      const currentTicketId = chatStore.getState().ticketId;
-
-      if (!currentTicketId) {
-        const createRes = await supportApi.createTicket({
-          initialMessage: trimmed,
-        });
-
-        if (!createRes.success || !createRes.data) {
-          message.error(createRes.message || "Không thể tạo cuộc trò chuyện hỗ trợ");
-          return;
-        }
-
-        await hydrateTicket(createRes.data);
-        chatStore.setUnreadCount(0);
-        return;
-      }
-
       if (connected) {
         sendRealtime({
-          ticketId: currentTicketId,
+          ticketId: state.ticketId,
           senderAccountId: accountId,
           message: trimmed,
           messageType: "TEXT",
@@ -202,7 +166,7 @@ const ChatWidget: React.FC = () => {
         return;
       }
 
-      const sendRes = await supportApi.sendMessage(currentTicketId, {
+      const sendRes = await supportApi.sendMessage(state.ticketId, {
         message: trimmed,
         messageType: "TEXT",
         isInternalNote: false,
@@ -231,28 +195,177 @@ const ChatWidget: React.FC = () => {
     return null;
   }
 
-  return (
-    <>
-      {!isOpen ? (
-        <ChatBubble
-          unreadCount={state.unreadCount}
-          position={state.position}
-          onOpen={() => void openChat()}
-          onPositionChange={onPositionChange}
-          draggableEnabled={!isMobile}
-        />
-      ) : null}
+  const renderTicketDetail = () => {
+    if (!state.selectedTicket) return null;
 
-      <ChatModal
-        open={isOpen}
-        messages={modalMessages}
-        currentAccountId={accountId}
-        sending={sending}
-        isMobile={isMobile}
-        onClose={minimizeChat}
-        onSend={sendMessage}
+    const ticket = state.selectedTicket;
+    const isClosed = ticket.status === "CLOSED";
+    const isResolved = ticket.status === "RESOLVED";
+
+    const canSend = !isClosed;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          background: "#f5f7fa",
+        }}
+      >
+        {/* Ticket header info */}
+        <div
+          style={{
+            padding: "8px 12px",
+            background: "#fff",
+            borderBottom: "1px solid #f0f0f0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Text strong style={{ fontSize: 14 }}>{ticket.code}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {statusLabel(ticket.status)}
+            </Text>
+          </div>
+          <Button
+            type="text"
+            size="small"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => chatStore.goTicketList()}
+          >
+            Quay lại
+          </Button>
+        </div>
+
+        {/* Info for resolved ticket */}
+        {isResolved && (
+          <div style={{ padding: "8px 12px", background: "#e6f7ff", borderBottom: "1px solid #91d5ff" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+              <InfoCircleOutlined style={{ color: "#1890ff", marginTop: 2 }} />
+              <Text style={{ fontSize: 12, color: "#595959" }}>
+                Yêu cầu đã được đánh dấu giải quyết. Nếu vẫn cần hỗ trợ, bạn có thể nhắn tiếp để mở lại.
+              </Text>
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          <MessageList
+            messages={modalMessages}
+            currentAccountId={accountId}
+            loading={false}
+          />
+        </div>
+
+        {/* Input */}
+        {isClosed ? (
+          <div
+            style={{
+              padding: 12,
+              background: "#f5f5f5",
+              textAlign: "center",
+              borderTop: "1px solid #f0f0f0",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Yêu cầu này đã được đóng.
+            </Text>
+          </div>
+        ) : (
+          <MessageInput onSend={sendMessage} sending={sending} />
+        )}
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (state.currentView) {
+      case "home":
+        return <ChatHome />;
+      case "ticket-list":
+        return <TicketListView />;
+      case "ticket-detail":
+        return renderTicketDetail();
+      default:
+        return <ChatHome />;
+    }
+  };
+
+  if (!isOpen) {
+    return (
+      <ChatBubble
+        unreadCount={state.unreadCount}
+        position={state.position}
+        onOpen={() => {
+          chatStore.setChatState("OPEN");
+        }}
+        onPositionChange={onPositionChange}
+        draggableEnabled={!isMobile}
       />
-    </>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        right: isMobile ? 0 : 20,
+        bottom: isMobile ? 0 : 20,
+        width: isMobile ? "100vw" : 380,
+        height: isMobile ? "100vh" : 560,
+        borderRadius: isMobile ? 0 : 14,
+        overflow: "hidden",
+        background: "#fff",
+        boxShadow: "0 18px 46px rgba(0,0,0,0.22)",
+        zIndex: 10001,
+        display: "flex",
+        flexDirection: "column",
+        animation: "supportChatEnter 0.16s ease-out",
+      }}
+    >
+      <style>
+        {`@keyframes supportChatEnter {
+          from { opacity: 0; transform: translateY(12px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }`}
+      </style>
+
+      {/* Common Header */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #0284c7, #0369a1)",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 12px",
+          height: 56,
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <CustomerServiceOutlined style={{ color: "white", fontSize: 20 }} />
+          <Text style={{ color: "white", fontWeight: 600, fontSize: 15 }}>
+            Hỗ trợ khách hàng
+          </Text>
+        </div>
+        <Button
+          type="text"
+          icon={<CloseOutlined />}
+          onClick={minimizeChat}
+          style={{ color: "white" }}
+        />
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {renderContent()}
+      </div>
+    </div>
   );
 };
 

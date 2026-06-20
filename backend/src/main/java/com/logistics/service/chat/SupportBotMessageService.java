@@ -35,6 +35,7 @@ public class SupportBotMessageService {
         entity.setMessage(message == null ? "" : message.trim());
         entity.setMessageType(SupportMessageType.SYSTEM);
         entity.setIsInternalNote(false);
+        entity.setIsRead(false);
 
         SupportMessage saved = supportMessageRepository.save(entity);
         updateTicketUpdatedAt(ticketId);
@@ -51,6 +52,7 @@ public class SupportBotMessageService {
         entity.setMessage(message == null ? "" : message.trim());
         entity.setMessageType(SupportMessageType.SYSTEM);
         entity.setIsInternalNote(false);
+        entity.setIsRead(false);
 
         SupportMessage saved = supportMessageRepository.save(entity);
         updateTicketUpdatedAt(ticketId);
@@ -99,6 +101,7 @@ public class SupportBotMessageService {
                 entity.getIsInternalNote(),
                 entity.getCreatedAt(),
                 senderName,
-                senderImage);
+                senderImage,
+                entity.getIsRead());
     }
 }
