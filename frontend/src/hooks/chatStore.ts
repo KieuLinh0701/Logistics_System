@@ -1,6 +1,7 @@
-import type {SupportMessage} from "../types/support";
+import type {SupportMessage, SupportTicket} from "../types/support";
 
 export type ChatState = "MINIMIZED" | "OPEN";
+export type ChatView = "home" | "ticket-list" | "ticket-detail";
 
 export type ChatPosition = {
   x: number;
@@ -9,10 +10,12 @@ export type ChatPosition = {
 
 export type ChatWidgetState = {
   chatState: ChatState;
+  currentView: ChatView;
   unreadCount: number;
   messages: SupportMessage[];
   position: ChatPosition;
   ticketId: number | null;
+  selectedTicket: SupportTicket | null;
 };
 
 type Listener = (state: ChatWidgetState) => void;
@@ -52,10 +55,12 @@ const loadPosition = (): ChatPosition => {
 
 let state: ChatWidgetState = {
   chatState: "MINIMIZED",
+  currentView: "home",
   unreadCount: 0,
   messages: [],
   position: loadPosition(),
   ticketId: null,
+  selectedTicket: null,
 };
 
 const emit = () => {
@@ -113,13 +118,77 @@ export const chatStore = {
     emit();
   },
 
+  setSelectedTicket(ticket: SupportTicket | null) {
+    state = {
+      ...state,
+      selectedTicket: ticket,
+      ticketId: ticket?.id ?? null,
+    };
+    emit();
+  },
+
+  setCurrentView(view: ChatView) {
+    state = { ...state, currentView: view };
+    emit();
+  },
+
+  selectTicket(ticket: SupportTicket) {
+    state = {
+      ...state,
+      selectedTicket: ticket,
+      ticketId: ticket.id,
+      currentView: "ticket-detail",
+      messages: [],
+    };
+    emit();
+  },
+
+  clearSelectedTicket() {
+    state = {
+      ...state,
+      selectedTicket: null,
+      ticketId: null,
+      messages: [],
+    };
+    emit();
+  },
+
+  goHome() {
+    state = {
+      ...state,
+      currentView: "home",
+    };
+    emit();
+  },
+
+  goTicketList() {
+    state = {
+      ...state,
+      currentView: "ticket-list",
+    };
+    emit();
+  },
+
+  goTicketDetail(ticket: SupportTicket) {
+    state = {
+      ...state,
+      selectedTicket: ticket,
+      ticketId: ticket.id,
+      currentView: "ticket-detail",
+      messages: [],
+    };
+    emit();
+  },
+
   reset() {
     state = {
       chatState: "MINIMIZED",
+      currentView: "home",
       unreadCount: 0,
       messages: [],
       position: loadPosition(),
       ticketId: null,
+      selectedTicket: null,
     };
     emit();
   },
