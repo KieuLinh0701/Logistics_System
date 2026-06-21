@@ -5,9 +5,9 @@ import dayjs from 'dayjs';
 import type {AuditLog} from "../../../../types/auditLog.ts";
 import {
     translateAuditLogAction,
-    translateAuditLogEntity,
     translateAuditLogStatus
 } from "../../../../utils/auditLogUtils.ts";
+import {translateEntityType} from "../../../../utils/entityTypeUtils.ts";
 
 interface AuditLogTableProps {
     data: AuditLog[];
@@ -65,7 +65,7 @@ const AuditLogTable: React.FC<AuditLogTableProps> = ({
             key: "entity",
             align: "center",
             render: (entity) => {
-                return translateAuditLogEntity(entity);
+                return translateEntityType(entity);
             },
         },
         {
