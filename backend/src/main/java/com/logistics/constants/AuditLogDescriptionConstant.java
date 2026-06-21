@@ -162,4 +162,48 @@ public class AuditLogDescriptionConstant {
     public static final String SERVICE_TYPE_CREATE = "Tạo loại dịch vụ mới";
     public static final String SERVICE_TYPE_UPDATE = "Cập nhật loại dịch vụ";
     public static final String SERVICE_TYPE_DELETE = "Xóa loại dịch vụ";
+
+    // Order - Shipper actions
+    public static final String ORDER_CLAIM_REQUEST = "Yêu cầu nhận đơn lấy hàng";
+    public static final String ORDER_CLAIM = "Nhận đơn hàng thành công";
+    public static final String ORDER_UNCLAIM = "Hủy nhận đơn hàng";
+    public static final String ORDER_PICKED_UP = "Xác nhận đã lấy hàng";
+    public static final String ORDER_DELIVERY_SUCCESS = "Giao hàng thành công";
+    public static final String ORDER_DELIVERY_FAILED = "Ghi nhận giao hàng thất bại";
+    public static final String ORDER_DELIVERY_ATTEMPT = "Ghi nhận lần giao hàng";
+    public static final String ORDER_RETURN_FAILED = "Trả hàng giao thất bại về bưu cục";
+    public static final String ORDER_PARTIAL_DELIVERY = "Hoàn tất giao một phần";
+    public static final String ORDER_PRODUCT_DELIVERED = "Giao sản phẩm thành công";
+    public static final String ORDER_PRODUCT_RETURNED = "Trả lại sản phẩm chưa giao được";
+    public static final String ORDER_RETURN_TO_ORIGIN = "Trả hàng về kho gốc";
+
+    // Incident Report
+    public static final String INCIDENT_REPORT_CREATE = "Tạo báo cáo sự cố vận chuyển";
+
+    // Shipper Vehicle Setting
+    public static final String SHIPPER_VEHICLE_SETTING_UPDATE = "Cập nhật cài đặt phương tiện";
+
+    // === DRIVER MODULE ===
+
+    // Shipment - Driver actions
+    public static final String SHIPMENT_START = "Bắt đầu vận chuyển chuyến hàng";
+    public static final String SHIPMENT_FINISH = "Hoàn tất vận chuyển chuyến hàng";
+
+    // Vehicle Tracking
+    public static final String VEHICLE_TRACKING_UPDATE = "Cập nhật vị trí phương tiện";
+
+    // COD
+    public static final String COD_COLLECT = "Thu tiền COD";
+    public static final String COD_SUBMIT = "Nộp tiền COD";
+
+    // Support Ticket
+    public static final String SUPPORT_TICKET_CREATE = "Tạo ticket hỗ trợ";
+    public static final String SUPPORT_TICKET_ASSIGN = "Phân công ticket hỗ trợ";
+    public static final String SUPPORT_TICKET_CLOSE = "Đóng ticket hỗ trợ";
+    public static final String SUPPORT_TICKET_FORCE_CLOSE = "Buộc đóng ticket hỗ trợ";
+    public static final String SUPPORT_TICKET_REOPEN = "Mở lại ticket hỗ trợ";
+
+    // Support Message
+    public static final String SUPPORT_MESSAGE_CREATE = "Gửi tin nhắn hỗ trợ";
+    public static final String SUPPORT_MESSAGE_MARK_READ = "Đánh dấu tin nhắn đã đọc";
 }

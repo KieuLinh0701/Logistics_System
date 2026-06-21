@@ -1,5 +1,9 @@
 package com.logistics.controller.driver;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.driver.FinishShipmentRequest;
@@ -27,6 +31,12 @@ public class ShipmentDriverController {
     }
 
     @PostMapping("/{id}/start")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SHIPMENT_START,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> startShipment(@PathVariable Integer id) {
         if (isNotDriver()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -34,7 +44,13 @@ public class ShipmentDriverController {
         shipmentDriverService.startShipment(id);
         return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu vận chuyển"));
     }
+
     @PostMapping("/finish")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SHIPMENT_FINISH
+    )
     public ResponseEntity<ApiResponse<String>> finishShipment(@RequestBody FinishShipmentRequest request) {
         if (isNotDriver()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -76,6 +92,11 @@ public class ShipmentDriverController {
     }
 
     @PostMapping("/tracking")
+    @Audit(
+            entity = EntityType.VEHICLE_TRACKING,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.VEHICLE_TRACKING_UPDATE
+    )
     public ResponseEntity<ApiResponse<String>> updateVehicleTracking(@RequestBody UpdateVehicleTrackingRequest request) {
         if (isNotDriver()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
