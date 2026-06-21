@@ -21,33 +21,18 @@ axiosClient.interceptors.request.use(
 );
 
 axiosClient.interceptors.response.use(
-  (response: AxiosResponse) => response.data,
-  (error: AxiosError) => {
-    console.error("API Error:", {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
+    (response: AxiosResponse) => response.data,
+    (error: AxiosError) => {
+        const status = error.response?.status;
+        const requestUrl = error.config?.url || "";
 
-    if (error.response) {
-      const status = error.response.status;
-      if (status === 401 && !error.config?.url?.includes("/auth/login")) {
-        console.warn("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!");
-        sessionStorage.clear();
-        window.location.href = "/login";
-      } else if (status >= 500) {
-        console.error("Lỗi máy chủ, vui lòng thử lại sau!");
-      }
-    } else if (error.request) {
-      console.error("Không thể kết nối tới server!");
-    } else {
-      console.error("Lỗi không xác định:", error.message);
+        if (status === 401 && !requestUrl.includes("/auth/login")) {
+            sessionStorage.clear();
+            window.location.href = "/login";
+        }
+
+        return Promise.resolve(error.response?.data);
     }
-
-    return Promise.reject(error);
-  }
 );
 
 type AxiosResponseData<T> = Promise<T>;
