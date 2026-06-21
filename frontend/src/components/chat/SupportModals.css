@@ -1,0 +1,22 @@
+/* Primary Button */
+.support-primary-btn {
+  background: #1E4DB7 !important;
+  border-color: #1E4DB7 !important;
+}
+
+.support-primary-btn:hover:not(:disabled) {
+  background: #2d5fd6 !important;
+  border-color: #2d5fd6 !important;
+}
+
+/* Modal Header */
+.ant-modal-header {
+  text-align: center;
+}
+
+.ant-modal-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}

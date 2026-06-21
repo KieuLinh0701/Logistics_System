@@ -1,31 +1,44 @@
 package com.logistics.service.chat;
 
-import com.logistics.dto.chat.SupportMessageDto;
-import com.logistics.entity.SupportMessage;
-import com.logistics.entity.SupportTicket;
-import com.logistics.enums.SupportMessageSenderType;
-import com.logistics.enums.SupportMessageType;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.logistics.enums.SupportTicketStatus;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.SupportMessageErrorCode;
 import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.repository.AccountRepository;
+import com.logistics.dto.chat.SupportMessageDto;
+import com.logistics.entity.SupportMessage;
+import com.logistics.entity.SupportTicket;
+import com.logistics.enums.SupportMessageSenderType;
+import com.logistics.enums.SupportMessageType;
+
 import com.logistics.repository.SupportMessageRepository;
 import com.logistics.repository.SupportTicketRepository;
 import com.logistics.request.chat.SendSupportMessageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SupportMessageService {
+
+    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    private static final List<String> ALLOWED_IMAGE_TYPES = List.of("image/jpeg", "image/png", "image/webp");
 
     private final SupportTicketRepository supportTicketRepository;
     private final SupportMessageRepository supportMessageRepository;
@@ -35,6 +48,7 @@ public class SupportMessageService {
     private final com.logistics.repository.EmployeeRepository employeeRepository;
     private final SupportAssistantService supportAssistantService;
     private final SupportBotMessageService supportBotMessageService;
+    private final Cloudinary cloudinary;
 
     @Transactional
     public SupportMessageDto sendMessage(Integer ticketId, Integer senderId,
@@ -402,6 +416,90 @@ public class SupportMessageService {
                 entity.getCreatedAt(),
                 senderName,
                 senderImage,
-                entity.getIsRead());
+                entity.getIsRead(),
+                entity.getImageUrl());
+    }
+
+    @Transactional
+    @SuppressWarnings("unchecked")
+    public SupportMessageDto sendImageMessage(Integer ticketId, Integer senderId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new AppException(SupportMessageErrorCode.SUPPORT_IMAGE_INVALID_TYPE);
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+            throw new AppException(SupportMessageErrorCode.SUPPORT_IMAGE_INVALID_TYPE);
+        }
+
+        if (file.getSize() > MAX_IMAGE_SIZE) {
+            throw new AppException(SupportMessageErrorCode.SUPPORT_IMAGE_SIZE_EXCEEDED);
+        }
+
+        SupportTicket ticket = supportTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new AppException(SupportTicketErrorCode.SUPPORT_TICKET_NOT_FOUND));
+
+        String roleName = resolveRoleNameByAccountId(senderId);
+
+        if (!canAccessTicket(ticket, senderId, roleName)) {
+            throw new AppException(SupportMessageErrorCode.SUPPORT_SEND_MESSAGE_DENIED);
+        }
+
+        if (ticket.getStatus() == SupportTicketStatus.CLOSED) {
+            throw new AppException(SupportTicketErrorCode.SUPPORT_TICKET_CLOSED);
+        }
+
+        // Upload to Cloudinary
+        String imageUrl;
+        try {
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "support-chat",
+                            "resource_type", "image"));
+            imageUrl = uploadResult.get("secure_url").toString();
+        } catch (Exception e) {
+            log.error("Failed to upload image to Cloudinary", e);
+            throw new AppException(SupportMessageErrorCode.SUPPORT_IMAGE_UPLOAD_FAILED);
+        }
+
+        boolean wasResolved = ticket.getStatus() == SupportTicketStatus.RESOLVED;
+        boolean isUserSender = !isManagerOrAdmin(roleName);
+
+        if (wasResolved && isUserSender) {
+            ticket.setStatus(SupportTicketStatus.OPEN);
+            ticket.setUpdatedAt(LocalDateTime.now());
+            supportTicketRepository.save(ticket);
+
+            createSystemMessage(ticketId, "🔓 Khách hàng đã phản hồi, yêu cầu được mở lại.");
+        }
+
+        SupportMessage saved = saveMessageWithImage(ticketId, senderId, imageUrl);
+
+        ticket.setUpdatedAt(LocalDateTime.now());
+        supportTicketRepository.save(ticket);
+
+        SupportMessageDto dto = toMessageDto(saved);
+        messagingTemplate.convertAndSend("/topic/support/" + ticketId, dto);
+
+        if (shouldTriggerAssistant(roleName, saved)) {
+            supportAssistantService.handleAfterUserMessage(ticket, saved);
+        }
+
+        return dto;
+    }
+
+    private SupportMessage saveMessageWithImage(Integer ticketId, Integer senderId, String imageUrl) {
+        SupportMessage entity = new SupportMessage();
+        entity.setTicketId(ticketId);
+        entity.setSenderAccountId(senderId);
+        entity.setSenderType(resolveSenderType(senderId));
+        entity.setMessage("[Hình ảnh]");
+        entity.setMessageType(SupportMessageType.IMAGE);
+        entity.setIsInternalNote(false);
+        entity.setIsRead(false);
+        entity.setImageUrl(imageUrl);
+
+        return supportMessageRepository.save(entity);
     }
 }

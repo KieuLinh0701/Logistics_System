@@ -99,6 +99,7 @@ public class SupportBotMessageService {
                 entity.getCreatedAt(),
                 senderName,
                 senderImage,
-                entity.getIsRead());
+                entity.getIsRead(),
+                entity.getImageUrl());
     }
 }

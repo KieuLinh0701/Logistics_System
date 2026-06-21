@@ -8,6 +8,7 @@ import type {
     SupportTicket,
 } from "../../types/support";
 import supportApi from "../../api/supportApi";
+import "./SupportModals.css";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -160,7 +161,7 @@ const TicketAssignModal: React.FC<Props> = ({ open, ticket, onCancel, onSuccess 
   return (
     <Modal
       title={
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
           <UserOutlined />
           <span>Phân công ticket</span>
         </div>
@@ -177,6 +178,8 @@ const TicketAssignModal: React.FC<Props> = ({ open, ticket, onCancel, onSuccess 
           loading={loading}
           disabled={!canSubmit}
           onClick={() => void handleSubmit()}
+          style={{ background: "#1E4DB7", borderColor: "#1E4DB7" }}
+          className="support-primary-btn"
         >
           Phân công
         </Button>,

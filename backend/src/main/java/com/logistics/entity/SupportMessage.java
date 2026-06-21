@@ -48,6 +48,9 @@ public class SupportMessage {
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

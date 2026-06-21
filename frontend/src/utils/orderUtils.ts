@@ -125,8 +125,6 @@ import {USER_FINAL_STATUSES} from "./userOrderEditRules";
     'PENDING',
     'CONFIRMED',
     'READY_FOR_PICKUP',
-    'PICKUP_PENDING',
-    'PICKUP_SUCCESS',
     'PICKUP_RETRY',
     'PICKUP_FAILED_FINAL',
     'PICKING_UP',
@@ -152,8 +150,6 @@ import {USER_FINAL_STATUSES} from "./userOrderEditRules";
       case 'PENDING': return 'Chờ duyệt';
       case 'CONFIRMED': return 'Đã xác nhận';
       case 'READY_FOR_PICKUP': return 'Sẵn sàng để lấy';
-      case 'PICKUP_PENDING': return 'Chờ lấy hàng';
-      case 'PICKUP_SUCCESS': return 'Lấy hàng thành công';
       case 'PICKUP_RETRY': return 'Lấy hàng thất bại - Thử lại';
       case 'PICKUP_FAILED_FINAL': return 'Lấy hàng thất bại - Dừng';
       case 'PICKING_UP': return 'Đang lấy hàng';

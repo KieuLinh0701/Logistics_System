@@ -60,7 +60,7 @@ public class PickupAttemptService {
         pickupAttemptRepository.save(attempt);
 
         if (status == PickupAttemptStatus.SUCCESS) {
-            order.setStatus(OrderStatus.PICKUP_SUCCESS);
+            order.setStatus(OrderStatus.PICKED_UP);
         } else {
             long failedCount = pickupAttemptRepository.countByOrderIdAndStatus(orderId, PickupAttemptStatus.FAILED);
             int maxAttempts = configService.getInt("MAX_PICKUP_ATTEMPTS");
