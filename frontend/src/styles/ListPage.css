@@ -199,6 +199,7 @@
   overflow-x: auto !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  width: 100% !important;
 }
 
 .table-container::-webkit-scrollbar {

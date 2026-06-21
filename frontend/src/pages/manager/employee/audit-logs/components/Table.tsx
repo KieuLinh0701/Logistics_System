@@ -3,10 +3,7 @@ import {Table, Tag} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import dayjs from 'dayjs';
 import type {AuditLog} from "../../../../../types/auditLog.ts";
-import {
-    translateAuditLogAction,
-    translateAuditLogStatus
-} from "../../../../../utils/auditLogUtils.ts";
+import {translateAuditLogAction, translateAuditLogStatus} from "../../../../../utils/auditLogUtils.ts";
 import {translateEntityType} from "../../../../../utils/entityTypeUtils.ts";
 
 interface AuditLogTableProps {

@@ -1,6 +1,6 @@
-import { Button, Input, Modal, Spin, message } from "antd";
-import { SendOutlined, PictureOutlined, CameraOutlined } from "@ant-design/icons";
-import { useEffect, useRef, useState } from "react";
+import {Button, Input, message, Modal, Spin} from "antd";
+import {CameraOutlined, PictureOutlined, SendOutlined} from "@ant-design/icons";
+import {useEffect, useRef, useState} from "react";
 import "./ChatMessageInput.css";
 
 const { TextArea } = Input;

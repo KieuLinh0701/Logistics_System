@@ -10,17 +10,17 @@ import {axiosExport} from "./exportClient";
 const shipperAssignmentApi = {
   // Manager
   async createManagerShipperAssignment(data: ManagerShipperAssignmentEditRequest) {
-    const res = await axiosClient.post<ApiResponse<Boolean>>("/manager/shipper-assignments", data);
+    const res = await axiosClient.post<ApiResponse<boolean>>("/manager/shipper-assignments", data);
     return res;
   },
 
   async updateManagerShipperAssignment(id: number, data: ManagerShipperAssignmentEditRequest) {
-    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/shipper-assignments/${id}`, data);
+    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/shipper-assignments/${id}`, data);
     return res;
   },
 
   async deleteManagerFutureShipperAssignment(id: number) {
-    const res = await axiosClient.delete<ApiResponse<Boolean>>(`/manager/shipper-assignments/${id}`);
+    const res = await axiosClient.delete<ApiResponse<boolean>>(`/manager/shipper-assignments/${id}`);
     return res;
   },
 

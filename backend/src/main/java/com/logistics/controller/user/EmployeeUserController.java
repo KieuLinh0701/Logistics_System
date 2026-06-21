@@ -69,7 +69,7 @@ public class EmployeeUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         service.updateIsActive(userId, id, updateIsActiveUserRequest);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping
@@ -84,7 +84,7 @@ public class EmployeeUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         service.createEmployee(userId, createEmployeeUserRequest);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PutMapping("/{id}")
@@ -100,7 +100,7 @@ public class EmployeeUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         service.updateEmployee(userId, id, updateEmployeeUserRequest);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/{id}/work-history")

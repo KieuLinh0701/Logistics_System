@@ -442,7 +442,7 @@ const UserOrderCreate: React.FC = () => {
             if (modalModeAddress === 'edit' && editingAddress?.id) {
                 const response = await addressApi.updateUserAddress(editingAddress.id, payload);
 
-                if (response.success && response.data) {
+                if (response.success) {
                     fetchAddresses();
                     message.success('Cập nhật địa chỉ thành công!');
                 } else {
@@ -451,7 +451,7 @@ const UserOrderCreate: React.FC = () => {
             } else {
                 const response = await addressApi.createUserAddress(payload);
 
-                if (response.success && response.data) {
+                if (response.success) {
                     fetchAddresses();
                     message.success('Thêm địa chỉ thành công!');
                 } else {
@@ -471,7 +471,7 @@ const UserOrderCreate: React.FC = () => {
         try {
             setLoadingAddress(true);
             const response = await addressApi.deleteUserAddress(addressId);
-            if (response.success && response.data) {
+            if (response.success) {
                 fetchAddresses();
                 message.success('Xóa địa chỉ thành công');
             } else {
@@ -488,7 +488,7 @@ const UserOrderCreate: React.FC = () => {
         try {
             setLoadingAddress(true);
             const response = await addressApi.setDefaultUserAddress(addressId);
-            if (response.success && response.data) {
+            if (response.success) {
                 fetchAddresses();
                 message.success("Đã đặt làm địa chỉ mặc định")
             } else {
@@ -1332,7 +1332,9 @@ const UserOrderCreate: React.FC = () => {
                     wardName: '',
                     cityCode: 0,
                     cityName: '',
-                    isDefault: addresses.length === 0
+                    isDefault: addresses.length === 0,
+                    latitude: 0,
+                    longitude: 0,
                 }}
                 onOk={handleSaveAddress}
                 onCancel={handleCancel}

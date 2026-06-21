@@ -36,7 +36,7 @@ import userApi from "../../../../api/userApi";
 import {geocodeAddress} from "../../../../service/mapsService.ts";
 
 const UserOrderEdit: React.FC = () => {
-    const { trackingNumber, orderId } = useParams();
+    const {trackingNumber, orderId} = useParams();
     const navigate = useNavigate();
 
     const [order, setOrder] = useState<Order | null>(null);
@@ -368,7 +368,7 @@ const UserOrderEdit: React.FC = () => {
         width: number,
         height: number,
         originalWeight: number
-        ) => {
+    ) => {
         try {
             const result = await shippingFeeApi.calculateWeight({
                 length,
@@ -528,7 +528,7 @@ const UserOrderEdit: React.FC = () => {
         setEditingAddress(null);
         form.resetFields();
         form.setFieldsValue({
-            address: { cityCode: undefined, wardCode: undefined, detail: "" }
+            address: {cityCode: undefined, wardCode: undefined, detail: ""}
         });
     };
 
@@ -753,7 +753,7 @@ const UserOrderEdit: React.FC = () => {
             }));
 
             const updated = orderProducts.map((op, i) =>
-                i === index ? { ...op, quantity: value } : op
+                i === index ? {...op, quantity: value} : op
             );
 
             setOrderProducts(updated);
@@ -842,7 +842,7 @@ const UserOrderEdit: React.FC = () => {
 
         if (!stillExists) {
             setSelectedOffice(null);
-            form.setFieldsValue({ senderOfficeId: undefined });
+            form.setFieldsValue({senderOfficeId: undefined});
         }
     }, [localOffices]);
 
@@ -932,7 +932,7 @@ const UserOrderEdit: React.FC = () => {
                 pickupType: pickupType,
                 weight,
                 originalWeight,
-                height, 
+                height,
                 length,
                 width,
                 serviceTypeId: selectedServiceType?.id,
@@ -948,14 +948,10 @@ const UserOrderEdit: React.FC = () => {
                 })),
             } as UserOrderRequest;
 
-            console.log("orderData", orderData);
-
             const result = await orderApi.updateUserOrder(order.id, orderData);
             if (result.success) {
                 message.success("Chỉnh sửa đơn hàng thành công")
-                if (result.data) {
-                    navigate(-1);
-                }
+                navigate(-1);
             } else {
                 message.error(result.message || "Chỉnh sửa đơn hàng thất bại")
             }
@@ -1200,7 +1196,7 @@ const UserOrderEdit: React.FC = () => {
                         <Button
                             type="text"
                             danger
-                            icon={<DeleteOutlined />}
+                            icon={<DeleteOutlined/>}
                             onClick={() => {
                                 setOrderProducts((prev) => {
                                     const updated = prev.filter(
@@ -1318,7 +1314,7 @@ const UserOrderEdit: React.FC = () => {
                                 onLoadOffices={() => {
                                     fetchLocalOffices();
                                 }}
-                                onChange={({ office, pickupType }) => {
+                                onChange={({office, pickupType}) => {
                                     setPickupType(pickupType);
 
                                     if (pickupType === "AT_OFFICE") {
@@ -1423,7 +1419,9 @@ const UserOrderEdit: React.FC = () => {
                     wardName: '',
                     cityCode: 0,
                     cityName: '',
-                    isDefault: addresses.length === 0
+                    isDefault: addresses.length === 0,
+                    latitude: 0,
+                    longitude: 0
                 }}
                 onOk={handleSaveAddress}
                 onCancel={handleCancel}

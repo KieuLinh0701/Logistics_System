@@ -51,6 +51,8 @@ const AddressSettingsUser: React.FC = () => {
                 isDefault: address.isDefault,
                 wardName: address.wardName || '',
                 cityName: address.cityName || '',
+                latitude: address.latitude,
+                longitude: address.longitude,
             });
             form.resetFields();
             form.setFieldsValue({
@@ -70,7 +72,9 @@ const AddressSettingsUser: React.FC = () => {
                 cityCode: 0,
                 wardName: '',
                 cityName: '',
-                isDefault: addresses.length === 0
+                isDefault: addresses.length === 0,
+                latitude: 0,
+                longitude: 0
             };
             setEditingAddress(emptyAddress as any);
             form.resetFields();
@@ -117,7 +121,7 @@ const AddressSettingsUser: React.FC = () => {
             if (modalMode === 'edit' && editingAddress?.id) {
                 const response = await addressApi.updateUserAddress(editingAddress.id, payload);
 
-                if (response.success && response.data) {
+                if (response.success) {
                     fetchAddresses();
                     message.success('Cập nhật địa chỉ thành công!');
                 } else {
@@ -126,7 +130,7 @@ const AddressSettingsUser: React.FC = () => {
             } else {
                 const response = await addressApi.createUserAddress(payload);
 
-                if (response.success && response.data) {
+                if (response.success) {
                     fetchAddresses();
                     message.success('Thêm địa chỉ thành công!');
                 } else {
@@ -147,11 +151,11 @@ const AddressSettingsUser: React.FC = () => {
         try {
             setLoading(true);
             const response = await addressApi.deleteUserAddress(addressId);
-            if (response.success && response.data) {
+            if (response.success) {
                 fetchAddresses();
                 message.success('Xóa địa chỉ thành công');
             } else {
-                message.error(response.message || "Xóa địa chỉ thành công");
+                message.error(response.message || "Xóa địa chỉ thất bại");
             }
         } catch (error) {
             message.error("Có lỗi khi xóa địa chỉ");
@@ -165,7 +169,7 @@ const AddressSettingsUser: React.FC = () => {
         try {
             setLoading(true);
             const response = await addressApi.setDefaultUserAddress(addressId);
-            if (response.success && response.data) {
+            if (response.success) {
                 fetchAddresses();
                 message.success("Đã đặt làm địa chỉ mặc định")
             } else {
@@ -218,7 +222,9 @@ const AddressSettingsUser: React.FC = () => {
                         wardName: '',
                         cityCode: 0,
                         cityName: '',
-                        isDefault: addresses.length === 0
+                        isDefault: addresses.length === 0,
+                        latitude: 0,
+                        longitude: 0
                     }}
                     onOk={handleSaveAddress}
                     onCancel={handleCancel}

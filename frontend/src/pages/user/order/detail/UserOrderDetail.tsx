@@ -32,10 +32,10 @@ import userApi from "../../../../api/userApi";
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 
 
-const { Title } = Typography;
+const {Title} = Typography;
 
 const UserOrderDetail: React.FC = () => {
-    const { trackingNumber, orderId } = useParams();
+    const {trackingNumber, orderId} = useParams();
 
     const navigate = useNavigate();
 
@@ -49,7 +49,7 @@ const UserOrderDetail: React.FC = () => {
     const [requestModalOpen, setRequestModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
 
-    const [userLocked, setUserLocked] = useState<Boolean>(false);
+    const [userLocked, setUserLocked] = useState<boolean>(false);
 
 
     const [summary, setSummary] = useState<OrderFulfillmentSummary | null>(null);
@@ -135,7 +135,7 @@ const UserOrderDetail: React.FC = () => {
         try {
             if (!order?.id) return;
             const result = await orderApi.cancelUserOrder(order.id);
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success("Hủy đơn hàng thành công");
                 fetchOrder();
             } else {
@@ -164,10 +164,10 @@ const UserOrderDetail: React.FC = () => {
             if (!order) return;
             const result = await orderApi.publicUserOrder(order.id);
 
-            if (result.success && result.data) {
-                message.success(result.message || "Đã chuyển đơn hàng sang xử lý thành công");
+            if (result.success) {
+                message.success("Đã chuyển đơn hàng sang xử lý thành công");
 
-                navigate(`/orders/tracking/${result.data}`, { replace: true });
+                navigate(`/orders/tracking/${result.data}`, {replace: true});
             } else {
                 message.error(result.message || "Chuyển trạng thái thất bại");
             }
@@ -189,8 +189,8 @@ const UserOrderDetail: React.FC = () => {
             if (!order) return;
             const result = await orderApi.deleteUserOrder(order.id);
 
-            if (result.success && result.data) {
-                message.success(result.message || "Xóa đơn hàng thành công");
+            if (result.success) {
+                message.success("Xóa đơn hàng thành công");
                 navigate(-1);
             } else {
                 message.error(result.message || "Xóa đơn hàng thất bại");
@@ -226,7 +226,7 @@ const UserOrderDetail: React.FC = () => {
             const result = await orderApi.setUserOrderReadyForPickup(order.id);
 
             if (result.success) {
-                message.success(result.message || "Chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy' thành công.");
+                message.success("Chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy' thành công.");
                 fetchOrder();
             } else {
                 message.error(result.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy'!");
@@ -266,13 +266,21 @@ const UserOrderDetail: React.FC = () => {
             title: "Số lượng đã giao",
             dataIndex: "deliveredQuantity",
             key: "deliveredQuantity",
-            render: (value: number | undefined) => value ?? 0,
+            render: (value: number | undefined) => (
+                <span className="custom-table-content-strong">
+                    {value ?? 0}
+                </span>
+            )
         },
         {
             title: "Số lượng hoàn",
             dataIndex: "returnedQuantity",
             key: "returnedQuantity",
-            render: (value: number | undefined) => value ?? 0,
+            render: (value: number | undefined) => (
+                <span className="custom-table-content-error">
+                    {value ?? 0}
+                </span>
+            )
         },
     ];
 
@@ -294,10 +302,10 @@ const UserOrderDetail: React.FC = () => {
                 }}
             />
             {order.pickupType === "AT_OFFICE" &&
-                <FromOfficeInfo office={order.fromOffice} />
+                <FromOfficeInfo office={order.fromOffice}/>
             }
-            <OrderInfo order={order} />
-            <OrderProducts products={order.orderProducts || []} />
+            <OrderInfo order={order}/>
+            <OrderProducts products={order.orderProducts || []}/>
             <div className="order-detail-card">
                 <Title level={5} className="order-detail-card-title order-detail-card-title-main">
                     Kết quả giao hàng
@@ -318,20 +326,24 @@ const UserOrderDetail: React.FC = () => {
                 </Descriptions>
             </div>
 
-            <div className="order-detail-card">
-                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-                    Chi tiết giao sản phẩm
-                </Title>
-                <Table
-                    rowKey={(record) => record.id || record.productId}
-                    columns={productColumns}
-                    dataSource={order.orderProducts || []}
-                    pagination={false}
-                    size="small"
-                />
-            </div>
-            <OrderHistoryCard histories={order.orderHistories} />
-            <OrderPayment order={order} />
+            {order.orderProducts.length !== 0 && (
+                <div className="order-detail-card">
+                    <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                        Chi tiết giao sản phẩm
+                    </Title>
+                    <div className="table-container">
+                        <Table
+                            rowKey={(record) => record.id || record.productId}
+                            columns={productColumns}
+                            dataSource={order.orderProducts || []}
+                            pagination={false}
+                            className="list-page-table"
+                        />
+                    </div>
+                </div>
+            )}
+            <OrderHistoryCard histories={order.orderHistories}/>
+            <OrderPayment order={order}/>
             <OrderActions
                 canPublic={canPublic}
                 canEdit={canEdit}
@@ -373,7 +385,7 @@ const UserOrderDetail: React.FC = () => {
             <AddEditModal
                 open={requestModalOpen}
                 mode="create"
-                request={{ orderTrackingNumber: order.trackingNumber }}
+                request={{orderTrackingNumber: order.trackingNumber}}
                 onSuccess={() => fetchOrder()}
                 onCancel={() => setRequestModalOpen(false)}
             />

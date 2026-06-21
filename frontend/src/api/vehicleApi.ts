@@ -44,7 +44,7 @@ const vehicleApi = {
   },
 
   async updateManagerVehicle(id: number, data: ManagerVehicleEditRequest) {
-    const res = await axiosClient.put<ApiResponse<Boolean>>(`/manager/vehicles/${id}`, data);
+    const res = await axiosClient.put<ApiResponse<boolean>>(`/manager/vehicles/${id}`, data);
     return res;
   },
 

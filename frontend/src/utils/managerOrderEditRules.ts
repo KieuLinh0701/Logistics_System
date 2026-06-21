@@ -5,7 +5,7 @@ interface EditableRule {
     nonEditableStatuses?: readonly OrderStatus[];
 }
 
-export const MANAGER_FINAL_STATUSES = ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED_DELIVERY'] as const;
+export const MANAGER_FINAL_STATUSES = ['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED_DELIVERY', 'PICKUP_FAILED_FINAL'] as const;
 
 // Điều kiện sửa order của manager cho đơn do user tạo
 // Chỉ cho phép sửa originalWeight, weight, height, length, width khi gian lận
@@ -33,11 +33,11 @@ export const MANAGER_EDIT_USER_ORDER_FIELD_RULES: Record<string, EditableRule> =
     recipientDetailAddress: {editableStatuses: []},
 
     // Thông tin đơn hàng
-    weight: {editableStatuses: ['PICKED_UP', 'AT_ORIGIN_OFFICE']},
-    originalWeight: {editableStatuses: ['PICKED_UP', 'AT_ORIGIN_OFFICE']},
-    height: {editableStatuses: ['PICKED_UP', 'AT_ORIGIN_OFFICE']},
-    length: {editableStatuses: ['PICKED_UP', 'AT_ORIGIN_OFFICE']},
-    width: {editableStatuses: ['PICKED_UP', 'AT_ORIGIN_OFFICE']},
+    weight: {editableStatuses: ['AT_ORIGIN_OFFICE']},
+    originalWeight: {editableStatuses: ['AT_ORIGIN_OFFICE']},
+    height: {editableStatuses: ['AT_ORIGIN_OFFICE']},
+    length: {editableStatuses: ['AT_ORIGIN_OFFICE']},
+    width: {editableStatuses: ['AT_ORIGIN_OFFICE']},
     serviceType: {editableStatuses: []},
     cod: {editableStatuses: []},
     orderValue: {editableStatuses: []},
@@ -100,10 +100,10 @@ export const MANAGER_EDIT_OFFICE_ORDER_FIELD_RULES: Record<string, EditableRule>
         editableStatuses: [],
     },
     recipientWardCode: {
-        editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKING_UP', 'PICKED_UP', 'AT_ORIGIN_OFFICE'],
+        editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKUP_RETRY', 'PICKING_UP', 'PICKED_UP', 'AT_ORIGIN_OFFICE'],
     },
     recipientWardName: {
-        editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKING_UP', 'PICKED_UP', 'AT_ORIGIN_OFFICE'],
+        editableStatuses: ['PENDING', 'CONFIRMED', 'READY_FOR_PICKUP', 'PICKUP_RETRY', 'PICKING_UP', 'PICKED_UP', 'AT_ORIGIN_OFFICE'],
     },
     recipientDetailAddress: {
         nonEditableStatuses: MANAGER_FINAL_STATUSES,
@@ -155,7 +155,7 @@ export const MANAGER_EDIT_OFFICE_ORDER_FIELD_RULES: Record<string, EditableRule>
     },
     // Ghi chú
     notes: {
-        nonEditableStatuses: ['DELIVERED', 'CANCELLED', 'RETURNED'],
+        nonEditableStatuses: MANAGER_FINAL_STATUSES,
     },
     // Khuyến mãi
     promotion: {

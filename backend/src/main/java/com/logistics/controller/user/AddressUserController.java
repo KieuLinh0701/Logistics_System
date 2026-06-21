@@ -75,7 +75,7 @@ public class AddressUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         service.delete(userId, id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PatchMapping("/{id}/default")
@@ -91,6 +91,6 @@ public class AddressUserController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         service.setDefault(userId, id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

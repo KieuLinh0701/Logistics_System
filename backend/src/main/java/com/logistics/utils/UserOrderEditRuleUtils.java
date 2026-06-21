@@ -28,7 +28,7 @@ public class UserOrderEditRuleUtils {
 
     public static final Set<OrderStatus> USER_FINAL_STATUSES = EnumSet.of(
             OrderStatus.DELIVERING, OrderStatus.DELIVERED, OrderStatus.RETURNED,
-            OrderStatus.CANCELLED, OrderStatus.FAILED_DELIVERY);
+            OrderStatus.CANCELLED, OrderStatus.FAILED_DELIVERY, OrderStatus.PICKUP_FAILED_FINAL);
 
     public static boolean canEditUserOrder(OrderStatus status) {
         return !USER_FINAL_STATUSES.contains(status);
@@ -67,6 +67,7 @@ public class UserOrderEditRuleUtils {
                         OrderStatus.PENDING,
                         OrderStatus.CONFIRMED,
                         OrderStatus.READY_FOR_PICKUP,
+                        OrderStatus.PICKUP_RETRY,
                         OrderStatus.PICKING_UP,
                         OrderStatus.PICKED_UP,
                         OrderStatus.AT_ORIGIN_OFFICE),
@@ -77,6 +78,7 @@ public class UserOrderEditRuleUtils {
                         OrderStatus.PENDING,
                         OrderStatus.CONFIRMED,
                         OrderStatus.READY_FOR_PICKUP,
+                        OrderStatus.PICKUP_RETRY,
                         OrderStatus.PICKING_UP,
                         OrderStatus.PICKED_UP,
                         OrderStatus.AT_ORIGIN_OFFICE),
@@ -99,8 +101,7 @@ public class UserOrderEditRuleUtils {
         map.put("fromOffice",
                 new EditableRule(EnumSet.of(OrderStatus.DRAFT, OrderStatus.PENDING), null));
         map.put("payer", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
-        map.put("notes", new EditableRule(null,
-                EnumSet.of(OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.RETURNED)));
+        map.put("notes", new EditableRule(null, USER_FINAL_STATUSES));
         map.put("promotion", new EditableRule(EnumSet.of(OrderStatus.DRAFT), null));
 
         USER_ORDER_FIELD_EDIT_RULES = Collections.unmodifiableMap(map);

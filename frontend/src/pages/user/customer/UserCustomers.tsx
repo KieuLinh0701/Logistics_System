@@ -223,7 +223,7 @@ const UserCustomers: React.FC = () => {
             if (modalMode === 'edit' && editingAddress?.id) {
                 const response = await recipientAddressApi.updateUserAddress(editingAddress.id, payload);
 
-                if (response.success && response.data) {
+                if (response.success) {
                     fetchAddresses();
                     message.success('Cập nhật địa chỉ thành công!');
                     handleCancel();
@@ -233,7 +233,7 @@ const UserCustomers: React.FC = () => {
             } else {
                 const response = await recipientAddressApi.createUserAddress(payload);
 
-                if (response.success && response.data) {
+                if (response.success) {
                     fetchAddresses();
                     message.success('Thêm địa chỉ thành công!');
                     handleCancel();
@@ -254,7 +254,7 @@ const UserCustomers: React.FC = () => {
         try {
             setLoading(true);
             const response = await recipientAddressApi.deleteUserAddress(addressId);
-            if (response.success && response.data) {
+            if (response.success) {
                 fetchAddresses();
                 message.success('Xóa địa chỉ thành công');
             } else {

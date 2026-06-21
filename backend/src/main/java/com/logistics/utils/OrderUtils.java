@@ -62,11 +62,13 @@ public class OrderUtils {
     private static final Set<OrderStatus> MANAGER_CANCEL_USER_ORDER_STATUSES = Set.of(
             OrderStatus.PENDING,
             OrderStatus.CONFIRMED,
+            OrderStatus.PICKING_UP,
             OrderStatus.READY_FOR_PICKUP);
 
     private static final Set<OrderStatus> MANAGER_CANCEL_OFFICE_ORDER_STATUSES = Set.of(
             OrderStatus.PENDING,
             OrderStatus.CONFIRMED,
+            OrderStatus.PICKING_UP,
             OrderStatus.READY_FOR_PICKUP,
             OrderStatus.AT_ORIGIN_OFFICE);
 

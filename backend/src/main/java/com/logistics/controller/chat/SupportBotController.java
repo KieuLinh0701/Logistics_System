@@ -1,8 +1,6 @@
 package com.logistics.controller.chat;
 
 import com.logistics.dto.chat.BotPreviewResponse;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.SupportMessageErrorCode;
 import com.logistics.request.chat.BotPreviewRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.chat.SupportAssistantService;
