@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
-import { Dropdown, Modal, Table } from "antd";
-import { DeleteOutlined, DownOutlined, EditOutlined } from "@ant-design/icons";
-import type { AdminVehicle } from "../../../../types/vehicle";
+import React, {useMemo} from "react";
+import {Dropdown, Modal, Table} from "antd";
+import {DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
+import type {AdminVehicle} from "../../../../types/vehicle";
 
 interface VehiclesTableProps {
   loading: boolean;

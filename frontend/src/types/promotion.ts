@@ -1,4 +1,4 @@
-import type { ServiceType } from "./serviceType";
+import type {ServiceType} from "./serviceType";
 
 export interface Promotion {
   id: number;

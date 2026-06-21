@@ -1,13 +1,6 @@
 import {useEffect, useRef, useState} from "react";
-import {
-    message,
-    Row,
-    Col,
-    Tag,
-} from "antd";
-import {
-    TeamOutlined,
-} from "@ant-design/icons";
+import {Col, message, Row, Tag,} from "antd";
+import {TeamOutlined,} from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
 import Actions from "./components/Actions";
 import type {

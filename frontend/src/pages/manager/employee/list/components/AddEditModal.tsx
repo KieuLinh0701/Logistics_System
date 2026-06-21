@@ -1,8 +1,13 @@
 import React from 'react';
-import { Modal, Form, Input, Select, Row, Col, DatePicker } from 'antd';
-import type { ManagerEmployee } from '../../../../../types/employee';
-import { OFFICE_MANAGER_ADDABLE_ROLES, translateRoleName } from '../../../../../utils/roleUtils';
-import { EMPLOYEE_SHIFTS, EMPLOYEE_STATUSES, translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
+import {Col, DatePicker, Form, Input, Modal, Row, Select} from 'antd';
+import type {ManagerEmployee} from '../../../../../types/employee';
+import {OFFICE_MANAGER_ADDABLE_ROLES, translateRoleName} from '../../../../../utils/roleUtils';
+import {
+    EMPLOYEE_SHIFTS,
+    EMPLOYEE_STATUSES,
+    translateEmployeeShift,
+    translateEmployeeStatus
+} from '../../../../../utils/employeeUtils';
 
 interface AddEditModalProps {
   open: boolean;

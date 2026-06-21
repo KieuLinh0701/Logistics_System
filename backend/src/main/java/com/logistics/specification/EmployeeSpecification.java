@@ -52,7 +52,9 @@ public class EmployeeSpecification {
             Join<Employee, AccountRole> accountRoleJoin = root.join("accountRole", JoinType.LEFT);
             Join<AccountRole, Role> roleJoin = accountRoleJoin.join("role", JoinType.LEFT);
 
-            Predicate predicate = cb.conjunction();
+            Predicate predicate = cb.and(
+                    cb.isNull(roleJoin.get("userOwner"))
+            );
 
             if (value != null && !value.isEmpty()) {
                 predicate = cb.and(

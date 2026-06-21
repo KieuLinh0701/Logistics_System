@@ -116,8 +116,6 @@ public class OrderUtils {
             case CONFIRMED -> "Đã xác nhận";
             case READY_FOR_PICKUP -> "Sẵn sàng để lấy";
 
-            case PICKUP_PENDING -> "Chờ lấy hàng";
-            case PICKUP_SUCCESS -> "Lấy hàng thành công";
             case PICKUP_RETRY -> "Lấy hàng thất bại - Thử lại";
             case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại - Dừng";
 

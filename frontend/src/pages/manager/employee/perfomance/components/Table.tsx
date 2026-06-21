@@ -1,5 +1,5 @@
 import React from "react";
-import {Table, Button, Tag, Tooltip} from "antd";
+import {Button, Table, Tooltip} from "antd";
 import type {ColumnsType} from "antd/es/table";
 import type {ManagerEmployeePerformanceData} from "../../../../../types/employee";
 import {translateEmployeeShift, translateEmployeeStatus} from "../../../../../utils/employeeUtils";

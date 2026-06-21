@@ -1,24 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
+import {Descriptions, Form, Input, message, Modal, Select, Tooltip, Typography, Upload,} from 'antd';
+import type {UploadFile} from 'antd/es/upload/interface';
+import {useNavigate} from 'react-router-dom';
+import type {Incident, ManagerIncidentUpdateRequest} from '../../../../../types/incidentReport';
 import {
-  Modal,
-  Form,
-  Input,
-  Select,
-  Descriptions,
-  Typography,
-  Tooltip,
-  Upload,
-  message,
-} from 'antd';
-import type { UploadFile } from 'antd/es/upload/interface';
-import { useNavigate } from 'react-router-dom';
-import type { Incident, ManagerIncidentUpdateRequest } from '../../../../../types/incidentReport';
-import { formatAddress } from '../../../../../utils/locationUtils';
-import {
-  getAllowedManagerIncidentReportStatuses,
-  translateIncidentPriority,
-  translateIncidentStatus,
-  translateIncidentType,
+    getAllowedManagerIncidentReportStatuses,
+    translateIncidentPriority,
+    translateIncidentStatus,
+    translateIncidentType,
 } from '../../../../../utils/incidentUtils';
 import incidentReportApi from '../../../../../api/incidentReportApi';
 

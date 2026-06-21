@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Form, Select, Input, Button, Typography, Card, message, Spin } from "antd";
-import { SearchOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Card, Form, Input, message, Select, Spin, Typography} from "antd";
+import {ClockCircleOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, SearchOutlined} from "@ant-design/icons";
 import "./OfficeSearch.css";
-import type { City, Ward } from "../../../../types/location";
+import type {City, Ward} from "../../../../types/location";
 import locationApi from "../../../../api/locationApi";
-import type { Office } from "../../../../types/office";
+import type {Office} from "../../../../types/office";
 import officeApi from "../../../../api/officeApi";
-import { translateOfficeType } from "../../../../utils/officeUtils";
+import {translateOfficeType} from "../../../../utils/officeUtils";
 
 const { Option } = Select;
 const { Title, Text } = Typography;

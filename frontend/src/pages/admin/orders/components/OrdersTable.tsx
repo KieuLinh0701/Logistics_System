@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
-import { Dropdown, Modal, Table } from "antd";
-import { DeleteOutlined, DownOutlined } from "@ant-design/icons";
-import type { AdminOrder } from "../../../../types/order";
-import { translateOrderStatus } from "../../../../utils/orderUtils";
+import React, {useMemo} from "react";
+import {Dropdown, Modal, Table} from "antd";
+import {DeleteOutlined, DownOutlined} from "@ant-design/icons";
+import type {AdminOrder} from "../../../../types/order";
+import {translateOrderStatus} from "../../../../utils/orderUtils";
 
 interface Option {
   label: string;

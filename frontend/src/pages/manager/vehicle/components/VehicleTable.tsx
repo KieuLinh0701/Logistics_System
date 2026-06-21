@@ -1,10 +1,10 @@
 import React from 'react';
-import { Table, Button, Space } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import {Button, Space, Table} from 'antd';
+import {EditOutlined} from '@ant-design/icons';
+import type {ColumnsType} from 'antd/es/table';
 import dayjs from 'dayjs';
-import type { Vehicle } from '../../../../types/vehicle';
-import { translateVehicleStatus, translateVehicleType } from '../../../../utils/vehicleUtils';
+import type {Vehicle} from '../../../../types/vehicle';
+import {translateVehicleStatus, translateVehicleType} from '../../../../utils/vehicleUtils';
 
 interface VehicleTableProps {
   data: Vehicle[];

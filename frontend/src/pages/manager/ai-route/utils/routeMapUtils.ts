@@ -1,5 +1,5 @@
-import { decode } from "@googlemaps/polyline-codec";
-import type { AiRouteStop, AiShipperRoute } from "../../../../types/aiRoute";
+import {decode} from "@googlemaps/polyline-codec";
+import type {AiRouteStop, AiShipperRoute} from "../../../../types/aiRoute";
 
 export const ROUTE_COLORS = [
   "#1C3D90",

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Typography, message, Form, Button, Input, Spin } from "antd";
+import React, {useEffect, useState} from "react";
+import {Button, Form, Input, message, Spin, Typography} from "antd";
 import dayjs from "dayjs";
 import companyInfoImage from "../../../assets/images/orderTracking.jpg";
 import HeaderHome from "../../../components/common/HeaderHome";
 import FooterHome from "../../../components/common/FooterHome";
 import "./OrderTracking.css";
-import type { OrderHistory } from "../../../types/orderHistory";
-import { useParams, useNavigate } from "react-router-dom";
+import type {OrderHistory} from "../../../types/orderHistory";
+import {useNavigate, useParams} from "react-router-dom";
 import orderApi from "../../../api/orderApi";
-import { getOrderHistoryActionText } from "../../../utils/orderHistoryUtils";
+import {getOrderHistoryActionText} from "../../../utils/orderHistoryUtils";
 
 const { Title, Paragraph } = Typography;
 

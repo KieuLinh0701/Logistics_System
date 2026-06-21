@@ -1,9 +1,9 @@
-import React, { useEffect } from "react";
-import { Modal, Input, Table, Tag, Row, Col } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
-import type { ManagerEmployee } from "../../../../../types/employee";
-import type { ColumnsType } from "antd/es/table";
-import { translateEmployeeShift } from "../../../../../utils/employeeUtils";
+import React, {useEffect} from "react";
+import {Col, Input, Modal, Row, Table, Tag} from "antd";
+import {SearchOutlined} from "@ant-design/icons";
+import type {ManagerEmployee} from "../../../../../types/employee";
+import type {ColumnsType} from "antd/es/table";
+import {translateEmployeeShift} from "../../../../../utils/employeeUtils";
 
 interface Props {
   open: boolean;

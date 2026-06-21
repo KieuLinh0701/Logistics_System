@@ -1,37 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect, useState} from "react";
+import {Avatar, Badge, Button, Divider, Dropdown, Layout, List, Modal, Space, Typography} from "antd";
 import {
-  Layout,
-  Button,
-  Space,
-  Typography,
-  Avatar,
-  Dropdown,
-  Badge,
-  List,
-  Divider,
-  Modal
-} from "antd";
-import {
-  UserOutlined,
-  LogoutOutlined,
-  ProfileOutlined,
-  BellOutlined,
-  ShoppingCartOutlined,
-  ClockCircleOutlined,
-  ExclamationCircleOutlined,
-  BellFilled,
-  PlayCircleOutlined
+    BellFilled,
+    BellOutlined,
+    ClockCircleOutlined,
+    ExclamationCircleOutlined,
+    LogoutOutlined,
+    PlayCircleOutlined,
+    ProfileOutlined,
+    ShoppingCartOutlined,
+    UserOutlined
 } from "@ant-design/icons";
-import { Link, useNavigate } from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import authApi from "../../api/authApi";
-import { getCurrentUser, getUserRole } from "../../utils/authUtils";
+import {getCurrentUser, getUserRole} from "../../utils/authUtils";
 import notificationApi from "../../api/notificationApi";
-import type { Notification } from "../../types/notification";
-import { connectWebSocket, disconnectWebSocket } from "../../socket/socket";
+import type {Notification} from "../../types/notification";
+import {connectWebSocket, disconnectWebSocket} from "../../socket/socket";
 import "./Header.css";
 import logo from "../../assets/images/home/logo_white.png";
-import { getFullName, type User } from "../../types/auth";
-import { translateRoleNameHeader } from "../../utils/roleUtils";
+import {getFullName, type User} from "../../types/auth";
+import {translateRoleNameHeader} from "../../utils/roleUtils";
 
 const { Header: AntHeader } = Layout;
 const { Text, Title } = Typography;

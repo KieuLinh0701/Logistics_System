@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { Typography, Card, Row, Col, message, Spin } from "antd";
+import React, {useEffect, useState} from "react";
+import {Card, Col, message, Row, Spin, Typography} from "antd";
 import {
-  EnvironmentOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  TeamOutlined,
-  TrophyOutlined,
-  SafetyOutlined
+    EnvironmentOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    SafetyOutlined,
+    TeamOutlined,
+    TrophyOutlined
 } from "@ant-design/icons";
 import companyInfoImage from "../../../assets/images/companyInfo.jpg";
 import HeaderHome from "../../../components/common/HeaderHome";
 import FooterHome from "../../../components/common/FooterHome";
-import type { Office } from "../../../types/office";
+import type {Office} from "../../../types/office";
 import officeApi from "../../../api/officeApi";
 import locationApi from "../../../api/locationApi";
 import "./CompanyInfo.css";

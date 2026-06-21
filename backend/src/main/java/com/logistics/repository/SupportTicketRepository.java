@@ -1,12 +1,12 @@
 package com.logistics.repository;
 
 import com.logistics.entity.SupportTicket;
+import com.logistics.enums.SupportTicketStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.logistics.enums.SupportTicketStatus;
 import java.util.List;
 
 @Repository

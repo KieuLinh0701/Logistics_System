@@ -1,4 +1,4 @@
-import { getUserPermissionGroups } from "../../utils/authUtils";
+import {getUserPermissionGroups} from "../../utils/authUtils";
 import Forbidden from "../common/Forbidden";
 import ManagerPaymentSubmissionBatchs from "../manager/paymentSubmissionBatch/ManagerPaymentSubmissionBatchs";
 import UserSettlementBatchs from "../user/settletmentBatch/UserSettlementBatchs";

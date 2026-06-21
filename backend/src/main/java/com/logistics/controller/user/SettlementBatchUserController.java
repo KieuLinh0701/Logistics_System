@@ -9,7 +9,6 @@ import com.logistics.dto.user.settlement.UserSettlementTransactionDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
-import com.logistics.request.user.shippingRequest.UserShippingRequestSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.user.SettlementBatchUserService;

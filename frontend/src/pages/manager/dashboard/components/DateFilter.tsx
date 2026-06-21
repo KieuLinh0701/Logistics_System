@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Row, Col, Space, Typography } from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Col, Row, Space, Typography} from 'antd';
 import dayjs from 'dayjs';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import {ClockCircleOutlined} from '@ant-design/icons';
 
 const { Text } = Typography;
 

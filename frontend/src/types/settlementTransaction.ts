@@ -1,4 +1,4 @@
-import type { Order } from "./orderHistory";
+import type {Order} from "./orderHistory";
 
 export interface SettlementTransaction {
     id: number;

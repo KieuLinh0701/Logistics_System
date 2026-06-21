@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Form, Input, Button, message, Card, Avatar, Modal } from 'antd';
-import { UserOutlined, CameraOutlined, EditOutlined, PhoneOutlined, EyeOutlined } from '@ant-design/icons';
-import { getCurrentUser } from '../../../../utils/authUtils';
+import React, {useEffect, useRef, useState} from 'react';
+import {Avatar, Button, Card, Form, Input, message, Modal} from 'antd';
+import {CameraOutlined, EditOutlined, EyeOutlined, PhoneOutlined, UserOutlined} from '@ant-design/icons';
+import {getCurrentUser} from '../../../../utils/authUtils';
 import userApi from '../../../../api/userApi';
-import type { User } from '../../../../types/auth';
+import type {User} from '../../../../types/auth';
 
 const ProfileSettings: React.FC = () => {
   const [loading, setLoading] = useState(false);

@@ -1,7 +1,7 @@
 import React from "react";
-import { Drawer, Descriptions } from "antd";
+import {Descriptions, Drawer} from "antd";
 import dayjs from "dayjs";
-import type { Promotion } from "../../../../types/promotion";
+import type {Promotion} from "../../../../types/promotion";
 
 interface PromotionDetailsDrawerProps {
   open: boolean;

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { message } from "antd";
+import React, {useCallback, useEffect, useState} from "react";
+import {message} from "antd";
 import orderApi from "../../../api/orderApi";
-import type { AdminOrder, Order } from "../../../types/order";
+import type {AdminOrder, Order} from "../../../types/order";
 import "../../hr/recruitment/components/RecruitmentShared.css";
 import "../../../styles/ListPage.css";
 import "../AdminModal.css";
@@ -9,7 +9,7 @@ import "./OrdersPage.css";
 import OrdersToolbar from "./components/OrdersToolbar";
 import OrdersTable from "./components/OrdersTable";
 import OrderDetailsDrawer from "./components/OrderDetailsDrawer";
-import { translateOrderStatus } from "../../../utils/orderUtils";
+import {translateOrderStatus} from "../../../utils/orderUtils";
 
 type QueryState = { page: number; limit: number; search: string; status?: string };
 

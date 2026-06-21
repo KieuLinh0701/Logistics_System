@@ -1,15 +1,5 @@
 package com.logistics.service.chat;
 
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.dto.chat.BotPreviewResponse;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
@@ -20,6 +10,15 @@ import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SupportMessageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -221,8 +220,6 @@ public class SupportAssistantService {
             case PENDING -> "Chờ xử lý";
             case CONFIRMED -> "Đã xác nhận";
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
-            case PICKUP_PENDING -> "Chờ lấy hàng";
-            case PICKUP_SUCCESS -> "Lấy hàng thành công";
             case PICKUP_RETRY -> "Chờ lấy lại";
             case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại cuối cùng";
             case PICKING_UP -> "Đang lấy hàng";

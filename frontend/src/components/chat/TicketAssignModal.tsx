@@ -1,21 +1,11 @@
-import { useEffect, useState } from "react";
-import {
-  Modal,
-  Form,
-  Select,
-  Button,
-  Typography,
-  message,
-  Spin,
-  Input,
-  Alert,
-} from "antd";
-import { UserOutlined, WarningOutlined } from "@ant-design/icons";
+import {useEffect, useState} from "react";
+import {Alert, Button, Form, Input, message, Modal, Select, Spin, Typography,} from "antd";
+import {UserOutlined, WarningOutlined} from "@ant-design/icons";
 import type {
-  SupportTicket,
-  AssignTicketPayload,
-  SupportAssignOfficeOption,
-  SupportAssignManagerOption,
+    AssignTicketPayload,
+    SupportAssignManagerOption,
+    SupportAssignOfficeOption,
+    SupportTicket,
 } from "../../types/support";
 import supportApi from "../../api/supportApi";
 import "./SupportModals.css";

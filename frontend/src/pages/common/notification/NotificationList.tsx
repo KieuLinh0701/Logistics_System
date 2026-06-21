@@ -1,24 +1,10 @@
-import React, { useEffect, useState } from "react";
-import {
-    Table,
-    Typography,
-    Button,
-    Layout,
-    Spin,
-    Input,
-    Checkbox,
-    message,
-} from "antd";
-import {
-    BellOutlined,
-    ReloadOutlined,
-    SearchOutlined,
-    CheckCircleOutlined
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import type { Notification } from "../../../types/notification";
+import React, {useEffect, useState} from "react";
+import {Button, Checkbox, Input, Layout, message, Spin, Table, Typography,} from "antd";
+import {BellOutlined, CheckCircleOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
+import {useNavigate} from "react-router-dom";
+import type {Notification} from "../../../types/notification";
 import notificationApi from "../../../api/notificationApi";
-import { getUserRole } from "../../../utils/authUtils";
+import {getUserRole} from "../../../utils/authUtils";
 import "./NotificationList.css";
 
 const { Content } = Layout;

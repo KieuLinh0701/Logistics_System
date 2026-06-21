@@ -1,9 +1,9 @@
 import React from "react";
-import { Form, Input, Modal, Select } from "antd";
-import type { FormInstance } from "antd";
-import type { AdminUser } from "../../../../types/user";
+import type {FormInstance} from "antd";
+import {Form, Input, Modal, Select} from "antd";
+import type {AdminUser} from "../../../../types/user";
 import "../../../hr/recruitment/job-posting/components/JobPostingComponents.css";
-import { translateRoleName } from "../../../../utils/roleUtils";
+import {translateRoleName} from "../../../../utils/roleUtils";
 
 interface AddEditUserModalProps {
   open: boolean;

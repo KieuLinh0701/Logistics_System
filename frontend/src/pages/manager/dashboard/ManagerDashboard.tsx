@@ -1,18 +1,18 @@
-import { Row, Col, message } from "antd";
-import { useEffect, useState } from "react";
+import {Col, message, Row} from "antd";
+import {useEffect, useState} from "react";
 import dashboardApi from "../../../api/dashboardApi";
-import { OrderStatsOverview } from "./components/OrderStatusOverview";
+import {OrderStatsOverview} from "./components/OrderStatusOverview";
 import DateFilter from "./components/DateFilter";
-import type { ManagerDashboardOverviewResponse } from "../../../types/dashboard";
-import { VehicleTypeChart } from "./components/VehicleTypeChart";
+import type {ManagerDashboardOverviewResponse} from "../../../types/dashboard";
+import {VehicleTypeChart} from "./components/VehicleTypeChart";
 import "./ManagerDashboard.css"
-import { VehicleStatsOverview } from "./components/VehicleStatsOverview";
-import { PaymentBatchStatsOverview } from "./components/PaymentBatchStatsOverview";
-import { EmployeeStatusOverview } from "./components/EmployeeStatusOverview";
-import { EmployeeTypeChart } from "./components/EmployeeTypeChart";
-import { IncidentStatsOverview } from "./components/IncidentStatsOverview";
-import { ShipmentStatsOverview } from "./components/ShipmentStatsOverview";
-import { ShippingRequestStatsOverview } from "./components/ShippingRequestStatsOverview";
+import {VehicleStatsOverview} from "./components/VehicleStatsOverview";
+import {PaymentBatchStatsOverview} from "./components/PaymentBatchStatsOverview";
+import {EmployeeStatusOverview} from "./components/EmployeeStatusOverview";
+import {EmployeeTypeChart} from "./components/EmployeeTypeChart";
+import {IncidentStatsOverview} from "./components/IncidentStatsOverview";
+import {ShipmentStatsOverview} from "./components/ShipmentStatsOverview";
+import {ShippingRequestStatsOverview} from "./components/ShippingRequestStatsOverview";
 
 const ManagerDashboard: React.FC = () => {
   const [data, setData] = useState<ManagerDashboardOverviewResponse | null>(null);

@@ -1,25 +1,15 @@
 import {useEffect, useRef, useState} from "react";
-import {
-    message,
-    Row,
-    Col,
-    Tag,
-    Form,
-} from "antd";
-import {
-    TeamOutlined,
-} from "@ant-design/icons";
+import {Col, Form, message, Row, Tag,} from "antd";
+import {TeamOutlined,} from "@ant-design/icons";
 import dayjs from "dayjs";
 import Title from "antd/es/typography/Title";
 import type {ManagerEmployee, ManagerEmployeeSearchRequest} from "../../../../types/employee";
 import employeeApi from "../../../../api/employeeApi";
-import {useSearchParams} from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import EmployeeTable from "./components/Table";
 import Actions from "./components/Actions";
 import SearchFilters from "./components/SearchFilters";
 import AddEditModal from "./components/AddEditModal";
-import type {ManagerOrderSearchRequest} from "../../../../types/order.ts";
-import orderApi from "../../../../api/orderApi.ts";
 
 const ManagerEmployeeList = () => {
     const latestRequestRef = useRef(0);
@@ -42,6 +32,7 @@ const ManagerEmployeeList = () => {
     const [total, setTotal] = useState(0);
     const [hover, setHover] = useState(false);
     const [form] = Form.useForm();
+    const navigate = useNavigate();
 
     const updateURL = () => {
         const params: any = {};
@@ -249,6 +240,10 @@ const ManagerEmployeeList = () => {
         setCurrentPage(1);
     };
 
+    const handleViewLog = async (id: number) => {
+        navigate(`/employees/${id}/logs`)
+    }
+
     const handleClearFilters = () => {
         setSearchText('');
         setFilterShift('ALL');
@@ -324,6 +319,7 @@ const ManagerEmployeeList = () => {
                             hireDate: dayjs(employee.hireDate)
                         });
                     }}
+                    onViewLog={handleViewLog}
                     onPageChange={(page, size) => {
                         setCurrentPage(page);
                         if (size) setPageSize(size);

@@ -1,6 +1,6 @@
 import React from "react";
-import { Modal, Form, Select, Input } from "antd";
-import { PICKUP_FAIL_REASONS, translatePickupFailReason } from "../../utils/orderUtils";
+import {Form, Input, Modal, Select} from "antd";
+import {PICKUP_FAIL_REASONS, translatePickupFailReason} from "../../utils/orderUtils";
 
 const { TextArea } = Input;
 

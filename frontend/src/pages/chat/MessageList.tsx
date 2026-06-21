@@ -1,8 +1,8 @@
 import { Avatar, Spin, Tag, Typography, Image } from "antd";
 import { UserOutlined, PictureOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { useEffect, useRef } from "react";
-import type { SupportMessage } from "../../types/support";
+import {useEffect, useRef} from "react";
+import type {SupportMessage} from "../../types/support";
 
 const { Text } = Typography;
 
@@ -123,9 +123,6 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId, loading }) =
             : "#f5f5f5";
 
         const borderColor = bot ? "#91caff" : "transparent";
-        const label = bot
-          ? item.senderLabel || "Trợ lý logistics"
-          : item.senderLabel || item.senderName;
 
         return (
           <div

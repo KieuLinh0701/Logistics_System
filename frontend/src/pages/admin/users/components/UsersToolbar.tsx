@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { Button, Input, Select } from "antd";
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Input, Select} from "antd";
+import {PlusOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import RecruitmentFilterPanel from "../../../hr/recruitment/components/RecruitmentFilterPanel";
 import "../../../hr/recruitment/components/RecruitmentShared.css";
-import { translateRoleName } from "../../../../utils/roleUtils";
+import {translateRoleName} from "../../../../utils/roleUtils";
 
 interface UsersToolbarProps {
   onSearchChange?: (q?: string) => void;

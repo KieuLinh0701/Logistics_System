@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from "react";
-import {Col, Row, Tag, message} from "antd";
+import {Col, message, Row, Tag} from "antd";
 import dayjs from "dayjs";
 import SearchFilters from "./components/SearchFilters";
 import Title from "antd/es/typography/Title";
@@ -12,9 +12,6 @@ import incidentReportApi from "../../../../api/incidentReportApi";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import "./ManagerIncidentReport.css"
 import ProcessingModal from "./components/ProcessingModal";
-import type {ManagerOrderSearchRequest} from "../../../../types/order.ts";
-import orderApi from "../../../../api/orderApi.ts";
-import OrderActions from "../list/components/Actions.tsx";
 import Actions from "./components/Actions.tsx";
 
 const ManagerIncidentReports = () => {

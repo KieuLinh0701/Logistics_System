@@ -11,8 +11,6 @@ public enum AuditLogAction {
     REJECT,
     CANCEL,
     LOGIN,
-    LOGOUT,
-    LOGIN_FAILED,
     CONFIRM,
     PROCESS,
     UPDATE_STATUS,

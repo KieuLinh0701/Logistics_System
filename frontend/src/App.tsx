@@ -29,6 +29,7 @@ import AdminPostOffices from "./pages/admin/postoffices/PostOfficesPage";
 import AdminServiceTypes from "./pages/admin/service-types/ServiceTypesPage";
 import AdminFeeConfigurations from "./pages/admin/fee-configurations/FeeConfigurationsPage";
 import ReportsPage from "./pages/admin/reports/ReportsPage";
+import AdminAuditLogsByUser from "./pages/admin/audit-logs-user/AdminAuditLogsByUser.tsx";
 
 // Manager
 import ManagerOffice from "./pages/manager/office/ManagerOffice";
@@ -43,6 +44,8 @@ import ManagerShipments from "./pages/manager/shipment/ManagerShipments";
 import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-assign/ManagerShipperAssignmentHistories";
 import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncidentReports";
 import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
+import ManagerAuditLogsByEmployee from "./pages/manager/employee/audit-logs/ManagerAuditLogsByEmployee.tsx";
+import ManagerAiRouteOptimization from "./pages/manager/ai-route/ManagerAiRouteOptimization";
 
 import OrderListRouter from "./pages/router/OrderListRouter";
 import VehiclesRouter from "./pages/router/VehiclesRouter";
@@ -52,7 +55,8 @@ import WaybillPrintRouter from "./pages/router/WaybillPrintRouter";
 import SettlementRouter from "./pages/router/SettlementRouter";
 import SettlementDetailRouter from "./pages/router/SettlementDetailRouter";
 import OrderEditRouter from "./pages/router/OrderEditRouter";
-import ManagerAiRouteOptimization from "./pages/manager/ai-route/ManagerAiRouteOptimization";
+import AuditLogsRouter from "./pages/router/AuditLogsRouter.tsx";
+import AuditLogsDetailRouter from "./pages/router/AuditLogsDetailRouter.tsx";
 
 // User
 import UserRoleList from "./pages/user/grouppermission/list/UserRoleList.tsx";
@@ -140,6 +144,8 @@ const App: React.FC = () => {
                         {/* Admin routes */}
                         <Route path="/users"
                                element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminUsers/></PrivateRoute>}/>
+                        <Route path="/users/:id/logs" element={<PrivateRoute
+                            allowedPermissionGroups={["group_admin"]}><AdminAuditLogsByUser/></PrivateRoute>}/>
                         <Route path="/postoffices"
                                element={<PrivateRoute allowedPermissionGroups={["group_admin"]}><AdminPostOffices/></PrivateRoute>}/>
                         <Route path="/service-types"
@@ -190,6 +196,10 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_user", "group_manager", "user_cod_session_view"]}><SettlementRouter/></PrivateRoute>}/>
                         <Route path="/settlements/:id" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager", "group_user", "user_cod_detail"]}><SettlementDetailRouter/></PrivateRoute>}/>
+                        <Route path="/logs" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager", "group_user", "user_audit_log_view", "group_admin"]}><AuditLogsRouter/></PrivateRoute>}/>
+                        <Route path="/employees/:id/logs"
+                               element={<PrivateRoute allowedPermissionGroups={["group_manager", "group_user", "user_audit_log_view_detail"]}><AuditLogsDetailRouter/></PrivateRoute>}/>
 
                         {/* User routes */}
                         <Route path="/orders/requests"
@@ -238,10 +248,12 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_manager"]}><ManagerShipperAssignmentHistory/></PrivateRoute>}/>
                         <Route path="/orders/incidents" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerIncidentReports/></PrivateRoute>}/>
-                        <Route path="/manager/leaves" element={<PrivateRoute
+                        <Route path="/leaves" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><LeaveManagementPage/></PrivateRoute>}/>
                         <Route path="/manager/internal-chat" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><InternalEmployeeChatPage/></PrivateRoute>}/>
+                        <Route path="/employees/:id/logs" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerAuditLogsByEmployee/></PrivateRoute>}/>
 
                         {/* Shipper routes */}
                         <Route path="/shipper/orders-unassigned" element={<PrivateRoute

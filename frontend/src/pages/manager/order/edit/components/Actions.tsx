@@ -1,7 +1,7 @@
 import React from "react";
-import { CloseOutlined, SaveOutlined } from "@ant-design/icons";
-import { Button, Row, Col } from "antd";
-import { canEditUserOrder, type OrderStatus } from "../../../../../utils/orderUtils";
+import {CloseOutlined, SaveOutlined} from "@ant-design/icons";
+import {Button, Col, Row} from "antd";
+import {canEditUserOrder, type OrderStatus} from "../../../../../utils/orderUtils";
 
 interface Props {
   onEdit: () => void;

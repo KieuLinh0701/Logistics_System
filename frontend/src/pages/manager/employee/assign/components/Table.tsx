@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Dropdown, Space, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
-import type { ManagerEmployee, ManagerEmployeeWithShipperAssignments } from '../../../../../types/employee';
-import type { ManagerShipperAssignment } from '../../../../../types/shipperAssignment';
-import { DownOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import React, {useEffect, useState} from 'react';
+import {Button, Dropdown, Space, Table} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
+import {translateEmployeeShift, translateEmployeeStatus} from '../../../../../utils/employeeUtils';
+import type {ManagerEmployee, ManagerEmployeeWithShipperAssignments} from '../../../../../types/employee';
+import type {ManagerShipperAssignment} from '../../../../../types/shipperAssignment';
+import {DownOutlined, PlusCircleOutlined} from '@ant-design/icons';
 import locationApi from '../../../../../api/locationApi';
 import dayjs from 'dayjs';
 

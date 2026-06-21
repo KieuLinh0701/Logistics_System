@@ -1,6 +1,6 @@
 import React from "react";
-import { Button } from "antd";
-import { FileExcelOutlined } from "@ant-design/icons";
+import {Button} from "antd";
+import {FileExcelOutlined} from "@ant-design/icons";
 
 interface Props {
   onExport: () => void;

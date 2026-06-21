@@ -1,5 +1,5 @@
-import React, {useEffect} from 'react';
-import {Table, Button, Tooltip, Dropdown} from 'antd';
+import React from 'react';
+import {Button, Dropdown, Table, Tooltip} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {useNavigate} from 'react-router-dom';
 import type {ShippingRequest} from '../../../../../types/shippingRequest';
@@ -8,7 +8,6 @@ import {
     translateShippingRequestStatus,
     translateShippingRequestType
 } from '../../../../../utils/shippingRequestUtils';
-import {formatAddress} from '../../../../../utils/locationUtils';
 import dayjs from 'dayjs';
 import {DownOutlined} from '@ant-design/icons';
 

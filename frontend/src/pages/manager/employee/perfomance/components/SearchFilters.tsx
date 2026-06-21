@@ -1,8 +1,12 @@
-import React, { useState } from "react";
-import { Row, Col, Input, Button, Select, Tooltip } from "antd";
-import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
-import { OFFICE_MANAGER_ADDABLE_ROLES, translateRoleName } from "../../../../../utils/roleUtils";
-import { EMPLOYEE_SHIFTS, EMPLOYEE_STATUSES, translateEmployeeShift, translateEmployeeStatus } from "../../../../../utils/employeeUtils";
+import React, {useState} from "react";
+import {Button, Col, Input, Row, Select, Tooltip} from "antd";
+import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
+import {
+    EMPLOYEE_SHIFTS,
+    EMPLOYEE_STATUSES,
+    translateEmployeeShift,
+    translateEmployeeStatus
+} from "../../../../../utils/employeeUtils";
 
 type FilterKeys = 'shift' | 'status';
 

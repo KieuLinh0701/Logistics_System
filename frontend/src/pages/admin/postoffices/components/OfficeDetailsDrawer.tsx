@@ -1,6 +1,6 @@
 import React from "react";
-import { Descriptions, Drawer, Tag } from "antd";
-import type { AdminOffice } from "../../../../types/office";
+import {Descriptions, Drawer, Tag} from "antd";
+import type {AdminOffice} from "../../../../types/office";
 
 interface Option {
   label: string;

@@ -9,7 +9,6 @@ import com.logistics.exception.AppException;
 import com.logistics.request.chat.SendSupportMessageRequest;
 import com.logistics.request.chat.SupportChatSendMessagePayload;
 import com.logistics.service.chat.SupportMessageService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

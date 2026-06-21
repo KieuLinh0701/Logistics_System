@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, message, Card, Typography } from 'antd';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import React, {useEffect, useState} from 'react';
+import {Button, Card, Form, Input, message, Typography} from 'antd';
+import {LockOutlined, MailOutlined} from '@ant-design/icons';
 import OtpInput from '../../../../components/common/input/OtpInput';
-import { getCurrentAccount } from '../../../../utils/authUtils';
+import {getCurrentAccount} from '../../../../utils/authUtils';
 import userApi from '../../../../api/userApi';
 
 const { Text } = Typography;

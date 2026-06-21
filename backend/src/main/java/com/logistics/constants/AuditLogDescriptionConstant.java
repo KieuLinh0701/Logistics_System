@@ -210,4 +210,10 @@ public class AuditLogDescriptionConstant {
     // Internal Chat
     public static final String INTERNAL_CHAT_MESSAGE_CREATE = "Gửi tin nhắn nội bộ";
     public static final String INTERNAL_CHAT_MESSAGE_MARK_READ = "Đánh dấu tin nhắn nội bộ đã đọc";
+    
+    // Audit Log
+    public static final String AUDIT_LOG_EXPORT_BY_EMPLOYEE = "Xuất báo cáo lịch sử hoạt động của nhân viên";
+    public static final String AUDIT_LOG_EXPORT = "Xuất báo cáo lịch sử hoat động";
+    public static final String AUDIT_LOG_EXPORT_BY_USER = "Xuất báo cáo lịch sử hoạt động của người đùng";
+
 }

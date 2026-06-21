@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Typography, message, Descriptions, Row } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Descriptions, message, Row, Space, Table, Typography} from "antd";
+import {ReloadOutlined} from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
-import type { DriverShipment } from "../../types/shipment";
+import type {DriverShipment} from "../../types/shipment";
 
 const { Title, Text } = Typography;
 

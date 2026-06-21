@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, DatePicker, Button } from 'antd';
-import type { ManagerShipperAssignment } from '../../../../../types/shipperAssignment';
+import React, {useEffect, useState} from 'react';
+import {Button, DatePicker, Form, Input, Modal, Select} from 'antd';
+import type {ManagerShipperAssignment} from '../../../../../types/shipperAssignment';
 import locationApi from '../../../../../api/locationApi';
 import dayjs from 'dayjs';
-import { DeleteOutlined, UserOutlined } from '@ant-design/icons';
-import type { ManagerEmployee } from '../../../../../types/employee';
+import {DeleteOutlined, UserOutlined} from '@ant-design/icons';
+import type {ManagerEmployee} from '../../../../../types/employee';
 
 const { Option } = Select;
 

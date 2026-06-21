@@ -1,12 +1,7 @@
 package com.logistics.service.chat;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.logistics.dto.chat.SupportTicketDetailDto;
+import com.logistics.dto.chat.SupportTicketDto;
 import com.logistics.entity.SupportMessage;
 import com.logistics.entity.SupportTicket;
 import com.logistics.enums.SupportTicketStatus;
@@ -14,15 +9,18 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.repository.AccountRepository;
 import com.logistics.repository.OfficeRepository;
+import com.logistics.repository.SupportTicketRepository;
 import com.logistics.request.chat.AssignTicketRequest;
 import com.logistics.request.chat.CloseTicketRequest;
 import com.logistics.request.chat.CreateSupportTicketRequest;
-import com.logistics.dto.chat.SupportTicketDetailDto;
-import com.logistics.dto.chat.SupportTicketDto;
-import com.logistics.repository.SupportTicketRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor

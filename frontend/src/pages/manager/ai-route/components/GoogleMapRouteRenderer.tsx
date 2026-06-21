@@ -1,16 +1,16 @@
-import React, { useCallback, useEffect, useRef } from "react";
-import { GoogleMap, InfoWindowF } from "@react-google-maps/api";
-import type { AiRouteStop, AiShipperRoute } from "../../../../types/aiRoute";
+import React, {useCallback, useEffect, useRef} from "react";
+import {GoogleMap, InfoWindowF} from "@react-google-maps/api";
+import type {AiRouteStop, AiShipperRoute} from "../../../../types/aiRoute";
 import RouteStopMarker from "./RouteStopMarker";
 import {
-  buildLatLngBounds,
-  collectMapPoints,
-  createDepotMarkerSvg,
-  decodeEncodedPolyline,
-  getRouteColor,
-  getRouteKey,
-  getStopLabel,
-  isValidStop,
+    buildLatLngBounds,
+    collectMapPoints,
+    createDepotMarkerSvg,
+    decodeEncodedPolyline,
+    getRouteColor,
+    getRouteKey,
+    getStopLabel,
+    isValidStop,
 } from "../utils/routeMapUtils";
 
 export interface SelectedStopInfo {

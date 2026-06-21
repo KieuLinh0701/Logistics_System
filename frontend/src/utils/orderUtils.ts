@@ -1,7 +1,7 @@
-  import { MANAGER_FINAL_STATUSES } from "./managerOrderEditRules";
-  import { USER_FINAL_STATUSES } from "./userOrderEditRules";
+import {MANAGER_FINAL_STATUSES} from "./managerOrderEditRules";
+import {USER_FINAL_STATUSES} from "./userOrderEditRules";
 
-  // Điều kiện để thao tác với order của user
+// Điều kiện để thao tác với order của user
   export const canEditUserOrder = (status: string): boolean => {
     return !USER_FINAL_STATUSES.includes(status as typeof USER_FINAL_STATUSES[number]);
   };
@@ -125,8 +125,6 @@
     'PENDING',
     'CONFIRMED',
     'READY_FOR_PICKUP',
-    'PICKUP_PENDING',
-    'PICKUP_SUCCESS',
     'PICKUP_RETRY',
     'PICKUP_FAILED_FINAL',
     'PICKING_UP',
@@ -152,8 +150,6 @@
       case 'PENDING': return 'Chờ duyệt';
       case 'CONFIRMED': return 'Đã xác nhận';
       case 'READY_FOR_PICKUP': return 'Sẵn sàng để lấy';
-      case 'PICKUP_PENDING': return 'Chờ lấy hàng';
-      case 'PICKUP_SUCCESS': return 'Lấy hàng thành công';
       case 'PICKUP_RETRY': return 'Lấy hàng thất bại - Thử lại';
       case 'PICKUP_FAILED_FINAL': return 'Lấy hàng thất bại - Dừng';
       case 'PICKING_UP': return 'Đang lấy hàng';

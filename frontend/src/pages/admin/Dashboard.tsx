@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Statistic, Typography } from "antd";
-import { UserOutlined, ShoppingOutlined, CarOutlined, ShopOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Card, Col, Row, Statistic, Typography} from "antd";
+import {CarOutlined, ShopOutlined, ShoppingOutlined, UserOutlined} from "@ant-design/icons";
 import dashboardApi from "../../api/dashboardApi";
 
 const { Title } = Typography;

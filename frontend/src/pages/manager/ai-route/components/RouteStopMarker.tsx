@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
-import { Marker } from "@react-google-maps/api";
-import type { AiRouteStop } from "../../../../types/aiRoute";
-import { createStopMarkerSvg } from "../utils/routeMapUtils";
+import React, {useMemo} from "react";
+import {Marker} from "@react-google-maps/api";
+import type {AiRouteStop} from "../../../../types/aiRoute";
+import {createStopMarkerSvg} from "../utils/routeMapUtils";
 
 export interface RouteStopMarkerProps {
   stop: AiRouteStop;

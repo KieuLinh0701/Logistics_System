@@ -1,4 +1,4 @@
-import type { OrderHistory } from "../types/orderHistory";
+import type {OrderHistory} from "../types/orderHistory";
 
 export const getOrderHistoryActionText = (history: OrderHistory) => {
   const fromOffice = history.fromOfficeName ?? "";

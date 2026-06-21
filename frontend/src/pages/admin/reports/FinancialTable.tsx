@@ -1,4 +1,4 @@
-import { Table } from 'antd';
+import {Table} from 'antd';
 
 type Point = {
   date: string; // ISO

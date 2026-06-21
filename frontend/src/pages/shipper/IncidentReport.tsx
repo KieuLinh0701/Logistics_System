@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from "react";
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Typography,
-  message,
-  Modal,
-  Table,
-  Tag,
-  Upload,
-} from "antd";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Form, Input, message, Modal, Select, Table, Tag, Typography, Upload,} from "antd";
+import {PlusOutlined, ReloadOutlined} from "@ant-design/icons";
 import orderApi from "../../api/orderApi";
 import dayjs from "dayjs";
 import "../../styles/ListPage.css";

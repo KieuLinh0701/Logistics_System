@@ -303,9 +303,7 @@ public class OrderShipperService {
                 predicates.add(root.get("status").in(
                     OrderStatus.PICKED_UP,
                     OrderStatus.READY_FOR_PICKUP,
-                    OrderStatus.PICKUP_PENDING,
                     OrderStatus.PICKUP_RETRY,
-                    OrderStatus.PICKUP_SUCCESS,
                     OrderStatus.DELIVERING,
                     OrderStatus.DELIVERED,
                     OrderStatus.DELIVERY_RETRY,
@@ -417,9 +415,7 @@ public class OrderShipperService {
                 OrderStatus.READY_FOR_PICKUP,
                 OrderStatus.PICKING_UP,
                 OrderStatus.PICKED_UP,
-                OrderStatus.PICKUP_PENDING,
-                OrderStatus.PICKUP_RETRY,
-                OrderStatus.PICKUP_SUCCESS
+                OrderStatus.PICKUP_RETRY
             ));
             assignedPreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
 
@@ -889,8 +885,7 @@ public class OrderShipperService {
 
         // Kiểm tra trạng thái phù hợp (đang lấy hàng)
         if (order.getStatus() != OrderStatus.PICKING_UP
-                && order.getStatus() != OrderStatus.READY_FOR_PICKUP
-                && order.getStatus() != OrderStatus.PICKUP_SUCCESS) {
+                && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 

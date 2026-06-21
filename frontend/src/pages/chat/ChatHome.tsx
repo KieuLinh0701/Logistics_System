@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import { chatStore } from "../../hooks/chatStore";
 import supportApi from "../../api/supportApi";
-import type { SupportTicket, BotPreviewResponse } from "../../types/support";
+import type {BotPreviewResponse, SupportTicket} from "../../types/support";
 
 const { TextArea } = Input;
 

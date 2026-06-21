@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Space} from 'antd';
-import {FileExcelOutlined, PlusOutlined} from '@ant-design/icons';
+import {FileExcelOutlined} from '@ant-design/icons';
 
 interface ActionsProps {
     onExport: () => void,

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal, Form, Input, Switch, message } from 'antd';
-import type { AddressRequest } from '../../../../../../types/address';
+import {Form, Input, message, Modal, Switch} from 'antd';
+import type {AddressRequest} from '../../../../../../types/address';
 import AddressForm from '../../../../../../components/common/AdressForm';
 
 interface AddressModalProps {

@@ -2,12 +2,12 @@ package com.logistics.service.manager;
 
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.entity.*;
+import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.ShipmentErrorCode;
-import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.ShipmentRepository;

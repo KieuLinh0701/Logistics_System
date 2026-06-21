@@ -1,8 +1,13 @@
-import React, { useEffect } from "react";
-import { Card, Form, Radio } from "antd";
-import type { FormInstance } from "antd/lib";
-import { ORDER_PAYER_TYPES, translateOrderPayerType, type OrderCreatorType, type OrderStatus } from "../../../../../utils/orderUtils";
-import { canManagerEditOrderField } from "../../../../../utils/managerOrderEditRules";
+import React, {useEffect} from "react";
+import {Card, Form, Radio} from "antd";
+import type {FormInstance} from "antd/lib";
+import {
+    ORDER_PAYER_TYPES,
+    type OrderCreatorType,
+    type OrderStatus,
+    translateOrderPayerType
+} from "../../../../../utils/orderUtils";
+import {canManagerEditOrderField} from "../../../../../utils/managerOrderEditRules";
 
 interface Props {
   form: FormInstance;

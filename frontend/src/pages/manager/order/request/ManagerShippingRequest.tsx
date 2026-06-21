@@ -13,8 +13,6 @@ import shippingRequestApi from '../../../../api/shippingRequestApi';
 import "./ManagerShippingRequest.css"
 import ConfirmModal from '../../../common/ConfirmModal';
 import Actions from "../incident/components/Actions.tsx";
-import type {SearchRequest} from "../../../../types/request.ts";
-import incidentReportApi from "../../../../api/incidentReportApi.ts";
 
 const ManagerShippingRequests: React.FC = () => {
     const navigate = useNavigate();

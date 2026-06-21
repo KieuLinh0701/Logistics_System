@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
-import { Dropdown, Modal, Table } from "antd";
-import { DownOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import type { AdminOffice } from "../../../../types/office";
+import React, {useMemo} from "react";
+import {Dropdown, Modal, Table} from "antd";
+import {DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
+import type {AdminOffice} from "../../../../types/office";
 
 interface Option {
   label: string;

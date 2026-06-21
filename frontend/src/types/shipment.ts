@@ -1,8 +1,7 @@
-import type { ManagerEmployee } from "./employee";
-import type { Office } from "./office";
-import type { Vehicle } from "./vehicle";
+import type {ManagerEmployee} from "./employee";
+import type {Office} from "./office";
+import type {Vehicle} from "./vehicle";
 import type {ListResponse} from "./response.ts";
-import type {Order} from "./order.ts";
 
 export interface ManagerShipment {
   id: number;

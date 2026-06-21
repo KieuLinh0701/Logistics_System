@@ -1,4 +1,4 @@
-import { getUserPermissionGroups } from "../../utils/authUtils";
+import {getUserPermissionGroups} from "../../utils/authUtils";
 import Forbidden from "../common/Forbidden";
 import ManagerOrderList from "../manager/order/list/ManagerOrderList";
 import UserOrderList from "../user/order/list/UserOrderList";

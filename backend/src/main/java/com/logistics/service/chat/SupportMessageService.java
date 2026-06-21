@@ -24,12 +24,13 @@ import com.logistics.entity.SupportMessage;
 import com.logistics.entity.SupportTicket;
 import com.logistics.enums.SupportMessageSenderType;
 import com.logistics.enums.SupportMessageType;
+
 import com.logistics.repository.SupportMessageRepository;
 import com.logistics.repository.SupportTicketRepository;
 import com.logistics.request.chat.SendSupportMessageRequest;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 
 @Service
 @RequiredArgsConstructor

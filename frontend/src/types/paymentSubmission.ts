@@ -1,5 +1,5 @@
-import type { Order } from "./order";
-import type { User } from "./user";
+import type {Order} from "./order";
+import type {User} from "./user";
 
 export interface ManagerPaymentSubmission {
   id: number;

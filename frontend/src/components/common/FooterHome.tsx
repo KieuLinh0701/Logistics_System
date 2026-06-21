@@ -1,8 +1,8 @@
 import React from 'react';
-import { Layout, Row, Col, Typography, Divider } from 'antd';
-import { Link } from 'react-router-dom';
-import { EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
-import './FooterHome.css'; 
+import {Col, Divider, Layout, Row, Typography} from 'antd';
+import {Link} from 'react-router-dom';
+import {EnvironmentOutlined, MailOutlined, PhoneOutlined} from '@ant-design/icons';
+import './FooterHome.css';
 
 const { Footer: AntFooter } = Layout;
 const { Text, Title } = Typography;

@@ -1,10 +1,9 @@
-import React, {useState, useEffect} from 'react';
-import {Card, Button, message} from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Button, Card, Form, message} from 'antd';
 import {PlusOutlined} from '@ant-design/icons';
-import {Form} from 'antd';
 import type {Address} from './components/AddressTable';
-import type {AddressRequest} from '../../../../../types/address';
 import AddressTable from './components/AddressTable';
+import type {AddressRequest} from '../../../../../types/address';
 import AddressModal from './components/AddressModal';
 import addressApi from '../../../../../api/addressApi';
 import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";

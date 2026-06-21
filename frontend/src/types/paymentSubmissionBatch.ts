@@ -1,5 +1,5 @@
-import type { ManagerPaymentSubmission } from "./paymentSubmission";
-import type { User } from "./user";
+import type {ManagerPaymentSubmission} from "./paymentSubmission";
+import type {User} from "./user";
 
 export interface ManagerPaymentSubmissionBatch {
   id: number;

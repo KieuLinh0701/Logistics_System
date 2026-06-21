@@ -16,25 +16,25 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.dto.chat.SupportMessageDto;
+import com.logistics.dto.chat.SupportTicketDetailDto;
+import com.logistics.dto.chat.SupportTicketDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
-import com.logistics.response.ApiResponse;
+import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.request.chat.AssignTicketRequest;
 import com.logistics.request.chat.CloseTicketRequest;
 import com.logistics.request.chat.CreateSupportTicketRequest;
 import com.logistics.request.chat.SendSupportMessageRequest;
-import com.logistics.dto.chat.SupportMessageDto;
-import com.logistics.dto.chat.SupportTicketDetailDto;
-import com.logistics.dto.chat.SupportTicketDto;
-import com.logistics.exception.enums.SupportMessageErrorCode;
-import com.logistics.exception.enums.SupportTicketErrorCode;
-import com.logistics.service.chat.SupportMessageService;
-import com.logistics.service.chat.SupportTicketService;
-import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import com.logistics.response.ApiResponse;
+import com.logistics.service.chat.SupportMessageService;
+import com.logistics.service.chat.SupportTicketService;
+import com.logistics.utils.SecurityUtils;
 
 @RestController
 @Validated

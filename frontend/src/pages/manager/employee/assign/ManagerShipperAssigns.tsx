@@ -1,13 +1,6 @@
 import {useEffect, useRef, useState} from "react";
-import {
-    message,
-    Row,
-    Col,
-    Tag,
-} from "antd";
-import {
-    TeamOutlined,
-} from "@ant-design/icons";
+import {Col, message, Row, Tag,} from "antd";
+import {TeamOutlined,} from "@ant-design/icons";
 import dayjs from "dayjs";
 import Title from "antd/es/typography/Title";
 import SearchFilters from "./components/SearchFilters";

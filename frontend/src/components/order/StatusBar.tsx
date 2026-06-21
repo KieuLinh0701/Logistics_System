@@ -1,6 +1,6 @@
 import React from "react";
-import { ORDER_STATUS, translateOrderStatus } from "../../utils/orderUtils.ts";
-import type { StatusCount } from "../../types/order.ts";
+import {ORDER_STATUS, translateOrderStatus} from "../../utils/orderUtils.ts";
+import type {StatusCount} from "../../types/order.ts";
 import {getUserRole} from "../../utils/authUtils.ts";
 
 interface Props {

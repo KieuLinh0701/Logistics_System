@@ -1,26 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Progress,
-  Radio,
-  Row,
-  Select,
-  Space,
-  Typography,
-  message,
+    Alert,
+    Button,
+    Card,
+    Col,
+    Form,
+    Input,
+    InputNumber,
+    message,
+    Progress,
+    Radio,
+    Row,
+    Select,
+    Space,
+    Typography,
 } from "antd";
 import shipperVehicleApi from "../../api/shipperVehicleApi";
-import type {
-  ShipperVehicleSetting,
-  ShipperVehicleStatus,
-  ShipperVehicleType,
-} from "../../types/shipperVehicle";
+import type {ShipperVehicleSetting, ShipperVehicleStatus, ShipperVehicleType,} from "../../types/shipperVehicle";
 
 const { Text } = Typography;
 
