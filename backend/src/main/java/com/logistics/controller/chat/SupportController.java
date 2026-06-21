@@ -25,6 +25,7 @@ import com.logistics.request.chat.SendSupportMessageRequest;
 import com.logistics.dto.chat.SupportMessageDto;
 import com.logistics.dto.chat.SupportTicketDetailDto;
 import com.logistics.dto.chat.SupportTicketDto;
+import com.logistics.exception.enums.SupportMessageErrorCode;
 import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.service.chat.SupportMessageService;
 import com.logistics.service.chat.SupportTicketService;
@@ -177,11 +178,10 @@ public class SupportController {
         Integer ticketId = body != null ? body.get("ticketId") : null;
 
         if (ticketId == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.failure("ticketId là bắt buộc"));
+            throw new AppException(SupportTicketErrorCode.SUPPORT_TICKET_ID_REQUIRED);
         }
 
         supportMessageService.markMessagesAsRead(ticketId, accountId);
-        return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));
+        return ResponseEntity.ok(ApiResponse.success("Đã đánh dấu tin nhắn là đã đọc", null));
     }
 }

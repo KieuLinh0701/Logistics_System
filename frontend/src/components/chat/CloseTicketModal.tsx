@@ -3,6 +3,7 @@ import { Modal, Form, Input, Button, Typography, message } from "antd";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import type { SupportTicket, CloseTicketPayload } from "../../types/support";
 import supportApi from "../../api/supportApi";
+import "./SupportModals.css";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -53,7 +54,7 @@ const CloseTicketModal: React.FC<Props> = ({ open, ticket, onCancel, onSuccess }
   return (
     <Modal
       title={
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
           <CheckCircleOutlined style={{ color: "#52c41a" }} />
           <span>Đánh dấu đã giải quyết</span>
         </div>
@@ -70,6 +71,8 @@ const CloseTicketModal: React.FC<Props> = ({ open, ticket, onCancel, onSuccess }
           loading={loading}
           icon={<CheckCircleOutlined />}
           onClick={() => void handleSubmit()}
+          style={{ background: "#1E4DB7", borderColor: "#1E4DB7" }}
+          className="support-primary-btn"
         >
           Đã giải quyết
         </Button>,

@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.logistics.dto.chat.BotPreviewResponse;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.SupportMessageErrorCode;
 import com.logistics.request.chat.BotPreviewRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.chat.SupportAssistantService;
@@ -26,18 +28,7 @@ public class SupportBotController {
     @PostMapping("/preview")
     public ResponseEntity<ApiResponse<BotPreviewResponse>> previewBotMessage(
             @Valid @RequestBody BotPreviewRequest request) {
-        try {
-            BotPreviewResponse response = supportAssistantService.previewMessage(request.getMessage());
-            return ResponseEntity.ok(ApiResponse.success("Preview generated", response));
-        } catch (Exception e) {
-            log.error("Error in previewBotMessage", e);
-            BotPreviewResponse fallback = new BotPreviewResponse(
-                    "ERROR",
-                    "Mình chưa xử lý được tin nhắn này. Bạn có thể tạo yêu cầu hỗ trợ để CSKH kiểm tra.",
-                    true,
-                    true
-            );
-            return ResponseEntity.ok(ApiResponse.success("Fallback response", fallback));
-        }
+        BotPreviewResponse response = supportAssistantService.previewMessage(request.getMessage());
+        return ResponseEntity.ok(ApiResponse.success("Preview generated", response));
     }
 }

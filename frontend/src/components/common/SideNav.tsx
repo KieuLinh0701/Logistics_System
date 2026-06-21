@@ -29,6 +29,8 @@ import {
     WarningOutlined,
     UserSwitchOutlined, 
     ContactsOutlined,
+    MessageOutlined,
+    CalendarOutlined,
 } from "@ant-design/icons";
 import "./SideNav.css";
 import {useMemo} from "react";
@@ -200,10 +202,21 @@ const SideNav: React.FC = () => {
                 icon: <GlobalOutlined/>,
             },
             {
-                key: "/support/tickets",
-                label: "Chăm sóc khách hàng",
-                path: "/support/tickets",
+                key: "support-group",
+                label: "Hỗ trợ & Liên lạc",
                 icon: <CustomerServiceOutlined/>,
+                children: [
+                    {
+                        key: "/support/tickets",
+                        label: "Chăm sóc khách hàng",
+                        path: "/support/tickets",
+                    },
+                    {
+                        key: "/manager/internal-chat",
+                        label: "Trao đổi nhân viên",
+                        path: "/manager/internal-chat",
+                    },
+                ],
             },
             {
                 key: "staff",
@@ -423,10 +436,16 @@ const SideNav: React.FC = () => {
                 icon: <ExclamationCircleOutlined/>,
             },
             {
+                key: "/shipper/contact-manager",
+                label: "Trao đổi với quản lý",
+                path: "/shipper/contact-manager",
+                icon: <MessageOutlined/>,
+            },
+            {
                 key: "/employee/leaves",
                 label: "Xin nghỉ phép",
                 path: "/employee/leaves",
-                icon: <ClockCircleOutlined/>,
+                icon: <CalendarOutlined/>,
             },
             {
                 key: "/account/settings",
@@ -459,6 +478,12 @@ const SideNav: React.FC = () => {
                 label: "Lịch sử vận chuyển",
                 path: "/driver/history",
                 icon: <ClockCircleOutlined/>,
+            },
+            {
+                key: "/driver/contact-manager",
+                label: "Trao đổi với quản lý",
+                path: "/driver/contact-manager",
+                icon: <ContactsOutlined/>,
             },
             {
                 key: "/employee/leaves",
@@ -503,7 +528,7 @@ const SideNav: React.FC = () => {
     useEffect(() => {
         const keys: string[] = [];
         menuItems.forEach((item) => {
-            if (item.children?.some((child) => child.key === pathname)) {
+            if (item.children?.some((child) => pathname.startsWith(child.key))) {
                 keys.push(item.key);
             }
         });

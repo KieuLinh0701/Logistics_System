@@ -206,4 +206,8 @@ public class AuditLogDescriptionConstant {
     // Support Message
     public static final String SUPPORT_MESSAGE_CREATE = "Gửi tin nhắn hỗ trợ";
     public static final String SUPPORT_MESSAGE_MARK_READ = "Đánh dấu tin nhắn đã đọc";
+
+    // Internal Chat
+    public static final String INTERNAL_CHAT_MESSAGE_CREATE = "Gửi tin nhắn nội bộ";
+    public static final String INTERNAL_CHAT_MESSAGE_MARK_READ = "Đánh dấu tin nhắn nội bộ đã đọc";
 }
