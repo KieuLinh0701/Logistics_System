@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Form, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {Form, message} from "antd";
+import {PlusOutlined} from "@ant-design/icons";
 import serviceTypeApi from "../../../api/serviceTypeApi";
-import type { AdminServiceType } from "../../../types/serviceType";
+import type {AdminServiceType} from "../../../types/serviceType";
 import "../../hr/recruitment/components/RecruitmentShared.css";
 import "../../../styles/ListPage.css";
 import "../AdminModal.css";

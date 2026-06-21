@@ -1,8 +1,8 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Tooltip } from "antd";
-import type { ManagerIncidentStats } from "../../../../types/dashboard";
-import { WarningOutlined } from "@ant-design/icons";
+import {Link} from "react-router-dom";
+import {Tooltip} from "antd";
+import type {ManagerIncidentStats} from "../../../../types/dashboard";
+import {WarningOutlined} from "@ant-design/icons";
 
 interface Props {
   data: ManagerIncidentStats;

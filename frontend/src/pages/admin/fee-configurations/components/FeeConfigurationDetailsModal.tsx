@@ -1,6 +1,6 @@
 import React from "react";
-import { Drawer, Descriptions } from "antd";
-import type { FeeConfiguration } from "../../../../types/feeConfiguration";
+import {Descriptions, Drawer} from "antd";
+import type {FeeConfiguration} from "../../../../types/feeConfiguration";
 
 interface FeeConfigurationDetailsModalProps {
   open: boolean;

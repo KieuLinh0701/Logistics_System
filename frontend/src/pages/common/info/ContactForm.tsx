@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Typography, Card, Row, Col, message, Select } from "antd";
-import { SendOutlined, PhoneOutlined, MailOutlined, EnvironmentOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Card, Col, Form, Input, message, Row, Select, Typography} from "antd";
+import {EnvironmentOutlined, MailOutlined, PhoneOutlined, SendOutlined} from "@ant-design/icons";
 import "./ContactForm.css";
 import contactFormImage from "../../../assets/images/contactForm.jpg";
 import HeaderHome from "../../../components/common/HeaderHome";
 import FooterHome from "../../../components/common/FooterHome";
-import type { Office } from "../../../types/office";
+import type {Office} from "../../../types/office";
 import officeApi from "../../../api/officeApi";
 import locationApi from "../../../api/locationApi";
 import Paragraph from "antd/es/typography/Paragraph";
-import { SHIPPING_REQUEST_TYPES_PUBLIC, translateShippingRequestType } from "../../../utils/shippingRequestUtils";
-import type { PublicShippingRequestCreate } from "../../../types/shippingRequest";
+import {SHIPPING_REQUEST_TYPES_PUBLIC, translateShippingRequestType} from "../../../utils/shippingRequestUtils";
+import type {PublicShippingRequestCreate} from "../../../types/shippingRequest";
 import shippingRequestApi from "../../../api/shippingRequestApi";
 
 const { Option } = Select;

@@ -1,14 +1,14 @@
 package com.logistics.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.logistics.entity.AuditLog;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Office;
-import com.logistics.entity.User;
+import com.logistics.entity.*;
 import com.logistics.enums.AuditLogStatus;
 import com.logistics.enums.EmployeeStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.AccountErrorCode;
 import com.logistics.repository.AuditLogRepository;
 import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.RoleRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.service.user.UserUserService;
 import com.logistics.utils.SecurityUtils;
@@ -23,7 +23,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Aspect
@@ -34,15 +33,18 @@ public class AuditAspect {
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
     private final UserUserService userService;
+    private final RoleRepository roleRepository;
     private final EmployeeRepository employeeRepository;
     private final ObjectMapper objectMapper;
 
     @Around("@annotation(audit)")
     public Object around(ProceedingJoinPoint pjp, Audit audit) throws Throwable {
         Integer userId = null;
+        Role currentRole = null;
 
         try {
             userId = SecurityUtils.getAuthenticatedUserId();
+            currentRole = SecurityUtils.getAuthenticatedUserRole();
         } catch (Exception e) {
         }
 
@@ -50,7 +52,7 @@ public class AuditAspect {
 
         Object result = pjp.proceed();
 
-        saveLog(userId, audit, pjp, payloadRequestBody, result);
+        saveLog(userId, currentRole, audit, pjp, payloadRequestBody, result);
 
         return result;
     }
@@ -58,6 +60,7 @@ public class AuditAspect {
     @Async
     protected void saveLog(
             Integer userId,
+            Role role,
             Audit audit,
             ProceedingJoinPoint pjp,
             String payloadRequestBody,
@@ -69,11 +72,24 @@ public class AuditAspect {
 
             User shop = null;
             Office office = null;
+
             if (user != null) {
-                shop = userService.getShop(user);
-                office = employeeRepository.findByUserIdAndStatus(userId, EmployeeStatus.ACTIVE)
-                        .map(Employee::getOffice)
-                        .orElse(null);
+                try {
+                    Role currentRole = roleRepository.findByIdWithPermissionGroups(role.getId())
+                            .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_UNAUTHORIZED_ACCESS));
+
+                    boolean isSystemRole = currentRole.getUserOwner() == null && !currentRole.getName().equalsIgnoreCase("User");
+
+                    if (isSystemRole) {
+                        office = employeeRepository.findByUserIdAndStatus(userId, EmployeeStatus.ACTIVE)
+                                .map(Employee::getOffice)
+                                .orElse(null);
+                    } else {
+                        shop = userService.getShop(user);
+                    }
+                } catch (Exception e) {
+                    log.warn("AuditAspect: could not determine role context - {}", e.getMessage());
+                }
             }
 
             String entityId = extractEntityId(pjp, audit);

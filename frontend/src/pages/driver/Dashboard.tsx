@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Statistic, Space, Typography, Table, Tag } from "antd";
-import { TruckOutlined, EnvironmentOutlined, ClockCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Card, Col, Row, Space, Statistic, Table, Tag, Typography} from "antd";
+import {CheckCircleOutlined, ClockCircleOutlined, EnvironmentOutlined, TruckOutlined} from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
-import { translateShipmentStatus } from "../../utils/shipmentUtils";
+import {translateShipmentStatus} from "../../utils/shipmentUtils";
 
 function translateVehicleStatus(status: string) {
   if (!status) return '';

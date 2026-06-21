@@ -1,4 +1,4 @@
-import type { Pagination } from "./response";
+import type {Pagination} from "./response";
 
 export interface Notification {
   id: number;

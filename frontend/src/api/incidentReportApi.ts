@@ -2,7 +2,6 @@ import type {Incident, ManagerIncidentUpdateRequest} from "../types/incidentRepo
 import type {SearchRequest} from "../types/request";
 import type {ApiResponse, ListResponse} from "../types/response";
 import axiosClient from "./axiosClient";
-import type {ManagerOrderSearchRequest} from "../types/order.ts";
 import {axiosExport} from "./exportClient.ts";
 
 const incidentReportApi = {

@@ -1,30 +1,27 @@
-// Type API network
-export interface Bank {
-  name: string;
-  short_name: string;
-}
+import type {User} from "./user.ts";
+import type {Role} from "./role.ts";
+import type {Office} from "./office.ts";
 
-export interface BankApiResponse {
-  code: number;
-  success: boolean;
-  data: Bank[];
-}
-
-// User
-export interface BankAccount {
+export interface AuditLog {
   id: number;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  isDefault: boolean;
-  notes: string;
+  entity: string;
+  entityId: string;
+  action: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  user: User;
+  office: Office;
 }
 
-export interface BankAccountRequest {
-  id?: number;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  isDefault: boolean;
-  notes: string;
+export interface AuditLogSearchRequest {
+  page: number;
+  limit: number;
+  search?: string;
+  action?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  entity?: string;
+  sort?: string;
 }

@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { Card, Row, Col, Typography, Button, Spin } from "antd";
+import React, {useEffect, useState} from "react";
+import {Button, Card, Col, Row, Spin, Typography} from "antd";
 import {
     ArrowRightOutlined,
-    UserAddOutlined,
-    FileAddOutlined,
-    InboxOutlined,
-    EyeOutlined,
-    TruckOutlined,
     DollarCircleOutlined,
+    EyeOutlined,
+    FileAddOutlined,
     GiftOutlined,
-    SyncOutlined
+    InboxOutlined,
+    SyncOutlined,
+    TruckOutlined,
+    UserAddOutlined
 } from "@ant-design/icons";
 import "./ServiceTypes.css";
 import servicesHeroImage from "../../../assets/images/serviceTypes.jpg";
 import HeaderHome from "../../../components/common/HeaderHome";
 import FooterHome from "../../../components/common/FooterHome";
-import type { ServiceType } from "../../../types/serviceType";
-import { useNavigate } from "react-router-dom";
+import type {ServiceType} from "../../../types/serviceType";
+import {useNavigate} from "react-router-dom";
 import serviceTypeApi from "../../../api/serviceTypeApi";
 
 const { Title, Paragraph } = Typography;

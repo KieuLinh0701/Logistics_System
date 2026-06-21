@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Segmented, Table, Tag } from "antd";
-import type { UserTopProductItem } from "../../../../types/dashboard";
+import React, {useState} from "react";
+import {Segmented, Table, Tag} from "antd";
+import type {UserTopProductItem} from "../../../../types/dashboard";
 
 interface Props {
   topSelling: UserTopProductItem[];

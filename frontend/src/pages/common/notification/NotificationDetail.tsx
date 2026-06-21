@@ -1,7 +1,7 @@
 import React from "react";
-import { Layout, Typography, Button, Card } from "antd";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { BellOutlined } from "@ant-design/icons";
+import {Button, Card, Layout, Typography} from "antd";
+import {useLocation, useNavigate, useParams} from "react-router-dom";
+import {BellOutlined} from "@ant-design/icons";
 import "./NotificationDetail.css";
 
 const { Content } = Layout;

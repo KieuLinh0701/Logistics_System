@@ -1,6 +1,6 @@
 import React from "react";
-import { CheckOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import {CheckOutlined} from "@ant-design/icons";
+import {Button} from "antd";
 
 interface Props {
   onCreate: (status: "DRAFT" | "PENDING") => void;

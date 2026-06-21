@@ -1,6 +1,6 @@
 import React from "react";
-import { Button, Descriptions, Drawer } from "antd";
-import type { AdminVehicle } from "../../../../types/vehicle";
+import {Button, Descriptions, Drawer} from "antd";
+import type {AdminVehicle} from "../../../../types/vehicle";
 
 interface VehicleDetailsDrawerProps {
   open: boolean;

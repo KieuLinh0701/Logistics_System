@@ -3,10 +3,12 @@ package com.logistics.mapper;
 import com.logistics.dto.*;
 import com.logistics.dto.admin.AdminAuditLogDto;
 import com.logistics.dto.manager.audit.ManagerAuditLogDto;
+import com.logistics.dto.user.audit.UserAuditLogDto;
 import com.logistics.entity.*;
 import com.logistics.enums.EmployeeStatus;
 
 import java.util.List;
+import java.util.Objects;
 
 public class AuditLogMapper {
 
@@ -25,7 +27,7 @@ public class AuditLogMapper {
                 entity.getCreatedAt());
     }
 
-    public List<BaseAuditLogDto> toBaseAuditLogDtoList(List<AuditLog> auditLogList) {
+    public static List<BaseAuditLogDto> toBaseAuditLogDtoList(List<AuditLog> auditLogList) {
         return auditLogList.stream()
                 .map(AuditLogMapper::toBaseAuditLogDto)
                 .toList();
@@ -44,13 +46,34 @@ public class AuditLogMapper {
                 entity.getDescription(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                toUserDto(entity.getUser()),
-                toRoleDto(entity.getUser() != null ? entity.getUser().getEmployees() : List.of()));
+                toUserManagerDto(entity.getUser()));
     }
 
     public static List<ManagerAuditLogDto> toManagerAuditLogDtoList(List<AuditLog> auditLogList) {
         return auditLogList.stream()
                 .map(AuditLogMapper::toManagerAuditLogDto)
+                .toList();
+    }
+
+    public static UserAuditLogDto toUserAuditLogDto(AuditLog entity, Integer shopId) {
+        if (entity == null) {
+            return null;
+        }
+
+        return new UserAuditLogDto(
+                entity.getId(),
+                entity.getEntity(),
+                entity.getEntityId(),
+                entity.getAction(),
+                entity.getDescription(),
+                entity.getStatus(),
+                entity.getCreatedAt(),
+                toUserUserDto(entity.getUser()));
+    }
+
+    public static List<UserAuditLogDto> toUserAuditLogDtoList(List<AuditLog> auditLogList, Integer shopId) {
+        return auditLogList.stream()
+                .map(x -> toUserAuditLogDto(x, shopId))
                 .toList();
     }
 
@@ -67,18 +90,17 @@ public class AuditLogMapper {
                 entity.getDescription(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                toUserDto(entity.getUser()),
-                toRoleDto(entity.getUser() != null ? entity.getUser().getEmployees() : List.of()),
+                toUserManagerDto(entity.getUser()),
                 toOfficeDto(entity.getOffice()));
     }
 
-    public List<AdminAuditLogDto> toAdminAuditLogDtoList(List<AuditLog> auditLogList) {
+    public static List<AdminAuditLogDto> toAdminAuditLogDtoList(List<AuditLog> auditLogList) {
         return auditLogList.stream()
                 .map(AuditLogMapper::toAdminAuditLogDto)
                 .toList();
     }
 
-    public static ManagerAuditLogDto.User toUserDto(User entity) {
+    public static ManagerAuditLogDto.User toUserManagerDto(User entity) {
         if (entity == null) {
             return null;
         }
@@ -90,23 +112,15 @@ public class AuditLogMapper {
         );
     }
 
-    public static ManagerAuditLogDto.Role toRoleDto(List<Employee> employees) {
-        if (employees.isEmpty()) {
+    public static UserAuditLogDto.User toUserUserDto(User entity) {
+        if (entity == null) {
             return null;
         }
 
-        Employee employee = employees.stream()
-                .filter(e -> e.getStatus().equals(EmployeeStatus.ACTIVE))
-                .findFirst()
-                .orElse(null);
-
-        if (employee == null || employee.getAccountRole() == null || employee.getAccountRole().getRole() == null) {
-            return null;
-        }
-
-        return new ManagerAuditLogDto.Role(
-                employee.getAccountRole().getRole().getId(),
-                employee.getAccountRole().getRole().getName()
+        return new UserAuditLogDto.User(
+                entity.getId(),
+                entity.getFullName(),
+                entity.getPhoneNumber()
         );
     }
 

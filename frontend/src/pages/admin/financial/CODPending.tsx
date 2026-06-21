@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Card, Table, Button, Collapse } from "antd";
+import React, {useEffect, useState} from "react";
+import {Button, Card, Collapse, Table} from "antd";
 import typedAxios from "../../../api/axiosClient";
-import type { AdminPaymentSubmissionListDto } from "../../../types/paymentSubmission";
+import type {AdminPaymentSubmissionListDto} from "../../../types/paymentSubmission";
 
 const { Panel } = Collapse;
 

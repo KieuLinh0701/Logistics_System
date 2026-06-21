@@ -1,6 +1,6 @@
 import React from "react";
 import OfficeSearchBody from "./OfficeSearchBody";
-import { Typography } from "antd";
+import {Typography} from "antd";
 import officeHeroImage from "../../../../assets/images/office.jpg";
 import "./OfficeSearch.css";
 import HeaderHome from "../../../../components/common/HeaderHome";

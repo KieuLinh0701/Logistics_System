@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Alert, Button, Card, Form, Input, Space, Spin, Typography, Upload, message } from "antd";
-import { LeftOutlined, SendOutlined } from "@ant-design/icons";
-import { useNavigate, useParams } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Alert, Button, Card, Form, Input, message, Space, Spin, Typography, Upload} from "antd";
+import {LeftOutlined, SendOutlined} from "@ant-design/icons";
+import {useNavigate, useParams} from "react-router-dom";
 import HeaderHome from "../../../components/common/HeaderHome";
 import "./ApplyJobPage.css";
 import "../../hr/recruitment/styles/recruitment.css";
@@ -9,7 +9,7 @@ import companyInfoImage from "../../../assets/images/companyInfo.jpg";
 import joblistImage from "../../../assets/images/joblist.png";
 import FooterHome from "../../../components/common/FooterHome";
 import recruitmentApi from "../../../api/recruitmentApi";
-import type { JobPosting } from "../../../types/recruitment";
+import type {JobPosting} from "../../../types/recruitment";
 
 const { Title, Paragraph } = Typography;
 

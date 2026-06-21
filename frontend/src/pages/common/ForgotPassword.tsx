@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, message, Typography, Steps } from 'antd';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { useNavigate, Link } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {Button, Card, Form, Input, message, Steps, Typography} from 'antd';
+import {LockOutlined, UserOutlined} from '@ant-design/icons';
+import {Link, useNavigate} from 'react-router-dom';
 import bg1 from "../../assets/images/bg-1.jpg";
 import './ForgotPassword.css';
 import OtpInput from '../../components/common/input/OtpInput';

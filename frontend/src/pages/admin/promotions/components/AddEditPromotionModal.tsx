@@ -1,9 +1,9 @@
 import React from "react";
-import { Col, DatePicker, Divider, Form, Input, InputNumber, Modal, Row, Select, Switch } from "antd";
-import type { FormInstance } from "antd";
-import type { AdminServiceType } from "../../../../types/serviceType";
-import type { AdminUser } from "../../../../types/user";
-import type { Promotion } from "../../../../types/promotion";
+import type {FormInstance} from "antd";
+import {Col, DatePicker, Divider, Form, Input, InputNumber, Modal, Row, Select, Switch} from "antd";
+import type {AdminServiceType} from "../../../../types/serviceType";
+import type {AdminUser} from "../../../../types/user";
+import type {Promotion} from "../../../../types/promotion";
 import "../../../hr/recruitment/job-posting/components/JobPostingComponents.css";
 
 interface Option {

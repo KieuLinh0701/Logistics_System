@@ -1,6 +1,6 @@
-import { Client } from "@stomp/stompjs";
+import {Client} from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import type { SupportChatSendPayload, SupportMessage } from "../types/support";
+import type {SupportChatSendPayload, SupportMessage} from "../types/support";
 
 type ConnectOptions = {
   accountId: number;

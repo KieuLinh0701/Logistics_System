@@ -6,7 +6,6 @@ import type {
     ManagerShipperAssignmentSearchRequest
 } from "../types/shipperAssignment";
 import {axiosExport} from "./exportClient";
-import type {ManagerEmployeeSearchRequest} from "../types/employee.ts";
 
 const shipperAssignmentApi = {
   // Manager

@@ -1,22 +1,9 @@
-import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Tag,
-  Button,
-  Space,
-  Typography,
-  Select,
-  Input,
-  message,
-} from "antd";
-import {
-  SearchOutlined,
-  ReloadOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Button, Input, message, Select, Space, Table, Tag, Typography,} from "antd";
+import {EyeOutlined, ReloadOutlined, SearchOutlined,} from "@ant-design/icons";
+import {useNavigate} from "react-router-dom";
+import type {ShipperOrder} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
-import type { ShipperOrder } from "../../api/orderApi";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 

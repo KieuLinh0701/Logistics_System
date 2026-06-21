@@ -1,8 +1,8 @@
 import React from "react";
-import { Typography, Button } from "antd";
-import { StarOutlined, TruckOutlined, DollarOutlined, UserOutlined, LoginOutlined } from "@ant-design/icons";
-import { getCurrentUser } from "../../../../utils/authUtils";
-import { getFullName } from "../../../../types/auth";
+import {Button, Typography} from "antd";
+import {DollarOutlined, LoginOutlined, StarOutlined, TruckOutlined, UserOutlined} from "@ant-design/icons";
+import {getCurrentUser} from "../../../../utils/authUtils";
+import {getFullName} from "../../../../types/auth";
 
 const { Title, Text } = Typography;
 

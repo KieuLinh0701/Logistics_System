@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ManagerAuditLogDto extends BaseAuditLogDto {
     private User user;
-    private Role role;
 
     public ManagerAuditLogDto(
             Integer id,
@@ -26,11 +25,9 @@ public class ManagerAuditLogDto extends BaseAuditLogDto {
             String description,
             AuditLogStatus status,
             LocalDateTime createdAt,
-            User user,
-            Role role) {
+            User user) {
         super(id, entity, entityId, action, description, status, createdAt);
         this.user = user;
-        this.role = role;
     }
 
     @Getter
@@ -41,14 +38,5 @@ public class ManagerAuditLogDto extends BaseAuditLogDto {
         private Integer id;
         private String fullName;
         private String phoneNumber;
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Role {
-        private Integer id;
-        private String name;
     }
 }

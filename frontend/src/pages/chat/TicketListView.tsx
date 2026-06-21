@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { Badge, Button, Empty, List, Spin, Tag, Typography } from "antd";
-import { ArrowLeftOutlined, PlusOutlined } from "@ant-design/icons";
+import {useEffect, useState} from "react";
+import {Badge, Button, Empty, List, Spin, Tag, Typography} from "antd";
+import {ArrowLeftOutlined, PlusOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import supportApi from "../../api/supportApi";
-import type { SupportMessage, SupportTicket, SupportTicketStatus } from "../../types/support";
-import { chatStore } from "../../hooks/chatStore";
+import type {SupportMessage, SupportTicket, SupportTicketStatus} from "../../types/support";
+import {chatStore} from "../../hooks/chatStore";
 
 dayjs.extend(relativeTime);
 

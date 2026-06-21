@@ -1,8 +1,8 @@
-import type { UploadFile } from 'antd/es/upload/interface';
-import { Modal, Descriptions, Button, Typography, Space, Tooltip, Upload } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
-import type { ShippingRequest } from '../../../../../types/shippingRequest';
-import { translateShippingRequestStatus, translateShippingRequestType } from '../../../../../utils/shippingRequestUtils';
+import type {UploadFile} from 'antd/es/upload/interface';
+import {Button, Descriptions, Modal, Space, Tooltip, Typography, Upload} from 'antd';
+import {EditOutlined} from '@ant-design/icons';
+import type {ShippingRequest} from '../../../../../types/shippingRequest';
+import {translateShippingRequestStatus, translateShippingRequestType} from '../../../../../utils/shippingRequestUtils';
 
 const { Text } = Typography;
 

@@ -1,7 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import type { ManagerShippingRequestStats } from "../../../../types/dashboard";
-import { GlobalOutlined } from "@ant-design/icons";
+import {Link} from "react-router-dom";
+import type {ManagerShippingRequestStats} from "../../../../types/dashboard";
+import {GlobalOutlined} from "@ant-design/icons";
 
 interface Props {
   data: ManagerShippingRequestStats;

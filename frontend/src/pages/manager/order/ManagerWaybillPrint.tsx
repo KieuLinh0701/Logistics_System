@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Button, Select, Card, Space, Row, Col, message } from "antd";
-import { PrinterOutlined, SettingOutlined } from "@ant-design/icons";
-import type { OrderPrint } from "../../../types/order";
+import React, {useEffect, useRef, useState} from "react";
+import {useLocation} from "react-router-dom";
+import {Button, Card, Col, message, Row, Select, Space} from "antd";
+import {PrinterOutlined, SettingOutlined} from "@ant-design/icons";
+import type {OrderPrint} from "../../../types/order";
 import orderApi from "../../../api/orderApi";
 import "./ManagerWaybillPrint.css";
 

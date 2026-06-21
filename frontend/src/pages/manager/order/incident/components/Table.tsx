@@ -1,11 +1,16 @@
 import React from "react";
-import { Table, Tag, Tooltip, Button, Dropdown } from "antd";
-import { DownOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import type { ColumnsType } from "antd/es/table";
+import {Button, Dropdown, Table, Tag, Tooltip} from "antd";
+import {DownOutlined} from "@ant-design/icons";
+import {useNavigate} from "react-router-dom";
+import type {ColumnsType} from "antd/es/table";
 import dayjs from 'dayjs';
-import type { Incident } from "../../../../../types/incidentReport";
-import { canEditManagerIncident, translateIncidentPriority, translateIncidentStatus, translateIncidentType } from "../../../../../utils/incidentUtils";
+import type {Incident} from "../../../../../types/incidentReport";
+import {
+    canEditManagerIncident,
+    translateIncidentPriority,
+    translateIncidentStatus,
+    translateIncidentType
+} from "../../../../../utils/incidentUtils";
 
 interface Props {
   incidents: Incident[];

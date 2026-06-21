@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, Col, Row, Statistic } from "antd";
-import { CarOutlined, ClockCircleOutlined, DollarOutlined, NodeIndexOutlined, TeamOutlined } from "@ant-design/icons";
-import { formatCurrency, formatMinutes } from "../utils/routeMapUtils";
+import {Card, Col, Row, Statistic} from "antd";
+import {CarOutlined, ClockCircleOutlined, DollarOutlined, NodeIndexOutlined, TeamOutlined} from "@ant-design/icons";
+import {formatCurrency, formatMinutes} from "../utils/routeMapUtils";
 
 interface RouteSummaryCardsProps {
   routeCount: number;

@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, Typography, Button, Spin } from "antd";
-import { CheckCircleOutlined, SafetyCertificateOutlined, StarOutlined } from "@ant-design/icons";
-import type { ServiceType } from "../../../../types/serviceType";
+import {Button, Card, Spin, Typography} from "antd";
+import {CheckCircleOutlined, SafetyCertificateOutlined, StarOutlined} from "@ant-design/icons";
+import type {ServiceType} from "../../../../types/serviceType";
 
 const { Title, Text } = Typography;
 

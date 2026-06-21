@@ -1,10 +1,13 @@
 import React from "react";
 import dayjs from 'dayjs';
-import { Table, Button, Dropdown, Tooltip } from "antd";
-import { DownOutlined } from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
-import { canProcessManagerPaymetSubmissionBatch, translatePaymentSubmissionBatchStatus } from "../../../../utils/paymentSubmissionBatchUtils";
-import type { ManagerPaymentSubmissionBatch } from "../../../../types/paymentSubmissionBatch";
+import {Button, Dropdown, Table, Tooltip} from "antd";
+import {DownOutlined} from "@ant-design/icons";
+import type {ColumnsType} from "antd/es/table";
+import {
+    canProcessManagerPaymetSubmissionBatch,
+    translatePaymentSubmissionBatchStatus
+} from "../../../../utils/paymentSubmissionBatchUtils";
+import type {ManagerPaymentSubmissionBatch} from "../../../../types/paymentSubmissionBatch";
 
 interface Props {
   batchs: ManagerPaymentSubmissionBatch[];

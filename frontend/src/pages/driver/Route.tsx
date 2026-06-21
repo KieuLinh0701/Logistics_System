@@ -1,26 +1,8 @@
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Typography,
-  Button,
-  Space,
-  List,
-  Tag,
-  Statistic,
-  message,
-  Spin,
-  Alert,
-  Modal,
-} from "antd";
-import {
-  EnvironmentOutlined,
-  PlayCircleOutlined,
-} from "@ant-design/icons";
+import React, {useEffect, useRef, useState} from "react";
+import {Alert, Button, Card, Col, List, message, Modal, Row, Space, Spin, Statistic, Tag, Typography,} from "antd";
+import {EnvironmentOutlined, PlayCircleOutlined,} from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
-import type { DriverRouteInfo, DriverDeliveryStop } from "../../types/shipment";
-import { useRef } from "react";
+import type {DriverDeliveryStop, DriverRouteInfo} from "../../types/shipment";
 
 const { Title, Text } = Typography;
 

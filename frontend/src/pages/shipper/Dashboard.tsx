@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { Card, Row, Col, Statistic, Table, Tag, Button, Space, Typography, List, Badge, message } from "antd";
+import React, {useEffect, useState} from "react";
+import {Badge, Button, Card, Col, List, message, Row, Space, Statistic, Table, Tag, Typography} from "antd";
 import {
-  TruckOutlined,
-  BoxPlotOutlined,
-  DollarOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  BellOutlined,
-  EnvironmentOutlined,
+    BellOutlined,
+    BoxPlotOutlined,
+    CheckCircleOutlined,
+    DollarOutlined,
+    EnvironmentOutlined,
+    ExclamationCircleOutlined,
+    TruckOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import type {ShipperOrder, ShipperStats} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
-import type { ShipperOrder, ShipperStats } from "../../api/orderApi";
-import { connectWebSocket, disconnectWebSocket } from "../../socket/socket";
-import { getUserId } from "../../utils/authUtils";
+import {connectWebSocket, disconnectWebSocket} from "../../socket/socket";
+import {getUserId} from "../../utils/authUtils";
 
 
 const { Title, Text } = Typography;

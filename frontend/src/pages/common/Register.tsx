@@ -1,14 +1,13 @@
-import React, { useState } from "react";
-import { Form, Input, Button, Card, Typography, Steps, Row, Col } from "antd";
-import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
-import { useNavigate, Link } from "react-router-dom";
+import React, {useState} from "react";
+import {Button, Card, Col, Form, Input, message, Row, Steps, Typography} from "antd";
+import {LockOutlined, MailOutlined, PhoneOutlined, UserOutlined} from "@ant-design/icons";
+import {Link, useNavigate} from "react-router-dom";
 import bg1 from "../../assets/images/bg-1.jpg";
-import type { RegisterData, VerifyRegisterOtpData } from "../../types/auth";
+import type {RegisterData, VerifyRegisterOtpData} from "../../types/auth";
 import "./Register.css";
 import authApi from "../../api/authApi";
 import OtpInput from "../../components/common/input/OtpInput";
-import { message } from "antd";
-import { getUserRole } from "../../utils/authUtils";
+import {getUserRole} from "../../utils/authUtils";
 
 const { Title, Text } = Typography;
 

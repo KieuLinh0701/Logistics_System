@@ -208,6 +208,8 @@ public class AuditLogDescriptionConstant {
     public static final String SUPPORT_MESSAGE_MARK_READ = "Đánh dấu tin nhắn đã đọc";
 
     // Audit Log
-    public static final String AUDIT_LOG_EXPORT_BY_EMPLOYEE = "Xuất báo cáo lịch sử làm việc của nhân viên";
-    public static final String AUDIT_LOG_EXPORT = "Xuất báo cáo lịch sử";
+    public static final String AUDIT_LOG_EXPORT_BY_EMPLOYEE = "Xuất báo cáo lịch sử hoạt động của nhân viên";
+    public static final String AUDIT_LOG_EXPORT = "Xuất báo cáo lịch sử hoat động";
+    public static final String AUDIT_LOG_EXPORT_BY_USER = "Xuất báo cáo lịch sử hoạt động của người đùng";
+
 }

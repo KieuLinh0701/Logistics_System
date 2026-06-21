@@ -1,8 +1,15 @@
 import React from 'react';
-import { Input, Select, DatePicker, Button, Row, Col } from 'antd';
-import { CloseCircleOutlined, SearchOutlined } from '@ant-design/icons';
-import type { Dayjs } from 'dayjs';
-import { translateVehicleFilterSort, translateVehicleStatus, translateVehicleType, VEHICLE_FILTER_SORT, VEHICLE_STATUSES, VEHICLE_TYPES } from '../../../../utils/vehicleUtils';
+import {Button, Col, DatePicker, Input, Row, Select} from 'antd';
+import {CloseCircleOutlined, SearchOutlined} from '@ant-design/icons';
+import type {Dayjs} from 'dayjs';
+import {
+    translateVehicleFilterSort,
+    translateVehicleStatus,
+    translateVehicleType,
+    VEHICLE_FILTER_SORT,
+    VEHICLE_STATUSES,
+    VEHICLE_TYPES
+} from '../../../../utils/vehicleUtils';
 
 const { RangePicker } = DatePicker;
 

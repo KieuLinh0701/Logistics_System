@@ -1,12 +1,37 @@
-import { useEffect, useState } from 'react';
-import { Row, Col, Typography, Space, Tag, Form, Input, TimePicker, Select, InputNumber, Button, message, Tooltip } from 'antd';
-import { BankOutlined, IdcardOutlined, PhoneOutlined, MailOutlined, ClockCircleOutlined, EditOutlined, FileTextOutlined, TagOutlined, UserOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import {useEffect, useState} from 'react';
+import {
+    Button,
+    Col,
+    Form,
+    Input,
+    InputNumber,
+    message,
+    Row,
+    Select,
+    Space,
+    Tag,
+    TimePicker,
+    Tooltip,
+    Typography
+} from 'antd';
+import {
+    BankOutlined,
+    ClockCircleOutlined,
+    EditOutlined,
+    EnvironmentOutlined,
+    FileTextOutlined,
+    IdcardOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    TagOutlined,
+    UserOutlined
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { Office, OfficeEditRequest } from '../../../types/office';
+import type {Office, OfficeEditRequest} from '../../../types/office';
 import officeApi from '../../../api/officeApi';
 import './ManagerOffice.css';
 import locationApi from '../../../api/locationApi';
-import { OFFICE_STATUSES, translateOfficeStatus } from '../../../utils/officeUtils';
+import {OFFICE_STATUSES, translateOfficeStatus} from '../../../utils/officeUtils';
 
 const { Title } = Typography;
 const { Option } = Select;

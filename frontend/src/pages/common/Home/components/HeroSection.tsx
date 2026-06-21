@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Input, Typography, Button, Space } from "antd";
+import React, {useState} from "react";
+import {Button, Input, Space, Typography} from "antd";
 import heroImage from "../../../../assets/images/home/h1_hero.jpg";
 
 const { Title, Paragraph } = Typography;

@@ -12,8 +12,6 @@ import ConfirmModal from '../../common/ConfirmModal';
 import type {ManagerShipment, ManagerShipmentSearchRequest} from '../../../types/shipment';
 import shipmentApi from '../../../api/shipmentApi';
 import AddEditShipmentModal from './components/AddEditShipmentModal';
-import type {ManagerOrderSearchRequest} from "../../../types/order.ts";
-import orderApi from "../../../api/orderApi.ts";
 
 const ManagerShipments: React.FC = () => {
     const latestRequestRef = useRef(0);

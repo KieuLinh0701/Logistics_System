@@ -1,6 +1,6 @@
 import React from "react";
-import { Descriptions, Modal } from "antd";
-import type { ShippingRequestRow } from "../../../../types/shippingRequest";
+import {Descriptions, Modal} from "antd";
+import type {ShippingRequestRow} from "../../../../types/shippingRequest";
 
 interface ShippingRequestDetailsModalProps {
   open: boolean;

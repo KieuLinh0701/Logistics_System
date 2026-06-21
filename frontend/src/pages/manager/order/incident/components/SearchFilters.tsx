@@ -1,9 +1,17 @@
-import React, { useState } from "react";
-import { Row, Col, Input, Button, Select, DatePicker, Tooltip } from "antd";
-import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import React, {useState} from "react";
+import {Button, Col, DatePicker, Input, Row, Select, Tooltip} from "antd";
+import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import { INCIDENT_FILTER_SORT, INCIDENT_PRIORITYS, INCIDENT_STATUSES, INCIDENT_TYPES, translateIncidentPriority, translateIncidentStatus, translateIncidentType } from "../../../../../utils/incidentUtils";
-import { translateEmployeeFilterSort } from "../../../../../utils/employeeUtils";
+import {
+    INCIDENT_FILTER_SORT,
+    INCIDENT_PRIORITYS,
+    INCIDENT_STATUSES,
+    INCIDENT_TYPES,
+    translateIncidentPriority,
+    translateIncidentStatus,
+    translateIncidentType
+} from "../../../../../utils/incidentUtils";
+import {translateEmployeeFilterSort} from "../../../../../utils/employeeUtils";
 
 type FilterKeys = "type" | "sort" | "status" | 'priority';
 

@@ -1,7 +1,7 @@
 import React from "react";
-import type { ManagerEmployeeStats } from "../../../../types/dashboard";
-import { Link } from "react-router-dom";
-import { TeamOutlined } from "@ant-design/icons";
+import type {ManagerEmployeeStats} from "../../../../types/dashboard";
+import {Link} from "react-router-dom";
+import {TeamOutlined} from "@ant-design/icons";
 
 interface Props {
   data: ManagerEmployeeStats;

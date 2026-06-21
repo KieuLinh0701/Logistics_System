@@ -1,41 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect, useState} from "react";
 import {
-  Card,
-  Row,
-  Col,
-  Typography,
-  Descriptions,
-  Table,
-  Tag,
-  Button,
-  Space,
-  Divider,
-  Modal,
-  message,
-  Spin,
-  Form,
-  InputNumber,
-  Input,
-  Alert,
-  Select,
+    Alert,
+    Button,
+    Card,
+    Col,
+    Descriptions,
+    Divider,
+    Form,
+    Input,
+    InputNumber,
+    message,
+    Modal,
+    Row,
+    Select,
+    Space,
+    Spin,
+    Table,
+    Tag,
+    Typography,
 } from "antd";
 import {
-  ArrowLeftOutlined,
-  PhoneOutlined,
-  EnvironmentOutlined,
-  DollarOutlined,
-  PlayCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  CompassOutlined,
+    ArrowLeftOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    CompassOutlined,
+    DollarOutlined,
+    EnvironmentOutlined,
+    PhoneOutlined,
+    PlayCircleOutlined,
 } from "@ant-design/icons";
-import { useParams, useNavigate } from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import dayjs from "dayjs";
+import type {ShipperOrder} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
-import { getUserRole } from "../../utils/authUtils";
-import { dispatchShipperRouteRefresh } from "./deliveryRouteEvents";
-import type { ShipperOrder } from "../../api/orderApi";
-import { translateOrderCodStatus, translatePaymentSubmissionStatus } from "../../utils/orderUtils";
+import {getUserRole} from "../../utils/authUtils";
+import {dispatchShipperRouteRefresh} from "./deliveryRouteEvents";
+import {translateOrderCodStatus, translatePaymentSubmissionStatus} from "../../utils/orderUtils";
 
 const { Title, Text, Paragraph } = Typography;
 

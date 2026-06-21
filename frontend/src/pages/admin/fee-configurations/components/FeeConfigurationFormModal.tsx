@@ -1,7 +1,7 @@
 import React from "react";
-import { Button, Form, Input, InputNumber, Modal, Select, Switch } from "antd";
-import type { AdminServiceType } from "../../../../types/serviceType";
-import type { Option } from "../../../../types/feeConfiguration";
+import {Button, Form, Input, InputNumber, Modal, Select, Switch} from "antd";
+import type {AdminServiceType} from "../../../../types/serviceType";
+import type {Option} from "../../../../types/feeConfiguration";
 
 import "../../../hr/recruitment/job-posting/components/JobPostingComponents.css";
 

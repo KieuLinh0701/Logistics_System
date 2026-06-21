@@ -1,5 +1,5 @@
 import type {Account, User} from "../types/auth";
-import {getDecodedToken, type DecodedToken} from "./jwt";
+import {type DecodedToken, getDecodedToken} from "./jwt";
 
 export function getUserRole(): string | null {
     const decoded: DecodedToken | null = getDecodedToken();

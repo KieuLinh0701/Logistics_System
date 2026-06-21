@@ -1,6 +1,6 @@
 import React from 'react';
-import { Input, Row, Col } from 'antd';
-import {SearchOutlined } from '@ant-design/icons';
+import {Col, Input, Row} from 'antd';
+import {SearchOutlined} from '@ant-design/icons';
 
 interface SearchFiltersProps {
   searchText: string;

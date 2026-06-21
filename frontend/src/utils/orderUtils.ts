@@ -1,7 +1,7 @@
-  import { MANAGER_FINAL_STATUSES } from "./managerOrderEditRules";
-  import { USER_FINAL_STATUSES } from "./userOrderEditRules";
+import {MANAGER_FINAL_STATUSES} from "./managerOrderEditRules";
+import {USER_FINAL_STATUSES} from "./userOrderEditRules";
 
-  // Điều kiện để thao tác với order của user
+// Điều kiện để thao tác với order của user
   export const canEditUserOrder = (status: string): boolean => {
     return !USER_FINAL_STATUSES.includes(status as typeof USER_FINAL_STATUSES[number]);
   };

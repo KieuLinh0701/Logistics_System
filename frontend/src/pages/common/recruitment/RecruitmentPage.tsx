@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Empty, Spin } from "antd";
-import { useNavigate } from "react-router-dom";
+import {useEffect, useMemo, useState} from "react";
+import {Alert, Empty, Spin, Typography} from "antd";
+import {useNavigate} from "react-router-dom";
 import HeaderHome from "../../../components/common/HeaderHome";
-import { Typography } from "antd";
 import "../../hr/recruitment/styles/recruitment.css";
 import companyInfoImage from "../../../assets/images/companyInfo.jpg";
 import joblistImage from "../../../assets/images/joblist.png";
 import JobCard from "../../hr/recruitment/components/JobCard";
-import { JobDetailModal } from "./JobDetailPage";
+import {JobDetailModal} from "./JobDetailPage";
 import FooterHome from "../../../components/common/FooterHome";
 import "./RecruitmentPage.css";
 import recruitmentApi from "../../../api/recruitmentApi";
-import type { JobPosting, RecruitmentRoleType } from "../../../types/recruitment";
-import { roleTypeLabelMap } from "./recruitmentHelpers";
+import type {JobPosting, RecruitmentRoleType} from "../../../types/recruitment";
+import {roleTypeLabelMap} from "./recruitmentHelpers";
 
 const { Title, Paragraph } = Typography;
 

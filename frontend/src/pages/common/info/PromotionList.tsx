@@ -1,19 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { Typography, Card, Row, Col, message, Spin, Pagination, Divider } from "antd";
-import {
-  CalendarOutlined,
-  DollarOutlined,
-  PercentageOutlined,
-  FireOutlined,
-  TagOutlined
-} from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Card, Col, Divider, message, Pagination, Row, Spin, Typography} from "antd";
+import {CalendarOutlined, DollarOutlined, FireOutlined, PercentageOutlined, TagOutlined} from "@ant-design/icons";
 import promotionImage from "../../../assets/images/promotion.jpg";
 import HeaderHome from "../../../components/common/HeaderHome";
 import FooterHome from "../../../components/common/FooterHome";
-import type { Promotion } from "../../../types/promotion";
+import type {Promotion} from "../../../types/promotion";
 import "./PromotionList.css";
 import promotionApi from "../../../api/promotionApi";
-import { getDiscountText } from "../../../utils/promotionUtils";
+import {getDiscountText} from "../../../utils/promotionUtils";
 
 const { Title, Text, Paragraph } = Typography;
 

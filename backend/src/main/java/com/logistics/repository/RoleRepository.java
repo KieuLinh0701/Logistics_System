@@ -14,8 +14,6 @@ public interface RoleRepository
         extends JpaRepository<Role, Integer>,
         JpaSpecificationExecutor<Role> {
 
-    Optional<Role> findByName(String name);
-
     Optional<Role> findByNameAndUserOwnerIsNull(String name);
 
     boolean existsByNameAndUserOwnerId(String name, Integer userOwnerId);

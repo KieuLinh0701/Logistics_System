@@ -1,5 +1,5 @@
 import React from "react";
-import { Space, Button } from "antd";
+import {Button, Space} from "antd";
 import {FileExcelOutlined, PlusOutlined, PrinterOutlined, TruckOutlined} from "@ant-design/icons";
 
 interface Props {

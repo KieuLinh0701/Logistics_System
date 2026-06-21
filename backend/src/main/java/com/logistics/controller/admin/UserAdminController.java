@@ -2,6 +2,7 @@ package com.logistics.controller.admin;
 
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.dto.BaseAuditLogDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
@@ -9,14 +10,21 @@ import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.repository.RoleRepository;
 import com.logistics.request.admin.CreateUserRequest;
 import com.logistics.request.admin.UpdateUserRequest;
+import com.logistics.request.manager.audit.AuditLogSearchRequest;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.ListResponse;
 import com.logistics.service.admin.UserAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -123,5 +131,41 @@ public class UserAdminController {
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.success(roles));
+    }
+
+    @GetMapping("/{id}/logs")
+    public ResponseEntity<ApiResponse<ListResponse<BaseAuditLogDto>>> listAuditLogsByUserId(
+            @PathVariable Integer id,
+            @Valid AuditLogSearchRequest auditLogSearchRequest) {
+
+        ListResponse<BaseAuditLogDto> result = userAdminService.listAuditLogsByUserId(id, auditLogSearchRequest);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+
+    @GetMapping("/{id}/logs/export")
+    @Audit(
+            entity = EntityType.AUDIT_LOG,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.AUDIT_LOG_EXPORT_BY_USER
+    )
+    public ResponseEntity<byte[]> export(
+            @PathVariable Integer id,
+            AuditLogSearchRequest auditLogSearchRequest) throws Exception {
+
+        byte[] data = userAdminService.export(id, auditLogSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo lịch sử hoạt động của người dùng.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

@@ -1,30 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {Alert, Button, Drawer, message, Table, Tag, Typography,} from "antd";
 import {
-  Alert,
-  Button,
-  Drawer,
-  Table,
-  Tag,
-  Typography,
-  message,
-} from "antd";
-import {
-  ThunderboltOutlined,
-  ReloadOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  NodeIndexOutlined,
-  HistoryOutlined,
+    CheckOutlined,
+    CloseOutlined,
+    HistoryOutlined,
+    NodeIndexOutlined,
+    ReloadOutlined,
+    ThunderboltOutlined,
 } from "@ant-design/icons";
 import aiRouteApi from "../../../api/aiRouteApi";
 import officeApi from "../../../api/officeApi";
-import type { AiRoutePlanDetail, AiRoutePlanSummary } from "../../../types/aiRoute";
-import type { ApiResponse } from "../../../types/response";
-import type { Office } from "../../../types/office";
-import type { SelectedStopInfo } from "./components/GoogleMapRouteRenderer";
+import type {AiRoutePlanDetail, AiRoutePlanSummary} from "../../../types/aiRoute";
+import type {ApiResponse} from "../../../types/response";
+import type {Office} from "../../../types/office";
+import type {SelectedStopInfo} from "./components/GoogleMapRouteRenderer";
 import RouteMap from "./components/RouteMap";
 import RouteSidebar from "./components/RouteSidebar";
-import { getRouteKey } from "./utils/routeMapUtils";
+import {getRouteKey} from "./utils/routeMapUtils";
 import "../../../styles/ListPage.css";
 import "../../shipper/ShipperPagesShared.css";
 import "./ManagerAiRouteOptimization.css";

@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { message } from "antd";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {message} from "antd";
 import axiosClient from "../../../api/axiosClient";
-import { translateShippingRequestStatus, translateShippingRequestType } from "../../../utils/shippingRequestUtils";
+import {translateShippingRequestStatus, translateShippingRequestType} from "../../../utils/shippingRequestUtils";
 import AssignOfficeModal from "./components/AssignOfficeModal";
 import ShippingRequestDetailsModal from "./components/ShippingRequestDetailsModal";
 import ShippingRequestsTable from "./components/ShippingRequestsTable";
 import ShippingRequestsToolbar from "./components/ShippingRequestsToolbar";
-import type { OfficeOption, ShippingRequestRow } from "../../../types/shippingRequest";
+import type {OfficeOption, ShippingRequestRow} from "../../../types/shippingRequest";
 import "../../../styles/ListPage.css";
 import "../../../pages/hr/recruitment/components/RecruitmentShared.css";
 import "./ShippingRequestsPage.css";

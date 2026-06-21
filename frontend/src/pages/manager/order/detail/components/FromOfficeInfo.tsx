@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import type { Office } from "../../../../../types/office";
+import React, {useEffect, useState} from "react";
+import type {Office} from "../../../../../types/office";
 import locationApi from "../../../../../api/locationApi";
 import Title from "antd/es/typography/Title";
-import { Tooltip } from "antd";
+import {Tooltip} from "antd";
 
 interface FromOfficeInfoProps {
     office: Office;

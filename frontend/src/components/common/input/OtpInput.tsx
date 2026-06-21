@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
-import { Input } from "antd";
-import type { InputRef } from "antd";
+import React, {useRef, useState} from "react";
+import type {InputRef} from "antd";
+import {Input} from "antd";
 import "./OtpInput.css";
 
 interface OtpInputProps {

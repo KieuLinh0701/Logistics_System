@@ -1,17 +1,9 @@
-import React, { useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Select,
-  Input,
-  Descriptions,
-  Typography,
-  Tooltip
-} from "antd";
+import React, {useEffect} from "react";
+import {Descriptions, Form, Input, Modal, Select, Tooltip, Typography} from "antd";
 import dayjs from "dayjs";
-import { useNavigate } from "react-router-dom";
-import type { ManagerPaymentSubmission } from "../../../../types/paymentSubmission";
-import { getAllowedManagerStatuses, translatePaymentSubmissionStatus } from "../../../../utils/paymentSubmissionUtils";
+import {useNavigate} from "react-router-dom";
+import type {ManagerPaymentSubmission} from "../../../../types/paymentSubmission";
+import {getAllowedManagerStatuses, translatePaymentSubmissionStatus} from "../../../../utils/paymentSubmissionUtils";
 
 const { Text } = Typography;
 const { TextArea } = Input;

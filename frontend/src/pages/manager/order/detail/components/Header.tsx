@@ -1,6 +1,6 @@
 import React from "react";
 import Title from "antd/es/typography/Title";
-import { ShoppingOutlined } from "@ant-design/icons";
+import {ShoppingOutlined} from "@ant-design/icons";
 
 interface Props {
   trackingNumber: string;

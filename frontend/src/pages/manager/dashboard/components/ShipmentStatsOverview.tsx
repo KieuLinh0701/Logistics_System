@@ -1,7 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import type { ManagerShipmentStats } from "../../../../types/dashboard";
-import { TruckOutlined } from "@ant-design/icons";
+import {Link} from "react-router-dom";
+import type {ManagerShipmentStats} from "../../../../types/dashboard";
+import {TruckOutlined} from "@ant-design/icons";
 
 interface Props {
   data: ManagerShipmentStats;

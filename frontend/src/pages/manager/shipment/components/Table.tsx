@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Tooltip, Dropdown } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import React, {useEffect, useState} from 'react';
+import {Button, Dropdown, Space, Table, Tooltip} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
 import dayjs from 'dayjs';
-import { canCancelManagerShipment, canEditManagerShipment, translateShipmentStatus, translateShipmentType } from '../../../../utils/shipmentUtils';
-import type { ManagerShipment } from '../../../../types/shipment';
-import { CloseCircleOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
+import {
+    canCancelManagerShipment,
+    canEditManagerShipment,
+    translateShipmentStatus,
+    translateShipmentType
+} from '../../../../utils/shipmentUtils';
+import type {ManagerShipment} from '../../../../types/shipment';
+import {CloseCircleOutlined, DownOutlined, EditOutlined} from '@ant-design/icons';
 import locationApi from '../../../../api/locationApi';
 
 interface TableProps {

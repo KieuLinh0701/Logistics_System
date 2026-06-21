@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Modal, Form, Input, Button, Typography, message } from "antd";
-import { CheckCircleOutlined } from "@ant-design/icons";
-import type { SupportTicket, CloseTicketPayload } from "../../types/support";
+import {useState} from "react";
+import {Button, Form, Input, message, Modal, Typography} from "antd";
+import {CheckCircleOutlined} from "@ant-design/icons";
+import type {CloseTicketPayload, SupportTicket} from "../../types/support";
 import supportApi from "../../api/supportApi";
 
 const { Text } = Typography;

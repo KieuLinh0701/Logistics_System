@@ -7,13 +7,14 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.mapper.AuditLogMapper;
 import com.logistics.repository.*;
-import com.logistics.request.manager.audit.ManagerAuditLogSearchRequest;
+import com.logistics.request.manager.audit.AuditLogSearchRequest;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.AuditLogSpecification;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
@@ -31,8 +32,6 @@ import java.util.List;
 import static com.logistics.utils.AuditLogUtils.translateAuditLogAction;
 import static com.logistics.utils.AuditLogUtils.translateAuditLogStatus;
 import static com.logistics.utils.EntityTypeUtils.translateEntityType;
-import static com.logistics.utils.ProductUtils.translateProductStatus;
-import static com.logistics.utils.ProductUtils.translateProductType;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +40,7 @@ public class AuditLogManagerService {
     private final AuditLogRepository repository;
     private final EmployeeManagerService employeeManagerService;
 
-    public ListResponse<ManagerAuditLogDto> list(int userId, ManagerAuditLogSearchRequest request) {
+    public ListResponse<ManagerAuditLogDto> list(int userId, AuditLogSearchRequest request) {
         int page = request.getPage();
         int limit = request.getLimit();
         String search = request.getSearch();
@@ -49,7 +48,6 @@ public class AuditLogManagerService {
         EntityType entity = request.getEntity();
         String sort = request.getSort();
         AuditLogAction action = request.getAction();
-        String role = request.getRole();
         LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
                 ? LocalDateTime.parse(request.getStartDate())
                 : null;
@@ -62,11 +60,10 @@ public class AuditLogManagerService {
 
         Specification<AuditLog> spec = AuditLogSpecification.unrestricted()
                 .and(AuditLogSpecification.office(userOffice.getId()))
-                .and(AuditLogSpecification.search(search))
+                .and(AuditLogSpecification.searchManagerUser(search))
                 .and(AuditLogSpecification.status(status))
                 .and(AuditLogSpecification.entityType(entity))
                 .and(AuditLogSpecification.action(action))
-                .and(AuditLogSpecification.role(role))
                 .and(AuditLogSpecification.createdAtBetween(startDate, endDate));
 
         Sort sortOpt = switch (sort.toLowerCase()) {
@@ -91,7 +88,7 @@ public class AuditLogManagerService {
         return data;
     }
 
-    public byte[] export(Integer userId, ManagerAuditLogSearchRequest request) {
+    public byte[] export(Integer userId, AuditLogSearchRequest request) {
         // 1. Lấy thông tin Office và xây dựng Specification giống hệt hàm list
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
@@ -102,11 +99,10 @@ public class AuditLogManagerService {
 
         Specification<AuditLog> spec = AuditLogSpecification.unrestricted()
                 .and(AuditLogSpecification.office(userOffice.getId()))
-                .and(AuditLogSpecification.search(request.getSearch()))
+                .and(AuditLogSpecification.searchManagerUser(request.getSearch()))
                 .and(AuditLogSpecification.status(request.getStatus()))
                 .and(AuditLogSpecification.entityType(request.getEntity()))
                 .and(AuditLogSpecification.action(request.getAction()))
-                .and(AuditLogSpecification.role(request.getRole()))
                 .and(AuditLogSpecification.createdAtBetween(startDate, endDate));
 
         // 2. Lấy toàn bộ dữ liệu (không phân trang)
@@ -120,11 +116,15 @@ public class AuditLogManagerService {
             XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
             XSSFFont font = (XSSFFont) workbook.createFont();
             font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
             headerStyle.setFont(font);
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
             // Định nghĩa Headers khớp với cột trên FE
-            String[] headers = {"Thời gian", "Nhân viên", "SĐT", "Đối tượng", "Mã ĐT", "Hành động", "Mô tả", "Trạng thái"};
+            String[] headers = {"Thời gian", "Họ tên NV", "SĐT NV", "Đối tượng", "Mã ĐT", "Hành động", "Mô tả", "Trạng thái"};
 
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {

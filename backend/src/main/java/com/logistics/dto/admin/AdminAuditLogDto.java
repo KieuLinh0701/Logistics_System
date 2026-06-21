@@ -26,9 +26,8 @@ public class AdminAuditLogDto extends ManagerAuditLogDto {
             AuditLogStatus status,
             LocalDateTime createdAt,
             User user,
-            Role role,
             Office office) {
-        super(id, entity, entityId, action, description, status, createdAt, user, role);
+        super(id, entity, entityId, action, description, status, createdAt, user);
         this.office = office;
     }
 

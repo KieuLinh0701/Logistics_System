@@ -1,16 +1,17 @@
 import React from "react";
-import { Dropdown } from "antd";
-import { DownOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import type { AdminUser } from "../../../../types/user";
+import {Button, Dropdown} from "antd";
+import {DeleteOutlined, DownOutlined, EditOutlined, HistoryOutlined} from "@ant-design/icons";
+import type {AdminUser} from "../../../../types/user";
 
 interface UsersActionsProps {
   record: AdminUser;
   loading?: boolean;
   onEdit: (u: AdminUser) => void;
   onDelete: (id: number) => void;
+  onViewLogs: (id: number) => void;
 }
 
-const UsersActions: React.FC<UsersActionsProps> = ({ record, loading, onEdit, onDelete }) => {
+const UsersActions: React.FC<UsersActionsProps> = ({ record, loading, onEdit, onDelete, onViewLogs }) => {
   const items = [
     { key: 'edit', icon: <EditOutlined />, label: 'Sửa' },
     { key: 'delete', icon: <DeleteOutlined />, label: 'Xóa' },
@@ -18,7 +19,13 @@ const UsersActions: React.FC<UsersActionsProps> = ({ record, loading, onEdit, on
 
   return (
     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-      
+        <Button
+            className="action-button-link"
+            type="link"
+            onClick={() => onViewLogs(record.id)}
+        >
+            Xem log
+        </Button>
       <Dropdown
         menu={{ items, onClick: ({ key }) => {
           if (key === 'edit') onEdit(record);

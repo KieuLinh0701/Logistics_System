@@ -1,4 +1,4 @@
-import type { ManagerEmployee } from "./employee";
+import type {ManagerEmployee} from "./employee";
 
 export interface ManagerShipperAssignment {
   id: number;

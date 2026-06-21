@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Form, Input, Select } from "antd";
-import type { City, Ward } from "../../types/location";
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import {Form, Input, Select} from "antd";
+import type {City, Ward} from "../../types/location";
 import locationApi from "../../api/locationApi";
-import { geocodeAddress, getPlaceDetails } from "../../service/mapsService";
-import type { Prediction } from "../../service/mapsService";
+import type {Prediction} from "../../service/mapsService";
+import {geocodeAddress, getPlaceDetails} from "../../service/mapsService";
 
 const { Option } = Select;
 

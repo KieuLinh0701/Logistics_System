@@ -1,10 +1,10 @@
 import React from "react";
-import { Table, Button, Tooltip } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import {Button, Table, Tooltip} from "antd";
+import type {ColumnsType} from "antd/es/table";
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
-import type { ManagerShipment } from "../../../../../types/shipment";
-import { translateShipmentStatus, translateShipmentType } from "../../../../../utils/shipmentUtils";
+import type {ManagerShipment} from "../../../../../types/shipment";
+import {translateShipmentStatus} from "../../../../../utils/shipmentUtils";
 
 interface Props {
   shipments: ManagerShipment[];

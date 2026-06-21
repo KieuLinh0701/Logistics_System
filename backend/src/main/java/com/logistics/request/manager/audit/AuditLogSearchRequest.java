@@ -12,14 +12,13 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ManagerAuditLogSearchRequest {
+public class AuditLogSearchRequest {
     private Integer page;
     private Integer limit;
     private String sort;
     private String startDate;
     private String endDate;
     private String search;
-    private String role;
     private EntityType entity;
     private AuditLogAction action;
     private AuditLogStatus status;

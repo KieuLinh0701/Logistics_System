@@ -1,26 +1,28 @@
 package com.logistics.service.manager;
 
 import com.logistics.constants.EmployeeConstant;
+import com.logistics.dto.BaseAuditLogDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
 import com.logistics.entity.*;
-import com.logistics.enums.EmployeeShift;
-import com.logistics.enums.EmployeeStatus;
-import com.logistics.enums.ShipmentType;
+import com.logistics.enums.*;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.exception.enums.RoleErrorCode;
 import com.logistics.exception.enums.UserErrorCode;
+import com.logistics.mapper.AuditLogMapper;
 import com.logistics.mapper.EmployeeMapper;
 import com.logistics.repository.*;
 import com.logistics.request.SearchRequest;
+import com.logistics.request.manager.audit.AuditLogSearchRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.common.NotificationService;
+import com.logistics.specification.AuditLogSpecification;
 import com.logistics.specification.EmployeeSpecification;
 import com.logistics.specification.UserSpecification;
 import com.logistics.utils.EmailService;
@@ -50,8 +52,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.logistics.utils.AuditLogUtils.translateAuditLogAction;
+import static com.logistics.utils.AuditLogUtils.translateAuditLogStatus;
 import static com.logistics.utils.EmployeeUtils.translateEmployeeShift;
 import static com.logistics.utils.EmployeeUtils.translateEmployeeStatus;
+import static com.logistics.utils.EntityTypeUtils.translateEntityType;
 import static com.logistics.utils.RoleUtils.translateSystemRoleName;
 
 @Service
@@ -73,6 +78,8 @@ public class EmployeeManagerService {
     private final EmailService emailService;
 
     private final NotificationService notificationService;
+
+    private final AuditLogRepository auditLogRepository;
 
     public Office getManagedOfficeByUserId(Integer userId) {
         List<Employee> employees = employeeRepository.findByUserId(userId);
@@ -402,11 +409,10 @@ public class EmployeeManagerService {
                     .findByAccountIdAndIsActiveTrue(account.getId());
 
             boolean hasActiveUserRole = activeAccountRoles.stream()
-                    .anyMatch(ar -> "User".equalsIgnoreCase(ar.getRole()
-                            .getName()));
+                    .anyMatch(ar ->
+                            "User".equalsIgnoreCase(ar.getRole().getName()) && ar.getRole().getUserOwner() == null);
             long activeNonUserRolesCount = activeAccountRoles.stream()
-                    .filter(ar -> !"User".equalsIgnoreCase(ar.getRole()
-                            .getName()))
+                    .filter(ar -> !"User".equalsIgnoreCase(ar.getRole().getName()) && ar.getRole().getUserOwner() == null)
                     .count();
 
             // role muốn thêm
@@ -643,11 +649,9 @@ public class EmployeeManagerService {
                     List<AccountRole> activeRoles = accountRoleRepository
                             .findByAccountIdAndIsActiveTrue(account.getId());
                     boolean hasUserActive = activeRoles.stream()
-                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole()
-                                    .getName()));
+                            .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()) && r.getRole().getUserOwner() == null);
                     long activeNonUserCount = activeRoles.stream()
-                            .filter(r -> !"User".equalsIgnoreCase(r.getRole()
-                                    .getName()))
+                            .filter(r -> !"User".equalsIgnoreCase(r.getRole().getName()) && r.getRole().getUserOwner() == null)
                             .count();
                     long totalActiveAfterAdd = activeRoles.size() + 1;
 
@@ -800,11 +804,9 @@ public class EmployeeManagerService {
                             List<AccountRole> activeRoles = accountRoleRepository
                                     .findByAccountIdAndIsActiveTrue(account.getId());
                             boolean hasUserActive = activeRoles.stream()
-                                    .anyMatch(r -> "User".equalsIgnoreCase(r.getRole()
-                                            .getName()));
+                                    .anyMatch(r -> "User".equalsIgnoreCase(r.getRole().getName()) && r.getRole().getUserOwner() == null);
                             long activeNonUserCount = activeRoles.stream()
-                                    .filter(r -> !"User".equalsIgnoreCase(r.getRole()
-                                            .getName()))
+                                    .filter(r -> !"User".equalsIgnoreCase(r.getRole().getName()) && r.getRole().getUserOwner() == null)
                                     .count();
 
                             if (hasUserActive && activeNonUserCount >= 1
@@ -947,11 +949,10 @@ public class EmployeeManagerService {
                         Employee employee = user.getEmployees()
                                 .stream()
                                 .filter(emp -> emp.getAccountRole() != null &&
-                                        emp.getAccountRole()
-                                                .getRole() != null &&
-                                        "Shipper".equalsIgnoreCase(emp.getAccountRole()
-                                                .getRole()
-                                                .getName()))
+                                        emp.getAccountRole().getRole() != null &&
+                                        "Shipper".equalsIgnoreCase(emp.getAccountRole().getRole().getName()) &&
+                                        emp.getAccountRole().getRole().getUserOwner() == null
+                                )
                                 .findFirst()
                                 .orElse(null);
 
@@ -1297,6 +1298,163 @@ public class EmployeeManagerService {
 
         } catch (Exception e) {
             throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
+        }
+    }
+
+    public ListResponse<BaseAuditLogDto> listAuditLogsByUserId(
+            Integer userId,
+            Integer employeeId,
+            AuditLogSearchRequest request) {
+
+        Office editorOffice = getManagedOfficeByUserId(userId);
+
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
+
+        if (!emp.getOffice()
+                .getId()
+                .equals(editorOffice.getId())) {
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_MANAGER_ACCESS_DENIED);
+        }
+
+        User user = emp.getUser();
+        if (user == null || user.getId() == null) {
+            throw new AppException(UserErrorCode.USER_NOT_FOUND);
+        }
+
+        int page = request.getPage();
+        int limit = request.getLimit();
+        String search = request.getSearch();
+        AuditLogStatus status = request.getStatus();
+        EntityType entity = request.getEntity();
+        String sort = request.getSort();
+        AuditLogAction action = request.getAction();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
+
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
+
+        Specification<AuditLog> spec = AuditLogSpecification.unrestricted()
+                .and(AuditLogSpecification.user(user.getId()))
+                .and(AuditLogSpecification.search(search))
+                .and(AuditLogSpecification.status(status))
+                .and(AuditLogSpecification.entityType(entity))
+                .and(AuditLogSpecification.action(action))
+                .and(AuditLogSpecification.createdAtBetween(startDate, endDate));
+
+        Sort sortOpt = switch (sort.toLowerCase()) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            default -> Sort.unsorted();
+        };
+
+        Pageable pageable = PageRequest.of(page - 1, limit, sortOpt);
+        Page<AuditLog> pageData = auditLogRepository.findAll(spec, pageable);
+
+        List<BaseAuditLogDto> list = AuditLogMapper.toBaseAuditLogDtoList(pageData.getContent());
+
+        int total = (int) pageData.getTotalElements();
+
+        Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
+
+        ListResponse<BaseAuditLogDto> data = new ListResponse<>();
+        data.setList(list);
+        data.setPagination(pagination);
+
+        return data;
+    }
+
+    public byte[] exportAuditLogsByUserId(
+            Integer userId,
+            Integer employeeId,
+            AuditLogSearchRequest request) {
+
+        Office editorOffice = getManagedOfficeByUserId(userId);
+
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
+
+        if (!emp.getOffice()
+                .getId()
+                .equals(editorOffice.getId())) {
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_MANAGER_ACCESS_DENIED);
+        }
+
+        User user = emp.getUser();
+        if (user == null || user.getId() == null) {
+            throw new AppException(UserErrorCode.USER_NOT_FOUND);
+        }
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        Specification<AuditLog> spec = AuditLogSpecification.unrestricted()
+                .and(AuditLogSpecification.user(user.getId()))
+                .and(AuditLogSpecification.search(request.getSearch()))
+                .and(AuditLogSpecification.status(request.getStatus()))
+                .and(AuditLogSpecification.entityType(request.getEntity()))
+                .and(AuditLogSpecification.action(request.getAction()))
+                .and(AuditLogSpecification.createdAtBetween(startDate, endDate));
+
+        List<AuditLog> logs = auditLogRepository.findAll(spec, Sort.by("createdAt").descending());
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Audit Logs");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Thời gian",
+                    "Đối tượng",
+                    "Mã ĐT",
+                    "Hành động",
+                    "Mô tả",
+                    "Trạng thái"};
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+
+            int rowIdx = 1;
+            for (AuditLog log : logs) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue(log.getCreatedAt() != null ? log.getCreatedAt().format(dtf) : "");
+                row.createCell(1).setCellValue(translateEntityType(log.getEntity()));
+                row.createCell(2).setCellValue(log.getId() != null ? log.getId().toString() : "");
+                row.createCell(3).setCellValue(translateAuditLogAction(log.getAction()));
+                row.createCell(4).setCellValue(log.getDescription() != null ? log.getDescription() : "");
+                row.createCell(5).setCellValue(translateAuditLogStatus(log.getStatus()));
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR, e);
         }
     }
 

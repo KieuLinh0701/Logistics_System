@@ -1,7 +1,7 @@
 import React from "react";
-import { Form, Input, InputNumber, Modal, Select } from "antd";
-import type { FormInstance } from "antd";
-import type { AdminServiceType } from "../../../../types/serviceType";
+import type {FormInstance} from "antd";
+import {Form, Input, InputNumber, Modal, Select} from "antd";
+import type {AdminServiceType} from "../../../../types/serviceType";
 import "../../../hr/recruitment/job-posting/components/JobPostingComponents.css";
 
 interface Option {

@@ -1,6 +1,6 @@
 import React from "react";
-import { Divider, Tooltip, Typography } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
+import {Divider, Tooltip, Typography} from "antd";
+import {InfoCircleOutlined} from "@ant-design/icons";
 
 const { Text } = Typography;
 

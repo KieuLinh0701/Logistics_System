@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, Upload, message, Descriptions, Typography, Tooltip } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
-import type { RcFile, UploadFile } from 'antd/es/upload/interface';
-import type { ShippingRequest } from '../../../../../types/shippingRequest';
+import React, {useEffect, useState} from 'react';
+import {Descriptions, Form, Input, message, Modal, Select, Tooltip, Typography, Upload} from 'antd';
+import {UploadOutlined} from '@ant-design/icons';
+import type {RcFile, UploadFile} from 'antd/es/upload/interface';
+import type {ShippingRequest} from '../../../../../types/shippingRequest';
 import {
-  translateShippingRequestType,
-  translateShippingRequestStatus,
-  getAllowedManagerStatuses
+    getAllowedManagerStatuses,
+    translateShippingRequestStatus,
+    translateShippingRequestType
 } from '../../../../../utils/shippingRequestUtils';
 import shippingRequestApi from '../../../../../api/shippingRequestApi';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 
 const { Text } = Typography;
 

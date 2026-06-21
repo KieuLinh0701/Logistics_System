@@ -1,18 +1,19 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Form, Pagination, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {Form, message, Pagination} from "antd";
+import {PlusOutlined} from "@ant-design/icons";
 import feeConfigurationApi from "../../../api/feeConfigurationApi";
 import serviceTypeApi from "../../../api/serviceTypeApi";
 import type {
-  CreateFeeConfigurationPayload,
-  FeeConfiguration,
+    CreateFeeConfigurationPayload,
+    FeeConfiguration,
+    Option,
+    QueryState,
 } from "../../../types/feeConfiguration";
-import type { AdminServiceType } from "../../../types/serviceType";
+import type {AdminServiceType} from "../../../types/serviceType";
 import FeeConfigurationFormModal from "./components/FeeConfigurationFormModal";
 import FeeConfigurationDetailsModal from "./components/FeeConfigurationDetailsModal";
 import FeeConfigurationsTable from "./components/FeeConfigurationsTable";
 import FeeConfigurationsToolbar from "./components/FeeConfigurationsToolbar";
-import type { Option, QueryState } from "../../../types/feeConfiguration";
 import "../../../styles/ListPage.css";
 import "../../../pages/hr/recruitment/components/RecruitmentShared.css";
 import "./FeeConfigurationsPage.css";

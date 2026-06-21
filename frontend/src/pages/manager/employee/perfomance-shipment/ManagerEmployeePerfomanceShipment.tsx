@@ -30,8 +30,6 @@ const ManagerEmployeePerfomanceShipment = () => {
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
     const [shipments, setShipments] = useState<ManagerShipment[] | []>([]);
-    const [exportShipments, setExportShipments] = useState<ManagerShipment[] | []>([]);
-
     const updateURL = () => {
         const params: any = {};
 

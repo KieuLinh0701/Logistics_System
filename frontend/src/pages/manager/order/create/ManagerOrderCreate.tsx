@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Col, Form, message, Row } from "antd";
+import React, {useEffect, useState} from "react";
+import {Col, Form, message, Row} from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
 import RecipientInfo from "./components/RecipientInfo";
@@ -8,8 +8,8 @@ import PaymentCard from "./components/PaymentCard";
 import OrderInfo from "./components/OrderInfo";
 import SenderInfo from "./components/SenderInfo";
 import PromotionCard from "./components/PromotionCard";
-import type { ManagerOrderRequest } from "../../../../types/order";
-import type { ServiceType } from "../../../../types/serviceType";
+import type {ManagerOrderRequest} from "../../../../types/order";
+import type {ServiceType} from "../../../../types/serviceType";
 import "./ManagerOrderCreate.css"
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import shippingFeeApi from "../../../../api/shippingFeeApi";

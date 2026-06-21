@@ -1,9 +1,20 @@
-import React, { useState } from "react";
-import { Row, Col, Input, Button, Select, DatePicker, Tooltip } from "antd";
-import { CloseCircleOutlined, CloseOutlined, FilterOutlined, SearchOutlined } from "@ant-design/icons";
+import React, {useState} from "react";
+import {Button, Col, DatePicker, Input, Row, Select, Tooltip} from "antd";
+import {CloseCircleOutlined, CloseOutlined, FilterOutlined, SearchOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import type { ServiceType } from "../../../../../types/serviceType";
-import { ORDER_FILTER_COD, ORDER_FILTER_SORT, ORDER_PAYER_TYPES, ORDER_PAYMENT_STATUS, ORDER_PICKUP_TYPES, ORDER_STATUS, translateOrderFilterCod, translateOrderFilterSort, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
+import type {ServiceType} from "../../../../../types/serviceType";
+import {
+    ORDER_FILTER_COD,
+    ORDER_FILTER_SORT,
+    ORDER_PAYER_TYPES,
+    ORDER_PAYMENT_STATUS,
+    ORDER_PICKUP_TYPES,
+    translateOrderFilterCod,
+    translateOrderFilterSort,
+    translateOrderPayerType,
+    translateOrderPaymentStatus,
+    translateOrderPickupType
+} from "../../../../../utils/orderUtils";
 
 type FilterKeys = "payer" | "paymentStatus" | "serviceType" | "cod" | "sort" | "pickupType";
 

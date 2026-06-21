@@ -1,23 +1,14 @@
 import {useEffect, useRef, useState} from "react";
-import {
-    message,
-    Row,
-    Col,
-    Tag,
-    Form,
-} from "antd";
-import {
-    TeamOutlined,
-} from "@ant-design/icons";
+import {Col, message, Row, Tag,} from "antd";
+import {HistoryOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import Title from "antd/es/typography/Title";
-import {useNavigate, useParams, useSearchParams} from "react-router-dom";
-import EmployeeTable from "./components/Table";
+import {useParams, useSearchParams} from "react-router-dom";
 import Actions from "./components/Actions";
 import SearchFilters from "./components/SearchFilters";
-import AddEditModal from "./components/AddEditModal";
 import type {AuditLog, AuditLogSearchRequest} from "../../../../types/auditLog.ts";
 import auditLogApi from "../../../../api/auditLogApi.ts";
+import AuditLogTable from "./components/Table";
 
 const ManagerAuditLogsByEmployee = () => {
     const { id } = useParams();
@@ -33,14 +24,12 @@ const ManagerAuditLogsByEmployee = () => {
     const [filterEntity, setFilterEntity] = useState<string>("ALL");
     const [filterStatus, setFilterStatus] = useState<string>("ALL");
     const [filterSort, setFilterSort] = useState<string>("NEWEST");
-    const [filterRole, setFilterRole] = useState<string>("ALL");
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [total, setTotal] = useState(0);
     const [hover, setHover] = useState(false);
-    const [form] = Form.useForm();
-    const navigate = useNavigate();
+    const [page, setPage] = useState(0);
 
     const updateURL = () => {
         const params: any = {};
@@ -49,7 +38,6 @@ const ManagerAuditLogsByEmployee = () => {
         if (filterAction !== "ALL") params.action = filterAction.toLowerCase();
         if (filterEntity !== "ALL") params.entity = filterEntity.toLowerCase();
         if (filterStatus !== "ALL") params.status = filterStatus.toLowerCase();
-        if (filterRole !== "ALL") params.role = filterRole;
         params.sort = filterSort.toLowerCase();
         if (currentPage) params.page = currentPage;
 
@@ -65,7 +53,6 @@ const ManagerAuditLogsByEmployee = () => {
         const pageParam = Number(searchParams.get("page")) || 1;
         const s = searchParams.get("search");
         const status = searchParams.get("status")?.toLocaleUpperCase();
-        const r = searchParams.get("role");
         const sort = searchParams.get("sort")?.toLocaleUpperCase();
         const startDate = searchParams.get("start");
         const endDate = searchParams.get("end");
@@ -74,9 +61,7 @@ const ManagerAuditLogsByEmployee = () => {
 
         setCurrentPage(pageParam);
         if (s) setSearchText(s);
-        if (shift) setFilterShift(shift);
         if (status) setFilterStatus(status);
-        if (r) setFilterRole(r);
         if (sort) setFilterSort(sort);
         if (action) setFilterAction(action);
         if (entity) setFilterEntity(entity);
@@ -101,7 +86,6 @@ const ManagerAuditLogsByEmployee = () => {
                 action: filterAction !== "ALL" ? filterAction : undefined,
                 entity: filterEntity !== "ALL" ? filterEntity : undefined,
                 status: filterStatus !== "ALL" ? filterStatus : undefined,
-                role: filterRole !== "ALL" ? filterRole : undefined,
                 sort: filterSort,
             };
 
@@ -117,24 +101,25 @@ const ManagerAuditLogsByEmployee = () => {
                 setLog(list);
                 setTotal(result.data.pagination?.total || 0);
             } else {
-                message.error(result.message || "Lỗi khi lấy danh sách lịch sử làm việc của nhân viên");
+                message.error(result.message || "Lỗi khi lấy danh sách lịch sử hoạt động của nhân viên");
             }
         } catch (error: any) {
-            message.error(error.message || "Lỗi khi lấy danh sách lịch sử làm việc của nhân viên");
+            message.error(error.message || "Lỗi khi lấy danh sách lịch sử hoạt động của nhân viên");
         } finally {
             setLoading(false);
         }
     };
 
     const handleExport = async () => {
+        if (employeeId == null) return;
         try {
-            const param: ManagerlogearchRequest = {
-                page: currentPage,
-                limit: pageSize,
+            const param: AuditLogSearchRequest = {
+                page,
+                limit: page,
                 search: searchText || undefined,
-                shift: filterShift !== "ALL" ? filterShift : undefined,
+                action: filterAction !== "ALL" ? filterAction : undefined,
+                entity: filterEntity !== "ALL" ? filterEntity : undefined,
                 status: filterStatus !== "ALL" ? filterStatus : undefined,
-                role: filterRole !== "ALL" ? filterRole : undefined,
                 sort: filterSort,
             };
             if (dateRange) {
@@ -142,8 +127,7 @@ const ManagerAuditLogsByEmployee = () => {
                 param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
             }
 
-            const result = await employeeApi.exportManagerlog(param);
-
+            const result = await auditLogApi.exportManagerByEmployeeId(employeeId, param);
 
             if (!result.success) {
                 console.error("Export thất bại:", result.error);
@@ -159,18 +143,18 @@ const ManagerAuditLogsByEmployee = () => {
     useEffect(() => {
         fetchLogs(currentPage);
         updateURL();
-    }, [currentPage, pageSize, searchText, filterShift, filterStatus, filterRole, filterSort, dateRange]);
+    }, [currentPage, pageSize, searchText, filterEntity, filterAction, filterStatus, filterSort, dateRange]);
 
     const handleFilterChange = (filter: string, value: string) => {
         switch (filter) {
             case 'sort':
                 setFilterSort(value);
                 break;
-            case 'shift':
-                setFilterShift(value);
+            case 'action':
+                setFilterAction(value);
                 break;
-            case 'role':
-                setFilterRole(value);
+            case 'entity':
+                setFilterEntity(value);
                 break;
             case 'status':
                 setFilterStatus(value);
@@ -179,15 +163,11 @@ const ManagerAuditLogsByEmployee = () => {
         setCurrentPage(1);
     };
 
-    const handleViewLog = async (id: number) => {
-        navigate(`/log/${id}/logs`)
-    }
-
     const handleClearFilters = () => {
         setSearchText('');
-        setFilterShift('ALL');
+        setFilterAction('ALL');
+        setFilterEntity('ALL');
         setFilterStatus('ALL');
-        setFilterRole('ALL');
         setFilterSort('NEWEST');
         setDateRange(null);
         setCurrentPage(1);
@@ -198,9 +178,9 @@ const ManagerAuditLogsByEmployee = () => {
             <div className="list-page-content">
                 <SearchFilters
                     searchText={searchText}
-                    filterShift={filterShift}
+                    filterAction={filterAction}
+                    filterEntity={filterEntity}
                     filterStatus={filterStatus}
-                    filterRole={filterRole}
                     filterSort={filterSort}
                     dateRange={dateRange}
                     hover={hover}
@@ -214,20 +194,14 @@ const ManagerAuditLogsByEmployee = () => {
                 <Row className="list-page-header" justify="space-between" align="middle">
                     <Col>
                         <Title level={3} className="list-page-title-main">
-                            <TeamOutlined className="title-icon"/>
-                            Danh sách nhân viên
+                            <HistoryOutlined className="title-icon"/>
+                            Lịch sử hoạt động
                         </Title>
                     </Col>
 
                     <Col>
                         <div className="list-page-actions">
                             <Actions
-                                onAdd={() => {
-                                    setIsModalOpen(true);
-                                    setModalMode("create");
-                                    setNewEmployee({});
-                                    form.resetFields();
-                                }}
                                 onExport={handleExport}
                                 total={total}
                             />
@@ -235,44 +209,18 @@ const ManagerAuditLogsByEmployee = () => {
                     </Col>
                 </Row>
 
-                <Tag className="list-page-tag">Kết quả trả về: {total} nhân viên</Tag>
+                <Tag className="list-page-tag">Kết quả trả về: {total} bản ghi</Tag>
 
-                <EmployeeTable
+                <AuditLogTable
                     data={log}
                     page={currentPage}
                     limit={pageSize}
                     total={total}
                     loading={loading}
-                    onEdit={(employee) => {
-                        setModalMode('edit');
-                        setNewEmployee(employee);
-                        setIsModalOpen(true);
-                        form.setFieldsValue({
-                            lastName: employee.lastName,
-                            firstName: employee.firstName,
-                            email: employee.email,
-                            phoneNumber: employee.phoneNumber,
-                            role: employee.role,
-                            shift: employee.shift,
-                            status: employee.status,
-                            hireDate: dayjs(employee.hireDate)
-                        });
-                    }}
-                    onViewLog={handleViewLog}
                     onPageChange={(page, size) => {
                         setCurrentPage(page);
                         if (size) setPageSize(size);
                     }}
-                />
-
-                <AddEditModal
-                    open={isModalOpen}
-                    mode={modalMode}
-                    employee={newEmployee}
-                    onOk={handleSubmit}
-                    onCancel={() => setIsModalOpen(false)}
-                    loading={loading}
-                    form={form}
                 />
             </div>
         </div>

@@ -5,7 +5,7 @@ import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.manager.audit.ManagerAuditLogDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
-import com.logistics.request.manager.audit.ManagerAuditLogSearchRequest;
+import com.logistics.request.manager.audit.AuditLogSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.service.manager.AuditLogManagerService;
@@ -24,18 +24,18 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/manager/logs")
-@Tag(name = "Manager - Employee", description = "Quản lý nhân sự, theo dõi hiệu suất và xuất báo cáo vận hành")
+@Tag(name = "Manager - Audit Logs", description = "Quản lý và theo dõi nhật ký hoạt động bưu cục, hỗ trợ xuất báo cáo")
 public class AuditLogManagerController {
 
     private final AuditLogManagerService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<ManagerAuditLogDto>>> list(
-            @Valid ManagerAuditLogSearchRequest managerEmployeeAuditLogSearchRequest,
+            @Valid AuditLogSearchRequest auditLogSearchRequest,
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ListResponse<ManagerAuditLogDto> result = service.list(userId, managerEmployeeAuditLogSearchRequest);
+        ListResponse<ManagerAuditLogDto> result = service.list(userId, auditLogSearchRequest);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
@@ -47,12 +47,12 @@ public class AuditLogManagerController {
             description = AuditLogDescriptionConstant.AUDIT_LOG_EXPORT
     )
     public ResponseEntity<byte[]> export(HttpServletRequest request,
-                                         ManagerAuditLogSearchRequest managerEmployeeAuditLogSearchRequest) throws Exception {
+                                         AuditLogSearchRequest auditLogSearchRequest) throws Exception {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
-        byte[] data = service.export(userId, managerEmployeeAuditLogSearchRequest);
+        byte[] data = service.export(userId, auditLogSearchRequest);
 
-        String fileName = "UTE Logistics_Báo cáo lịch sử làm việc của bưu cục.xlsx";
+        String fileName = "UTE Logistics_Báo cáo lịch sử hoạt động của bưu cục.xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
                 .replaceAll("\\+", "%20");
 

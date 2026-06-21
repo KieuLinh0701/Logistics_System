@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import HeaderHome from '../../../components/common/HeaderHome';
 import FooterHome from '../../../components/common/FooterHome';
 import HeroSection from './components/HeroSection';
@@ -6,8 +6,8 @@ import TrackingServices from './components/TrackingServices';
 import InformationServices from './components/InformationServices';
 import FeaturesSection from './components/FeaturesSection';
 import ShippingServices from './components/ShippingServices';
-import { useNavigate } from 'react-router-dom';
-import type { ServiceType } from '../../../types/serviceType';
+import {useNavigate} from 'react-router-dom';
+import type {ServiceType} from '../../../types/serviceType';
 import serviceTypeApi from '../../../api/serviceTypeApi';
 import "./Home.css";
 

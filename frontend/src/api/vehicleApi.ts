@@ -1,7 +1,6 @@
 import type {ApiResponse, ListResponse} from "../types/response";
 import type {AdminVehicle, ManagerVehicleEditRequest, ManagerVehicleSearchRequest, Vehicle} from "../types/vehicle";
 import axiosClient from "./axiosClient";
-import type {SearchRequest} from "../types/request.ts";
 import {axiosExport} from "./exportClient.ts";
 
 const vehicleApi = {

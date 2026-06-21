@@ -1,16 +1,16 @@
 import axiosClient from "./axiosClient";
 import type {ApiResponse} from "../types/response";
 import type {
+    AssignTicketPayload,
     BotPreviewResponse,
+    CloseTicketPayload,
     CreateSupportTicketPayload,
     SendSupportMessagePayload,
+    SupportAssignManagerOption,
+    SupportAssignOptionsResponse,
     SupportMessage,
     SupportTicket,
     SupportTicketDetail,
-    AssignTicketPayload,
-    CloseTicketPayload,
-    SupportAssignOptionsResponse,
-    SupportAssignManagerOption,
 } from "../types/support";
 
 const supportApi = {

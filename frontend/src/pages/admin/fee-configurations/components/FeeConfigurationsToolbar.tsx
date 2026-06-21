@@ -1,8 +1,8 @@
 import React from "react";
-import { Button, Input, Select } from "antd";
-import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import {Button, Input, Select} from "antd";
+import {ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import RecruitmentFilterPanel from "../../../hr/recruitment/components/RecruitmentFilterPanel";
-import type { Option } from "../../../../types/feeConfiguration";
+import type {Option} from "../../../../types/feeConfiguration";
 
 interface FeeConfigurationsToolbarProps {
   search: string;
