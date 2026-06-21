@@ -1,12 +1,12 @@
-import { Avatar, Spin, Typography, message, Image } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import {Avatar, Image, message, Spin, Typography} from "antd";
+import {UserOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getUserRole } from "../../utils/authUtils";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {getUserRole} from "../../utils/authUtils";
+import type {InternalChatMessage, InternalChatRoom} from "../../api/internalChatApi";
 import internalChatApi from "../../api/internalChatApi";
-import type { InternalChatMessage, InternalChatRoom } from "../../api/internalChatApi";
 import ChatMessageInput from "../../components/chat/ChatMessageInput";
 import "./InternalChat.css";
 

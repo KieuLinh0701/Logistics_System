@@ -1,17 +1,15 @@
 package com.logistics.controller.chat;
 
-import java.security.Principal;
-
+import com.logistics.exception.AppException;
+import com.logistics.request.chat.InternalChatPayload;
+import com.logistics.service.chat.InternalChatService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
-import com.logistics.exception.AppException;
-import com.logistics.request.chat.InternalChatPayload;
-import com.logistics.service.chat.InternalChatService;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.security.Principal;
 
 @Controller
 @RequiredArgsConstructor

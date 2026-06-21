@@ -1,5 +1,5 @@
 import axiosClient from "./axiosClient";
-import type { ApiResponse } from "../types/response";
+import type {ApiResponse} from "../types/response";
 
 export interface InternalChatRoom {
   id: number;

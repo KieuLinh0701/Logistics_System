@@ -1,27 +1,21 @@
 import {connectSupportSocket, type SupportSocketClient} from "../../socket/supportSocket";
 import {
-  Avatar,
-  Badge,
-  Button,
-  Empty,
-  Input,
-  List,
-  Spin,
-  Tag,
-  Typography,
-  message,
-  Select,
-  Popconfirm,
-  Alert,
-  Image,
+    Alert,
+    Avatar,
+    Badge,
+    Button,
+    Empty,
+    Image,
+    Input,
+    List,
+    message,
+    Popconfirm,
+    Select,
+    Spin,
+    Tag,
+    Typography,
 } from "antd";
-import {
-  UserOutlined,
-  UserSwitchOutlined,
-  CheckCircleOutlined,
-  RedoOutlined,
-  PictureOutlined,
-} from "@ant-design/icons";
+import {CheckCircleOutlined, PictureOutlined, RedoOutlined, UserOutlined, UserSwitchOutlined,} from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";

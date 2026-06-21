@@ -1,5 +1,5 @@
-import { Avatar, Spin, Tag, Typography, Image } from "antd";
-import { UserOutlined, PictureOutlined } from "@ant-design/icons";
+import {Avatar, Image, Spin, Tag, Typography} from "antd";
+import {PictureOutlined, UserOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {useEffect, useRef} from "react";
 import type {SupportMessage} from "../../types/support";

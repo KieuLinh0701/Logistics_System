@@ -1,35 +1,29 @@
 package com.logistics.service.chat;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.logistics.enums.SupportTicketStatus;
-import com.logistics.exception.AppException;
-import com.logistics.exception.enums.SupportMessageErrorCode;
-import com.logistics.exception.enums.SupportTicketErrorCode;
-import com.logistics.repository.AccountRepository;
 import com.logistics.dto.chat.SupportMessageDto;
 import com.logistics.entity.SupportMessage;
 import com.logistics.entity.SupportTicket;
 import com.logistics.enums.SupportMessageSenderType;
 import com.logistics.enums.SupportMessageType;
-
+import com.logistics.enums.SupportTicketStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.SupportMessageErrorCode;
+import com.logistics.exception.enums.SupportTicketErrorCode;
+import com.logistics.repository.AccountRepository;
 import com.logistics.repository.SupportMessageRepository;
 import com.logistics.repository.SupportTicketRepository;
 import com.logistics.request.chat.SendSupportMessageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.*;
 
 
 @Service

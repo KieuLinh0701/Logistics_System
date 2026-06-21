@@ -4,6 +4,7 @@ import {NavLink, useLocation} from "react-router-dom";
 import {
     BankOutlined,
     BarChartOutlined,
+    CalendarOutlined,
     CarOutlined,
     CheckCircleOutlined,
     ClockCircleOutlined,
@@ -18,6 +19,7 @@ import {
     GlobalOutlined,
     HistoryOutlined,
     HomeOutlined,
+    MessageOutlined,
     NodeIndexOutlined,
     ProfileOutlined,
     ScanOutlined,
@@ -30,8 +32,6 @@ import {
     UserOutlined,
     UserSwitchOutlined,
     WarningOutlined,
-    MessageOutlined,
-    CalendarOutlined,
 } from "@ant-design/icons";
 import "./SideNav.css";
 import {getUserRole, hasPermissionGroup} from "../../utils/authUtils";
