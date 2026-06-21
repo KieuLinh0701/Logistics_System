@@ -208,9 +208,7 @@ export default function ShippingRequests() {
 
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
     READY_FOR_PICKUP: { label: "Sẵn sàng lấy hàng", color: "blue" },
-    PICKUP_PENDING: { label: "Chờ lấy hàng", color: "orange" },
     PICKUP_RETRY: { label: "Lấy hàng thất bại - Thử lại", color: "orange" },
-    PICKUP_SUCCESS: { label: "Lấy hàng thành công", color: "green" },
     PICKUP_FAILED_FINAL: { label: "Lấy hàng thất bại - Dừng", color: "red" },
     PICKING_UP: { label: "Đang lấy", color: "orange" },
     PICKED_UP: { label: "Đã lấy", color: "orange" },

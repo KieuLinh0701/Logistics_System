@@ -91,6 +91,8 @@ import MyLeavePage from "./pages/leave/MyLeavePage";
 import LeaveManagementPage from "./pages/leave/LeaveManagementPage";
 import SupportChatPage from "./pages/chat/SupportChatPage";
 import ChatWidget from "./pages/chat/ChatWidget";
+import ContactManagerPage from "./pages/chat/ContactManagerPage";
+import InternalEmployeeChatPage from "./pages/chat/InternalEmployeeChatPage";
 
 // Recruitment
 import RecruitmentPage from "./pages/common/recruitment/RecruitmentPage";
@@ -248,6 +250,8 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_manager"]}><ManagerIncidentReports/></PrivateRoute>}/>
                         <Route path="/leaves" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><LeaveManagementPage/></PrivateRoute>}/>
+                        <Route path="/manager/internal-chat" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><InternalEmployeeChatPage/></PrivateRoute>}/>
                         <Route path="/employees/:id/logs" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerAuditLogsByEmployee/></PrivateRoute>}/>
 
@@ -272,6 +276,8 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_shipper"]}><ShipperCODManagement/></PrivateRoute>}/>
                         <Route path="/report" element={<PrivateRoute 
                             allowedPermissionGroups={["group_shipper"]}><ShipperIncidentReport/></PrivateRoute>}/>
+                        <Route path="/shipper/contact-manager" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ContactManagerPage/></PrivateRoute>}/>
                         <Route path="/employee/leaves" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper", "group_driver"]}><MyLeavePage/></PrivateRoute>}/>
                         <Route path="/shipper/settings/vehicle" element={<PrivateRoute
@@ -284,6 +290,8 @@ const App: React.FC = () => {
                                element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverRoute/></PrivateRoute>}/>
                         <Route path="/driver/history"
                                element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverHistory/></PrivateRoute>}/>
+                        <Route path="/driver/contact-manager" element={<PrivateRoute
+                            allowedPermissionGroups={["group_driver"]}><ContactManagerPage/></PrivateRoute>}/>
                     </Route>
                 </Routes>
                 <ChatWidget/>

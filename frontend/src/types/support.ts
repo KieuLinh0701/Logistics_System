@@ -46,6 +46,7 @@ export interface SupportMessage {
   senderName?: string | null;
   senderImage?: string | null;
   isRead?: boolean;
+  imageUrl?: string | null;
 }
 
 export interface CreateSupportTicketPayload {

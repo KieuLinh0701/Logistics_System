@@ -1,5 +1,5 @@
-import {Avatar, Spin, Tag, Typography} from "antd";
-import {UserOutlined} from "@ant-design/icons";
+import { Avatar, Spin, Tag, Typography, Image } from "antd";
+import { UserOutlined, PictureOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {useEffect, useRef} from "react";
 import type {SupportMessage} from "../../types/support";
@@ -123,9 +123,6 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId, loading }) =
             : "#f5f5f5";
 
         const borderColor = bot ? "#91caff" : "transparent";
-        const label = bot
-          ? item.senderLabel || "Trợ lý logistics"
-          : item.senderLabel || item.senderName;
 
         return (
           <div
@@ -179,9 +176,19 @@ const MessageList: React.FC<Props> = ({ messages, currentAccountId, loading }) =
                 </div>
               )}
 
-              <Text style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                {item.message}
-              </Text>
+              {item.messageType === "IMAGE" && item.imageUrl ? (
+                <Image
+                  src={item.imageUrl}
+                  alt="Hình ảnh"
+                  style={{ maxWidth: "100%", maxHeight: 250, borderRadius: 8, cursor: "pointer" }}
+                  preview={{ mask: <PictureOutlined style={{ fontSize: 24 }} /> }}
+                />
+              ) : (
+                <Text style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                  {item.message}
+                </Text>
+              )}
+
               <div style={{ marginTop: 4, textAlign: "right" }}>
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   {dayjs(item.createdAt).format("DD/MM HH:mm")}

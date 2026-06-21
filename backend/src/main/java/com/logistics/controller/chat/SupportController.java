@@ -1,5 +1,19 @@
 package com.logistics.controller.chat;
 
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
 import com.logistics.dto.chat.SupportMessageDto;
@@ -13,19 +27,14 @@ import com.logistics.request.chat.AssignTicketRequest;
 import com.logistics.request.chat.CloseTicketRequest;
 import com.logistics.request.chat.CreateSupportTicketRequest;
 import com.logistics.request.chat.SendSupportMessageRequest;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 import com.logistics.response.ApiResponse;
 import com.logistics.service.chat.SupportMessageService;
 import com.logistics.service.chat.SupportTicketService;
 import com.logistics.utils.SecurityUtils;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @Validated
@@ -171,11 +180,25 @@ public class SupportController {
         Integer ticketId = body != null ? body.get("ticketId") : null;
 
         if (ticketId == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.failure("ticketId là bắt buộc"));
+            throw new AppException(SupportTicketErrorCode.SUPPORT_TICKET_ID_REQUIRED);
         }
 
         supportMessageService.markMessagesAsRead(ticketId, accountId);
-        return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));
+        return ResponseEntity.ok(ApiResponse.success("Đã đánh dấu tin nhắn là đã đọc", null));
+    }
+
+    @PostMapping("/tickets/{id}/messages/image")
+    @Audit(
+            entity = EntityType.SUPPORT_MESSAGE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SUPPORT_MESSAGE_CREATE,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<SupportMessageDto>> uploadImage(
+            @PathVariable Integer id,
+            @RequestParam("file") MultipartFile file) {
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        SupportMessageDto dto = supportMessageService.sendImageMessage(id, accountId, file);
+        return ResponseEntity.ok(ApiResponse.success("Gửi ảnh thành công", dto));
     }
 }

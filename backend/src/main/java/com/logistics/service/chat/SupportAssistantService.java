@@ -220,8 +220,6 @@ public class SupportAssistantService {
             case PENDING -> "Chờ xử lý";
             case CONFIRMED -> "Đã xác nhận";
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
-            case PICKUP_PENDING -> "Chờ lấy hàng";
-            case PICKUP_SUCCESS -> "Lấy hàng thành công";
             case PICKUP_RETRY -> "Chờ lấy lại";
             case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại cuối cùng";
             case PICKING_UP -> "Đang lấy hàng";

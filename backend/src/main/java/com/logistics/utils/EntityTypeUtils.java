@@ -54,6 +54,8 @@ public class EntityTypeUtils {
             case SHOP_WORK_HISTORY -> "Lịch sử làm việc của shop";
             case SUPPORT_MESSAGE -> "Tin nhắn hỗ trợ";
             case SUPPORT_TICKET -> "Phiếu hỗ trợ";
+            case INTERNAL_CHAT_ROOM -> "Phòng chat nội bộ";
+            case INTERNAL_CHAT_MESSAGE -> "Tin nhắn chat nội bộ";
             case SYSTEM_CONFIG -> "Cấu hình hệ thống";
             case USER -> "Người dùng";
             case USER_PROMOTION -> "Khuyến mãi người dùng";

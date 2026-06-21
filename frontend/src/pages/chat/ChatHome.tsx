@@ -1,7 +1,12 @@
-import {useEffect, useRef, useState} from "react";
-import {Button, Input, message} from "antd";
-import {FileTextOutlined, RobotOutlined, SendOutlined,} from "@ant-design/icons";
-import {chatStore} from "../../hooks/chatStore";
+import { useState, useRef, useEffect } from "react";
+import { Button, Input, message } from "antd";
+import {
+  FileTextOutlined,
+  RobotOutlined,
+  SendOutlined,
+  PictureOutlined,
+} from "@ant-design/icons";
+import { chatStore } from "../../hooks/chatStore";
 import supportApi from "../../api/supportApi";
 import type {BotPreviewResponse, SupportTicket} from "../../types/support";
 
