@@ -33,7 +33,7 @@ axiosClient.interceptors.response.use(
 
     if (error.response) {
       const status = error.response.status;
-      if (status === 401) {
+      if (status === 401 && !error.config?.url?.includes("/auth/login")) {
         console.warn("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!");
         sessionStorage.clear();
         window.location.href = "/login";
@@ -45,6 +45,7 @@ axiosClient.interceptors.response.use(
     } else {
       console.error("Lỗi không xác định:", error.message);
     }
+
     return Promise.reject(error);
   }
 );

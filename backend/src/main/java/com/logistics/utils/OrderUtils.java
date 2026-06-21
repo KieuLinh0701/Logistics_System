@@ -45,7 +45,10 @@ public class OrderUtils {
     private static final Set<OrderStatus> STATUSES_NOT_ALLOWED_TO_PRINT = Set.of(
             OrderStatus.DRAFT,
             OrderStatus.PENDING,
-            OrderStatus.CANCELLED);
+            OrderStatus.CANCELLED,
+            OrderStatus.PICKUP_FAILED_FINAL,
+            OrderStatus.DELIVERED,
+            OrderStatus.RETURNED);
 
     public static boolean canUserPrint(OrderStatus status) {
         return !STATUSES_NOT_ALLOWED_TO_PRINT.contains(status);
