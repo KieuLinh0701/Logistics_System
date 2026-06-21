@@ -33,7 +33,7 @@ public class AuthController {
             action = AuditLogAction.REGISTER,
             description = AuditLogDescriptionConstant.AUTH_REGISTER
     )
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<?>> register(@RequestBody RegisterRequest request) {
         if (request.getEmail() == null || request.getPassword() == null ||
                 request.getFirstName() == null || request.getLastName() == null || request.getPhoneNumber() == null) {
             throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
@@ -55,7 +55,7 @@ public class AuthController {
     }
 
     @PostMapping("/register/verify-otp")
-    public ResponseEntity<?> verifyAndRegisterUser(@RequestBody VerifyRegisterOtpRequest request) {
+    public ResponseEntity<ApiResponse<?>> verifyAndRegisterUser(@RequestBody VerifyRegisterOtpRequest request) {
         if (request.getEmail() == null || request.getOtp() == null ||
                 request.getPassword() == null || request.getFirstName() == null ||
                 request.getLastName() == null || request.getPhoneNumber() == null) {

@@ -21,24 +21,18 @@ axiosClient.interceptors.request.use(
 );
 
 axiosClient.interceptors.response.use(
-  (response: AxiosResponse) => response.data,
-  (error: AxiosError) => {
-    if (error.response) {
-      const status = error.response.status;
-      if (status === 401) {
-        console.warn("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại!");
-        sessionStorage.clear();
-        window.location.href = "/login";
-      } else if (status >= 500) {
-        console.error("Lỗi máy chủ, vui lòng thử lại sau!");
-      }
-    } else if (error.request) {
-      console.error("Không thể kết nối tới server!");
-    } else {
-      console.error("Lỗi không xác định:", error.message);
+    (response: AxiosResponse) => response.data,
+    (error: AxiosError) => {
+        const status = error.response?.status;
+        const requestUrl = error.config?.url || "";
+
+        if (status === 401 && !requestUrl.includes("/auth/login")) {
+            sessionStorage.clear();
+            window.location.href = "/login";
+        }
+
+        return Promise.resolve(error.response?.data);
     }
-    return Promise.reject(error);
-  }
 );
 
 type AxiosResponseData<T> = Promise<T>;
