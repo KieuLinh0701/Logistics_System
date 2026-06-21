@@ -19,7 +19,7 @@ import {USER_FINAL_STATUSES} from "./userOrderEditRules";
   };
 
   export const canPrintUserOrder = (value: string) => {
-    return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
+    return !["DRAFT", "PENDING", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
   };
 
   export const canDeleteUserOrder = (value: string) => {
