@@ -55,8 +55,8 @@ const ManagerAuditLogs = () => {
         const sort = searchParams.get("sort")?.toLocaleUpperCase();
         const startDate = searchParams.get("start");
         const endDate = searchParams.get("end");
-        const action = searchParams.get("action");
-        const entity = searchParams.get("entity");
+        const action = searchParams.get("action")?.toLocaleUpperCase();
+        const entity = searchParams.get("entity")?.toLocaleUpperCase();
 
         setCurrentPage(pageParam);
         if (s) setSearchText(s);

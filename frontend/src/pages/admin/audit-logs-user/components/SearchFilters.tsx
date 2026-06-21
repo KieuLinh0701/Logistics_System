@@ -4,14 +4,13 @@ import {CloseCircleOutlined, SearchOutlined} from '@ant-design/icons';
 import type {Dayjs} from 'dayjs';
 import {
     AUDIT_LOG_ACTION,
-    AUDIT_LOG_ENTITY,
     AUDIT_LOG_FILTER_SORT,
     AUDIT_LOG_STATUS,
     translateAuditLogAction,
-    translateAuditLogEntity,
     translateAuditLogFilterSort,
     translateAuditLogStatus
 } from "../../../../utils/auditLogUtils.ts";
+import {ENTITY_TYPE, translateEntityType} from "../../../../utils/entityTypeUtils.ts";
 
 const {RangePicker} = DatePicker;
 
@@ -87,8 +86,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                             onChange={(val) => onFilterChange('entity', val)}
                         >
                             <Select.Option value="ALL">Tất cả đối tượng</Select.Option>
-                            {AUDIT_LOG_ENTITY.map((s) => <Select.Option key={s}
-                                                                       value={s}>{translateAuditLogEntity(s)}</Select.Option>)}
+                            {ENTITY_TYPE.map((s) => <Select.Option key={s}
+                                                                       value={s}>{translateEntityType(s)}</Select.Option>)}
                         </Select>
 
                         <Select
