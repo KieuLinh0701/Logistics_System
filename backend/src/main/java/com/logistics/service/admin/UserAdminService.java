@@ -1,7 +1,6 @@
 package com.logistics.service.admin;
 
 import com.logistics.dto.BaseAuditLogDto;
-import com.logistics.dto.admin.AdminAuditLogDto;
 import com.logistics.entity.*;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.AuditLogStatus;

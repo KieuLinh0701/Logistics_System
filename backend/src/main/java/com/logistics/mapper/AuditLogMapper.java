@@ -1,14 +1,14 @@
 package com.logistics.mapper;
 
-import com.logistics.dto.*;
+import com.logistics.dto.BaseAuditLogDto;
 import com.logistics.dto.admin.AdminAuditLogDto;
 import com.logistics.dto.manager.audit.ManagerAuditLogDto;
 import com.logistics.dto.user.audit.UserAuditLogDto;
-import com.logistics.entity.*;
-import com.logistics.enums.EmployeeStatus;
+import com.logistics.entity.AuditLog;
+import com.logistics.entity.Office;
+import com.logistics.entity.User;
 
 import java.util.List;
-import java.util.Objects;
 
 public class AuditLogMapper {
 

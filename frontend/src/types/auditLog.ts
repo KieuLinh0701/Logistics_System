@@ -1,5 +1,4 @@
 import type {User} from "./user.ts";
-import type {Role} from "./role.ts";
 import type {Office} from "./office.ts";
 
 export interface AuditLog {

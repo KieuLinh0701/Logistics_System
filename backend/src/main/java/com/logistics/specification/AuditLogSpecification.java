@@ -7,11 +7,10 @@ import com.logistics.enums.EmployeeStatus;
 import com.logistics.enums.EntityType;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import org.springframework.data.jpa.domain.Specification;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AuditLogSpecification {
 

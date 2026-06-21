@@ -1,9 +1,7 @@
 package com.logistics.utils;
 
-import com.logistics.enums.*;
-
-import java.util.Map;
-import java.util.Set;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.AuditLogStatus;
 
 public class AuditLogUtils {
 

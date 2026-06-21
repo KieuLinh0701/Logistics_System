@@ -4,7 +4,9 @@ import {CloseCircleOutlined, SearchOutlined} from '@ant-design/icons';
 import type {Dayjs} from 'dayjs';
 import {
     AUDIT_LOG_ACTION,
-    AUDIT_LOG_ENTITY, AUDIT_LOG_FILTER_SORT, AUDIT_LOG_STATUS,
+    AUDIT_LOG_ENTITY,
+    AUDIT_LOG_FILTER_SORT,
+    AUDIT_LOG_STATUS,
     translateAuditLogAction,
     translateAuditLogEntity,
     translateAuditLogFilterSort,

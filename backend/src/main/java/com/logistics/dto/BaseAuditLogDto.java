@@ -1,6 +1,5 @@
 package com.logistics.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.AuditLogStatus;
 import com.logistics.enums.EntityType;

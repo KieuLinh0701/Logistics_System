@@ -8,7 +8,6 @@ import {
     translateAuditLogEntity,
     translateAuditLogStatus
 } from "../../../../utils/auditLogUtils.ts";
-import {translateRoleName} from "../../../../utils/roleUtils.ts";
 
 interface AuditLogTableProps {
     data: AuditLog[];

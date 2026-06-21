@@ -1,6 +1,6 @@
 import React from "react";
 import {Button, Dropdown} from "antd";
-import {DeleteOutlined, DownOutlined, EditOutlined, HistoryOutlined} from "@ant-design/icons";
+import {DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
 import type {AdminUser} from "../../../../types/user";
 
 interface UsersActionsProps {

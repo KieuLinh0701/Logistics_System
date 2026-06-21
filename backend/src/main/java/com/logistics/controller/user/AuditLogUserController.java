@@ -2,7 +2,6 @@ package com.logistics.controller.user;
 
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
-import com.logistics.dto.manager.audit.ManagerAuditLogDto;
 import com.logistics.dto.user.audit.UserAuditLogDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;

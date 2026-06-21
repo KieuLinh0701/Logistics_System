@@ -1,15 +1,5 @@
 package com.logistics.service.chat;
 
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.dto.chat.BotPreviewResponse;
 import com.logistics.entity.Order;
 import com.logistics.entity.OrderHistory;
@@ -20,6 +10,15 @@ import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SupportMessageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
