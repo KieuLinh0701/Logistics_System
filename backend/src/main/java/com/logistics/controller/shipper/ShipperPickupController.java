@@ -1,5 +1,9 @@
 package com.logistics.controller.shipper;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.enums.PickupAttemptStatus;
 import com.logistics.enums.PickupFailReason;
 import com.logistics.exception.AppException;
@@ -28,6 +32,12 @@ public class ShipperPickupController {
     }
 
     @PostMapping("/{orderId}/pickup-attempt")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_PICKED_UP,
+            params = {"orderId"}
+    )
     public ResponseEntity<ApiResponse<Map<String, Object>>> recordPickupAttempt(
             @PathVariable Integer orderId,
             @RequestBody PickupAttemptRequest request) {
