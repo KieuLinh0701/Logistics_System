@@ -2,125 +2,144 @@ import {MANAGER_FINAL_STATUSES} from "./managerOrderEditRules";
 import {USER_FINAL_STATUSES} from "./userOrderEditRules";
 
 // Điều kiện để thao tác với order của user
-  export const canEditUserOrder = (status: string): boolean => {
+export const canEditUserOrder = (status: string): boolean => {
     return !USER_FINAL_STATUSES.includes(status as typeof USER_FINAL_STATUSES[number]);
-  };
+};
 
-  export const canEditUserOrderStatus = (status: string) => {
+export const canEditUserOrderStatus = (status: string) => {
     return ["DRAFT"].includes(status);
-  };
+};
 
-  export const canPublicUserOrder = (value: string) => {
+export const canPublicUserOrder = (value: string) => {
     return ["DRAFT"].includes(value);
-  };
+};
 
-  export const canCancelUserOrder = (value: string) => {
+export const canCancelUserOrder = (value: string) => {
     return ["PENDING", "CONFIRMED", "READY_FOR_PICKUP"].includes(value)
-  };
+};
 
-  export const canPrintUserOrder = (value: string) => {
+export const canPrintUserOrder = (value: string) => {
     return !["DRAFT", "PENDING", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
-  };
+};
 
-  export const canDeleteUserOrder = (value: string) => {
+export const canDeleteUserOrder = (value: string) => {
     return ["DRAFT"].includes(value)
-  };
+};
 
-  export const canReadyUserOrder = (value: string) => {
+export const canReadyUserOrder = (value: string) => {
     return ["CONFIRMED"].includes(value)
-  };
+};
 
-  // Điều kiện để thao tác với order của manager
-  export const canPrintManagerOrder = (value: string) => {
-    return !["DRAFT", "PENDING", "CANCELLED"].includes(value)
-  };
+// Điều kiện để thao tác với order của manager
+export const canPrintManagerOrder = (value: string) => {
+    return !["DRAFT", "PENDING", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
+};
 
-  const MANAGER_CANCEL_USER_ORDER_STATUSES: readonly OrderStatus[] = [
+const MANAGER_CANCEL_USER_ORDER_STATUSES: readonly OrderStatus[] = [
     "PENDING",
     "CONFIRMED",
+    "PICKING_UP",
     "READY_FOR_PICKUP",
-  ];
+];
 
-  const MANAGER_CANCEL_OFFICE_ORDER_STATUSES: readonly OrderStatus[] = [
+const MANAGER_CANCEL_OFFICE_ORDER_STATUSES: readonly OrderStatus[] = [
     "PENDING",
     "CONFIRMED",
+    "PICKING_UP",
     "READY_FOR_PICKUP",
     "AT_ORIGIN_OFFICE",
-  ];
+];
 
-  export const canCancelManagerOrder = (
+export const canCancelManagerOrder = (
     status: OrderStatus,
     creatorType: OrderCreatorType
-  ): boolean => {
+): boolean => {
     if (creatorType === "USER") {
-      return MANAGER_CANCEL_USER_ORDER_STATUSES.includes(status);
+        return MANAGER_CANCEL_USER_ORDER_STATUSES.includes(status);
     }
     return MANAGER_CANCEL_OFFICE_ORDER_STATUSES.includes(status);
-  };
+};
 
-  const MANAGER_CONFIRM_ORDER_STATUSES: readonly OrderStatus[] = [
+const MANAGER_CONFIRM_ORDER_STATUSES: readonly OrderStatus[] = [
     "PENDING",
-  ];
-  export const canConfirmManagerOrder = (
+];
+export const canConfirmManagerOrder = (
     status: OrderStatus,
     creatorType: OrderPickupType
-  ): boolean => {
+): boolean => {
     return MANAGER_CONFIRM_ORDER_STATUSES.includes(status) && (creatorType === "AT_OFFICE" || creatorType === "PICKUP_BY_COURIER");
-  };
+};
 
-  export const canAtOriginOfficeManagerOrder = (value: string) => {
+export const canAtOriginOfficeManagerOrder = (value: string) => {
     return ["CONFIRMED"].includes(value)
-  };
+};
 
-  export const canEditManagerOrder = (status: string) => {
+export const canEditManagerOrder = (status: string, createdByType: string) => {
+    if (createdByType === 'USER') {
+        return ["AT_ORIGIN_OFFICE"].includes(status);
+    }
     return !MANAGER_FINAL_STATUSES.includes(status as typeof MANAGER_FINAL_STATUSES[number]);
-  };
+};
 
 
-  // Các list enum của order và bản dịch
-  export const ORDER_COD_STATUS = ['NONE', 'EXPECTED', 'PENDING', 'SUBMITTED', 'RECEIVED', 'TRANSFERRED'] as const;
+// Các list enum của order và bản dịch
+export const ORDER_COD_STATUS = ['NONE', 'EXPECTED', 'PENDING', 'SUBMITTED', 'RECEIVED', 'TRANSFERRED'] as const;
 
-  export const ORDER_CREATOR_TYPES = ['USER', 'MANAGER', 'ADMIN'] as const;
-  export const translateOrderCreatorType = (value: string): string => {
+export const ORDER_CREATOR_TYPES = ['USER', 'MANAGER', 'ADMIN'] as const;
+export const translateOrderCreatorType = (value: string): string => {
     switch (value) {
-      case 'USER': return 'Người dùng';
-      case 'MANAGER': return 'Quản lý';
-      case 'ADMIN': return 'Quản trị viên';
-      default: return value;
+        case 'USER':
+            return 'Người dùng';
+        case 'MANAGER':
+            return 'Quản lý';
+        case 'ADMIN':
+            return 'Quản trị viên';
+        default:
+            return value;
     }
-  };
-  export type OrderCreatorType = typeof ORDER_CREATOR_TYPES[keyof typeof ORDER_CREATOR_TYPES];
+};
+export type OrderCreatorType = typeof ORDER_CREATOR_TYPES[keyof typeof ORDER_CREATOR_TYPES];
 
-  export const ORDER_PAYER_TYPES = ['CUSTOMER', 'SHOP'] as const;
-  export const translateOrderPayerType = (value: string): string => {
+export const ORDER_PAYER_TYPES = ['CUSTOMER', 'SHOP'] as const;
+export const translateOrderPayerType = (value: string): string => {
     switch (value) {
-      case 'CUSTOMER': return 'Người nhận';
-      case 'SHOP': return 'Người gửi';
-      default: return value;
+        case 'CUSTOMER':
+            return 'Người nhận';
+        case 'SHOP':
+            return 'Người gửi';
+        default:
+            return value;
     }
-  };
+};
 
-  export const ORDER_PAYMENT_STATUS = ['PAID', 'UNPAID', 'REFUNDED'] as const;
-  export const translateOrderPaymentStatus = (value: string): string => {
+export const ORDER_PAYMENT_STATUS = ['PAID', 'UNPAID', 'REFUNDED'] as const;
+export const translateOrderPaymentStatus = (value: string): string => {
     switch (value) {
-      case 'PAID': return 'Đã thanh toán';
-      case 'UNPAID': return 'Chưa thanh toán';
-      case 'REFUNDED': return 'Đã hoàn tiền';
-      default: return value;
+        case 'PAID':
+            return 'Đã thanh toán';
+        case 'UNPAID':
+            return 'Chưa thanh toán';
+        case 'REFUNDED':
+            return 'Đã hoàn tiền';
+        default:
+            return value;
     }
-  };
+};
 
-  export const ORDER_PICKUP_TYPES = ['PICKUP_BY_COURIER', 'AT_OFFICE'] as const;
-  export type OrderPickupType = typeof ORDER_PICKUP_TYPES[keyof typeof ORDER_PICKUP_TYPES];
-  export const translateOrderPickupType = (value: string): string => {
+export const ORDER_PICKUP_TYPES = ['PICKUP_BY_COURIER', 'AT_OFFICE'] as const;
+export type OrderPickupType = typeof ORDER_PICKUP_TYPES[keyof typeof ORDER_PICKUP_TYPES];
+export const translateOrderPickupType = (value: string): string => {
     switch (value) {
-      case 'PICKUP_BY_COURIER': return 'Lấy hàng tại nhà';
-      case 'AT_OFFICE': return 'Giao tại bưu cục';
-      default: return value;
+        case 'PICKUP_BY_COURIER':
+            return 'Lấy hàng tại nhà';
+        case 'AT_OFFICE':
+            return 'Giao tại bưu cục';
+        default:
+            return value;
     }
-  };
+};
 
-  export const ORDER_STATUS = [
+export const ORDER_STATUS = [
     'DRAFT',
     'PENDING',
     'CONFIRMED',
@@ -142,67 +161,102 @@ import {USER_FINAL_STATUSES} from "./userOrderEditRules";
     'PARTIAL_RETURN',
     'DELIVERY_RETRY',
     'DELIVERY_FAILED_FINAL',
-  ] as const;
-  export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
-  export const translateOrderStatus = (value: string): string => {
+] as const;
+export type OrderStatus = typeof ORDER_STATUS[keyof typeof ORDER_STATUS];
+export const translateOrderStatus = (value: string): string => {
     switch (value) {
-      case 'DRAFT': return 'Bản nháp';
-      case 'PENDING': return 'Chờ duyệt';
-      case 'CONFIRMED': return 'Đã xác nhận';
-      case 'READY_FOR_PICKUP': return 'Sẵn sàng để lấy';
-      case 'PICKUP_RETRY': return 'Lấy hàng thất bại - Thử lại';
-      case 'PICKUP_FAILED_FINAL': return 'Lấy hàng thất bại - Dừng';
-      case 'PICKING_UP': return 'Đang lấy hàng';
-      case 'PICKED_UP': return 'Đã lấy hàng';
-      case 'AT_ORIGIN_OFFICE': return 'Tại bưu cục gốc';
-      case 'IN_TRANSIT': return 'Đang vận chuyển';
-      case 'AT_DEST_OFFICE': return 'Tại bưu cục đích';
-      case 'DELIVERING': return 'Đang giao';
-      case 'DELIVERED': return 'Đã giao hàng';
-      case 'FAILED_DELIVERY': return 'Giao thất bại';
-      case 'DELIVERY_RETRY': return 'Chờ giao lại';
-      case 'DELIVERY_FAILED_FINAL': return 'Giao thất bại - Dừng';
-      case 'PARTIAL_DELIVERY': return 'Giao hàng một phần';
-      case 'PARTIAL_RETURN': return 'Hoàn trả một phần';
-      case 'CANCELLED': return 'Đã hủy';
-      case 'RETURNING': return 'Đang hoàn trả';
-      case 'RETURNED': return 'Đã hoàn trả';
-      default: return value;
+        case 'DRAFT':
+            return 'Bản nháp';
+        case 'PENDING':
+            return 'Chờ duyệt';
+        case 'CONFIRMED':
+            return 'Đã xác nhận';
+        case 'READY_FOR_PICKUP':
+            return 'Sẵn sàng để lấy';
+        case 'PICKUP_RETRY':
+            return 'Lấy hàng thất bại - Thử lại';
+        case 'PICKUP_FAILED_FINAL':
+            return 'Lấy hàng thất bại - Dừng';
+        case 'PICKING_UP':
+            return 'Đang lấy hàng';
+        case 'PICKED_UP':
+            return 'Đã lấy hàng';
+        case 'AT_ORIGIN_OFFICE':
+            return 'Tại bưu cục gốc';
+        case 'IN_TRANSIT':
+            return 'Đang vận chuyển';
+        case 'AT_DEST_OFFICE':
+            return 'Tại bưu cục đích';
+        case 'DELIVERING':
+            return 'Đang giao';
+        case 'DELIVERED':
+            return 'Đã giao hàng';
+        case 'FAILED_DELIVERY':
+            return 'Giao thất bại';
+        case 'DELIVERY_RETRY':
+            return 'Chờ giao lại';
+        case 'DELIVERY_FAILED_FINAL':
+            return 'Giao thất bại - Dừng';
+        case 'PARTIAL_DELIVERY':
+            return 'Giao hàng một phần';
+        case 'PARTIAL_RETURN':
+            return 'Hoàn trả một phần';
+        case 'CANCELLED':
+            return 'Đã hủy';
+        case 'RETURNING':
+            return 'Đang hoàn trả';
+        case 'RETURNED':
+            return 'Đã hoàn trả';
+        default:
+            return value;
     }
-  };
+};
 
-  export const PICKUP_FAIL_REASONS = ['SHOP_CLOSED', 'NOT_READY', 'CUSTOMER_CANCELLED', 'NO_RESPONSE', 'OTHER'] as const;
-  export type PickupFailReason = typeof PICKUP_FAIL_REASONS[keyof typeof PICKUP_FAIL_REASONS];
-  export const translatePickupFailReason = (value: string): string => {
+export const PICKUP_FAIL_REASONS = ['SHOP_CLOSED', 'NOT_READY', 'CUSTOMER_CANCELLED', 'NO_RESPONSE', 'OTHER'] as const;
+export type PickupFailReason = typeof PICKUP_FAIL_REASONS[keyof typeof PICKUP_FAIL_REASONS];
+export const translatePickupFailReason = (value: string): string => {
     switch (value) {
-      case 'SHOP_CLOSED': return 'Shop đóng cửa';
-      case 'NOT_READY': return 'Hàng chưa sẵn sàng';
-      case 'CUSTOMER_CANCELLED': return 'Khách hủy đơn';
-      case 'NO_RESPONSE': return 'Không liên hệ được';
-      case 'OTHER': return 'Khác';
-      default: return value;
+        case 'SHOP_CLOSED':
+            return 'Shop đóng cửa';
+        case 'NOT_READY':
+            return 'Hàng chưa sẵn sàng';
+        case 'CUSTOMER_CANCELLED':
+            return 'Khách hủy đơn';
+        case 'NO_RESPONSE':
+            return 'Không liên hệ được';
+        case 'OTHER':
+            return 'Khác';
+        default:
+            return value;
     }
-  };
+};
 
-  export const translatePickupAttemptStatus = (value: string): string => {
+export const translatePickupAttemptStatus = (value: string): string => {
     switch (value) {
-      case 'SUCCESS': return 'Thành công';
-      case 'FAILED': return 'Thất bại';
-      default: return value;
+        case 'SUCCESS':
+            return 'Thành công';
+        case 'FAILED':
+            return 'Thất bại';
+        default:
+            return value;
     }
-  };
+};
 
-  export const ORDER_FILTER_COD = ['ALL', 'YES', 'NO'] as const;
-  export const translateOrderFilterCod = (value: string): string => {
+export const ORDER_FILTER_COD = ['ALL', 'YES', 'NO'] as const;
+export const translateOrderFilterCod = (value: string): string => {
     switch (value) {
-      case 'ALL': return 'Tất cả COD';
-      case 'YES': return 'Có COD';
-      case 'NO': return 'Không COD';
-      default: return value;
+        case 'ALL':
+            return 'Tất cả COD';
+        case 'YES':
+            return 'Có COD';
+        case 'NO':
+            return 'Không COD';
+        default:
+            return value;
     }
-  };
+};
 
-  export const ORDER_FILTER_SORT = [
+export const ORDER_FILTER_SORT = [
     'NEWEST',
     'OLDEST',
     'COD_HIGH',
@@ -213,60 +267,71 @@ import {USER_FINAL_STATUSES} from "./userOrderEditRules";
     'FEE_LOW',
     'WEIGHT_HIGH',
     'WEIGHT_LOW',
-  ] as const;
-  export const translateOrderFilterSort = (value: string): string => {
+] as const;
+export const translateOrderFilterSort = (value: string): string => {
     switch (value) {
-      case 'NEWEST': return 'Mới nhất';
-      case 'OLDEST': return 'Cũ nhất';
+        case 'NEWEST':
+            return 'Mới nhất';
+        case 'OLDEST':
+            return 'Cũ nhất';
 
-      case 'COD_HIGH': return 'COD cao nhất';
-      case 'COD_LOW': return 'COD thấp nhất';
+        case 'COD_HIGH':
+            return 'COD cao nhất';
+        case 'COD_LOW':
+            return 'COD thấp nhất';
 
-      case 'ORDER_VALUE_HIGH': return 'Giá trị đơn cao nhất';
-      case 'ORDER_VALUE_LOW': return 'Giá trị đơn thấp nhất';
+        case 'ORDER_VALUE_HIGH':
+            return 'Giá trị đơn cao nhất';
+        case 'ORDER_VALUE_LOW':
+            return 'Giá trị đơn thấp nhất';
 
-      case 'FEE_HIGH': return 'Phí dịch vụ cao nhất';
-      case 'FEE_LOW': return 'Phí dịch vụ thấp nhất';
+        case 'FEE_HIGH':
+            return 'Phí dịch vụ cao nhất';
+        case 'FEE_LOW':
+            return 'Phí dịch vụ thấp nhất';
 
-      case 'WEIGHT_HIGH': return 'Khối lượng cao nhất';
-      case 'WEIGHT_LOW': return 'Khối lượng thấp nhất';
+        case 'WEIGHT_HIGH':
+            return 'Khối lượng cao nhất';
+        case 'WEIGHT_LOW':
+            return 'Khối lượng thấp nhất';
 
-      default: return value;
-    }
-  };
-
-  export const translateOrderCodStatus = (value: string): string => {
-    switch (value) {
-      case 'NONE':
-        return 'Không COD';
-      case 'EXPECTED':
-        return 'Chưa thu COD';
-      case 'PENDING':
-        return 'Shipper giữ COD';
-      case 'SUBMITTED':
-        return 'Đã nộp chờ đối soát';
-      case 'RECEIVED':
-        return 'Bưu cục đã nhận';
-      case 'TRANSFERRED':
-        return 'Đã chuyển shop';
-      default:
-        return value;
-    }
-  };
-
-    export const translatePaymentSubmissionStatus = (value: string): string => {
-      switch (value) {
-        case 'PENDING':
-          return 'Đang chờ';
-        case 'IN_BATCH':
-          return 'Đã vào phiên nộp';
-        case 'MATCHED':
-          return 'Đã khớp';
-        case 'MISMATCHED':
-          return 'Lệch tiền';
-        case 'ADJUSTED':
-          return 'Đã điều chỉnh';
         default:
-          return value;
-      }
-    };
+            return value;
+    }
+};
+
+export const translateOrderCodStatus = (value: string): string => {
+    switch (value) {
+        case 'NONE':
+            return 'Không COD';
+        case 'EXPECTED':
+            return 'Chưa thu COD';
+        case 'PENDING':
+            return 'Shipper giữ COD';
+        case 'SUBMITTED':
+            return 'Đã nộp chờ đối soát';
+        case 'RECEIVED':
+            return 'Bưu cục đã nhận';
+        case 'TRANSFERRED':
+            return 'Đã chuyển shop';
+        default:
+            return value;
+    }
+};
+
+export const translatePaymentSubmissionStatus = (value: string): string => {
+    switch (value) {
+        case 'PENDING':
+            return 'Đang chờ';
+        case 'IN_BATCH':
+            return 'Đã vào phiên nộp';
+        case 'MATCHED':
+            return 'Đã khớp';
+        case 'MISMATCHED':
+            return 'Lệch tiền';
+        case 'ADJUSTED':
+            return 'Đã điều chỉnh';
+        default:
+            return value;
+    }
+};

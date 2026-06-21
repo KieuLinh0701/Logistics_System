@@ -28,10 +28,14 @@ public class ManagerOrderEditRuleUtils {
             OrderStatus.DELIVERED,
             OrderStatus.RETURNED,
             OrderStatus.CANCELLED,
-            OrderStatus.FAILED_DELIVERY
+            OrderStatus.FAILED_DELIVERY,
+            OrderStatus.PICKUP_FAILED_FINAL
     );
 
-    public static boolean canEditManagerOrder(OrderStatus status) {
+    public static boolean canEditManagerOrder(OrderStatus status, OrderCreatorType createdType) {
+        if (createdType.equals(OrderCreatorType.USER)) {
+            return EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE).contains(status);
+        }
         return !MANAGER_FINAL_STATUSES.contains(status);
     }
 
@@ -64,11 +68,11 @@ public class ManagerOrderEditRuleUtils {
         map.put("recipientLongitude", new EditableRule(null, null));
 
         // Thông tin đơn hàng 
-        map.put("weight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
-        map.put("originalWeight", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
-        map.put("height", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
-        map.put("length", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
-        map.put("width", new EditableRule(EnumSet.of(OrderStatus.PICKED_UP, OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("weight", new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("originalWeight", new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("height", new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("length", new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
+        map.put("width", new EditableRule(EnumSet.of(OrderStatus.AT_ORIGIN_OFFICE), null));
         map.put("serviceType", new EditableRule(null, null));
         map.put("cod", new EditableRule(null, null));
         map.put("orderValue", new EditableRule(null, null));
@@ -124,6 +128,7 @@ public class ManagerOrderEditRuleUtils {
                                 OrderStatus.PENDING,
                                 OrderStatus.CONFIRMED,
                                 OrderStatus.READY_FOR_PICKUP,
+                                OrderStatus.PICKUP_RETRY,
                                 OrderStatus.PICKING_UP,
                                 OrderStatus.PICKED_UP,
                                 OrderStatus.AT_ORIGIN_OFFICE
@@ -137,6 +142,7 @@ public class ManagerOrderEditRuleUtils {
                                 OrderStatus.PENDING,
                                 OrderStatus.CONFIRMED,
                                 OrderStatus.READY_FOR_PICKUP,
+                                OrderStatus.PICKUP_RETRY,
                                 OrderStatus.PICKING_UP,
                                 OrderStatus.PICKED_UP,
                                 OrderStatus.AT_ORIGIN_OFFICE
@@ -167,16 +173,7 @@ public class ManagerOrderEditRuleUtils {
         map.put("payer", new EditableRule(null, null));
 
         // Ghi chú
-        map.put("notes",
-                new EditableRule(
-                        null,
-                        EnumSet.of(
-                                OrderStatus.DELIVERED,
-                                OrderStatus.CANCELLED,
-                                OrderStatus.RETURNED
-                        )
-                )
-        );
+        map.put("notes", new EditableRule(null, MANAGER_FINAL_STATUSES));
 
         // Khuyến mãi
         map.put("promotion", new EditableRule(null, null));

@@ -30,10 +30,10 @@ import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
 
 
-const { Title } = Typography;
+const {Title} = Typography;
 
 const UserOrderDetail: React.FC = () => {
-    const { trackingNumber } = useParams();
+    const {trackingNumber} = useParams();
 
     const navigate = useNavigate();
 
@@ -194,7 +194,7 @@ const UserOrderDetail: React.FC = () => {
         return <div>Đang tải chi tiết đơn hàng...</div>;
     }
 
-    const canEdit = canEditManagerOrder(order.status);
+    const canEdit = canEditManagerOrder(order.status, order.createdByType);
     const canCancel = canCancelManagerOrder(order.status as OrderStatus, order.createdByType as OrderCreatorType);
     const canPrint = canPrintManagerOrder(order.status);
     const canSetAtOriginOffice = canAtOriginOfficeManagerOrder(order.status);
@@ -217,84 +217,87 @@ const UserOrderDetail: React.FC = () => {
                     fullAddress: order.recipientFullAddress,
                 }}
             />
-            <OrderInfo order={order} />
+            <OrderInfo order={order}/>
             <OfficeInfo
                 fromOffice={order.fromOffice}
-                toOffice={order.toOffice} />
-            <OrderProducts products={order.orderProducts || []} />
-            <OrderHistoryCard histories={order.orderHistories} />
+                toOffice={order.toOffice}/>
+            <OrderProducts products={order.orderProducts || []}/>
+            <OrderHistoryCard histories={order.orderHistories}/>
+
+            {order.pickupAttempts?.length !== 0 && (
+                <div className="order-detail-card">
+                    <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                        Lịch sử lấy hàng
+                    </Title>
+                    <Timeline
+                        items={(order.pickupAttempts || []).map((attempt) => ({
+                            color: attempt.status === "SUCCESS" ? "green" : "red",
+                            children: (
+                                <div>
+                                    <div>
+                                        Lần thử
+                                        #{attempt.attemptNumber} - {translatePickupAttemptStatus(attempt.status)}
+                                    </div>
+                                    <div>
+                                        {attempt.failReason ? translatePickupFailReason(attempt.failReason) : ""}
+                                        {attempt.note ? ` - ${attempt.note}` : ""}
+                                    </div>
+                                    <div>
+                                        {attempt.attemptedAt ? new Date(attempt.attemptedAt).toLocaleString("vi-VN") : ""}
+                                        {attempt.shipperName ? ` - ${attempt.shipperName}` : ""}
+                                    </div>
+                                </div>
+                            ),
+                        }))}
+                    />
+                </div>
+            )}
+            <OrderPayment order={order}/>
             <div className="order-detail-card">
                 <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-                    Lịch sử lấy hàng
+                    Kết quả giao hàng
                 </Title>
-                <Timeline
-                    items={(order.pickupAttempts || []).map((attempt) => ({
-                        color: attempt.status === "SUCCESS" ? "green" : "red",
-                        children: (
-                            <div>
-                                <div>
-                                    Lần thử #{attempt.attemptNumber} - {translatePickupAttemptStatus(attempt.status)}
-                                </div>
-                                <div>
-                                    {attempt.failReason ? translatePickupFailReason(attempt.failReason) : ""}
-                                    {attempt.note ? ` - ${attempt.note}` : ""}
-                                </div>
-                                <div>
-                                    {attempt.attemptedAt ? new Date(attempt.attemptedAt).toLocaleString("vi-VN") : ""}
-                                    {attempt.shipperName ? ` - ${attempt.shipperName}` : ""}
-                                </div>
-                            </div>
-                        ),
-                    }))}
-                />
+
+                <Descriptions column={2} size="small">
+
+                    <Descriptions.Item label="Trạng thái đơn hàng">
+                        {order.status
+                            ? translateOrderStatus(order.status)
+                            : "Không có dữ liệu"}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
+                        {summaryLoading
+                            ? "Đang tải..."
+                            : summary
+                                ? `${summary.deliveredItems} / ${summary.totalItems}`
+                                : "Không có dữ liệu"}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Sản phẩm hoàn trả">
+                        {summaryLoading
+                            ? "Đang tải..."
+                            : (summary?.returnedItems ?? "Không có dữ liệu")}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="COD đã thu / COD dự kiến">
+                        {summaryLoading
+                            ? "Đang tải..."
+                            : summary
+                                ? `${summary.collectedCOD.toLocaleString()} / ${summary.expectedCOD.toLocaleString()} VNĐ`
+                                : "Không có dữ liệu"}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Giá trị hoàn trả">
+                        {summaryLoading
+                            ? "Đang tải..."
+                            : summary
+                                ? `${summary.returnedValue.toLocaleString()} VNĐ`
+                                : "Không có dữ liệu"}
+                    </Descriptions.Item>
+
+                </Descriptions>
             </div>
-            {/* <FeedbackCard orderId={order.id} orderStatus={order.status} /> */}
-            <OrderPayment order={order} />
-            <div className="order-detail-card">
-            <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-                Kết quả giao hàng
-            </Title>
-
-            <Descriptions column={2} size="small">
-
-                <Descriptions.Item label="Trạng thái đơn hàng">
-                    {order.status
-                        ? translateOrderStatus(order.status)
-                        : "Không có dữ liệu"}
-                </Descriptions.Item>
-
-                <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
-                    {summaryLoading
-                        ? "Đang tải..."
-                        : summary
-                            ? `${summary.deliveredItems} / ${summary.totalItems}`
-                            : "Không có dữ liệu"}
-                </Descriptions.Item>
-
-                <Descriptions.Item label="Sản phẩm hoàn trả">
-                    {summaryLoading
-                        ? "Đang tải..."
-                        : (summary?.returnedItems ?? "Không có dữ liệu")}
-                </Descriptions.Item>
-
-                <Descriptions.Item label="COD đã thu / COD dự kiến">
-                    {summaryLoading
-                        ? "Đang tải..."
-                        : summary
-                            ? `${summary.collectedCOD.toLocaleString()} / ${summary.expectedCOD.toLocaleString()} VNĐ`
-                            : "Không có dữ liệu"}
-                </Descriptions.Item>
-
-                <Descriptions.Item label="Giá trị hoàn trả">
-                    {summaryLoading
-                        ? "Đang tải..."
-                        : summary
-                            ? `${summary.returnedValue.toLocaleString()} VNĐ`
-                            : "Không có dữ liệu"}
-                </Descriptions.Item>
-
-            </Descriptions>
-        </div>
             <OrderActions
                 canEdit={canEdit}
                 canCancel={canCancel}

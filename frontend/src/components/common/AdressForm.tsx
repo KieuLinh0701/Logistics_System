@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
-import {Form, Input, Select} from "antd";
+import {Form, Input, message, Select} from "antd";
 import type {City, Ward} from "../../types/location";
 import locationApi from "../../api/locationApi";
 import type {Prediction} from "../../service/mapsService";
@@ -27,12 +27,12 @@ const AddressForm: React.FC<AddressFormProps> = ({
                                                      form,
                                                      prefix,
                                                      initialCity,
-                                                     initialCityName = "",
+                                                     initialCityName,
                                                      initialWard,
-                                                     initialWardName = "",
+                                                     initialWardName,
                                                      initialDetail,
-                                                     initialLatitude = 0,
-                                                     initialLongitude = 0,
+                                                     initialLatitude,
+                                                     initialLongitude,
                                                      disableCity,
                                                      disableWard,
                                                      disableDetailAddress,
@@ -76,7 +76,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
         [form, prefix]
     );
 
-    // ─── Google Autocomplete init ─────────────────────────────────────────────
     useEffect(() => {
         const init = () => {
             if (window.google?.maps?.places) {
@@ -99,19 +98,17 @@ const AddressForm: React.FC<AddressFormProps> = ({
         }
     }, []);
 
-    // ─── Load cities ──────────────────────────────────────────────────────────
     useEffect(() => {
         locationApi.getCities().then(setCities).catch(console.error);
     }, []);
 
-    // ─── Init một lần khi mount ───────────────────────────────────────────────
+
     useEffect(() => {
         if (!initialCity) {
             initDoneRef.current = true;
             return;
         }
 
-        // Chỉ cần load ward list để hiển thị dropdown — name/lat/lng đã có từ props
         locationApi.getWardsByCity(Number(initialCity)).then((wardList) => {
             setWards(wardList);
 
@@ -121,7 +118,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
                     cityCode:  initialCity,
                     wardCode:  initialWard  ?? null,
                     detail:    initialDetail ?? "",
-                    // Ghi extra vào store luôn một lần
                     cityName:  initialCityName,
                     wardName:  initialWardName,
                     latitude:  initialLatitude,
@@ -129,7 +125,6 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 },
             });
 
-            // Sync ref
             extraRef.current = {
                 cityName:  initialCityName,
                 wardName:  initialWardName,
@@ -138,10 +133,45 @@ const AddressForm: React.FC<AddressFormProps> = ({
             };
 
             initDoneRef.current = true;
+
+            const isInvalidCoords =
+                !initialLatitude || !initialLongitude ||
+                initialLatitude === 0 || initialLongitude === 0;
+
+            if (isInvalidCoords && initialCityName && initialWardName && initialDetail?.trim()) {
+                const attempts = [
+                    [initialDetail, initialWardName, initialCityName, "Việt Nam"].join(", "),
+                    [initialWardName, initialCityName, "Việt Nam"].join(", "),
+                ];
+                (async () => {
+                    for (const address of attempts) {
+                        try {
+                            const data = await geocodeAddress(address);
+                            if (data?.results?.[0]?.geometry?.location) {
+                                const { lat, lng } = data.results[0].geometry.location;
+                                const isValidVN = lat >= 8.0 && lat <= 23.5 && lng >= 102.0 && lng <= 110.0;
+                                if (isValidVN) {
+                                    extraRef.current = { ...extraRef.current, latitude: lat, longitude: lng };
+                                    form.setFieldsValue({
+                                        [prefix]: {
+                                            ...form.getFieldValue(prefix),
+                                            latitude: lat,
+                                            longitude: lng,
+                                        },
+                                    });
+                                    return;
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Geocode thất bại:", err);
+                        }
+                    }
+                    message.warning('Không xác định được tọa độ, vui lòng nhập chi tiết địa chỉ rõ hơn!');
+                })();
+            }
         });
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ─── Load wards khi user đổi city ────────────────────────────────────────
     useEffect(() => {
         if (!initDoneRef.current) return;
         if (!selectedCity) return;
@@ -198,19 +228,24 @@ const AddressForm: React.FC<AddressFormProps> = ({
                     const data = await geocodeAddress(address);
                     if (data?.results?.[0]?.geometry?.location) {
                         const { lat, lng } = data.results[0].geometry.location;
-                        setExtra({ latitude: lat, longitude: lng });
-                        return;
+
+                        const isValidVN = lat >= 8.0 && lat <= 23.5 && lng >= 102.0 && lng <= 110.0;
+                        if (isValidVN) {
+                            setExtra({ latitude: lat, longitude: lng });
+                            return;
+                        }
                     }
                 } catch (err) {
                     console.error("Geocode thất bại:", err);
                 }
             }
             setExtra({ latitude: 0, longitude: 0 });
+            message.warning('Không xác định được tọa độ, vui lòng nhập chi tiết địa chỉ rõ hơn!');
         },
         [setExtra]
     );
 
-    // ─── Handlers ─────────────────────────────────────────────────────────────
+
     const handleAddressInput = (val: string) => {
         setAddressInput(val);
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -338,8 +373,8 @@ const AddressForm: React.FC<AddressFormProps> = ({
         const value = e.target.value;
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            const cityName = extraRef.current.cityName;
-            const wardName = extraRef.current.wardName;
+            const cityName = extraRef.current.cityName ?? "";
+            const wardName = extraRef.current.wardName ?? "";
             handleGeocode(cityName, wardName, value);
         }, 800);
     };

@@ -494,7 +494,7 @@ public class OrderManagerService {
 
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            if (!ManagerOrderEditRuleUtils.canEditManagerOrder(order.getStatus())) {
+            if (!ManagerOrderEditRuleUtils.canEditManagerOrder(order.getStatus(), order.getCreatedByType())) {
                 throw new AppException(OrderErrorCode.ORDER_CANNOT_EDIT);
             }
 

@@ -15,6 +15,8 @@ export interface Address {
   phoneNumber: string;
   wardName?: string;
   cityName?: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface AddressTableProps {

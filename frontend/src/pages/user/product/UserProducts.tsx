@@ -139,7 +139,7 @@ const UserProducts: React.FC = () => {
             });
 
             const result = await productApi.updateUserProduct(formData);
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success("Sửa sản phẩm thành công");
                 setIsModalOpen(false);
                 setNewProduct({});

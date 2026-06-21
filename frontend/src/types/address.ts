@@ -25,8 +25,8 @@ export interface AddressRequest {
     name: string;
     phoneNumber: string;
     isDefault: boolean;
-    latitude?: number;
-    longitude?: number;
+    latitude: number;
+    longitude: number;
 }
 
 export type AddressType = 'SENDER' | 'RECIPIENT';

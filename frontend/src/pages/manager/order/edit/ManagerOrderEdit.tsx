@@ -23,7 +23,7 @@ import {type OrderCreatorType, type OrderStatus} from "../../../../utils/orderUt
 import ConfirmModal from "../../../common/ConfirmModal";
 
 const ManagerOrderEdit: React.FC = () => {
-    const { trackingNumber } = useParams();
+    const {trackingNumber} = useParams();
     const navigate = useNavigate();
 
     const [order, setOrder] = useState<Order | null>(null);
@@ -266,7 +266,7 @@ const ManagerOrderEdit: React.FC = () => {
 
         if (!stillExists) {
             setSelectedOffice(null);
-            form.setFieldsValue({ senderOfficeId: undefined });
+            form.setFieldsValue({senderOfficeId: undefined});
         }
     }, [localOffices]);
 
@@ -355,10 +355,8 @@ const ManagerOrderEdit: React.FC = () => {
 
             const result = await orderApi.updateManagerOrder(order.id, orderData);
             if (result.success) {
-                message.success(result.message || "Chỉnh sửa đơn hàng thành công")
-                if (result.data) {
-                    navigate(-1);
-                }
+                message.success("Chỉnh sửa đơn hàng thành công")
+                navigate(-1);
             } else {
                 message.error(result.message || "Chỉnh sửa đơn hàng thất bại")
             }
@@ -620,7 +618,7 @@ const ManagerOrderEdit: React.FC = () => {
                                     onLoadOffices={() => {
                                         fetchLocalOffices();
                                     }}
-                                    onChange={({ office, pickupType }) => {
+                                    onChange={({office, pickupType}) => {
                                         setPickupType(pickupType);
 
                                         if (pickupType === "AT_OFFICE") {

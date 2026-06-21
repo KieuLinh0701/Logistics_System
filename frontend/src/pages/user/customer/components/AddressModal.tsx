@@ -81,6 +81,13 @@ const AddressModal: React.FC<AddressModalProps> = ({
         <AddressForm
           form={form}
           prefix='address'
+          initialCity={address.cityCode !== 0 ? address.cityCode : undefined}
+          initialCityName={address.cityName}
+          initialWard={address.wardCode !== 0 ? address.wardCode : undefined}
+          initialWardName={address.wardName}
+          initialDetail={address.detail}
+          initialLatitude={address.latitude}
+          initialLongitude={address.longitude}
         />
       </Form>
     </Modal>
