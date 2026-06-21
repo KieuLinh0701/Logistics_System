@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.response.ApiResponse;
 import com.logistics.request.chat.AssignTicketRequest;
@@ -40,6 +44,11 @@ public class SupportController {
     private final SupportMessageService supportMessageService;
 
     @PostMapping("/tickets")
+    @Audit(
+            entity = EntityType.SUPPORT_TICKET,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SUPPORT_TICKET_CREATE
+    )
     public ResponseEntity<ApiResponse<SupportTicketDto>> createTicket(@Valid @RequestBody CreateSupportTicketRequest request) {
         if (!SecurityUtils.hasRole("user")) {
             throw new AppException(SupportTicketErrorCode.SUPPORT_CREATE_TICKET_DENIED);
@@ -77,6 +86,12 @@ public class SupportController {
     }
 
     @PostMapping("/tickets/{id}/messages")
+    @Audit(
+            entity = EntityType.SUPPORT_MESSAGE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SUPPORT_MESSAGE_CREATE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<SupportMessageDto>> sendMessage(@PathVariable Integer id, @Valid @RequestBody SendSupportMessageRequest request) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
         SupportMessageDto dto = supportMessageService.sendMessage(id, accountId, request);
@@ -84,6 +99,12 @@ public class SupportController {
     }
 
     @PostMapping("/tickets/{id}/assign")
+    @Audit(
+            entity = EntityType.SUPPORT_TICKET,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SUPPORT_TICKET_ASSIGN,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<SupportTicketDto>> assignTicket(
             @PathVariable Integer id,
             @Valid @RequestBody AssignTicketRequest request) {
@@ -96,6 +117,12 @@ public class SupportController {
     }
 
     @PostMapping("/tickets/{id}/close")
+    @Audit(
+            entity = EntityType.SUPPORT_TICKET,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SUPPORT_TICKET_CLOSE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<SupportTicketDto>> closeTicket(
             @PathVariable Integer id,
             @RequestBody(required = false) CloseTicketRequest request) {
@@ -107,6 +134,12 @@ public class SupportController {
     }
 
     @PostMapping("/tickets/{id}/force-close")
+    @Audit(
+            entity = EntityType.SUPPORT_TICKET,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SUPPORT_TICKET_FORCE_CLOSE,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<SupportTicketDto>> forceCloseTicket(
             @PathVariable Integer id,
             @RequestBody(required = false) CloseTicketRequest request) {
@@ -119,6 +152,12 @@ public class SupportController {
     }
 
     @PostMapping("/tickets/{id}/reopen")
+    @Audit(
+            entity = EntityType.SUPPORT_TICKET,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SUPPORT_TICKET_REOPEN,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<SupportTicketDto>> reopenTicket(@PathVariable Integer id) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
         String roleName = SecurityUtils.getAuthenticatedUserRole() != null
@@ -128,6 +167,11 @@ public class SupportController {
     }
 
     @PostMapping("/messages/mark-read")
+    @Audit(
+            entity = EntityType.SUPPORT_MESSAGE,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.SUPPORT_MESSAGE_MARK_READ
+    )
     public ResponseEntity<ApiResponse<Void>> markMessagesRead(@RequestBody Map<String, Integer> body) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
         Integer ticketId = body != null ? body.get("ticketId") : null;

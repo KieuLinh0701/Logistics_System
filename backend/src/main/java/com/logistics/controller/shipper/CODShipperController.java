@@ -1,5 +1,9 @@
 package com.logistics.controller.shipper;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.CollectCODRequest;
@@ -42,6 +46,11 @@ public class CODShipperController {
     }
 
     @PostMapping("/collect")
+    @Audit(
+            entity = EntityType.PAYMENT_SUBMISSION,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.COD_COLLECT
+    )
     public ResponseEntity<ApiResponse<Map<String, Object>>> collectCOD(@RequestBody CollectCODRequest request) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -51,6 +60,11 @@ public class CODShipperController {
     }
 
     @PostMapping("/submit")
+    @Audit(
+            entity = EntityType.PAYMENT_SUBMISSION,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.COD_SUBMIT
+    )
     public ResponseEntity<ApiResponse<Map<String, Object>>> submitCOD(@RequestBody SubmitCODRequest request) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);

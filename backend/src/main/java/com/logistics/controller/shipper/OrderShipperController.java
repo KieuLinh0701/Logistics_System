@@ -1,5 +1,9 @@
 package com.logistics.controller.shipper;
 
+import com.logistics.audit.Audit;
+import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.enums.AuditLogAction;
+import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.DeliverOriginRequest;
@@ -93,6 +97,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/claim")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CLAIM,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> claimOrder(@PathVariable Integer id) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -102,6 +112,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/claim-request")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CLAIM_REQUEST,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> claimOrderRequest(@PathVariable Integer id) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -111,6 +127,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/unclaim")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_UNCLAIM,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> unclaimOrder(@PathVariable Integer id) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -120,6 +142,12 @@ public class OrderShipperController {
     }
 
     @PutMapping("/orders/{id}/status")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_DELIVERY_SUCCESS,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> updateDeliveryStatus(
             @PathVariable Integer id,
             @RequestBody UpdateDeliveryStatusRequest request) {
@@ -133,6 +161,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/delivery-attempt")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_DELIVERY_ATTEMPT,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> createDeliveryAttempt(
             @PathVariable Integer id,
             @RequestBody UpdateDeliveryStatusRequest request) {
@@ -146,6 +180,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/return-failed-to-office")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_RETURN_FAILED,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> returnFailedToOffice(@PathVariable Integer id) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -168,8 +208,14 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success(shipperService.getDeliveryHistory(page, limit, status)));
     }
 
-        @PostMapping(value = "/incident", consumes = {"multipart/form-data"})
-        public ResponseEntity<ApiResponse<Map<String, Object>>> createIncident(
+    @PostMapping(value = "/incident", consumes = {"multipart/form-data"})
+    @Audit(
+            entity = EntityType.INCIDENT_REPORT,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.INCIDENT_REPORT_CREATE,
+            params = {"orderId"}
+    )
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createIncident(
             @RequestParam Integer orderId,
             @RequestParam(required = false) String incidentType,
             @RequestParam String title,
@@ -185,6 +231,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/picked-up")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_PICKED_UP,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> markPickedUp(@PathVariable Integer id, @RequestBody PickedUpRequest request) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -202,6 +254,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/order-products/{orderProductId}/delivered")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ORDER_PRODUCT_DELIVERED,
+            params = {"orderProductId"}
+    )
     public ResponseEntity<ApiResponse<String>> markProductDelivered(@PathVariable Integer orderProductId, @RequestBody Map<String, Object> payload) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -212,6 +270,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/order-products/{orderProductId}/returned")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE,
+            description = AuditLogDescriptionConstant.ORDER_PRODUCT_RETURNED,
+            params = {"orderProductId"}
+    )
     public ResponseEntity<ApiResponse<String>> markProductReturned(@PathVariable Integer orderProductId, @RequestBody Map<String, Object> payload) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
@@ -223,6 +287,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/partial-finish")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_PARTIAL_DELIVERY,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> finishPartialDelivery(@PathVariable Integer id) {
         try {
             String role = Objects.requireNonNull(SecurityUtils.getAuthenticatedUserRole())
@@ -239,6 +309,12 @@ public class OrderShipperController {
     }
 
     @PostMapping("/orders/{id}/deliver-origin")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_RETURN_TO_ORIGIN,
+            params = {"id"}
+    )
     public ResponseEntity<ApiResponse<String>> deliverToOrigin(@PathVariable Integer id, @RequestBody(required = false) DeliverOriginRequest request) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
