@@ -162,4 +162,9 @@ public class AuditLogDescriptionConstant {
     public static final String SERVICE_TYPE_CREATE = "Tạo loại dịch vụ mới";
     public static final String SERVICE_TYPE_UPDATE = "Cập nhật loại dịch vụ";
     public static final String SERVICE_TYPE_DELETE = "Xóa loại dịch vụ";
+
+    // Audit Log
+    public static final String AUDIT_LOG_EXPORT_BY_EMPLOYEE = "Xuất báo cáo lịch sử làm việc của nhân viên";
+    public static final String AUDIT_LOG_EXPORT = "Xuất báo cáo lịch sử";
+
 }
