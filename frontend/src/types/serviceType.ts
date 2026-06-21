@@ -1,4 +1,4 @@
-import type { ShippingRate } from "./shippingRate";
+import type {ShippingRate} from "./shippingRate";
 
 export interface ServiceType {
   id: number;

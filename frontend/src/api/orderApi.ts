@@ -5,11 +5,11 @@ import type {
     ManagerOrderRequest,
     ManagerOrderSearchRequest,
     Order,
+    OrderFulfillmentSummary,
     OrderPrint,
     StatusCount,
     UserOrderRequest,
-    UserOrderSearchRequest,
-    OrderFulfillmentSummary
+    UserOrderSearchRequest
 } from "../types/order";
 import axiosClient from "./axiosClient";
 import type {OrderHistory} from "../types/orderHistory";

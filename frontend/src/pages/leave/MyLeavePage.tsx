@@ -1,11 +1,11 @@
-import { Button, message, Popconfirm, Row, Table, Tag, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { useEffect, useState } from "react";
-import { CalendarOutlined, PlusOutlined } from "@ant-design/icons";
+import {Button, message, Popconfirm, Row, Table, Tag, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import {useEffect, useState} from "react";
+import {CalendarOutlined, PlusOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import LeaveFormModal from "./LeaveFormModal";
 import leaveApi from "../../api/leaveApi";
-import type { CreateLeavePayload, LeaveItem } from "../../types/leave";
+import type {CreateLeavePayload, LeaveItem} from "../../types/leave";
 import "../../styles/ListPage.css";
 
 const { Title } = Typography;

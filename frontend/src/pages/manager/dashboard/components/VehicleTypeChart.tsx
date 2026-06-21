@@ -1,9 +1,6 @@
 import React from "react";
-import {
-  PieChart, Pie, Cell, ResponsiveContainer,
-  Tooltip
-} from "recharts";
-import { translateVehicleType } from "../../../../utils/vehicleUtils";
+import {Cell, Pie, PieChart, ResponsiveContainer, Tooltip} from "recharts";
+import {translateVehicleType} from "../../../../utils/vehicleUtils";
 
 interface Props {
   data?: Record<string, number>;

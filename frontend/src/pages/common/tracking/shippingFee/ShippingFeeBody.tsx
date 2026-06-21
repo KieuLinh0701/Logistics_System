@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Form, InputNumber, Select, Button, Typography, Row, Col, message } from "antd";
-import type { City } from "../../../../types/location";
-import type { ServiceType } from "../../../../types/serviceType";
+import React, {useEffect, useState} from "react";
+import {Button, Col, Form, InputNumber, message, Row, Select, Typography} from "antd";
+import type {City} from "../../../../types/location";
+import type {ServiceType} from "../../../../types/serviceType";
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import "./ShippingFee.css";
 import locationApi from "../../../../api/locationApi";

@@ -1,6 +1,6 @@
-import { Navigate } from "react-router-dom";
-import type { ReactNode } from "react";
-import { getUserRole } from "../../utils/authUtils";
+import {Navigate} from "react-router-dom";
+import type {ReactNode} from "react";
+import {getUserRole} from "../../utils/authUtils";
 
 interface AuthRouteProps {
   children: ReactNode;

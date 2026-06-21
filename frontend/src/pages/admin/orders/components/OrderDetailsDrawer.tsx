@@ -1,6 +1,6 @@
 import React from "react";
-import { Descriptions, Drawer, List, Spin } from "antd";
-import type { AdminOrder } from "../../../../types/order";
+import {Descriptions, Drawer, List, Spin} from "antd";
+import type {AdminOrder} from "../../../../types/order";
 
 interface OrderDetailsDrawerProps {
   open: boolean;

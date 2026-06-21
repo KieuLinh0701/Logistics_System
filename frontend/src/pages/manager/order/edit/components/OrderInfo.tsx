@@ -1,23 +1,11 @@
-import React, { useEffect, useRef } from "react";
-import {
-    Card,
-    Row,
-    Col,
-    Form,
-    InputNumber,
-    Select,
-    Table,
-    Tooltip,
-} from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
-import type { FormInstance } from "antd/lib";
-import type { OrderProduct } from "../../../../../types/orderProduct";
-import type { ServiceType } from "../../../../../types/serviceType";
-import {
-    type OrderCreatorType,
-    type OrderStatus,
-} from "../../../../../utils/orderUtils";
-import { canManagerEditOrderField } from "../../../../../utils/managerOrderEditRules";
+import React, {useEffect, useRef} from "react";
+import {Card, Col, Form, InputNumber, Row, Select, Table, Tooltip,} from "antd";
+import {InfoCircleOutlined} from "@ant-design/icons";
+import type {FormInstance} from "antd/lib";
+import type {OrderProduct} from "../../../../../types/orderProduct";
+import type {ServiceType} from "../../../../../types/serviceType";
+import {type OrderCreatorType, type OrderStatus,} from "../../../../../utils/orderUtils";
+import {canManagerEditOrderField} from "../../../../../utils/managerOrderEditRules";
 
 interface Props {
     form: FormInstance;

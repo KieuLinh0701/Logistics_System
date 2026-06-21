@@ -1,10 +1,7 @@
-import React, { useState } from "react";
-import { Layout, Button } from "antd";
-import {
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-} from "@ant-design/icons";
-import { Outlet } from "react-router-dom";
+import React, {useState} from "react";
+import {Button, Layout} from "antd";
+import {MenuFoldOutlined, MenuUnfoldOutlined,} from "@ant-design/icons";
+import {Outlet} from "react-router-dom";
 import Header from "../components/common/Header";
 import SideNav from "../components/common/SideNav.tsx";
 import "./DashboardLayout.css";

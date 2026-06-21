@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Col, Form, message, Row } from "antd";
+import React, {useEffect, useState} from "react";
+import {Col, Form, message, Row} from "antd";
 import Header from "./components/Header";
 import Actions from "./components/Actions";
 import RecipientInfo from "./components/RecipientInfo";
@@ -9,17 +9,17 @@ import OrderInfo from "./components/OrderInfo";
 import SenderInfo from "./components/SenderInfo";
 import PickupType from "./components/PickupType";
 import PromotionCard from "./components/PromotionCard";
-import type { ManagerOrderRequest, Order } from "../../../../types/order";
-import type { OrderProduct } from "../../../../types/orderProduct";
-import type { Office } from "../../../../types/office";
-import type { ServiceType } from "../../../../types/serviceType";
+import type {ManagerOrderRequest, Order} from "../../../../types/order";
+import type {OrderProduct} from "../../../../types/orderProduct";
+import type {Office} from "../../../../types/office";
+import type {ServiceType} from "../../../../types/serviceType";
 import "./ManagerOrderEdit.css"
 import serviceTypeApi from "../../../../api/serviceTypeApi";
 import shippingFeeApi from "../../../../api/shippingFeeApi";
 import officeApi from "../../../../api/officeApi";
 import orderApi from "../../../../api/orderApi";
-import { useNavigate, useParams } from "react-router-dom";
-import { type OrderCreatorType, type OrderStatus } from "../../../../utils/orderUtils";
+import {useNavigate, useParams} from "react-router-dom";
+import {type OrderCreatorType, type OrderStatus} from "../../../../utils/orderUtils";
 import ConfirmModal from "../../../common/ConfirmModal";
 
 const ManagerOrderEdit: React.FC = () => {

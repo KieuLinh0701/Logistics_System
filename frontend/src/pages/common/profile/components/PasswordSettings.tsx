@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, message, Card } from 'antd';
-import { LockOutlined } from '@ant-design/icons';
+import React, {useState} from 'react';
+import {Button, Card, Form, Input, message} from 'antd';
+import {LockOutlined} from '@ant-design/icons';
 import userApi from '../../../../api/userApi';
 
 const PasswordSettings: React.FC = () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Space, Table} from 'antd';
-import {EditOutlined, EyeOutlined} from '@ant-design/icons';
+import {EditOutlined, EyeOutlined, HistoryOutlined} from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import dayjs from "dayjs";
 import type {User} from "../../../../../types/user.ts";
@@ -11,6 +11,7 @@ interface DataTableProps {
     loading?: boolean;
     onEdit: (user: User) => void;
     onViewRoles: (id: number) => void;
+    onViewLogs: (id: number) => void;
     page: number;
     limit: number;
     total: number;
@@ -26,7 +27,7 @@ const DataTable: React.FC<DataTableProps> = ({
                                                  limit,
                                                  total,
                                                  onPageChange,
-
+                                                 onViewLogs
                                              }) => {
 
     const canViewWorkHistory = hasPermissionGroup(['GROUP_USER', 'USER_EMPLOYEE_HISTORY_VIEW']);
@@ -70,6 +71,12 @@ const DataTable: React.FC<DataTableProps> = ({
 
                 return (
                     <Space size="small">
+                        <Button
+                            type="text"
+                            icon={<HistoryOutlined style={{color: '#1c3d90'}}/>}
+                            onClick={() => onViewLogs(record.id!)}
+                            title="Xem lịch sử hoạt động của nhân viên"
+                        />
                         {canViewWorkHistory && (
                             <Button
                                 type="text"

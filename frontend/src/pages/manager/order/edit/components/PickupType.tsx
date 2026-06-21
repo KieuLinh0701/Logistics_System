@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Card, Form, Select, Radio } from "antd";
-import type { FormInstance } from "antd/lib";
-import type { Office } from "../../../../../types/office";
-import { ORDER_PICKUP_TYPES, translateOrderPickupType, type OrderCreatorType, type OrderStatus } from "../../../../../utils/orderUtils";
+import React, {useEffect, useState} from "react";
+import {Card, Form, Radio, Select} from "antd";
+import type {FormInstance} from "antd/lib";
+import type {Office} from "../../../../../types/office";
+import {
+    ORDER_PICKUP_TYPES,
+    type OrderCreatorType,
+    type OrderStatus,
+    translateOrderPickupType
+} from "../../../../../utils/orderUtils";
 import locationApi from "../../../../../api/locationApi";
-import { canManagerEditOrderField } from "../../../../../utils/managerOrderEditRules";
+import {canManagerEditOrderField} from "../../../../../utils/managerOrderEditRules";
 
 interface Props {
   form: FormInstance;

@@ -1,37 +1,31 @@
 package com.logistics.controller.chat;
 
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.dto.chat.SupportMessageDto;
+import com.logistics.dto.chat.SupportTicketDetailDto;
+import com.logistics.dto.chat.SupportTicketDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
-import com.logistics.response.ApiResponse;
+import com.logistics.exception.enums.SupportTicketErrorCode;
 import com.logistics.request.chat.AssignTicketRequest;
 import com.logistics.request.chat.CloseTicketRequest;
 import com.logistics.request.chat.CreateSupportTicketRequest;
 import com.logistics.request.chat.SendSupportMessageRequest;
-import com.logistics.dto.chat.SupportMessageDto;
-import com.logistics.dto.chat.SupportTicketDetailDto;
-import com.logistics.dto.chat.SupportTicketDto;
-import com.logistics.exception.enums.SupportTicketErrorCode;
+import com.logistics.response.ApiResponse;
 import com.logistics.service.chat.SupportMessageService;
 import com.logistics.service.chat.SupportTicketService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @Validated

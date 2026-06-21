@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, Table, Tag, Row, Col, Statistic, Card } from 'antd';
-import type { BulkResponse } from '../../../../../types/response';
-import type { ManagerOrderShipment } from '../../../../../types/shipment';
+import {Card, Col, Modal, Row, Statistic, Table, Tag} from 'antd';
+import type {BulkResponse} from '../../../../../types/response';
+import type {ManagerOrderShipment} from '../../../../../types/shipment';
 
 interface BulkResultProps {
   open: boolean;

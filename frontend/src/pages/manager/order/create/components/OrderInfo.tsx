@@ -1,16 +1,8 @@
 import React from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Form,
-  InputNumber,
-  Select,
-  Tooltip,
-} from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
-import type { FormInstance } from "antd/lib";
-import type { ServiceType } from "../../../../../types/serviceType";
+import {Card, Col, Form, InputNumber, Row, Select, Tooltip,} from "antd";
+import {InfoCircleOutlined} from "@ant-design/icons";
+import type {FormInstance} from "antd/lib";
+import type {ServiceType} from "../../../../../types/serviceType";
 
 interface Props {
   form: FormInstance;

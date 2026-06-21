@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { Card, Col, Form, Input, Row } from "antd";
-import type { FormInstance } from "antd/lib";
+import React, {useEffect} from "react";
+import {Card, Col, Form, Input, Row} from "antd";
+import type {FormInstance} from "antd/lib";
 import AddressForm from "../../../../../components/common/AdressForm";
 
 interface Props {

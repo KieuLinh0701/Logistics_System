@@ -1,12 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, DatePicker, Row, Table, Tabs } from 'antd';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Button, Card, Col, DatePicker, Row, Table, Tabs} from 'antd';
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, CartesianGrid,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Legend,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
 } from 'recharts';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { reportApi } from '../../../api/reportApi';
+import {reportApi} from '../../../api/reportApi';
 import "../../../styles/ListPage.css";
 
 type AnyRecord = Record<string, any>;

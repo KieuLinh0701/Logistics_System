@@ -192,12 +192,11 @@
 .table-container {
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  box-shadow: none;
+  border: none;
   overflow: hidden;
   margin-top: 0px;
   overflow-x: auto !important;
-
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
@@ -548,7 +547,7 @@
 
 /* Advanced Filters */
 .advanced-filters-row {
-  margin-top: 24px;
+  margin-top: 12px;
   margin-bottom: 24px;
 }
 

@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
-import { Dropdown, Table } from "antd";
-import { DeleteOutlined, DownOutlined, EditOutlined } from "@ant-design/icons";
+import React, {useMemo} from "react";
+import {Dropdown, Table} from "antd";
+import {DeleteOutlined, DownOutlined, EditOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import type { Promotion } from "../../../../types/promotion";
+import type {Promotion} from "../../../../types/promotion";
 
 interface PromotionsTableProps {
   loading: boolean;

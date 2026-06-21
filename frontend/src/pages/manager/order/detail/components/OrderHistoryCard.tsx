@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { Typography, Collapse } from "antd";
+import React, {useState} from "react";
+import {Collapse, Typography} from "antd";
 import dayjs from "dayjs";
-import type { OrderHistory } from "../../../../../types/orderHistory";
-import { getOrderHistoryActionText } from "../../../../../utils/orderHistoryUtils";
+import type {OrderHistory} from "../../../../../types/orderHistory";
+import {getOrderHistoryActionText} from "../../../../../utils/orderHistoryUtils";
 
 const { Title } = Typography;
 const { Panel } = Collapse;

@@ -1,12 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Tooltip, Dropdown } from "antd";
-import { EditOutlined, CloseCircleOutlined, DownOutlined, PrinterOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import type { ColumnsType } from "antd/es/table";
-import type { Order } from "../../../../../types/order";
-import locationApi from "../../../../../api/locationApi";
+import React from "react";
+import {Button, Dropdown, Space, Table, Tooltip} from "antd";
+import {CheckCircleOutlined, CloseCircleOutlined, DownOutlined, EditOutlined, PrinterOutlined} from "@ant-design/icons";
+import {useNavigate} from "react-router-dom";
+import type {ColumnsType} from "antd/es/table";
+import type {Order} from "../../../../../types/order";
 import dayjs from 'dayjs';
-import { canAtOriginOfficeManagerOrder, canCancelManagerOrder, canConfirmManagerOrder, canEditManagerOrder, canPrintManagerOrder, translateOrderCreatorType, translateOrderPayerType, translateOrderPaymentStatus, translateOrderPickupType, translateOrderStatus } from "../../../../../utils/orderUtils";
+import {
+    canAtOriginOfficeManagerOrder,
+    canCancelManagerOrder,
+    canConfirmManagerOrder,
+    canEditManagerOrder,
+    canPrintManagerOrder,
+    translateOrderCreatorType,
+    translateOrderPayerType,
+    translateOrderPaymentStatus,
+    translateOrderPickupType,
+    translateOrderStatus
+} from "../../../../../utils/orderUtils";
 
 interface Props {
   orders: Order[];

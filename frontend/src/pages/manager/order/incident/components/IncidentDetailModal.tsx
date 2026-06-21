@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Descriptions, Typography, Upload, Tooltip, Space, Button } from "antd";
-import type { Incident } from "../../../../../types/incidentReport";
-import { canEditManagerIncident, translateIncidentPriority, translateIncidentStatus, translateIncidentType } from "../../../../../utils/incidentUtils";
-import type { UploadFile } from 'antd/es/upload/interface';
-import { EditOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Descriptions, Modal, Space, Tooltip, Typography, Upload} from "antd";
+import type {Incident} from "../../../../../types/incidentReport";
+import {
+    canEditManagerIncident,
+    translateIncidentPriority,
+    translateIncidentStatus,
+    translateIncidentType
+} from "../../../../../utils/incidentUtils";
+import type {UploadFile} from 'antd/es/upload/interface';
+import {EditOutlined} from "@ant-design/icons";
 
 const { Text } = Typography;
 

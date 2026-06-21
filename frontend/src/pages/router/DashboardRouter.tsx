@@ -1,4 +1,4 @@
-import { getUserRole } from "../../utils/authUtils";
+import {getUserRole} from "../../utils/authUtils";
 import UserDashboard from "../user/dashboard/UserDashboard";
 import AdminDashboard from "../admin/Dashboard";
 import ShipperDashboard from "../shipper/Dashboard";

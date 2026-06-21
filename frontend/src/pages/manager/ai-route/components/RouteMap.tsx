@@ -1,8 +1,8 @@
 import React from "react";
-import { Empty, Spin, Typography } from "antd";
-import { LoadScript } from "@react-google-maps/api";
-import type { AiRoutePlanDetail, AiShipperRoute } from "../../../../types/aiRoute";
-import GoogleMapRouteRenderer, { type SelectedStopInfo } from "./GoogleMapRouteRenderer";
+import {Empty, Spin, Typography} from "antd";
+import {LoadScript} from "@react-google-maps/api";
+import type {AiRoutePlanDetail, AiShipperRoute} from "../../../../types/aiRoute";
+import GoogleMapRouteRenderer, {type SelectedStopInfo} from "./GoogleMapRouteRenderer";
 import RouteLegend from "./RouteLegend";
 
 const MAP_LIBRARIES: ("places")[] = ["places"];

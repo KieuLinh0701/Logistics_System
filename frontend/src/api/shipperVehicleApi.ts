@@ -1,8 +1,8 @@
 import axiosClient from "./axiosClient";
 import type {
-  ShipperVehicleSetting,
-  ShipperVehicleSettingRequest,
-  ShipperVehicleStatusUpdateRequest,
+    ShipperVehicleSetting,
+    ShipperVehicleSettingRequest,
+    ShipperVehicleStatusUpdateRequest,
 } from "../types/shipperVehicle";
 
 const unwrap = <T>(res: any): T => {

@@ -3,16 +3,14 @@ import type {ApiResponse, ListResponse} from "../types/response";
 import type {
     AdminUser,
     UpadteEmailData,
-    UpadtePasswordData, User,
+    UpadtePasswordData,
+    User,
     UserEmployeeSearchRequest,
-    VerifyEmailUpdateOTPData,
-    UserFormValues
+    UserFormValues,
+    VerifyEmailUpdateOTPData
 } from "../types/user";
 import axiosClient from "./axiosClient";
-import type {
-    ShopWorkHistory,
-    UserShopWorkHistorySearchUserRequest
-} from "../types/shopWorkHistory.ts";
+import type {ShopWorkHistory, UserShopWorkHistorySearchUserRequest} from "../types/shopWorkHistory.ts";
 
 const userApi = {
     // All User

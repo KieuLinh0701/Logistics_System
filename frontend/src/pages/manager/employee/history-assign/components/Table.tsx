@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { translateEmployeeShift, translateEmployeeStatus } from '../../../../../utils/employeeUtils';
-import type { ManagerShipperAssignment } from '../../../../../types/shipperAssignment';
+import React, {useEffect, useState} from 'react';
+import {Table} from 'antd';
+import type {ColumnsType} from 'antd/es/table';
+import {translateEmployeeShift, translateEmployeeStatus} from '../../../../../utils/employeeUtils';
+import type {ManagerShipperAssignment} from '../../../../../types/shipperAssignment';
 import locationApi from '../../../../../api/locationApi';
 import dayjs from 'dayjs';
 

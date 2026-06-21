@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Tabs } from 'antd';
-import { UserOutlined, MailOutlined, LockOutlined, ProfileOutlined, CarOutlined } from '@ant-design/icons';
+import React, {useState} from 'react';
+import {Tabs} from 'antd';
+import {CarOutlined, LockOutlined, MailOutlined, ProfileOutlined, UserOutlined} from '@ant-design/icons';
 import EmailSettings from './components/EmailSettings';
 import ProfileSettings from './components/ProfileSettings';
 import PasswordSettings from './components/PasswordSettings';

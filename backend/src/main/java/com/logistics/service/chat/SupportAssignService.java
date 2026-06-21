@@ -1,16 +1,5 @@
 package com.logistics.service.chat;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.logistics.dto.chat.SupportAssignManagerOption;
 import com.logistics.dto.chat.SupportAssignOfficeOption;
 import com.logistics.dto.chat.SupportAssignOptionsResponse;
@@ -21,9 +10,13 @@ import com.logistics.repository.EmployeeRepository;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.SupportTicketRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

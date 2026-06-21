@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Modal, List, Empty, message, Radio} from "antd";
+import {Empty, List, message, Modal, Radio} from "antd";
 import recipientAddressApi from "../../../api/recipientAddressApi.ts";
 import type {RecipientAddressWithStats} from "../../../types/recipientAddress.ts";
 

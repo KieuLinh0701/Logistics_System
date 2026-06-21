@@ -1,11 +1,6 @@
 import React from "react";
-import { Card, Typography, Button } from "antd";
-import {
-  DollarOutlined,
-  EnvironmentOutlined,
-  FileSearchOutlined,
-  ProfileOutlined,
-} from "@ant-design/icons";
+import {Button, Card, Typography} from "antd";
+import {DollarOutlined, EnvironmentOutlined, FileSearchOutlined, ProfileOutlined,} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Typography, message, Spin, Table, Card, Row, Col } from "antd";
+import React, {useEffect, useState} from "react";
+import {Card, Col, message, Row, Spin, Table, Typography} from "antd";
 import "./ShippingRates.css";
 
-import type { ServiceTypeWithShippingRatesResponse } from "../../../../types/serviceType";
+import type {ServiceTypeWithShippingRatesResponse} from "../../../../types/serviceType";
 import serviceTypeApi from "../../../../api/serviceTypeApi";
-import { getShippingRateRegionTypeNote, translateShippingRateRegionType } from "../../../../utils/shippingRateUtils";
+import {getShippingRateRegionTypeNote, translateShippingRateRegionType} from "../../../../utils/shippingRateUtils";
 
 const { Title } = Typography;
 

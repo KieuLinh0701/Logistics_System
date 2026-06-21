@@ -1,7 +1,7 @@
-import { DatePicker, Form, Input, Modal, Select } from "antd";
-import dayjs, { Dayjs } from "dayjs";
-import { useEffect } from "react";
-import type { CreateLeavePayload, LeaveReasonType, LeaveShift } from "../../types/leave";
+import {DatePicker, Form, Input, Modal, Select} from "antd";
+import dayjs, {Dayjs} from "dayjs";
+import {useEffect} from "react";
+import type {CreateLeavePayload, LeaveReasonType, LeaveShift} from "../../types/leave";
 
 const { TextArea } = Input;
 

@@ -29,7 +29,7 @@ public class AuditLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     // Người thực hiện
     @ManyToOne(fetch = FetchType.LAZY)

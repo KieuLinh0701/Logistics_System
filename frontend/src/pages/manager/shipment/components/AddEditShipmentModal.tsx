@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Modal, Form, Select, message, Button} from 'antd';
+import {Button, Form, message, Modal, Select} from 'antd';
 import dayjs from 'dayjs';
 import type {ManagerShipment, ManagerShipmentAddEditRequest} from '../../../../types/shipment';
 import type {Vehicle} from '../../../../types/vehicle';

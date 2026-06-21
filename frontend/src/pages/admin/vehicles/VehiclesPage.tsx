@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Form, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import React, {useCallback, useEffect, useState} from "react";
+import {Form, message} from "antd";
+import {PlusOutlined} from "@ant-design/icons";
 import vehicleApi from "../../../api/vehicleApi";
 import axiosClient from "../../../api/axiosClient";
-import type { AdminVehicle } from "../../../types/vehicle";
+import type {AdminVehicle} from "../../../types/vehicle";
 import "../../hr/recruitment/components/RecruitmentShared.css";
 import "../../../styles/ListPage.css";
 import "../AdminModal.css";

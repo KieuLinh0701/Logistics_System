@@ -1,8 +1,14 @@
-import React, { useState } from "react";
-import { Row, Col, Button, Select, DatePicker, Input } from "antd";
-import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import React, {useState} from "react";
+import {Button, Col, DatePicker, Input, Row, Select} from "antd";
+import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import { SHIPMENT_FILTER_SORT, SHIPMENT_STATUSES, translateShipmentFilterSort, translateShipmentStatus } from "../../../../../utils/shipmentUtils";
+import {
+    SHIPMENT_FILTER_SORT,
+    SHIPMENT_STATUSES,
+    translateShipmentFilterSort,
+    translateShipmentStatus
+} from "../../../../../utils/shipmentUtils";
+
 type FilterKeys = "sort" | "status";
 
 interface Props {

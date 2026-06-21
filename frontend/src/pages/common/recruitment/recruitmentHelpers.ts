@@ -1,4 +1,4 @@
-import type { JobApplicationStatus, JobPostingStatus, RecruitmentRoleType } from "../../../types/recruitment";
+import type {JobApplicationStatus, JobPostingStatus, RecruitmentRoleType} from "../../../types/recruitment";
 
 export const roleTypeLabelMap: Record<RecruitmentRoleType, string> = {
   DRIVER: "Tài xế",

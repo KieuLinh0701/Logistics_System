@@ -1,4 +1,4 @@
-import { getUserPermissionGroups } from "../../utils/authUtils";
+import {getUserPermissionGroups} from "../../utils/authUtils";
 import Forbidden from "../common/Forbidden";
 import ManagerWaybillPrint from "../manager/order/ManagerWaybillPrint";
 import UserWaybillPrint from "../user/order/UserWaybillPrint";

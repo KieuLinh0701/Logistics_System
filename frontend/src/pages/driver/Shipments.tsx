@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { Table, Button, Space, Typography, message, Modal, Descriptions, Row } from "antd";
-import { ReloadOutlined, PlayCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Descriptions, message, Modal, Row, Space, Table, Typography} from "antd";
+import {CheckCircleOutlined, CloseCircleOutlined, PlayCircleOutlined, ReloadOutlined} from "@ant-design/icons";
 import shipmentApi from "../../api/shipmentApi";
-import type { DriverShipment } from "../../types/shipment";
-import { useNavigate } from "react-router-dom";
+import type {DriverShipment} from "../../types/shipment";
+import {useNavigate} from "react-router-dom";
 
 const { Title, Text } = Typography;
 

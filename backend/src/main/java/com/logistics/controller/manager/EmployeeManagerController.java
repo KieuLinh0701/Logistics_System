@@ -2,6 +2,7 @@ package com.logistics.controller.manager;
 
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
+import com.logistics.dto.BaseAuditLogDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListDto;
 import com.logistics.dto.manager.employee.ManagerEmployeeListWithShipperAssignmentDto;
 import com.logistics.dto.manager.employee.ManagerEmployeePerformanceDto;
@@ -9,6 +10,7 @@ import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
 import com.logistics.request.SearchRequest;
+import com.logistics.request.manager.audit.AuditLogSearchRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeEditRequest;
 import com.logistics.request.manager.employee.ManagerEmployeeSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -242,14 +244,44 @@ public class EmployeeManagerController {
     }
 
     @GetMapping("/{id}/logs")
-    public ResponseEntity<ApiResponse<ListResponse<ManagerEmployeeListDto>>> getLogsByEmployeeId(
-            @Valid ManagerEmployeeSearchRequest managerShippingRequestSearchRequest,
+    public ResponseEntity<ApiResponse<ListResponse<BaseAuditLogDto>>> listAuditLogsByUserId(
+            @PathVariable Integer id,
+            @Valid AuditLogSearchRequest auditLogSearchRequest,
             HttpServletRequest request) {
+
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ListResponse<ManagerEmployeeListDto> result = service.list(
-                userId,
-                managerShippingRequestSearchRequest);
+        ListResponse<BaseAuditLogDto> result = service.listAuditLogsByUserId(userId, id, auditLogSearchRequest);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+
+    @GetMapping("/{id}/logs/export")
+    @Audit(
+            entity = EntityType.AUDIT_LOG,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.AUDIT_LOG_EXPORT_BY_USER
+    )
+    public ResponseEntity<byte[]> exportAuditLogsByUserId(
+            @PathVariable Integer id,
+            AuditLogSearchRequest auditLogSearchRequest,
+            HttpServletRequest request) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        byte[] data = service.exportAuditLogsByUserId(userId, id, auditLogSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo lịch sử hoạt động của nhân viên.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
     }
 }

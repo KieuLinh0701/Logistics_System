@@ -1,33 +1,33 @@
-import React, { useState, useEffect } from "react";
+import React, {useEffect, useState} from "react";
 import {
-  Table,
-  Tag,
-  Button,
-  Space,
-  Typography,
-  Row,
-  Col,
-  Card,
-  Select,
-  DatePicker,
-  Input,
-  Statistic,
-  message,
-  Modal,
+    Button,
+    Card,
+    Col,
+    DatePicker,
+    Input,
+    message,
+    Modal,
+    Row,
+    Select,
+    Space,
+    Statistic,
+    Table,
+    Tag,
+    Typography,
 } from "antd";
 import {
-  EyeOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DollarOutlined,
-  PhoneOutlined,
-  ReloadOutlined,
-  SearchOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    DollarOutlined,
+    EyeOutlined,
+    PhoneOutlined,
+    ReloadOutlined,
+    SearchOutlined,
 } from "@ant-design/icons";
+import type {ShipperOrder, ShipperStats} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
-import type { ShipperOrder, ShipperStats } from "../../api/orderApi";
 import dayjs from "dayjs";
-import { translateOrderCodStatus, translateOrderStatus } from "../../utils/orderUtils";
+import {translateOrderCodStatus, translateOrderStatus} from "../../utils/orderUtils";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 

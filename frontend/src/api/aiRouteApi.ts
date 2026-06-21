@@ -1,9 +1,5 @@
 import axiosClient from "./axiosClient";
-import type {
-  AiRoutePlanDetail,
-  AiRoutePlanSummary,
-  AiOptimizeRequest,
-} from "../types/aiRoute";
+import type {AiOptimizeRequest, AiRoutePlanDetail, AiRoutePlanSummary,} from "../types/aiRoute";
 
 const unwrap = <T>(res: any): T => {
   if (res?.data !== undefined) return res.data as T;

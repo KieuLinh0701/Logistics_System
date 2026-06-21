@@ -5,8 +5,8 @@ import FooterHome from "../../../../components/common/FooterHome";
 import Paragraph from "antd/es/typography/Paragraph";
 import trackingHeroImage from "../../../../assets/images/shippingRates.jpg";
 import "./ShippingRates.css";
-import { ArrowRightOutlined, FileSearchOutlined, GiftOutlined, LineChartOutlined } from "@ant-design/icons";
-import { Button, Card, Typography } from "antd";
+import {ArrowRightOutlined, FileSearchOutlined, GiftOutlined, LineChartOutlined} from "@ant-design/icons";
+import {Button, Card, Typography} from "antd";
 
 const { Title, Text } = Typography;
 

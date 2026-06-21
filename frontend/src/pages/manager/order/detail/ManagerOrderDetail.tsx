@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { message, Descriptions, Typography, Timeline } from "antd";
+import React, {useEffect, useState} from "react";
+import {useNavigate, useParams} from "react-router-dom";
+import {Descriptions, message, Timeline, Typography} from "antd";
 
 import Header from "./components/Header";
 import OrderSenderRecipient from "./components/SenderRecipientInfo";
@@ -9,7 +9,7 @@ import OrderProducts from "./components/ProductsInfo";
 import OrderPayment from "./components/PaymentInfo";
 import OrderActions from "./components/Actions";
 import OrderHistoryCard from "./components/OrderHistoryCard";
-import type { Order, OrderFulfillmentSummary } from "../../../../types/order";
+import type {Order, OrderFulfillmentSummary} from "../../../../types/order";
 import "./ManagerOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
@@ -19,12 +19,12 @@ import {
     canConfirmManagerOrder,
     canEditManagerOrder,
     canPrintManagerOrder,
-    translateOrderStatus,
-    translatePickupAttemptStatus,
-    translatePickupFailReason,
     type OrderCreatorType,
     type OrderPickupType,
-    type OrderStatus
+    type OrderStatus,
+    translateOrderStatus,
+    translatePickupAttemptStatus,
+    translatePickupFailReason
 } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";

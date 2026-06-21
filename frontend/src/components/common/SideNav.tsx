@@ -1,37 +1,37 @@
-import React, {useState, useEffect} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {Menu} from "antd";
 import {NavLink, useLocation} from "react-router-dom";
 import {
-    DashboardOutlined,
-    GlobalOutlined,
-    CustomerServiceOutlined,
-    ShoppingOutlined,
+    BankOutlined,
+    BarChartOutlined,
     CarOutlined,
-    HomeOutlined,
-    TeamOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+    ContactsOutlined,
+    CustomerServiceOutlined,
+    DashboardOutlined,
     DollarOutlined,
     DropboxOutlined,
-    UserOutlined,
-    ShopOutlined,
-    SettingOutlined,
-    ShoppingCartOutlined,
-    GiftOutlined,
-    BarChartOutlined,
-    ProfileOutlined,
-    ClockCircleOutlined,
-    ExclamationCircleOutlined,
-    TruckOutlined,
     EnvironmentOutlined,
-    BankOutlined,
-    CheckCircleOutlined,
-    ScanOutlined,
+    ExclamationCircleOutlined,
+    GiftOutlined,
+    GlobalOutlined,
+    HistoryOutlined,
+    HomeOutlined,
     NodeIndexOutlined,
+    ProfileOutlined,
+    ScanOutlined,
+    SettingOutlined,
+    ShopOutlined,
+    ShoppingCartOutlined,
+    ShoppingOutlined,
+    TeamOutlined,
+    TruckOutlined,
+    UserOutlined,
+    UserSwitchOutlined,
     WarningOutlined,
-    UserSwitchOutlined, 
-    ContactsOutlined,
 } from "@ant-design/icons";
 import "./SideNav.css";
-import {useMemo} from "react";
 import {getUserRole, hasPermissionGroup} from "../../utils/authUtils";
 
 type MenuItemType = {
@@ -78,6 +78,12 @@ const SideNav: React.FC = () => {
                 label: "Quản lý người dùng",
                 path: "/users",
                 icon: <UserOutlined/>,
+            },
+            {
+                key: "/logs",
+                label: "Lịch sử hoạt động",
+                path: "/logs",
+                icon: <HistoryOutlined/>,
             },
             {
                 key: "/postoffices",
@@ -233,6 +239,12 @@ const SideNav: React.FC = () => {
                 ],
             },
             {
+                key: "/logs",
+                label: "Lịch sử hoạt động",
+                path: "/logs",
+                icon: <HistoryOutlined/>,
+            },
+            {
                 key: "recruitment",
                 label: "Tuyển dụng",
                 icon: <TeamOutlined/>,
@@ -256,9 +268,9 @@ const SideNav: React.FC = () => {
                 icon: <HomeOutlined/>,
             },
             {
-                key: "/manager/leaves",
+                key: "/leaves",
                 label: "Duyệt nghỉ phép",
-                path: "/manager/leaves",
+                path: "/leaves",
                 icon: <ClockCircleOutlined/>,
             },
             {
@@ -327,6 +339,13 @@ const SideNav: React.FC = () => {
                 path: "/employees",
                 icon: <TeamOutlined />,
                 permissionGroups: ['GROUP_USER', 'USER_EMPLOYEE_VIEW'],
+            },
+            {
+                key: "/logs",
+                label: "Lịch sử hoạt động",
+                path: "/logs",
+                icon: <HistoryOutlined/>,
+                permissionGroups: ['GROUP_USER', 'USER_AUDIT_LOG_VIEW'],
             },
             {
                 key: "/customers",

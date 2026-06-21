@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, Form, Input, Select, DatePicker } from 'antd';
-import type { Vehicle } from '../../../../types/vehicle';
-import { translateVehicleStatus, VEHICLE_STATUSES } from '../../../../utils/vehicleUtils';
+import {DatePicker, Form, Input, Modal, Select} from 'antd';
+import type {Vehicle} from '../../../../types/vehicle';
+import {translateVehicleStatus, VEHICLE_STATUSES} from '../../../../utils/vehicleUtils';
 
 const { TextArea } = Input;
 

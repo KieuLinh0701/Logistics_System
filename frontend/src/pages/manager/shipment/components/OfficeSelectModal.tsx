@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Form, Select, message } from "antd";
-import type { Office } from "../../../../types/office";
+import React, {useEffect, useState} from "react";
+import {Form, message, Modal, Select} from "antd";
+import type {Office} from "../../../../types/office";
 import locationApi from "../../../../api/locationApi";
-import type { City, Ward } from "../../../../types/location";
+import type {City, Ward} from "../../../../types/location";
 import officeApi from "../../../../api/officeApi";
 
 const { Option } = Select;

@@ -1,5 +1,5 @@
 import React from "react";
-import { CloseCircleOutlined, EditOutlined, PrinterOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import {CheckCircleOutlined, CloseCircleOutlined, EditOutlined, PrinterOutlined} from "@ant-design/icons";
 
 interface Props {
   canEdit: boolean;

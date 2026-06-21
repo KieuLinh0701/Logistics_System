@@ -8,7 +8,6 @@ import com.logistics.enums.EntityType;
 import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ShippingRequestAdminService;
-import com.logistics.service.common.NotificationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

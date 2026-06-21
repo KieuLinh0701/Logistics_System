@@ -1,13 +1,12 @@
 import {useEffect, useRef, useState} from "react";
-import {useSearchParams} from "react-router-dom";
-import {useNavigate} from "react-router-dom";
-import {message, Tag, Row, Col} from "antd";
+import {useNavigate, useSearchParams} from "react-router-dom";
+import {Col, message, Row, Tag} from "antd";
 import dayjs from "dayjs";
 import OrderActions from "./components/Actions";
 import SearchFilters from "./components/SearchFilters";
 import OrderTable from "./components/Table";
 import Title from "antd/es/typography/Title";
-import type {ManagerOrderSearchRequest, Order, StatusCount, UserOrderSearchRequest} from "../../../../types/order";
+import type {ManagerOrderSearchRequest, Order, StatusCount} from "../../../../types/order";
 import orderApi from "../../../../api/orderApi";
 import "../../../../styles/ListPage.css";
 import type {ServiceType} from "../../../../types/serviceType";

@@ -1,15 +1,11 @@
-import React, { useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Select,
-  Input,
-  Descriptions,
-  Typography,
-} from "antd";
+import React, {useEffect} from "react";
+import {Descriptions, Form, Input, Modal, Select, Typography,} from "antd";
 import dayjs from "dayjs";
-import type { ManagerPaymentSubmissionBatch } from "../../../../types/paymentSubmissionBatch";
-import { getAllowedManagerStatuses, translatePaymentSubmissionBatchStatus } from "../../../../utils/paymentSubmissionBatchUtils";
+import type {ManagerPaymentSubmissionBatch} from "../../../../types/paymentSubmissionBatch";
+import {
+    getAllowedManagerStatuses,
+    translatePaymentSubmissionBatchStatus
+} from "../../../../utils/paymentSubmissionBatchUtils";
 
 const { Text } = Typography;
 const { TextArea } = Input;

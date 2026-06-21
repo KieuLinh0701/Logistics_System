@@ -1,8 +1,8 @@
 import React from "react";
 import Title from "antd/es/typography/Title";
-import { Row } from "antd";
-import { ShoppingOutlined } from "@ant-design/icons";
-import { translateOrderCreatorType } from "../../../../../utils/orderUtils";
+import {Row} from "antd";
+import {ShoppingOutlined} from "@ant-design/icons";
+import {translateOrderCreatorType} from "../../../../../utils/orderUtils";
 
 interface Props {
   trackingNumber?: string;

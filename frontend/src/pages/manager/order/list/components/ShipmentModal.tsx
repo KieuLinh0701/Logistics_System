@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Input, Table, Tag, Row, Col, Tooltip, Button, Select } from "antd";
-import { CloseCircleOutlined, SearchOutlined } from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
+import React, {useEffect, useState} from "react";
+import {Button, Col, Input, Modal, Row, Select, Table, Tag, Tooltip} from "antd";
+import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
+import type {ColumnsType} from "antd/es/table";
 import dayjs from 'dayjs';
-import type { ManagerShipment } from "../../../../../types/shipment";
-import { SHIPMENT_FILTER_SORT, SHIPMENT_TYPES, translateShipmentFilterSort, translateShipmentType } from "../../../../../utils/shipmentUtils";
+import type {ManagerShipment} from "../../../../../types/shipment";
+import {
+    SHIPMENT_FILTER_SORT,
+    SHIPMENT_TYPES,
+    translateShipmentFilterSort,
+    translateShipmentType
+} from "../../../../../utils/shipmentUtils";
 import locationApi from "../../../../../api/locationApi";
-import { Option } from "antd/es/mentions";
+import {Option} from "antd/es/mentions";
 
 interface Props {
   open: boolean;

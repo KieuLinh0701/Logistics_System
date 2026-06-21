@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { message, Descriptions, Table, Typography } from "antd";
+import React, {useEffect, useState} from "react";
+import {useNavigate, useParams} from "react-router-dom";
+import {Descriptions, message, Table, Typography} from "antd";
 
 import Header from "./components/Header";
 import OrderSenderRecipient from "./components/SenderRecipientInfo";
@@ -9,17 +9,25 @@ import OrderProducts from "./components/ProductsInfo";
 import OrderPayment from "./components/PaymentInfo";
 import OrderActions from "./components/Actions";
 import OrderHistoryCard from "./components/OrderHistoryCard";
-import type { Order, OrderFulfillmentSummary } from "../../../../types/order";
+import type {Order, OrderFulfillmentSummary} from "../../../../types/order";
 import "./UserOrderDetail.css";
 import orderApi from "../../../../api/orderApi";
 import ConfirmCancelModal from "./components/ConfirmCancelModal";
 import ConfirmPublicModal from "./components/ConfirmPublicModal";
-import { canCancelUserOrder, canDeleteUserOrder, canEditUserOrder, canPrintUserOrder, canPublicUserOrder, canReadyUserOrder, translateOrderStatus } from "../../../../utils/orderUtils";
+import {
+    canCancelUserOrder,
+    canDeleteUserOrder,
+    canEditUserOrder,
+    canPrintUserOrder,
+    canPublicUserOrder,
+    canReadyUserOrder,
+    translateOrderStatus
+} from "../../../../utils/orderUtils";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import AddEditModal from "../request/components/AddEditModal";
 import FromOfficeInfo from "./components/FromOfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
-import { canCreateUserShippingRequestFromOrderDetail } from "../../../../utils/shippingRequestUtils";
+import {canCreateUserShippingRequestFromOrderDetail} from "../../../../utils/shippingRequestUtils";
 import userApi from "../../../../api/userApi";
 import {hasPermissionGroup} from "../../../../utils/authUtils.ts";
 

@@ -1,21 +1,9 @@
 import React from "react";
-import { Badge, Button, Card, Empty, Space, Switch, Tag, Tooltip, Typography } from "antd";
-import {
-  EyeInvisibleOutlined,
-  EyeOutlined,
-  AimOutlined,
-  CarOutlined,
-  ClockCircleOutlined,
-} from "@ant-design/icons";
-import type { AiRoutePlanDetail, AiShipperRoute } from "../../../../types/aiRoute";
+import {Badge, Button, Card, Empty, Space, Switch, Tag, Tooltip, Typography} from "antd";
+import {AimOutlined, CarOutlined, ClockCircleOutlined, EyeInvisibleOutlined, EyeOutlined,} from "@ant-design/icons";
+import type {AiRoutePlanDetail, AiShipperRoute} from "../../../../types/aiRoute";
 import RouteSummaryCards from "./RouteSummaryCards";
-import {
-  formatCurrency,
-  formatMinutes,
-  getRouteColor,
-  getRouteKey,
-  summarizePlan,
-} from "../utils/routeMapUtils";
+import {formatCurrency, formatMinutes, getRouteColor, getRouteKey, summarizePlan,} from "../utils/routeMapUtils";
 
 interface RouteSidebarProps {
   plan: AiRoutePlanDetail | null;

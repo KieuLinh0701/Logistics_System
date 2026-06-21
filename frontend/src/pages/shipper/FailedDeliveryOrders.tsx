@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Button, Card, Empty, Input, Space, Spin, Table, Tag, Typography, message } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { ReloadOutlined, SearchOutlined, InboxOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import orderApi, { type ShipperOrder } from "../../api/orderApi";
-import { translateOrderStatus } from "../../utils/orderUtils";
+import React, {useEffect, useState} from "react";
+import {Button, Card, Empty, Input, message, Space, Spin, Table, Tag, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import {InboxOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
+import {useNavigate} from "react-router-dom";
+import orderApi, {type ShipperOrder} from "../../api/orderApi";
+import {translateOrderStatus} from "../../utils/orderUtils";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 

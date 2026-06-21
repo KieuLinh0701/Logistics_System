@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Form, message } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
+import {Form, message} from "antd";
+import {PlusOutlined} from "@ant-design/icons";
 import officeApi from "../../../api/officeApi";
 import locationApi from "../../../api/locationApi";
-import { formatAddress as formatAddressUtil } from "../../../utils/locationUtils";
-import type { AdminOffice, CreateOfficePayload } from "../../../types/office";
+import {formatAddress as formatAddressUtil} from "../../../utils/locationUtils";
+import type {AdminOffice, CreateOfficePayload} from "../../../types/office";
 import "../../hr/recruitment/components/RecruitmentShared.css";
 import "../../../styles/ListPage.css";
 import "../AdminModal.css";

@@ -1,33 +1,27 @@
-import { connectSupportSocket, type SupportSocketClient } from "../../socket/supportSocket";
+import {connectSupportSocket, type SupportSocketClient} from "../../socket/supportSocket";
 import {
-  Avatar,
-  Badge,
-  Empty,
-  Input,
-  List,
-  Spin,
-  Tag,
-  Typography,
-  message,
-  Select,
-  Button,
-  Popconfirm,
-  Alert,
+    Alert,
+    Avatar,
+    Badge,
+    Button,
+    Empty,
+    Input,
+    List,
+    message,
+    Popconfirm,
+    Select,
+    Spin,
+    Tag,
+    Typography,
 } from "antd";
-import {
-  UserOutlined,
-  SendOutlined,
-  UserSwitchOutlined,
-  CheckCircleOutlined,
-  RedoOutlined,
-} from "@ant-design/icons";
+import {CheckCircleOutlined, RedoOutlined, SendOutlined, UserOutlined, UserSwitchOutlined,} from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { getUserId, getUserRole } from "../../utils/authUtils";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useNavigate, useParams} from "react-router-dom";
+import {getUserId, getUserRole} from "../../utils/authUtils";
 import supportApi from "../../api/supportApi";
-import type { SupportMessage, SupportTicket, SupportTicketStatus } from "../../types/support";
+import type {SupportMessage, SupportTicket, SupportTicketStatus} from "../../types/support";
 import TicketAssignModal from "../../components/chat/TicketAssignModal";
 import CloseTicketModal from "../../components/chat/CloseTicketModal";
 import "./SupportChatPage.css";

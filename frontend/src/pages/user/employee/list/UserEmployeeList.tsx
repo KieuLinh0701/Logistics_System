@@ -149,6 +149,11 @@ const UserEmployeeList: React.FC = () => {
         navigate(`/employees/${id}/work-history`);
     }
 
+    const handleViewLogsOfEmployee = async (id: number) => {
+        if (!id) return;
+        navigate(`/employees/${id}/logs`);
+    }
+
     const fetchRoles = async () => {
         try {
 
@@ -278,6 +283,7 @@ const UserEmployeeList: React.FC = () => {
                     loading={loading}
                     limit={limit}
                     onViewRoles={handleViewRolesOfEmployee}
+                    onViewLogs={handleViewLogsOfEmployee}
                     onPageChange={(page, size) => {
                         setPage(page);
                         if (size) setLimit(size);

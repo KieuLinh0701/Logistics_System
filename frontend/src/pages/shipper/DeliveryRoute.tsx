@@ -1,37 +1,37 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
-  Card,
-  Row,
-  Col,
-  Typography,
-  Button,
-  Space,
-  List,
-  Tag,
-  Progress,
-  Statistic,
-  Modal,
-  message,
-  Spin,
-  Alert,
-  Divider,
+    Alert,
+    Button,
+    Card,
+    Col,
+    Divider,
+    List,
+    message,
+    Modal,
+    Progress,
+    Row,
+    Space,
+    Spin,
+    Statistic,
+    Tag,
+    Typography,
 } from "antd";
 import {
-  EnvironmentOutlined,
-  PhoneOutlined,
-  DollarOutlined,
-  CompassOutlined,
-  CheckCircleOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  NodeIndexOutlined,
-  EyeOutlined,
+    CheckCircleOutlined,
+    CompassOutlined,
+    DollarOutlined,
+    EnvironmentOutlined,
+    EyeOutlined,
+    NodeIndexOutlined,
+    PauseCircleOutlined,
+    PhoneOutlined,
+    PlayCircleOutlined,
 } from "@ant-design/icons";
-import { GoogleMap, LoadScript, MarkerF, PolylineF } from "@react-google-maps/api";
+import {GoogleMap, LoadScript, MarkerF, PolylineF} from "@react-google-maps/api";
 import polyline from "@mapbox/polyline";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import orderApi from "../../api/orderApi";
-import { SHIPPER_ROUTE_REFRESH_EVENT } from "./deliveryRouteEvents";
+import {SHIPPER_ROUTE_REFRESH_EVENT} from "./deliveryRouteEvents";
 
 const { Title, Text } = Typography;
 
