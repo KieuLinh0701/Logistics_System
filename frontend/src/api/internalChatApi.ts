@@ -28,6 +28,8 @@ export interface InternalChatMessage {
   senderRole: string;
   senderAvatar: string | null;
   message: string;
+  messageType?: string;
+  imageUrl?: string | null;
   isMine: boolean;
   isRead: boolean;
   createdAt: string;
@@ -60,6 +62,38 @@ const internalChatApi = {
 
   markAsRead(roomId: number) {
     return axiosClient.post<ApiResponse<null>>(`/internal-chat/rooms/${roomId}/read`);
+  },
+
+  uploadImage(roomId: number, file: File) {
+    console.log("[internalChatApi.uploadImage] Request:", {
+      roomId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      formDataKey: "file",
+    });
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return axiosClient
+      .post<ApiResponse<InternalChatMessage>>(`/internal-chat/rooms/${roomId}/messages/image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((res) => {
+        console.log("[internalChatApi.uploadImage] Success:", res);
+        return res;
+      })
+      .catch((error) => {
+        console.error("[internalChatApi.uploadImage] Error:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        throw error;
+      });
   },
 };
 

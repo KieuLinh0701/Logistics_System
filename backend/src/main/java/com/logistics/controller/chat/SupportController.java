@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
@@ -183,5 +185,20 @@ public class SupportController {
 
         supportMessageService.markMessagesAsRead(ticketId, accountId);
         return ResponseEntity.ok(ApiResponse.success("Đã đánh dấu tin nhắn là đã đọc", null));
+    }
+
+    @PostMapping("/tickets/{id}/messages/image")
+    @Audit(
+            entity = EntityType.SUPPORT_MESSAGE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.SUPPORT_MESSAGE_CREATE,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<SupportMessageDto>> uploadImage(
+            @PathVariable Integer id,
+            @RequestParam("file") MultipartFile file) {
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        SupportMessageDto dto = supportMessageService.sendImageMessage(id, accountId, file);
+        return ResponseEntity.ok(ApiResponse.success("Gửi ảnh thành công", dto));
     }
 }

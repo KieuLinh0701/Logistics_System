@@ -8,8 +8,9 @@ import {
   Typography,
   message,
   Select,
+  Image,
 } from "antd";
-import { UserOutlined, SendOutlined, SearchOutlined } from "@ant-design/icons";
+import { UserOutlined, SendOutlined, SearchOutlined, PictureOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { getUserRole } from "../../utils/authUtils";
 import internalChatApi from "../../api/internalChatApi";
 import type { InternalChatMessage, InternalChatRoom } from "../../api/internalChatApi";
+import ChatMessageInput from "../../components/chat/ChatMessageInput";
 import "./InternalChat.css";
 
 dayjs.extend(relativeTime);
@@ -53,6 +55,7 @@ const InternalEmployeeChatPage: React.FC = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [rooms, setRooms] = useState<InternalChatRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<InternalChatRoom | null>(null);
   const [messages, setMessages] = useState<InternalChatMessage[]>([]);
@@ -171,6 +174,25 @@ const InternalEmployeeChatPage: React.FC = () => {
   const selectRoom = (room: InternalChatRoom) => {
     setSelectedRoom(room);
     setMessages([]);
+  };
+
+  const handleUploadImage = async (file: File) => {
+    if (!selectedRoom) return;
+
+    setUploadingImage(true);
+    try {
+      const res = await internalChatApi.uploadImage(selectedRoom.id, file);
+      if (res.success && res.data) {
+        setMessages((prev) => [...prev, res.data!]);
+        void fetchRooms();
+      } else {
+        message.error(res.message || "Gửi ảnh thất bại");
+      }
+    } catch {
+      message.error("Gửi ảnh thất bại");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const filteredRooms = useMemo(() => {
@@ -364,9 +386,18 @@ const InternalEmployeeChatPage: React.FC = () => {
                               </Text>
                             </div>
                           )}
-                          <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-                            {msg.message}
-                          </div>
+                          {msg.messageType === "IMAGE" && msg.imageUrl ? (
+                            <Image
+                              src={msg.imageUrl}
+                              alt="Hình ảnh"
+                              style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8, cursor: "pointer" }}
+                              preview={{ mask: <PictureOutlined style={{ fontSize: 24 }} /> }}
+                            />
+                          ) : (
+                            <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                              {msg.message}
+                            </div>
+                          )}
                           <div className="chat-bubble-time">
                             <Text style={{ fontSize: 11, color: isMine ? "rgba(255,255,255,0.85)" : undefined }}>
                               {dayjs(msg.createdAt).format("HH:mm")}
@@ -394,23 +425,12 @@ const InternalEmployeeChatPage: React.FC = () => {
 
             {/* Input */}
             <div className="manager-internal-chat-input">
-              <TextArea
-                rows={2}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+              <ChatMessageInput
+                onSend={handleSend}
+                onUploadImage={handleUploadImage}
+                sending={sending}
                 placeholder="Nhập tin nhắn..."
-                disabled={sending}
-                className="manager-internal-chat-textarea"
               />
-              <button
-                type="button"
-                className="manager-internal-chat-send-btn"
-                onClick={() => void handleSend()}
-                disabled={sending || !inputValue.trim()}
-              >
-                <SendOutlined />
-              </button>
             </div>
           </>
         )}

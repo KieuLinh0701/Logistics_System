@@ -16,6 +16,9 @@ public enum InternalChatErrorCode implements BaseErrorCode {
     INTERNAL_CHAT_INVALID_ROLE(HttpStatus.FORBIDDEN, "Bạn không có quyền thực hiện thao tác này"),
     INTERNAL_CHAT_INVALID_PRINCIPAL(HttpStatus.BAD_REQUEST, "Thông tin xác thực không hợp lệ"),
     INTERNAL_CHAT_INVALID_SENDER(HttpStatus.BAD_REQUEST, "Người gửi không hợp lệ"),
+    INTERNAL_CHAT_IMAGE_INVALID_TYPE(HttpStatus.BAD_REQUEST, "Chỉ chấp nhận file ảnh định dạng JPEG, PNG hoặc WebP"),
+    INTERNAL_CHAT_IMAGE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "Kích thước ảnh vượt quá giới hạn 5MB"),
+    INTERNAL_CHAT_IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Upload ảnh thất bại"),
     ;
 
     private final HttpStatus httpStatus;

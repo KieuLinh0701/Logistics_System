@@ -2,11 +2,16 @@ package com.logistics.service.chat;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.logistics.dto.chat.InternalChatMessageDto;
 import com.logistics.dto.chat.InternalChatRoomDto;
 import com.logistics.entity.Employee;
@@ -29,15 +34,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class InternalChatService {
 
-    private final InternalChatRoomRepository roomRepository;
-    private final InternalChatMessageRepository messageRepository;
-    private final EmployeeRepository employeeRepository;
-    private final UserRepository userRepository;
-
     private static final String ROLE_SHIPPER = "Shipper";
     private static final String ROLE_DRIVER = "Driver";
     private static final String ROLE_MANAGER = "Manager";
     private static final String ROLE_ADMIN = "Admin";
+
+    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    private static final List<String> ALLOWED_IMAGE_TYPES = List.of("image/jpeg", "image/png", "image/webp");
+
+    private final InternalChatRoomRepository roomRepository;
+    private final InternalChatMessageRepository messageRepository;
+    private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final Cloudinary cloudinary;
 
     @Transactional
     public InternalChatRoomDto getOrCreateMyRoom() {
@@ -233,13 +243,81 @@ public class InternalChatService {
         message.setSenderName(senderName);
         message.setSenderRole(roleName);
         message.setMessage(request.getMessage());
+        message.setMessageType("TEXT");
         message.setIsRead(false);
 
         message = messageRepository.save(message);
 
         roomRepository.updateLastMessage(roomId, request.getMessage(), LocalDateTime.now(), accountId);
 
-        return toMessageDto(message, accountId);
+        InternalChatMessageDto dto = toMessageDto(message, accountId);
+
+        messagingTemplate.convertAndSend("/topic/internal-chat/" + roomId, dto);
+
+        return dto;
+    }
+
+    @Transactional
+    @SuppressWarnings("unchecked")
+    public InternalChatMessageDto sendImageMessage(Integer roomId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new AppException(InternalChatErrorCode.INTERNAL_CHAT_IMAGE_INVALID_TYPE);
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+            throw new AppException(InternalChatErrorCode.INTERNAL_CHAT_IMAGE_INVALID_TYPE);
+        }
+
+        if (file.getSize() > MAX_IMAGE_SIZE) {
+            throw new AppException(InternalChatErrorCode.INTERNAL_CHAT_IMAGE_SIZE_EXCEEDED);
+        }
+
+        Integer accountId = SecurityUtils.getAuthenticatedAccountId();
+        String roleName = getCurrentRoleName();
+
+        InternalChatRoom room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new AppException(InternalChatErrorCode.INTERNAL_CHAT_ROOM_NOT_FOUND));
+
+        if (!canAccessRoom(room, accountId, roleName)) {
+            throw new AppException(InternalChatErrorCode.INTERNAL_CHAT_INVALID_ROLE);
+        }
+
+        // Upload to Cloudinary
+        String imageUrl;
+        try {
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "internal-chat",
+                            "resource_type", "image"));
+            imageUrl = uploadResult.get("secure_url").toString();
+        } catch (Exception e) {
+            throw new AppException(InternalChatErrorCode.INTERNAL_CHAT_IMAGE_UPLOAD_FAILED);
+        }
+
+        User user = userRepository.findByAccountId(accountId)
+                .orElseThrow(() -> new AppException(InternalChatErrorCode.INTERNAL_CHAT_USER_NOT_FOUND));
+
+        InternalChatMessage message = new InternalChatMessage();
+        message.setRoomId(roomId);
+        message.setSenderAccountId(accountId);
+        message.setSenderName(user.getFullName());
+        message.setSenderRole(roleName);
+        message.setMessage("[Hình ảnh]");
+        message.setMessageType("IMAGE");
+        message.setImageUrl(imageUrl);
+        message.setIsRead(false);
+
+        message = messageRepository.save(message);
+
+        roomRepository.updateLastMessage(roomId, "[Hình ảnh]", LocalDateTime.now(), accountId);
+
+        InternalChatMessageDto dto = toMessageDto(message, accountId);
+
+        messagingTemplate.convertAndSend("/topic/internal-chat/" + roomId, dto);
+
+        return dto;
     }
 
     @Transactional
@@ -335,6 +413,8 @@ public class InternalChatService {
                 .senderRole(message.getSenderRole())
                 .senderAvatar(senderAvatar)
                 .message(message.getMessage())
+                .messageType(message.getMessageType())
+                .imageUrl(message.getImageUrl())
                 .isMine(message.getSenderAccountId().equals(currentAccountId))
                 .isRead(message.getIsRead())
                 .createdAt(message.getCreatedAt())

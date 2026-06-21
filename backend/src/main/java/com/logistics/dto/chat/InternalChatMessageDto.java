@@ -19,6 +19,8 @@ public class InternalChatMessageDto {
     private String senderRole;
     private String senderAvatar;
     private String message;
+    private String messageType;
+    private String imageUrl;
     private Boolean isMine;
     private Boolean isRead;
     private LocalDateTime createdAt;

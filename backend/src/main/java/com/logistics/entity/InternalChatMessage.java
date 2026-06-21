@@ -54,6 +54,12 @@ public class InternalChatMessage {
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;
 
+    @Column(name = "message_type", nullable = false, length = 20)
+    private String messageType = "TEXT";
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -4,6 +4,7 @@ import {
   FileTextOutlined,
   RobotOutlined,
   SendOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
 import { chatStore } from "../../hooks/chatStore";
 import supportApi from "../../api/supportApi";

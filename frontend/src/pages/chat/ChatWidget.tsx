@@ -11,7 +11,7 @@ import ChatBubble from "./ChatBubble.tsx";
 import ChatHome from "./ChatHome.tsx";
 import TicketListView from "./TicketListView.tsx";
 import MessageList from "./MessageList";
-import MessageInput from "./MessageInput";
+import ChatMessageInput from "../../components/chat/ChatMessageInput";
 
 const { Text } = Typography;
 
@@ -35,6 +35,7 @@ const ChatWidget: React.FC = () => {
   const [state, setState] = useState(chatStore.getState());
   const [isMobile, setIsMobile] = useState(false);
   const [sending, setSending] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!canUseWidget) {
@@ -187,6 +188,29 @@ const ChatWidget: React.FC = () => {
     }
   };
 
+  const handleUploadImage = async (file: File) => {
+    if (!state.ticketId || !accountId) {
+      message.error("Vui lòng chọn một yêu cầu hỗ trợ trước");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const res = await supportApi.uploadImage(state.ticketId, file);
+      if (!res.success) {
+        message.error(res.message || "Gửi ảnh thất bại");
+        return;
+      }
+      if (res.data) {
+        chatStore.appendMessage(res.data as SupportMessage);
+      }
+    } catch {
+      message.error("Gửi ảnh thất bại");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const isOpen = state.chatState === "OPEN";
 
   const modalMessages = useMemo(() => state.messages, [state.messages]);
@@ -276,7 +300,13 @@ const ChatWidget: React.FC = () => {
             </Text>
           </div>
         ) : (
-          <MessageInput onSend={sendMessage} sending={sending} />
+          <ChatMessageInput
+            onSend={sendMessage}
+            onUploadImage={handleUploadImage}
+            sending={sending || uploadingImage}
+            disabled={!canSend}
+            placeholder="Nhập tin nhắn..."
+          />
         )}
       </div>
     );

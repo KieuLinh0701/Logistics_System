@@ -1,6 +1,5 @@
-import { Avatar, Spin, Typography, message } from "antd";
-import { UserOutlined, SendOutlined } from "@ant-design/icons";
-import { Input } from "antd";
+import { Avatar, Spin, Typography, message, Image } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,12 +7,12 @@ import { useNavigate } from "react-router-dom";
 import { getUserRole } from "../../utils/authUtils";
 import internalChatApi from "../../api/internalChatApi";
 import type { InternalChatMessage, InternalChatRoom } from "../../api/internalChatApi";
+import ChatMessageInput from "../../components/chat/ChatMessageInput";
 import "./InternalChat.css";
 
 dayjs.extend(relativeTime);
 
 const { Text, Title } = Typography;
-const { TextArea } = Input;
 
 const UTE_BRAND_COLOR = "#1E4DB7";
 
@@ -38,9 +37,9 @@ const ContactManagerPage: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [room, setRoom] = useState<InternalChatRoom | null>(null);
   const [messages, setMessages] = useState<InternalChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState("");
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -108,23 +107,21 @@ const ContactManagerPage: React.FC = () => {
     }
   }, [messages]);
 
-  const handleSend = async () => {
-    const text = inputValue.trim();
-    if (!text || !room) {
+  const handleSend = async (text: string) => {
+    if (!text.trim() || !room) {
       return;
     }
 
     setSending(true);
     try {
-      const res = await internalChatApi.sendMessage(room.id, { message: text });
+      const res = await internalChatApi.sendMessage(room.id, { message: text.trim() });
       if (res.success && res.data) {
         setMessages((prev) => [...prev, res.data!]);
         setRoom((prev) => prev ? {
           ...prev,
-          lastMessage: text,
+          lastMessage: text.trim(),
           lastMessageAt: res.data!.createdAt,
         } : prev);
-        setInputValue("");
       } else {
         message.error(res.message || "Gửi tin nhắn thất bại");
       }
@@ -135,10 +132,28 @@ const ContactManagerPage: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void handleSend();
+  const handleUploadImage = async (file: File) => {
+    if (!room) return;
+
+    setUploadingImage(true);
+    try {
+      const res = await internalChatApi.uploadImage(room.id, file);
+      if (res.success && res.data) {
+        setMessages((prev) => [...prev, res.data!]);
+        setRoom((prev) => prev ? {
+          ...prev,
+          lastMessage: "[Hình ảnh]",
+          lastMessageAt: res.data!.createdAt,
+        } : prev);
+      } else {
+        console.error("[ContactManagerPage] uploadImage failed:", res);
+        message.error(res.message || "Gửi ảnh thất bại");
+      }
+    } catch (err) {
+      console.error("[ContactManagerPage] uploadImage error:", err);
+      message.error("Gửi ảnh thất bại");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -236,9 +251,18 @@ const ContactManagerPage: React.FC = () => {
                         </Text>
                       </div>
                     )}
-                    <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-                      {msg.message}
-                    </div>
+                    {msg.messageType === "IMAGE" && msg.imageUrl ? (
+                      <Image
+                        src={msg.imageUrl}
+                        alt="Hình ảnh"
+                        style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8, cursor: "pointer" }}
+                        preview={{ mask: <span style={{ fontSize: 12 }}>Xem</span> }}
+                      />
+                    ) : (
+                      <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                        {msg.message}
+                      </div>
+                    )}
                     <div className="chat-bubble-time">
                       <Text style={{ fontSize: 11, color: isMine ? "rgba(255,255,255,0.85)" : undefined }}>
                         {dayjs(msg.createdAt).format("HH:mm")}
@@ -265,23 +289,12 @@ const ContactManagerPage: React.FC = () => {
 
         {/* Input */}
         <div className="internal-chat-input">
-          <TextArea
-            rows={2}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
+          <ChatMessageInput
+            onSend={handleSend}
+            onUploadImage={handleUploadImage}
+            sending={sending}
             placeholder="Nhập tin nhắn cho quản lý..."
-            disabled={sending}
-            className="internal-chat-textarea"
           />
-          <button
-            type="button"
-            className="internal-chat-send-btn"
-            onClick={() => void handleSend()}
-            disabled={sending || !inputValue.trim()}
-          >
-            <SendOutlined />
-          </button>
         </div>
       </div>
     </div>

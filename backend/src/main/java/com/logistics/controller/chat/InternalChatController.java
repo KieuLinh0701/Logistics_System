@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.logistics.audit.Audit;
 import com.logistics.constants.AuditLogDescriptionConstant;
@@ -78,5 +80,19 @@ public class InternalChatController {
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Integer roomId) {
         internalChatService.markRoomAsRead(roomId);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PostMapping("/rooms/{roomId}/messages/image")
+    @Audit(
+            entity = EntityType.INTERNAL_CHAT_MESSAGE,
+            action = AuditLogAction.CREATE,
+            description = AuditLogDescriptionConstant.INTERNAL_CHAT_MESSAGE_CREATE,
+            params = {"roomId"}
+    )
+    public ResponseEntity<ApiResponse<InternalChatMessageDto>> uploadImage(
+            @PathVariable Integer roomId,
+            @RequestParam("file") MultipartFile file) {
+        InternalChatMessageDto message = internalChatService.sendImageMessage(roomId, file);
+        return ResponseEntity.ok(ApiResponse.success(message));
     }
 }

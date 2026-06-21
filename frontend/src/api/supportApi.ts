@@ -38,6 +38,16 @@ const supportApi = {
     return axiosClient.post<ApiResponse<SupportMessage>>(`/support/tickets/${id}/messages`, payload);
   },
 
+  async uploadImage(ticketId: number, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return axiosClient.post<ApiResponse<SupportMessage>>(`/support/tickets/${ticketId}/messages/image`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
   async markMessagesRead(ticketId: number) {
     return axiosClient.post<ApiResponse<null>>(`/support/messages/mark-read`, { ticketId });
   },
