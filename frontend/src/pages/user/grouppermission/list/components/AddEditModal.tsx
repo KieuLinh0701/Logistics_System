@@ -61,7 +61,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         const newIds = checked
             ? Array.from(new Set([...selectedIds, group.id]))
             : selectedIds.filter(id => id !== group.id);
-        onRoleChange({...role, permissionGroupIds: newIds});
+        const formValues = form.getFieldsValue();
+        onRoleChange({...role, ...formValues, permissionGroupIds: newIds});
     };
 
     const toggleChild = (child: PermissionGroup, parent: PermissionGroup, checked: boolean) => {
@@ -79,7 +80,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                 newIds = newIds.filter(id => id !== parent.id);
             }
         }
-        onRoleChange({...role, permissionGroupIds: newIds});
+        const formValues = form.getFieldsValue();
+        onRoleChange({...role, ...formValues, permissionGroupIds: newIds});
     };
 
     const toggleModule = (mod: PermissionModule, checked: boolean) => {
@@ -87,7 +89,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         const newIds = checked
             ? Array.from(new Set([...selectedIds, ...allIds]))
             : selectedIds.filter(id => !allIds.includes(id));
-        onRoleChange({...role, permissionGroupIds: newIds});
+        const formValues = form.getFieldsValue();
+        onRoleChange({...role, ...formValues, permissionGroupIds: newIds});
     };
 
     const renderGroup = (group: PermissionGroup, parent?: PermissionGroup, depth = 0) => (
@@ -152,12 +155,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                 form.resetFields();
             }, 0);
         }
-    }, [open, mode, role, form]);
-
-    useEffect(() => {
-        console.log('open:', open, 'mode:', mode, 'role:', role);
-        console.log('form instance in modal:', form);
-    }, [open]);
+    }, [open]); 
 
     return (
         <Modal
