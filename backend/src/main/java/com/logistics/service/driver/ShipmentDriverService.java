@@ -13,6 +13,7 @@ import com.logistics.repository.*;
 import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
 import com.logistics.service.common.NotificationService;
+import com.logistics.service.common.OrderDestinationService;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,9 @@ public class ShipmentDriverService {
 
     @Autowired
     private OfficeRepository officeRepository;
+
+    @Autowired
+    private OrderDestinationService orderDestinationService;
 
     private Employee getCurrentEmployee() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
@@ -155,57 +159,12 @@ public class ShipmentDriverService {
             List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                if (isOrderDestinationMatch(order, shipment.getToOffice())) {
+                if (orderDestinationService.isDestinationOffice(order, shipment.getToOffice())) {
                     order.setPendingDestinationConfirm(true);
                     orderRepository.save(order);
                 }
             }
         }
-    }
-
-    // Kiểm tra xem địa chỉ đích của Order có khớp với bưu cục đích của shipment không.
-    // Ưu tiên: toOffice.id > (cityCode + wardCode) > cityCode
-     
-    private boolean isOrderDestinationMatch(Order order, Office destinationOffice) {
-        // 1. Ưu tiên chính: So sánh toOffice.id
-        if (order.getToOffice() != null && order.getToOffice().getId() != null) {
-            if (order.getToOffice().getId().equals(destinationOffice.getId())) {
-                return true;
-            }
-        }
-
-        // 2. Fallback theo địa chỉ: Lấy cityCode/wardCode từ Order
-        Integer orderCityCode = null;
-        Integer orderWardCode = null;
-
-        if (order.getRecipientAddress() != null) {
-            orderCityCode = order.getRecipientAddress().getCityCode();
-            orderWardCode = order.getRecipientAddress().getWardCode();
-        }
-
-        if (orderCityCode == null) {
-            orderCityCode = order.getRecipientCityCode();
-        }
-        if (orderWardCode == null) {
-            orderWardCode = order.getRecipientWardCode();
-        }
-
-        // Lấy cityCode/wardCode từ destinationOffice
-        Integer officeCityCode = destinationOffice.getCityCode();
-        Integer officeWardCode = destinationOffice.getWardCode();
-
-        // 3. Nếu có đủ wardCode ở cả hai bên: so sánh cả cityCode + wardCode
-        if (orderWardCode != null && officeWardCode != null
-                && orderCityCode != null && officeCityCode != null) {
-            return orderCityCode.equals(officeCityCode) && orderWardCode.equals(officeWardCode);
-        }
-
-        // 4. Fallback cuối: chỉ so sánh cityCode
-        if (orderCityCode != null && officeCityCode != null) {
-            return orderCityCode.equals(officeCityCode);
-        }
-
-        return false;
     }
 
     public Map<String, Object> getShipments(int page, int limit) {
