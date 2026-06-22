@@ -48,10 +48,9 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     };
 
     const toggleGroup = (group: PermissionGroup, checked: boolean) => {
-        const ids = collectIds(group);
         const newIds = checked
-            ? Array.from(new Set([...selectedIds, ...ids]))
-            : selectedIds.filter(id => !ids.includes(id));
+            ? Array.from(new Set([...selectedIds, group.id]))
+            : selectedIds.filter(id => id !== group.id);
         onRoleChange({ ...role, permissionGroupIds: newIds });
     };
 
