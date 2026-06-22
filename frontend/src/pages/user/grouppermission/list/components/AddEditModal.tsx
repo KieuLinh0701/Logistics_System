@@ -160,60 +160,66 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     }, [open]);
 
     return (
-        <Spin spinning={loadingPermissionModule} tip="Đang tải phân quyền...">
-            <Modal
-                title={<span
-                    className="modal-title">{mode === 'edit' ? 'Chỉnh sửa nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
-                open={open}
-                onOk={onOk}
-                width={1200}
-                onCancel={onCancel}
-                okText={mode === 'edit' ? 'Cập nhật' : 'Thêm'}
-                okButtonProps={{className: 'modal-ok-button', loading}}
-                cancelButtonProps={{className: 'modal-cancel-button'}}
-                cancelText="Hủy"
-                className="modal-hide-scrollbar"
-                maskClosable={false}
-                keyboard={false}
-            >
-                <Form form={form} layout="vertical">
-                    <p className="permission-section-label">| Thông tin</p>
-                    <hr className="separator"/>
-                    <div className="permission-info-grid">
-                        <Form.Item
-                            label={<span className="modal-lable">Tên nhóm quyền</span>}
-                            name="name"
-                            rules={[{required: true, message: 'Nhập tên nhóm quyền!'}]}
-                        >
-                            <Input
-                                className="modal-custom-input"
-                                placeholder="Nhập tên nhóm quyền"
-                            />
-                        </Form.Item>
-                        <Form.Item
-                            label={<span className="modal-lable">Mô tả nhóm quyền</span>}
-                            name="description"
-                        >
-                            <Input
-                                className="modal-custom-input"
-                                placeholder="Nhập mô tả chi tiết của nhóm quyền"
-                            />
-                        </Form.Item>
+        <Modal
+            title={<span
+                className="modal-title">{mode === 'edit' ? 'Chỉnh sửa nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
+            open={open}
+            onOk={onOk}
+            width={1200}
+            onCancel={onCancel}
+            okText={mode === 'edit' ? 'Cập nhật' : 'Thêm'}
+            okButtonProps={{className: 'modal-ok-button', loading}}
+            cancelButtonProps={{className: 'modal-cancel-button'}}
+            cancelText="Hủy"
+            className="modal-hide-scrollbar"
+            maskClosable={false}
+            keyboard={false}
+        >
+            <Form form={form} layout="vertical">
+                {loadingPermissionModule ? (
+                    <div style={{textAlign: 'center', padding: '50px 0'}}>
+                        <Spin tip="Đang tải danh mục phân quyền..." size="large"/>
                     </div>
+                ) : (
+                    <>
+                        <p className="permission-section-label">| Thông tin</p>
+                        <hr className="separator"/>
+                        <div className="permission-info-grid">
+                            <Form.Item
+                                label={<span className="modal-lable">Tên nhóm quyền</span>}
+                                name="name"
+                                rules={[{required: true, message: 'Nhập tên nhóm quyền!'}]}
+                            >
+                                <Input
+                                    className="modal-custom-input"
+                                    placeholder="Nhập tên nhóm quyền"
+                                />
+                            </Form.Item>
+                            <Form.Item
+                                label={<span className="modal-lable">Mô tả nhóm quyền</span>}
+                                name="description"
+                            >
+                                <Input
+                                    className="modal-custom-input"
+                                    placeholder="Nhập mô tả chi tiết của nhóm quyền"
+                                />
+                            </Form.Item>
+                        </div>
 
-                    {permissionModules.length > 0 && (
-                        <>
-                            <p className="permission-section-label" style={{marginTop: 8}}>| Phân quyền</p>
-                            <hr className="separator"/>
-                            <div className="permission-modules-grid">
-                                <div>{col1.map(renderModule)}</div>
-                                <div>{col2.map(renderModule)}</div>
-                            </div>
-                        </>
-                    )}
-                </Form>
-            </Modal>
-        </Spin>
+                        {permissionModules.length > 0 && (
+                            <>
+                                <p className="permission-section-label" style={{marginTop: 8}}>| Phân quyền</p>
+                                <hr className="separator"/>
+                                <div className="permission-modules-grid">
+                                    <div>{col1.map(renderModule)}</div>
+                                    <div>{col2.map(renderModule)}</div>
+                                </div>
+                            </>
+                        )}
+                    </>
+                )}
+            </Form>
+        </Modal>
     );
 };
 
