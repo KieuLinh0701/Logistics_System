@@ -228,7 +228,7 @@ const UserOrderList = () => {
             if (!orderId) return;
             const result = await orderApi.deleteUserOrder(orderId);
 
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success("Xóa đơn hàng thành công");
                 fetchOrders();
                 fetchStatusCounts();
