@@ -111,7 +111,7 @@ const UserProducts: React.FC = () => {
                 setIsModalOpen(false);
                 setNewProduct({});
                 form.resetFields();
-                fetchProducts(1);
+                setPage(1);
             } else {
                 message.error(result.message || "Lỗi khi thêm sản phẩm");
             }
@@ -144,7 +144,7 @@ const UserProducts: React.FC = () => {
                 setIsModalOpen(false);
                 setNewProduct({});
                 form.resetFields();
-                fetchProducts(1);
+                setPage(1);
             } else {
                 message.error(result.message || "Lỗi khi sửa sản phẩm");
             }
@@ -224,7 +224,7 @@ const UserProducts: React.FC = () => {
                     setBulkModalOpen(true);
                     setPage(1);
                     handleClearFilters();
-                    fetchProducts(1);
+                    setPage(1);
                 } else {
                     message.error(result?.message || "Thêm các sản phẩm thất bại");
                 }
@@ -371,7 +371,7 @@ const UserProducts: React.FC = () => {
             const result = await productApi.deleteUserProduct(productId);
             if (result.success) {
                 message.success("Xóa sản phẩm thành công");
-                fetchProducts(1);
+                setPage(1);
             } else {
                 message.error(result.message || "Lỗi khi xóa sản phẩm");
             }
