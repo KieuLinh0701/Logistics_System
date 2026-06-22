@@ -200,6 +200,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
           <InputNumber
             className="modal-custom-input-number"
             min={0}
+            step={1000}
             placeholder="Nhập giá sản phẩm"
             onChange={(val) => onProductChange({ ...product, price: val ?? 0 })}
           />
