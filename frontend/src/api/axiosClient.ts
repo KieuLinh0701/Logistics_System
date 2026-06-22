@@ -34,23 +34,28 @@ axiosClient.interceptors.response.use(
     }
 );
 
-type AxiosResponseData<T> = Promise<T>;
-
+const TIMEOUTS = {
+    get: 15000,
+    post: 60000,
+    put: 30000,
+    patch: 30000,
+    delete: 15000,
+};
 const typedAxios = {
     get: <T = any>(url: string, config?: any): Promise<T> =>
-        axiosClient.get(url, config) as unknown as Promise<T>,
+        axiosClient.get(url, { timeout: TIMEOUTS.get, ...config }) as unknown as Promise<T>,
 
     post: <T>(url: string, data?: any, config?: any): Promise<T> =>
-        axiosClient.post(url, data, config) as unknown as Promise<T>,
+        axiosClient.post(url, data, { timeout: TIMEOUTS.post, ...config }) as unknown as Promise<T>,
 
     put: <T>(url: string, data?: any, config?: any): Promise<T> =>
-        axiosClient.put(url, data, config) as unknown as Promise<T>,
+        axiosClient.put(url, data, { timeout: TIMEOUTS.put, ...config }) as unknown as Promise<T>,
 
     patch: <T>(url: string, data?: any, config?: any): Promise<T> =>
-        axiosClient.patch(url, data, config) as unknown as Promise<T>,
+        axiosClient.patch(url, data, { timeout: TIMEOUTS.patch, ...config }) as unknown as Promise<T>,
 
     delete: <T>(url: string, config?: any): Promise<T> =>
-        axiosClient.delete(url, config) as unknown as Promise<T>,
+        axiosClient.delete(url, { timeout: TIMEOUTS.delete, ...config }) as unknown as Promise<T>,
 };
 
 export default typedAxios;
