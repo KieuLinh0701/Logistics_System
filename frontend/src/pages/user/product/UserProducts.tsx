@@ -45,6 +45,8 @@ const UserProducts: React.FC = () => {
     const [filterStock, setFilterStock] = useState<string>('ALL');
     const [form] = Form.useForm();
 
+    const [refreshKey, setRefreshKey] = useState(0);
+
     // Thiết lập URL
     const updateURL = () => {
         const params: any = {};
@@ -111,7 +113,7 @@ const UserProducts: React.FC = () => {
                 setIsModalOpen(false);
                 setNewProduct({});
                 form.resetFields();
-                setPage(1);
+                resetOrRefresh();
             } else {
                 message.error(result.message || "Lỗi khi thêm sản phẩm");
             }
@@ -144,7 +146,7 @@ const UserProducts: React.FC = () => {
                 setIsModalOpen(false);
                 setNewProduct({});
                 form.resetFields();
-                setPage(1);
+                resetOrRefresh();
             } else {
                 message.error(result.message || "Lỗi khi sửa sản phẩm");
             }
@@ -224,7 +226,7 @@ const UserProducts: React.FC = () => {
                     setBulkModalOpen(true);
                     setPage(1);
                     handleClearFilters();
-                    setPage(1);
+                    resetOrRefresh();
                 } else {
                     message.error(result?.message || "Thêm các sản phẩm thất bại");
                 }
@@ -371,7 +373,7 @@ const UserProducts: React.FC = () => {
             const result = await productApi.deleteUserProduct(productId);
             if (result.success) {
                 message.success("Xóa sản phẩm thành công");
-                setPage(1);
+                resetOrRefresh();
             } else {
                 message.error(result.message || "Lỗi khi xóa sản phẩm");
             }
@@ -409,7 +411,17 @@ const UserProducts: React.FC = () => {
     useEffect(() => {
         updateURL();
         fetchProducts(page);
-    }, [page, search, filterType, filterStatus, filterSort, dateRange, filterStock]);
+    }, [page, search, filterType, filterStatus, filterSort, dateRange, filterStock, refreshKey]);
+
+    const refresh = () => setRefreshKey(prev => prev + 1);
+
+    const resetOrRefresh = () => {
+        if (page === 1) {
+            setRefreshKey(prev => prev + 1);
+        } else {
+            setPage(1);
+        }
+    };
 
     return (
         <div className="list-page-layout">

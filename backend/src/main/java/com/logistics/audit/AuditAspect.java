@@ -52,11 +52,20 @@ public class AuditAspect {
 
         String payloadRequestBody = extractRequestBody(pjp);
 
-        Object result = pjp.proceed();
+        try {
+            Object result = pjp.proceed();
 
-        saveLog(userId, currentRole, audit, pjp, payloadRequestBody, result);
+            saveLog(userId, currentRole, audit, pjp, payloadRequestBody, result, AuditLogStatus.SUCCESS, null);
 
-        return result;
+            return result;
+        } catch (Throwable e) {
+            AuditLogStatus status = (e instanceof org.springframework.security.access.AccessDeniedException)
+                    ? AuditLogStatus.FORBIDDEN
+                    : AuditLogStatus.FAILED;
+
+            saveLog(userId, currentRole, audit, pjp, payloadRequestBody, null, status, e.getMessage());
+            throw e;
+        }
     }
 
     @Async
@@ -66,7 +75,9 @@ public class AuditAspect {
             Audit audit,
             ProceedingJoinPoint pjp,
             String payloadRequestBody,
-            Object result) {
+            Object result,
+            AuditLogStatus status,
+            String errorMessage) {
         try {
             User user = userId != null
                     ? userRepository.findById(userId).orElse(null)
@@ -112,7 +123,8 @@ public class AuditAspect {
                     .action(audit.action())
                     .entityId(entityId)
                     .description(description)
-                    .status(AuditLogStatus.SUCCESS)
+                    .status(status)
+                    .errorMessage(errorMessage)
                     .payloadRequestBody(payloadRequestBody)
                     .payloadResult(toJson(result))
                     .build();

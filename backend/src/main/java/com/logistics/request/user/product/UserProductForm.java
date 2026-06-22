@@ -4,28 +4,32 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
-public record UserProductForm (
-        Integer id,
+@Data
+@NoArgsConstructor
+public class UserProductForm {
+        private Integer id;
 
         @NotBlank(message = "Tên sản phẩm không được để trống")
-        String name,
+        private String name;
 
         @NotNull(message = "Trọng lượng không được để trống")
         @DecimalMin(value = "0.0", inclusive = false, message = "Trọng lượng phải lớn hơn 0")
-        BigDecimal weight,
+        private BigDecimal weight;
 
         @NotNull(message = "Giá không được để trống")
         @Min(value = 0, message = "Giá không được âm")
-        Integer price,
+        private Integer price;
 
         @NotBlank(message = "Loại sản phẩm không được để trống")
-        String type,
+        private String type;
 
-        String status,
-        Integer stock,
-        MultipartFile imageFile
-) {}
+        private String status;
+        private Integer stock;
+        private MultipartFile imageFile;
+}

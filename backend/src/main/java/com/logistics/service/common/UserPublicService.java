@@ -49,6 +49,7 @@ public class UserPublicService {
     private final NotificationService notificationService;
     private final RoleService roleService;
 
+
     public void updatePassword(@NonNull Integer accountId, UpdatePasswordRequest request) {
             Account account = accountRepository.findById(accountId)
                     .orElseThrow(() -> new AppException(AccountErrorCode.ACCOUNT_NOT_FOUND));
