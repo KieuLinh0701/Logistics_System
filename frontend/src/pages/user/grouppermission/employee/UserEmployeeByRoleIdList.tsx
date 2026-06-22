@@ -58,7 +58,7 @@ const UserEmployeeByRoleIdList: React.FC = () => {
             const result = await userApi.updateUserIsActive(id, isActive, roleId);
 
             if (result.success) {
-                message.success(result.message || 'Đặt tài khoản mặc định thành công!');
+                message.success('Đặt tài khoản mặc định thành công!');
                 fetchEmployees();
             } else {
                 message.error(result.message || 'Cập nhật mặc định thất bại!');

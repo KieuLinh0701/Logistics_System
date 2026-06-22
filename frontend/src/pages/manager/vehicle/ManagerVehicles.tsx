@@ -88,7 +88,7 @@ const ManagerVehicles: React.FC = () => {
             const result = await vehicleApi.updateManagerVehicle(selectedVehicle.id, param);
 
             if (result.success) {
-                message.success(result.message || "Cập nhật phương tiện thành công!");
+                message.success("Cập nhật phương tiện thành công!");
                 setIsModalOpen(false);
                 fetchVehicles(page);
             } else {

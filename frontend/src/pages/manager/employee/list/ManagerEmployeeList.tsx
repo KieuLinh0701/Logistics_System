@@ -194,7 +194,7 @@ const ManagerEmployeeList = () => {
             const result = await employeeApi.createManagerEmployee(payload);
 
             if (result.success) {
-                message.success(result.message || "Thêm nhân viên thành công!");
+                message.success("Thêm nhân viên thành công!");
                 setIsModalOpen(false);
                 form.resetFields();
                 fetchEmployees(currentPage);

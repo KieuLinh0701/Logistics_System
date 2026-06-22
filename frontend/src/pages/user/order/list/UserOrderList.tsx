@@ -202,7 +202,7 @@ const UserOrderList = () => {
             const result = await orderApi.publicUserOrder(orderId);
 
             if (result.success && result.data) {
-                message.success(result.message || "Đã chuyển đơn hàng sang xử lý thành công");
+                message.success("Đã chuyển đơn hàng sang xử lý thành công");
 
                 fetchOrders();
                 fetchStatusCounts();
@@ -229,7 +229,7 @@ const UserOrderList = () => {
             const result = await orderApi.deleteUserOrder(orderId);
 
             if (result.success && result.data) {
-                message.success(result.message || "Xóa đơn hàng thành công");
+                message.success("Xóa đơn hàng thành công");
                 fetchOrders();
                 fetchStatusCounts();
             } else {
@@ -358,7 +358,7 @@ const UserOrderList = () => {
             const result = await orderApi.setUserOrderReadyForPickup(orderId);
 
             if (result.success) {
-                message.success(result.message || "Chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy' thành công.");
+                message.success("Chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy' thành công.");
                 fetchOrders();
                 fetchStatusCounts();
             } else {

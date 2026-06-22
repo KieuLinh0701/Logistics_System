@@ -148,8 +148,8 @@ const AddEditShipmentModal: React.FC<AddEditShipmentModalProps> = ({
                 err = "Cập nhật chuyến hàng thất bại";
             }
 
-            if (result.success && result.data) {
-                message.success(result.message || mess)
+            if (result.success) {
+                message.success(mess)
                 onSuccess();
                 onCancel();
             } else {

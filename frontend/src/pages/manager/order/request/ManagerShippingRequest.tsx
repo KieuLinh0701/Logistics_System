@@ -158,7 +158,7 @@ const ManagerShippingRequests: React.FC = () => {
             const result = await shippingRequestApi.cancelUserShippingRequest(requestId);
 
             if (result.success && result.data) {
-                message.success(result.message || "Hủy yêu cầu thành công");
+                message.success("Hủy yêu cầu thành công");
                 fetchRequests(page);
                 if (detailModalVisible && selectedRequest) {
                     setSelectedRequest({

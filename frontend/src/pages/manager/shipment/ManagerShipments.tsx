@@ -161,7 +161,7 @@ const ManagerShipments: React.FC = () => {
             const result = await shipmentApi.cancelManagerShipment(id);
 
             if (result.success) {
-                message.success(result.message || "Hủy chuyến hàng thành công");
+                message.success("Hủy chuyến hàng thành công");
                 fetchShipments(page);
                 if (detailModalVisible && selectedShipment) {
                     setSelectedShipment({
