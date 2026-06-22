@@ -80,9 +80,12 @@
 			<artifactId>hibernate-envers</artifactId>
 		</dependency>
 
+		<!-- Source: https://mvnrepository.com/artifact/com.sendgrid/sendgrid-java -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
+			<groupId>com.sendgrid</groupId>
+			<artifactId>sendgrid-java</artifactId>
+			<version>4.10.3</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>

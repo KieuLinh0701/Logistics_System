@@ -17,6 +17,7 @@ import com.logistics.request.recruitment.UpdateJobApplicationStatusRequest;
 import com.logistics.request.recruitment.UpdateJobPostingRequest;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
+import com.logistics.service.email.EmailService;
 import com.logistics.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -61,7 +62,7 @@ public class RecruitmentService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private com.logistics.utils.EmailService emailService;
+    private EmailService emailService;
 
     public JobPostingDto createJob(CreateJobPostingRequest request) {
         assertCanManageJobPosting();

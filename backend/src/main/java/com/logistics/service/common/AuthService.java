@@ -11,7 +11,7 @@ import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.repository.*;
 import com.logistics.request.common.auth.*;
 import com.logistics.response.AuthResponse;
-import com.logistics.utils.EmailService;
+import com.logistics.service.email.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
 import com.logistics.utils.PasswordUtils;
