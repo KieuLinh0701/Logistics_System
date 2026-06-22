@@ -413,8 +413,6 @@ const UserProducts: React.FC = () => {
         fetchProducts(page);
     }, [page, search, filterType, filterStatus, filterSort, dateRange, filterStock, refreshKey]);
 
-    const refresh = () => setRefreshKey(prev => prev + 1);
-
     const resetOrRefresh = () => {
         if (page === 1) {
             setRefreshKey(prev => prev + 1);
