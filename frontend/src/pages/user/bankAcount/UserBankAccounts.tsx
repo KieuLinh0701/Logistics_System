@@ -98,7 +98,7 @@ const UserBankAccounts: React.FC = () => {
       const result = await bankAccountApi.deleteUserBankAccount(id);
 
       if (result.success) {
-        message.success(result.message || 'Xóa tài khoản thành công!');
+        message.success('Xóa tài khoản thành công!');
         fetchBankAccounts();
       } else {
         message.error(result.message || 'Xóa tài khoản thất bại!');
@@ -113,7 +113,7 @@ const UserBankAccounts: React.FC = () => {
       const result = await bankAccountApi.setDefaultUserBankAccount(id);
 
       if (result.success) {
-        message.success(result.message || 'Đặt tài khoản mặc định thành công!');
+        message.success('Đặt tài khoản mặc định thành công!');
         fetchBankAccounts();
       } else {
         message.error(result.message || 'Cập nhật mặc định thất bại!');

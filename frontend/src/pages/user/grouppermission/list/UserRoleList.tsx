@@ -154,7 +154,7 @@ const UserRoleList: React.FC = () => {
             const result = await roleApi.deleteUserRole(id);
 
             if (result.success) {
-              message.success(result.message || 'Xóa thành công!');
+              message.success('Xóa thành công!');
               fetchRoles();
             } else {
               message.error(result.message || 'Xóa thất bại!');
