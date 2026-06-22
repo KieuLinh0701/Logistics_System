@@ -155,7 +155,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                 form.resetFields();
             }, 0);
         }
-    }, [open]); 
+    }, [open]);
 
     return (
         <Modal
