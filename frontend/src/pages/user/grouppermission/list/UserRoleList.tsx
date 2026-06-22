@@ -21,6 +21,7 @@ const UserRoleList: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingModal, setLoadingModal] = useState(false);
+    const [loadingPermissionModule, setLoadingermissionModule] = useState(false);
     const [search, setSearch] = useState("");
     const [limit, setLimit] = useState(10);
     const [page, setPage] = useState(1);
@@ -166,7 +167,7 @@ const UserRoleList: React.FC = () => {
 
     const fetchPermissionModules = async () => {
         try {
-
+            setLoadingermissionModule(true)
             const result = await permissionModuleApi.listUserActivePermissionModules();
 
             if (result && result.success && result.data) {
@@ -178,6 +179,8 @@ const UserRoleList: React.FC = () => {
         } catch (error: any) {
             setPermissionModules([]);
             message.error(error.message || "Có lỗi khi lấy danh sách danh mục phân quyền");
+        } finally {
+            setLoadingermissionModule(false);
         }
     };
 
@@ -287,6 +290,7 @@ const UserRoleList: React.FC = () => {
                     form={form}
                     permissionModules={permissionModules}
                     loading={loadingModal}
+                    loadingPermissionModule={loadingPermissionModule}
                 />
             </div>
         </div>
