@@ -3,10 +3,9 @@ import axios from "axios";
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8080/api",
-  timeout: 60000,
+  timeout: 15000,
   withCredentials: false,
 });
-
 
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
