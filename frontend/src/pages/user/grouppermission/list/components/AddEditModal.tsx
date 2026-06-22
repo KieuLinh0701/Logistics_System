@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {Checkbox, Form, Input, Modal} from 'antd';
+import {Checkbox, Form, Input, Modal, Spin} from 'antd';
 import type {Role} from "../../../../../types/role.ts";
 import type {PermissionModule} from "../../../../../types/permissionModule.ts";
 import type {PermissionGroup} from "../../../../../types/permissionGroup.ts";
@@ -13,6 +13,7 @@ interface AddEditModalProps {
     onRoleChange: (role: Role) => void;
     form: any;
     permissionModules: PermissionModule[];
+    loadingPermissionModule: boolean;
     loading: boolean;
 }
 
@@ -22,7 +23,16 @@ const collectIds = (group: PermissionGroup): number[] => [
 ];
 
 const AddEditModal: React.FC<AddEditModalProps> = ({
-                                                       open, mode, role, onOk, onCancel, onRoleChange, form, loading, permissionModules,
+                                                       open,
+                                                       mode,
+                                                       role,
+                                                       onOk,
+                                                       onCancel,
+                                                       onRoleChange,
+                                                       form,
+                                                       loading,
+                                                       permissionModules,
+                                                       loadingPermissionModule
                                                    }) => {
     const selectedIds: number[] = role?.permissionGroupIds || [];
 
@@ -51,7 +61,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         const newIds = checked
             ? Array.from(new Set([...selectedIds, group.id]))
             : selectedIds.filter(id => id !== group.id);
-        onRoleChange({ ...role, permissionGroupIds: newIds });
+        onRoleChange({...role, permissionGroupIds: newIds});
     };
 
     const toggleChild = (child: PermissionGroup, parent: PermissionGroup, checked: boolean) => {
@@ -69,7 +79,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                 newIds = newIds.filter(id => id !== parent.id);
             }
         }
-        onRoleChange({ ...role, permissionGroupIds: newIds });
+        onRoleChange({...role, permissionGroupIds: newIds});
     };
 
     const toggleModule = (mod: PermissionModule, checked: boolean) => {
@@ -77,7 +87,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
         const newIds = checked
             ? Array.from(new Set([...selectedIds, ...allIds]))
             : selectedIds.filter(id => !allIds.includes(id));
-        onRoleChange({ ...role, permissionGroupIds: newIds });
+        onRoleChange({...role, permissionGroupIds: newIds});
     };
 
     const renderGroup = (group: PermissionGroup, parent?: PermissionGroup, depth = 0) => (
@@ -90,7 +100,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                         ? toggleChild(group, parent, e.target.checked)
                         : toggleGroup(group, e.target.checked)
                 }
-                style={{ fontSize: 13, color: depth > 0 ? '#555' : '#333', margin: 0 }}
+                style={{fontSize: 13, color: depth > 0 ? '#555' : '#333', margin: 0}}
             >
                 {group.name}
             </Checkbox>
@@ -106,7 +116,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     const renderModule = (mod: PermissionModule) => (
         <div key={mod.id} className="permission-module-card">
             <div className="permission-module-header">
-                <span className="permission-module-dot" />
+                <span className="permission-module-dot"/>
                 <span className="permission-module-title">{mod.name}</span>
                 <Checkbox
                     indeterminate={isModuleIndeterminate(mod)}
@@ -114,7 +124,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                     onChange={(e) => toggleModule(mod, e.target.checked)}
                     className="permission-select-all-checkbox"
                 >
-                    <span style={{ color: '#1C3D90', fontSize: 12, fontWeight: 500 }}>Chọn tất cả</span>
+                    <span style={{color: '#1C3D90', fontSize: 12, fontWeight: 500}}>Chọn tất cả</span>
                 </Checkbox>
             </div>
             <div className="permission-checkbox-grid">
@@ -150,57 +160,60 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
     }, [open]);
 
     return (
-        <Modal
-            title={<span className="modal-title">{mode === 'edit' ? 'Chỉnh sửa nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
-            open={open}
-            onOk={onOk}
-            width={1200}
-            onCancel={onCancel}
-            okText={mode === 'edit' ? 'Cập nhật' : 'Thêm'}
-            okButtonProps={{ className: 'modal-ok-button', loading }}
-            cancelButtonProps={{ className: 'modal-cancel-button' }}
-            cancelText="Hủy"
-            className="modal-hide-scrollbar"
-            maskClosable={false}
-            keyboard={false}
-        >
-            <Form form={form} layout="vertical">
-                <p className="permission-section-label">| Thông tin</p>
-                <hr className="separator" />
-                <div className="permission-info-grid">
-                    <Form.Item
-                        label={<span className="modal-lable">Tên nhóm quyền</span>}
-                        name="name"
-                        rules={[{ required: true, message: 'Nhập tên nhóm quyền!' }]}
-                    >
-                        <Input
-                            className="modal-custom-input"
-                            placeholder="Nhập tên nhóm quyền"
-                        />
-                    </Form.Item>
-                    <Form.Item
-                        label={<span className="modal-lable">Mô tả nhóm quyền</span>}
-                        name="description"
-                    >
-                        <Input
-                            className="modal-custom-input"
-                            placeholder="Nhập mô tả chi tiết của nhóm quyền"
-                        />
-                    </Form.Item>
-                </div>
+        <Spin spinning={loadingPermissionModule} tip="Đang tải phân quyền...">
+            <Modal
+                title={<span
+                    className="modal-title">{mode === 'edit' ? 'Chỉnh sửa nhóm quyền' : 'Thêm nhóm quyền mới'}</span>}
+                open={open}
+                onOk={onOk}
+                width={1200}
+                onCancel={onCancel}
+                okText={mode === 'edit' ? 'Cập nhật' : 'Thêm'}
+                okButtonProps={{className: 'modal-ok-button', loading}}
+                cancelButtonProps={{className: 'modal-cancel-button'}}
+                cancelText="Hủy"
+                className="modal-hide-scrollbar"
+                maskClosable={false}
+                keyboard={false}
+            >
+                <Form form={form} layout="vertical">
+                    <p className="permission-section-label">| Thông tin</p>
+                    <hr className="separator"/>
+                    <div className="permission-info-grid">
+                        <Form.Item
+                            label={<span className="modal-lable">Tên nhóm quyền</span>}
+                            name="name"
+                            rules={[{required: true, message: 'Nhập tên nhóm quyền!'}]}
+                        >
+                            <Input
+                                className="modal-custom-input"
+                                placeholder="Nhập tên nhóm quyền"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            label={<span className="modal-lable">Mô tả nhóm quyền</span>}
+                            name="description"
+                        >
+                            <Input
+                                className="modal-custom-input"
+                                placeholder="Nhập mô tả chi tiết của nhóm quyền"
+                            />
+                        </Form.Item>
+                    </div>
 
-                {permissionModules.length > 0 && (
-                    <>
-                        <p className="permission-section-label" style={{ marginTop: 8 }}>| Phân quyền</p>
-                        <hr className="separator" />
-                        <div className="permission-modules-grid">
-                            <div>{col1.map(renderModule)}</div>
-                            <div>{col2.map(renderModule)}</div>
-                        </div>
-                    </>
-                )}
-            </Form>
-        </Modal>
+                    {permissionModules.length > 0 && (
+                        <>
+                            <p className="permission-section-label" style={{marginTop: 8}}>| Phân quyền</p>
+                            <hr className="separator"/>
+                            <div className="permission-modules-grid">
+                                <div>{col1.map(renderModule)}</div>
+                                <div>{col2.map(renderModule)}</div>
+                            </div>
+                        </>
+                    )}
+                </Form>
+            </Modal>
+        </Spin>
     );
 };
 
