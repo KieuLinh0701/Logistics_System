@@ -138,22 +138,22 @@ public class ProductUserService {
 
     private ProductDto createProduct(int userId, UserProductForm request) {
 
-        checkDuplicateName(userId, request.name());
+        checkDuplicateName(userId, request.getName());
 
         User user = userService.getUser(userId);
 
         Product product = new Product();
         product.setUser(user);
-        product.setName(request.name());
-        product.setWeight(request.weight());
-        product.setPrice(request.price());
-        product.setType(ProductType.valueOf(request.type()));
+        product.setName(request.getName());
+        product.setWeight(request.getWeight());
+        product.setPrice(request.getPrice());
+        product.setType(ProductType.valueOf(request.getType()));
         product.setStatus(
-                request.status() != null ? ProductStatus.valueOf(request.status()) : ProductStatus.ACTIVE);
-        product.setStock(request.stock() != null ? request.stock() : 0);
+                request.getStatus() != null ? ProductStatus.valueOf(request.getStatus()) : ProductStatus.ACTIVE);
+        product.setStock(request.getStock() != null ? request.getStock() : 0);
 
-        if (request.imageFile() != null && !request.imageFile().isEmpty()) {
-            product.setImage(uploadImage(request.imageFile()));
+        if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
+            product.setImage(uploadImage(request.getImageFile()));
         }
 
         product = repository.save(product);
@@ -170,24 +170,24 @@ public class ProductUserService {
     public ProductDto update(int userId, UserProductForm request) {
             Integer shopId = userService.getShopId(userId);
 
-            Product product = getProduct(request.id());
+            Product product = getProduct(request.getId());
 
             checkUserPermission(shopId, product);
 
-            if (request.name() != null && !request.name().equals(product.getName())) {
-                checkDuplicateName(shopId, request.name());
-                product.setName(request.name());
+            if (request.getName() != null && !request.getName().equals(product.getName())) {
+                checkDuplicateName(shopId, request.getName());
+                product.setName(request.getName());
             }
 
-            product.setWeight(request.weight() != null ? request.weight() : product.getWeight());
-            product.setPrice(request.price() != null ? request.price() : product.getPrice());
-            product.setType(request.type() != null ? ProductType.valueOf(request.type()) : product.getType());
+            product.setWeight(request.getWeight() != null ? request.getWeight() : product.getWeight());
+            product.setPrice(request.getPrice() != null ? request.getPrice() : product.getPrice());
+            product.setType(request.getType() != null ? ProductType.valueOf(request.getType()) : product.getType());
             product.setStatus(
-                    request.status() != null ? ProductStatus.valueOf(request.status()) : product.getStatus());
-            product.setStock(request.stock() != null ? request.stock() : product.getStock());
+                    request.getStatus() != null ? ProductStatus.valueOf(request.getStatus()) : product.getStatus());
+            product.setStock(request.getStock() != null ? request.getStock() : product.getStock());
 
-            if (request.imageFile() != null && !request.imageFile().isEmpty()) {
-                product.setImage(uploadImage(request.imageFile()));
+            if (request.getImageFile() != null && !request.getImageFile().isEmpty()) {
+                product.setImage(uploadImage(request.getImageFile()));
             }
 
             repository.save(product);
@@ -222,7 +222,7 @@ public class ProductUserService {
 
         for (UserProductForm form : request.getProducts()) {
 
-            String trimmedName = form.name() != null ? form.name().trim() : "";
+            String trimmedName = form.getName() != null ? form.getName().trim() : "";
 
             BulkResponse.BulkResult<ProductDto> result = new BulkResponse.BulkResult<>();
             result.setName(trimmedName);
@@ -230,11 +230,11 @@ public class ProductUserService {
             List<String> missing = new ArrayList<>();
             if (trimmedName.isEmpty())
                 missing.add("tên");
-            if (form.weight() == null)
+            if (form.getWeight() == null)
                 missing.add("trọng lượng");
-            if (form.price() == null)
+            if (form.getPrice() == null)
                 missing.add("giá");
-            if (form.type() == null)
+            if (form.getType() == null)
                 missing.add("loại");
 
             if (!missing.isEmpty()) {
