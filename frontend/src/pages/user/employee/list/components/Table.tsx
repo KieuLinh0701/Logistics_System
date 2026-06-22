@@ -31,6 +31,7 @@ const DataTable: React.FC<DataTableProps> = ({
                                              }) => {
 
     const canViewWorkHistory = hasPermissionGroup(['GROUP_USER', 'USER_EMPLOYEE_HISTORY_VIEW']);
+    const canViewAuditLogs = hasPermissionGroup(['GROUP_USER', 'USER_AUDIT_LOG_DETAIL']);
     const canEdit = hasPermissionGroup(['GROUP_USER', 'USER_EMPLOYEE_EDIT']);
 
     const columns: ColumnsType<User> = [
@@ -71,12 +72,14 @@ const DataTable: React.FC<DataTableProps> = ({
 
                 return (
                     <Space size="small">
+                        {canViewAuditLogs && (
                         <Button
                             type="text"
                             icon={<HistoryOutlined style={{color: '#1c3d90'}}/>}
                             onClick={() => onViewLogs(record.id!)}
                             title="Xem lịch sử hoạt động của nhân viên"
                         />
+                        )}
                         {canViewWorkHistory && (
                             <Button
                                 type="text"

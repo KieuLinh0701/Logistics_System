@@ -199,7 +199,7 @@ const App: React.FC = () => {
                         <Route path="/logs" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager", "group_user", "user_audit_log_view", "group_admin"]}><AuditLogsRouter/></PrivateRoute>}/>
                         <Route path="/employees/:id/logs"
-                               element={<PrivateRoute allowedPermissionGroups={["group_manager", "group_user", "user_audit_log_view_detail"]}><AuditLogsDetailRouter/></PrivateRoute>}/>
+                               element={<PrivateRoute allowedPermissionGroups={["group_manager", "group_user", "user_audit_log_detail_view"]}><AuditLogsDetailRouter/></PrivateRoute>}/>
 
                         {/* User routes */}
                         <Route path="/orders/requests"

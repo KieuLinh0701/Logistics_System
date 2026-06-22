@@ -5,7 +5,7 @@ import supportApi from "../../api/supportApi";
 import type {SupportMessage} from "../../types/support";
 import {chatStore} from "../../hooks/chatStore";
 import {useChatSocket} from "../../hooks/useChatSocket";
-import {getUserId, getUserRole} from "../../utils/authUtils";
+import {getUserId, getUserRole, hasPermissionGroup} from "../../utils/authUtils";
 import ChatBubble from "./ChatBubble.tsx";
 import ChatHome from "./ChatHome.tsx";
 import TicketListView from "./TicketListView.tsx";
@@ -29,7 +29,7 @@ const ChatWidget: React.FC = () => {
   const [role, setRole] = useState<string | null>(getUserRole());
   const [accountId, setAccountId] = useState<number | null>(getUserId());
 
-  const canUseWidget = role === "user";
+  const canUseWidget = hasPermissionGroup(['GROUP_USER', 'USER_SUPPORT_TICKET']);
 
   const [state, setState] = useState(chatStore.getState());
   const [isMobile, setIsMobile] = useState(false);

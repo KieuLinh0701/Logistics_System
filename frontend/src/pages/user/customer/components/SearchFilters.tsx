@@ -35,7 +35,7 @@ const SearchFilters: React.FC<Props> = ({
             <Tooltip title="Tìm theo tên, số điện thoại hoặc địa chỉ khách hàng">
               <Input
                 className="search-input"
-                placeholder="Tìm kiếm..."
+                placeholder="Tìm theo tên, số điện thoại hoặc địa chỉ khách hàng"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 allowClear
