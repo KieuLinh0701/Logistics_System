@@ -7,12 +7,11 @@ import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.VehicleStatus;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.EmployeeErrorCode;
-import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.exception.enums.ShipmentErrorCode;
+import com.logistics.exception.enums.VehicleErrorCode;
 import com.logistics.repository.*;
 import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
-import com.logistics.service.assignment.AutoAssignService;
 import com.logistics.service.common.NotificationService;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
@@ -41,9 +40,6 @@ public class ShipmentDriverService {
 
     @Autowired
     private OrderRepository orderRepository;
-
-    @Autowired
-    private AutoAssignService autoAssignService;
 
     @Autowired
     private OrderHistoryRepository orderHistoryRepository;
@@ -87,6 +83,16 @@ public class ShipmentDriverService {
             throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_PENDING);
         }
 
+        // Kiểm tra và cập nhật Vehicle -> IN_USE nếu có
+        if (shipment.getVehicle() != null) {
+            Vehicle vehicle = shipment.getVehicle();
+            if (vehicle.getStatus() != VehicleStatus.AVAILABLE) {
+                throw new AppException(VehicleErrorCode.VEHICLE_NOT_AVAILABLE);
+            }
+            vehicle.setStatus(VehicleStatus.IN_USE);
+            vehicleRepository.save(vehicle);
+        }
+
         // Lấy danh sách orders cho shipment và cập nhật shipment -> IN_TRANSIT
         List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipmentId);
 
@@ -112,6 +118,7 @@ public class ShipmentDriverService {
         }
     }
 
+    @Transactional
     public void finishShipment(FinishShipmentRequest request) {
         Employee employee = getCurrentEmployee();
 
@@ -140,36 +147,65 @@ public class ShipmentDriverService {
             }
         }
 
-        // Cập nhật trạng thái đơn hàng và ghi lịch sử
-        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(request.getShipmentId());
-        for (ShipmentOrder so : shipmentOrders) {
-            Order order = so.getOrder();
+        // Driver chỉ cập nhật ShipmentStatus, không cập nhật OrderStatus
+        // OrderStatus sẽ do Manager xử lý ở chức năng riêng
 
-            // Ghi OrderHistory
-            OrderHistory history = new OrderHistory();
-            history.setOrder(order);
-            history.setFromOffice(order.getFromOffice());
-            history.setToOffice(order.getToOffice());
-            history.setShipment(shipment);
-
-            if (newStatus == ShipmentStatus.COMPLETED) {
-                // Kiểm tra đơn hàng phải ở trạng thái IN_TRANSIT
-                if (order.getStatus() != OrderStatus.IN_TRANSIT) {
-                    throw new AppException(OrderErrorCode.ORDER_NOT_IN_TRANSIT, order.getTrackingNumber());
+        // Khi COMPLETED: kiểm tra và set pendingDestinationConfirm cho các đơn trong shipment
+        if (newStatus == ShipmentStatus.COMPLETED && shipment.getToOffice() != null) {
+            List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
+            for (ShipmentOrder so : shipmentOrders) {
+                Order order = so.getOrder();
+                if (isOrderDestinationMatch(order, shipment.getToOffice())) {
+                    order.setPendingDestinationConfirm(true);
+                    orderRepository.save(order);
                 }
-                history.setAction(OrderHistoryActionType.IMPORTED);
-                history.setNote("Đơn đã đến bưu cục đích");
-                order.setStatus(OrderStatus.AT_DEST_OFFICE);
-            } else {
-                history.setAction(OrderHistoryActionType.RETURNED);
-                history.setNote("Chuyến vận chuyển bị hủy");
             }
-
-            orderHistoryRepository.save(history);
-            orderRepository.save(order);
-            // kích hoạt auto-assign khi đơn về bưu cục
-            autoAssignService.autoAssignOnArrival(order.getId());
         }
+    }
+
+    // Kiểm tra xem địa chỉ đích của Order có khớp với bưu cục đích của shipment không.
+    // Ưu tiên: toOffice.id > (cityCode + wardCode) > cityCode
+     
+    private boolean isOrderDestinationMatch(Order order, Office destinationOffice) {
+        // 1. Ưu tiên chính: So sánh toOffice.id
+        if (order.getToOffice() != null && order.getToOffice().getId() != null) {
+            if (order.getToOffice().getId().equals(destinationOffice.getId())) {
+                return true;
+            }
+        }
+
+        // 2. Fallback theo địa chỉ: Lấy cityCode/wardCode từ Order
+        Integer orderCityCode = null;
+        Integer orderWardCode = null;
+
+        if (order.getRecipientAddress() != null) {
+            orderCityCode = order.getRecipientAddress().getCityCode();
+            orderWardCode = order.getRecipientAddress().getWardCode();
+        }
+
+        if (orderCityCode == null) {
+            orderCityCode = order.getRecipientCityCode();
+        }
+        if (orderWardCode == null) {
+            orderWardCode = order.getRecipientWardCode();
+        }
+
+        // Lấy cityCode/wardCode từ destinationOffice
+        Integer officeCityCode = destinationOffice.getCityCode();
+        Integer officeWardCode = destinationOffice.getWardCode();
+
+        // 3. Nếu có đủ wardCode ở cả hai bên: so sánh cả cityCode + wardCode
+        if (orderWardCode != null && officeWardCode != null
+                && orderCityCode != null && officeCityCode != null) {
+            return orderCityCode.equals(officeCityCode) && orderWardCode.equals(officeWardCode);
+        }
+
+        // 4. Fallback cuối: chỉ so sánh cityCode
+        if (orderCityCode != null && officeCityCode != null) {
+            return orderCityCode.equals(officeCityCode);
+        }
+
+        return false;
     }
 
     public Map<String, Object> getShipments(int page, int limit) {

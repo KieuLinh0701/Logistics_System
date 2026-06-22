@@ -14,6 +14,7 @@ public enum VehicleErrorCode implements BaseErrorCode {
     VEHICLE_OFFICE_MISMATCH(HttpStatus.FORBIDDEN, "Phương tiên không thuộc bưu cục của bạn!"),
     VEHICLE_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "Tổng trọng lượng vượt quá sức chứa của xe. Vui lòng chọn xe khác."),
     VEHICLE_LICENSE_PLATE_EXISTED(HttpStatus.BAD_REQUEST, "Biển số xe đã tồn tại"),
+    VEHICLE_NOT_AVAILABLE(HttpStatus.CONFLICT, "Phương tiện không sẵn sàng sử dụng. Xe đang được bảo trì hoặc đã ngừng hoạt động."),
     ;
 
     private final HttpStatus httpStatus;

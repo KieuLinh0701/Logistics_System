@@ -235,4 +235,8 @@ public class Order {
     @Column(precision = 19, scale = 2)
     private BigDecimal returnedAmount = BigDecimal.ZERO;
 
+    // Flag gợi ý đơn hàng đã tới bưu cục đích, chờ Manager xác nhận
+    @Column(nullable = false)
+    private Boolean pendingDestinationConfirm = false;
+
 }
