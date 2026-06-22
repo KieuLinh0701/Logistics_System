@@ -1,6 +1,6 @@
 package com.logistics.service.ai;
 
-import com.logistics.config.AiServiceProperties;
+import com.logistics.config.properties.AiServiceProperties;
 import com.logistics.dto.ai.client.AiRouteOptimizationRequestDto;
 import com.logistics.dto.ai.client.AiRouteOptimizationResponseDto;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;

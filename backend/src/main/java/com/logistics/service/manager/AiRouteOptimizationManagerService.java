@@ -1,6 +1,6 @@
 package com.logistics.service.manager;
 
-import com.logistics.config.AiServiceProperties;
+import com.logistics.config.properties.AiServiceProperties;
 import com.logistics.dto.ai.client.*;
 import com.logistics.dto.manager.ai.*;
 import com.logistics.entity.*;

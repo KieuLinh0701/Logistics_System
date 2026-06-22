@@ -1,4 +1,4 @@
-package com.logistics.config;
+package com.logistics.config.properties;
 
 import lombok.Getter;
 import lombok.Setter;

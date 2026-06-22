@@ -20,7 +20,7 @@ import com.logistics.request.common.user.UpdatePasswordRequest;
 import com.logistics.request.common.user.UpdateProfileRequest;
 import com.logistics.request.common.user.VerifyEmailUpdateOTPRequest;
 import com.logistics.response.AuthResponse;
-import com.logistics.utils.EmailService;
+import com.logistics.service.email.EmailService;
 import com.logistics.utils.JwtUtils;
 import com.logistics.utils.OTPUtils;
 import com.logistics.utils.PasswordUtils;
