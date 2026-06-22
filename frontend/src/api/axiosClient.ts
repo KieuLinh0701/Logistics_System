@@ -2,21 +2,21 @@ import type {AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfi
 import axios from "axios";
 
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8080/api",
-  timeout: 15000,
-  withCredentials: false,
+    baseURL: import.meta.env.VITE_API_BASE || "http://localhost:8080/api",
+    timeout: 15000,
+    withCredentials: false,
 });
 
 axiosClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = sessionStorage.getItem("token");
-    if (token) {
-      config.headers = config.headers || {};
-      (config.headers as any).Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error: AxiosError) => Promise.reject(error)
+    (config: InternalAxiosRequestConfig) => {
+        const token = sessionStorage.getItem("token");
+        if (token) {
+            config.headers = config.headers || {};
+            (config.headers as any).Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error: AxiosError) => Promise.reject(error)
 );
 
 axiosClient.interceptors.response.use(
@@ -34,23 +34,28 @@ axiosClient.interceptors.response.use(
     }
 );
 
-type AxiosResponseData<T> = Promise<T>;
-
+const TIMEOUTS = {
+    get: 15000,
+    post: 60000,
+    put: 30000,
+    patch: 30000,
+    delete: 15000,
+};
 const typedAxios = {
-  get: <T = any>(url: string, config?: any): AxiosResponseData<T> =>
-    axiosClient.get<T>(url, config).then(res => res as unknown as T),
+    get: <T = any>(url: string, config?: any): Promise<T> =>
+        axiosClient.get(url, { timeout: TIMEOUTS.get, ...config }) as unknown as Promise<T>,
 
-  post: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.post<T>(url, data, config) as AxiosResponseData<T>,
+    post: <T>(url: string, data?: any, config?: any): Promise<T> =>
+        axiosClient.post(url, data, { timeout: TIMEOUTS.post, ...config }) as unknown as Promise<T>,
 
-  put: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.put<T>(url, data, config) as AxiosResponseData<T>,
+    put: <T>(url: string, data?: any, config?: any): Promise<T> =>
+        axiosClient.put(url, data, { timeout: TIMEOUTS.put, ...config }) as unknown as Promise<T>,
 
-  patch: <T>(url: string, data?: any, config?: any): AxiosResponseData<T> =>
-    axiosClient.patch<T>(url, data, config) as AxiosResponseData<T>,
+    patch: <T>(url: string, data?: any, config?: any): Promise<T> =>
+        axiosClient.patch(url, data, { timeout: TIMEOUTS.patch, ...config }) as unknown as Promise<T>,
 
-  delete: <T>(url: string, config?: any): AxiosResponseData<T> =>
-    axiosClient.delete<T>(url, config) as AxiosResponseData<T>,
+    delete: <T>(url: string, config?: any): Promise<T> =>
+        axiosClient.delete(url, { timeout: TIMEOUTS.delete, ...config }) as unknown as Promise<T>,
 };
 
 export default typedAxios;
