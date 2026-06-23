@@ -25,6 +25,13 @@ axiosClient.interceptors.response.use(
         const status = error.response?.status;
         const requestUrl = error.config?.url || "";
 
+        console.error("[AXIOS_ROUTE_ERROR]");
+        console.error("URL", error.config?.url);
+        console.error("METHOD", error.config?.method);
+        console.error("STATUS", error.response?.status);
+        console.error("DATA", error.response?.data);
+        console.error("FULL", error);
+
         if (status === 401 && !requestUrl.includes("/auth/login")) {
             sessionStorage.clear();
             window.location.href = "/login";

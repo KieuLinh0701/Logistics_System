@@ -8,6 +8,8 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.DeliverOriginRequest;
 import com.logistics.request.shipper.PickedUpRequest;
+import com.logistics.request.shipper.PickupInsertionRequest;
+import com.logistics.request.shipper.ShipperReOptimizeRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.OrderShipperService;
@@ -245,6 +247,15 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success("Đã xác nhận lấy hàng"));
     }
 
+    @PostMapping("/orders/{id}/retry-pickup")
+    public ResponseEntity<ApiResponse<String>> retryPickup(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        shipperService.retryPickup(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã tiến hành đến lấy lại"));
+    }
+
     @GetMapping("/orders/{id}/partial-start")
     public ResponseEntity<ApiResponse<Map<String, Object>>> startPartialDelivery(@PathVariable Integer id) {
         if (isNotShipper()) {
@@ -357,5 +368,23 @@ public class OrderShipperController {
         Integer routeId = (Integer) request.get("routeId");
         shipperService.startRoute(routeId);
         return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu lộ trình"));
+    }
+
+    @PostMapping("/route/re-optimize")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> reOptimizeRoute(
+            @RequestBody ShipperReOptimizeRequest body) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(shipperService.reOptimizeRoute(body)));
+    }
+
+    @PostMapping("/route/pickup-insert")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> pickupInsertion(
+            @RequestBody PickupInsertionRequest body) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(shipperService.assignPickupToShipperRoute(body)));
     }
 }

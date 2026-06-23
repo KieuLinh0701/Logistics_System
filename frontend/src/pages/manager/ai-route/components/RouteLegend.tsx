@@ -1,6 +1,6 @@
 import React from "react";
 import type {AiShipperRoute} from "../../../../types/aiRoute";
-import {getRouteColor, getRouteKey} from "../utils/routeMapUtils";
+import {getRouteColor, getRouteKey, isReturnToOfficeStop} from "../utils/routeMapUtils";
 
 interface RouteLegendProps {
   routes: AiShipperRoute[];
@@ -35,7 +35,7 @@ const RouteLegend: React.FC<RouteLegendProps> = ({
               >
                 <span className="ai-route-legend-swatch" style={{ backgroundColor: color }} />
                 <span className="ai-route-legend-name">{route.shipperName}</span>
-                <span className="ai-route-legend-meta">{route.stops?.length ?? route.stopCount ?? 0} điểm</span>
+                <span className="ai-route-legend-meta">{route.stops?.filter(s => !isReturnToOfficeStop(s)).length ?? route.stopCount ?? 0} điểm</span>
               </button>
             </li>
           );

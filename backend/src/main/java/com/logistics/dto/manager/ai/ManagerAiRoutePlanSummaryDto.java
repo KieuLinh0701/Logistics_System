@@ -1,6 +1,7 @@
 package com.logistics.dto.manager.ai;
 
 import com.logistics.enums.AiRoutePlanStatus;
+import com.logistics.enums.RouteMode;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,6 +20,8 @@ public class ManagerAiRoutePlanSummaryDto {
     private Long totalCod;
     private Integer unassignedCount;
     private Integer routeCount;
+    private RouteMode routeMode;
+    private Boolean returnToOffice;
     private LocalDateTime createdAt;
     private LocalDateTime confirmedAt;
 }

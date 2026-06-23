@@ -1,7 +1,7 @@
 package com.logistics.service.manager;
 
 import com.logistics.config.properties.AiServiceProperties;
-import com.logistics.dto.ai.client.*;
+import com.logistics.dto.ai.*;
 import com.logistics.dto.manager.ai.*;
 import com.logistics.entity.*;
 import com.logistics.enums.*;
@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,8 +60,19 @@ public class AiRouteOptimizationManagerService {
                 ? request.getStartTime()
                 : aiServiceProperties.getDefaultStartTime();
 
-        List<Order> orders = findDeliveryReadyOrders(office.getId());
-        if (orders.isEmpty()) {
+        boolean returnToOffice = request != null && request.getReturnToOffice() != null
+                ? request.getReturnToOffice()
+                : true;
+        RouteMode routeMode = request != null && request.getRouteMode() != null
+                ? request.getRouteMode()
+                : RouteMode.CLOSED_LOOP;
+
+        // Lấy delivery orders
+        List<Order> deliveryOrders = findDeliveryReadyOrders(office.getId());
+        List<AiRouteStopInputDto> deliveryStops = deliveryOrders.stream()
+                .map(this::toAiRouteStop).toList();
+
+        if (deliveryStops.isEmpty()) {
             throw new AppException(AiRouteErrorCode.AI_NO_ORDERS_READY);
         }
 
@@ -69,19 +81,37 @@ public class AiRouteOptimizationManagerService {
             throw new AppException(AiRouteErrorCode.AI_NO_AVAILABLE_SHIPPERS);
         }
 
+        // Build AI request với closed loop
+        AiLocationDto startLocation = new AiLocationDto();
+        startLocation.setType("OFFICE");
+        startLocation.setId(office.getId());
+        startLocation.setName(office.getName());
+        startLocation.setLatitude(office.getLatitude().doubleValue());
+        startLocation.setLongitude(office.getLongitude().doubleValue());
+
+        AiLocationDto endLocation = returnToOffice ? startLocation : null;
+
         AiRouteOptimizationRequestDto aiRequest = AiRouteOptimizationRequestDto.builder()
                 .office(new AiOfficeLocationDto(
                         office.getId(),
                         office.getName(),
+                        office.getDetail(),
                         office.getLatitude().doubleValue(),
-                        office.getLongitude().doubleValue()))
+                        office.getLongitude().doubleValue()
+                ))
+                .startLocation(startLocation)
+                .endLocation(endLocation)
+                .returnToOffice(returnToOffice)
+                .routeMode(routeMode.name())
+                .optimizationScope(RouteOptimizationScope.MANAGER_GLOBAL.name())
                 .shippers(shippers)
-                .orders(orders.stream().map(this::toAiOrder).toList())
+                .stops(deliveryStops)
                 .options(Map.of("ortools_time_limit_seconds", 8))
                 .build();
 
         AiRouteOptimizationResponseDto aiResponse = aiServiceClient.optimizeRoutes(aiRequest);
-        AiRoutePlan plan = persistDraftPlan(office, manager, aiResponse, aiRequest);
+
+        AiRoutePlan plan = persistDraftPlan(office, manager, deliveryOrders, aiResponse, aiRequest, routeMode, returnToOffice);
 
         return toDetailDto(plan, aiResponse.getUnassignedOrders());
     }
@@ -90,25 +120,42 @@ public class AiRouteOptimizationManagerService {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
         List<ManagerAiRoutePlanSummaryDto> list = new ArrayList<>();
         aiRoutePlanRepository.findByOfficeIdAndStatusOrderByCreatedAtDesc(office.getId(), AiRoutePlanStatus.DRAFT)
-                .stream()
-                .map(this::toSummaryDto)
-                .forEach(list::add);
+                .stream().map(this::toSummaryDto).forEach(list::add);
         aiRoutePlanRepository.findByOfficeIdAndStatusOrderByCreatedAtDesc(office.getId(), AiRoutePlanStatus.CONFIRMED)
-                .stream()
-                .map(this::toSummaryDto)
-                .forEach(list::add);
+                .stream().map(this::toSummaryDto).forEach(list::add);
         return list;
     }
 
+    @Transactional(readOnly = true)
     public ManagerAiRoutePlanDetailDto getPlan(Integer managerUserId, Long planId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
+
+        // Fetch plan + office/manager nhẹ nhàng, không join routes/stops
         AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
                 .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
-        plan.getRoutes().forEach(r -> {
-            if (r.getStops() != null) {
-                r.getStops().size();
-            }
-        });
+
+        // Fetch routes riêng (tránh MultipleBagFetchException)
+        List<AiRoutePlanRoute> routes = aiRoutePlanRepository.findRoutesByPlanId(planId);
+
+        // Fetch stops riêng cho tất cả routes (tránh N+1)
+        List<Long> routeIds = routes.stream().map(AiRoutePlanRoute::getId).toList();
+        List<AiRoutePlanStop> allStops = routeIds.isEmpty()
+                ? List.of()
+                : aiRoutePlanRepository.findStopsByRouteIds(routeIds);
+
+        // Map stops theo routeId
+        Map<Long, List<AiRoutePlanStop>> stopsByRouteId = allStops.stream()
+                .collect(Collectors.groupingBy(s -> s.getRoute().getId()));
+
+        // Gán stops vào routes (trong memory, không trigger Hibernate)
+        for (AiRoutePlanRoute route : routes) {
+            route.setStops(new ArrayList<>(stopsByRouteId.getOrDefault(route.getId(), List.of())));
+        }
+        plan.setRoutes(routes);
+
+        log.debug("getPlan: planId={} officeId={} routes={} stopsTotal={}",
+                planId, office.getId(), routes.size(), allStops.size());
+
         return toDetailDto(plan, List.of());
     }
 
@@ -127,21 +174,45 @@ public class AiRouteOptimizationManagerService {
                     .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_SHIPPER_NOT_FOUND));
 
             for (AiRoutePlanStop stop : route.getStops()) {
+                RouteStopType stopType = stop.getStopType();
                 Order order = stop.getOrder();
-                if (order.getEmployee() != null && !Objects.equals(order.getEmployee().getId(), shipperEmployee.getId())) {
-                    throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER);
+
+                // RETURN_TO_OFFICE stop: không có order, bỏ qua
+                if (stopType == RouteStopType.RETURN_TO_OFFICE) {
+                    continue;
                 }
-                order.setEmployee(shipperEmployee);
-                if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
-                    order.setStatus(OrderStatus.READY_FOR_PICKUP);
+
+                if (order != null) {
+                    if (order.getEmployee() != null && !Objects.equals(order.getEmployee().getId(), shipperEmployee.getId())) {
+                        throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER);
+                    }
+                    order.setEmployee(shipperEmployee);
+
+                    // DELIVERY: chuyển AT_DEST_OFFICE -> READY_FOR_PICKUP
+                    if (stopType == RouteStopType.DELIVERY) {
+                        if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
+                            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+                        }
+                    }
+                    // PICKUP: giữ nguyên status hoặc chuyển CONFIRMED -> READY_FOR_PICKUP nếu cần
+                    else if (stopType == RouteStopType.PICKUP) {
+                        if (order.getStatus() == OrderStatus.CONFIRMED) {
+                            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+                        }
+                    }
+                    orderRepository.save(order);
                 }
-                orderRepository.save(order);
             }
         }
 
         plan.setStatus(AiRoutePlanStatus.CONFIRMED);
         plan.setConfirmedAt(LocalDateTime.now());
         aiRoutePlanRepository.save(plan);
+
+        log.info("confirmPlan: planId={} routeCount={} stopCount={}",
+                planId,
+                plan.getRoutes().size(),
+                plan.getRoutes().stream().mapToInt(r -> r.getStops().size()).sum());
 
         return toDetailDto(plan, List.of());
     }
@@ -201,46 +272,29 @@ public class AiRouteOptimizationManagerService {
             List<Employee> emps = employeeRepository.findByUserId(user.getId());
             Employee employee = emps.stream()
                     .filter(e -> e.getOffice() != null && Objects.equals(e.getOffice().getId(), office.getId()))
-                    .findFirst()
-                    .orElse(null);
-            if (employee == null || employee.getStatus() != EmployeeStatus.ACTIVE) {
-                continue;
-            }
-            if (leaveRequestRepository.existsApprovedLeaveOnDate(
-                    employee.getId(), today, LeaveRequestStatus.APPROVED)) {
-                continue;
-            }
+                    .findFirst().orElse(null);
+            if (employee == null || employee.getStatus() != EmployeeStatus.ACTIVE) continue;
+            if (leaveRequestRepository.existsApprovedLeaveOnDate(employee.getId(), today, LeaveRequestStatus.APPROVED)) continue;
 
             ShipperVehicle vehicle = shipperVehicleRepository.findByShipperId(employee.getId())
                     .orElseGet(() -> createDefaultVehicle(employee));
-            if (vehicle.getStatus() != ShipperVehicleStatus.ACTIVE) {
-                continue;
-            }
+            if (vehicle.getStatus() != ShipperVehicleStatus.ACTIVE) continue;
 
             int maxOrders = vehicle.getMaxOrders() != null && vehicle.getMaxOrders() > 0
-                    ? vehicle.getMaxOrders()
-                    : capacity;
+                    ? vehicle.getMaxOrders() : capacity;
             int currentOrders = vehicle.getCurrentOrders() != null ? Math.max(0, vehicle.getCurrentOrders()) : 0;
             int remainingOrders = Math.max(0, maxOrders - currentOrders);
-            if (remainingOrders <= 0) {
-                continue;
-            }
+            if (remainingOrders <= 0) continue;
 
             double maxWeightKg = vehicle.getMaxWeightKg() != null && vehicle.getMaxWeightKg() > 0
-                    ? vehicle.getMaxWeightKg()
-                    : 35.0;
+                    ? vehicle.getMaxWeightKg() : 35.0;
             double currentWeightKg = vehicle.getCurrentWeightKg() != null
-                    ? Math.max(0.0, vehicle.getCurrentWeightKg().doubleValue())
-                    : 0.0;
+                    ? Math.max(0.0, vehicle.getCurrentWeightKg().doubleValue()) : 0.0;
             double remainingWeightKg = Math.max(0.0, maxWeightKg - currentWeightKg);
-            if (remainingWeightKg <= 0) {
-                continue;
-            }
+            if (remainingWeightKg <= 0) continue;
 
             List<ShipperAssignment> assignments = shipperAssignmentRepository.findActiveByShipperId(user.getId(), now);
-            if (assignments.isEmpty()) {
-                continue;
-            }
+            if (assignments.isEmpty()) continue;
 
             String name = user.getFirstName() + " " + user.getLastName();
             List<AiShipperAssignmentAreaDto> areas = assignments.stream()
@@ -263,6 +317,27 @@ public class AiRouteOptimizationManagerService {
                     .build());
         }
         return result;
+    }
+
+    private AiRouteStopInputDto toAiRouteStop(Order order) {
+        Double weightKg = normalizeOrderWeight(order);
+        return AiRouteStopInputDto.builder()
+                .stopId(order.getId().longValue())
+                .orderId(order.getId())
+                .trackingNumber(order.getTrackingNumber())
+                .stopType("DELIVERY")
+                .recipientName(order.getRecipientName())
+                .recipientPhone(order.getRecipientPhone())
+                .address(order.getRecipientFullAddress())
+                .wardCode(order.getRecipientWardCode())
+                .cityCode(order.getRecipientCityCode())
+                .latitude(order.getRecipientLatitude())
+                .longitude(order.getRecipientLongitude())
+                .codAmount(order.getCod() != null ? order.getCod() : 0)
+                .priority("NORMAL")
+                .serviceTimeMinutes(5)
+                .weightKg(weightKg)
+                .build();
     }
 
     private AiOrderInputDto toAiOrder(Order order) {
@@ -308,8 +383,11 @@ public class AiRouteOptimizationManagerService {
     private AiRoutePlan persistDraftPlan(
             Office office,
             Employee manager,
+            List<Order> deliveryOrders,
             AiRouteOptimizationResponseDto aiResponse,
-            AiRouteOptimizationRequestDto aiRequest) {
+            AiRouteOptimizationRequestDto aiRequest,
+            RouteMode routeMode,
+            boolean returnToOffice) {
 
         AiRoutePlan plan = new AiRoutePlan();
         plan.setOffice(office);
@@ -317,6 +395,13 @@ public class AiRouteOptimizationManagerService {
         plan.setStatus(AiRoutePlanStatus.DRAFT);
         plan.setPlanCode("AI-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
         plan.setOptimizationNote(aiResponse.getMessage());
+        plan.setRouteMode(routeMode);
+        plan.setReturnToOffice(returnToOffice);
+        plan.setOptimizationScope(RouteOptimizationScope.MANAGER_GLOBAL);
+        plan.setCreatedByRole("MANAGER");
+        plan.setCreatedByEmployeeId(manager.getId());
+        plan.setVersionNumber(1);
+        plan.setActive(true);
 
         if (aiResponse.getSummary() != null) {
             AiOptimizationSummaryDto s = aiResponse.getSummary();
@@ -327,11 +412,10 @@ public class AiRouteOptimizationManagerService {
             plan.setUnassignedCount(s.getUnassignedOrderCount() != null ? s.getUnassignedOrderCount() : 0);
         }
 
+        // Collect order IDs from AI response
         Set<Integer> orderIds = new HashSet<>();
         for (AiShipperRouteOutputDto routeDto : aiResponse.getRoutes()) {
-            if (routeDto.getStops() == null) {
-                continue;
-            }
+            if (routeDto.getStops() == null) continue;
             for (AiRouteStopOutputDto stopDto : routeDto.getStops()) {
                 if (stopDto.getOrderId() != null) {
                     orderIds.add(stopDto.getOrderId());
@@ -340,6 +424,14 @@ public class AiRouteOptimizationManagerService {
         }
         Map<Integer, Order> orderMap = orderRepository.findAllById(orderIds).stream()
                 .collect(Collectors.toMap(Order::getId, o -> o));
+
+        Map<String, Order> orderByTrackingNumber = deliveryOrders.stream()
+                .filter(o -> o.getTrackingNumber() != null)
+                .collect(Collectors.toMap(
+                        Order::getTrackingNumber,
+                        Function.identity(),
+                        (a, b) -> a
+                ));
 
         for (AiShipperRouteOutputDto routeDto : aiResponse.getRoutes()) {
             AiRoutePlanRoute route = new AiRoutePlanRoute();
@@ -354,18 +446,34 @@ public class AiRouteOptimizationManagerService {
             route.setTotalCod(routeDto.getTotalCod());
             route.setEncodedPolyline(routeDto.getEncodedPolyline());
             route.setStartTime(routeDto.getStartTime());
+            route.setRouteMode(routeMode);
+            route.setReturnToOffice(returnToOffice);
+            route.setRouteVersion(1);
+            route.setIsActive(true);
 
             List<AiRoutePlanStop> stops = new ArrayList<>();
+            int stopSeq = 1;
+
+            // Business stops (DELIVERY / PICKUP)
             if (routeDto.getStops() != null) {
                 for (AiRouteStopOutputDto stopDto : routeDto.getStops()) {
-                    Order order = orderMap.get(stopDto.getOrderId());
+                    // Try orderId first, then fall back to trackingNumber
+                    Order order = null;
+                    if (stopDto.getOrderId() != null) {
+                        order = orderMap.get(stopDto.getOrderId());
+                    }
+                    if (order == null && stopDto.getTrackingNumber() != null) {
+                        order = orderByTrackingNumber.get(stopDto.getTrackingNumber());
+                    }
                     if (order == null) {
                         continue;
                     }
+
                     AiRoutePlanStop stop = new AiRoutePlanStop();
                     stop.setRoute(route);
                     stop.setOrder(order);
-                    stop.setStopSequence(stopDto.getStopSequence());
+                    stop.setStopType(RouteStopType.DELIVERY); // AI mặc định DELIVERY
+                    stop.setStopSequence(stopSeq++);
                     stop.setTrackingNumber(stopDto.getTrackingNumber());
                     stop.setRecipientName(stopDto.getRecipientName());
                     stop.setRecipientPhone(stopDto.getRecipientPhone());
@@ -377,15 +485,45 @@ public class AiRouteOptimizationManagerService {
                     stop.setEtaTime(stopDto.getEtaTime());
                     stop.setEtaMinutesFromStart(stopDto.getEtaMinutesFromStart());
                     stop.setLegDistanceKm(toBd(stopDto.getLegDistanceKm()));
+                    stop.setStopStatus(RouteStopStatus.PENDING);
+                    stop.setIsInserted(false);
                     stops.add(stop);
                 }
             }
+
+            // RETURN_TO_OFFICE stop (nếu AI trả về)
+            AiRouteStopOutputDto returnStopDto = routeDto.getReturnToOfficeStop();
+            if (returnToOffice && returnStopDto != null) {
+                AiRoutePlanStop returnStop = new AiRoutePlanStop();
+                returnStop.setRoute(route);
+                returnStop.setOrder(null); // RETURN_TO_OFFICE không có order
+                returnStop.setStopType(RouteStopType.RETURN_TO_OFFICE);
+                returnStop.setStopSequence(stopSeq++);
+                returnStop.setTrackingNumber(null);
+                returnStop.setRecipientName(returnStopDto.getRecipientName() != null ? returnStopDto.getRecipientName() : office.getName());
+                returnStop.setRecipientPhone(null);
+                returnStop.setRecipientAddress(returnStopDto.getRecipientAddress() != null ? returnStopDto.getRecipientAddress() : office.getName());
+                returnStop.setRecipientLatitude(returnStopDto.getLatitude());
+                returnStop.setRecipientLongitude(returnStopDto.getLongitude());
+                returnStop.setCodAmount(0);
+                returnStop.setPriority("NORMAL");
+                returnStop.setEtaTime(returnStopDto.getEtaTime());
+                returnStop.setEtaMinutesFromStart(returnStopDto.getEtaMinutesFromStart());
+                returnStop.setLegDistanceKm(toBd(returnStopDto.getLegDistanceKm()));
+                returnStop.setStopStatus(RouteStopStatus.PENDING);
+                returnStop.setIsInserted(false);
+                stops.add(returnStop);
+            }
+
             route.setStops(stops);
-            route.setStopCount(stops.size());
+            long businessStopCount = stops.stream().filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE).count();
+            route.setStopCount((int) businessStopCount);
             plan.getRoutes().add(route);
         }
 
-        return aiRoutePlanRepository.save(plan);
+        AiRoutePlan savedPlan = aiRoutePlanRepository.save(plan);
+
+        return savedPlan;
     }
 
     private ManagerAiRoutePlanDetailDto toDetailDto(AiRoutePlan plan, List<AiUnassignedOrderOutputDto> unassignedFromAi) {
@@ -404,11 +542,17 @@ public class AiRouteOptimizationManagerService {
                         .encodedPolyline(r.getEncodedPolyline())
                         .startTime(r.getStartTime())
                         .stopCount(r.getStopCount())
-                        .stops(r.getStops().stream()
-                                .sorted(Comparator.comparing(AiRoutePlanStop::getStopSequence))
+                        .routeMode(r.getRouteMode())
+                        .returnToOffice(r.getReturnToOffice())
+                        .routeVersion(r.getRouteVersion())
+                        .isActive(r.getIsActive())
+                        .returnToOfficeStop(r.getStops().stream()
+                                .filter(s -> s.getStopType() == RouteStopType.RETURN_TO_OFFICE)
+                                .findFirst()
                                 .map(s -> ManagerAiRouteStopDto.builder()
                                         .stopId(s.getId())
-                                        .orderId(s.getOrder().getId())
+                                        .orderId(null)
+                                        .stopType(s.getStopType())
                                         .stopSequence(s.getStopSequence())
                                         .trackingNumber(s.getTrackingNumber())
                                         .recipientName(s.getRecipientName())
@@ -420,6 +564,32 @@ public class AiRouteOptimizationManagerService {
                                         .priority(s.getPriority())
                                         .etaTime(s.getEtaTime())
                                         .etaMinutesFromStart(s.getEtaMinutesFromStart())
+                                        .stopStatus(s.getStopStatus())
+                                        .isInserted(s.getIsInserted())
+                                        .insertedReason(s.getInsertedReason())
+                                        .build())
+                                .orElse(null))
+                        .stops(r.getStops().stream()
+                                .sorted(Comparator.comparing(AiRoutePlanStop::getStopSequence))
+                                .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                                .map(s -> ManagerAiRouteStopDto.builder()
+                                        .stopId(s.getId())
+                                        .orderId(s.getOrder() != null ? s.getOrder().getId() : null)
+                                        .stopType(s.getStopType())
+                                        .stopSequence(s.getStopSequence())
+                                        .trackingNumber(s.getTrackingNumber())
+                                        .recipientName(s.getRecipientName())
+                                        .recipientPhone(s.getRecipientPhone())
+                                        .recipientAddress(s.getRecipientAddress())
+                                        .latitude(s.getRecipientLatitude())
+                                        .longitude(s.getRecipientLongitude())
+                                        .codAmount(s.getCodAmount())
+                                        .priority(s.getPriority())
+                                        .etaTime(s.getEtaTime())
+                                        .etaMinutesFromStart(s.getEtaMinutesFromStart())
+                                        .stopStatus(s.getStopStatus())
+                                        .isInserted(s.getIsInserted())
+                                        .insertedReason(s.getInsertedReason())
                                         .build())
                                 .toList())
                         .build())
@@ -447,6 +617,13 @@ public class AiRouteOptimizationManagerService {
                 .optimizationNote(plan.getOptimizationNote())
                 .createdAt(plan.getCreatedAt())
                 .confirmedAt(plan.getConfirmedAt())
+                .routeMode(plan.getRouteMode())
+                .returnToOffice(plan.getReturnToOffice())
+                .optimizationScope(plan.getOptimizationScope())
+                .versionNumber(plan.getVersionNumber())
+                .active(plan.getActive())
+                .startedAt(plan.getStartedAt())
+                .completedAt(plan.getCompletedAt())
                 .routes(routes)
                 .unassignedOrders(unassigned)
                 .build();
@@ -463,6 +640,8 @@ public class AiRouteOptimizationManagerService {
                 .totalCod(plan.getTotalCod())
                 .unassignedCount(plan.getUnassignedCount())
                 .routeCount(plan.getRoutes() != null ? plan.getRoutes().size() : 0)
+                .routeMode(plan.getRouteMode())
+                .returnToOffice(plan.getReturnToOffice())
                 .createdAt(plan.getCreatedAt())
                 .confirmedAt(plan.getConfirmedAt())
                 .build();

@@ -4,6 +4,7 @@ import {EyeOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import {connectWebSocket, disconnectWebSocket} from "../../../socket/socket";
 import {getCurrentUser, getUserId} from "../../../utils/authUtils";
 import orderApi from "../../../api/orderApi";
+import {dispatchShipperRouteRefresh} from "../deliveryRouteEvents";
 import SimpleMap from "../../../components/map/SimpleMap";
 import PickupAttemptModal from "../PickupAttemptModal";
 import "../../../styles/ListPage.css";
@@ -121,6 +122,7 @@ export default function ShippingRequests() {
 
       await orderApi.claimShipperOrderRequest(rec.id);
       message.success("Đã nhận đơn");
+      dispatchShipperRouteRefresh();
       await refreshList(1, pagination.pageSize);
       setPagination((p) => ({ ...p, current: 1 }));
     } catch (e) {
@@ -201,6 +203,20 @@ export default function ShippingRequests() {
       setSelectedOrder(detail || selectedOrder);
     } catch (e: any) {
       message.error(e?.response?.data?.message || "Lỗi khi báo lấy hàng thất bại");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRetryPickup(order: any) {
+    try {
+      setLoading(true);
+      await orderApi.retryPickup(order.id);
+      message.success("Đã tiến hành đến lấy lại. Người gửi sẽ được thông báo.");
+      setSelectedOrder((prev: any) => prev ? { ...prev, status: "PICKING_UP" } : prev);
+      await refreshList();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi tiến hành lấy lại");
     } finally {
       setLoading(false);
     }
@@ -368,15 +384,31 @@ export default function ShippingRequests() {
                       Nộp tại bưu cục
                     </Button>
                   </Space>
+                ) : selectedOrder.status === "PICKUP_RETRY" ? (
+                  <Space>
+                    <Button onClick={() => setMapVisible(false)}>Đóng</Button>
+                    <Button
+                      type="primary"
+                      className="primary-button"
+                      onClick={() => selectedOrder && handleRetryPickup(selectedOrder)}
+                      loading={loading}
+                    >
+                      Tiến hành đến lấy lại
+                    </Button>
+                  </Space>
+                ) : selectedOrder.status === "PICKING_UP" ? (
+                  <Space>
+                    <Button onClick={() => setMapVisible(false)}>Đóng</Button>
+                    <Button danger onClick={() => setPickupFailedModalOpen(true)}>
+                      Báo lấy hàng thất bại
+                    </Button>
+                    <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)}>
+                      Xác nhận đã lấy
+                    </Button>
+                  </Space>
                 ) : (
                   <Space>
                     <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                    <Button danger onClick={() => setPickupFailedModalOpen(true)} disabled={selectedOrder.status === "PICKUP_FAILED_FINAL"}>
-                      Báo lấy hàng thất bại
-                    </Button>
-                    <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)} disabled={selectedOrder.status === "PICKUP_FAILED_FINAL"}>
-                      Xác nhận đã lấy
-                    </Button>
                   </Space>
                 )
               ) : null

@@ -3,7 +3,9 @@ import {Badge, Button, Card, Empty, Space, Switch, Tag, Tooltip, Typography} fro
 import {AimOutlined, CarOutlined, ClockCircleOutlined, EyeInvisibleOutlined, EyeOutlined,} from "@ant-design/icons";
 import type {AiRoutePlanDetail, AiShipperRoute} from "../../../../types/aiRoute";
 import RouteSummaryCards from "./RouteSummaryCards";
-import {formatCurrency, formatMinutes, getRouteColor, getRouteKey, summarizePlan,} from "../utils/routeMapUtils";
+import {formatCurrency, formatMinutes, getRouteColor, getRouteKey, isReturnToOfficeStop, summarizePlan,} from "../utils/routeMapUtils";
+
+const AI_ROUTE_DEBUG = import.meta.env.DEV;
 
 interface RouteSidebarProps {
   plan: AiRoutePlanDetail | null;
@@ -99,10 +101,30 @@ const RouteSidebar: React.FC<RouteSidebarProps> = ({
         ) : (
           routes.map((route, index) => {
             const routeKey = getRouteKey(route, index);
+            if (AI_ROUTE_DEBUG) {
+              console.group(`[AI_ROUTE_DEBUG] RouteSidebar route[${index}] ${route.shipperName}`);
+              console.log("route full:", route);
+              console.log("route.stops:", route.stops);
+              console.log("route.stops length:", route.stops?.length);
+              console.log("route.returnToOfficeStop:", route.returnToOfficeStop);
+              console.log("route.stopCount:", route.stopCount);
+              console.log(
+                "stop types:",
+                route.stops?.map((s) => ({
+                  id: s.stopId,
+                  orderId: s.orderId,
+                  trackingNumber: s.trackingNumber,
+                  stopType: s.stopType,
+                  lat: s.latitude,
+                  lng: s.longitude,
+                }))
+              );
+              console.groupEnd();
+            }
             const color = getRouteColor(index);
             const visible = visibleRouteKeys.has(routeKey);
             const active = highlightedRouteKey === routeKey;
-            const stopCount = route.stops?.length ?? route.stopCount ?? 0;
+            const stopCount = route.stops?.filter(s => !isReturnToOfficeStop(s)).length ?? route.stopCount ?? 0;
 
             return (
               <Card

@@ -237,6 +237,11 @@ const orderApi = {
         return res.data;
     },
 
+    async retryPickup(orderId: number) {
+        const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/retry-pickup`);
+        return res.data;
+    },
+
     async getShipperDeliveryHistory(params: { page?: number; limit?: number; status?: string }) {
         const res = await axiosClient.get<ApiResponse<any>>("/shipper/history", { params });
         const data = res.data || {};
@@ -334,25 +339,79 @@ const orderApi = {
 
     // Route
     async getShipperRoute() {
-        const res = await axiosClient.get<ApiResponse<any>>("/shipper/route");
-        return res.data as {
-            routeInfo: {
-                id: number;
-                name: string;
-                startLocation: string;
-                totalStops: number;
-                completedStops: number;
-                totalDistance: number;
-                estimatedDuration: number;
-                totalCOD: number;
-                status: string;
-            };
-            deliveryStops: any[];
-        };
+        const res = await axiosClient.get<{
+            success: boolean;
+            message?: string;
+            data: {
+                routeInfo: {
+                    id: number;
+                    name: string;
+                    startLocation: string;
+                    totalStops: number;
+                    completedStops: number;
+                    totalDistance: number;
+                    estimatedDuration: number;
+                    totalCOD: number;
+                    status: string;
+                    source?: string;
+                    encodedPolyline?: string;
+                    planCode?: string;
+                    fuelCost?: number;
+                    routeMode?: string;
+                    returnToOffice?: boolean;
+                    routeVersion?: number;
+                    isActive?: boolean;
+                    parentRouteId?: number;
+                    currentLatitude?: number;
+                    currentLongitude?: number;
+                    actualStartedAt?: string;
+                    actualCompletedAt?: string;
+                    reoptimizedAt?: string;
+                    reoptimizeReason?: string;
+                };
+                deliveryStops: any[];
+                office?: {
+                    id?: number;
+                    name: string;
+                    latitude?: number;
+                    longitude?: number;
+                };
+            } | null;
+        }>("/shipper/route");
+
+        if (!res.data) {
+            throw new Error("getShipperRoute returned null/undefined response");
+        }
+
+        return res.data;
     },
 
     async startShipperRoute(routeId: number) {
         await axiosClient.post<ApiResponse<any>>("/shipper/route/start", {routeId});
+    },
+
+    async reOptimizeShipperRoute(payload: {
+        routeId?: number;
+        currentLatitude: number;
+        currentLongitude: number;
+        currentAddress?: string;
+        includeRemainingStopsOnly?: boolean;
+        returnToOffice?: boolean;
+        reason?: string;
+    }) {
+        const res = await axiosClient.post<ApiResponse<any>>("/shipper/route/re-optimize", payload);
+        return res.data;
+    },
+
+    async pickupInsertion(payload: {
+        pickupOrderId: number;
+        targetShipperEmployeeId?: number;
+        targetRouteId?: number;
+        autoAssign?: boolean;
+        reOptimizeAfterInsert?: boolean;
+    }) {
+        const res = await axiosClient.post<ApiResponse<any>>("/shipper/route/pickup-insert", payload);
+        return res.data;
     },
 
     // Report

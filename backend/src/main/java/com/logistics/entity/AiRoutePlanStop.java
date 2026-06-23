@@ -1,10 +1,15 @@
 package com.logistics.entity;
 
+import com.logistics.enums.RouteStopStatus;
+import com.logistics.enums.RouteStopType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ai_route_plan_stops")
@@ -23,8 +28,12 @@ public class AiRoutePlanStop {
     private AiRoutePlanRoute route;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
+    @JoinColumn(name = "order_id")
     private Order order;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private RouteStopType stopType = RouteStopType.DELIVERY;
 
     @Column(nullable = false)
     private Integer stopSequence;
@@ -54,5 +63,30 @@ public class AiRoutePlanStop {
 
     private Integer etaMinutesFromStart;
 
-    private java.math.BigDecimal legDistanceKm;
+    private BigDecimal legDistanceKm;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private RouteStopStatus stopStatus = RouteStopStatus.PENDING;
+
+    @Column(name = "is_inserted")
+    private Boolean isInserted = false;
+
+    @Column(length = 100)
+    private String insertedReason;
+
+    @Column(name = "original_sequence")
+    private Integer originalSequence;
+
+    @Column(name = "actual_arrived_at")
+    private LocalDateTime actualArrivedAt;
+
+    @Column(name = "actual_completed_at")
+    private LocalDateTime actualCompletedAt;
+
+    @Column(name = "service_time_minutes")
+    private Integer serviceTimeMinutes;
+
+    @Column(name = "leg_duration_minutes")
+    private Integer legDurationMinutes;
 }

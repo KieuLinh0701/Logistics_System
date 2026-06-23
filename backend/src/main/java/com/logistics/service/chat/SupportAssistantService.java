@@ -281,6 +281,7 @@ public class SupportAssistantService {
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
             case PICKING_UP -> "Đang lấy hàng";
             case PICKED_UP -> "Đã lấy hàng";
+            case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại cuối cùng";
             case IMPORTED -> "Đã nhập hàng";
             case EXPORTED -> "Đã xuất hàng";
             case AT_DEST_OFFICE -> "Tại bưu cục đích";
@@ -292,7 +293,7 @@ public class SupportAssistantService {
             case DELIVERY_RETRY -> "Chờ giao lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case RETURNING -> "Đang hoàn hàng";
-            case RETURN_RETRY_AT_ORIGIN_OFFICE -> "Hàng hoàn đã về đến bưu cục xuất phát";
+            case RETURN_AT_ORIGIN_OFFICE -> "Hàng hoàn đã về bưu cục gốc";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn hàng";

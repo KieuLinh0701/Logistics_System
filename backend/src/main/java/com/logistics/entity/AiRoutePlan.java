@@ -1,6 +1,8 @@
 package com.logistics.entity;
 
 import com.logistics.enums.AiRoutePlanStatus;
+import com.logistics.enums.RouteMode;
+import com.logistics.enums.RouteOptimizationScope;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -60,6 +62,41 @@ public class AiRoutePlan {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private RouteMode routeMode = RouteMode.CLOSED_LOOP;
+
+    @Column(nullable = false)
+    private Boolean returnToOffice = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private RouteOptimizationScope optimizationScope = RouteOptimizationScope.MANAGER_GLOBAL;
+
+    @Column(length = 20)
+    private String createdByRole = "MANAGER";
+
+    @Column(name = "created_by_employee_id")
+    private Integer createdByEmployeeId;
+
+    @Column(name = "base_plan_id")
+    private Long basePlanId;
+
+    @Column(name = "version_number")
+    private Integer versionNumber = 1;
+
+    @Column(nullable = false)
+    private Boolean active = true;
+
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "parent_plan_id")
+    private Long parentPlanId;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AiRoutePlanRoute> routes = new ArrayList<>();

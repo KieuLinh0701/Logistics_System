@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef} from "react";
-import {GoogleMap, InfoWindowF} from "@react-google-maps/api";
+import {GoogleMap, InfoWindowF, Marker as InfoWindowMarker} from "@react-google-maps/api";
 import type {AiRouteStop, AiShipperRoute} from "../../../../types/aiRoute";
 import RouteStopMarker from "./RouteStopMarker";
 import {
@@ -10,6 +10,8 @@ import {
     getRouteColor,
     getRouteKey,
     getStopLabel,
+    getStopTypeLabel,
+    getStopTypeBadge,
     isValidStop,
 } from "../utils/routeMapUtils";
 
@@ -119,22 +121,23 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
         return;
       }
 
-      const path = decodeEncodedPolyline(route.encodedPolyline);
-      if (path.length <= 1) return;
+        const decodedPath = decodeEncodedPolyline(route.encodedPolyline);
 
-      const color = getRouteColor(routeIndex);
-      const highlighted = highlightedRouteKey === routeKey;
-      const dimmed = highlightedRouteKey != null && !highlighted;
+        if (decodedPath.length <= 1) return;
 
-      const polyline = new google.maps.Polyline({
-        path,
-        map,
-        strokeColor: color,
-        strokeOpacity: dimmed ? 0.28 : 0.92,
-        strokeWeight: highlighted ? 7 : 5,
-        geodesic: true,
-        zIndex: highlighted ? 300 : 100 + routeIndex,
-      });
+        const color = getRouteColor(routeIndex);
+        const highlighted = highlightedRouteKey === routeKey;
+        const dimmed = highlightedRouteKey != null && !highlighted;
+
+        const polyline = new google.maps.Polyline({
+          path: decodedPath,
+          map,
+          strokeColor: color,
+          strokeOpacity: dimmed ? 0.28 : 0.92,
+          strokeWeight: highlighted ? 7 : 5,
+          geodesic: true,
+          zIndex: highlighted ? 300 : 100 + routeIndex,
+        });
 
       routePolylinesRef.current.push(polyline);
     });
@@ -257,7 +260,24 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
           onCloseClick={() => onStopSelect(null)}
         >
           <div className="ai-route-info-window">
-            <div className="ai-route-info-title">{selectedStop.stop.trackingNumber}</div>
+            <div className="ai-route-info-title">{selectedStop.stop.trackingNumber || "Quay về bưu cục"}</div>
+            {(() => {
+              const badge = getStopTypeBadge(selectedStop.stop.stopType);
+              return (
+                <span style={{
+                  display: "inline-block",
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                  backgroundColor: badge.bg,
+                  color: badge.color,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}>
+                  {getStopTypeLabel(selectedStop.stop.stopType)}
+                </span>
+              );
+            })()}
             <p>
               <strong>Người nhận:</strong> {selectedStop.stop.recipientName || "—"}
             </p>
@@ -273,9 +293,16 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
             <p>
               <strong>ETA:</strong> {selectedStop.stop.etaTime || "—"}
             </p>
-            <p>
-              <strong>COD:</strong> {(selectedStop.stop.codAmount ?? 0).toLocaleString("vi-VN")}đ
-            </p>
+            {selectedStop.stop.stopType !== "RETURN_TO_OFFICE" && (
+              <p>
+                <strong>COD:</strong> {(selectedStop.stop.codAmount ?? 0).toLocaleString("vi-VN")}đ
+              </p>
+            )}
+            {selectedStop.stop.stopType === "RETURN_TO_OFFICE" && (
+              <p style={{color: "#E53935", fontStyle: "italic"}}>
+                Quay về bưu cục để nộp COD / bàn giao ca
+              </p>
+            )}
           </div>
         </InfoWindowF>
       )}

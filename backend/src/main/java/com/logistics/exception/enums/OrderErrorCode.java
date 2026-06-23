@@ -57,6 +57,7 @@ public enum OrderErrorCode implements BaseErrorCode {
     ORDER_INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "Số lượng không hợp lệ"),
     ORDER_QUANTITY_EXCEEDED(HttpStatus.BAD_REQUEST, "Số lượng vượt quá số lượng còn lại hoặc đã có thay đổi"),
     ORDER_INVALID_CLAIM_STATUS(HttpStatus.BAD_REQUEST, "Chỉ có thể nhận đơn ở trạng thái đã xác nhận, đã đến bưu cục đích hoặc sẵn sàng lấy"),
+    ORDER_ALREADY_CLAIMED(HttpStatus.CONFLICT, "Đơn hàng đã được nhận bởi shipper khác"),
     ORDER_PARTIAL_DELIVERY_INVALID(HttpStatus.BAD_REQUEST, "Đơn đang giao 1 phần, không đi qua luồng delivery retry"),
     ORDER_MISSING_FAIL_REASON(HttpStatus.BAD_REQUEST, "failReason là bắt buộc"),
     ORDER_INVALID_DELIVERY_STATUS(HttpStatus.BAD_REQUEST, "Trạng thái giao hàng không hợp lệ"),

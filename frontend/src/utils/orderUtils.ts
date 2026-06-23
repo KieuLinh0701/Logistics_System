@@ -161,7 +161,7 @@ export const ORDER_STATUS = [
     'FAILED_DELIVERY',
     'CANCELLED',
     'RETURNING',
-    'RETURN_RETRY_AT_ORIGIN_OFFICE',
+    'RETURN_AT_ORIGIN_OFFICE',
     'RETURN_RETRY',
     'RETURN_FAILED_FINAL',
     'RETURNED',
@@ -217,8 +217,8 @@ export const translateOrderStatus = (value: string): string => {
             return 'Đã hủy';
         case 'RETURNING':
             return 'Đang hoàn trả';
-        case 'RETURN_RETRY_AT_ORIGIN_OFFICE':
-            return 'Đã hoàn về bưu cục xuất phát';
+        case 'RETURN_AT_ORIGIN_OFFICE':
+            return 'Đã hoàn về bưu cục gốc';
         case 'RETURN_RETRY':
             return 'Hoàn hàng lại';
         case 'RETURN_FAILED_FINAL':

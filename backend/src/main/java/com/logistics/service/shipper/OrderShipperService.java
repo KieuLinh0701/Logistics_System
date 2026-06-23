@@ -11,7 +11,19 @@ import com.logistics.request.common.notification.NotificationSearchRequest;
 import com.logistics.request.shipper.CreateIncidentReportRequest;
 import com.logistics.request.shipper.DeliverOriginRequest;
 import com.logistics.request.shipper.PickedUpRequest;
+import com.logistics.request.shipper.PickupInsertionRequest;
+import com.logistics.request.shipper.ShipperReOptimizeRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
+import com.logistics.dto.ai.AiLocationDto;
+import com.logistics.dto.ai.AiOfficeLocationDto;
+import com.logistics.dto.ai.AiOrderInputDto;
+import com.logistics.dto.ai.AiRouteOptimizationRequestDto;
+import com.logistics.dto.ai.AiRouteOptimizationResponseDto;
+import com.logistics.dto.ai.AiRouteStopInputDto;
+import com.logistics.dto.ai.AiRouteStopOutputDto;
+import com.logistics.dto.ai.AiShipperInputDto;
+import com.logistics.dto.ai.AiShipperRouteOutputDto;
+import com.logistics.service.ai.AiServiceClient;
 import com.logistics.response.NotificationResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.assignment.AutoAssignService;
@@ -19,6 +31,7 @@ import com.logistics.service.common.ConfigService;
 import com.logistics.service.common.NotificationService;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +50,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class OrderShipperService {
 
     @Autowired
@@ -82,7 +96,13 @@ public class OrderShipperService {
     private AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
 
     @Autowired
+    private AiRoutePlanStopRepository aiRoutePlanStopRepository;
+
+    @Autowired
     private ShipperVehicleRepository shipperVehicleRepository;
+
+    @Autowired
+    private AiServiceClient aiServiceClient;
 
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
         OrderHistory history = new OrderHistory();
@@ -614,10 +634,21 @@ public class OrderShipperService {
         int totalReturned = products.stream().mapToInt(p -> p.getReturnedQuantity() == null ? 0 : p.getReturnedQuantity()).sum();
 
         if (totalDelivered >= totalQty && totalReturned == 0) {
+            OrderStatus oldStatus = order.getStatus();
             order.setStatus(OrderStatus.DELIVERED);
             orderRepository.save(order);
             applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
             saveHistory(order, OrderHistoryActionType.DELIVERED, "Đã giao toàn bộ đơn hàng");
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Giao hàng thành công",
+                        String.format("Đơn %s đã được giao thành công.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
             try {
                 User shipperUser = employee.getUser();
                 if (order.getCod() != null && order.getCod() > 0 && !hasExistingCodSubmission(order)) {
@@ -629,6 +660,7 @@ public class OrderShipperService {
             return;
         }
 
+        OrderStatus oldStatus = order.getStatus();
         if (totalDelivered > 0) {
             order.setStatus(OrderStatus.PARTIAL_DELIVERY);
         } else if (totalReturned > 0) {
@@ -645,6 +677,23 @@ public class OrderShipperService {
         }
         if (totalReturned > 0 && totalDelivered == 0) {
             saveHistory(order, OrderHistoryActionType.PARTIAL_RETURN, "Trả 1 phần: trả " + totalReturned + " / " + totalQty);
+        }
+
+        if (order.getUser() != null) {
+            String title;
+            if (totalDelivered > 0) {
+                title = "Giao hàng một phần";
+            } else {
+                title = "Hoàn hàng một phần";
+            }
+            notificationService.create(
+                    title,
+                    String.format("Đơn %s %s.", order.getTrackingNumber(), totalDelivered > 0 ? "đã được giao một phần" : "có sản phẩm được hoàn một phần"),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
         }
 
         if (totalDelivered > 0) {
@@ -666,8 +715,12 @@ public class OrderShipperService {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getEmployee() != null) {
+            throw new AppException(OrderErrorCode.ORDER_ALREADY_CLAIMED);
+        }
 
         if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             if (order.getFromOffice() == null || !Objects.equals(order.getFromOffice().getId(), officeId)) {
@@ -683,10 +736,28 @@ public class OrderShipperService {
             throw new AppException(OrderErrorCode.ORDER_INVALID_CLAIM_STATUS);
         }
 
+        OrderStatus oldStatus = order.getStatus();
         order.setStatus(OrderStatus.PICKING_UP);
         order.setEmployee(employee);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper nhận yêu cầu lấy hàng (bắt đầu lấy)");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Shipper đang đến lấy hàng",
+                    String.format("Shipper đang trên đường đến lấy đơn %s.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+
+        try {
+            assignOrderToActiveAiRoute(employee, order);
+        } catch (Exception e) {
+            log.warn("claimOrderRequest: failed to assign order {} to AI route: {}", id, e.getMessage());
+        }
     }
 
     @Transactional
@@ -694,8 +765,12 @@ public class OrderShipperService {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getEmployee() != null) {
+            throw new AppException(OrderErrorCode.ORDER_ALREADY_CLAIMED);
+        }
 
         if (order.getToOffice() == null || !Objects.equals(order.getToOffice().getId(), officeId)) {
             throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
@@ -709,6 +784,13 @@ public class OrderShipperService {
         order.setEmployee(employee);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.READY_FOR_PICKUP, "Shipper nhận đơn (sẵn sàng lấy)");
+
+        // Thêm đơn vào AI route hiện tại của shipper
+        try {
+            assignOrderToActiveAiRoute(employee, order);
+        } catch (Exception e) {
+            log.warn("claimOrder: failed to assign order {} to AI route: {}", id, e.getMessage());
+        }
     }
 
     @Transactional
@@ -916,10 +998,50 @@ public class OrderShipperService {
         applyVehicleWorkloadByStatus(order, employee, OrderStatus.PICKED_UP);
         saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper xác nhận đã lấy hàng");
 
-        // Gửi notification đơn giản
-        try {
-            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
-        } catch (Exception e) { throw e; }
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Đã lấy hàng thành công",
+                    String.format("Đơn %s đã được lấy hàng thành công.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+    }
+
+    @Transactional
+    public void retryPickup(Integer id) {
+        Employee employee = getCurrentEmployee();
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        // Kiểm tra trạng thái phải là PICKUP_RETRY
+        if (order.getStatus() != OrderStatus.PICKUP_RETRY) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
+        }
+
+        // Kiểm tra shipper hiện tại là người đã nhận đơn
+        if (order.getEmployee() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
+        }
+
+        order.setStatus(OrderStatus.PICKING_UP);
+        orderRepository.save(order);
+        orderRepository.flush();
+        saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper tiến hành đến lấy lại (retry pickup)");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Lấy hàng chưa thành công",
+                    String.format("Lấy hàng đơn %s chưa thành công. Hệ thống sẽ sắp xếp lấy lại.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     @Transactional
@@ -953,9 +1075,16 @@ public class OrderShipperService {
 
         try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception e) { throw e; }
 
-        try {
-            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
-        } catch (Exception e) { throw e; }
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Hàng đã về bưu cục gốc",
+                    String.format("Đơn %s đã về bưu cục gốc.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     public Map<String, Object> getDeliveryHistory(int page, int limit, String status) {
@@ -1690,16 +1819,18 @@ public class OrderShipperService {
             }
         }
 
-        notificationService.create(
-                "Đã giao hàng thành công",
-                "Đơn hàng " + order.getTrackingNumber() + " - Đã giao hàng thành công",
-                "order_status_changed",
-                shipperUser.getId(),
-                null,
-                "recipientaddress",
-                order.getTrackingNumber()
-        );
         saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Giao hàng thành công",
+                    String.format("Đơn %s đã được giao thành công.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     private void handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
@@ -1730,12 +1861,32 @@ public class OrderShipperService {
             order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
             orderRepository.save(order);
             saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Giao hàng không thành công",
+                        String.format("Đơn %s giao không thành công sau nhiều lần thử.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
             return;
         }
 
         order.setStatus(OrderStatus.DELIVERY_RETRY);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.DELIVERY_RETRY, buildDeliveryAttemptNote(reason, note, attemptNumber, maxAttempts));
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Giao hàng chưa thành công",
+                    String.format("Giao đơn %s chưa thành công. Hệ thống sẽ sắp xếp giao lại.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     @Transactional
@@ -1768,6 +1919,16 @@ public class OrderShipperService {
         order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Giao hàng không thành công",
+                    String.format("Đơn %s giao không thành công sau nhiều lần thử.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     private String resolveSenderFullAddress(Order order) {
@@ -1803,13 +1964,29 @@ public class OrderShipperService {
     }
 
     // Lộ trình giao hàng (ưu tiên tuyến AI đã xác nhận)
+    @Transactional(readOnly = true)
     public Map<String, Object> getDeliveryRoute() {
         Employee employee = getCurrentEmployee();
+        log.info("[getDeliveryRoute] shipperEmployeeId={} officeId={}",
+                employee.getId(), employee.getOffice() != null ? employee.getOffice().getId() : null);
 
-        List<AiRoutePlanRoute> aiRoutes = aiRoutePlanRouteRepository.findConfirmedRoutesForShipper(
+        List<AiRoutePlanRoute> aiRoutes = aiRoutePlanRouteRepository.findActiveConfirmedRoutesForShipper(
                 employee.getId(), AiRoutePlanStatus.CONFIRMED);
-        if (!aiRoutes.isEmpty()) {
-            return buildAiDeliveryRouteResponseData(employee, aiRoutes.get(0));
+        log.info("[getDeliveryRoute] aiRoutes found={}", aiRoutes.size());
+
+        AiRoutePlanRoute aiRoute = null;
+        for (AiRoutePlanRoute r : aiRoutes) {
+            long deliveryPickupStops = r.getStops().stream()
+                    .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                    .count();
+                    if (deliveryPickupStops > 0) {
+                aiRoute = r;
+                break;
+            }
+        }
+
+        if (aiRoute != null) {
+            return buildAiDeliveryRouteResponseData(employee, aiRoute);
         }
 
         Integer officeId = employee.getOffice().getId();
@@ -1822,7 +1999,9 @@ public class OrderShipperService {
             predicates.add(root.get("status").in(
                     OrderStatus.AT_DEST_OFFICE,
                     OrderStatus.PICKED_UP,
-                    OrderStatus.DELIVERING
+                    OrderStatus.DELIVERING,
+                    OrderStatus.READY_FOR_PICKUP,
+                    OrderStatus.PICKING_UP
             ));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -1863,53 +2042,95 @@ public class OrderShipperService {
         result.put("routeInfo", routeInfo);
         result.put("deliveryStops", deliveryStops);
 
+        log.info("[getDeliveryRoute] returning fallback route: totalStops={}", routeOrders.size());
         return result;
     }
 
     private Map<String, Object> buildAiDeliveryRouteResponseData(Employee employee, AiRoutePlanRoute aiRoute) {
-        List<AiRoutePlanStop> stops = aiRoute.getStops();
-        if (stops != null) {
-            stops.sort(Comparator.comparing(AiRoutePlanStop::getStopSequence));
+        // Query directly from DB to get correct ordering
+        List<AiRoutePlanStop> allStops = aiRoutePlanStopRepository.findByRouteIdOrderByStopSequenceAsc(aiRoute.getId());
+        if (allStops != null) {
+            allStops.sort(Comparator.comparing(AiRoutePlanStop::getStopSequence));
         } else {
-            stops = List.of();
+            allStops = List.<AiRoutePlanStop>of();
         }
 
-        int totalCOD = stops.stream().mapToInt(s -> s.getCodAmount() != null ? s.getCodAmount() : 0).sum();
+        // Visible stops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
+        List<AiRoutePlanStop> visibleStops = allStops.stream()
+                .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                .toList();
 
-        List<Map<String, Object>> deliveryStops = stops.stream().map(stop -> {
+        // totalCOD: chỉ DELIVERY stops
+        int totalCOD = visibleStops.stream()
+                .filter(s -> s.getStopType() == RouteStopType.DELIVERY)
+                .mapToInt(s -> {
+                    Integer cod = s.getCodAmount();
+                    return cod != null ? cod : 0;
+                })
+                .sum();
+
+        List<Map<String, Object>> deliveryStops = visibleStops.stream().map(stop -> {
             Order order = stop.getOrder();
-            String recipientFullAddress = stop.getRecipientAddress() != null
-                    ? stop.getRecipientAddress()
+            String trackingNumber = stop.getTrackingNumber();
+            String recipientName = stop.getRecipientName();
+            String recipientPhone = stop.getRecipientPhone();
+            String stopAddress = stop.getRecipientAddress();
+            String recipientFullAddress = stopAddress != null
+                    ? stopAddress
                     : (order != null ? resolveRecipientFullAddress(order) : "");
+
+            // COD: chỉ DELIVERY mới có COD
+            int codAmount = 0;
+            if (stop.getStopType() == RouteStopType.DELIVERY) {
+                Integer cod = stop.getCodAmount();
+                codAmount = cod != null ? cod : 0;
+            }
+
             Map<String, Object> m = new HashMap<>();
-            m.put("id", order != null ? order.getId() : stop.getOrder().getId());
-            m.put("trackingNumber", stop.getTrackingNumber());
-            m.put("recipientName", stop.getRecipientName());
-            m.put("recipientPhone", stop.getRecipientPhone());
+            m.put("id", stop.getId());
+            m.put("orderId", order != null ? order.getId() : null);
+            m.put("trackingNumber", trackingNumber != null ? trackingNumber : "");
+            m.put("stopType", stop.getStopType() != null ? stop.getStopType().name() : "DELIVERY");
+            m.put("recipientName", recipientName != null ? recipientName : "");
+            m.put("recipientPhone", recipientPhone != null ? recipientPhone : "");
             m.put("recipientAddress", recipientFullAddress);
             m.put("recipientFullAddress", recipientFullAddress);
             m.put("latitude", stop.getRecipientLatitude());
             m.put("longitude", stop.getRecipientLongitude());
-            m.put("codAmount", stop.getCodAmount());
+            m.put("codAmount", codAmount);
             m.put("priority", "HIGH".equalsIgnoreCase(stop.getPriority()) ? "urgent" : "normal");
             m.put("serviceType", order != null && order.getServiceType() != null
                     ? order.getServiceType().getName() : "Tiêu chuẩn");
             m.put("stopSequence", stop.getStopSequence());
             m.put("etaTime", stop.getEtaTime());
             m.put("etaMinutesFromStart", stop.getEtaMinutesFromStart());
-            m.put("status", order != null && order.getStatus() == OrderStatus.DELIVERED ? "completed" : "pending");
+            m.put("stopStatus", stop.getStopStatus() != null ? stop.getStopStatus().name() : "PENDING");
+            m.put("isInserted", stop.getIsInserted() != null ? stop.getIsInserted() : false);
+            m.put("insertedReason", stop.getInsertedReason());
+            m.put("legDistanceKm", stop.getLegDistanceKm() != null ? stop.getLegDistanceKm().doubleValue() : null);
+            m.put("legDurationMinutes", stop.getLegDurationMinutes());
+            m.put("actualArrivedAt", stop.getActualArrivedAt());
+            m.put("actualCompletedAt", stop.getActualCompletedAt());
+            if (order != null) {
+                m.put("status", order.getStatus() == OrderStatus.DELIVERED ? "completed" : "pending");
+            } else {
+                RouteStopStatus ss = stop.getStopStatus();
+                m.put("status", ss != null ? ss.name().toLowerCase() : "pending");
+            }
             return m;
         }).toList();
 
+        AiRoutePlan plan = aiRoute.getPlan();
         Map<String, Object> routeInfo = new HashMap<>();
         routeInfo.put("id", aiRoute.getId());
-        routeInfo.put("planId", aiRoute.getPlan().getId());
-        routeInfo.put("planCode", aiRoute.getPlan().getPlanCode());
-        routeInfo.put("name", "Tuyến AI - " + aiRoute.getShipperName());
-        routeInfo.put("startLocation", employee.getOffice().getName());
-        routeInfo.put("totalStops", stops.size());
-        routeInfo.put("completedStops", (int) stops.stream()
-                .filter(s -> s.getOrder() != null && s.getOrder().getStatus() == OrderStatus.DELIVERED)
+        routeInfo.put("planId", plan != null ? plan.getId() : null);
+        routeInfo.put("planCode", plan != null ? plan.getPlanCode() : null);
+        routeInfo.put("name", aiRoute.getShipperName() != null ? "Tuyến AI - " + aiRoute.getShipperName() : "Tuyến AI");
+        routeInfo.put("startLocation", employee.getOffice() != null ? employee.getOffice().getName() : "");
+        // totalStops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
+        routeInfo.put("totalStops", visibleStops.size());
+        routeInfo.put("completedStops", (int) visibleStops.stream()
+                .filter(s -> s.getStopStatus() == RouteStopStatus.COMPLETED)
                 .count());
         routeInfo.put("totalDistance", aiRoute.getEstimatedDistanceKm() != null
                 ? aiRoute.getEstimatedDistanceKm().doubleValue() : 0);
@@ -1921,21 +2142,635 @@ public class OrderShipperService {
         routeInfo.put("startTime", aiRoute.getStartTime());
         routeInfo.put("status", "ai_optimized");
         routeInfo.put("source", "AI");
+        routeInfo.put("routeMode", aiRoute.getRouteMode() != null ? aiRoute.getRouteMode().name() : "CLOSED_LOOP");
+        routeInfo.put("returnToOffice", aiRoute.getReturnToOffice() != null ? aiRoute.getReturnToOffice() : true);
+        routeInfo.put("routeVersion", aiRoute.getRouteVersion() != null ? aiRoute.getRouteVersion() : 1);
+        routeInfo.put("isActive", aiRoute.getIsActive() != null ? aiRoute.getIsActive() : true);
+        routeInfo.put("parentRouteId", aiRoute.getParentRouteId());
+        routeInfo.put("currentLatitude", aiRoute.getCurrentLatitude());
+        routeInfo.put("currentLongitude", aiRoute.getCurrentLongitude());
+        routeInfo.put("actualStartedAt", aiRoute.getActualStartedAt());
+        routeInfo.put("actualCompletedAt", aiRoute.getActualCompletedAt());
+        routeInfo.put("reoptimizedAt", aiRoute.getReoptimizedAt());
+        routeInfo.put("reoptimizeReason", aiRoute.getReoptimizeReason());
 
+        Office office = employee.getOffice();
         Map<String, Object> officeMap = new HashMap<>();
-        officeMap.put("name", employee.getOffice().getName());
-        officeMap.put("latitude", employee.getOffice().getLatitude());
-        officeMap.put("longitude", employee.getOffice().getLongitude());
+        officeMap.put("id", office != null ? office.getId() : null);
+        officeMap.put("name", office != null ? office.getName() : "");
+        officeMap.put("latitude", office != null ? office.getLatitude() : null);
+        officeMap.put("longitude", office != null ? office.getLongitude() : null);
 
         Map<String, Object> result = new HashMap<>();
         result.put("routeInfo", routeInfo);
         result.put("deliveryStops", deliveryStops);
         result.put("office", officeMap);
-
         return result;
     }
 
     public void startRoute(Integer routeId) {
+    }
+
+    // ===================== SHIPPER RE-OPTIMIZE =====================
+    @Transactional
+    public Map<String, Object> reOptimizeRoute(ShipperReOptimizeRequest request) {
+        Long startMs = System.currentTimeMillis();
+        Employee employee = getCurrentEmployee();
+
+        try {
+            Office office = employee.getOffice();
+            if (office == null) {
+                throw new AppException(CommonErrorCode.BAD_REQUEST, "Shipper chưa được gán bưu cục");
+            }
+
+            AiRoutePlanRoute currentRoute;
+            if (request.getRouteId() != null) {
+                currentRoute = aiRoutePlanRouteRepository.findByIdWithDetails(request.getRouteId().longValue())
+                        .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
+                if (!Objects.equals(currentRoute.getShipperEmployeeId(), employee.getId())) {
+                    throw new AppException(CommonErrorCode.FORBIDDEN, "Bạn không có quyền tái tối ưu tuyến này");
+                }
+            } else {
+                List<AiRoutePlanRoute> routes = aiRoutePlanRouteRepository.findActiveConfirmedRoutesForShipper(
+                        employee.getId(), AiRoutePlanStatus.CONFIRMED);
+                if (routes.isEmpty()) {
+                    throw new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND, "Không có tuyến nào để tái tối ưu");
+                }
+                if (routes.size() > 1) {
+                    throw new AppException(CommonErrorCode.BAD_REQUEST,
+                            "Có " + routes.size() + " tuyến đang active. Vui lòng chọn tuyến cụ thể (routeId).");
+                }
+                currentRoute = routes.get(0);
+            }
+
+            if (currentRoute.getIsActive() == null || !currentRoute.getIsActive()) {
+                long completedStops = currentRoute.getStops().stream()
+                        .filter(s -> s.getStopStatus() == RouteStopStatus.COMPLETED)
+                        .count();
+                long totalStops = currentRoute.getStops().size();
+                boolean allCompleted = totalStops > 0 && completedStops == totalStops;
+
+                log.warn("[BE_ROUTE_BLOCKED] routeId={} isActive={} completedAt={} completedStops={}/{} allCompleted={} reoptimizedAt={} totalStops={}",
+                        currentRoute.getId(),
+                        currentRoute.getIsActive(),
+                        currentRoute.getActualCompletedAt(),
+                        completedStops, totalStops, allCompleted,
+                        currentRoute.getReoptimizedAt(),
+                        currentRoute.getStops().size());
+
+                if (currentRoute.getActualCompletedAt() != null) {
+                    throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS,
+                            "Tuyến đã hoàn tất (completedAt=" + currentRoute.getActualCompletedAt() + ")");
+                }
+                if (allCompleted) {
+                    throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS,
+                            "Tất cả điểm dừng đã hoàn thành, không thể tái tối ưu");
+                }
+                log.info("[BE_ROUTE_REACTIVATING] routeId={} isActive=false but can be re-optimized",
+                        currentRoute.getId());
+            }
+
+            log.info("reOptimizeRoute: employeeId={} requestRouteId={} currentRouteId={} planId={} shipperEmployeeId={}",
+                    employee.getId(), request.getRouteId(), currentRoute.getId(),
+                    currentRoute.getPlan(), currentRoute.getShipperEmployeeId());
+
+            List<AiRoutePlanStop> allStops = currentRoute.getStops();
+            log.debug("reOptimizeRoute: totalStops={}", allStops.size());
+
+            List<AiRoutePlanStop> remainingStops = allStops.stream()
+                    .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                    .filter(s -> hasValidLatLng(s.getRecipientLatitude(), s.getRecipientLongitude()))
+                    .filter(s -> s.getStopStatus() == RouteStopStatus.PENDING
+                            || s.getStopStatus() == RouteStopStatus.ARRIVED)
+                    .sorted(Comparator.comparing(AiRoutePlanStop::getStopSequence))
+                    .toList();
+
+            if (remainingStops.isEmpty()) {
+                log.warn("reOptimizeRoute: remainingStops is empty! totalStops={}", allStops.size());
+                throw new AppException(CommonErrorCode.BAD_REQUEST,
+                        "Không còn điểm dừng nào để tái tối ưu. totalStops=" + allStops.size()
+                                + " remainingAfterFilter=0. Xem log chi tiết.");
+            }
+
+            AiLocationDto startLocation;
+            boolean hasValidGps = request.getCurrentLatitude() != null
+                    && request.getCurrentLongitude() != null
+                    && hasValidLatLng(request.getCurrentLatitude(), request.getCurrentLongitude());
+
+            if (hasValidGps) {
+                startLocation = AiLocationDto.builder()
+                        .type("CURRENT_POSITION")
+                        .latitude(request.getCurrentLatitude())
+                        .longitude(request.getCurrentLongitude())
+                        .name(request.getCurrentAddress())
+                        .build();
+            } else {
+                startLocation = AiLocationDto.builder()
+                        .type("OFFICE")
+                        .id(office.getId())
+                        .name(office.getName())
+                        .latitude(office.getLatitude().doubleValue())
+                        .longitude(office.getLongitude().doubleValue())
+                        .build();
+                log.warn("reOptimizeRoute: GPS không hợp lệ, dùng office làm startLocation. lat={} lng={}",
+                        request.getCurrentLatitude(), request.getCurrentLongitude());
+            }
+
+            AiLocationDto endLocation = AiLocationDto.builder()
+                    .type("OFFICE")
+                    .id(office.getId())
+                    .name(office.getName())
+                    .latitude(office.getLatitude().doubleValue())
+                    .longitude(office.getLongitude().doubleValue())
+                    .build();
+
+            List<AiRouteStopInputDto> stopInputs = remainingStops.stream()
+                .map(s -> {
+                    RouteStopType stopType = s.getStopType();
+                    Order order = s.getOrder();
+                    if (stopType == RouteStopType.PICKUP && order != null) {
+                        Double senderLat = order.getSenderLatitude();
+                        Double senderLng = order.getSenderLongitude();
+                        return AiRouteStopInputDto.builder()
+                                .stopId(s.getId())
+                                .orderId(order.getId())
+                                .trackingNumber(order.getTrackingNumber())
+                                .stopType("PICKUP")
+                                .recipientName(order.getSenderName())
+                                .recipientPhone(order.getSenderPhone())
+                                .address(order.getSenderFullAddress())
+                                .latitude(senderLat)
+                                .longitude(senderLng)
+                                .codAmount(0)
+                                .priority(s.getPriority())
+                                .serviceTimeMinutes(5)
+                                .weightKg(order.getWeight() != null ? order.getWeight().doubleValue() : 1.0)
+                                .build();
+                    } else {
+                        Integer cod = s.getCodAmount();
+                        Integer orderId = (order != null && order.getId() != null) ? order.getId().intValue() : null;
+                        return AiRouteStopInputDto.builder()
+                                .stopId(s.getId())
+                                .orderId(orderId)
+                                .trackingNumber(s.getTrackingNumber())
+                                .stopType("DELIVERY")
+                                .recipientName(s.getRecipientName())
+                                .recipientPhone(s.getRecipientPhone())
+                                .address(s.getRecipientAddress())
+                                .latitude(s.getRecipientLatitude())
+                                .longitude(s.getRecipientLongitude())
+                                .codAmount(cod != null ? cod : 0)
+                                .priority(s.getPriority())
+                                .serviceTimeMinutes(5)
+                                .weightKg(1.0)
+                                .build();
+                    }
+                })
+                .toList();
+
+            AiShipperInputDto shipper = AiShipperInputDto.builder()
+                    .id(employee.getUser().getId())
+                    .employeeId(employee.getId())
+                    .name((employee.getUser().getFirstName() + " " + employee.getUser().getLastName()).trim())
+                    .capacity(20)
+                    .speedKmh(25.0)
+                    .fuelCostPerKm(3000.0)
+                    .startTime("08:00")
+                    .assignments(List.of())
+                    .build();
+
+            AiOfficeLocationDto officeDto = AiOfficeLocationDto.builder()
+                    .id(office.getId())
+                    .name(office.getName())
+                    .address(office.getDetail())
+                    .latitude(office.getLatitude().doubleValue())
+                    .longitude(office.getLongitude().doubleValue())
+                    .build();
+
+            AiRouteOptimizationRequestDto aiRequest = AiRouteOptimizationRequestDto.builder()
+                    .office(officeDto)
+                    .startLocation(startLocation)
+                    .endLocation(endLocation)
+                    .returnToOffice(request.getReturnToOffice() != null ? request.getReturnToOffice() : true)
+                    .routeMode("CLOSED_LOOP")
+                    .optimizationScope("SHIPPER_LOCAL")
+                    .shippers(List.of(shipper))
+                    .stops(stopInputs)
+                    .options(Map.of("ortools_time_limit_seconds", 8))
+                    .build();
+
+            log.info("reOptimizeRoute: AI request → scope={} mode={} returnToOffice={} startType={} stops={} shippers=1 officeId={}",
+                    aiRequest.getOptimizationScope(), aiRequest.getRouteMode(),
+                    aiRequest.getReturnToOffice(),
+                    startLocation.getType(), stopInputs.size(), office.getId());
+
+            AiRouteOptimizationResponseDto aiResponse;
+            Long aiCallStartMs = System.currentTimeMillis();
+            try {
+                aiResponse = aiServiceClient.optimizeRoutes(aiRequest);
+            } catch (Exception e) {
+                log.error("AI re-optimize failed: {}", e.getMessage(), e);
+                throw new AppException(AiRouteErrorCode.AI_SERVICE_UNAVAILABLE, "AI không phản hồi: " + e.getMessage());
+            }
+            Long aiCallEndMs = System.currentTimeMillis();
+            log.info("reOptimizeRoute: AI call completed in {}ms", aiCallEndMs - aiCallStartMs);
+
+            if (aiResponse.getRoutes() == null || aiResponse.getRoutes().isEmpty()) {
+                throw new AppException(CommonErrorCode.INTERNAL_SERVER_ERROR, "AI không tìm được tuyến nào");
+            }
+
+            AiShipperRouteOutputDto newAiRoute = aiResponse.getRoutes().get(0);
+
+            // Validate AI output before any DB writes
+            long aiDeliveryPickupCount = newAiRoute.getStops().stream()
+                    .filter(s -> {
+                        String t = s.getStopType();
+                        return t == null || (!t.equalsIgnoreCase("RETURN_TO_OFFICE")
+                                && !t.equalsIgnoreCase("OFFICE")
+                                && !t.equalsIgnoreCase("DEPOT"));
+                    })
+                    .count();
+
+            log.debug("[BE_AI_VALIDATION] aiStops={} deliveryPickupCount={}",
+                    newAiRoute.getStops().size(), aiDeliveryPickupCount);
+
+            if (aiDeliveryPickupCount == 0) {
+                log.warn("[BE_NO_DELIVERY_STOPS] AI returned 0 DELIVERY/PICKUP stops. remainingStops sent to AI={}. Not deactivating old route.",
+                        remainingStops.size());
+                throw new AppException(CommonErrorCode.BAD_REQUEST,
+                        "AI không trả về điểm giao hàng nào. Còn " + remainingStops.size()
+                                + " điểm dừng chưa hoàn thành trên tuyến cũ. Không thể tái tối ưu.");
+            }
+
+            // Build oldStopMap BEFORE deactivating old route
+            Map<Integer, AiRoutePlanStop> oldStopMap = remainingStops.stream()
+                    .collect(Collectors.toMap(
+                            s -> s.getOrder() != null ? s.getOrder().getId() : s.getId().intValue(),
+                            s -> s,
+                            (a, b) -> a
+                    ));
+
+            log.debug("reOptimizeRoute: oldStopMap size={}", oldStopMap.size());
+
+            List<AiRoutePlanStop> newStops = new ArrayList<>();
+            int seq = 1;
+
+            for (AiRouteStopOutputDto stopDto : newAiRoute.getStops()) {
+                String stopTypeStr = stopDto.getStopType();
+                boolean isReturnStop = "RETURN_TO_OFFICE".equalsIgnoreCase(stopTypeStr)
+                        || "OFFICE".equalsIgnoreCase(stopTypeStr)
+                        || "DEPOT".equalsIgnoreCase(stopTypeStr);
+
+                if (stopDto.getOrderId() == null || isReturnStop) {
+                    continue;
+                }
+
+                AiRoutePlanStop oldStop = oldStopMap.get(stopDto.getOrderId());
+                if (oldStop == null) {
+                    throw new AppException(CommonErrorCode.BAD_REQUEST,
+                            "AI trả về đơn không có trong danh sách: orderId=" + stopDto.getOrderId()
+                                    + " tracking=" + stopDto.getTrackingNumber()
+                                    + ". Các đơn hàng hợp lệ: " + oldStopMap.keySet());
+                }
+
+                AiRoutePlanStop newStop = new AiRoutePlanStop();
+                newStop.setRoute(null);
+                newStop.setOrder(oldStop.getOrder());
+                newStop.setStopType(stopTypeStr != null ? RouteStopType.valueOf(stopTypeStr) : RouteStopType.DELIVERY);
+                newStop.setStopSequence(seq++);
+                newStop.setTrackingNumber(stopDto.getTrackingNumber());
+                newStop.setRecipientName(stopDto.getRecipientName());
+                newStop.setRecipientPhone(stopDto.getRecipientPhone());
+                newStop.setRecipientAddress(stopDto.getRecipientAddress());
+                newStop.setRecipientLatitude(stopDto.getLatitude());
+                newStop.setRecipientLongitude(stopDto.getLongitude());
+                newStop.setCodAmount(stopDto.getCodAmount());
+                newStop.setPriority(stopDto.getPriority());
+                newStop.setEtaTime(stopDto.getEtaTime());
+                newStop.setEtaMinutesFromStart(stopDto.getEtaMinutesFromStart());
+                Double legDist = stopDto.getLegDistanceKm() != null ? stopDto.getLegDistanceKm() : 0.0;
+                newStop.setLegDistanceKm(BigDecimal.valueOf(legDist));
+                newStop.setStopStatus(RouteStopStatus.PENDING);
+                newStop.setIsInserted(oldStop.getIsInserted());
+                newStop.setInsertedReason(oldStop.getInsertedReason());
+                newStop.setOriginalSequence(oldStop.getOriginalSequence());
+                newStops.add(newStop);
+            }
+
+            int savedDeliveryPickup = newStops.size();
+
+            // RETURN_TO_OFFICE stop
+            int savedReturnStops = 0;
+            AiRouteStopOutputDto returnDto = newAiRoute.getReturnToOfficeStop();
+            if (returnDto != null) {
+                AiRoutePlanStop returnStop = new AiRoutePlanStop();
+                returnStop.setRoute(null);
+                returnStop.setOrder(null);
+                returnStop.setStopType(RouteStopType.RETURN_TO_OFFICE);
+                returnStop.setStopSequence(seq++);
+                returnStop.setRecipientName(office.getName());
+                returnStop.setRecipientAddress(office.getName());
+                returnStop.setRecipientLatitude(office.getLatitude().doubleValue());
+                returnStop.setRecipientLongitude(office.getLongitude().doubleValue());
+                returnStop.setCodAmount(0);
+                returnStop.setEtaTime(returnDto.getEtaTime());
+                returnStop.setEtaMinutesFromStart(returnDto.getEtaMinutesFromStart());
+                returnStop.setStopStatus(RouteStopStatus.PENDING);
+                returnStop.setIsInserted(false);
+                newStops.add(returnStop);
+                savedReturnStops = 1;
+            }
+
+            log.debug("reOptimizeRoute: newStops total={} deliveryPickup={} returnOffice={}",
+                    newStops.size(), savedDeliveryPickup, savedReturnStops);
+
+            // Validate saved delivery/pickup stops before deactivating old route
+            if (savedDeliveryPickup == 0) {
+                log.warn("[BE_ROLLBACK] No DELIVERY/PICKUP stops saved. AI returned {} stops. Keeping old route active.",
+                        newAiRoute.getStops().size());
+                throw new AppException(CommonErrorCode.BAD_REQUEST,
+                        "Không có điểm giao hàng nào được lưu. AI trả về " + newAiRoute.getStops().size()
+                                + " điểm dừng không hợp lệ. Giữ nguyên tuyến cũ.");
+            }
+
+            // Create new route and deactivate old route
+            AiRoutePlanRoute newRoute = new AiRoutePlanRoute();
+            newRoute.setPlan(currentRoute.getPlan());
+            newRoute.setShipperUserId(currentRoute.getShipperUserId());
+            newRoute.setShipperEmployeeId(currentRoute.getShipperEmployeeId());
+            newRoute.setShipperName(currentRoute.getShipperName());
+            newRoute.setRouteSequence(currentRoute.getRouteSequence());
+            newRoute.setEstimatedDistanceKm(BigDecimal.valueOf(
+                    newAiRoute.getEstimatedDistanceKm() != null ? newAiRoute.getEstimatedDistanceKm() : 0.0));
+            newRoute.setEstimatedDurationMinutes(BigDecimal.valueOf(
+                    newAiRoute.getEstimatedDurationMinutes() != null ? newAiRoute.getEstimatedDurationMinutes() : 0.0));
+            newRoute.setFuelCost(BigDecimal.valueOf(
+                    newAiRoute.getFuelCost() != null ? newAiRoute.getFuelCost() : 0.0));
+            newRoute.setTotalCod(newAiRoute.getTotalCod() != null ? newAiRoute.getTotalCod() : 0L);
+            newRoute.setEncodedPolyline(newAiRoute.getEncodedPolyline());
+            newRoute.setStartTime(newAiRoute.getStartTime());
+            newRoute.setCurrentLatitude(request.getCurrentLatitude());
+            newRoute.setCurrentLongitude(request.getCurrentLongitude());
+            newRoute.setRouteMode(RouteMode.CLOSED_LOOP);
+            newRoute.setReturnToOffice(true);
+            newRoute.setRouteVersion((currentRoute.getRouteVersion() != null ? currentRoute.getRouteVersion() : 1) + 1);
+            newRoute.setParentRouteId(currentRoute.getId());
+            newRoute.setIsActive(true);
+            newRoute.setReoptimizeReason(request.getReason() != null ? request.getReason() : "MANUAL");
+
+            // Attach stops to route
+            for (AiRoutePlanStop s : newStops) {
+                s.setRoute(newRoute);
+            }
+            newRoute.setStops(newStops);
+            newRoute.setStopCount(savedDeliveryPickup);
+
+            // Deactivate old route AFTER new route is fully validated
+            currentRoute.setIsActive(false);
+            currentRoute.setReoptimizedAt(LocalDateTime.now());
+            currentRoute.setReoptimizeReason(request.getReason() != null ? request.getReason() : "MANUAL");
+
+            // Save new route first (old route stays active until new route is persisted)
+            newRoute = aiRoutePlanRouteRepository.save(newRoute);
+
+            // Then save old route as inactive
+            aiRoutePlanRouteRepository.save(currentRoute);
+
+            Long saveEndMs = System.currentTimeMillis();
+            log.info("reOptimizeRoute: Route optimized - oldRouteId={} newRouteId={} version={} deliveryStops={} totalMs={}",
+                    currentRoute.getId(), newRoute.getId(), newRoute.getRouteVersion(),
+                    savedDeliveryPickup, saveEndMs - startMs);
+
+            Map<String, Object> result = buildAiDeliveryRouteResponseData(employee, newRoute);
+
+            long elapsed = System.currentTimeMillis() - startMs;
+            log.info("reOptimizeRoute: completed - newRouteId={} totalMs={} resultKeys={}",
+                    newRoute.getId(), elapsed, result.keySet());
+
+            return result;
+
+        } catch (AppException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new AppException(CommonErrorCode.INTERNAL_SERVER_ERROR,
+                    "Lỗi khi tái tối ưu tuyến: " + ex.getClass().getSimpleName() + " - " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Chuẩn hóa stopSequence cho route để:
+     * - DELIVERY / PICKUP đứng trước (giữ thứ tự theo stopSequence hiện tại)
+     * - RETURN_TO_OFFICE luôn ở cuối
+     * - Đánh lại sequence từ 1
+     * - SaveAll tất cả stops
+     * - Cập nhật route.stopCount
+     *
+     * QUAN TRỌNG: luôn query trực tiếp từ DB bằng repository,
+     * KHÔNG phụ thuộc vào route.getStops() để tránh EntityManager cache.
+     */
+    private void normalizeRouteStopSequences(Long routeId) {
+        List<AiRoutePlanStop> allStops = aiRoutePlanStopRepository.findByRouteIdOrderByStopSequenceAsc(routeId);
+        if (allStops == null || allStops.isEmpty()) {
+            return;
+        }
+
+        // Tách rõ operational (DELIVERY + PICKUP) vs RETURN_TO_OFFICE
+        // Sort operational theo stopSequence hiện tại để giữ thứ tự DELIVERY
+        List<AiRoutePlanStop> operationalStops = allStops.stream()
+                .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                .sorted(Comparator
+                        .comparing((AiRoutePlanStop s) -> s.getStopSequence() != null ? s.getStopSequence() : 0)
+                        .thenComparing(s -> s.getId() != null ? s.getId() : 0L))
+                .toList();
+
+        List<AiRoutePlanStop> returnStops = allStops.stream()
+                .filter(s -> s.getStopType() == RouteStopType.RETURN_TO_OFFICE)
+                .toList();
+
+        // Ghép: operational (đã sort) trước, RETURN_TO_OFFICE cuối
+        List<AiRoutePlanStop> ordered = new java.util.ArrayList<>(operationalStops);
+        ordered.addAll(returnStops);
+
+        // Đánh lại sequence: operational 1..n, RETURN_TO_OFFICE n+1..
+        for (int i = 0; i < ordered.size(); i++) {
+            ordered.get(i).setStopSequence(i + 1);
+        }
+
+        aiRoutePlanStopRepository.saveAll(ordered);
+
+        // Cập nhật route.stopCount và reoptimizedAt
+        AiRoutePlanRoute route = aiRoutePlanRouteRepository.findById(routeId)
+                .orElseThrow(() -> new IllegalStateException("Route not found: " + routeId));
+        route.setStopCount(operationalStops.size());
+        route.setReoptimizedAt(java.time.LocalDateTime.now());
+        aiRoutePlanRouteRepository.save(route);
+    }
+
+    /**
+     * Thêm đơn hàng vào AI route đang hoạt động của shipper.
+     * Nếu chưa có AI route thì bỏ qua (đơn vẫn được gán vào shipper).
+     */
+    private void assignOrderToActiveAiRoute(Employee employee, Order order) {
+        List<AiRoutePlanRoute> routes = aiRoutePlanRouteRepository.findConfirmedRoutesForShipper(
+                employee.getId(), AiRoutePlanStatus.CONFIRMED);
+
+        if (routes.isEmpty()) {
+            log.info("assignOrderToActiveAiRoute: no active AI route for shipperId={}, orderId={} skipped",
+                    employee.getId(), order.getId());
+            return;
+        }
+
+        AiRoutePlanRoute targetRoute = routes.get(0);
+        Long routeId = targetRoute.getId();
+
+        if (Boolean.TRUE.equals(aiRoutePlanStopRepository.existsByRouteIdAndOrderId(routeId, order.getId()))) {
+            log.info("assignOrderToActiveAiRoute: orderId={} already exists in routeId={}, skip",
+                    order.getId(), routeId);
+            return;
+        }
+
+        boolean isPickup = order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER
+                || order.getStatus() == OrderStatus.READY_FOR_PICKUP
+                || order.getStatus() == OrderStatus.PICKING_UP
+                || order.getStatus() == OrderStatus.PICKED_UP;
+        RouteStopType stopType = isPickup ? RouteStopType.PICKUP : RouteStopType.DELIVERY;
+        String insertedReason = isPickup ? "PICKUP_REQUEST" : "SHIPPER_CLAIM";
+
+        int tempSeq = aiRoutePlanStopRepository.findMaxStopSequenceByRouteId(routeId).orElse(0) + 1;
+
+        AiRoutePlanStop newStop = new AiRoutePlanStop();
+        newStop.setRoute(targetRoute);
+        newStop.setOrder(order);
+        newStop.setStopType(stopType);
+        newStop.setStopSequence(tempSeq);
+        newStop.setOriginalSequence(tempSeq);
+        newStop.setTrackingNumber(order.getTrackingNumber());
+        newStop.setRecipientName(order.getSenderName());
+        newStop.setRecipientPhone(order.getSenderPhone());
+        newStop.setRecipientAddress(order.getSenderFullAddress());
+        newStop.setRecipientLatitude(order.getSenderLatitude() != null ? order.getSenderLatitude() : 0.0);
+        newStop.setRecipientLongitude(order.getSenderLongitude() != null ? order.getSenderLongitude() : 0.0);
+        newStop.setCodAmount(order.getCod() != null ? order.getCod() : 0);
+        newStop.setPriority("NORMAL");
+        newStop.setStopStatus(RouteStopStatus.PENDING);
+        newStop.setIsInserted(true);
+        newStop.setInsertedReason(insertedReason);
+        newStop.setServiceTimeMinutes(5);
+        aiRoutePlanStopRepository.saveAndFlush(newStop);
+
+        // Query thẳng DB để verify stop đã được persist
+        List<AiRoutePlanStop> verifyStops = aiRoutePlanStopRepository.findByRouteIdOrderByStopSequenceAsc(routeId);
+
+        // Gọi normalize với routeId — query TRỰC TIẾP từ DB, KHÔNG dùng refreshedRoute entity
+        normalizeRouteStopSequences(routeId);
+
+        log.info("assignOrderToActiveAiRoute: orderId={} shipperId={} routeId={} stopType={} "
+                        + "stopId={} insertedReason={}",
+                order.getId(), employee.getId(), routeId, stopType, newStop.getId(), insertedReason);
+    }
+
+    // ===================== PICKUP INSERTION =====================
+    @Transactional
+    public Map<String, Object> assignPickupToShipperRoute(PickupInsertionRequest request) {
+        Employee employee = getCurrentEmployee();
+
+        Order order = orderRepository.findById(request.getPickupOrderId())
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getEmployee() != null && !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER, "Đơn đã được gán cho shipper khác");
+        }
+
+        if (order.getStatus() != OrderStatus.READY_FOR_PICKUP && order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS, "Trạng thái đơn không phù hợp để gán pickup");
+        }
+
+        // Assign order to shipper
+        order.setEmployee(employee);
+        if (order.getStatus() == OrderStatus.CONFIRMED) {
+            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        }
+        orderRepository.save(order);
+
+        AiRoutePlanRoute targetRoute;
+        if (request.getTargetRouteId() != null) {
+            targetRoute = aiRoutePlanRouteRepository.findByIdWithDetails(request.getTargetRouteId().longValue())
+                    .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
+            if (!Objects.equals(targetRoute.getShipperEmployeeId(), employee.getId())) {
+                throw new AppException(CommonErrorCode.FORBIDDEN, "Tuyến không thuộc về bạn");
+            }
+        } else {
+            List<AiRoutePlanRoute> routes = aiRoutePlanRouteRepository.findConfirmedRoutesForShipper(
+                    employee.getId(), AiRoutePlanStatus.CONFIRMED);
+            if (routes.isEmpty()) {
+                // No route exists - just return success, pickup will be standalone
+                log.info("assignPickupToShipperRoute: no active route, pickup orderId={} assigned to shipperId={}",
+                        request.getPickupOrderId(), employee.getId());
+                return Map.of("message", "Đơn pickup đã được gán cho shipper", "orderId", order.getId());
+            }
+            targetRoute = routes.get(0);
+        }
+
+        // Add PICKUP stop to existing route
+        AiRoutePlanStop pickupStop = new AiRoutePlanStop();
+        pickupStop.setRoute(targetRoute);
+        pickupStop.setOrder(order);
+        pickupStop.setStopType(RouteStopType.PICKUP);
+        pickupStop.setStopSequence(targetRoute.getStops().size() + 1);
+        pickupStop.setOriginalSequence(targetRoute.getStops().size() + 1);
+        pickupStop.setTrackingNumber(order.getTrackingNumber());
+        pickupStop.setRecipientName(order.getSenderName());
+        pickupStop.setRecipientPhone(order.getSenderPhone());
+        pickupStop.setRecipientAddress(order.getSenderFullAddress());
+        pickupStop.setRecipientLatitude(order.getSenderLatitude() != null ? order.getSenderLatitude() : 0.0);
+        pickupStop.setRecipientLongitude(order.getSenderLongitude() != null ? order.getSenderLongitude() : 0.0);
+        pickupStop.setCodAmount(0);
+        pickupStop.setPriority("NORMAL");
+        pickupStop.setStopStatus(RouteStopStatus.PENDING);
+        pickupStop.setIsInserted(true);
+        pickupStop.setInsertedReason("PICKUP_REQUEST");
+        pickupStop.setServiceTimeMinutes(5);
+
+        // Save & flush pickup stop TRƯỚC normalize
+        Long routeId = targetRoute.getId();
+        aiRoutePlanStopRepository.saveAndFlush(pickupStop);
+
+        // Gọi normalize với routeId — query TRỰC TIẾP từ DB, KHÔNG dùng refreshedRoute entity
+        normalizeRouteStopSequences(routeId);
+
+        // Notify shipper
+        try {
+            notificationService.create(
+                    "Đơn lấy hàng mới",
+                    "Có đơn pickup mới: " + order.getTrackingNumber() + ". Bấm 'Tối ưu lại tuyến' để cập nhật.",
+                    "pickup_inserted",
+                    employee.getUser().getId(),
+                    null,
+                    "order",
+                    order.getTrackingNumber()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send pickup notification: {}", e.getMessage());
+        }
+
+        log.info("assignPickupToShipperRoute: orderId={} shipperId={} routeId={}",
+                request.getPickupOrderId(), employee.getId(), targetRoute.getId());
+
+        return Map.of(
+                "message", "Đơn pickup đã được thêm vào tuyến",
+                "orderId", order.getId(),
+                "routeId", targetRoute.getId(),
+                "stopId", pickupStop.getId(),
+                "requiresReoptimize", true
+        );
+    }
+
+    private boolean hasValidLatLng(Double lat, Double lng) {
+        return lat != null && lng != null
+                && !lat.equals(0.0) && !lng.equals(0.0)
+                && !Double.isNaN(lat) && !Double.isNaN(lng)
+                && lat >= -90 && lat <= 90
+                && lng >= -180 && lng <= 180;
     }
 }
 

@@ -1,4 +1,4 @@
-package com.logistics.dto.ai.client;
+package com.logistics.dto.ai;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -8,21 +8,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class AiOrderInputDto {
+public class AiLocationDto {
+    private String type; // OFFICE, CURRENT_POSITION, CUSTOM
     private Integer id;
-    private String trackingNumber;
-    private String recipientName;
-    private String recipientPhone;
-    private String recipientAddress;
-    private Integer recipientWardCode;
-    private Integer recipientCityCode;
+    private String name;
     private Double latitude;
     private Double longitude;
-    private Integer codAmount;
-    private String priority;
-    private Double weightKg;
 }

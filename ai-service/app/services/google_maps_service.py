@@ -8,9 +8,10 @@ import polyline
 from googlemaps.exceptions import ApiError, HTTPError, Timeout
 
 from app.config.settings import Settings
-from app.models.route_optimization import OfficeLocation, OrderInput
+from app.models.route_optimization import OrderInput, RouteStopInput
 from app.services.geo_utils import (
     build_haversine_duration_matrix,
+    haversine_distance_km,
     haversine_duration_seconds,
 )
 
@@ -20,7 +21,6 @@ MATRIX_SOURCE_GOOGLE = "GOOGLE_DURATION_MATRIX"
 MATRIX_SOURCE_MIXED = "MIXED_WITH_FALLBACK"
 MATRIX_SOURCE_HAVERSINE = "HAVERSINE_FALLBACK"
 
-# Google Distance Matrix: toi da 25 diem xuat phat × 25 diem den moi request
 _MAX_MATRIX_NODES = 25
 _MAX_CACHE_ENTRIES = 64
 
@@ -41,16 +41,6 @@ class GoogleMapsService:
     def _coord_key(self, lat: float, lng: float) -> str:
         precision = self._settings.duration_matrix_coord_precision
         return f"{round(lat, precision)},{round(lng, precision)}"
-
-    def _locations_from_depot_stops(
-        self,
-        depot: OfficeLocation,
-        stops: list[OrderInput],
-    ) -> list[dict]:
-        return [
-            {"lat": depot.latitude, "lng": depot.longitude},
-            *[ {"lat": s.latitude, "lng": s.longitude} for s in stops],
-        ]
 
     def _cache_key(self, locations: list[dict]) -> str:
         mode = self._settings.duration_matrix_travel_mode
@@ -86,18 +76,40 @@ class GoogleMapsService:
             speed_kmh=self._settings.duration_matrix_avg_speed_kmh,
         )
 
+    def _haversine_fallback_polyline(
+        self,
+        start_location: dict,
+        ordered_stops: list,
+        end_location: dict | None = None,
+    ) -> list[tuple[float, float]]:
+        """Tạo polyline đường thẳng từ Haversine points làm fallback."""
+        points = [(start_location["lat"], start_location["lng"])]
+        for stop in ordered_stops:
+            points.append((stop.latitude, stop.longitude))
+        if end_location:
+            points.append((end_location["lat"], end_location["lng"]))
+        else:
+            points.append((start_location["lat"], start_location["lng"]))
+        return points
+
     def build_duration_matrix(
         self,
-        depot: OfficeLocation,
-        stops: list[OrderInput],
+        start_location: dict,
+        stops: list[OrderInput | RouteStopInput],
+        end_location: dict | None = None,
     ) -> DurationMatrixResult:
-        """
-        Tạo ma trận chi phí thời gian (giây) cho OR-Tools.
-        Nút 0 là depot, các nút còn lại là điểm dừng.
-        """
-        locations = self._locations_from_depot_stops(depot, stops)
-        size = len(locations)
+        locations = [{"lat": stop.latitude, "lng": stop.longitude} for stop in stops]
 
+        # Nếu closed loop: thêm start và end (cùng office) vào matrix
+        # Matrix nodes = start + stops + end
+        full_locations = []
+        if start_location:
+            full_locations.append(start_location)
+        full_locations.extend(locations)
+        if end_location:
+            full_locations.append(end_location)
+
+        size = len(full_locations)
         if size <= 1:
             return DurationMatrixResult(
                 duration_matrix=[[0]],
@@ -105,7 +117,7 @@ class GoogleMapsService:
                 matrix_source=MATRIX_SOURCE_HAVERSINE,
             )
 
-        cache_key = self._cache_key(locations)
+        cache_key = self._cache_key(full_locations)
         cached = self._get_cached(cache_key)
         if cached is not None:
             logger.debug("Duration matrix cache hit (%s nodes)", size)
@@ -113,7 +125,7 @@ class GoogleMapsService:
 
         if not self._client:
             logger.warning("GOOGLE_MAPS_API_KEY missing; Haversine duration matrix fallback")
-            result = self._haversine_matrix_result(locations)
+            result = self._haversine_matrix_result(full_locations)
             self._set_cached(cache_key, result)
             return result
 
@@ -122,11 +134,11 @@ class GoogleMapsService:
                 "Too many nodes (%s) for Google Distance Matrix; Haversine fallback",
                 size,
             )
-            result = self._haversine_matrix_result(locations)
+            result = self._haversine_matrix_result(full_locations)
             self._set_cached(cache_key, result)
             return result
 
-        lat_lngs = [(loc["lat"], loc["lng"]) for loc in locations]
+        lat_lngs = [(loc["lat"], loc["lng"]) for loc in full_locations]
         mode = self._settings.duration_matrix_travel_mode
 
         try:
@@ -137,7 +149,7 @@ class GoogleMapsService:
             )
         except (ApiError, HTTPError, Timeout, Exception) as exc:
             logger.warning("Google Distance Matrix API failed: %s; Haversine fallback", exc)
-            result = self._haversine_matrix_result(locations)
+            result = self._haversine_matrix_result(full_locations)
             self._set_cached(cache_key, result)
             return result
 
@@ -146,7 +158,7 @@ class GoogleMapsService:
                 "Google Distance Matrix status=%s; Haversine fallback",
                 response.get("status"),
             )
-            result = self._haversine_matrix_result(locations)
+            result = self._haversine_matrix_result(full_locations)
             self._set_cached(cache_key, result)
             return result
 
@@ -168,7 +180,7 @@ class GoogleMapsService:
                 else:
                     pair_fallback = True
                     matrix_row.append(
-                        self._pair_fallback_duration(locations[i], locations[j])
+                        self._pair_fallback_duration(full_locations[i], full_locations[j])
                     )
                     logger.debug(
                         "Duration matrix pair fallback i=%s j=%s status=%s",
@@ -181,7 +193,7 @@ class GoogleMapsService:
 
         if len(matrix) != size:
             logger.warning("Google matrix size mismatch; Haversine fallback")
-            result = self._haversine_matrix_result(locations)
+            result = self._haversine_matrix_result(full_locations)
             self._set_cached(cache_key, result)
             return result
 
@@ -208,45 +220,139 @@ class GoogleMapsService:
 
     def get_driving_route(
         self,
-        office: OfficeLocation,
-        route_orders: list[OrderInput],
-    ) -> tuple[list[tuple[float, float]], float, float, str | None]:
+        start_location: dict,
+        ordered_stops: list[OrderInput | RouteStopInput],
+        end_location: dict | None = None,
+        route_mode: str = "CLOSED_LOOP",
+    ) -> tuple[list[tuple[float, float]], float, float, str | None, float, float]:
+        """Gọi Google Directions API để lấy tuyến thực tế.
+
+        Args:
+            start_location: dict với lat/lng điểm xuất phát
+            ordered_stops: danh sách stops đã được sắp xếp
+            end_location: dict với lat/lng điểm kết thúc (None = dùng start_location)
+            route_mode: CLOSED_LOOP hoặc OPEN_ROUTE
+
+        Returns:
+            (decoded_polyline, total_distance_km, total_duration_minutes,
+             encoded_polyline, return_distance_km, return_duration_minutes)
         """
-        Gọi Google Directions API để lấy tuyến thực tế.
-        Trả về điểm polyline, quãng đường, thời gian và encoded polyline.
-        """
-        if not route_orders:
-            return [], 0.0, 0.0, None
+        if not ordered_stops:
+            return [], 0.0, 0.0, None, 0.0, 0.0
 
         if not self._client:
             logger.warning("GOOGLE_MAPS_API_KEY missing; using straight-line fallback")
-            points = [(office.latitude, office.longitude)] + [
-                (o.latitude, o.longitude) for o in route_orders
-            ]
-            return points, 0.0, 0.0, None
+            points = [(start_location["lat"], start_location["lng"])]
+            for stop in ordered_stops:
+                points.append((stop.latitude, stop.longitude))
+            if route_mode == "CLOSED_LOOP" and end_location:
+                points.append((end_location["lat"], end_location["lng"]))
+            elif route_mode == "CLOSED_LOOP":
+                points.append((start_location["lat"], start_location["lng"]))
+            return points, 0.0, 0.0, None, 0.0, 0.0
 
-        origin = (office.latitude, office.longitude)
-        destination = (route_orders[-1].latitude, route_orders[-1].longitude)
-        waypoints = [(o.latitude, o.longitude) for o in route_orders[:-1]]
+        # Tính return leg từ last stop về office trước
+        last_stop = {"lat": ordered_stops[-1].latitude, "lng": ordered_stops[-1].longitude}
+        return_dest = end_location if end_location else start_location
+        return_duration_seconds = haversine_duration_seconds(last_stop, return_dest)
+        return_duration_minutes = return_duration_seconds / 60.0
+        return_distance_km = haversine_distance_km(last_stop, return_dest)
+
+        if route_mode == "OPEN_ROUTE":
+            # OPEN: office → [1.1 → 1.2 → ... → 1.5], không quay về
+            origin = (start_location["lat"], start_location["lng"])
+            destination = (ordered_stops[-1].latitude, ordered_stops[-1].longitude)
+            waypoints = [(s.latitude, s.longitude) for s in ordered_stops[:-1]]
+            waypoints_str = "|".join(f"{lat},{lng}" for lat, lng in waypoints) if waypoints else None
+
+            try:
+                directions_result = self._client.directions(
+                    origin=origin,
+                    destination=destination,
+                    waypoints=[waypoints_str] if waypoints_str else [],
+                    mode="driving",
+                    language="vi",
+                    timeout=5,
+                )
+            except Exception as exc:
+                logger.warning("[DIRECTIONS_TIMEOUT] OPEN_ROUTE Leg1 failed: %s. Using haversine fallback.", exc)
+                decoded = self._haversine_fallback_polyline(start_location, ordered_stops, end_location)
+                return decoded, 0.0, 0.0, None, 0.0, 0.0
+
+            if not directions_result:
+                logger.warning("[DIRECTIONS_EMPTY] OPEN_ROUTE Leg1 returned empty. Using haversine fallback.")
+                decoded = self._haversine_fallback_polyline(start_location, ordered_stops, end_location)
+                return decoded, 0.0, 0.0, None, 0.0, 0.0
+
+            route = directions_result[0]
+            total_distance_km = sum(leg["distance"]["value"] for leg in route["legs"]) / 1000
+            total_duration_minutes = sum(leg["duration"]["value"] for leg in route["legs"]) / 60
+            encoded = route["overview_polyline"]["points"]
+            decoded = polyline.decode(encoded)
+            return decoded, total_distance_km, total_duration_minutes, encoded, 0.0, 0.0
+
+        # CLOSED_LOOP: tách thành 2 legs để đảm bảo stop cuối nằm trên polyline
+        leg1_origin = (start_location["lat"], start_location["lng"])
+        leg1_destination = (ordered_stops[-1].latitude, ordered_stops[-1].longitude)
+        leg1_waypoints = [(s.latitude, s.longitude) for s in ordered_stops[:-1]]
+        leg1_waypoints_str = "|".join(f"{lat},{lng}" for lat, lng in leg1_waypoints) if leg1_waypoints else None
 
         try:
-            directions_result = self._client.directions(
-                origin=origin,
-                destination=destination,
-                waypoints=waypoints,
+            directions_leg1 = self._client.directions(
+                origin=leg1_origin,
+                destination=leg1_destination,
+                waypoints=[leg1_waypoints_str] if leg1_waypoints_str else [],
                 mode="driving",
                 language="vi",
+                timeout=5,
             )
         except Exception as exc:
-            logger.exception("Google Directions API failed: %s", exc)
-            return [], 0.0, 0.0, None
+            logger.warning("[DIRECTIONS_TIMEOUT] CLOSED_LOOP Leg1 failed: %s. Using haversine fallback.", exc)
+            decoded = self._haversine_fallback_polyline(start_location, ordered_stops, end_location)
+            return decoded, 0.0, 0.0, None, 0.0, 0.0
 
-        if not directions_result:
-            return [], 0.0, 0.0, None
+        if not directions_leg1:
+            logger.warning("[DIRECTIONS_EMPTY] CLOSED_LOOP Leg1 returned empty. Using haversine fallback.")
+            decoded = self._haversine_fallback_polyline(start_location, ordered_stops, end_location)
+            return decoded, 0.0, 0.0, None, 0.0, 0.0
 
-        route = directions_result[0]
-        real_distance_km = sum(leg["distance"]["value"] for leg in route["legs"]) / 1000
-        real_duration_minutes = sum(leg["duration"]["value"] for leg in route["legs"]) / 60
-        encoded = route["overview_polyline"]["points"]
-        decoded = polyline.decode(encoded)
-        return decoded, real_distance_km, real_duration_minutes, encoded
+        leg1 = directions_leg1[0]
+        leg1_distance_km = sum(leg["distance"]["value"] for leg in leg1["legs"]) / 1000
+        leg1_duration_minutes = sum(leg["duration"]["value"] for leg in leg1["legs"]) / 60
+        leg1_encoded = leg1["overview_polyline"]["points"]
+        decoded_leg1 = polyline.decode(leg1_encoded)
+
+        # Leg 2: last stop → office
+        try:
+            directions_leg2 = self._client.directions(
+                origin=leg1_destination,
+                destination=(return_dest["lat"], return_dest["lng"]),
+                waypoints=[],
+                mode="driving",
+                language="vi",
+                timeout=5,
+            )
+        except Exception as exc:
+            logger.warning("[DIRECTIONS_TIMEOUT] CLOSED_LOOP Leg2 failed: %s. Using haversine fallback.", exc)
+            decoded = self._haversine_fallback_polyline(start_location, ordered_stops, end_location)
+            return decoded, 0.0, 0.0, None, 0.0, 0.0
+
+        if not directions_leg2:
+            logger.warning("[DIRECTIONS_EMPTY] CLOSED_LOOP Leg2 returned empty. Using haversine fallback.")
+            decoded = self._haversine_fallback_polyline(start_location, ordered_stops, end_location)
+            return decoded, 0.0, 0.0, None, 0.0, 0.0
+
+        leg2 = directions_leg2[0]
+        leg2_distance_km = sum(leg["distance"]["value"] for leg in leg2["legs"]) / 1000
+        leg2_duration_minutes = sum(leg["duration"]["value"] for leg in leg2["legs"]) / 60
+        decoded_leg2 = polyline.decode(leg2["overview_polyline"]["points"])
+
+        # Ghép 2 legs: decoded_leg1 + decoded_leg2
+        decoded = list(decoded_leg1) + list(decoded_leg2)
+
+        encoded = polyline.encode(decoded)
+
+        total_distance_km = leg1_distance_km + leg2_distance_km
+        total_duration_minutes = leg1_duration_minutes + leg2_duration_minutes
+
+        return decoded, total_distance_km, total_duration_minutes, encoded, return_distance_km, return_duration_minutes

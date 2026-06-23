@@ -42,12 +42,38 @@ def build_haversine_duration_matrix(
     return matrix
 
 
-def haversine_route_distance_km(office: dict, orders: list[dict]) -> float:
-    """Tổng quãng đường Haversine theo tuyến depot -> orders (dùng làm dự phòng)."""
+def haversine_route_distance_km(
+    office: dict,
+    orders: list[dict],
+    include_return_to_office: bool = False,
+) -> float:
+    """Tổng quãng đường Haversine theo tuyến.
+
+    Args:
+        office: dict với lat/lng của bưu cục
+        orders: danh sách dict với lat/lng của các điểm dừng
+        include_return_to_office: nếu True, cộng thêm quãng từ last stop về office
+    """
     if not orders:
         return 0.0
     legs = [office, *orders]
     total_m = 0
     for i in range(len(legs) - 1):
         total_m += distance_meter(legs[i], legs[i + 1])
+    if include_return_to_office:
+        total_m += distance_meter(legs[-1], office)
     return total_m / 1000.0
+
+
+def haversine_return_duration_seconds(
+    last_stop: dict,
+    office: dict,
+    speed_kmh: float = DEFAULT_FALLBACK_SPEED_KMH,
+) -> int:
+    """Thời gian từ last stop quay về office."""
+    return haversine_duration_seconds(last_stop, office, speed_kmh)
+
+
+def haversine_distance_km(a: dict, b: dict) -> float:
+    """Khoảng cách km giữa 2 điểm Haversine."""
+    return distance_meter(a, b) / 1000.0
