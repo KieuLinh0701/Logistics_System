@@ -65,7 +65,7 @@ public class ManagerOrderDetailDto {
     private String notes;
     private LocalDateTime deliveredAt;
     private LocalDateTime paidAt;
-    private LocalDateTime refundedAt;
+    private LocalDateTime returnedAt;
     private LocalDateTime createdAt;
     private OfficeDto fromOffice;
     private OfficeDto toOffice;

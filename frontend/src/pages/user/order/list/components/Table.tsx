@@ -179,22 +179,26 @@ const OrderTable: React.FC<Props> = ({
             align: "left",
             render: (_, record) => {
                 const times = [
+                    {label: "Thanh toán", value: record.paidAt},
                     {label: "Tạo đơn", value: record.createdAt},
-                    {label: record.status === "RETURNED" ? "Hoàn hàng" : "Giao hàng", value: record.deliveriedAt},
-                    {label: "Thanh toán", value: record.paidAt}
+                    {label: "Giao hàng", value: record.deliveriedAt},
+                    {label: "Hoàn hàng", value: record.returnedAt},
                 ];
+
+                const validTimes = times.filter(t => t.value);
 
                 return (
                     <>
-                        {times.map((t, idx) => {
-                            const formatted = t.value ? dayjs(t.value).format('HH:mm:ss DD/MM/YYYY') : null;
-                            return (
-                                <div key={idx}>
+                        {validTimes.length > 0 ? (
+                            validTimes.map((t, idx) => (
+                                <div key={idx} style={{ marginBottom: '2px' }}>
                                     <span className="custom-table-content-strong">{t.label}:{" "}</span>
-                                    {formatted || <span className="text-muted">N/A</span>}
+                                    {dayjs(t.value).format('HH:mm DD/MM/YYYY')}
                                 </div>
-                            );
-                        })}
+                            ))
+                        ) : (
+                            <span className="text-muted">Chưa có thông tin</span>
+                        )}
                     </>
                 );
             }

@@ -81,6 +81,9 @@ export const canEditManagerOrder = (status: string, createdByType: string) => {
     return !MANAGER_FINAL_STATUSES.includes(status as typeof MANAGER_FINAL_STATUSES[number]);
 };
 
+export const canReturnedManagerOrder = (value: string) => {
+    return ["RETURN_FAILED_FINAL"].includes(value)
+};
 
 // Các list enum của order và bản dịch
 export const ORDER_COD_STATUS = ['NONE', 'EXPECTED', 'PENDING', 'SUBMITTED', 'RECEIVED', 'TRANSFERRED'] as const;
@@ -158,6 +161,7 @@ export const ORDER_STATUS = [
     'FAILED_DELIVERY',
     'CANCELLED',
     'RETURNING',
+    'RETURN_RETRY_AT_ORIGIN_OFFICE',
     'RETURN_RETRY',
     'RETURN_FAILED_FINAL',
     'RETURNED',
@@ -213,6 +217,8 @@ export const translateOrderStatus = (value: string): string => {
             return 'Đã hủy';
         case 'RETURNING':
             return 'Đang hoàn trả';
+        case 'RETURN_RETRY_AT_ORIGIN_OFFICE':
+            return 'Đã hoàn về bưu cục xuất phát';
         case 'RETURN_RETRY':
             return 'Hoàn hàng lại';
         case 'RETURN_FAILED_FINAL':

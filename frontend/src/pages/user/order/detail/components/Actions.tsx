@@ -43,7 +43,7 @@ const Actions: React.FC<Props> = ({
                                       onDelete,
                                       onCreateRequest,
                                       onReady,
-                                      onTransitToOffice
+                                      onTransitToOffice,
                                   }) => (
     <div className="order-detail-actions-container">
         {/* Nhóm nút bên trái */}

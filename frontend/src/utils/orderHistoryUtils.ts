@@ -29,6 +29,8 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return `Giao hàng không thành công`;
     case "RETURNING":
       return `Đơn hàng đang được hoàn trả về kho`;
+    case 'RETURN_AT_ORIGIN_OFFICE':
+      return `Đơn hàng đã hoàn về tới bưu cục xuất phát`;
     case "RETURN_RETRY":
       return `Đơn hàng đang chờ hoàn trả lại`;
     case "RETURN_FAILED_FINAL":
