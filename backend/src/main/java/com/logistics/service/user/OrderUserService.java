@@ -11,7 +11,6 @@ import com.logistics.exception.enums.*;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.OrderPrintMapper;
 import com.logistics.repository.*;
-import com.logistics.request.common.office.PublicOfficeSearchRequest;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ListResponse;
@@ -173,7 +172,7 @@ public class OrderUserService {
                 .collect(Collectors.toList());
 
         long total = counts.stream().mapToLong(UserOrderStatusCountResponse::getCount).sum();
-        counts.add(0, new UserOrderStatusCountResponse("ALL", total));
+        counts.addFirst(new UserOrderStatusCountResponse("ALL", total));
 
         return counts;
 
@@ -656,6 +655,8 @@ public class OrderUserService {
         }
 
         order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        order.setReadyForPickupAt(LocalDateTime.now());
+        order.setPickupNotificationStage(PickupNotificationStage.NONE);
         repository.save(order);
 
         orderHistoryUserService.save(

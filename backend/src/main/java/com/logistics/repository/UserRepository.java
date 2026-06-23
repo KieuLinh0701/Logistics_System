@@ -53,4 +53,44 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable);
+
+    // Stage 1a: shipper trùng wardCode (ưu tiên cao)
+    @Query("""
+        SELECT DISTINCT sa.shipper FROM ShipperAssignment sa
+        JOIN sa.shipper.account acc
+        JOIN acc.accountRoles ar
+        JOIN ar.role r
+        WHERE sa.cityCode = :cityCode
+          AND sa.wardCode = :wardCode
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt > :now)
+          AND acc.isActive = true
+          AND ar.isActive = true
+          AND r.name = 'Shipper'
+          AND r.userOwner IS NULL
+    """)
+    List<User> findActiveShippersByWard(
+            @Param("cityCode") Integer cityCode,
+            @Param("wardCode") Integer wardCode,
+            @Param("now") LocalDateTime now
+    );
+
+    // Stage 1b + Stage 2: toàn bộ shipper trong city
+    @Query("""
+        SELECT DISTINCT sa.shipper FROM ShipperAssignment sa
+        JOIN sa.shipper.account acc
+        JOIN acc.accountRoles ar
+        JOIN ar.role r
+        WHERE sa.cityCode = :cityCode
+          AND sa.startAt <= :now
+          AND (sa.endAt IS NULL OR sa.endAt > :now)
+          AND acc.isActive = true
+          AND ar.isActive = true
+          AND r.name = 'Shipper'
+          AND r.userOwner IS NULL
+    """)
+    List<User> findActiveShippersByCity(
+            @Param("cityCode") Integer cityCode,
+            @Param("now") LocalDateTime now
+    );
 }

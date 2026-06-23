@@ -6,11 +6,13 @@ import java.util.Set;
 
 public class ShipmentOrderUtils {
 
-    // Các trạng thái của Order mà Manager được phép thêm vào chuyến hàng
+    // Các trạng thái của Order mà Manager không được phép thêm vào chuyến hàng
     private static final Set<OrderStatus> ORDER_STATUSES_NOT_ADDABLE_GENERAL = Set.of(
             OrderStatus.DRAFT,
             OrderStatus.PENDING,
-            OrderStatus.CONFIRMED,
+            OrderStatus.TRANSIT_TO_OFFICE,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.URGENT_PICKUP,
             OrderStatus.PICKING_UP,
             OrderStatus.PICKED_UP,
             OrderStatus.DELIVERING,

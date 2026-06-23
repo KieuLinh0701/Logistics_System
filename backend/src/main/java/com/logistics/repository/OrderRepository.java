@@ -8,6 +8,7 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
+import com.logistics.enums.PickupNotificationStage;
 import com.logistics.enums.ShipmentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
@@ -240,4 +241,30 @@ public interface OrderRepository
             WHERE o.user.id = :userId AND o.toOffice IS NOT NULL
             """)
     List<Office> findDistinctToOfficesByUserId(@Param("userId") Integer userId);
+
+    // Lấy đơn đã READY_FOR_PICKUP quá N phút, chưa ping stage này
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.status = :status
+          AND o.pickupNotificationStage = :stage
+          AND o.readyForPickupAt <= :before
+    """)
+    List<Order> findReadyOrdersForNotification(
+            @Param("status") OrderStatus status,
+            @Param("stage") PickupNotificationStage stage,
+            @Param("before") LocalDateTime before
+    );
+
+    // Manager xem danh sách URGENT theo cityCode của office
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.status = :status
+          AND o.senderCityCode = :cityCode
+          AND o.fromOffice IS NULL
+        ORDER BY o.readyForPickupAt ASC
+    """)
+    List<Order> findUrgentOrdersByCityCode(
+            @Param("status") OrderStatus status,
+            @Param("cityCode") Integer cityCode
+    );
 }

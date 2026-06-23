@@ -6,7 +6,6 @@ import {
     PlayCircleOutlined,
     PrinterOutlined
 } from "@ant-design/icons";
-import {canTransitToOfficeUserOrder} from "../../../../../utils/orderUtils.ts";
 
 interface Props {
     canPublic: boolean;

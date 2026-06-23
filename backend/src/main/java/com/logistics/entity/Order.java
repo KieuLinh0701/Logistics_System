@@ -239,4 +239,13 @@ public class Order {
     @Column(nullable = false)
     private Boolean pendingDestinationConfirm = false;
 
+    private LocalDateTime readyForPickupAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private PickupNotificationStage pickupNotificationStage = PickupNotificationStage.NONE;
+
+    @Version
+    private Long version;
+
 }

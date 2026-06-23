@@ -20,8 +20,8 @@ import {
     canEditUserOrder,
     canPrintUserOrder,
     canPublicUserOrder,
-    canReadyUserOrder, canTransitToOfficeUserOrder,
-    translateOrderStatus
+    canReadyUserOrder,
+    canTransitToOfficeUserOrder
 } from "../../../../utils/orderUtils";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import AddEditModal from "../request/components/AddEditModal";
