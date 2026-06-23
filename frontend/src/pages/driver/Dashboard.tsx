@@ -36,7 +36,11 @@ function getShipmentTagColor(status: string) {
       return "success";
     case "FAILED_DELIVERY":
     case "RETURNED":
+    case "RETURN_FAILED_FINAL":
       return "error";
+    case "RETURNING":
+    case "RETURN_RETRY":
+      return "warning";
     default:
       return "default";
   }
