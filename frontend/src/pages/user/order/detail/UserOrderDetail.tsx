@@ -339,9 +339,6 @@ const UserOrderDetail: React.FC = () => {
                     Kết quả giao hàng
                 </Title>
                 <Descriptions column={2} size="small">
-                    <Descriptions.Item label="Trạng thái">
-                        {translateOrderStatus(order.status)}
-                    </Descriptions.Item>
                     <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
                         {summaryLoading ? "Đang tải..." : summary ? `${summary.deliveredItems} / ${summary.totalItems}` : "N/A"}
                     </Descriptions.Item>

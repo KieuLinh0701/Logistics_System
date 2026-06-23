@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {Col, message, Row, Tag} from "antd";
 import dayjs from "dayjs";
@@ -52,6 +52,7 @@ const ManagerOrderList = () => {
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+    const [modalReturnedOpen, setModalReturnedOpen] = useState(false);
     const [modalConfirmOpenAddOrders, setModalConfirmOpenAddOrders] = useState(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
 
@@ -311,6 +312,11 @@ const ManagerOrderList = () => {
         setModalConfirmOpen(true);
     };
 
+    const handleReturnedOrder = (id: number) => {
+        setOrderId(id);
+        setModalReturnedOpen(true);
+    };
+
     const confirmAtOriginOfficeOrder = async () => {
         if (!orderId) return;
 
@@ -330,6 +336,31 @@ const ManagerOrderList = () => {
             }
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận bàn giao đơn hàng cho bưu cục xuất phát!");
+        } finally {
+            setLoading(false);
+            setOrderId(null);
+        }
+    };
+
+    const confirmReturnedOrder = async () => {
+        if (!orderId) return;
+
+        setModalReturnedOpen(false);
+
+        try {
+            setLoading(true);
+
+            const result = await orderApi.setManagerReturned(orderId);
+
+            if (result.success) {
+                message.success("Đơn hàng đã hoàn thành công cho khách.");
+                fetchOrders(page);
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Có lỗi khi hoàn hàng cho khách!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi hoàn hàng cho khách!");
         } finally {
             setLoading(false);
             setOrderId(null);
@@ -594,6 +625,7 @@ const ManagerOrderList = () => {
                     onEdit={handleEditOrder}
                     onConfirm={handleConfirm}
                     onAtOriginOffice={handleAtOriginOfficeOrder}
+                    onReturned={handleReturnedOrder}
                     page={page}
                     total={total}
                     loading={loading}
@@ -640,6 +672,15 @@ const ManagerOrderList = () => {
                 open={modalConfirmOpenAddOrders}
                 onOk={confirmAddOrdersInShipment}
                 onCancel={() => setModalConfirmOpenAddOrders(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Xác nhận hoàn hàng"
+                message="Bạn có chắc muốn xác nhận đã hoàn hàng lại cho khách hàng?"
+                open={modalReturnedOpen}
+                onOk={confirmReturnedOrder}
+                onCancel={() => setModalReturnedOpen(false)}
                 loading={loading}
             />
 

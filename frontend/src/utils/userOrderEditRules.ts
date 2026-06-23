@@ -6,7 +6,7 @@ interface EditableRule {
     nonEditableStatuses?: readonly OrderStatus[];
 }
 
-export const USER_FINAL_STATUSES = ['DELIVERING', 'DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED_DELIVERY', "PICKUP_FAILED_FINAL"] as const;
+export const USER_FINAL_STATUSES = ['DELIVERING', 'DELIVERED', 'RETURN_FAILED_FINAL', 'RETURNED', 'CANCELLED', 'FAILED_DELIVERY', "PICKUP_FAILED_FINAL"] as const;
 
 export const USER_ORDER_FIELD_EDIT_RULES: Record<string, EditableRule> = {
     // Người gửi

@@ -8,132 +8,133 @@ import Title from "antd/es/typography/Title";
 import type {Order} from "../../../../../types/order";
 
 interface OrderInfoProps {
-  order: Order;
+    order: Order;
 }
 
-const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
-  const renderField = (label: string, value: any) => {
-    const displayValue = value === null || value === undefined || value === ""
-      ? <span className="order-detail-card-na-tag">N/A</span>
-      : value;
+const OrderInfo: React.FC<OrderInfoProps> = ({order}) => {
+    const renderField = (label: string, value: any) => {
+        const displayValue = value === null || value === undefined || value === ""
+            ? <span className="order-detail-card-na-tag">N/A</span>
+            : value;
 
-    return (
-      <div className="order-detail-card-field">
-        <strong className="order-detail-card-label">{label}</strong>
-        <span className="order-detail-card-value">
+        return (
+            <div className="order-detail-card-field">
+                <strong className="order-detail-card-label">{label}</strong>
+                <span className="order-detail-card-value">
           {displayValue}
         </span>
-      </div>
-    );
-  };
+            </div>
+        );
+    };
 
-  const timeLabel = order.status === "RETURNED" ? "Thời gian hoàn hàng:" : "Thời gian giao hàng:";
+    const timeLabel = order.status === "RETURNED" ? "Thời gian hoàn hàng:" : "Thời gian giao hàng:";
 
-  return (
-    <>
-      {/* Card thông tin đơn hàng */}
-      <div className="order-detail-card">
-        <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-          Thông tin đơn hàng
-        </Title>
+    return (
+        <>
+            {/* Card thông tin đơn hàng */}
+            <div className="order-detail-card">
+                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                    Thông tin đơn hàng
+                </Title>
 
-        <div className="order-detail-card-inner">
-          <div className="order-detail-card-column">
-              {renderField(
-                  "Khối lượng thực tế:",
-                  <div>
-                      {order.adjustedOriginalWeight != null &&
-                      order.adjustedOriginalWeight != order.originalWeight ? (
-                          <>
+                <div className="order-detail-card-inner">
+                    <div className="order-detail-card-column">
+                        {renderField(
+                            "Khối lượng thực tế:",
+                            <div>
+                                {order.adjustedOriginalWeight != null &&
+                                order.adjustedOriginalWeight != order.originalWeight ? (
+                                    <>
                             <span className="custom-table-content-error">
                               {order.adjustedOriginalWeight} kg
                             </span>{" "}
-                              <span className="text-muted">
+                                        <span className="text-muted">
                               (từ {order.originalWeight} kg)
                             </span>
-                          </>
-                      ) : (
-                          <span>{order.originalWeight} kg</span>
-                      )}
-                  </div>
-              )}
+                                    </>
+                                ) : (
+                                    <span>{order.originalWeight} kg</span>
+                                )}
+                            </div>
+                        )}
 
-              {renderField(
-                  "Kích thước (D × R × C):",
-                  <div>
-                      {(order.adjustedLength != null && order.adjustedLength != order.length) ||
-                      (order.adjustedWidth != null && order.adjustedWidth != order.width) ||
-                      (order.adjustedHeight != null && order.adjustedHeight != order.height) ? (
-                          <>
-                              <div className="custom-table-content-error">
-                                  {order.adjustedLength ?? order.length} ×{" "}
-                                  {order.adjustedWidth ?? order.width} ×{" "}
-                                  {order.adjustedHeight ?? order.height} cm
-                              </div>
-                              <div className="text-muted small">
-                                  (từ {order.length} × {order.width} × {order.height} cm)
-                              </div>
-                          </>
-                      ) : (
-                          <span>
+                        {renderField(
+                            "Kích thước (D × R × C):",
+                            <div>
+                                {(order.adjustedLength != null && order.adjustedLength != order.length) ||
+                                (order.adjustedWidth != null && order.adjustedWidth != order.width) ||
+                                (order.adjustedHeight != null && order.adjustedHeight != order.height) ? (
+                                    <>
+                                        <div className="custom-table-content-error">
+                                            {order.adjustedLength ?? order.length} ×{" "}
+                                            {order.adjustedWidth ?? order.width} ×{" "}
+                                            {order.adjustedHeight ?? order.height} cm
+                                        </div>
+                                        <div className="text-muted small">
+                                            (từ {order.length} × {order.width} × {order.height} cm)
+                                        </div>
+                                    </>
+                                ) : (
+                                    <span>
                             {order.length} × {order.width} × {order.height} cm
                           </span>
-                      )}
-                  </div>
-              )}
+                                )}
+                            </div>
+                        )}
 
-              {/* Khối lượng tính phí */}
-              {renderField(
-                  "Khối lượng tính phí:",
-                  <div>
-                      {order.adjustedWeight != null &&
-                      order.adjustedWeight != order.weight ? (
-                          <>
+                        {/* Khối lượng tính phí */}
+                        {renderField(
+                            "Khối lượng tính phí:",
+                            <div>
+                                {order.adjustedWeight != null &&
+                                order.adjustedWeight != order.weight ? (
+                                    <>
                             <span className="custom-table-content-error">
                               {order.adjustedWeight} kg
                             </span>{" "}
-                              <span className="text-muted">
+                                        <span className="text-muted">
                                 (từ {order.weight} kg)
                               </span>
-                          </>
-                      ) : (
-                          <span>{order.weight} kg</span>
-                      )}
-                  </div>
-              )}
-            {renderField("Giá trị:", `${order.orderValue.toLocaleString()} VNĐ`)}
-            {renderField("COD (Dự kiến):", `${(order.cod || 0).toLocaleString()} VNĐ`)}
-          </div>
+                                    </>
+                                ) : (
+                                    <span>{order.weight} kg</span>
+                                )}
+                            </div>
+                        )}
+                        {renderField("Giá trị:", `${order.orderValue.toLocaleString()} VNĐ`)}
+                        {renderField("COD (Dự kiến):", `${(order.cod || 0).toLocaleString()} VNĐ`)}
+                        {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
+                        {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
+                        {order.deliveredAt && renderField(timeLabel, new Date(order.deliveredAt).toLocaleString())}
+                        {order.returnedAt && renderField(timeLabel, new Date(order.returnedAt).toLocaleString())}
+                    </div>
 
-          <div className="order-detail-card-column">
-              {renderField("Trạng thái:", translateOrderStatus(order.status))}
-              {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
-              {renderField("Dịch vụ:", order.serviceType?.name)}
-              {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
-              {renderField("Người tạo đơn:", translateOrderCreatorType(order.createdByType))}
-              {order.userCode && renderField("Mã người tạo đơn:", order.userCode)}
-              {order.employeeCode && renderField("Mã nhân viên tạo đơn:", order.employeeCode)}
-              {order.deliveredAt && renderField(timeLabel, new Date(order.deliveredAt).toLocaleString())}
-              {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
-          </div>
-        </div>
-      </div>
+                    <div className="order-detail-card-column">
+                        {renderField("Trạng thái:", translateOrderStatus(order.status))}
+                        {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
+                        {renderField("Dịch vụ:", order.serviceType?.name)}
+                        {renderField("Người tạo đơn:", translateOrderCreatorType(order.createdByType))}
+                        {order.userCode && renderField("Mã người tạo đơn:", order.userCode)}
+                        {order.employeeCode && renderField("Mã nhân viên tạo đơn:", order.employeeCode)}
+                    </div>
+                </div>
+            </div>
 
-      {/* Card Notes */}
-      {order.notes && (
-        <div className="order-detail-card">
-          <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-            Ghi chú
-          </Title>
-          <div className="order-detail-card-field">
+            {/* Card Notes */}
+            {order.notes && (
+                <div className="order-detail-card">
+                    <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                        Ghi chú
+                    </Title>
+                    <div className="order-detail-card-field">
             <span className="order-detail-card-value">
               {order.notes}
             </span>
-          </div>
-        </div>
-      )}
-    </>
-  );
+                    </div>
+                </div>
+            )}
+        </>
+    );
 };
 
 export default OrderInfo;

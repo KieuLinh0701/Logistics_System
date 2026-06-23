@@ -18,11 +18,10 @@ import {
     canCancelManagerOrder,
     canConfirmManagerOrder,
     canEditManagerOrder,
-    canPrintManagerOrder,
+    canPrintManagerOrder, canReturnedManagerOrder,
     type OrderCreatorType,
     type OrderPickupType,
     type OrderStatus,
-    translateOrderStatus,
     translatePickupAttemptStatus,
     translatePickupFailReason
 } from "../../../../utils/orderUtils";
@@ -43,6 +42,7 @@ const UserOrderDetail: React.FC = () => {
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+    const [returnedModalConfirmOpen, setReturnedModalConfirmOpen] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
 
@@ -141,6 +141,10 @@ const UserOrderDetail: React.FC = () => {
         setModalConfirmOpen(true);
     };
 
+    const handleReturnedOrder = () => {
+        setReturnedModalConfirmOpen(true);
+    };
+
     const confirmAtOriginOfficeOrder = async () => {
         setModalConfirmOpen(false);
 
@@ -158,6 +162,28 @@ const UserOrderDetail: React.FC = () => {
             }
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi khi bàn giao đơn hàng cho bưu cục xuất phát!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const confirmReturnedOrder = async () => {
+        setReturnedModalConfirmOpen(false);
+
+        try {
+            setLoading(true);
+            if (!order) return;
+
+            const result = await orderApi.setManagerReturned(order.id);
+
+            if (result.success) {
+                message.success("Đơn hàng đã hoàn thành công cho khách.");
+                fetchOrder();
+            } else {
+                message.error(result.message || "Có lỗi khi hoàn hàng cho khách!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi khi hoàn hàng cho khách!");
         } finally {
             setLoading(false);
         }
@@ -199,6 +225,7 @@ const UserOrderDetail: React.FC = () => {
     const canPrint = canPrintManagerOrder(order.status);
     const canSetAtOriginOffice = canAtOriginOfficeManagerOrder(order.status);
     const canConfirm = canConfirmManagerOrder(order.status as OrderStatus, order.pickupType as OrderPickupType);
+    const canReturn = canReturnedManagerOrder(order.status);
 
     return (
         <div className="order-detail container">
@@ -260,12 +287,6 @@ const UserOrderDetail: React.FC = () => {
 
                 <Descriptions column={2} size="small">
 
-                    <Descriptions.Item label="Trạng thái đơn hàng">
-                        {order.status
-                            ? translateOrderStatus(order.status)
-                            : "Không có dữ liệu"}
-                    </Descriptions.Item>
-
                     <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
                         {summaryLoading
                             ? "Đang tải..."
@@ -304,11 +325,13 @@ const UserOrderDetail: React.FC = () => {
                 canPrint={canPrint}
                 canSetAtOriginOffice={canSetAtOriginOffice}
                 canConfirm={canConfirm}
+                canReturned={canReturn}
                 onEdit={handleEditOrder}
                 onCancel={handleCancelOrder}
                 onPrint={handlePrintOrder}
                 onConfirm={handleConfirm}
                 onSetAtOriginOffice={handleAtOriginOfficeOrder}
+                onReturned={handleReturnedOrder}
             />
 
             <ConfirmCancelModal
@@ -333,6 +356,15 @@ const UserOrderDetail: React.FC = () => {
                 open={confirmModalOpen}
                 onOk={confirmConfirmOrder}
                 onCancel={() => setConfirmModalOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Xác nhận hoàn hàng"
+                message="Bạn có chắc muốn xác nhận đã hoàn hàng lại cho khách hàng?"
+                open={returnedModalConfirmOpen}
+                onOk={confirmReturnedOrder}
+                onCancel={() => setReturnedModalConfirmOpen(false)}
                 loading={loading}
             />
 

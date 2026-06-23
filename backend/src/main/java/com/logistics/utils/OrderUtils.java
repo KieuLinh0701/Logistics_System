@@ -87,6 +87,14 @@ public class OrderUtils {
         return MANAGER_CANCEL_OFFICE_ORDER_STATUSES.contains(status);
     }
 
+    // Những trạng thái mà manager được phép chuyển sang "Đã hoàn hàng"
+    private static final Set<OrderStatus> MANAGER_ALLOWED_TO_RETURNED_STATUSES = Set.of(
+            OrderStatus.RETURN_FAILED_FINAL);
+
+    public static boolean canManagerSetReturned(OrderStatus status) {
+        return MANAGER_ALLOWED_TO_RETURNED_STATUSES.contains(status);
+    }
+
     // Những trạng thái Order mà manager được phép tạo chuyến giao hàng
     private static final Set<OrderStatus> VALID_ORDER_STATUSES_FOR_SHIPMENT_CREATION_MANAGER = Set.of(
             OrderStatus.AT_ORIGIN_OFFICE,
@@ -148,6 +156,7 @@ public class OrderUtils {
 
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn trả";
+            case RETURN_RETRY_AT_ORIGIN_OFFICE -> "Đã hoàn về bưu cục xuất phát";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn trả";

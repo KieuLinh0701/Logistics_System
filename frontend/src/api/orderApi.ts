@@ -417,6 +417,10 @@ const orderApi = {
          return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/at-origin-office`);
     },
 
+    async setManagerReturned(id: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/returned`);
+    },
+
     async confirmManagerOrder(id: number) {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/confirm`);
     },

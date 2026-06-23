@@ -168,6 +168,21 @@ public class OrderManagerController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PatchMapping("/{id}/returned")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_RETURNED,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Void>> returnedOrder(@PathVariable Integer id,
+                                                          HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        service.setOrderReturned(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     @GetMapping("/export")
     @Audit(
             entity = EntityType.ORDER,

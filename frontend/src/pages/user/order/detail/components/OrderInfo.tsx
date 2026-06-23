@@ -23,8 +23,6 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
     );
   };
 
-   const timeLabel = order.status === "RETURNED" ? "Thời gian hoàn hàng:" : "Thời gian giao hàng:";
-
   return (
     <>
       {/* Card thông tin đơn hàng */}
@@ -39,7 +37,8 @@ const OrderInfo: React.FC<OrderInfoProps> = ({ order }) => {
               {renderField("Hình thức lấy hàng:", translateOrderPickupType(order.pickupType))}
               {renderField("Dịch vụ:", order.serviceType?.name)}
               {renderField("Thời gian tạo đơn:", order.createdAt ? new Date(order.createdAt).toLocaleString() : null)}
-              {order.deliveredAt && renderField(timeLabel, new Date(order.deliveredAt).toLocaleString())}
+              {order.deliveredAt && renderField("Thời gian giao hàng", new Date(order.deliveredAt).toLocaleString())}
+              {order.returnedAt && renderField("Thời gian hoàn hàng", new Date(order.returnedAt).toLocaleString())}
               {order.paidAt && renderField("Thời gian thanh toán:", new Date(order.paidAt).toLocaleString())}
           </div>
 

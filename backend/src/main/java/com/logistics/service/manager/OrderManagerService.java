@@ -312,7 +312,6 @@ public class OrderManagerService {
         if (!order.getCreatedByType()
                 .equals(OrderCreatorType.USER) && order.getPayer()
                 .equals(OrderPayerType.SHOP)) {
-            order.setRefundedAt(LocalDateTime.now());
             order.setPaymentStatus(OrderPaymentStatus.REFUNDED);
         }
 
@@ -330,7 +329,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng có mã vận đơn #%s của bạn đã bị hủy bởi nhân viên chúng tôi. Nếu bạn không yêu cầu hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
-                    "recipientaddress",
+                    "order",
                     order.getUser()
                             .getId(),
                     null,
@@ -363,7 +362,7 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng #%s đã được xác nhận. Vui lòng chuẩn bị hàng hóa và mang đến bưu cục để hoàn tất việc gửi hàng.",
                             order.getTrackingNumber()),
-                    "recipientaddress",
+                    "order",
                     order.getUser()
                             .getId(),
                     null,
@@ -755,7 +754,7 @@ public class OrderManagerService {
                                     oldWeight == null ? "0" : oldWeight.toPlainString(),
                                     request.getWeight()
                                             .toPlainString()),
-                            "recipientaddress",
+                            "order",
                             order.getUser()
                                     .getId(),
                             null,
@@ -1117,9 +1116,54 @@ public class OrderManagerService {
                     String.format(
                             "Đơn hàng có mã vận đơn #%s của bạn đã được mang đến và bàn giao cho đơn vị vận chuyển thành công tại bưu cục xuất phát. Nếu bạn không thực hiện hành động này, vui lòng liên hệ để được hỗ trợ.",
                             order.getTrackingNumber()),
-                    "recipientaddress",
+                    "order",
                     order.getUser()
                             .getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+    }
+
+    public void setOrderReturned(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (order.getFromOffice() == null || !userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId())) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+
+        if (!OrderUtils.canManagerSetReturned(order.getStatus())) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.AT_ORIGIN_OFFICE));
+        }
+
+        if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
+        }
+
+        order.setStatus(OrderStatus.RETURNED);
+        order.setReturnedAt(LocalDateTime.now());
+        repository.save(order);
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                userOffice,
+                null,
+                OrderHistoryActionType.RETURNED,
+                null);
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Hoàn hàng thành công",
+                    String.format(
+                            "Đơn hàng #%s đã được hoàn trả thành công đến người gửi.",
+                            order.getTrackingNumber()),
+                    "order",
+                    order.getUser().getId(),
                     null,
                     "orders/tracking",
                     order.getTrackingNumber());
