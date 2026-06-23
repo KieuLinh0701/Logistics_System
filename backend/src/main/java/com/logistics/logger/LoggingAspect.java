@@ -53,7 +53,7 @@ public class LoggingAspect {
         log.info("END {}.{}() | result={} | time={}ms",
                 className,
                 methodName,
-                result,
+                result != null ? result.getClass().getSimpleName() : "null",
                 duration
         );
 
@@ -79,10 +79,18 @@ public class LoggingAspect {
             }
 
             // Nếu có @Sensitive thì hiện ***, không thì hiện giá trị thật
-            Object value = isSensitive ? "******" : args[i];
+            Object value = isSensitive ? "******" : safeToString(args[i]);
             sb.append(value);
             if (i < args.length - 1) sb.append(", ");
         }
         return sb.append("]").toString();
+    }
+
+    private String safeToString(Object obj) {
+        if (obj == null) return "null";
+        if (obj instanceof String || obj instanceof Number || obj instanceof Boolean || obj instanceof Enum) {
+            return obj.toString();
+        }
+        return obj.getClass().getSimpleName(); // entity → chỉ log tên class
     }
 }

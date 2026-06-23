@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +65,7 @@ public class SupportAssistantService {
                 .findTopByTicketIdAndSenderTypeInOrderByCreatedAtDesc(ticket.getId(),
                         List.of(SupportMessageSenderType.MANAGER, SupportMessageSenderType.ADMIN));
         if (lastManagerOrAdminMessage.isPresent() && lastManagerOrAdminMessage.get().getCreatedAt() != null
-                && lastManagerOrAdminMessage.get().getCreatedAt().isAfter(java.time.LocalDateTime.now().minusMinutes(30))) {
+                && lastManagerOrAdminMessage.get().getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(30))) {
             return;
         }
 
@@ -275,6 +276,7 @@ public class SupportAssistantService {
         }
         return switch (action) {
             case PENDING -> "Chờ xử lý";
+            case TRANSIT_TO_OFFICE -> "Đang chuyển về bưu cục";
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
             case PICKING_UP -> "Đang lấy hàng";
@@ -290,6 +292,7 @@ public class SupportAssistantService {
             case DELIVERY_RETRY -> "Chờ giao lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case RETURNING -> "Đang hoàn hàng";
+            case RETURN_RETRY_AT_ORIGIN_OFFICE -> "Hàng hoàn đã về đến bưu cục xuất phát";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn hàng";
@@ -297,7 +300,7 @@ public class SupportAssistantService {
         };
     }
 
-    private String formatHistoryTime(java.time.LocalDateTime time) {
+    private String formatHistoryTime(LocalDateTime time) {
         if (time == null) {
             return "Chưa có thông tin";
         }

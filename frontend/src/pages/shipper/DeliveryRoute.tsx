@@ -425,8 +425,14 @@ const ShipperDeliveryRoute: React.FC = () => {
             return;
         }
 
+        const currentRoute = routeInfo;
+        if (!currentRoute?.id) {
+            message.error("Không tìm thấy tuyến hiện tại để tái tối ưu");
+            return;
+        }
+
         const payload = {
-            routeId: routeInfo.id,
+            routeId: currentRoute.id,
             currentLatitude: currentPosition.lat,
             currentLongitude: currentPosition.lng,
             includeRemainingStopsOnly: true,

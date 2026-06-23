@@ -94,7 +94,6 @@ export interface Order {
     discountAmount: number;
     cod: number;
     actualCollected?: number;
-    returnedAmount?: number;
     totalFee: number;
     orderValue: number;
     payer: string;
@@ -104,7 +103,6 @@ export interface Order {
     shippingFee: number;
     paidAt: string;
     deliveredAt: string;
-    refundedAt: string;
     createdAt: string;
     fromOffice: Office;
     toOffice: Office;
@@ -117,6 +115,7 @@ export interface Order {
     codStatus: string;
     paymentSubmissions?: PaymentSubmission[];
     codAmount?: number;
+    returnedAt: number;
 }
 
 export interface StatusCount {

@@ -191,6 +191,21 @@ public class OrderUserController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PatchMapping("/{id}/transit-to-office")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_SET_TRANSIT_TO_OFFICE,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Void>> setOrderTransitToOffice(@PathVariable Integer id,
+                                                                    HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        service.setOrderTransitToOffice(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     @GetMapping("/export")
     @Audit(
             entity = EntityType.ORDER,

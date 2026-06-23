@@ -3,6 +3,7 @@ package com.logistics.enums;
 public enum OrderHistoryActionType {
     PENDING,
     READY_FOR_PICKUP,
+    TRANSIT_TO_OFFICE,
     URGENT_PICKUP,
     PICKING_UP,
     PICKED_UP,
@@ -17,6 +18,7 @@ public enum OrderHistoryActionType {
     DELIVERY_RETRY,
     DELIVERY_FAILED_FINAL,
     RETURNING,
+    RETURN_RETRY_AT_ORIGIN_OFFICE,
     RETURN_RETRY,
     RETURN_FAILED_FINAL,
     RETURNED,

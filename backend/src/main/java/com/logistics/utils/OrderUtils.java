@@ -8,17 +8,27 @@ public class OrderUtils {
 
     // Những trạng thái mà user được phép chuyển sang "Sẵn sàng để lấy"
     private static final Set<OrderStatus> USER_ALLOWED_TO_READY_STATUSES = Set.of(
-            OrderStatus.CONFIRMED);
+            OrderStatus.PENDING);
 
     public static boolean canUserSetReady(OrderStatus status) {
         return USER_ALLOWED_TO_READY_STATUSES.contains(status);
+    }
+
+    // Những trạng thái mà user được phép chuyển sang "Đang chuyển về bưu cục"
+    private static final Set<OrderStatus> USER_ALLOWED_TO_TRANSIT_TO_OFFICE_STATUSES = Set.of(
+            OrderStatus.CONFIRMED);
+
+    public static boolean canUserSetTransitToOffice(OrderStatus status) {
+        return USER_ALLOWED_TO_TRANSIT_TO_OFFICE_STATUSES.contains(status);
     }
 
     // Những trạng thái user được phép hủy
     private static final Set<OrderStatus> USER_CANCELLABLE_STATUSES = Set.of(
             OrderStatus.PENDING,
             OrderStatus.CONFIRMED,
-            OrderStatus.READY_FOR_PICKUP);
+            OrderStatus.TRANSIT_TO_OFFICE,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.URGENT_PICKUP);
 
     public static boolean canUserCancel(OrderStatus status) {
         return USER_CANCELLABLE_STATUSES.contains(status);
@@ -44,7 +54,6 @@ public class OrderUtils {
     // Những trạng thái user/manager được phép in vận đơn
     private static final Set<OrderStatus> STATUSES_NOT_ALLOWED_TO_PRINT = Set.of(
             OrderStatus.DRAFT,
-            OrderStatus.PENDING,
             OrderStatus.CANCELLED,
             OrderStatus.PICKUP_FAILED_FINAL,
             OrderStatus.DELIVERED,
@@ -59,17 +68,14 @@ public class OrderUtils {
     }
 
     // Những trạng thái manager được phép hủy
-    private static final Set<OrderStatus> MANAGER_CANCEL_USER_ORDER_STATUSES = Set.of(
-            OrderStatus.PENDING,
-            OrderStatus.CONFIRMED,
-            OrderStatus.PICKING_UP,
-            OrderStatus.READY_FOR_PICKUP);
+    private static final Set<OrderStatus> MANAGER_CANCEL_USER_ORDER_STATUSES = Set.of();
 
     private static final Set<OrderStatus> MANAGER_CANCEL_OFFICE_ORDER_STATUSES = Set.of(
             OrderStatus.PENDING,
             OrderStatus.CONFIRMED,
             OrderStatus.PICKING_UP,
             OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.URGENT_PICKUP,
             OrderStatus.AT_ORIGIN_OFFICE);
 
     public static boolean canManagerCancel(
@@ -79,6 +85,14 @@ public class OrderUtils {
             return MANAGER_CANCEL_USER_ORDER_STATUSES.contains(status);
         }
         return MANAGER_CANCEL_OFFICE_ORDER_STATUSES.contains(status);
+    }
+
+    // Những trạng thái mà manager được phép chuyển sang "Đã hoàn hàng"
+    private static final Set<OrderStatus> MANAGER_ALLOWED_TO_RETURNED_STATUSES = Set.of(
+            OrderStatus.RETURN_FAILED_FINAL);
+
+    public static boolean canManagerSetReturned(OrderStatus status) {
+        return MANAGER_ALLOWED_TO_RETURNED_STATUSES.contains(status);
     }
 
     // Những trạng thái Order mà manager được phép tạo chuyến giao hàng
@@ -95,7 +109,7 @@ public class OrderUtils {
     // Những trạng thái Order mà manager được xác nhận là được người dùng bàn giao
     // đến bưu cục
     private static final Set<OrderStatus> VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE = Set.of(
-            OrderStatus.CONFIRMED);
+            OrderStatus.TRANSIT_TO_OFFICE);
 
     public static boolean canManagerSetAtOriginOffice(OrderStatus status) {
         return VALID_ORDER_STATUSES_FOR_MANAGER_SET_AT_ORIGIN_OFFICE.contains(status);
@@ -108,7 +122,7 @@ public class OrderUtils {
 
     public static boolean canManagerConfirm(OrderStatus status, OrderPickupType pickupType) {
         return STATUSES_ALLOWED_TO_CONFIRMED_FOR_MANAGER.contains(status)
-                && (pickupType == OrderPickupType.AT_OFFICE || pickupType == OrderPickupType.PICKUP_BY_COURIER);
+                && (pickupType == OrderPickupType.AT_OFFICE);
     }
 
     public static String translateOrderStatus(OrderStatus status) {
@@ -117,8 +131,9 @@ public class OrderUtils {
 
         return switch (status) {
             case DRAFT -> "Bản nháp";
-            case PENDING -> "Chờ duyệt";
-            case CONFIRMED -> "Đã xác nhận";
+            case PENDING -> "Đang chờ đóng gói";
+            case CONFIRMED -> "Đã nhận đơn";
+            case TRANSIT_TO_OFFICE -> "Đang chuyển về bưu cục'";
             case READY_FOR_PICKUP -> "Sẵn sàng để lấy";
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
 
@@ -141,6 +156,7 @@ public class OrderUtils {
 
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn trả";
+            case RETURN_RETRY_AT_ORIGIN_OFFICE -> "Đã hoàn về bưu cục xuất phát";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn trả";

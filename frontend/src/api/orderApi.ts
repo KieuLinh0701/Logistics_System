@@ -109,6 +109,10 @@ const orderApi = {
         return res;
     },
 
+    async setUserOrderTransitToOffice(id: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/transit-to-office`);
+    },
+
     async exportUserOrders(params: UserOrderSearchRequest) {
         try {
             const res = await axiosExport.get("/user/orders/export", {
@@ -465,6 +469,10 @@ const orderApi = {
 
     async setManagerOrderAtOriginOffice(id: number) {
          return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/at-origin-office`);
+    },
+
+    async setManagerReturned(id: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/returned`);
     },
 
     async confirmManagerOrder(id: number) {

@@ -209,7 +209,7 @@ public class Order {
     private Office toOffice;
 
     private LocalDateTime paidAt;
-    private LocalDateTime refundedAt;
+    private LocalDateTime returnedAt;
 
     @CreatedDate
     @Column(updatable = false)

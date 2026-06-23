@@ -18,7 +18,7 @@ import {
     canEditUserOrder,
     canPrintUserOrder,
     canPublicUserOrder,
-    canReadyUserOrder,
+    canReadyUserOrder, canTransitToOfficeUserOrder,
     translateOrderCodStatus,
     translateOrderPayerType,
     translateOrderPaymentStatus,
@@ -34,6 +34,7 @@ interface Props {
     onDelete: (id: number) => void;
     onPrint: (id: number) => void;
     onReady: (id: number) => void;
+    onTransitToOffice: (id: number) => void;
     onEdit: (id: number, trackingNumber: string) => void;
     page: number;
     limit: number;
@@ -53,6 +54,7 @@ const OrderTable: React.FC<Props> = ({
                                          onPrint,
                                          onEdit,
                                          onReady,
+                                         onTransitToOffice,
                                          page,
                                          limit,
                                          total,
@@ -177,22 +179,26 @@ const OrderTable: React.FC<Props> = ({
             align: "left",
             render: (_, record) => {
                 const times = [
+                    {label: "Thanh toán", value: record.paidAt},
                     {label: "Tạo đơn", value: record.createdAt},
-                    {label: record.status === "RETURNED" ? "Hoàn hàng" : "Giao hàng", value: record.deliveriedAt},
-                    {label: "Thanh toán", value: record.paidAt}
+                    {label: "Giao hàng", value: record.deliveriedAt},
+                    {label: "Hoàn hàng", value: record.returnedAt},
                 ];
+
+                const validTimes = times.filter(t => t.value);
 
                 return (
                     <>
-                        {times.map((t, idx) => {
-                            const formatted = t.value ? dayjs(t.value).format('HH:mm:ss DD/MM/YYYY') : null;
-                            return (
-                                <div key={idx}>
+                        {validTimes.length > 0 ? (
+                            validTimes.map((t, idx) => (
+                                <div key={idx} style={{ marginBottom: '2px' }}>
                                     <span className="custom-table-content-strong">{t.label}:{" "}</span>
-                                    {formatted || <span className="text-muted">N/A</span>}
+                                    {dayjs(t.value).format('HH:mm DD/MM/YYYY')}
                                 </div>
-                            );
-                        })}
+                            ))
+                        ) : (
+                            <span className="text-muted">Chưa có thông tin</span>
+                        )}
                     </>
                 );
             }
@@ -301,6 +307,7 @@ const OrderTable: React.FC<Props> = ({
                 const canPrint = canPrintUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PRINT_BULK']);
                 const canPublic = canPublicUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PROCESS']);
                 const canReady = canReadyUserOrder(record.status) && record.pickupType === "PICKUP_BY_COURIER" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
+                const canTransitToOffice = canTransitToOfficeUserOrder(record.status) && record.pickupType === "AT_OFFICE" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_TRANSIT_TO_OFFICE']);
 
                 const items = [
                     ...(canPrint ? [{
@@ -315,6 +322,13 @@ const OrderTable: React.FC<Props> = ({
                         icon: <PlayCircleOutlined/>,
                         label: "Sẵn sàng để lấy",
                         onClick: () => onReady(record.id),
+                    }] : []),
+
+                    ...(canTransitToOffice ? [{
+                        key: "ready",
+                        icon: <PlayCircleOutlined/>,
+                        label: "Chuyển về bưu cục",
+                        onClick: () => onTransitToOffice(record.id),
                     }] : []),
 
                     ...(canPublic ? [{
