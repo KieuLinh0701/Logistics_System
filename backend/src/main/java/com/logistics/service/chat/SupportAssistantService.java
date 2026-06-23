@@ -236,6 +236,8 @@ public class SupportAssistantService {
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn hàng";
+            case RETURN_RETRY -> "Hoàn hàng lại";
+            case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn hàng";
             default -> status.name();
         };
@@ -274,6 +276,7 @@ public class SupportAssistantService {
         return switch (action) {
             case PENDING -> "Chờ xử lý";
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
+            case URGENT_PICKUP -> "Ưu tiên lấy hàng";
             case PICKING_UP -> "Đang lấy hàng";
             case PICKED_UP -> "Đã lấy hàng";
             case IMPORTED -> "Đã nhập hàng";
@@ -287,6 +290,8 @@ public class SupportAssistantService {
             case DELIVERY_RETRY -> "Chờ giao lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case RETURNING -> "Đang hoàn hàng";
+            case RETURN_RETRY -> "Hoàn hàng lại";
+            case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn hàng";
             case CANCELLED -> "Đã hủy";
         };

@@ -144,6 +144,7 @@ export const ORDER_STATUS = [
     'PENDING',
     'CONFIRMED',
     'READY_FOR_PICKUP',
+    'URGENT_PICKUP',
     'PICKUP_RETRY',
     'PICKUP_FAILED_FINAL',
     'PICKING_UP',
@@ -156,6 +157,8 @@ export const ORDER_STATUS = [
     'FAILED_DELIVERY',
     'CANCELLED',
     'RETURNING',
+    'RETURN_RETRY',
+    'RETURN_FAILED_FINAL',
     'RETURNED',
     'PARTIAL_DELIVERY',
     'PARTIAL_RETURN',
@@ -173,6 +176,8 @@ export const translateOrderStatus = (value: string): string => {
             return 'Đã xác nhận';
         case 'READY_FOR_PICKUP':
             return 'Sẵn sàng để lấy';
+        case 'URGENT_PICKUP':
+            return 'Ưu tiên lấy hàng';
         case 'PICKUP_RETRY':
             return 'Lấy hàng thất bại - Thử lại';
         case 'PICKUP_FAILED_FINAL':
@@ -205,6 +210,10 @@ export const translateOrderStatus = (value: string): string => {
             return 'Đã hủy';
         case 'RETURNING':
             return 'Đang hoàn trả';
+        case 'RETURN_RETRY':
+            return 'Hoàn hàng lại';
+        case 'RETURN_FAILED_FINAL':
+            return 'Hoàn hàng thất bại cuối cùng';
         case 'RETURNED':
             return 'Đã hoàn trả';
         default:

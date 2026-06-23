@@ -185,6 +185,9 @@ const BarcodeScanner: React.FC = () => {
       PARTIAL_DELIVERY: "Giao 1 phần",
       PARTIAL_RETURN: "Trả 1 phần",
       RETURNED: "Đã hoàn trả",
+      RETURNING: "Đang hoàn",
+      RETURN_RETRY: "Hoàn lại",
+      RETURN_FAILED_FINAL: "Hoàn thất bại",
       CANCELLED: "Đã hủy",
     };
     return statusMap[status] || status;

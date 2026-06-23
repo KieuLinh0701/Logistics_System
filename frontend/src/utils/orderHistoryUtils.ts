@@ -9,6 +9,8 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return "Đơn hàng đã được tạo";
     case "READY_FOR_PICKUP":
       return "Đơn hàng đã sẵn sàng để shipper đến lấy";
+    case "URGENT_PICKUP":
+      return "Đơn hàng ưu tiên cần shipper đến lấy ngay";
     case "PICKING_UP":
       return `Shipper đang đến lấy hàng từ người gửi`;
     case "PICKED_UP":
@@ -25,6 +27,10 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return `Giao hàng không thành công`;
     case "RETURNING":
       return `Đơn hàng đang được hoàn trả về kho`;
+    case "RETURN_RETRY":
+      return `Đơn hàng đang chờ hoàn trả lại`;
+    case "RETURN_FAILED_FINAL":
+      return `Hoàn hàng thất bại cuối cùng`;
     case "RETURNED":
       return `Đơn hàng đã được hoàn trả thành công`;
     case "CANCELLED":

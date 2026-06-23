@@ -268,7 +268,11 @@ const fetchOrderDetail = async () => {
       case "DELIVERY_RETRY":
       case "DELIVERY_FAILED_FINAL":
       case "RETURNED":
+      case "RETURN_FAILED_FINAL":
         return "error";
+      case "RETURNING":
+      case "RETURN_RETRY":
+        return "warning";
       default:
         return "default";
     }
@@ -303,6 +307,12 @@ const fetchOrderDetail = async () => {
         return "Trả 1 phần";
       case "RETURNED":
         return "Đã hoàn";
+      case "RETURNING":
+        return "Đang hoàn";
+      case "RETURN_RETRY":
+        return "Hoàn lại";
+      case "RETURN_FAILED_FINAL":
+        return "Hoàn thất bại";
       default:
         return status;
     }

@@ -6,6 +6,7 @@ public enum OrderStatus {
     CONFIRMED,
     TRANSIT_TO_OFFICE, // này cho trường hợp khi đoơn hàng là mang đến bưu cục báo cho bưu cuục biết chuẩn bị nhận đơn
     READY_FOR_PICKUP,
+    URGENT_PICKUP,
     PICKUP_RETRY,
     PICKUP_FAILED_FINAL,
     PICKING_UP, // Thêm này báo Chuẩn bị lấy hàng sau khi admin confirm thì shipper có thể nhận
@@ -26,5 +27,7 @@ public enum OrderStatus {
 
     CANCELLED,
     RETURNING,
+    RETURN_RETRY,
+    RETURN_FAILED_FINAL,
     RETURNED
 }

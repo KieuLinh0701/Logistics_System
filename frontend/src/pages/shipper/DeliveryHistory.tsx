@@ -258,6 +258,8 @@ const ShipperDeliveryHistory: React.FC = () => {
               <Option value="AT_DEST_OFFICE">Đã nộp về bưu cục</Option>
               <Option value="DELIVERY_FAILED_FINAL">Giao thất bại</Option>
               <Option value="RETURNING">Đang hoàn hàng</Option>
+              <Option value="RETURN_RETRY">Hoàn hàng lại</Option>
+              <Option value="RETURN_FAILED_FINAL">Hoàn thất bại</Option>
               <Option value="RETURNED">Đã hoàn hàng</Option>
             </Select>
             <RangePicker
