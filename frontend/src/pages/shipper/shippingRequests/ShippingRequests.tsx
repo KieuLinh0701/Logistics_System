@@ -208,6 +208,20 @@ export default function ShippingRequests() {
     }
   }
 
+  async function handleRetryPickup(order: any) {
+    try {
+      setLoading(true);
+      await orderApi.retryPickup(order.id);
+      message.success("Đã tiến hành đến lấy lại. Người gửi sẽ được thông báo.");
+      setSelectedOrder((prev: any) => prev ? { ...prev, status: "PICKING_UP" } : prev);
+      await refreshList();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi tiến hành lấy lại");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
     READY_FOR_PICKUP: { label: "Sẵn sàng lấy hàng", color: "blue" },
     PICKUP_RETRY: { label: "Lấy hàng thất bại - Thử lại", color: "orange" },
@@ -370,15 +384,31 @@ export default function ShippingRequests() {
                       Nộp tại bưu cục
                     </Button>
                   </Space>
+                ) : selectedOrder.status === "PICKUP_RETRY" ? (
+                  <Space>
+                    <Button onClick={() => setMapVisible(false)}>Đóng</Button>
+                    <Button
+                      type="primary"
+                      className="primary-button"
+                      onClick={() => selectedOrder && handleRetryPickup(selectedOrder)}
+                      loading={loading}
+                    >
+                      Tiến hành đến lấy lại
+                    </Button>
+                  </Space>
+                ) : selectedOrder.status === "PICKING_UP" ? (
+                  <Space>
+                    <Button onClick={() => setMapVisible(false)}>Đóng</Button>
+                    <Button danger onClick={() => setPickupFailedModalOpen(true)}>
+                      Báo lấy hàng thất bại
+                    </Button>
+                    <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)}>
+                      Xác nhận đã lấy
+                    </Button>
+                  </Space>
                 ) : (
                   <Space>
                     <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                    <Button danger onClick={() => setPickupFailedModalOpen(true)} disabled={selectedOrder.status === "PICKUP_FAILED_FINAL"}>
-                      Báo lấy hàng thất bại
-                    </Button>
-                    <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)} disabled={selectedOrder.status === "PICKUP_FAILED_FINAL"}>
-                      Xác nhận đã lấy
-                    </Button>
                   </Space>
                 )
               ) : null

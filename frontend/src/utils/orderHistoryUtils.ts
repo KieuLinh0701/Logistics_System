@@ -17,6 +17,8 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return `Shipper đang đến lấy hàng từ người gửi`;
     case "PICKED_UP":
       return `Đơn hàng đã được lấy từ người gửi`;
+    case "PICKUP_FAILED_FINAL":
+      return `Lấy hàng thất bại quá số lần cho phép`;
     case "IMPORTED":
       return `Đơn hàng đã nhập kho ${toOffice}`;
     case "EXPORTED":

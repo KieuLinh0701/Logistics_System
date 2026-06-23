@@ -237,6 +237,11 @@ const orderApi = {
         return res.data;
     },
 
+    async retryPickup(orderId: number) {
+        const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/retry-pickup`);
+        return res.data;
+    },
+
     async getShipperDeliveryHistory(params: { page?: number; limit?: number; status?: string }) {
         const res = await axiosClient.get<ApiResponse<any>>("/shipper/history", { params });
         const data = res.data || {};

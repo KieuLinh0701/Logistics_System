@@ -119,6 +119,17 @@ public class ShipmentDriverService {
             history.setAction(OrderHistoryActionType.EXPORTED);
             history.setNote("Đơn hàng đang được vận chuyển giữa bưu cục");
             orderHistoryRepository.save(history);
+
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Hàng đang vận chuyển",
+                        String.format("Đơn %s đang được vận chuyển đến bưu cục đích.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
         }
     }
 

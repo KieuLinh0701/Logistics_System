@@ -247,6 +247,15 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success("Đã xác nhận lấy hàng"));
     }
 
+    @PostMapping("/orders/{id}/retry-pickup")
+    public ResponseEntity<ApiResponse<String>> retryPickup(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        shipperService.retryPickup(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã tiến hành đến lấy lại"));
+    }
+
     @GetMapping("/orders/{id}/partial-start")
     public ResponseEntity<ApiResponse<Map<String, Object>>> startPartialDelivery(@PathVariable Integer id) {
         if (isNotShipper()) {

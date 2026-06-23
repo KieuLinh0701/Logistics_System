@@ -634,10 +634,21 @@ public class OrderShipperService {
         int totalReturned = products.stream().mapToInt(p -> p.getReturnedQuantity() == null ? 0 : p.getReturnedQuantity()).sum();
 
         if (totalDelivered >= totalQty && totalReturned == 0) {
+            OrderStatus oldStatus = order.getStatus();
             order.setStatus(OrderStatus.DELIVERED);
             orderRepository.save(order);
             applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
             saveHistory(order, OrderHistoryActionType.DELIVERED, "Đã giao toàn bộ đơn hàng");
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Giao hàng thành công",
+                        String.format("Đơn %s đã được giao thành công.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
             try {
                 User shipperUser = employee.getUser();
                 if (order.getCod() != null && order.getCod() > 0 && !hasExistingCodSubmission(order)) {
@@ -649,6 +660,7 @@ public class OrderShipperService {
             return;
         }
 
+        OrderStatus oldStatus = order.getStatus();
         if (totalDelivered > 0) {
             order.setStatus(OrderStatus.PARTIAL_DELIVERY);
         } else if (totalReturned > 0) {
@@ -665,6 +677,23 @@ public class OrderShipperService {
         }
         if (totalReturned > 0 && totalDelivered == 0) {
             saveHistory(order, OrderHistoryActionType.PARTIAL_RETURN, "Trả 1 phần: trả " + totalReturned + " / " + totalQty);
+        }
+
+        if (order.getUser() != null) {
+            String title;
+            if (totalDelivered > 0) {
+                title = "Giao hàng một phần";
+            } else {
+                title = "Hoàn hàng một phần";
+            }
+            notificationService.create(
+                    title,
+                    String.format("Đơn %s %s.", order.getTrackingNumber(), totalDelivered > 0 ? "đã được giao một phần" : "có sản phẩm được hoàn một phần"),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
         }
 
         if (totalDelivered > 0) {
@@ -707,10 +736,22 @@ public class OrderShipperService {
             throw new AppException(OrderErrorCode.ORDER_INVALID_CLAIM_STATUS);
         }
 
+        OrderStatus oldStatus = order.getStatus();
         order.setStatus(OrderStatus.PICKING_UP);
         order.setEmployee(employee);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper nhận yêu cầu lấy hàng (bắt đầu lấy)");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Shipper đang đến lấy hàng",
+                    String.format("Shipper đang trên đường đến lấy đơn %s.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
 
         try {
             assignOrderToActiveAiRoute(employee, order);
@@ -957,10 +998,50 @@ public class OrderShipperService {
         applyVehicleWorkloadByStatus(order, employee, OrderStatus.PICKED_UP);
         saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper xác nhận đã lấy hàng");
 
-        // Gửi notification đơn giản
-        try {
-            notificationService.create("Đã lấy hàng", "Đơn " + order.getTrackingNumber() + " đã được shipper xác nhận lấy", "order_picked_up", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
-        } catch (Exception e) { throw e; }
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Đã lấy hàng thành công",
+                    String.format("Đơn %s đã được lấy hàng thành công.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+    }
+
+    @Transactional
+    public void retryPickup(Integer id) {
+        Employee employee = getCurrentEmployee();
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        // Kiểm tra trạng thái phải là PICKUP_RETRY
+        if (order.getStatus() != OrderStatus.PICKUP_RETRY) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
+        }
+
+        // Kiểm tra shipper hiện tại là người đã nhận đơn
+        if (order.getEmployee() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
+        }
+
+        order.setStatus(OrderStatus.PICKING_UP);
+        orderRepository.save(order);
+        orderRepository.flush();
+        saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper tiến hành đến lấy lại (retry pickup)");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Lấy hàng chưa thành công",
+                    String.format("Lấy hàng đơn %s chưa thành công. Hệ thống sẽ sắp xếp lấy lại.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     @Transactional
@@ -994,9 +1075,16 @@ public class OrderShipperService {
 
         try { autoAssignService.autoAssignOnArrival(order.getId()); } catch (Exception e) { throw e; }
 
-        try {
-            notificationService.create("Đã đến bưu cục", "Đơn " + order.getTrackingNumber() + " đã được nộp tại bưu cục", "order_at_origin_office", employee.getUser().getId(), null, "recipientaddress", order.getTrackingNumber());
-        } catch (Exception e) { throw e; }
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Hàng đã về bưu cục gốc",
+                    String.format("Đơn %s đã về bưu cục gốc.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     public Map<String, Object> getDeliveryHistory(int page, int limit, String status) {
@@ -1731,16 +1819,18 @@ public class OrderShipperService {
             }
         }
 
-        notificationService.create(
-                "Đã giao hàng thành công",
-                "Đơn hàng " + order.getTrackingNumber() + " - Đã giao hàng thành công",
-                "order_status_changed",
-                shipperUser.getId(),
-                null,
-                "recipientaddress",
-                order.getTrackingNumber()
-        );
         saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Giao hàng thành công",
+                    String.format("Đơn %s đã được giao thành công.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     private void handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
@@ -1771,12 +1861,32 @@ public class OrderShipperService {
             order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
             orderRepository.save(order);
             saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Giao hàng không thành công",
+                        String.format("Đơn %s giao không thành công sau nhiều lần thử.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
             return;
         }
 
         order.setStatus(OrderStatus.DELIVERY_RETRY);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.DELIVERY_RETRY, buildDeliveryAttemptNote(reason, note, attemptNumber, maxAttempts));
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Giao hàng chưa thành công",
+                    String.format("Giao đơn %s chưa thành công. Hệ thống sẽ sắp xếp giao lại.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     @Transactional
@@ -1809,6 +1919,16 @@ public class OrderShipperService {
         order.setStatus(OrderStatus.DELIVERY_FAILED_FINAL);
         orderRepository.save(order);
         saveHistory(order, OrderHistoryActionType.DELIVERY_FAILED_FINAL, "Giao thất bại quá số lần cho phép");
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Giao hàng không thành công",
+                    String.format("Đơn %s giao không thành công sau nhiều lần thử.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
     }
 
     private String resolveSenderFullAddress(Order order) {
