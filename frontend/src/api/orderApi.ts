@@ -4,6 +4,7 @@ import type {
     CreateOrderSuccess,
     ManagerOrderRequest,
     ManagerOrderSearchRequest,
+    ManagerUrgentOrderSearchRequest,
     Order,
     OrderFulfillmentSummary,
     OrderPrint,
@@ -484,16 +485,8 @@ const orderApi = {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/confirm`);
     },
 
-    // Public
-    async getPublicOrderByTrackingNumber(trackingNumber: string) {
-        const res = await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
-        return res;
-    },
-
-    //
-    async getFulfillmentSummary(orderId: number) {
-        const res = await axiosClient.get<ApiResponse<OrderFulfillmentSummary>>(`/orders/${orderId}/fulfillment-summary`);
-        return res;
+    async listUrgentManagerOrders(params: ManagerUrgentOrderSearchRequest) {
+        return await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders/urgent-pickup", {params});
     },
 
     async exportManagerOrders(params: ManagerOrderSearchRequest) {
@@ -533,6 +526,60 @@ const orderApi = {
         } catch (error) {
             return { success: false, error };
         }
+    },
+
+    async exportManagerUrgentOrders(params: ManagerUrgentOrderSearchRequest) {
+        try {
+            const res = await axiosExport.get("/manager/orders/urgent-pickup/export", {
+                params,
+                responseType: "blob",
+            });
+
+            const blob = res.data;
+            const contentDisposition = res.headers['content-disposition'];
+
+            let fileName = "BaoCao.xlsx";
+
+            if (contentDisposition) {
+                let fileNameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    fileName = decodeURIComponent(fileNameMatch[1].trim());
+                } else {
+                    fileNameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+                    if (fileNameMatch && fileNameMatch[1]) {
+                        fileName = fileNameMatch[1].trim();
+                    }
+                }
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            return { success: true, fileName };
+        } catch (error) {
+            return { success: false, error };
+        }
+    },
+
+    async confirmManagerUrgentOrder(id: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/urgent-pickup/${id}/confirm`);
+    },
+
+    // Public
+    async getPublicOrderByTrackingNumber(trackingNumber: string) {
+        return await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);
+    },
+
+    // User + Manager
+    async getFulfillmentSummary(orderId: number) {
+        const res = await axiosClient.get<ApiResponse<OrderFulfillmentSummary>>(`/orders/${orderId}/fulfillment-summary`);
+        return res;
     },
 
 };

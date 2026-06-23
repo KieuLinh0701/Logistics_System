@@ -12,20 +12,27 @@ import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.exception.enums.ServiceTypeErrorCode;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.OrderPrintMapper;
-import com.logistics.repository.*;
+import com.logistics.repository.OrderHistoryRepository;
+import com.logistics.repository.OrderProductRepository;
+import com.logistics.repository.OrderRepository;
+import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
+import com.logistics.request.user.order.UserUrgentOrderSearchRequest;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
+import com.logistics.response.manager.order.UrgentOrderResponse;
 import com.logistics.service.common.FeePublicService;
 import com.logistics.service.common.NotificationService;
-import com.logistics.service.user.*;
+import com.logistics.service.user.OrderHistoryUserService;
+import com.logistics.service.user.ProductUserService;
+import com.logistics.service.user.PromotionUserService;
+import com.logistics.service.user.ServiceTypeUserService;
 import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.AddressUtils;
 import com.logistics.utils.ManagerOrderEditRuleUtils;
 import com.logistics.utils.OrderFieldUtils;
 import com.logistics.utils.OrderUtils;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
@@ -38,6 +45,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -61,10 +69,6 @@ public class OrderManagerService {
     private final OrderHistoryRepository orderHistoryRepository;
 
     private final PromotionUserService promotionUserService;
-
-    private final OfficeRepository officeRepository;
-
-    private final AddressUserService addressUserService;
 
     private final ServiceTypeUserService serviceTypeUserService;
 
@@ -355,6 +359,9 @@ public class OrderManagerService {
 
         order.setStatus(OrderStatus.CONFIRMED);
         repository.save(order);
+
+        orderHistoryUserService.save(order, null, userOffice,
+                null, OrderHistoryActionType.CONFIRMED, null);
 
         if (order.getUser() != null) {
             notificationService.create(
@@ -1166,6 +1173,149 @@ public class OrderManagerService {
                     order.getUser().getId(),
                     null,
                     "orders/tracking",
+                    order.getTrackingNumber());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public ListResponse<UrgentOrderResponse> getUrgentOrders(
+            Integer userId,
+            UserUrgentOrderSearchRequest request) {
+
+        Office office = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
+
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
+
+        String sort = request.getSort() != null ? request.getSort().toLowerCase() : "newest";
+        Sort sortOpt = switch (sort) {
+            case "oldest" -> Sort.by("readyForPickupAt").ascending();
+            case "newest" -> Sort.by("readyForPickupAt").descending();
+            default -> Sort.by("readyForPickupAt").descending();
+        };
+
+        Pageable pageable = PageRequest.of(request.getPage() - 1, request.getLimit(), sortOpt);
+
+        Page<Order> pageData = repository.findUrgentOrdersByCityCode(
+                OrderStatus.URGENT_PICKUP,
+                office.getCityCode(),
+                request.getSearch(),
+                startDate,
+                endDate,
+                pageable
+        );
+        List<UrgentOrderResponse> list = pageData.getContent()
+                .stream()
+                .map(OrderMapper::toUrgentOrderResponse)
+                .toList();
+
+        Pagination pagination = new Pagination(
+                (int) pageData.getTotalElements(),
+                request.getPage(),
+                request.getLimit(),
+                pageData.getTotalPages()
+        );
+
+        return new ListResponse<>(list, pagination);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportUrgent(Integer userId, UserUrgentOrderSearchRequest request) {
+        // 1. Lấy thông tin office quản lý
+        Office office = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        // 2. Xử lý thời gian
+        LocalDateTime startDate = (request.getStartDate() != null && !request.getStartDate().isBlank())
+                ? LocalDateTime.parse(request.getStartDate()) : null;
+        LocalDateTime endDate = (request.getEndDate() != null && !request.getEndDate().isBlank())
+                ? LocalDateTime.parse(request.getEndDate()) : null;
+
+        List<Order> orders = repository.findUrgentOrdersForExport(
+                OrderStatus.URGENT_PICKUP,
+                office.getCityCode(),
+                request.getSearch(),
+                startDate,
+                endDate
+        );
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("UrgentOrders");
+
+            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
+            XSSFFont font = (XSSFFont) workbook.createFont();
+            font.setBold(true);
+            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
+            headerStyle.setFont(font);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(
+                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            String[] headers = {
+                    "Mã đơn", "Địa chỉ lấy hàng", "Thời gian sẵn sàng"
+            };
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+            int rowIdx = 1;
+            for (Order o : orders) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(o.getTrackingNumber() != null ? o.getTrackingNumber() : "N/A");
+                row.createCell(1).setCellValue(o.getSenderFullAddress() != null ? o.getSenderFullAddress() : "");
+                row.createCell(2).setCellValue(o.getReadyForPickupAt() != null ? o.getReadyForPickupAt().format(dtf) : "");
+            }
+
+            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
+        }
+    }
+
+    public void confirmUrgentOrder(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (!OrderUtils.canManagerUrgentConfirm(order.getStatus(), order.getPickupType())) {
+            throw new AppException(OrderErrorCode.ORDER_CANNOT_CONFIRM);
+        }
+
+        order.setStatus(OrderStatus.CONFIRMED);
+        order.setFromOffice(userOffice);
+        repository.save(order);
+
+        orderHistoryUserService.save(order, null, userOffice,
+                null, OrderHistoryActionType.CONFIRMED, null);
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Đơn hàng đã được xác nhận",
+                    String.format(
+                            "Đơn hàng #%s đã được xác nhận. Chúng tôi sẽ phân phối nhân viên giao hàng đến lấy hàng trong thời gian sớm nhất.",
+                            order.getTrackingNumber()),
+                    "order",
+                    order.getUser()
+                            .getId(),
+                    null,
+                    "orders/list",
                     order.getTrackingNumber());
         }
     }

@@ -11,6 +11,8 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return "Đơn hàng đã sẵn sàng để shipper đến lấy";
     case "TRANSIT_TO_OFFICE":
       return "Đơn hàng đang được chuyển về bưu cục";
+    case "CONFIRMED":
+      return "Đơn hàng đã được xác nhận";
     case "URGENT_PICKUP":
       return "Đơn hàng ưu tiên cần shipper đến lấy ngay";
     case "PICKING_UP":

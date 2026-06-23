@@ -116,6 +116,7 @@ export interface Order {
     paymentSubmissions?: PaymentSubmission[];
     codAmount?: number;
     returnedAt: number;
+    readyForPickupAt: string;
 }
 
 export interface StatusCount {
@@ -185,6 +186,15 @@ export interface ManagerOrderSearchRequest {
     serviceTypeId?: number;
     paymentStatus?: string;
     cod?: string;
+    sort?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export interface ManagerUrgentOrderSearchRequest {
+    page: number;
+    limit: number;
+    search?: string;
     sort?: string;
     startDate?: string;
     endDate?: string;

@@ -46,6 +46,7 @@ import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncide
 import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
 import ManagerAuditLogsByEmployee from "./pages/manager/employee/audit-logs/ManagerAuditLogsByEmployee.tsx";
 import ManagerAiRouteOptimization from "./pages/manager/ai-route/ManagerAiRouteOptimization";
+import ManagerUrgentOrderList from "./pages/manager/order/urgent-pickup/ManagerUrgentOrderList.tsx";
 
 import OrderListRouter from "./pages/router/OrderListRouter";
 import VehiclesRouter from "./pages/router/VehiclesRouter";
@@ -67,6 +68,7 @@ import UserBankAccounts from "./pages/user/bankAcount/UserBankAccounts";
 import UserOrderEdit from "./pages/user/order/edit/UserOrderEdit";
 import UserShippingRequests from "./pages/user/order/request/UserShippingRequests";
 import UserEmployeeList from "./pages/user/employee/list/UserEmployeeList.tsx";
+import UserEmployeeHistory from "./pages/user/employee/history/UserEmployeeHistory.tsx";
 
 // Shipper
 import ShipperOrders from "./pages/shipper/Orders";
@@ -100,7 +102,6 @@ import JobDetailPage from "./pages/common/recruitment/JobDetailPage";
 import ApplyJobPage from "./pages/common/recruitment/ApplyJobPage";
 import JobPostingManagementPage from "./pages/hr/recruitment/job-posting/JobPostingManagementPage";
 import ApplicationReviewPage from "./pages/hr/recruitment/application/ApplicationReviewPage";
-import UserEmployeeHistory from "./pages/user/employee/history/UserEmployeeHistory.tsx";
 
 const App: React.FC = () => {
     return (
@@ -254,6 +255,8 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_manager"]}><InternalEmployeeChatPage/></PrivateRoute>}/>
                         <Route path="/employees/:id/logs" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerAuditLogsByEmployee/></PrivateRoute>}/>
+                        <Route path="/orders/urgent" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerUrgentOrderList/></PrivateRoute>}/>
 
                         {/* Shipper routes */}
                         <Route path="/shipper/orders-unassigned" element={<PrivateRoute

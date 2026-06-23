@@ -125,6 +125,14 @@ public class OrderUtils {
                 && (pickupType == OrderPickupType.AT_OFFICE);
     }
 
+    private static final Set<OrderStatus> STATUSES_ALLOWED_TO_URGENT_CONFIRMED_FOR_MANAGER = Set.of(
+            OrderStatus.URGENT_PICKUP);
+
+    public static boolean canManagerUrgentConfirm(OrderStatus status, OrderPickupType pickupType) {
+        return STATUSES_ALLOWED_TO_URGENT_CONFIRMED_FOR_MANAGER.contains(status)
+                && (pickupType == OrderPickupType.PICKUP_BY_COURIER);
+    }
+
     public static String translateOrderStatus(OrderStatus status) {
         if (status == null)
             return "";
@@ -132,7 +140,7 @@ public class OrderUtils {
         return switch (status) {
             case DRAFT -> "Bản nháp";
             case PENDING -> "Đang chờ đóng gói";
-            case CONFIRMED -> "Đã nhận đơn";
+            case CONFIRMED -> "Đã xác nhận";
             case TRANSIT_TO_OFFICE -> "Đang chuyển về bưu cục'";
             case READY_FOR_PICKUP -> "Sẵn sàng để lấy";
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
@@ -156,11 +164,7 @@ public class OrderUtils {
 
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn trả";
-<<<<<<< Updated upstream
-            case RETURN_AT_ORIGIN_OFFICE -> "Đã hoàn về bưu cục gốc";
-=======
             case RETURN_AT_ORIGIN_OFFICE -> "Đã hoàn về bưu cục xuất phát";
->>>>>>> Stashed changes
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn trả";

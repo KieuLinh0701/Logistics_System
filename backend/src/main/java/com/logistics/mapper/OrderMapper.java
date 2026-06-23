@@ -8,6 +8,7 @@ import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.entity.*;
+import com.logistics.response.manager.order.UrgentOrderResponse;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,15 +16,17 @@ import java.util.stream.Collectors;
 
 public class OrderMapper {
 
-    public static List<UserSettlementOrderDto> toUserSettlementOrderDtoList(
-            List<Order> entities) {
-
-        if (entities == null || entities.isEmpty())
-            return List.of();
-
-        return entities.stream()
-                .map(OrderMapper::toUserSettlementOrderDto)
-                .collect(Collectors.toList());
+    public static UrgentOrderResponse toUrgentOrderResponse(Order o) {
+        return UrgentOrderResponse.builder()
+                .id(o.getId())
+                .trackingNumber(o.getTrackingNumber())
+                .senderFullAddress(o.getSenderFullAddress())
+                .senderWardName(o.getSenderWardName())
+                .senderCityName(o.getSenderCityName())
+                .senderWardCode(o.getSenderWardCode())
+                .senderCityCode(o.getSenderCityCode())
+                .readyForPickupAt(o.getReadyForPickupAt())
+                .build();
     }
 
     public static UserSettlementOrderDto toUserSettlementOrderDto(Order entity) {

@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
     Alert,
-    Badge,
     Button,
     Card,
     Col,
@@ -28,13 +27,12 @@ import {
     PhoneOutlined,
     PlayCircleOutlined,
     ReloadOutlined,
-    SyncOutlined,
 } from "@ant-design/icons";
-import { GoogleMap, MarkerF, PolylineF, useJsApiLoader } from "@react-google-maps/api";
+import {GoogleMap, MarkerF, PolylineF, useJsApiLoader} from "@react-google-maps/api";
 import polyline from "@mapbox/polyline";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import orderApi from "../../api/orderApi";
-import { SHIPPER_ROUTE_REFRESH_EVENT } from "./deliveryRouteEvents";
+import {SHIPPER_ROUTE_REFRESH_EVENT} from "./deliveryRouteEvents";
 
 const { Title, Text } = Typography;
 
