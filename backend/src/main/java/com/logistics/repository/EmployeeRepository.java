@@ -162,6 +162,23 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer>, Jp
             AND e.status = com.logistics.enums.EmployeeStatus.ACTIVE
             AND ar.isActive = true
             AND LOWER(r.name) = LOWER('Manager')
+            AND r.userOwner IS NULL
             """)
     List<Employee> findActiveManagersByOfficeId(@Param("officeId") Integer officeId);
+
+
+    @Query("""
+                SELECT e FROM Employee e
+                JOIN e.accountRole ar
+                JOIN ar.role r
+                JOIN e.user u
+                JOIN u.account acc
+                WHERE e.office.cityCode = :cityCode
+                  AND e.status = com.logistics.enums.EmployeeStatus.ACTIVE
+                  AND acc.isActive = true
+                  AND ar.isActive = true
+                  AND r.name = 'Shipper'
+                  AND r.userOwner IS NULL
+            """)
+    List<Employee> findActiveShippersByCityCode(@Param("cityCode") Integer cityCode);
 }

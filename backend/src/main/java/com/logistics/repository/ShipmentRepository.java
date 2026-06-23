@@ -33,4 +33,13 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     List<Shipment> findByVehicleId(Integer vehicleId);
 
     List<Shipment> findByEmployeeId(Integer employeeId);
+
+    @Query("""
+                SELECT s FROM Shipment s
+                WHERE s.employee.id = :employeeId
+                  AND s.type = com.logistics.enums.ShipmentType.DELIVERY
+                  AND s.status = com.logistics.enums.ShipmentStatus.IN_TRANSIT
+                ORDER BY s.createdAt DESC
+            """)
+    Optional<Shipment> findActivePickupShipmentByEmployee(@Param("employeeId") Integer employeeId);
 }
