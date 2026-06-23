@@ -645,7 +645,7 @@ const ManagerOrderList = () => {
 
             <ConfirmModal
                 title='Xác nhận nhận hàng'
-                message='Bạn có chắc rằng bạn đã nhận đơn hàng này tại bưu cục để chuyển giao cho đơn vị vận chuyển không?'
+                message='Bạn có chắc rằng bạn đơn hàng này đã đến bưu cục để chuyển giao cho đơn vị vận chuyển không?'
                 open={modalConfirmOpen}
                 onOk={confirmAtOriginOfficeOrder}
                 onCancel={() => setModalConfirmOpen(false)}

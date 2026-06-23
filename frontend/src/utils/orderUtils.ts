@@ -15,11 +15,11 @@ export const canPublicUserOrder = (value: string) => {
 };
 
 export const canCancelUserOrder = (value: string) => {
-    return ["PENDING", "CONFIRMED", "READY_FOR_PICKUP"].includes(value)
+    return ["PENDING", "TRANSIT_TO_OFFICE", "CONFIRMED", "READY_FOR_PICKUP", "URGENT_PICKUP"].includes(value)
 };
 
 export const canPrintUserOrder = (value: string) => {
-    return !["DRAFT", "PENDING", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
+    return !["DRAFT", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
 };
 
 export const canDeleteUserOrder = (value: string) => {
@@ -27,26 +27,26 @@ export const canDeleteUserOrder = (value: string) => {
 };
 
 export const canReadyUserOrder = (value: string) => {
+    return ["PENDING"].includes(value)
+};
+
+export const canTransitToOfficeUserOrder = (value: string) => {
     return ["CONFIRMED"].includes(value)
 };
 
 // Điều kiện để thao tác với order của manager
 export const canPrintManagerOrder = (value: string) => {
-    return !["DRAFT", "PENDING", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
+    return !["DRAFT", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
 };
 
-const MANAGER_CANCEL_USER_ORDER_STATUSES: readonly OrderStatus[] = [
-    "PENDING",
-    "CONFIRMED",
-    "PICKING_UP",
-    "READY_FOR_PICKUP",
-];
+const MANAGER_CANCEL_USER_ORDER_STATUSES: readonly OrderStatus[] = [];
 
 const MANAGER_CANCEL_OFFICE_ORDER_STATUSES: readonly OrderStatus[] = [
     "PENDING",
     "CONFIRMED",
-    "PICKING_UP",
+    "TRANSIT_TO_OFFICE",
     "READY_FOR_PICKUP",
+    "URGENT_PICKUP",
     "AT_ORIGIN_OFFICE",
 ];
 
@@ -67,11 +67,11 @@ export const canConfirmManagerOrder = (
     status: OrderStatus,
     creatorType: OrderPickupType
 ): boolean => {
-    return MANAGER_CONFIRM_ORDER_STATUSES.includes(status) && (creatorType === "AT_OFFICE" || creatorType === "PICKUP_BY_COURIER");
+    return MANAGER_CONFIRM_ORDER_STATUSES.includes(status) && (creatorType === "AT_OFFICE");
 };
 
 export const canAtOriginOfficeManagerOrder = (value: string) => {
-    return ["CONFIRMED"].includes(value)
+    return ["TRANSIT_TO_OFFICE"].includes(value)
 };
 
 export const canEditManagerOrder = (status: string, createdByType: string) => {
@@ -142,8 +142,9 @@ export const translateOrderPickupType = (value: string): string => {
 export const ORDER_STATUS = [
     'DRAFT',
     'PENDING',
-    'CONFIRMED',
+    'TRANSIT_TO_OFFICE',
     'READY_FOR_PICKUP',
+    'CONFIRMED',
     'URGENT_PICKUP',
     'PICKUP_RETRY',
     'PICKUP_FAILED_FINAL',
@@ -171,11 +172,13 @@ export const translateOrderStatus = (value: string): string => {
         case 'DRAFT':
             return 'Bản nháp';
         case 'PENDING':
-            return 'Chờ duyệt';
+            return 'Đang chờ đóng gói';
         case 'CONFIRMED':
-            return 'Đã xác nhận';
+            return 'Đã nhận đơn';
         case 'READY_FOR_PICKUP':
             return 'Sẵn sàng để lấy';
+        case 'TRANSIT_TO_OFFICE':
+            return 'Đang chuyển về bưu cục';
         case 'URGENT_PICKUP':
             return 'Ưu tiên lấy hàng';
         case 'PICKUP_RETRY':

@@ -14,6 +14,7 @@ public enum OfficeErrorCode implements BaseErrorCode {
     OFFICE_ADDRESS_REQUIRED(HttpStatus.BAD_REQUEST, "Thông tin địa chỉ không được để trống"),
     OFFICE_COORDINATES_REQUIRED(HttpStatus.BAD_REQUEST, "Vĩ độ và kinh độ không được để trống"),
     OFFICE_INVALID_TYPE_OR_STATUS(HttpStatus.BAD_REQUEST, "Giá trị type/status không hợp lệ"),
+    OFFICE_LOCATION_MISMATCH(HttpStatus.BAD_REQUEST, "Bưu cục không phù hợp với vị trí đã chọn"),
     ;
 
     private final HttpStatus httpStatus;

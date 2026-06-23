@@ -275,6 +275,7 @@ public class SupportAssistantService {
         }
         return switch (action) {
             case PENDING -> "Chờ xử lý";
+            case TRANSIT_TO_OFFICE -> "Đang chuyển về bưu cục";
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
             case PICKING_UP -> "Đang lấy hàng";

@@ -18,7 +18,7 @@ import {
     canEditUserOrder,
     canPrintUserOrder,
     canPublicUserOrder,
-    canReadyUserOrder,
+    canReadyUserOrder, canTransitToOfficeUserOrder,
     translateOrderCodStatus,
     translateOrderPayerType,
     translateOrderPaymentStatus,
@@ -34,6 +34,7 @@ interface Props {
     onDelete: (id: number) => void;
     onPrint: (id: number) => void;
     onReady: (id: number) => void;
+    onTransitToOffice: (id: number) => void;
     onEdit: (id: number, trackingNumber: string) => void;
     page: number;
     limit: number;
@@ -53,6 +54,7 @@ const OrderTable: React.FC<Props> = ({
                                          onPrint,
                                          onEdit,
                                          onReady,
+                                         onTransitToOffice,
                                          page,
                                          limit,
                                          total,
@@ -301,6 +303,7 @@ const OrderTable: React.FC<Props> = ({
                 const canPrint = canPrintUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PRINT_BULK']);
                 const canPublic = canPublicUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PROCESS']);
                 const canReady = canReadyUserOrder(record.status) && record.pickupType === "PICKUP_BY_COURIER" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
+                const canTransitToOffice = canTransitToOfficeUserOrder(record.status) && record.pickupType === "AT_OFFICE" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_TRANSIT_TO_OFFICE']);
 
                 const items = [
                     ...(canPrint ? [{
@@ -315,6 +318,13 @@ const OrderTable: React.FC<Props> = ({
                         icon: <PlayCircleOutlined/>,
                         label: "Sẵn sàng để lấy",
                         onClick: () => onReady(record.id),
+                    }] : []),
+
+                    ...(canTransitToOffice ? [{
+                        key: "ready",
+                        icon: <PlayCircleOutlined/>,
+                        label: "Chuyển về bưu cục",
+                        onClick: () => onTransitToOffice(record.id),
                     }] : []),
 
                     ...(canPublic ? [{

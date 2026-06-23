@@ -1093,7 +1093,7 @@ public class OrderManagerService {
         }
 
         if (!OrderUtils.canManagerSetAtOriginOffice(order.getStatus())) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, order.getStatus(), OrderStatus.AT_ORIGIN_OFFICE);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.AT_ORIGIN_OFFICE));
         }
 
         if (!order.getPickupType().equals(OrderPickupType.AT_OFFICE)) {

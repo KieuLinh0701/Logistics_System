@@ -48,6 +48,7 @@ const UserOrderList = () => {
     const [publicModalOpen, setPublicModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
+    const [transitToOfficeModalOpen, setTransitToOfficeModalOpen] = useState(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
 
     const [userLocked, setUserLocked] = useState<boolean>(false);
@@ -347,6 +348,11 @@ const UserOrderList = () => {
         setModalConfirmOpen(true);
     };
 
+    const handleTransitToOffice = (id: number) => {
+        setOrderId(id);
+        setTransitToOfficeModalOpen(true);
+    };
+
     const confirmReadyOrder = async () => {
         if (!orderId) return;
 
@@ -366,6 +372,31 @@ const UserOrderList = () => {
             }
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Sẵn sàng để lấy'!");
+        } finally {
+            setLoading(false);
+            setOrderId(null);
+        }
+    };
+
+    const confirmTransitToOfficeOrder = async () => {
+        if (!orderId) return;
+
+        setTransitToOfficeModalOpen(false);
+
+        try {
+            setLoading(true);
+
+            const result = await orderApi.setUserOrderTransitToOffice(orderId);
+
+            if (result.success) {
+                message.success("Chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục' thành công.");
+                fetchOrders();
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục'!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục'!");
         } finally {
             setLoading(false);
             setOrderId(null);
@@ -519,6 +550,7 @@ const UserOrderList = () => {
                     onPrint={handlePrintOrder}
                     onEdit={handleEditOrder}
                     onReady={handleReadyOrder}
+                    onTransitToOffice={handleTransitToOffice}
                     page={page}
                     total={total}
                     loading={loading}
@@ -561,6 +593,15 @@ const UserOrderList = () => {
                 open={modalConfirmOpen}
                 onOk={confirmReadyOrder}
                 onCancel={() => setModalConfirmOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng đang chuyển về bưu cục'
+                message='Bạn có chắc chắn đơn hàng này đang chuyển về bưu cục đã chọn trước đó không?'
+                open={transitToOfficeModalOpen}
+                onOk={confirmTransitToOfficeOrder}
+                onCancel={() => setTransitToOfficeModalOpen(false)}
                 loading={loading}
             />
         </div>
