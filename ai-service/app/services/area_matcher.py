@@ -1,43 +1,69 @@
 import logging
 
 from app.config.settings import Settings
-from app.models.route_optimization import OfficeLocation, OrderInput, ShipperAssignmentArea, ShipperInput
+from app.models.route_optimization import OfficeLocation, OrderInput, RouteStopInput, ShipperAssignmentArea, ShipperInput
 from app.services.geo_utils import distance_meter
 
 logger = logging.getLogger(__name__)
 
 
-def assignment_matches_order(assignment: ShipperAssignmentArea, order: OrderInput) -> bool:
+def _to_dict(obj) -> dict:
+    """Chuyển Pydantic model hoặc dict thành dict thuần để truy cập trường."""
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    return {}
+
+
+def assignment_matches_order(assignment: ShipperAssignmentArea, order: OrderInput | RouteStopInput) -> bool:
     """
     Kiểm tra đơn hàng có thuộc khu vực được phân công hay không.
     Ưu tiên so khớp theo phường/xã, nếu không có thì so khớp theo thành phố.
+    Hỗ trợ cả OrderInput (recipient_ward_code) và RouteStopInput (ward_code).
     """
+    d = _to_dict(order)
     ward = assignment.ward_code
     if ward is not None and ward != 0:
-        return order.recipient_ward_code == ward
-    return order.recipient_city_code == assignment.city_code
+        return d.get("recipient_ward_code", d.get("ward_code")) == ward
+    return d.get("recipient_city_code", d.get("city_code", 0)) == assignment.city_code
 
 
-def shipper_matches_order(shipper: ShipperInput, order: OrderInput) -> bool:
+def shipper_matches_order(shipper: ShipperInput, order: OrderInput | RouteStopInput) -> bool:
     return any(assignment_matches_order(a, order) for a in shipper.assignments)
 
 
-def _order_point(order: OrderInput) -> dict:
-    return {"lat": order.latitude, "lng": order.longitude}
+def _order_point(order: OrderInput | RouteStopInput) -> dict:
+    d = _to_dict(order)
+    return {"lat": d.get("latitude"), "lng": d.get("longitude")}
+
+
+def _order_id(order: OrderInput | RouteStopInput):
+    """Lấy order id — RouteStopInput dùng order_id, OrderInput dùng id."""
+    d = _to_dict(order)
+    return d.get("order_id", d.get("id"))
+
+
+def _safe_weight_kg(order: OrderInput | RouteStopInput) -> float:
+    d = _to_dict(order)
+    val = d.get("weight_kg")
+    return val if val and val > 0 else 1.0
 
 
 def _office_point(office: OfficeLocation) -> dict:
     return {"lat": office.latitude, "lng": office.longitude}
 
 
-def _min_distance_to_order(existing_orders: list[OrderInput], order: OrderInput) -> int:
+def _min_distance_to_order(
+    existing_orders: list[OrderInput | RouteStopInput], order: OrderInput | RouteStopInput
+) -> int:
     if not existing_orders:
         return 0
     target = _order_point(order)
     return min(distance_meter(_order_point(o), target) for o in existing_orders)
 
 
-def _compactness_penalty(existing_orders: list[OrderInput]) -> float:
+def _compactness_penalty(existing_orders: list[OrderInput | RouteStopInput]) -> float:
     if len(existing_orders) < 2:
         return 0.0
     points = [_order_point(o) for o in existing_orders]
@@ -56,10 +82,6 @@ def _normalize(value: float, max_value: float) -> float:
     return value / max_value
 
 
-def _safe_weight_kg(order: OrderInput) -> float:
-    return order.weight_kg if order.weight_kg > 0 else 1.0
-
-
 def _shipper_weight_limit(shipper: ShipperInput, settings: Settings) -> float:
     if shipper.remaining_weight_kg is not None:
         return max(0.0, shipper.remaining_weight_kg)
@@ -71,16 +93,19 @@ def _shipper_weight_limit(shipper: ShipperInput, settings: Settings) -> float:
 def assign_orders_to_shippers(
     office: OfficeLocation,
     shippers: list[ShipperInput],
-    orders: list[OrderInput],
+    orders: list[OrderInput | RouteStopInput],
     settings: Settings,
     enable_debug_log: bool = False,
-) -> tuple[dict[int, list[OrderInput]], list[tuple[OrderInput, str]]]:
+) -> tuple[
+    dict[int, list[OrderInput | RouteStopInput]],
+    list[tuple[OrderInput | RouteStopInput, str]],
+]:
     """
     Phân công đơn cho shipper theo khu vực, sức chứa và tải trọng.
     Trả về danh sách đã gán và danh sách chưa gán kèm lý do.
     """
-    shipper_load: dict[int, list[OrderInput]] = {s.id: [] for s in shippers}
-    unassigned: list[tuple[OrderInput, str]] = []
+    shipper_load: dict[int, list[OrderInput | RouteStopInput]] = {s.id: [] for s in shippers}
+    unassigned: list[tuple[OrderInput | RouteStopInput, str]] = []
 
     if not shippers:
         return shipper_load, [(o, "NO_SHIPPER_AVAILABLE") for o in orders]
@@ -102,18 +127,20 @@ def assign_orders_to_shippers(
 
     for order in orders:
         candidates = [s for s in shippers if shipper_matches_order(s, order)]
+        order_id = _order_id(order)
         if enable_debug_log:
+            d = _to_dict(order)
             logger.debug(
                 "Assignment order=%s ward=%s city=%s matched_shippers=%s",
-                order.id,
-                order.recipient_ward_code,
-                order.recipient_city_code,
+                order_id,
+                d.get("recipient_ward_code", d.get("ward_code")),
+                d.get("recipient_city_code", d.get("city_code")),
                 len(candidates),
             )
         if not candidates:
             unassigned.append((order, "NO_MATCHING_AREA"))
             if enable_debug_log:
-                logger.debug("Assignment unassigned order=%s reason=NO_MATCHING_AREA", order.id)
+                logger.debug("Assignment unassigned order=%s reason=NO_MATCHING_AREA", order_id)
             continue
 
         # Bỏ qua shipper đã vượt sức chứa đơn.
@@ -121,21 +148,21 @@ def assign_orders_to_shippers(
         if not candidates:
             unassigned.append((order, "CAPACITY_EXCEEDED"))
             if enable_debug_log:
-                logger.debug("Assignment unassigned order=%s reason=CAPACITY_EXCEEDED", order.id)
+                logger.debug("Assignment unassigned order=%s reason=CAPACITY_EXCEEDED", order_id)
             continue
 
         order_weight = _safe_weight_kg(order)
         weight_filtered: list[ShipperInput] = []
-        for shipper in candidates:
-            current_weight = sum(_safe_weight_kg(o) for o in shipper_load[shipper.id])
-            limit_weight = _shipper_weight_limit(shipper, settings)
+        for sp in candidates:
+            current_weight = sum(_safe_weight_kg(o) for o in shipper_load[sp.id])
+            limit_weight = _shipper_weight_limit(sp, settings)
             if current_weight + order_weight <= limit_weight:
-                weight_filtered.append(shipper)
+                weight_filtered.append(sp)
 
         if not weight_filtered:
             unassigned.append((order, "WEIGHT_CAPACITY_EXCEEDED"))
             if enable_debug_log:
-                logger.debug("Assignment unassigned order=%s reason=WEIGHT_CAPACITY_EXCEEDED", order.id)
+                logger.debug("Assignment unassigned order=%s reason=WEIGHT_CAPACITY_EXCEEDED", order_id)
             continue
 
         candidates = weight_filtered
@@ -144,45 +171,44 @@ def assign_orders_to_shippers(
         compactness_scores: dict[int, float] = {}
         workload_scores: dict[int, float] = {}
 
-        for shipper in candidates:
-            current_orders = shipper_load[shipper.id]
-            workload_ratio = len(current_orders) / max(shipper.capacity, 1)
-            workload_scores[shipper.id] = workload_ratio
+        for sp in candidates:
+            current_orders = shipper_load[sp.id]
+            workload_ratio = len(current_orders) / max(sp.capacity, 1)
+            workload_scores[sp.id] = workload_ratio
 
             if not current_orders:
-                distance_scores[shipper.id] = float(distance_meter(depot, _order_point(order)))
+                distance_scores[sp.id] = float(distance_meter(depot, _order_point(order)))
             else:
-                distance_scores[shipper.id] = float(_min_distance_to_order(current_orders, order))
+                distance_scores[sp.id] = float(_min_distance_to_order(current_orders, order))
 
-            compactness_scores[shipper.id] = float(_compactness_penalty(current_orders))
+            compactness_scores[sp.id] = float(_compactness_penalty(current_orders))
 
         max_distance = max(distance_scores.values(), default=0.0)
         max_compactness = max(compactness_scores.values(), default=0.0)
 
-        def assignment_score(shipper: ShipperInput) -> float:
-            # Chuẩn hóa điểm để cộng các tiêu chí khác đơn vị.
+        def assignment_score(sp: ShipperInput) -> float:
             return (
-                workload_scores[shipper.id] * 0.45
-                + _normalize(distance_scores[shipper.id], max_distance) * 0.45
-                + _normalize(compactness_scores[shipper.id], max_compactness) * 0.10
+                workload_scores[sp.id] * 0.45
+                + _normalize(distance_scores[sp.id], max_distance) * 0.45
+                + _normalize(compactness_scores[sp.id], max_compactness) * 0.10
             )
 
         if enable_debug_log:
-            for shipper in candidates:
-                score = assignment_score(shipper)
-                current_orders = len(shipper_load[shipper.id])
-                distance_km = distance_scores[shipper.id] / 1000.0
-                compactness_km = compactness_scores[shipper.id] / 1000.0
+            for sp in candidates:
+                score = assignment_score(sp)
+                current_orders = len(shipper_load[sp.id])
+                distance_km = distance_scores[sp.id] / 1000.0
+                compactness_km = compactness_scores[sp.id] / 1000.0
                 logger.debug(
                     "Assignment candidate order=%s shipper_id=%s shipper_name=%s "
                     "current_orders=%s capacity=%s workload_ratio=%.3f "
                     "distance_km=%.3f compactness_km=%.3f score=%.4f",
-                    order.id,
-                    shipper.id,
-                    shipper.name,
+                    order_id,
+                    sp.id,
+                    sp.name,
                     current_orders,
-                    shipper.capacity,
-                    workload_scores[shipper.id],
+                    sp.capacity,
+                    workload_scores[sp.id],
                     distance_km,
                     compactness_km,
                     score,
@@ -195,7 +221,7 @@ def assign_orders_to_shippers(
             selected_score = assignment_score(chosen)
             logger.debug(
                 "Assignment selected order=%s shipper_id=%s shipper_name=%s score=%.4f",
-                order.id,
+                order_id,
                 chosen.id,
                 chosen.name,
                 selected_score,

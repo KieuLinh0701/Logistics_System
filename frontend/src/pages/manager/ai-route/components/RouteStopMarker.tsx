@@ -1,7 +1,13 @@
-import React, {useMemo} from "react";
-import {Marker} from "@react-google-maps/api";
-import type {AiRouteStop} from "../../../../types/aiRoute";
-import {createStopMarkerSvg} from "../utils/routeMapUtils";
+import React, { useMemo } from "react";
+import { Marker } from "@react-google-maps/api";
+import type { AiRouteStop } from "../../../../types/aiRoute";
+import {
+  createStopMarkerSvg,
+  createReturnToOfficeMarkerSvg,
+  createPickupMarkerSvg,
+  isReturnToOfficeStop,
+  isPickupStop,
+} from "../utils/routeMapUtils";
 
 export interface RouteStopMarkerProps {
   stop: AiRouteStop;
@@ -26,14 +32,25 @@ const RouteStopMarker: React.FC<RouteStopMarkerProps> = ({
   );
 
   const icon = useMemo(() => {
-    const url = createStopMarkerSvg(color, label, highlighted || selected);
+    const isReturn = isReturnToOfficeStop(stop);
+    const isPickup = isPickupStop(stop);
     const size = highlighted || selected ? 40 : 34;
+    let url: string;
+
+    if (isReturn) {
+      url = createReturnToOfficeMarkerSvg("VỀ BC");
+    } else if (isPickup) {
+      url = createPickupMarkerSvg(label);
+    } else {
+      url = createStopMarkerSvg(color, label, highlighted || selected, stop.stopType);
+    }
+
     return {
       url,
       scaledSize: new google.maps.Size(size, size),
       anchor: new google.maps.Point(size / 2, size / 2),
     };
-  }, [color, label, highlighted, selected]);
+  }, [color, label, highlighted, selected, stop.stopType]);
 
   return (
     <Marker

@@ -5,6 +5,7 @@ import {EyeOutlined, ReloadOutlined} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ShipperOrder} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
+import {dispatchShipperRouteRefresh} from "./deliveryRouteEvents";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 
@@ -42,6 +43,7 @@ const ShipperUnassignedOrders: React.FC = () => {
     try {
       await orderApi.claimShipperOrder(orderId);
       message.success("Đã nhận đơn");
+      dispatchShipperRouteRefresh();
       fetchUnassigned(page, limit);
     } catch (err: any) {
       message.error(err?.message || "Lỗi khi nhận đơn");

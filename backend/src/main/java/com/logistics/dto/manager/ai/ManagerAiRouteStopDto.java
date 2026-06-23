@@ -1,5 +1,7 @@
 package com.logistics.dto.manager.ai;
 
+import com.logistics.enums.RouteStopStatus;
+import com.logistics.enums.RouteStopType;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,6 +10,7 @@ import lombok.Data;
 public class ManagerAiRouteStopDto {
     private Long stopId;
     private Integer orderId;
+    private RouteStopType stopType;
     private Integer stopSequence;
     private String trackingNumber;
     private String recipientName;
@@ -19,4 +22,7 @@ public class ManagerAiRouteStopDto {
     private String priority;
     private String etaTime;
     private Integer etaMinutesFromStart;
+    private RouteStopStatus stopStatus;
+    private Boolean isInserted;
+    private String insertedReason;
 }

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+
+import traceback
 
 from app.config.settings import Settings, get_settings
 from app.models.route_optimization import RouteOptimizationRequest, RouteOptimizationResponse
@@ -12,19 +14,40 @@ def get_optimizer(settings: Settings = Depends(get_settings)) -> RouteOptimizerS
 
 
 @router.post("/route", response_model=RouteOptimizationResponse)
-def optimize_route(
-    request: RouteOptimizationRequest,
+async def optimize_route(
+    request: Request,
     optimizer: RouteOptimizerService = Depends(get_optimizer),
 ) -> RouteOptimizationResponse:
     """Tối ưu tuyến giao hàng dựa trên dữ liệu đầu vào."""
-    if not request.office:
-        raise HTTPException(status_code=400, detail="office is required")
-    if not request.shippers:
-        raise HTTPException(status_code=400, detail="At least one shipper is required")
     try:
-        return optimizer.optimize(request)
+        body = await request.json()
+    except Exception:
+        body = None
+
+    try:
+        validated: RouteOptimizationRequest = RouteOptimizationRequest.model_validate(body) if body else None
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Optimization failed: {exc}") from exc
+        import logging
+        logging.error("422 Pydantic validation thất bại – request_body=%s error=%s", body, exc)
+        raise HTTPException(status_code=422, detail={
+            "message": "Validation thất bại",
+            "error": str(exc),
+            "request_body": body,
+        }) from exc
+
+    if not validated.office:
+        raise HTTPException(status_code=400, detail="office is required")
+    if not validated.shippers:
+        raise HTTPException(status_code=400, detail="Cần ít nhất một shipper")
+    try:
+        import logging
+        logging.info("optimize_route: scope=%s body=%s", validated.optimization_scope, body)
+        return optimizer.optimize(validated)
+    except Exception as exc:
+        import logging
+        logging.exception("Tối ưu tuyến thất bại: %s", exc)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Tối ưu thất bại: {exc}") from exc
 
 
 @router.get("/health")

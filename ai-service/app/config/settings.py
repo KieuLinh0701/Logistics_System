@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     duration_matrix_coord_precision: int = 5
 
     enable_assignment_debug_log: bool = False
+    electric_bike_low_battery_threshold: int = 20
 
 
 @lru_cache

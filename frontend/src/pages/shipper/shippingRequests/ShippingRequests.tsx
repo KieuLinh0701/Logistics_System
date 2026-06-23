@@ -4,6 +4,7 @@ import {EyeOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import {connectWebSocket, disconnectWebSocket} from "../../../socket/socket";
 import {getCurrentUser, getUserId} from "../../../utils/authUtils";
 import orderApi from "../../../api/orderApi";
+import {dispatchShipperRouteRefresh} from "../deliveryRouteEvents";
 import SimpleMap from "../../../components/map/SimpleMap";
 import PickupAttemptModal from "../PickupAttemptModal";
 import "../../../styles/ListPage.css";
@@ -121,6 +122,7 @@ export default function ShippingRequests() {
 
       await orderApi.claimShipperOrderRequest(rec.id);
       message.success("Đã nhận đơn");
+      dispatchShipperRouteRefresh();
       await refreshList(1, pagination.pageSize);
       setPagination((p) => ({ ...p, current: 1 }));
     } catch (e) {
