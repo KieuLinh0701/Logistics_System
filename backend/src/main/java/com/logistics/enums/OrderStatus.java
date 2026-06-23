@@ -3,9 +3,9 @@ package com.logistics.enums;
 public enum OrderStatus {
     DRAFT,
     PENDING,
-    CONFIRMED,
     TRANSIT_TO_OFFICE, // này cho trường hợp khi đoơn hàng là mang đến bưu cục báo cho bưu cuục biết chuẩn bị nhận đơn
     READY_FOR_PICKUP,
+    CONFIRMED,
     URGENT_PICKUP,
     PICKUP_RETRY,
     PICKUP_FAILED_FINAL,

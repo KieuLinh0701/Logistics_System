@@ -109,6 +109,10 @@ const orderApi = {
         return res;
     },
 
+    async setUserOrderTransitToOffice(id: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/transit-to-office`);
+    },
+
     async exportUserOrders(params: UserOrderSearchRequest) {
         try {
             const res = await axiosExport.get("/user/orders/export", {

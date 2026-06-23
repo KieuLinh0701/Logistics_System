@@ -20,7 +20,7 @@ import {
     canEditUserOrder,
     canPrintUserOrder,
     canPublicUserOrder,
-    canReadyUserOrder,
+    canReadyUserOrder, canTransitToOfficeUserOrder,
     translateOrderStatus
 } from "../../../../utils/orderUtils";
 import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
@@ -45,6 +45,7 @@ const UserOrderDetail: React.FC = () => {
 
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [publicModalOpen, setPublicModalOpen] = useState(false);
+    const [transitModalOpen, setTransitModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [requestModalOpen, setRequestModalOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
@@ -216,6 +217,10 @@ const UserOrderDetail: React.FC = () => {
         setModalConfirmOpen(true);
     };
 
+    const handleTransitionToOffice = () => {
+        setTransitModalOpen(true);
+    };
+
     const confirmReadyOrder = async () => {
         setModalConfirmOpen(false);
 
@@ -238,6 +243,28 @@ const UserOrderDetail: React.FC = () => {
         }
     };
 
+    const confirmTransitToOfficeOrder = async () => {
+        setTransitModalOpen(false);
+
+        try {
+            if (!order) return;
+            setLoading(true);
+
+            const result = await orderApi.setUserOrderTransitToOffice(order.id);
+
+            if (result.success) {
+                message.success("Chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục' thành công.");
+                fetchOrder();
+            } else {
+                message.error(result.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục'!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục'!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     if (loadingView || !order) {
         return <div>Đang tải chi tiết đơn hàng...</div>;
@@ -250,6 +277,7 @@ const UserOrderDetail: React.FC = () => {
     const canDelete = canDeleteUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_DELETE_DRAFT']);
     const canReady = canReadyUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
     const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_SUPPORT_CREATE']);
+    const canTransitToOffice =canTransitToOfficeUserOrder(order.status) && order.pickupType === "AT_OFFICE" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_TRANSIT_TO_OFFICE']);
 
     const productColumns = [
         {
@@ -352,12 +380,14 @@ const UserOrderDetail: React.FC = () => {
                 canDelete={canDelete}
                 canRequest={canRequets}
                 canReady={canReady}
+                canTransitToOffice={canTransitToOffice}
                 onPublic={handlePublicOrder}
                 onEdit={handleEditOrder}
                 onCancel={handleCancelOrder}
                 onPrint={handlePrintOrder}
                 onDelete={handleDeleteOrder}
                 onReady={handleReadyOrder}
+                onTransitToOffice={handleTransitionToOffice}
                 onCreateRequest={handleCreateShippingRequest}
             />
 
@@ -396,6 +426,15 @@ const UserOrderDetail: React.FC = () => {
                 open={modalConfirmOpen}
                 onOk={confirmReadyOrder}
                 onCancel={() => setModalConfirmOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng đang chuyển về bưu cục'
+                message='Bạn có chắc chắn đơn hàng này đang chuyển về bưu cục đã chọn trước đó không?'
+                open={transitModalOpen}
+                onOk={confirmTransitToOfficeOrder}
+                onCancel={() => setTransitModalOpen(false)}
                 loading={loading}
             />
 
