@@ -105,7 +105,11 @@ const ShipperDashboard: React.FC = () => {
         return "success";
       case "FAILED_DELIVERY":
       case "RETURNED":
+      case "RETURN_FAILED_FINAL":
         return "error";
+      case "RETURNING":
+      case "RETURN_RETRY":
+        return "warning";
       default:
         return "default";
     }
@@ -135,6 +139,12 @@ const ShipperDashboard: React.FC = () => {
         return "Trả 1 phần";
       case "RETURNED":
         return "Đã hoàn";
+      case "RETURNING":
+        return "Đang hoàn";
+      case "RETURN_RETRY":
+        return "Hoàn lại";
+      case "RETURN_FAILED_FINAL":
+        return "Hoàn thất bại";
       default:
         return status;
     }

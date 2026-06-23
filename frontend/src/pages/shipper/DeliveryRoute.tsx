@@ -388,8 +388,12 @@ const ShipperDeliveryRoute: React.FC = () => {
       case "FAILED":
       case "FAILED_DELIVERY":
       case "RETURNED":
+      case "RETURN_FAILED_FINAL":
       case "CANCELLED":
         return "error";
+      case "RETURNING":
+      case "RETURN_RETRY":
+        return "warning";
       default:
         return "default";
     }
@@ -421,6 +425,12 @@ const ShipperDeliveryRoute: React.FC = () => {
         return "Trả 1 phần";
       case "RETURNED":
         return "Đã hoàn trả";
+      case "RETURNING":
+        return "Đang hoàn";
+      case "RETURN_RETRY":
+        return "Hoàn lại";
+      case "RETURN_FAILED_FINAL":
+        return "Hoàn thất bại";
       case "CANCELLED":
         return "Đã hủy";
       default:

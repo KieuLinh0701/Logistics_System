@@ -120,6 +120,7 @@ public class OrderUtils {
             case PENDING -> "Chờ duyệt";
             case CONFIRMED -> "Đã xác nhận";
             case READY_FOR_PICKUP -> "Sẵn sàng để lấy";
+            case URGENT_PICKUP -> "Ưu tiên lấy hàng";
 
             case PICKUP_RETRY -> "Lấy hàng thất bại - Thử lại";
             case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại - Dừng";
@@ -140,6 +141,8 @@ public class OrderUtils {
 
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn trả";
+            case RETURN_RETRY -> "Hoàn hàng lại";
+            case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn trả";
 
             default -> status.name();
