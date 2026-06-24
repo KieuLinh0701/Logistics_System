@@ -10,9 +10,6 @@ public class PaymentSubmissionBatchUtils {
     // Manager: các trạng thái được phép chuyển tiếp
     private static final Map<PaymentSubmissionBatchStatus, Set<PaymentSubmissionBatchStatus>> MANAGER_ALLOWED_STATUS_TRANSITIONS = Map
             .of(
-
-                    PaymentSubmissionBatchStatus.OPEN, Set.of(),
-
                     PaymentSubmissionBatchStatus.PROCESSING, Set.of(
                             PaymentSubmissionBatchStatus.COMPLETED),
 

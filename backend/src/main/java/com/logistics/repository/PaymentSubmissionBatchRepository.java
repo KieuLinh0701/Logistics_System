@@ -17,20 +17,16 @@ public interface PaymentSubmissionBatchRepository
         JpaSpecificationExecutor<PaymentSubmissionBatch> {
 
     // Thống kê tổng quan theo officeId
-    @Query("SELECT new com.logistics.dto.manager.dashboard.ManagerPaymentSubmissionBatchStatsDto(" +
-            "COUNT(b), " +
-            "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.OPEN THEN 1 ELSE "
-            + "0 END), 0), "
-            +
-            "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.PROCESSING THEN 1 ELSE 0 "
-            + "END), 0), "
-            +
-            "COALESCE(SUM(CASE WHEN b.status = com.logistics.enums.PaymentSubmissionBatchStatus.COMPLETED THEN 1 ELSE 0 END), 0)) "
-            +
-            "FROM PaymentSubmissionBatch b " +
-            "WHERE b.office.id = :officeId")
-    ManagerPaymentSubmissionBatchStatsDto getPaymentSubmissionBatchStatsByOffice(
-            @Param("officeId") Integer officeId);
+    @Query("""
+    SELECT new com.logistics.dto.manager.dashboard.ManagerPaymentSubmissionBatchStatsDto(
+        COUNT(b),
+        COALESCE(SUM(CASE WHEN b.status = 'PROCESSING' THEN 1 ELSE 0 END), 0),
+        COALESCE(SUM(CASE WHEN b.status = 'COMPLETED' THEN 1 ELSE 0 END), 0)
+    )
+    FROM PaymentSubmissionBatch b
+    WHERE b.office.id = :officeId
+    """)
+    ManagerPaymentSubmissionBatchStatsDto getPaymentSubmissionBatchStatsByOffice(@Param("officeId") Integer officeId);
 
     Optional<PaymentSubmissionBatch> findByShipperIdAndStatus(
             Integer shipperId,

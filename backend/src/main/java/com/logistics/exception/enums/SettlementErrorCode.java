@@ -11,9 +11,11 @@ public enum SettlementErrorCode implements BaseErrorCode {
     SETTLEMENT_NO_OPEN_BATCH(HttpStatus.BAD_REQUEST, "Không có phiên đối soát nào đang mở"),
     SETTLEMENT_NO_SUBMISSION(HttpStatus.BAD_REQUEST, "Không tìm thấy bản ghi nộp tiền"),
     SETTLEMENT_AMOUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "Số tiền vượt quá số dư cần đối soát"),
+    SETTLEMENT_AMOUNT_NOT_ENOUGH(HttpStatus.BAD_REQUEST, "Số tiền thực nộp thấp hơn số tiền hệ thống cho phép."),
     SETTLEMENT_NO_PENDING_DEBT(HttpStatus.BAD_REQUEST, "Không có khoản nợ nào cần thanh toán"),
     SETTLEMENT_MIN_PAYMENT_REQUIRED(HttpStatus.BAD_REQUEST, "Tổng nợ phải từ %s₫ trở lên"),
     SETTLEMENT_ACCOUNT_LOCKED_DUE_TO_OVERDUE(HttpStatus.BAD_REQUEST, "Phiên đối soát của bạn đã quá hạn thanh toán, tài khoản tạm khóa. Vui lòng hoàn tất thanh toán các phiên trước khi tạo đơn hàng mới."),
+    SETTLEMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "Bạn không có quyền thực hiện thao tác này trên các giao dịch không thuộc về bạn."),
     ;
 
     private final HttpStatus httpStatus;

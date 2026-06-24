@@ -1522,7 +1522,7 @@ public class OrderManagerService {
 
     public void checkCurrentOfficePermission(Order order, Office office) {
         if (!office.getId().equals(
-                order.getCurrentOffice() != null ? order.getToOffice().getId() : null)) {
+                order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null)) {
             throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
         }
     }
