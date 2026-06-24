@@ -181,6 +181,8 @@ const ShipperDeliveryRoute: React.FC = () => {
             }
 
             setRouteInfo(routeData.routeInfo);
+            console.log("[ROUTE_DURATION]", routeData.routeInfo?.estimatedDuration,
+                "totalDistance=", routeData.routeInfo?.totalDistance);
 
             // Tách RETURN_TO_OFFICE ra khỏi deliveryStops
             const routeStops = (routeData.deliveryStops || []) as DeliveryStop[];
@@ -440,7 +442,8 @@ const ShipperDeliveryRoute: React.FC = () => {
 
         setReOptimizing(true);
         try {
-            await orderApi.reOptimizeShipperRoute(payload);
+            const response = await orderApi.reOptimizeShipperRoute(payload);
+            console.log("[REOPTIMIZE_RESPONSE]", response);
             message.success("Đã tối ưu lại tuyến!");
             await fetchRouteData();
         } catch (err: any) {
@@ -929,7 +932,9 @@ const ShipperDeliveryRoute: React.FC = () => {
                                                         <Text type="secondary">
                                                             <EnvironmentOutlined /> {d.contactAddress}
                                                         </Text>
-                                                        {stop.etaTime && <Text type="secondary">ETA: {stop.etaTime}</Text>}
+                                                        <Text type="secondary">
+                                                            {stop.etaTime ? `ETA: ${stop.etaTime}` : "ETA: Chưa có"}
+                                                        </Text>
                                                         {d.showCod && (stop.codAmount ?? 0) > 0 && (
                                                             <Text>
                                                                 <DollarOutlined /> COD thu hộ: {stop.codAmount.toLocaleString()}đ

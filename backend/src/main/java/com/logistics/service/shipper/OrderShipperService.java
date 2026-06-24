@@ -1569,12 +1569,31 @@ public class OrderShipperService {
             Map<String, Object> f = new HashMap<>();
             f.put("id", order.getFromOffice().getId());
             f.put("name", order.getFromOffice().getName());
+            f.put("code", order.getFromOffice().getCode());
+            f.put("phoneNumber", order.getFromOffice().getPhoneNumber());
             f.put("detail", order.getFromOffice().getDetail());
+            f.put("cityCode", order.getFromOffice().getCityCode());
+            f.put("wardCode", order.getFromOffice().getWardCode());
             f.put("latitude", order.getFromOffice().getLatitude());
             f.put("longitude", order.getFromOffice().getLongitude());
             map.put("fromOffice", f);
         } else {
             map.put("fromOffice", null);
+        }
+        if (order.getCurrentOffice() != null) {
+            Map<String, Object> c = new HashMap<>();
+            c.put("id", order.getCurrentOffice().getId());
+            c.put("name", order.getCurrentOffice().getName());
+            c.put("code", order.getCurrentOffice().getCode());
+            c.put("phoneNumber", order.getCurrentOffice().getPhoneNumber());
+            c.put("detail", order.getCurrentOffice().getDetail());
+            c.put("cityCode", order.getCurrentOffice().getCityCode());
+            c.put("wardCode", order.getCurrentOffice().getWardCode());
+            c.put("latitude", order.getCurrentOffice().getLatitude());
+            c.put("longitude", order.getCurrentOffice().getLongitude());
+            map.put("currentOffice", c);
+        } else {
+            map.put("currentOffice", null);
         }
         try {
             List<Map<String, Object>> attempts = pickupAttemptRepository
@@ -2097,6 +2116,159 @@ public class OrderShipperService {
         return parts.isEmpty() ? null : String.join(", ", parts);
     }
 
+    /**
+     * Tính ETA cộng dồn theo từng LEG thật giữa các điểm:
+     *   currentPos -> stop1 -> stop2 -> ... -> office (nếu returnToOffice)
+     *
+     * - legDistanceKm = Haversine giữa 2 tọa độ
+     * - legDurationMinutes = legDistanceKm / speedKmh * 60
+     * - serviceTimeMinutes: lấy từ AI nếu có, fallback theo stopType/COD
+     * - ETA stop = baseTime + sum(leg) trước stop
+     *
+     * @return tổng estimatedDuration = sum(legDurationMinutes + serviceTimeMinutes)
+     */
+    private double computeLegBasedEtas(List<AiRoutePlanStop> stops,
+                                        LocalDateTime baseTime,
+                                        Double startLat, Double startLng,
+                                        Double officeLat, Double officeLng,
+                                        Double speedKmh) {
+        if (stops == null || stops.isEmpty()) return 0.0;
+
+        double speed = (speedKmh != null && speedKmh > 0) ? speedKmh : 25.0;
+
+        // Sắp xếp theo stopSequence để tính tuần tự
+        List<AiRoutePlanStop> sorted = new ArrayList<>(stops);
+        sorted.sort(Comparator.comparing(AiRoutePlanStop::getStopSequence,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+
+        LocalDateTime currentEta = baseTime;
+        Double fromLat = startLat;
+        Double fromLng = startLng;
+        double totalDuration = 0.0;
+        int stopIdx = 0;
+
+        for (AiRoutePlanStop s : sorted) {
+            boolean isReturnStop = s.getStopType() == RouteStopType.RETURN_TO_OFFICE;
+
+            Double toLat = s.getRecipientLatitude();
+            Double toLng = s.getRecipientLongitude();
+
+            // Nếu là stop RETURN_TO_OFFICE, dùng tọa độ bưu cục nếu thiếu
+            if (isReturnStop && (!hasValidLatLng(toLat, toLng))) {
+                toLat = officeLat;
+                toLng = officeLng;
+            }
+
+            int legMin;
+            double distanceKm = 0.0;
+
+            if (hasValidLatLng(fromLat, fromLng) && hasValidLatLng(toLat, toLng)) {
+                distanceKm = haversineKm(fromLat, fromLng, toLat, toLng);
+                legMin = (int) Math.round(distanceKm / speed * 60.0);
+                if (legMin < 1) legMin = 1;
+            } else {
+                // Không có tọa độ: dùng legDurationMinutes từ AI nếu có & hợp lệ
+                Integer aiLeg = s.getLegDurationMinutes();
+                if (aiLeg != null && aiLeg > 0) {
+                    legMin = aiLeg;
+                    distanceKm = legMin / 60.0 * speed;
+                } else {
+                    // Fallback cuối: chia đều 5 phút
+                    legMin = 5;
+                }
+            }
+
+            currentEta = currentEta.plusMinutes(legMin);
+            s.setEtaTime(currentEta.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+            s.setLegDistanceKm(BigDecimal.valueOf(Math.round(distanceKm * 100.0) / 100.0));
+            s.setLegDurationMinutes(legMin);
+
+            int minsFromStart = (int) java.time.Duration.between(baseTime, currentEta).toMinutes();
+            s.setEtaMinutesFromStart(minsFromStart);
+
+            // Service time: ưu tiên AI, fallback theo rule
+            int svcMin = resolveServiceTimeMinutes(s);
+            s.setServiceTimeMinutes(svcMin);
+
+            currentEta = currentEta.plusMinutes(svcMin);
+
+            totalDuration += legMin + svcMin;
+
+            fromLat = toLat;
+            fromLng = toLng;
+            stopIdx++;
+        }
+
+        return totalDuration;
+    }
+
+    /**
+     * Xác định tốc độ trung bình (km/h) để tính leg duration.
+     * Ưu tiên: lấy từ shipper.speedKmh nếu có, fallback 25 km/h.
+     */
+    private Double resolveAverageSpeedKmh(AiRoutePlanRoute route) {
+        try {
+            if (route != null && route.getShipperEmployeeId() != null) {
+                // Shipper entity không có speedKmh cố định; dùng config mặc định theo khu vực
+                // Hiện tại hard-code 25 km/h nội thành; có thể mở rộng sau
+            }
+        } catch (Exception ignored) {
+        }
+        return 25.0;
+    }
+
+    /**
+     * Service time tại 1 stop theo rule nghiệp vụ:
+     * - DELIVERY/PICKUP thường: 5/7 phút
+     * - COD > 0: cộng thêm 2 phút
+     * - Ưu tiên lấy từ AI serviceTimeMinutes nếu có và > 0
+     */
+    private int resolveServiceTimeMinutes(AiRoutePlanStop s) {
+        Integer aiSvc = s.getServiceTimeMinutes();
+        if (aiSvc != null && aiSvc > 0) {
+            return aiSvc;
+        }
+        int base;
+        if (s.getStopType() == RouteStopType.PICKUP) {
+            base = 7;
+        } else {
+            base = 5;
+        }
+        if (s.getCodAmount() != null && s.getCodAmount() > 0) {
+            base += 2;
+        }
+        return base;
+    }
+
+    /**
+     * Khoảng cách Haversine giữa 2 tọa độ (km).
+     */
+    private double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+        double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    /**
+     * Tính tổng duration = sum(legDurationMinutes + serviceTimeMinutes) cho tất cả stops.
+     */
+    private double computeTotalDurationMinutes(List<AiRoutePlanStop> stops) {
+        if (stops == null || stops.isEmpty()) return 0;
+        long total = 0;
+        for (AiRoutePlanStop s : stops) {
+            Integer leg = s.getLegDurationMinutes();
+            Integer svc = s.getServiceTimeMinutes();
+            if (leg != null) total += leg;
+            if (svc != null) total += svc;
+        }
+        return total;
+    }
+
     // Lộ trình giao hàng (ưu tiên tuyến AI đã xác nhận)
     @Transactional(readOnly = true)
     public Map<String, Object> getDeliveryRoute() {
@@ -2167,8 +2339,10 @@ public class OrderShipperService {
         routeInfo.put("startLocation", employee.getOffice().getName());
         routeInfo.put("totalStops", routeOrders.size());
         routeInfo.put("completedStops", (int) routeOrders.stream().filter(o -> o.getStatus() == OrderStatus.DELIVERED).count());
+        // Ước tính: ~20 phút/điểm dừng (di chuyển + giao)
+        int estimatedMinutes = routeOrders.size() * 20;
         routeInfo.put("totalDistance", 0); // TODO: Tính toán khoảng cách thực tế
-        routeInfo.put("estimatedDuration", 0); // TODO: Tính toán thời gian ước tính
+        routeInfo.put("estimatedDuration", estimatedMinutes);
         routeInfo.put("totalCOD", totalCOD);
         routeInfo.put("status", "not_started");
 
@@ -2584,6 +2758,8 @@ public class OrderShipperService {
                 newStop.setEtaMinutesFromStart(stopDto.getEtaMinutesFromStart());
                 Double legDist = stopDto.getLegDistanceKm() != null ? stopDto.getLegDistanceKm() : 0.0;
                 newStop.setLegDistanceKm(BigDecimal.valueOf(legDist));
+                newStop.setLegDurationMinutes(stopDto.getLegDurationMinutes());
+                newStop.setServiceTimeMinutes(stopDto.getServiceTimeMinutes());
                 newStop.setStopStatus(RouteStopStatus.PENDING);
                 newStop.setIsInserted(oldStop.getIsInserted());
                 newStop.setInsertedReason(oldStop.getInsertedReason());
@@ -2636,13 +2812,18 @@ public class OrderShipperService {
             newRoute.setRouteSequence(currentRoute.getRouteSequence());
             newRoute.setEstimatedDistanceKm(BigDecimal.valueOf(
                     newAiRoute.getEstimatedDistanceKm() != null ? newAiRoute.getEstimatedDistanceKm() : 0.0));
-            newRoute.setEstimatedDurationMinutes(BigDecimal.valueOf(
-                    newAiRoute.getEstimatedDurationMinutes() != null ? newAiRoute.getEstimatedDurationMinutes() : 0.0));
             newRoute.setFuelCost(BigDecimal.valueOf(
                     newAiRoute.getFuelCost() != null ? newAiRoute.getFuelCost() : 0.0));
             newRoute.setTotalCod(newAiRoute.getTotalCod() != null ? newAiRoute.getTotalCod() : 0L);
             newRoute.setEncodedPolyline(newAiRoute.getEncodedPolyline());
-            newRoute.setStartTime(newAiRoute.getStartTime());
+            // route.startTime chỉ lưu HH:mm (cột VARCHAR(10)), KHÔNG lưu LocalDateTime đầy đủ
+            String persistedStartTime = currentRoute.getStartTime();
+            if (persistedStartTime == null || persistedStartTime.isBlank()) {
+                persistedStartTime = java.time.LocalTime.now()
+                        .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            }
+            newRoute.setStartTime(persistedStartTime);
+            newRoute.setReoptimizedAt(LocalDateTime.now());
             newRoute.setCurrentLatitude(request.getCurrentLatitude());
             newRoute.setCurrentLongitude(request.getCurrentLongitude());
             newRoute.setRouteMode(RouteMode.CLOSED_LOOP);
@@ -2651,6 +2832,23 @@ public class OrderShipperService {
             newRoute.setParentRouteId(currentRoute.getId());
             newRoute.setIsActive(true);
             newRoute.setReoptimizeReason(request.getReason() != null ? request.getReason() : "MANUAL");
+
+            // Tính ETA theo leg thật: currentPos -> stop1 -> stop2 -> ... -> office
+            // Không chia đều - dùng khoảng cách Haversine / tốc độ thực tế
+            LocalDateTime etaBaseTime = LocalDateTime.now();
+            Double startLat = request.getCurrentLatitude();
+            Double startLng = request.getCurrentLongitude();
+            Double officeLat = office.getLatitude() != null ? office.getLatitude().doubleValue() : null;
+            Double officeLng = office.getLongitude() != null ? office.getLongitude().doubleValue() : null;
+            Double speedKmh = resolveAverageSpeedKmh(currentRoute);
+            double computedDuration = computeLegBasedEtas(
+                    newStops, etaBaseTime, startLat, startLng,
+                    officeLat, officeLng, speedKmh);
+
+            // Tổng estimatedDuration của route = sum(leg + service) từ computeLegBasedEtas
+            // Re-optimize: ETA đã tự tính theo leg thật → duration phải đồng bộ cùng nguồn.
+            // KHÔNG ưu tiên AI estimatedDuration vì có thể lệch so với leg thật.
+            newRoute.setEstimatedDurationMinutes(BigDecimal.valueOf(computedDuration));
 
             // Attach stops to route
             for (AiRoutePlanStop s : newStops) {
@@ -2680,6 +2878,10 @@ public class OrderShipperService {
             long elapsed = System.currentTimeMillis() - startMs;
             log.info("reOptimizeRoute: completed - newRouteId={} totalMs={} resultKeys={}",
                     newRoute.getId(), elapsed, result.keySet());
+            log.info("[REOPTIMIZE_RESPONSE] routeId={} estimatedDuration={} totalStops={} totalDistance={}",
+                    newRoute.getId(), newRoute.getEstimatedDurationMinutes(),
+                    result.get("routeInfo") != null ? ((Map<?, ?>) result.get("routeInfo")).get("totalStops") : null,
+                    newRoute.getEstimatedDistanceKm());
 
             return result;
 

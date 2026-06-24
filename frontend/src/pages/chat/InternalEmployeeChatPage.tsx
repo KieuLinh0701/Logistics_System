@@ -48,13 +48,11 @@ const InternalEmployeeChatPage: React.FC = () => {
   const [rooms, setRooms] = useState<InternalChatRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<InternalChatRoom | null>(null);
   const [messages, setMessages] = useState<InternalChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
   const [searchText, setSearchText] = useState("");
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const roomsPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const fetchRooms = useCallback(async () => {
     try {
       const res = await internalChatApi.getRooms();
@@ -130,18 +128,17 @@ const InternalEmployeeChatPage: React.FC = () => {
     }
   }, [messages]);
 
-  const handleSend = async () => {
-    const text = inputValue.trim();
-    if (!text || !selectedRoom) {
+  const handleSend = async (text?: string) => {
+    const content = (text ?? "").trim();
+    if (!content || !selectedRoom) {
       return;
     }
 
     setSending(true);
     try {
-      const res = await internalChatApi.sendMessage(selectedRoom.id, { message: text });
+      const res = await internalChatApi.sendMessage(selectedRoom.id, { message: content });
       if (res.success && res.data) {
         setMessages((prev) => [...prev, res.data!]);
-        setInputValue("");
         void fetchRooms();
       } else {
         message.error(res.message || "Gửi tin nhắn thất bại");
