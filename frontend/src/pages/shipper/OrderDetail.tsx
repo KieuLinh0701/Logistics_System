@@ -459,9 +459,11 @@ const fetchOrderDetail = async () => {
                   : (order.serviceType as any)?.name || ""}
               </Descriptions.Item>
               <Descriptions.Item label="Bưu cục hiện tại">
-                {order.currentOffice
-                  ? (order.currentOffice as any).name || "—"
-                  : "Chưa xác định"
+                {order.currentOffice?.name
+                  ? order.currentOffice.name
+                  : order.fromOffice?.name
+                    ? `Chưa cập nhật - Bưu cục gốc: ${order.fromOffice.name}`
+                    : "Chưa xác định"
                 }
               </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo">
@@ -540,32 +542,28 @@ const fetchOrderDetail = async () => {
               <Descriptions.Item label="COD thu hộ">
                 <Space>
                   <DollarOutlined style={{ color: "#f50" }} />
-                  <div>
-                    <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                      {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "0đ"}
-                    </Text>
-                    {order.codStatus && order.codStatus !== "NONE" && (
-                      <div style={{ marginTop: 6 }}>
-                        <Tag color={
-                          order.codStatus === "PENDING" ? "orange" :
-                          order.codStatus === "SUBMITTED" ? "blue" :
-                          order.codStatus === "RECEIVED" || order.codStatus === "TRANSFERRED" ? "green" :
-                          "default"
-                        }>{translateOrderCodStatus(order.codStatus)}</Tag>
-                      </div>
-                    )}
-                  </div>
+                  <Text strong style={{ color: "#f50", fontSize: 16 }}>
+                    {order.cod > 0 ? `${order.cod.toLocaleString()}đ` : "0đ"}
+                  </Text>
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label={getShippingFeeLabel()}>
-                {(order.payer || "").toUpperCase() === "CUSTOMER"
-                  ? `${Number(order.shippingFee || 0).toLocaleString()}đ`
-                  : "0đ"}
+                <Space>
+                  <DollarOutlined style={{ color: "#f50" }} />
+                  <Text strong style={{ color: "#f50", fontSize: 16 }}>
+                    {(order.payer || "").toUpperCase() === "CUSTOMER"
+                      ? `${Number(order.shippingFee || 0).toLocaleString()}đ`
+                      : "0đ"}
+                  </Text>
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Tổng tiền cần thu">
-                <Text strong style={{ color: "#f50", fontSize: 16 }}>
-                  {`${getTotalNeedCollect().toLocaleString()}đ`}
-                </Text>
+                <Space>
+                  <DollarOutlined style={{ color: "#f50" }} />
+                  <Text strong style={{ color: "#f50", fontSize: 16 }}>
+                    {`${getTotalNeedCollect().toLocaleString()}đ`}
+                  </Text>
+                </Space>
               </Descriptions.Item>
             </Descriptions>
           </Card>
