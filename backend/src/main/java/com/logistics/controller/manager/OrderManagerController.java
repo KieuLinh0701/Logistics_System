@@ -10,8 +10,10 @@ import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
+import com.logistics.request.user.order.UserUrgentOrderSearchRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
+import com.logistics.response.manager.order.UrgentOrderResponse;
 import com.logistics.service.manager.OrderManagerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -209,4 +211,90 @@ public class OrderManagerController {
                 .headers(headers)
                 .body(data);
     }
+
+    // Danh sách đơn URGENT thuộc cityCode của office manager
+    @GetMapping("/urgent-pickup")
+    public ResponseEntity<ApiResponse<ListResponse<UrgentOrderResponse>>> getUrgentOrders(
+            HttpServletRequest request,
+            UserUrgentOrderSearchRequest userUrgentOrderSearchRequest) {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(ApiResponse.success(service.getUrgentOrders(userId, userUrgentOrderSearchRequest)));
+    }
+
+    @GetMapping("/urgent-pickup/export")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.EXPORT,
+            description = AuditLogDescriptionConstant.ORDER_URGENT_EXPORT
+    )
+    public ResponseEntity<byte[]> exportUrgent(
+            HttpServletRequest request,
+            UserUrgentOrderSearchRequest userUrgentOrderSearchRequest) throws Exception {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        byte[] data = service.exportUrgent(userId, userUrgentOrderSearchRequest);
+
+        String fileName = "UTE Logistics_Báo cáo xử lý các yêu cầu lấy đơn hàng bưu cục.xlsx";
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                .replaceAll("\\+", "%20");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename*=UTF-8''" + encodedFileName);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(data);
+    }
+
+    @PatchMapping("/urgent-pickup/{id}/confirm")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_URGENT_CONFIRM,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Void>> confirmUrgentOrder(@PathVariable Integer id,
+                                                          HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        service.confirmUrgentOrder(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    // 2. Manager claim đơn về office của mình
+//    @PostMapping("/{trackingNumber}/claim")
+//
+//    public ResponseEntity<?> claimOrder(
+//            @PathVariable String trackingNumber,
+//            HttpServletRequest request) throws Exception {
+//
+//        Integer userId = (Integer) request.getAttribute("currentUserId");
+//        urgentPickupService.claimOrder(trackingNumber, userId);
+//        return ResponseEntity.ok(Map.of("message", "Đã nhận đơn về bưu cục"));
+//    }
+
+    // 3. Load shipper available + shipment IN_TRANSIT hiện tại (nếu có)
+//    @GetMapping("/{orderId}/shippers")
+//    public ResponseEntity<List<ShipperWithShipmentResponse>> getAvailableShippers(
+//            @PathVariable Integer orderId,
+//            @RequestAttribute("employeeId") Integer employeeId
+//    ) {
+//        return ResponseEntity.ok(urgentPickupService.getAvailableShippers(orderId, employeeId));
+//    }
+
+    // 4. Assign shipper: add vào shipment IN_TRANSIT hoặc tạo mới PENDING → CONFIRMED
+//    @PostMapping("/{trackingNumber}/assign")
+//    public ResponseEntity<?> assignShipper(
+//            @PathVariable String trackingNumber,
+//            @RequestBody AssignShipperRequest assignShipperRequest,
+//            HttpServletRequest request,
+//            UserOrderSearchRequest userOrderSearchRequest) throws Exception {
+//
+//        Integer userId = (Integer) request.getAttribute("currentUserId");
+//        urgentPickupService.assignShipper(orderId, request.getShipperId(), request.getShipmentId(), employeeId);
+//        return ResponseEntity.ok(Map.of("message", "Đã assign shipper thành công"));
+//    }
 }

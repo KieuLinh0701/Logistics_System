@@ -8,6 +8,7 @@ import com.logistics.entity.Office;
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderStatus;
+import com.logistics.enums.PickupNotificationStage;
 import com.logistics.enums.ShipmentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
@@ -149,7 +150,7 @@ public interface OrderRepository
             "FROM ShipmentOrder so " +
             "WHERE so.order.id = :orderId AND so.shipment.status IN :statuses")
     boolean existsByIdAndShipmentStatusIn(@Param("orderId") Integer orderId,
-            @Param("statuses") List<ShipmentStatus> statuses);
+                                          @Param("statuses") List<ShipmentStatus> statuses);
 
     @Query("""
                 SELECT new com.logistics.dto.manager.dashboard.ManagerOrderStatsDTO(
@@ -210,6 +211,7 @@ public interface OrderRepository
     Double sumWeightByEmployeeIdAndStatusIn(
             @Param("employeeId") Integer employeeId,
             @Param("statuses") List<OrderStatus> statuses);
+
     @Query("""
             SELECT o.status, COUNT(o) FROM Order o WHERE o.user.id = :userId GROUP BY o.status
             """)
@@ -240,4 +242,57 @@ public interface OrderRepository
             WHERE o.user.id = :userId AND o.toOffice IS NOT NULL
             """)
     List<Office> findDistinctToOfficesByUserId(@Param("userId") Integer userId);
+
+    // Lấy đơn đã READY_FOR_PICKUP quá N phút, chưa ping stage này
+    @Query("""
+                SELECT o FROM Order o
+                WHERE o.status = :status
+                  AND o.pickupNotificationStage = :stage
+                  AND o.readyForPickupAt <= :before
+            """)
+    List<Order> findReadyOrdersForNotification(
+            @Param("status") OrderStatus status,
+            @Param("stage") PickupNotificationStage stage,
+            @Param("before") LocalDateTime before
+    );
+
+    // Manager xem danh sách URGENT theo cityCode của office
+    @Query("""
+                SELECT o FROM Order o
+                WHERE o.status = :status
+                  AND o.senderCityCode = :cityCode
+                  AND o.fromOffice IS NULL
+                  AND (:search IS NULL OR 
+                       o.senderFullAddress LIKE %:search% OR 
+                       o.trackingNumber LIKE %:search%)
+                  AND (:startDate IS NULL OR o.readyForPickupAt >= :startDate)
+                  AND (:endDate IS NULL OR o.readyForPickupAt <= :endDate)
+            """)
+    Page<Order> findUrgentOrdersByCityCode(
+            @Param("status") OrderStatus status,
+            @Param("cityCode") Integer cityCode,
+            @Param("search") String search,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable
+    );
+
+    @Query("""
+                SELECT o FROM Order o
+                WHERE o.status = :status
+                  AND o.senderCityCode = :cityCode
+                  AND o.fromOffice IS NULL
+                  AND (:search IS NULL OR 
+                       o.senderFullAddress LIKE %:search% OR 
+                       o.trackingNumber LIKE %:search%)
+                  AND (:startDate IS NULL OR o.readyForPickupAt >= :startDate)
+                  AND (:endDate IS NULL OR o.readyForPickupAt <= :endDate)
+            """)
+    List<Order> findUrgentOrdersForExport(
+            @Param("status") OrderStatus status,
+            @Param("cityCode") Integer cityCode,
+            @Param("search") String search,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

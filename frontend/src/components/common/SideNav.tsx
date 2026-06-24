@@ -183,6 +183,11 @@ const SideNav: React.FC = () => {
                         path: "/orders/list",
                     },
                     {
+                        key: "/orders/urgent",
+                        label: "Đơn hàng khẩn cấp",
+                        path: "/orders/urgent",
+                    },
+                    {
                         key: "/orders/incidents",
                         label: "Báo cáo sự cố",
                         path: "/orders/incidents",

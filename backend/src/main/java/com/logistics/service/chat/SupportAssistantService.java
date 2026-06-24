@@ -279,6 +279,7 @@ public class SupportAssistantService {
             case TRANSIT_TO_OFFICE -> "Đang chuyển về bưu cục";
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
+            case CONFIRMED -> "Đã xác nhận";
             case PICKING_UP -> "Đang lấy hàng";
             case PICKED_UP -> "Đã lấy hàng";
             case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại cuối cùng";

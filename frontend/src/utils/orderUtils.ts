@@ -178,7 +178,7 @@ export const translateOrderStatus = (value: string): string => {
         case 'PENDING':
             return 'Đang chờ đóng gói';
         case 'CONFIRMED':
-            return 'Đã nhận đơn';
+            return 'Đã xác nhận';
         case 'READY_FOR_PICKUP':
             return 'Sẵn sàng để lấy';
         case 'TRANSIT_TO_OFFICE':

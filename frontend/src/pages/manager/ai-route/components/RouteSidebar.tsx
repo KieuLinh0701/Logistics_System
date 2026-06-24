@@ -3,7 +3,14 @@ import {Badge, Button, Card, Empty, Space, Switch, Tag, Tooltip, Typography} fro
 import {AimOutlined, CarOutlined, ClockCircleOutlined, EyeInvisibleOutlined, EyeOutlined,} from "@ant-design/icons";
 import type {AiRoutePlanDetail, AiShipperRoute} from "../../../../types/aiRoute";
 import RouteSummaryCards from "./RouteSummaryCards";
-import {formatCurrency, formatMinutes, getRouteColor, getRouteKey, isReturnToOfficeStop, summarizePlan,} from "../utils/routeMapUtils";
+import {
+    formatCurrency,
+    formatMinutes,
+    getRouteColor,
+    getRouteKey,
+    isReturnToOfficeStop,
+    summarizePlan,
+} from "../utils/routeMapUtils";
 
 const AI_ROUTE_DEBUG = import.meta.env.DEV;
 
