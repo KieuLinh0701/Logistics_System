@@ -170,8 +170,9 @@ public class EmployeeUserService {
         roleUserService.checkOwnerPermission(currentUser, role);
 
         AccountRole accountRole = accountRoleRepository
-                .findByAccountIdAndRoleId(targetUser.getAccount()
-                        .getId(), request.getRoleId())
+                .findByAccountIdAndRoleId(
+                        targetUser.getAccount().getId(),
+                        request.getRoleId())
                 .orElseThrow(() -> new AppException(UserErrorCode.USER_EMPLOYEE_ROLE_NOT_FOUND));
 
         Integer shopId = userUserService.getShopId(currentUser);
