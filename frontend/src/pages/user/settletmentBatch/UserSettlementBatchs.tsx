@@ -216,14 +216,9 @@ const UserSettlementBatchs = () => {
                 const result = await paymentApi.checkPaymentVPN(paymentCheck);
 
                 if (result.success) {
-                    if (result.data) {
-                        message.success(result.message || "Thanh toán phiên đối soát thành công");
-                        fetch(currentPage);
-                        fetchSummary()
-                    } else {
-                        message.error(result.message || "Thanh toán phiên đối soát thất bại");
-                    }
+                    message.success(result.message || "Thanh toán phiên đối soát thành công");
                     fetch(currentPage);
+                    fetchSummary()
                 } else {
                     message.error(result.message || "Có lỗi xảy ra khi thanh toán phiên đối soát");
                 }
