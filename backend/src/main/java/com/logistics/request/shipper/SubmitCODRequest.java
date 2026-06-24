@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class SubmitCODRequest {
-    private Integer totalAmount; // Tổng số tiền nộp
+    private List<Integer> transactionIds; // Danh sách các transactionIds cần nôp
     private String notes; // Ghi chú
-    private List<String> imageUrls; // Ảnh biên lai
+    private Integer totalAmount; // Thực nôpk
 }

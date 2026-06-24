@@ -168,7 +168,7 @@ const ShipperCODManagement: React.FC = () => {
   const calculateTotalAmount = () => {
     return selectedTransactions.reduce((total, transactionId) => {
       const transaction = transactions.find((t) => t.id === transactionId);
-      return total + (transaction?.actualAmount || 0);
+      return total + (transaction?.systemAmount || 0);
     }, 0);
   };
 
@@ -249,6 +249,7 @@ const ShipperCODManagement: React.FC = () => {
               setSelectedTransactions(selectedTransactions.filter((id) => id !== record.id));
             }
           }}
+          disabled={record.status !== 'PENDING'}
         >
           Chọn
         </Checkbox>

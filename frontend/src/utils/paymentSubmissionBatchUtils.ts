@@ -1,15 +1,12 @@
 export const canProcessManagerPaymetSubmissionBatch = (value: string) => {
-    return ["PENDING", 'CHECKING', 'PARTIAL'].includes(value);
+    return ["PROCESSING"].includes(value);
 };
 
 export const PAYMENT_SUBMISSION_BATCH_STATUSES = [
-    'OPEN',
     'PROCESSING',
     'COMPLETED'] as const;
 export const translatePaymentSubmissionBatchStatus = (value: string): string => {
     switch (value) {
-        case 'OPEN':
-            return 'Đang mở';
         case 'PROCESSING':
             return 'Đang đối soát';
         case 'COMPLETED':
@@ -23,7 +20,7 @@ export const PAYMENT_SUBMISSION_BATCH_FILTER_SORT = [
     'NEWEST',
     'OLDEST',
 ] as const;
-export const translatePaymentSubmissionFilterSort = (value: string): string => {
+export const translatePaymentSubmissionBatchFilterSort = (value: string): string => {
     switch (value) {
         case 'NEWEST':
             return 'Mới nhất';
@@ -43,7 +40,6 @@ export const getAllowedManagerStatuses = (currentStatus?: string): string[] => {
         case 'PROCESSING':
             return ['COMPLETED'];
 
-        case 'OPEN':
         case 'COMPLETED':
             return [];
 
