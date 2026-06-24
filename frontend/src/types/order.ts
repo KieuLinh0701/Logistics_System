@@ -106,6 +106,7 @@ export interface Order {
     createdAt: string;
     fromOffice: Office;
     toOffice: Office;
+    currentOffice?: Office;
     orderProducts: OrderProduct[];
     orderHistories: OrderHistory[];
     pickupAttempts?: PickupAttempt[];

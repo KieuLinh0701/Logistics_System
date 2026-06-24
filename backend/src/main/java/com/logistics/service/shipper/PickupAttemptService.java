@@ -1,6 +1,7 @@
 package com.logistics.service.shipper;
 
 import com.logistics.entity.Order;
+import com.logistics.entity.OrderProduct;
 import com.logistics.entity.PickupAttempt;
 import com.logistics.entity.User;
 import com.logistics.enums.OrderHistoryActionType;
@@ -11,16 +12,19 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.exception.enums.UserErrorCode;
 import com.logistics.repository.OrderHistoryRepository;
+import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.repository.UserRepository;
 import com.logistics.service.common.ConfigService;
 import com.logistics.service.common.NotificationService;
+import com.logistics.service.user.ProductUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -31,9 +35,11 @@ public class PickupAttemptService {
     private final UserRepository userRepository;
     private final PickupAttemptRepository pickupAttemptRepository;
     private final OrderHistoryRepository orderHistoryRepository;
+    private final OrderProductRepository orderProductRepository;
     private final ConfigService configService;
     private final OrderShipperService orderShipperService;
     private final NotificationService notificationService;
+    private final ProductUserService productUserService;
 
     @Transactional
     public Map<String, Object> recordPickupAttempt(Integer orderId,
@@ -83,6 +89,10 @@ public class PickupAttemptService {
             int maxAttempts = configService.getInt("MAX_PICKUP_ATTEMPTS");
 
             if (failedCount >= maxAttempts) {
+                if (order.getStatus() == OrderStatus.CANCELLED) {
+                    return orderShipperService.buildOrderDetail(order);
+                }
+
                 // Ghi history PICKUP_FAILED_FINAL
                 var historyFailed = new com.logistics.entity.OrderHistory();
                 historyFailed.setOrder(order);
@@ -93,6 +103,9 @@ public class PickupAttemptService {
                 // Chuyển sang CANCELLED
                 order.setStatus(OrderStatus.CANCELLED);
                 orderRepository.save(order);
+
+                List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+                productUserService.restoreStockFromOrder(orderProducts);
 
                 // Ghi history CANCELLED
                 var historyCancelled = new com.logistics.entity.OrderHistory();

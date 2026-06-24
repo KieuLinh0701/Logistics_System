@@ -18,7 +18,7 @@ const BarcodeScanner: React.FC = () => {
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(console.error);
+        scannerRef.current.stop().catch(() => undefined);
       }
     };
   }, []);
@@ -80,7 +80,6 @@ const BarcodeScanner: React.FC = () => {
       setScanning(true);
       message.info("Camera đã được bật. Hãy quét mã vạch.");
     } catch (error: any) {
-      console.error("Camera error:", error);
       setCameraError("Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập camera hoặc sử dụng chức năng tải ảnh lên.");
       message.error("Không thể khởi động camera");
     }
@@ -95,7 +94,7 @@ const BarcodeScanner: React.FC = () => {
         setVideoReady(false);
         message.info("Camera đã được tắt");
       } catch (error) {
-        console.error("Stop camera error:", error);
+        // ignore stop error
       }
     }
   };
@@ -113,10 +112,10 @@ const BarcodeScanner: React.FC = () => {
 
     try {
       // Lấy đơn hàng theo mã vận đơn (tracking number)
-      const orderResponse = await orderApi.getShipperOrders({ 
+      const orderResponse = await orderApi.getShipperOrders({
         search: trackingNumber,
         page: 1,
-        limit: 1 
+        limit: 1
       });
 
       if (!orderResponse.orders || orderResponse.orders.length === 0) {
@@ -135,9 +134,9 @@ const BarcodeScanner: React.FC = () => {
       }
 
       // Cập nhật trạng thái sang PICKED_UP
-      await orderApi.updateShipperDeliveryStatus(order.id, { status: "PICKED_UP" });
+      await orderApi.markShipperPickedUp(order.id);
       message.success(`Đã cập nhật đơn hàng ${trackingNumber} sang trạng thái "Đã lấy hàng"`);
-      
+
       // Đặt lại sau 2 giây
       setTimeout(() => {
         setScannedCode(null);
@@ -145,7 +144,6 @@ const BarcodeScanner: React.FC = () => {
       }, 2000);
 
     } catch (error: any) {
-      console.error("Update error:", error);
       message.error(error.message || "Không thể cập nhật trạng thái đơn hàng");
       setProcessing(false);
     }
@@ -158,7 +156,7 @@ const BarcodeScanner: React.FC = () => {
 
       const scanner = new Html5Qrcode("qr-reader-file");
       const result = await scanner.scanFile(file, false);
-      
+
       if (result) {
         await handleScanSuccess(result);
       } else {
@@ -166,7 +164,6 @@ const BarcodeScanner: React.FC = () => {
         setProcessing(false);
       }
     } catch (error: any) {
-      console.error("File scan error:", error);
       message.error("Không thể đọc mã vạch từ ảnh. Vui lòng thử ảnh khác.");
       setProcessing(false);
     }

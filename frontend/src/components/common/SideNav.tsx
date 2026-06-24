@@ -401,12 +401,6 @@ const SideNav: React.FC = () => {
                 icon: <DashboardOutlined/>,
             },
             {
-                key: "/shipper/scan-barcode",
-                label: "Quét mã vận đơn",
-                path: "/shipper/scan-barcode",
-                icon: <ScanOutlined/>,
-            },
-            {
                 key: "shipper-orders",
                 label: "Quản lý đơn hàng",
                 icon: <ShoppingOutlined/>,
@@ -421,25 +415,29 @@ const SideNav: React.FC = () => {
                         label: "Đơn hàng cần giao",
                         path: "/shipper/orders",
                     },
+                    {
+                        key: "/shipper/shipping-requests",
+                        label: "Yêu cầu lấy hàng",
+                        path: "/shipper/shipping-requests",
+                    },
+                    {
+                        key: "/shipper/failed-deliveries",
+                        label: "Hàng giao thất bại",
+                        path: "/shipper/failed-deliveries",
+                    },
                 ],
             },
             {
+                key: "/shipper/scan-barcode",
+                label: "Quét mã vận đơn",
+                path: "/shipper/scan-barcode",
+                icon: <ScanOutlined/>,
+            },
+            {
                 key: "/route",
-                label: "Lộ trình giao hàng",
+                label: "Lộ trình vận chuyển",
                 path: "/route",
                 icon: <CarOutlined/>,
-            },
-            {
-                key: "/shipper/shipping-requests",
-                label: "Yêu cầu lấy hàng",
-                path: "/shipper/shipping-requests",
-                icon: <ExclamationCircleOutlined/>,
-            },
-            {
-                key: "/shipper/failed-deliveries",
-                label: "Hàng giao thất bại",
-                path: "/shipper/failed-deliveries",
-                icon: <WarningOutlined/>,
             },
             {
                 key: "/cod",

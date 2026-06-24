@@ -69,6 +69,7 @@ public class ManagerOrderDetailDto {
     private LocalDateTime createdAt;
     private OfficeDto fromOffice;
     private OfficeDto toOffice;
+    private OfficeDto currentOffice;
     private List<OrderProductDto> orderProducts;
     private List<OrderHistoryDto> orderHistories;
     private List<PickupAttemptDto> pickupAttempts;

@@ -2,6 +2,7 @@ package com.logistics.service.driver;
 
 import com.logistics.entity.*;
 import com.logistics.enums.OrderHistoryActionType;
+import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.VehicleStatus;
@@ -14,6 +15,7 @@ import com.logistics.request.driver.FinishShipmentRequest;
 import com.logistics.request.driver.UpdateVehicleTrackingRequest;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.OrderDestinationService;
+import com.logistics.service.common.OrderOriginService;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +64,9 @@ public class ShipmentDriverService {
 
     @Autowired
     private OrderDestinationService orderDestinationService;
+
+    @Autowired
+    private OrderOriginService orderOriginService;
 
     private Employee getCurrentEmployee() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();
@@ -165,15 +170,77 @@ public class ShipmentDriverService {
         // Driver chỉ cập nhật ShipmentStatus, không cập nhật OrderStatus
         // OrderStatus sẽ do Manager xử lý ở chức năng riêng
 
-        // Khi COMPLETED: kiểm tra và set pendingDestinationConfirm cho các đơn trong shipment
+        // Khi COMPLETED: kiểm tra và xử lý các đơn trong shipment
         if (newStatus == ShipmentStatus.COMPLETED && shipment.getToOffice() != null) {
+            Office currentOffice = shipment.getToOffice();
             List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
-                if (orderDestinationService.isDestinationOffice(order, shipment.getToOffice())) {
-                    order.setPendingDestinationConfirm(true);
+                OrderStatus orderStatus = order.getStatus();
+
+                // Tracking vi tri: cap nhat currentOffice cho moi order trong shipment
+                // (khong phu thuoc dung/sai bu cua)
+                order.setCurrentOffice(currentOffice);
+
+                // Flow 1: IN_TRANSIT -> kiem tra co phai bu cua dich khong
+                if (orderStatus == OrderStatus.IN_TRANSIT) {
+                    if (orderDestinationService.isDestinationOffice(order, currentOffice)) {
+                        order.setPendingDestinationConfirm(true);
+                    }
                     orderRepository.save(order);
+                    continue;
                 }
+
+                // Flow 2: RETURNING -> kiem tra co ve dung bu cua goc khong
+                if (orderStatus == OrderStatus.RETURNING
+                        && orderOriginService.isOriginOffice(order, currentOffice)) {
+                    // Ve dung bu cua goc: chuyen doi trang thai + ghi history + notification
+                    if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+                        order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
+                        orderRepository.save(order);
+                        OrderHistory history = new OrderHistory();
+                        history.setOrder(order);
+                        history.setFromOffice(currentOffice);
+                        history.setToOffice(currentOffice);
+                        history.setAction(OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE);
+                        history.setNote("Driver hoan tat shipment, don da ve bu cua goc, cho giao lai cho nguoi gui");
+                        orderHistoryRepository.save(history);
+                        if (order.getUser() != null) {
+                            notificationService.create(
+                                    "Don hang da ve bu cua goc",
+                                    String.format("Don %s da ve bu cua goc va se duoc giao lai cho nguoi gui.", order.getTrackingNumber()),
+                                    "order_status",
+                                    order.getUser().getId(),
+                                    null,
+                                    "orders/tracking",
+                                    order.getTrackingNumber());
+                        }
+                    } else {
+                        order.setStatus(OrderStatus.RETURNED);
+                        orderRepository.save(order);
+                        OrderHistory history = new OrderHistory();
+                        history.setOrder(order);
+                        history.setFromOffice(currentOffice);
+                        history.setToOffice(currentOffice);
+                        history.setAction(OrderHistoryActionType.RETURNED);
+                        history.setNote("Driver hoan tat shipment, don hoan da ve bu cua goc, nguoi gui tu den nhan");
+                        orderHistoryRepository.save(history);
+                        if (order.getUser() != null) {
+                            notificationService.create(
+                                    "Don hang da ve bu cua goc",
+                                    String.format("Don %s da ve bu cua goc, vui long den bu cua de nhan hang hoan.", order.getTrackingNumber()),
+                                    "order_status",
+                                    order.getUser().getId(),
+                                    null,
+                                    "orders/tracking",
+                                    order.getTrackingNumber());
+                        }
+                    }
+                    continue;
+                }
+
+                // RETURNING ve sai bu cua goc: van luu currentOffice da cap nhat, giu nguyen trang thai
+                orderRepository.save(order);
             }
         }
     }
@@ -325,22 +392,24 @@ public class ShipmentDriverService {
             return emptyData;
         }
 
-        // Nhóm orders theo toOffice
+        // Nhom orders theo toOffice
         Map<Integer, Map<String, Object>> officeGroups = new HashMap<>();
         for (ShipmentOrder so : shipmentOrders) {
             Order order = so.getOrder();
-            // Nếu recipientaddress.toOffice là null thì dùng shipment.toOffice (một số chuyến có thể chỉ có 1 bưu cục đích)
+            // Neu recipientaddress.toOffice la null thi dung shipment.toOffice (mot so chuyen co the chi co 1 buu cuc dich)
             Office targetOffice = order.getToOffice() != null ? order.getToOffice() : activeShipment.getToOffice();
             if (targetOffice == null) continue;
 
             Integer officeId = targetOffice.getId();
             officeGroups.computeIfAbsent(officeId, k -> {
                 Map<String, Object> group = new HashMap<>();
-                group.put("office", Map.of(
-                        "id", targetOffice.getId(),
-                        "name", targetOffice.getName() != null ? targetOffice.getName() : "",
-                        "address", buildOfficeAddress(targetOffice)
-                ));
+                Map<String, Object> officeMap = new HashMap<>();
+                officeMap.put("id", targetOffice.getId());
+                officeMap.put("name", targetOffice.getName() != null ? targetOffice.getName() : "");
+                officeMap.put("address", buildOfficeAddress(targetOffice));
+                officeMap.put("latitude", targetOffice.getLatitude());
+                officeMap.put("longitude", targetOffice.getLongitude());
+                group.put("office", officeMap);
                 group.put("orders", new ArrayList<>());
                 return group;
             });
@@ -388,6 +457,31 @@ public class ShipmentDriverService {
                     "id", activeShipment.getFromOffice().getId(),
                     "name", activeShipment.getFromOffice().getName() != null ? activeShipment.getFromOffice().getName() : ""
             ));
+        }
+
+        // Xac dinh buu cuc dich:
+        // - Uu tien shipment.toOffice
+        // - Fallback: buu cuc dich cua cac don trong shipment (chuyen TRANSFER co the chua set toOffice)
+        Office destOffice = activeShipment.getToOffice();
+        if (destOffice == null && !shipmentOrders.isEmpty()) {
+            // Lay theo don dau tien co toOffice (cac don TRANSFER thuong cung toOffice)
+            for (ShipmentOrder so : shipmentOrders) {
+                Order o = so.getOrder();
+                if (o.getToOffice() != null) {
+                    destOffice = o.getToOffice();
+                    break;
+                }
+            }
+        }
+
+        if (destOffice != null) {
+            Map<String, Object> toOfficeMap = new HashMap<>();
+            toOfficeMap.put("id", destOffice.getId());
+            toOfficeMap.put("name", destOffice.getName() != null ? destOffice.getName() : "");
+            toOfficeMap.put("address", buildOfficeAddress(destOffice));
+            toOfficeMap.put("latitude", destOffice.getLatitude());
+            toOfficeMap.put("longitude", destOffice.getLongitude());
+            routeInfo.put("toOffice", toOfficeMap);
         }
 
         Map<String, Object> data = new HashMap<>();

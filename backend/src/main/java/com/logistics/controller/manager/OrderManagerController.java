@@ -281,4 +281,38 @@ public class OrderManagerController {
         service.confirmUrgentOrder(userId, id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    // 2. Manager claim đơn về office của mình
+//    @PostMapping("/{trackingNumber}/claim")
+//
+//    public ResponseEntity<?> claimOrder(
+//            @PathVariable String trackingNumber,
+//            HttpServletRequest request) throws Exception {
+//
+//        Integer userId = (Integer) request.getAttribute("currentUserId");
+//        urgentPickupService.claimOrder(trackingNumber, userId);
+//        return ResponseEntity.ok(Map.of("message", "Đã nhận đơn về bưu cục"));
+//    }
+
+    // 3. Load shipper available + shipment IN_TRANSIT hiện tại (nếu có)
+//    @GetMapping("/{orderId}/shippers")
+//    public ResponseEntity<List<ShipperWithShipmentResponse>> getAvailableShippers(
+//            @PathVariable Integer orderId,
+//            @RequestAttribute("employeeId") Integer employeeId
+//    ) {
+//        return ResponseEntity.ok(urgentPickupService.getAvailableShippers(orderId, employeeId));
+//    }
+
+    // 4. Assign shipper: add vào shipment IN_TRANSIT hoặc tạo mới PENDING → CONFIRMED
+//    @PostMapping("/{trackingNumber}/assign")
+//    public ResponseEntity<?> assignShipper(
+//            @PathVariable String trackingNumber,
+//            @RequestBody AssignShipperRequest assignShipperRequest,
+//            HttpServletRequest request,
+//            UserOrderSearchRequest userOrderSearchRequest) throws Exception {
+//
+//        Integer userId = (Integer) request.getAttribute("currentUserId");
+//        urgentPickupService.assignShipper(orderId, request.getShipperId(), request.getShipmentId(), employeeId);
+//        return ResponseEntity.ok(Map.of("message", "Đã assign shipper thành công"));
+//    }
 }

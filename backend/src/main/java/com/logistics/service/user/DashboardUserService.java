@@ -86,7 +86,6 @@ public class DashboardUserService {
                 orders.setShipping(0L);
                 orders.setDelivering(0L);
                 orders.setDelivered(0L);
-                orders.setFailedDelivery(0L);
                 orders.setReturning(0L);
                 orders.setReturnedCancelled(0L);
             }

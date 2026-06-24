@@ -2,10 +2,9 @@ import {useEffect, useRef, useState} from "react";
 import {Button, Input, message, Modal, Space, Table, Tag, Typography} from "antd";
 import {EyeOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import {connectWebSocket, disconnectWebSocket} from "../../../socket/socket";
-import {getCurrentUser, getUserId} from "../../../utils/authUtils";
+import {getUserId} from "../../../utils/authUtils";
 import orderApi from "../../../api/orderApi";
 import {dispatchShipperRouteRefresh} from "../deliveryRouteEvents";
-import SimpleMap from "../../../components/map/SimpleMap";
 import PickupAttemptModal from "../PickupAttemptModal";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";
@@ -224,10 +223,11 @@ export default function ShippingRequests() {
 
   const STATUS_MAP: Record<string, { label: string; color: string }> = {
     READY_FOR_PICKUP: { label: "Sẵn sàng lấy hàng", color: "blue" },
+    URGENT_PICKUP: { label: "Ưu tiên lấy hàng", color: "red" },
     PICKUP_RETRY: { label: "Lấy hàng thất bại - Thử lại", color: "orange" },
     PICKUP_FAILED_FINAL: { label: "Lấy hàng thất bại - Dừng", color: "red" },
-    PICKING_UP: { label: "Đang lấy", color: "orange" },
-    PICKED_UP: { label: "Đã lấy", color: "orange" },
+    PICKING_UP: { label: "Đang lấy hàng", color: "orange" },
+    PICKED_UP: { label: "Đã lấy hàng", color: "orange" },
     AT_ORIGIN_OFFICE: { label: "Đã nộp tại bưu cục", color: "green" },
     DELIVERED: { label: "Đã giao", color: "green" },
     CANCELLED: { label: "Đã huỷ", color: "red" },
@@ -301,7 +301,7 @@ export default function ShippingRequests() {
       key: "action",
       render: (record: any) => (
         <Space>
-          {record.status === "READY_FOR_PICKUP" && (
+          {(record.status === "READY_FOR_PICKUP" || record.status === "URGENT_PICKUP") && (
             <Button type="primary" className="primary-button" onClick={() => accept(record.id)}>
               Nhận
             </Button>
@@ -368,7 +368,7 @@ export default function ShippingRequests() {
           />
 
           <Modal
-            title={selectedOrder ? `Bản đồ - ${selectedOrder.trackingNumber || selectedOrder.id}` : "Bản đồ"}
+            title={selectedOrder ? `Chi tiết đơn hàng - ${selectedOrder.trackingNumber || selectedOrder.id}` : "Chi tiết đơn hàng"}
             open={mapVisible}
             onCancel={() => setMapVisible(false)}
             footer={
@@ -406,6 +406,13 @@ export default function ShippingRequests() {
                       Xác nhận đã lấy
                     </Button>
                   </Space>
+                ) : selectedOrder.status === "URGENT_PICKUP" || selectedOrder.status === "READY_FOR_PICKUP" ? (
+                  <Space>
+                    <Button onClick={() => setMapVisible(false)}>Đóng</Button>
+                    <Button type="primary" className="primary-button" onClick={() => accept(selectedOrder.id)}>
+                      Nhận
+                    </Button>
+                  </Space>
                 ) : (
                   <Space>
                     <Button onClick={() => setMapVisible(false)}>Đóng</Button>
@@ -413,59 +420,18 @@ export default function ShippingRequests() {
                 )
               ) : null
             }
-            width={800}
+            width={600}
           >
-            {selectedOrder &&
-              (() => {
-                const currentUser = getCurrentUser();
-                const shipperOffice = (currentUser as any)?.office || selectedOrder.fromOffice || null;
-                const deliverOffice = shipperOffice
-                  ? {
-                      id: shipperOffice.id,
-                      name: shipperOffice.name,
-                      address: shipperOffice.detail || `${shipperOffice.detail || ""}`,
-                      latitude: shipperOffice.latitude,
-                      longitude: shipperOffice.longitude,
-                    }
-                  : null;
-
-                const attempts = selectedOrder.pickupAttempts || [];
-                const maxAttempts = selectedOrder.maxPickupAttempts || 0;
-                const failedAttempts = attempts.filter((a: any) => a.status === "FAILED").length;
-
-                if (selectedOrder.status === "PICKED_UP") {
-                  return <SimpleMap deliveryStops={[]} deliverOffice={deliverOffice} />;
-                }
-
-                return (
-                  <div>
-                    <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-                      Lần thử {failedAttempts} / {maxAttempts || "-"}
-                    </Typography.Text>
-                    <SimpleMap
-                      title="Lộ trình nhận hàng"
-                      deliveryStops={[
-                        {
-                          id: selectedOrder.id,
-                          trackingNumber: selectedOrder.trackingNumber,
-                          recipientName: selectedOrder.senderName || selectedOrder.recipientName,
-                          recipientPhone: selectedOrder.senderPhone || selectedOrder.recipientPhone,
-                          recipientAddress: selectedOrder.senderAddress || selectedOrder.recipientAddress || "",
-                          codAmount: selectedOrder.cod || 0,
-                          priority: "normal",
-                          serviceType: selectedOrder.serviceType || "Tiêu chuẩn",
-                          estimatedTime: "",
-                          status: selectedOrder.status === "PICKED_UP" ? "completed" : "in_progress",
-                          coordinates: { lat: selectedOrder.latitude || 0, lng: selectedOrder.longitude || 0 },
-                          distance: 0,
-                          travelTime: 0,
-                        },
-                      ]}
-                      deliverOffice={null}
-                    />
-                  </div>
-                );
-              })()}
+            {selectedOrder && (() => {
+              const attempts = selectedOrder.pickupAttempts || [];
+              const maxAttempts = selectedOrder.maxPickupAttempts || 0;
+              const failedAttempts = attempts.filter((a: any) => a.status === "FAILED").length;
+              return (
+                <Typography.Text type="secondary" style={{ display: "block" }}>
+                  Lần thử {failedAttempts} / {maxAttempts || "-"}
+                </Typography.Text>
+              );
+            })()}
           </Modal>
 
           <PickupAttemptModal

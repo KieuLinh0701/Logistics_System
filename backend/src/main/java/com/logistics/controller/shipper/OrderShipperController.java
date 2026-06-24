@@ -330,6 +330,31 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success("Đã trả hàng về kho gốc"));
     }
 
+    // Lấy danh sách đơn chờ xác nhận đến bưu cục đích
+    @GetMapping("/orders/pending-destination-confirm")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getPendingDestinationConfirmOrders() {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(shipperService.getPendingDestinationConfirmOrders()));
+    }
+
+    // Stage 2 - Xác nhận đơn đã đến bưu cục đích
+    @PatchMapping("/orders/{id}/confirm-destination")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_DESTINATION,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> confirmDestinationOffice(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        shipperService.confirmDestinationOffice(id);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận đơn đã đến bưu cục đích thành công"));
+    }
+
     @GetMapping("/incidents")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> listIncidents() {
         if (isNotShipper()) {

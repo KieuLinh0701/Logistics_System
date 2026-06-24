@@ -290,7 +290,8 @@ const UserOrderDetail: React.FC = () => {
             <OrderInfo order={order}/>
             <OfficeInfo
                 fromOffice={order.fromOffice}
-                toOffice={order.toOffice}/>
+                toOffice={order.toOffice}
+                currentOffice={order.currentOffice}/>
             <OrderProducts products={order.orderProducts || []}/>
             <OrderHistoryCard histories={order.orderHistories}/>
 

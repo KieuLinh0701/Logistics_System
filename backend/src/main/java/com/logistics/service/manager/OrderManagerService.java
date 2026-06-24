@@ -83,9 +83,9 @@ public class OrderManagerService {
 
     private final NotificationService notificationService;
 
-    private final PickupAttemptRepository pickupAttemptRepository;
-
     private final OrderDestinationService orderDestinationService;
+
+    private final PickupAttemptRepository pickupAttemptRepository;
 
     public ListResponse<ManagerOrderListDto> list(int userId, UserOrderSearchRequest request) {
         int page = request.getPage();
@@ -470,6 +470,7 @@ public class OrderManagerService {
             order.setPaymentStatus(OrderPaymentStatus.UNPAID);
             order.setNotes(request.getNotes());
             order.setFromOffice(userOffice);
+            order.setCurrentOffice(userOffice);
             order.setEmployee(currentEmployee);
             order.setCodStatus(OrderCodStatus.NONE);
             if (OrderPayerType.valueOf(request.getPayer())
@@ -1113,8 +1114,15 @@ public class OrderManagerService {
         System.out.println("isDestination" + isDestination);
 
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
+
+        // Set currentOffice = bưu cục hiện tại của manager
         order.setCurrentOffice(userOffice);
-        order.setPendingDestinationConfirm(isDestination);
+
+        // Stage 1 - Kiểm tra nếu office hiện tại là bưu cục đích thì set pendingDestinationConfirm = true
+        if (orderDestinationService.isDestinationOffice(order, userOffice)) {
+            order.setPendingDestinationConfirm(true);
+        }
+
         repository.save(order);
 
         orderHistoryUserService.save(
@@ -1171,6 +1179,88 @@ public class OrderManagerService {
         }
 
         repository.save(order);
+    }
+
+    /**
+     * Stage 2 - Xác nhận thủ công đơn hàng đã đến bưu cục đích.
+     * Chỉ áp dụng cho đơn có pendingDestinationConfirm = true.
+     */
+    @Transactional
+    public void confirmDestinationOffice(Integer userId, Integer orderId) {
+        // Dùng findByIdForUpdate để tránh race condition
+        Order order = repository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        // Validate pendingDestinationConfirm
+        if (order.getPendingDestinationConfirm() == null || !order.getPendingDestinationConfirm()) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
+                    "Trạng thái hiện tại không yêu cầu xác nhận bưu cục đích",
+                    "AT_DEST_OFFICE");
+        }
+
+        // Validate order status hợp lệ: IN_TRANSIT hoặc AT_ORIGIN_OFFICE
+        OrderStatus currentStatus = order.getStatus();
+        if (currentStatus != OrderStatus.IN_TRANSIT && currentStatus != OrderStatus.AT_ORIGIN_OFFICE) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
+                    translateOrderStatus(currentStatus),
+                    translateOrderStatus(OrderStatus.AT_DEST_OFFICE));
+        }
+
+        // Validate user thuộc bưu cục hiện tại (dùng isDestinationOffice để handle toOffice null)
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        if (!orderDestinationService.isDestinationOffice(order, userOffice)) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+
+        // Set status
+        order.setStatus(OrderStatus.AT_DEST_OFFICE);
+        order.setPendingDestinationConfirm(false);
+        // Nếu toOffice null, set bằng office hiện tại để autoAssignOnArrival hoạt động đúng
+        if (order.getToOffice() == null) {
+            order.setToOffice(userOffice);
+        }
+        // Set currentOffice = bưu cục hiện tại của manager
+        order.setCurrentOffice(userOffice);
+        repository.save(order);
+
+        // Ghi OrderHistory AT_DEST_OFFICE
+        orderHistoryUserService.save(
+                order,
+                null,
+                userOffice,
+                null,
+                OrderHistoryActionType.AT_DEST_OFFICE,
+                null);
+
+        // Gửi notification cho user
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Hàng đã đến bưu cục đích",
+                    String.format("Đơn %s đã đến bưu cục đích và sẵn sàng giao đến bạn.", order.getTrackingNumber()),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+    }
+
+    /**
+     * Lấy danh sách đơn hàng có pendingDestinationConfirm = true tại bưu cục của manager.
+     */
+    public ListResponse<ManagerOrderListDto> getPendingDestinationConfirmOrders(Integer userId, int page, int limit) {
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        List<OrderStatus> statuses = List.of(OrderStatus.IN_TRANSIT, OrderStatus.AT_ORIGIN_OFFICE);
+
+        List<Order> orders = repository.findPendingDestinationConfirmByOfficeId(userOffice.getId(), userOffice.getCityCode(), statuses);
+
+        List<ManagerOrderListDto> dtos = orders.stream()
+                .map(OrderMapper::toManagerOrderListDto)
+                .collect(Collectors.toList());
+
+        int totalPages = (int) Math.ceil((double) dtos.size() / limit);
+        Pagination pagination = new Pagination(dtos.size(), page, limit, totalPages);
+        return new ListResponse<>(dtos, pagination);
     }
 
     public void setOrderReturned(Integer userId, Integer orderId) {

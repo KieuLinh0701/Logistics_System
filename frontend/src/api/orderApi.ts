@@ -576,6 +576,24 @@ const orderApi = {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/urgent-pickup/${id}/confirm`);
     },
 
+    // Stage 2 - Xác nhận đơn đã đến bưu cục đích
+    async confirmManagerDestinationOffice(orderId: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${orderId}/confirm-destination`);
+    },
+
+    async confirmShipperDestinationOffice(orderId: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/shipper/orders/${orderId}/confirm-destination`);
+    },
+
+    async listManagerPendingDestinationConfirm(params: { page?: number; limit?: number }) {
+        return await axiosClient.get<ApiResponse<ListResponse<Order>>>(`/manager/orders/pending-destination-confirm`, { params });
+    },
+
+    async listShipperPendingDestinationConfirm() {
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders/pending-destination-confirm");
+        return res.data ?? { orders: [] };
+    },
+
     // Public
     async getPublicOrderByTrackingNumber(trackingNumber: string) {
         return await axiosClient.get<ApiResponse<OrderHistory[]>>(`/public/orders/${trackingNumber}`);

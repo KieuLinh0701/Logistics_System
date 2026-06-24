@@ -28,7 +28,6 @@ public class ManagerOrderEditRuleUtils {
             OrderStatus.DELIVERED,
             OrderStatus.RETURNED,
             OrderStatus.CANCELLED,
-            OrderStatus.FAILED_DELIVERY,
             OrderStatus.PICKUP_FAILED_FINAL
     );
 
