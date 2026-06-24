@@ -86,6 +86,9 @@ public class ShippingRequestShipperService {
             if (selected == null) selected = empList.get(0);
             order.setEmployee(selected);
         }
+        if (order.getFromOffice() == null && order.getEmployee() != null && order.getEmployee().getOffice() != null) {
+            order.setFromOffice(order.getEmployee().getOffice());
+        }
 
         order.setStatus(com.logistics.enums.OrderStatus.PICKING_UP);
         orderRepository.save(order);

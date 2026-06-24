@@ -18,6 +18,7 @@ public class ManagerShipmentDetailDto {
 
     private Recipient recipient;
     private Office toOffice;
+    private Office currentOffice;
 
     private BigDecimal weight;
     private Integer cod;

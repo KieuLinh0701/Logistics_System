@@ -85,6 +85,19 @@ public class OrderMapper {
                             .getLongitude());
         }
 
+        ManagerShipmentDetailDto.Office currentOffice = null;
+        if (entity.getCurrentOffice() != null) {
+            currentOffice = new ManagerShipmentDetailDto.Office(
+                    entity.getCurrentOffice().getId(),
+                    entity.getCurrentOffice().getName(),
+                    entity.getCurrentOffice().getPostalCode(),
+                    entity.getCurrentOffice().getCityCode(),
+                    entity.getCurrentOffice().getWardCode(),
+                    entity.getCurrentOffice().getDetail(),
+                    entity.getCurrentOffice().getLatitude(),
+                    entity.getCurrentOffice().getLongitude());
+        }
+
         return new ManagerShipmentDetailDto(
                 entity.getId(),
                 entity.getTrackingNumber(),
@@ -92,6 +105,7 @@ public class OrderMapper {
                         .name() : null,
                 recipient,
                 toOffice,
+                currentOffice,
                 entity.getWeight() != null ? entity.getWeight() : BigDecimal.ZERO,
                 entity.getCod() != null ? entity.getCod() : 0,
                 entity.getTotalFee() != null ? entity.getTotalFee() : 0,
@@ -169,6 +183,7 @@ public class OrderMapper {
                 entity.getCreatedAt(),
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OfficeMapper.toDto(entity.getToOffice()),
+                OfficeMapper.toDto(entity.getCurrentOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
                 toPickupAttemptDtoList(pickupAttempts),
@@ -292,6 +307,7 @@ public class OrderMapper {
                 entity.getReturnedAt(),
                 entity.getCreatedAt(),
                 OfficeMapper.toDto(entity.getFromOffice()),
+                OfficeMapper.toDto(entity.getCurrentOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
                 toPickupAttemptDtoList(pickupAttempts),

@@ -43,7 +43,8 @@ public class OrderProduct {
     private Integer returnedQuantity = 0;
 
     @Version
-    private Long version;
+    @Column(nullable = false, columnDefinition = "BIGINT NOT NULL DEFAULT 0")
+    private Long version = 0L;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

@@ -76,7 +76,6 @@ public interface OrderRepository
             +
             "SUM(CASE WHEN o.status = 'DELIVERING' THEN 1 ELSE 0 END), " +
             "SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN o.status = 'FAILED_DELIVERY' THEN 1 ELSE 0 END), " +
             "SUM(CASE WHEN o.status = 'RETURNING' THEN 1 ELSE 0 END), " +
             "SUM(CASE WHEN o.status IN ('RETURNED', 'CANCELLED') THEN 1 ELSE 0 END)) " +
             "FROM Order o WHERE o.user.id = :userId")
@@ -164,8 +163,7 @@ public interface OrderRepository
                     SUM(CASE WHEN o.status = 'DELIVERING' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END), 
                     SUM(CASE WHEN o.status = 'DELIVERED' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END), 
                     SUM(CASE WHEN o.status = 'RETURNED' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
-                    SUM(CASE WHEN o.status = 'RETURNING' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
-                    SUM(CASE WHEN o.status = 'FAILED_DELIVERY' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END) 
+                    SUM(CASE WHEN o.status = 'RETURNING' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END) 
                 )
                 FROM Order o
                 WHERE o.fromOffice.id = :officeId OR o.toOffice.id = :officeId
@@ -282,8 +280,8 @@ public interface OrderRepository
                 WHERE o.status = :status
                   AND o.senderCityCode = :cityCode
                   AND o.fromOffice IS NULL
-                  AND (:search IS NULL OR 
-                       o.senderFullAddress LIKE %:search% OR 
+                  AND (:search IS NULL OR
+                       o.senderFullAddress LIKE %:search% OR
                        o.trackingNumber LIKE %:search%)
                   AND (:startDate IS NULL OR o.readyForPickupAt >= :startDate)
                   AND (:endDate IS NULL OR o.readyForPickupAt <= :endDate)
@@ -294,5 +292,27 @@ public interface OrderRepository
             @Param("search") String search,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
+    );
+
+    // Lấy đơn có pendingDestinationConfirm = true tại một bưu cục cụ thể
+    // Lọc theo toOffice.id hoặc theo cityCode/wardCode nếu toOffice null
+    @Query("""
+                SELECT o FROM Order o
+                WHERE o.pendingDestinationConfirm = true
+                  AND o.status IN :statuses
+                  AND (
+                      (o.toOffice IS NOT NULL AND o.toOffice.id = :officeId)
+                      OR
+                      (o.toOffice IS NULL AND
+                       ((o.recipientAddress IS NOT NULL AND o.recipientAddress.cityCode = :cityCode)
+                        OR (o.recipientAddress IS NULL AND o.recipientCityCode = :cityCode))
+                  )
+                )
+                ORDER BY o.updatedAt DESC
+            """)
+    List<Order> findPendingDestinationConfirmByOfficeId(
+            @Param("officeId") Integer officeId,
+            @Param("cityCode") Integer cityCode,
+            @Param("statuses") List<OrderStatus> statuses
     );
 }

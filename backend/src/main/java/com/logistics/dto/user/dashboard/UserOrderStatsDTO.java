@@ -17,14 +17,13 @@ public class UserOrderStatsDTO {
     private Long shipping = 0L;
     private Long delivering = 0L;
     private Long delivered = 0L;
-    private Long failedDelivery = 0L;
     private Long returning = 0L;
     private Long returnedCancelled = 0L;
 
     public UserOrderStatsDTO(Long total, Long draft, Long pending, Long confirmed,
                              Long readyForPickup, Long pickingUp, Long shipping,
-                             Long delivering, Long delivered, Long failedDelivery,
-                             Long returning, Long returnedCancelled) {
+                             Long delivering, Long delivered, Long returning,
+                             Long returnedCancelled) {
         this.total = total;
         this.draft = draft;
         this.pending = pending;
@@ -34,7 +33,6 @@ public class UserOrderStatsDTO {
         this.shipping = shipping;
         this.delivering = delivering;
         this.delivered = delivered;
-        this.failedDelivery = failedDelivery;
         this.returning = returning;
         this.returnedCancelled = returnedCancelled;
     }

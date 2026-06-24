@@ -129,12 +129,26 @@ export interface DriverRouteInfo {
     id: number;
     name: string;
   };
+  toOffice?: {
+    id: number;
+    name: string;
+    address?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  };
 }
 
 export interface DriverDeliveryStop {
   id: number;
   officeName: string;
   officeAddress?: string;
+  office?: {
+    id: number;
+    name: string;
+    address?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  };
   orderCount: number;
   orders: Array<{
     id: number;

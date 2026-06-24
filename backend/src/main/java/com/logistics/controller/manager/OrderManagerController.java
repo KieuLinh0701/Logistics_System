@@ -264,6 +264,32 @@ public class OrderManagerController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    // Lấy danh sách đơn chờ xác nhận đến bưu cục đích
+    @GetMapping("/pending-destination-confirm")
+    public ResponseEntity<ApiResponse<ListResponse<ManagerOrderListDto>>> getPendingDestinationConfirmOrders(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int limit,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(ApiResponse.success(service.getPendingDestinationConfirmOrders(userId, page, limit)));
+    }
+
+    // Stage 2 - Xác nhận đơn đã đến bưu cục đích
+    @PatchMapping("/{id}/confirm-destination")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_DESTINATION,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Void>> confirmDestinationOffice(@PathVariable Integer id,
+                                                                     HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        service.confirmDestinationOffice(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     // 2. Manager claim đơn về office của mình
 //    @PostMapping("/{trackingNumber}/claim")
 //

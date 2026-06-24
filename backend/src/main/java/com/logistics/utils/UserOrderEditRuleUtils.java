@@ -28,7 +28,7 @@ public class UserOrderEditRuleUtils {
 
     public static final Set<OrderStatus> USER_FINAL_STATUSES = EnumSet.of(
             OrderStatus.DELIVERING, OrderStatus.DELIVERED, OrderStatus.RETURNED,
-            OrderStatus.CANCELLED, OrderStatus.FAILED_DELIVERY, OrderStatus.PICKUP_FAILED_FINAL);
+            OrderStatus.CANCELLED, OrderStatus.PICKUP_FAILED_FINAL);
 
     public static boolean canEditUserOrder(OrderStatus status) {
         return !USER_FINAL_STATUSES.contains(status);

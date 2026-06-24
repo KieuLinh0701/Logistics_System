@@ -7,11 +7,13 @@ import {Tooltip} from "antd";
 interface OfficeInfoProps {
     fromOffice?: Office;
     toOffice?: Office;
+    currentOffice?: Office;
 }
 
-const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice }) => {
+const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice, currentOffice }) => {
     const [fromAddress, setFromAddress] = useState<string>("");
     const [toAddress, setToAddress] = useState<string>("");
+    const [currentAddress, setCurrentAddress] = useState<string>("");
 
     useEffect(() => {
         const formatAddress = async (detail?: string, wardCode?: number, cityCode?: number) => {
@@ -31,7 +33,10 @@ const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice }) => {
         if (toOffice) {
             formatAddress(toOffice.detail, toOffice.wardCode, toOffice.cityCode).then(setToAddress);
         }
-    }, [fromOffice, toOffice]);
+        if (currentOffice) {
+            formatAddress(currentOffice.detail, currentOffice.wardCode, currentOffice.cityCode).then(setCurrentAddress);
+        }
+    }, [fromOffice, toOffice, currentOffice]);
 
     const openMap = (office?: Office) => {
         if (office?.latitude && office?.longitude) {
@@ -99,6 +104,24 @@ const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice }) => {
                         )}
                     </div>
                 }
+
+                {/* Cột bưu cục hiện tại */}
+                <div className="order-detail-card-column">
+                    <Title level={5} className="order-detail-card-title order-detail-card-title-sub">
+                        Bưu cục hiện tại
+                    </Title>
+                    {currentOffice
+                        ? (
+                            <>
+                                {renderField("Tên:", currentOffice.name)}
+                                {renderField("Địa chỉ:", currentAddress, !!(currentOffice.latitude && currentOffice.longitude), currentOffice)}
+                                {renderField("Email:", currentOffice.email)}
+                                {renderField("Điện thoại:", currentOffice.phoneNumber)}
+                            </>
+                        )
+                        : renderField("Tên:", "Chưa xác định")
+                    }
+                </div>
             </div>
         </div>
     );

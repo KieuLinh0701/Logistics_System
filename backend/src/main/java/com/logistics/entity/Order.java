@@ -208,6 +208,11 @@ public class Order {
     @JoinColumn(name = "to_office_id")
     private Office toOffice;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_office_id")
+    @Audited
+    private Office currentOffice;
+
     private LocalDateTime paidAt;
     private LocalDateTime returnedAt;
 
@@ -246,6 +251,7 @@ public class Order {
     private PickupNotificationStage pickupNotificationStage = PickupNotificationStage.NONE;
 
     @Version
-    private Long version;
+    @Column(nullable = false, columnDefinition = "BIGINT NOT NULL DEFAULT 0")
+    private Long version = 0L;
 
 }

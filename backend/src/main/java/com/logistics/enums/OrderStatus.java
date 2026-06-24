@@ -21,7 +21,6 @@ public enum OrderStatus {
 
     PARTIAL_DELIVERY,
     PARTIAL_RETURN,
-    FAILED_DELIVERY, // Thêm này báo Giao không thành công
     DELIVERY_RETRY,
     DELIVERY_FAILED_FINAL,
 

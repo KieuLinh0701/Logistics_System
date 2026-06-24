@@ -38,7 +38,6 @@ public class ShipmentOrderUtils {
     // shipment được gán nhân viên là Shipper của toOffice
     private static final Set<OrderStatus> ORDER_STATUSES_ADDABLE_IF_SHIPPER_TO_OFFICE_ASSIGNED = Set.of(
             OrderStatus.AT_DEST_OFFICE,
-            OrderStatus.FAILED_DELIVERY,
             OrderStatus.RETURNING);
 
     public static boolean isOrderAddableIfShipperToOfficeAssigned(OrderStatus status) {
