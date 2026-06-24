@@ -17,7 +17,7 @@ const ConfirmModal: React.FC<Props> = ({ open, title, message, onOk, onCancel, l
             okText="Có"
             cancelText="Không"
             centered
-            closeIcon
+            closeIcon={false}
             okButtonProps={{
                 className: "modal-ok-button",
                 loading
@@ -25,6 +25,8 @@ const ConfirmModal: React.FC<Props> = ({ open, title, message, onOk, onCancel, l
             cancelButtonProps={{ className: "modal-cancel-button" }}
             onOk={onOk}
             onCancel={onCancel}
+            maskClosable={false}
+            keyboard={false}
         >
             <span className="order-detail-confirm-modal-content">
                 {message}

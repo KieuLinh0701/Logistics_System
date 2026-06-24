@@ -6,6 +6,8 @@ import com.logistics.dto.manager.ai.ManagerAiRoutePlanDetailDto;
 import com.logistics.dto.manager.ai.ManagerAiRoutePlanSummaryDto;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.manager.ai.ManagerAiOptimizeRequest;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.manager.AiRouteOptimizationManagerService;
@@ -34,7 +36,7 @@ public class AiRouteOptimizationManagerController {
     @GetMapping("/preview")
     public ResponseEntity<ApiResponse<Map<String, Object>>> preview(HttpServletRequest request) {
         if (denyManager()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(ApiResponse.success(service.previewDeliveryReadyOrders(userId)));
@@ -50,7 +52,7 @@ public class AiRouteOptimizationManagerController {
             HttpServletRequest request,
             @RequestBody(required = false) ManagerAiOptimizeRequest body) {
         if (denyManager()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(ApiResponse.success(service.optimize(userId, body)));
@@ -59,7 +61,7 @@ public class AiRouteOptimizationManagerController {
     @GetMapping("/plans")
     public ResponseEntity<ApiResponse<List<ManagerAiRoutePlanSummaryDto>>> listPlans(HttpServletRequest request) {
         if (denyManager()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(ApiResponse.success(service.listPlans(userId)));
@@ -70,7 +72,7 @@ public class AiRouteOptimizationManagerController {
             HttpServletRequest request,
             @PathVariable Long planId) {
         if (denyManager()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(ApiResponse.success(service.getPlan(userId, planId)));
@@ -86,7 +88,7 @@ public class AiRouteOptimizationManagerController {
             HttpServletRequest request,
             @PathVariable Long planId) {
         if (denyManager()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(ApiResponse.success(service.confirmPlan(userId, planId)));
@@ -102,7 +104,7 @@ public class AiRouteOptimizationManagerController {
             HttpServletRequest request,
             @PathVariable Long planId) {
         if (denyManager()) {
-            return ResponseEntity.status(403).body(new ApiResponse<>(false, "Forbidden", null));
+            throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         Integer userId = (Integer) request.getAttribute("currentUserId");
 

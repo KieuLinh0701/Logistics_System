@@ -1091,7 +1091,7 @@ public class OrderManagerService {
         return tracking;
     }
 
-    public void setOrderAtOriginOffice(Integer userId, Integer orderId) {
+    public boolean setOrderAtOriginOffice(Integer userId, Integer orderId) {
         Order order = getOrderById(orderId);
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -1109,6 +1109,9 @@ public class OrderManagerService {
         if (!order.getPickupType().equals(OrderPickupType.AT_OFFICE)) {
             throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
         }
+
+        boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
+        System.out.println("isDestination" + isDestination);
 
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
 
@@ -1143,6 +1146,39 @@ public class OrderManagerService {
                     "orders/tracking",
                     order.getTrackingNumber());
         }
+
+        return isDestination;
+    }
+
+    public void confirmDestinationOrder(
+            Integer userId,
+            Integer orderId,
+            boolean confirmed) {
+        Order order = getOrderById(orderId);
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (order.getFromOffice() == null || !userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId())) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+
+        boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
+
+        if (!isDestination && !order.getPendingDestinationConfirm()) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_DESTINATION_OFFICE);
+        }
+
+        if (confirmed) {
+            order.setStatus(OrderStatus.AT_DEST_OFFICE);
+            order.setToOffice(userOffice);
+            order.setCurrentOffice(userOffice);
+        } else {
+            order.setPendingDestinationConfirm(false);
+        }
+
+        repository.save(order);
     }
 
     /**

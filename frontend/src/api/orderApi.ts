@@ -465,8 +465,7 @@ const orderApi = {
 
     async printManagerOrders(orderIds: number[]) {
         const query = orderIds.join(",");
-        const res = await axiosClient.get<ApiResponse<OrderPrint[]>>(`/manager/orders/print?orderIds=${query}`);
-        return res;
+        return await axiosClient.get<ApiResponse<OrderPrint[]>>(`/manager/orders/print?orderIds=${query}`);
     },
 
     async cancelManagerOrder(id: number) {
@@ -474,7 +473,13 @@ const orderApi = {
     },
 
     async setManagerOrderAtOriginOffice(id: number) {
-         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/at-origin-office`);
+         return await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/at-origin-office`);
+    },
+
+    async setManagerConfirmDestinationOffice(id: number, confirmed: boolean) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/confirm-destination`,
+            { confirmed }
+        );
     },
 
     async setManagerReturned(id: number) {

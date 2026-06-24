@@ -28,6 +28,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -146,12 +147,29 @@ public class OrderManagerController {
             description = AuditLogDescriptionConstant.ORDER_SET_AT_ORIGIN_OFFICE,
             params = {"id"}
     )
-    public ResponseEntity<ApiResponse<Void>> setOrderAtOriginOffice(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<Boolean>> setOrderAtOriginOffice(@PathVariable Integer id,
             HttpServletRequest request) {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        service.setOrderAtOriginOffice(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(service.setOrderAtOriginOffice(userId, id)));
+    }
+
+    @PatchMapping("/{id}/confirm-destination")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_DESTINATION,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Void>> confirmDestinationOrder(
+            @PathVariable Integer id,
+            HttpServletRequest request,
+            @RequestBody Map<String, Boolean> body) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        boolean confirmed = Boolean.TRUE.equals(body.get("confirmed"));
+
+        service.confirmDestinationOrder(userId, id, confirmed);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
@@ -261,32 +279,6 @@ public class OrderManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
         service.confirmUrgentOrder(userId, id);
-        return ResponseEntity.ok(ApiResponse.success(null));
-    }
-
-    // Lấy danh sách đơn chờ xác nhận đến bưu cục đích
-    @GetMapping("/pending-destination-confirm")
-    public ResponseEntity<ApiResponse<ListResponse<ManagerOrderListDto>>> getPendingDestinationConfirmOrders(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int limit,
-            HttpServletRequest request) {
-        Integer userId = (Integer) request.getAttribute("currentUserId");
-        return ResponseEntity.ok(ApiResponse.success(service.getPendingDestinationConfirmOrders(userId, page, limit)));
-    }
-
-    // Stage 2 - Xác nhận đơn đã đến bưu cục đích
-    @PatchMapping("/{id}/confirm-destination")
-    @Audit(
-            entity = EntityType.ORDER,
-            action = AuditLogAction.UPDATE_STATUS,
-            description = AuditLogDescriptionConstant.ORDER_CONFIRM_DESTINATION,
-            params = {"id"}
-    )
-    public ResponseEntity<ApiResponse<Void>> confirmDestinationOffice(@PathVariable Integer id,
-                                                                     HttpServletRequest request) {
-        Integer userId = (Integer) request.getAttribute("currentUserId");
-
-        service.confirmDestinationOffice(userId, id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

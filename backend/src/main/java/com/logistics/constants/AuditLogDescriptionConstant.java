@@ -39,6 +39,7 @@ public class AuditLogDescriptionConstant {
     public static final String ORDER_EXPORT = "Xuất báo cáo danh sách đơn hàng";
     public static final String ORDER_PRINT = "In đơn hàng";
     public static final String ORDER_SET_AT_ORIGIN_OFFICE = "Cập nhật trạng thái đơn hàng đã đến bưu cục gốc";
+    public static final String ORDER_CONFIRM_DESTINATION = "Cập nhật đơn hàng đã đến bưu cục gốc hay chưa";
     public static final String ORDER_CONFIRM = "Xác nhận đơn hàng";
     public static final String ORDER_RETURNED = "Xác nhận đã hoàn hàng cho đơn hàng hoàn thất bại";
     public static final String ORDER_URGENT_EXPORT = "Xuất báo cáo danh sách đơn hàng khẩn cấp c";
@@ -192,9 +193,6 @@ public class AuditLogDescriptionConstant {
     // Shipment - Driver actions
     public static final String SHIPMENT_START = "Bắt đầu vận chuyển chuyến hàng";
     public static final String SHIPMENT_FINISH = "Hoàn tất vận chuyển chuyến hàng";
-
-    // Order - Destination Confirm
-    public static final String ORDER_CONFIRM_DESTINATION = "Xác nhận đơn hàng đã đến bưu cục đích";
 
     // Vehicle Tracking
     public static final String VEHICLE_TRACKING_UPDATE = "Cập nhật vị trí phương tiện";

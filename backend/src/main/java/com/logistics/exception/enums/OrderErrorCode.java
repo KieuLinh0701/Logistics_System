@@ -62,7 +62,8 @@ public enum OrderErrorCode implements BaseErrorCode {
     ORDER_MISSING_FAIL_REASON(HttpStatus.BAD_REQUEST, "failReason là bắt buộc"),
     ORDER_INVALID_DELIVERY_STATUS(HttpStatus.BAD_REQUEST, "Trạng thái giao hàng không hợp lệ"),
     ORDERS_NOT_FOUND_TO_PRINT(HttpStatus.BAD_REQUEST, "Không tìm thấy đơn hàng nào để in"),
-    ORDER_AUTO_ASSIGN_OFFICE_FAILED(HttpStatus.BAD_REQUEST,"Không thể tự động gán bưu cục xuất");
+    ORDER_AUTO_ASSIGN_OFFICE_FAILED(HttpStatus.BAD_REQUEST,"Không thể tự động gán bưu cục xuất"),
+    ORDER_NOT_DESTINATION_OFFICE(HttpStatus.BAD_REQUEST, "Bưu cục hiện tại không phải bưu cục đích của đơn hàng")
     ;
 
     private final HttpStatus httpStatus;
