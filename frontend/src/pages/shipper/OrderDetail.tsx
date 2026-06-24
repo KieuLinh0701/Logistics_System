@@ -458,6 +458,12 @@ const fetchOrderDetail = async () => {
                   ? order.serviceType
                   : (order.serviceType as any)?.name || ""}
               </Descriptions.Item>
+              <Descriptions.Item label="Bưu cục hiện tại">
+                {order.currentOffice
+                  ? (order.currentOffice as any).name || "—"
+                  : "Chưa xác định"
+                }
+              </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo">
                 {dayjs(order.createdAt).format("DD/MM/YYYY HH:mm")}
               </Descriptions.Item>
@@ -605,7 +611,7 @@ const fetchOrderDetail = async () => {
         <Form form={deliveryForm} layout="vertical" onFinish={handleSubmitDelivery}>
           <Alert
             message="Xác nhận bắt đầu giao hàng"
-            description="Bạn sẽ được chuyển đến trang lộ trình giao hàng sau khi xác nhận."
+            description="Bạn sẽ được chuyển đến trang lộ trình vận chuyển sau khi xác nhận."
             type="info"
             showIcon
             style={{ marginBottom: 16 }}

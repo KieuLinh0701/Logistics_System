@@ -599,7 +599,7 @@ const ShipperDeliveryRoute: React.FC = () => {
     if (!routeInfo || deliveryStops.length === 0) {
         return (
             <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
-                <Alert message="Không có lộ trình giao hàng hôm nay" type="info" showIcon />
+                <Alert message="Không có lộ trình vận chuyển hôm nay" type="info" showIcon />
             </div>
         );
     }
@@ -610,7 +610,7 @@ const ShipperDeliveryRoute: React.FC = () => {
     return (
         <div style={{ padding: 24, background: "#F9FAFB", borderRadius: 12 }}>
             <Title level={2} style={{ color: "#1C3D90", marginBottom: 24 }}>
-                Lộ trình giao hàng {routeInfo.source === "AI" && <Tag color="blue">Đã tối ưu</Tag>}
+                Lộ trình vận chuyển {routeInfo.source === "AI" && <Tag color="blue">Đã tối ưu</Tag>}
             </Title>
 
             <Card style={{ marginBottom: 24 }}>

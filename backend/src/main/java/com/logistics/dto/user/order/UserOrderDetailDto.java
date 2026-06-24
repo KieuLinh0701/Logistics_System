@@ -68,6 +68,7 @@ public class UserOrderDetailDto {
     private LocalDateTime refundedAt;
     private LocalDateTime createdAt;
     private OfficeDto fromOffice;
+    private OfficeDto currentOffice;
     private List<OrderProductDto> orderProducts;
     private List<OrderHistoryDto> orderHistories;
     private List<PickupAttemptDto> pickupAttempts;

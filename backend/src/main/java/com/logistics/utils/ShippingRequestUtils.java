@@ -102,7 +102,6 @@ public class ShippingRequestUtils {
                         OrderStatus.IN_TRANSIT,
                         OrderStatus.AT_DEST_OFFICE,
                         OrderStatus.DELIVERING,
-                        OrderStatus.FAILED_DELIVERY,
                         OrderStatus.RETURNING).contains(orderStatus)) {
                     return toOffice;
                 }

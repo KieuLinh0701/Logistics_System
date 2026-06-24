@@ -16,24 +16,18 @@ public class ManagerShipmentDetailDto {
     private String trackingNumber;
     private String status;
 
-    private Recipient recipient;
     private Office toOffice;
+    private Office currentOffice;
 
     private BigDecimal weight;
     private Integer cod;
     private Integer totalFee;
     private String payer;
     private String paymentStatus;
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Recipient {
-        private String name;
-        private String phone;
-        private String fullAddress;
-    }
+    private boolean pendingDestinationConfirm;
+    private String recipientName;
+    private String recipientPhone;
+    private String recipientFullAddress;
 
     @Getter
     @Setter

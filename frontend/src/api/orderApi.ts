@@ -1,4 +1,4 @@
-import type {ApiResponse, ListResponse} from "../types/response";
+import type {ApiResponse, BulkResponse, ListResponse} from "../types/response";
 import type {
     AdminOrder,
     CreateOrderSuccess,
@@ -574,6 +574,20 @@ const orderApi = {
 
     async confirmManagerUrgentOrder(id: number) {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/urgent-pickup/${id}/confirm`);
+    },
+
+    async saveManagerConfirmDestinationOrdersInShipment(ids: number[], confirmed: boolean) {
+        const param = { ids, confirmed };
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-destination-bulk`, param);
+    },
+
+    async confirmShipperDestinationOffice(orderId: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/shipper/orders/${orderId}/confirm-destination`);
+    },
+
+    async listShipperPendingDestinationConfirm() {
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders/pending-destination-confirm");
+        return res.data ?? { orders: [] };
     },
 
     // Public

@@ -486,7 +486,7 @@ const ManagerOrderList = () => {
                 page: currentPage,
                 limit: limit,
                 search: searchShipment,
-                type: filterTypeShipment !== null ? filterTypeShipment : undefined,
+                type: filterTypeShipment !== "ALL" ? filterTypeShipment : undefined,
                 sort: filterSortShipment,
             };
 

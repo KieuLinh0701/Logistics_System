@@ -3,7 +3,7 @@ import {Button, Space} from 'antd';
 import {FileExcelOutlined, PlusOutlined} from '@ant-design/icons';
 
 interface ActionsProps {
-    onAddRequest: () => void,
+    onAddRequest?: () => void,
     onExport: () => void,
     total: number,
 }
@@ -15,13 +15,15 @@ const Actions: React.FC<ActionsProps> = ({
                                          }) => {
     return (
         <Space align="center">
-            <Button
-                className="primary-button"
-                icon={<PlusOutlined/>}
-                onClick={onAddRequest}
-            >
-                Tạo chuyến hàng
-            </Button>
+            {onAddRequest && (
+                <Button
+                    className="primary-button"
+                    icon={<PlusOutlined/>}
+                    onClick={onAddRequest}
+                >
+                    Tạo chuyến hàng
+                </Button>
+            )}
             <Button
                 className="success-button"
                 icon={<FileExcelOutlined/>}

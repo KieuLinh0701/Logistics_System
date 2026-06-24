@@ -232,7 +232,6 @@ public class SupportAssistantService {
             case DELIVERED -> "Đã giao thành công";
             case PARTIAL_DELIVERY -> "Giao một phần";
             case PARTIAL_RETURN -> "Hoàn một phần";
-            case FAILED_DELIVERY -> "Giao thất bại";
             case DELIVERY_RETRY -> "Chờ giao lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case CANCELLED -> "Đã hủy";
@@ -290,7 +289,6 @@ public class SupportAssistantService {
             case DELIVERED -> "Đã giao thành công";
             case PARTIAL_DELIVERY -> "Giao một phần";
             case PARTIAL_RETURN -> "Hoàn một phần";
-            case FAILED_DELIVERY -> "Giao thất bại";
             case DELIVERY_RETRY -> "Chờ giao lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case RETURNING -> "Đang hoàn hàng";

@@ -332,6 +332,25 @@ const UserOrderDetail: React.FC = () => {
             {order.pickupType === "AT_OFFICE" &&
                 <FromOfficeInfo office={order.fromOffice}/>
             }
+            {order.currentOffice && (
+                <div className="order-detail-card">
+                    <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                        Bưu cục hiện tại
+                    </Title>
+                    <Descriptions column={2} size="small" bordered>
+                        <Descriptions.Item label="Tên">{order.currentOffice.name || "—"}</Descriptions.Item>
+                        <Descriptions.Item label="Địa chỉ">
+                            {[
+                                order.currentOffice.detail,
+                                order.currentOffice.wardCode,
+                                order.currentOffice.cityCode,
+                            ].filter(Boolean).join(", ") || "—"}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Điện thoại">{order.currentOffice.phoneNumber || "—"}</Descriptions.Item>
+                        <Descriptions.Item label="Email">{order.currentOffice.email || "—"}</Descriptions.Item>
+                    </Descriptions>
+                </div>
+            )}
             <OrderInfo order={order}/>
             <OrderProducts products={order.orderProducts || []}/>
             <div className="order-detail-card">

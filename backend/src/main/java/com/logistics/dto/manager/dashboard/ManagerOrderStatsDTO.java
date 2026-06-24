@@ -19,12 +19,10 @@ public class ManagerOrderStatsDTO {
     private Long delivered = 0L;
     private Long returned = 0L;
     private Long returning = 0L;
-    private Long failedDelivery = 0L;
 
     public ManagerOrderStatsDTO(Long total, Long pending, Long confirmed, Long readyForPickup,
                                 Long pickingOrPicked, Long inWarehouse, Long customerAtOffice,
-                                Long delivering, Long delivered, Long returned, Long returning,
-                                Long failedDelivery) {
+                                Long delivering, Long delivered, Long returned, Long returning) {
         this.total = total;
         this.pending = pending;
         this.confirmed = confirmed;
@@ -36,6 +34,5 @@ public class ManagerOrderStatsDTO {
         this.delivered = delivered;
         this.returned = returned;
         this.returning = returning;
-        this.failedDelivery = failedDelivery;
     }
 }

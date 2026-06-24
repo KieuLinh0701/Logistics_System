@@ -60,11 +60,13 @@ public class AuditLog {
     private AuditLogAction action;
 
     // Nội dung trước khi thay đổi
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String payloadRequestBody;
 
     // Nội dung sau khi thay đổi
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String payloadResult;
 
     // Mô tả ngắn hiển thị trên UI

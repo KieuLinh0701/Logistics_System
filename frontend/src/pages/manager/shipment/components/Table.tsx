@@ -13,372 +13,373 @@ import {CloseCircleOutlined, DownOutlined, EditOutlined} from '@ant-design/icons
 import locationApi from '../../../../api/locationApi';
 
 interface TableProps {
-  data: ManagerShipment[];
-  currentPage: number;
-  pageSize: number;
-  total: number;
-  loading?: boolean;
-  onEdit: (shipment: ManagerShipment) => void;
-  onCancel: (item: ManagerShipment) => void;
-  onDetail: (value: ManagerShipment) => void;
-  onPageChange: (page: number, pageSize?: number) => void;
+    data: ManagerShipment[];
+    currentPage: number;
+    pageSize: number;
+    total: number;
+    loading?: boolean;
+    onEdit: (shipment: ManagerShipment) => void;
+    onCancel: (item: ManagerShipment) => void;
+    onDetail: (value: ManagerShipment) => void;
+    onPageChange: (page: number, pageSize?: number) => void;
+    tab: string;
 }
 
 const RequestTable: React.FC<TableProps> = ({
-  data,
-  currentPage,
-  pageSize,
-  total,
-  loading = false,
-  onEdit,
-  onDetail,
-  onCancel,
-  onPageChange,
-}) => {
+                                                data,
+                                                currentPage,
+                                                pageSize,
+                                                total,
+                                                loading = false,
+                                                onEdit,
+                                                onDetail,
+                                                onCancel,
+                                                onPageChange,
+                                                tab,
+                                            }) => {
 
-  const [formattedAddressMap, setFormattedAddressMap] = useState<Record<string, string>>({});
+    const [formattedAddressMap, setFormattedAddressMap] = useState<Record<string, string>>({});
 
-  const formatAddress = async (
-    key: string,
-    detail?: string,
-    wardCode?: number,
-    cityCode?: number
-  ) => {
-    try {
-      const cityName = cityCode
-        ? await locationApi.getCityNameByCode(cityCode)
-        : "";
-      const wardName =
-        cityCode && wardCode
-          ? await locationApi.getWardNameByCode(cityCode, wardCode)
-          : "";
+    const formatAddress = async (
+        key: string,
+        detail?: string,
+        wardCode?: number,
+        cityCode?: number
+    ) => {
+        try {
+            const cityName = cityCode
+                ? await locationApi.getCityNameByCode(cityCode)
+                : "";
+            const wardName =
+                cityCode && wardCode
+                    ? await locationApi.getWardNameByCode(cityCode, wardCode)
+                    : "";
 
-      setFormattedAddressMap((prev) => ({
-        ...prev,
-        [key]: [detail, wardName, cityName].filter(Boolean).join(", "),
-      }));
-    } catch (error) {
-      setFormattedAddressMap((prev) => ({
-        ...prev,
-        [key]: detail || "",
-      }));
-    }
-  };
+            setFormattedAddressMap((prev) => ({
+                ...prev,
+                [key]: [detail, wardName, cityName].filter(Boolean).join(", "),
+            }));
+        } catch (error) {
+            setFormattedAddressMap((prev) => ({
+                ...prev,
+                [key]: detail || "",
+            }));
+        }
+    };
 
-  useEffect(() => {
-    data.forEach((item) => {
-      if (item.fromOffice) {
-        formatAddress(
-          `from-${item.id}`,
-          item.fromOffice.detail,
-          item.fromOffice.wardCode,
-          item.fromOffice.cityCode
-        );
-      }
-      if (item.toOffice) {
-        formatAddress(
-          `to-${item.id}`,
-          item.toOffice.detail,
-          item.toOffice.wardCode,
-          item.toOffice.cityCode
-        );
-      }
-    });
-  }, [data]);
+    useEffect(() => {
+        data.forEach((item) => {
+            if (item.fromOffice) {
+                formatAddress(
+                    `from-${item.id}`,
+                    item.fromOffice.detail,
+                    item.fromOffice.wardCode,
+                    item.fromOffice.cityCode
+                );
+            }
+            if (item.toOffice) {
+                formatAddress(
+                    `to-${item.id}`,
+                    item.toOffice.detail,
+                    item.toOffice.wardCode,
+                    item.toOffice.cityCode
+                );
+            }
+        });
+    }, [data]);
 
-  const columns: ColumnsType<ManagerShipment> = [
-    {
-      title: 'Mã chuyến',
-      dataIndex: 'code',
-      key: 'code',
-      align: 'center',
-      render: (_, record) => {
-        return (
-          <Tooltip title="Click để xem danh sách đơn hàng của chuyến hàng">
+    const columns: ColumnsType<ManagerShipment> = [
+        {
+            title: 'Mã chuyến',
+            dataIndex: 'code',
+            key: 'code',
+            align: 'center',
+            render: (_, record) => {
+                return (
+                    <Tooltip title="Click để xem danh sách đơn hàng của chuyến hàng">
             <span
-              className="navigate-link"
-              onClick={() => onDetail(record)}
+                className="navigate-link"
+                onClick={() => onDetail(record)}
             >
               {record.code}
             </span>
-          </Tooltip>
-        );
-      }
-    },
-    {
-      title: 'Loại chuyến',
-      dataIndex: 'type',
-      key: 'type',
-      align: 'center',
-      render: (type) => translateShipmentType(type)
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      align: 'center',
-      render: (status) => translateShipmentStatus(status)
-    },
-    {
-      title: 'Phương tiện',
-      dataIndex: 'vehicle',
-      key: 'vehicle',
-      align: 'center',
-      render: (_, record) => {
-        const vehicle = record.vehicle;
+                    </Tooltip>
+                );
+            }
+        },
+        {
+            title: 'Loại chuyến',
+            dataIndex: 'type',
+            key: 'type',
+            align: 'center',
+            render: (type) => translateShipmentType(type)
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            key: 'status',
+            align: 'center',
+            render: (status) => translateShipmentStatus(status)
+        },
+        {
+            title: 'Phương tiện',
+            dataIndex: 'vehicle',
+            key: 'vehicle',
+            align: 'center',
+            render: (_, record) => {
+                const vehicle = record.vehicle;
 
-        if (!vehicle) {
-          return <span className="text-muted">N/A</span>;
-        }
+                if (!vehicle) {
+                    return <span className="text-muted">N/A</span>;
+                }
 
-        return (
-          <div>
-            {vehicle.licensePlate}<br />
-            <span className='text-muted'>
+                return (
+                    <div>
+                        {vehicle.licensePlate}<br/>
+                        <span className='text-muted'>
             ({vehicle.capacity} Kg)</span>
-          </div>
-        );
-      }
-    },
-    {
-      title: 'Bưu cục đến',
-      key: 'toOffice',
-      align: 'left',
-      render: (_, record) => {
-        const to = record.toOffice;
+                    </div>
+                );
+            }
+        },
+        {
+            title: tab === "INBOUND" ? "Bưu cục đi" : "Bưu cục đến",
+            key: 'office',
+            align: 'left',
+            render: (_, record) => {
+                const office = tab === "INBOUND" ? record.fromOffice : record.toOffice;
+                const addressKey = tab === "INBOUND" ? `from-${record.id}` : `to-${record.id}`;
 
-        if (!to) {
-          return <span className="text-muted">N/A</span>;
-        }
+                if (!office) {
+                    return <span className="text-muted">N/A</span>;
+                }
 
-        const toAddress = formattedAddressMap[`to-${record.id}`];
+                const address = formattedAddressMap[addressKey];
 
-        return (
-          <div>
-            <span>
-              {to.name}
-            </span><br />
-            <span>{to.postalCode}</span><br />
+                return (
+                    <div>
+                        <span>{office.name}</span><br/>
+                        <span>{office.postalCode}</span><br/>
+                        {office.latitude && office.longitude ? (
+                            <Tooltip title="Nhấn để xem vị trí trên Google Maps">
+                        <span
+                            className="navigate-link custom-table-content-limit"
+                            onClick={() =>
+                                window.open(
+                                    `https://www.google.com/maps?q=${office.latitude},${office.longitude}`,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                )
+                            }
+                        >
+                            {address || 'Chưa có địa chỉ'}
+                        </span>
+                            </Tooltip>
+                        ) : (
+                            <Tooltip title="Địa chỉ không có tọa độ">
+                                <span>{address || 'Chưa có địa chỉ'}</span>
+                            </Tooltip>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
+            title: 'Nhân viên phụ trách',
+            dataIndex: 'employee',
+            key: 'employee',
+            align: 'left',
+            render: (_, record) => {
+                const employee = record.employee;
 
-            {to.latitude && to.longitude ? (
-              <Tooltip title="Nhấn để xem vị trí trên Google Maps">
-                <span
-                  className="navigate-link custom-table-content-limit"
-                  onClick={() =>
-                    window.open(
-                      `https://www.google.com/maps?q=${to.latitude},${to.longitude}`,
-                      "_blank",
-                      "noopener,noreferrer"
-                    )
-                  }
-                >
-                  {toAddress || 'Chưa có địa chỉ'}
-                </span>
-              </Tooltip>
-            ) : (
-              <Tooltip title="Địa chỉ không có tọa độ">
-                <span>{toAddress || 'Chưa có địa chỉ'}</span>
-              </Tooltip>
-            )}
-          </div>
-        );
-      }
-    },
-    {
-      title: 'Nhân viên phụ trách',
-      dataIndex: 'employee',
-      key: 'employee',
-      align: 'left',
-      render: (_, record) => {
-        const employee = record.employee;
+                if (!employee) {
+                    return <span className="text-muted">N/A</span>;
+                }
 
-        if (!employee) {
-          return <span className="text-muted">N/A</span>;
-        }
-
-        return (
-          <div>
+                return (
+                    <div>
             <span className="custom-table-content-strong">
               {employee.lastName} {employee.firstName} - {employee.code}
-            </span><br />
-            <span>
+            </span><br/>
+                        <span>
               {employee.phoneNumber}
-            </span><br />
-            <span>
+            </span><br/>
+                        <span>
               {employee.email}
             </span>
-          </div>
-        );
-      }
-    },
-    {
-      title: 'Nhân viên tạo chuyến',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
-      align: 'left',
-      render: (_, record) => {
-        const createdBy = record.createdBy;
+                    </div>
+                );
+            }
+        },
+        {
+            title: 'Nhân viên tạo chuyến',
+            dataIndex: 'createdBy',
+            key: 'createdBy',
+            align: 'left',
+            render: (_, record) => {
+                const createdBy = record.createdBy;
 
-        if (!createdBy) {
-          return <span className="text-muted">N/A</span>;
-        }
+                if (!createdBy) {
+                    return <span className="text-muted">N/A</span>;
+                }
 
-        return (
-          <div>
+                return (
+                    <div>
             <span className="custom-table-content-strong">
               {createdBy.lastName} {createdBy.firstName} - {createdBy.code}
-            </span><br />
-            <span>
+            </span><br/>
+                        <span>
               {createdBy.phoneNumber}
-            </span><br />
-            <span>
+            </span><br/>
+                        <span>
               {createdBy.email}
             </span>
-          </div>
-        );
-      }
-    },
-    {
-      title: 'Thời gian',
-      key: 'time',
-      align: 'left',
-      render: (_, record) => {
-        const createdAt = record.createdAt
-          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
-          : null;
+                    </div>
+                );
+            }
+        },
+        {
+            title: 'Thời gian',
+            key: 'time',
+            align: 'left',
+            render: (_, record) => {
+                const createdAt = record.createdAt
+                    ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
+                    : null;
 
-        const updatedAt = record.updatedAt
-          ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
-          : null;
+                const updatedAt = record.updatedAt
+                    ? dayjs(record.createdAt).format('HH:mm:ss DD/MM/YYYY')
+                    : null;
 
-        const startTime = record.startTime
-          ? dayjs(record.startTime).format('HH:mm:ss DD/MM/YYYY')
-          : null;
+                const startTime = record.startTime
+                    ? dayjs(record.startTime).format('HH:mm:ss DD/MM/YYYY')
+                    : null;
 
-        const endTime = record.endTime
-          ? dayjs(record.endTime).format('HH:mm:ss DD/MM/YYYY')
-          : null;
+                const endTime = record.endTime
+                    ? dayjs(record.endTime).format('HH:mm:ss DD/MM/YYYY')
+                    : null;
 
-        if (!createdAt && !startTime && !endTime) {
-          return <span className="text-muted">N/A</span>;
-        }
+                if (!createdAt && !startTime && !endTime) {
+                    return <span className="text-muted">N/A</span>;
+                }
 
-        return (
-          <div>
-            {startTime && (
-              <div>
+                return (
+                    <div>
+                        {startTime && (
+                            <div>
                 <span className="custom-table-content-strong">
                   Bắt đầu:{" "}
                 </span>
-                {startTime}
-              </div>
-            )}
-            {endTime && (
-              <div>
+                                {startTime}
+                            </div>
+                        )}
+                        {endTime && (
+                            <div>
                 <span className="custom-table-content-strong">
                   Kết thúc:{" "}
                 </span>
-                {endTime}
-              </div>
-            )}
-            {startTime && (
-              <hr className="separator" />
-            )}
-            {createdAt && (
-              <div>
+                                {endTime}
+                            </div>
+                        )}
+                        {startTime && (
+                            <hr className="separator"/>
+                        )}
+                        {createdAt && (
+                            <div>
                 <span className="custom-table-content-strong">
                   Tạo mới:{" "}
                 </span>
-                {createdAt}
-              </div>
-            )}
-            {updatedAt && (
-              <div>
+                                {createdAt}
+                            </div>
+                        )}
+                        {updatedAt && (
+                            <div>
                 <span className="custom-table-content-strong">
                   Cập nhật:{" "}
                 </span>
-                {updatedAt}
-              </div>
-            )}
-          </div>
-        );
-      }
-    },
-    {
-      key: "action",
-      align: "left",
-      render: (_, record: ManagerShipment) => {
-        const canCancel = canCancelManagerShipment(record.status);
-        const canEdit = canEditManagerShipment(record.status);
+                                {updatedAt}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
+            key: "action",
+            align: "left",
+            render: (_, record: ManagerShipment) => {
+                const canCancel = canCancelManagerShipment(record.status);
+                const canEdit = canEditManagerShipment(record.status);
 
-        const items = [
-          ...(canEdit
-            ? [
-              {
-                key: "edit",
-                icon: <EditOutlined />,
-                label: "Sửa",
-                onClick: () => onEdit(record),
-              },
-            ]
-            : []),
+                const items = [
+                    ...(canEdit
+                        ? [
+                            {
+                                key: "edit",
+                                icon: <EditOutlined/>,
+                                label: "Sửa",
+                                onClick: () => onEdit(record),
+                            },
+                        ]
+                        : []),
 
-          ...(canCancel
-            ? [
-              {
-                key: "cancel",
-                icon: <CloseCircleOutlined />,
-                label: "Hủy",
-                onClick: () => onCancel(record),
-              },
-            ]
-            : []),
-        ];
+                    ...(canCancel
+                        ? [
+                            {
+                                key: "cancel",
+                                icon: <CloseCircleOutlined/>,
+                                label: "Hủy",
+                                onClick: () => onCancel(record),
+                            },
+                        ]
+                        : []),
+                ];
 
-        return (
-          <Space>
-            <Button
-              className="action-button-link"
-              type="link"
-              onClick={() => onDetail(record)}
-            >
-              DS đơn hàng
-            </Button>
+                return (
+                    <Space>
+                        <Button
+                            className="action-button-link"
+                            type="link"
+                            onClick={() => onDetail(record)}
+                        >
+                            DS đơn hàng
+                        </Button>
 
-            <Dropdown menu={{ items }} trigger={["click"]} disabled={items.length === 0}>
-              <Button className="dropdown-trigger-button">
-                Thêm <DownOutlined />
-              </Button>
-            </Dropdown>
-          </Space>
-        );
-      },
-    },
-  ];
+                        <Dropdown menu={{items}} trigger={["click"]} disabled={items.length === 0}>
+                            <Button className="dropdown-trigger-button">
+                                Thêm <DownOutlined/>
+                            </Button>
+                        </Dropdown>
+                    </Space>
+                );
+            },
+        },
+    ];
 
-  const tableData = data.map((p, index) => ({
-    ...p,
-    key: String(index + 1 + (currentPage - 1) * pageSize),
-  }));
+    const tableData = data.map((p, index) => ({
+        ...p,
+        key: String(index + 1 + (currentPage - 1) * pageSize),
+    }));
 
-  return (
-    <div className="table-container">
-      <Table
-        columns={columns}
-        dataSource={tableData}
-        rowKey="id"
-        scroll={{ x: "max-content" }}
-        className="list-page-table"
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          onChange: onPageChange,
-        }}
-        loading={loading}
-      />
-    </div>
-  );
-};
+    return (
+        <div className="table-container">
+            <Table
+                columns={columns}
+                dataSource={tableData}
+                rowKey="id"
+                scroll={{x: "max-content"}}
+                className="list-page-table"
+                pagination={{
+                    current: currentPage,
+                    pageSize,
+                    total,
+                    onChange: onPageChange,
+                }}
+                loading={loading}
+            />
+        </div>
+    );
+}
+    ;
 
-export default RequestTable;
+    export default RequestTable;

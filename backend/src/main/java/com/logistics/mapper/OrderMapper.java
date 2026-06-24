@@ -54,16 +54,6 @@ public class OrderMapper {
         if (entity == null)
             return null;
 
-        ManagerShipmentDetailDto.Recipient recipient = null;
-        if (entity.getRecipientAddress() != null) {
-            recipient = new ManagerShipmentDetailDto.Recipient(
-                    entity.getRecipientAddress()
-                            .getName(),
-                    entity.getRecipientAddress()
-                            .getPhoneNumber(),
-                    entity.getRecipientAddress().getFullAddress());
-        }
-
         ManagerShipmentDetailDto.Office toOffice = null;
         if (entity.getToOffice() != null) {
             toOffice = new ManagerShipmentDetailDto.Office(
@@ -85,20 +75,38 @@ public class OrderMapper {
                             .getLongitude());
         }
 
+        ManagerShipmentDetailDto.Office currentOffice = null;
+        if (entity.getCurrentOffice() != null) {
+            currentOffice = new ManagerShipmentDetailDto.Office(
+                    entity.getCurrentOffice().getId(),
+                    entity.getCurrentOffice().getName(),
+                    entity.getCurrentOffice().getPostalCode(),
+                    entity.getCurrentOffice().getCityCode(),
+                    entity.getCurrentOffice().getWardCode(),
+                    entity.getCurrentOffice().getDetail(),
+                    entity.getCurrentOffice().getLatitude(),
+                    entity.getCurrentOffice().getLongitude());
+        }
+
         return new ManagerShipmentDetailDto(
                 entity.getId(),
                 entity.getTrackingNumber(),
                 entity.getStatus() != null ? entity.getStatus()
                         .name() : null,
-                recipient,
                 toOffice,
+                currentOffice,
                 entity.getWeight() != null ? entity.getWeight() : BigDecimal.ZERO,
                 entity.getCod() != null ? entity.getCod() : 0,
                 entity.getTotalFee() != null ? entity.getTotalFee() : 0,
                 entity.getPayer() != null ? entity.getPayer()
                         .name() : null,
                 entity.getPaymentStatus() != null ? entity.getPaymentStatus()
-                        .name() : null);
+                        .name() : null,
+                entity.getPendingDestinationConfirm(),
+                entity.getRecipientName(),
+                entity.getRecipientPhone(),
+                entity.getRecipientFullAddress()
+        );
     }
 
     public static ManagerOrderDetailDto toManagerOrderDetailDto(Order entity,
@@ -169,6 +177,7 @@ public class OrderMapper {
                 entity.getCreatedAt(),
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OfficeMapper.toDto(entity.getToOffice()),
+                OfficeMapper.toDto(entity.getCurrentOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
                 toPickupAttemptDtoList(pickupAttempts),
@@ -292,6 +301,7 @@ public class OrderMapper {
                 entity.getReturnedAt(),
                 entity.getCreatedAt(),
                 OfficeMapper.toDto(entity.getFromOffice()),
+                OfficeMapper.toDto(entity.getCurrentOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
                 toPickupAttemptDtoList(pickupAttempts),

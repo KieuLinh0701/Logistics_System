@@ -12,6 +12,7 @@ import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.request.user.order.UserUrgentOrderSearchRequest;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.manager.order.UrgentOrderResponse;
 import com.logistics.service.manager.OrderManagerService;
@@ -173,6 +174,27 @@ public class OrderManagerController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PatchMapping("/confirm-destination-bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_DESTINATION_BULK
+    )
+    public ResponseEntity<BulkResponse<String>> confirmDestinationOrders(
+            HttpServletRequest request,
+            @RequestBody Map<String, Object> body) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        boolean confirmed = Boolean.TRUE.equals(body.get("confirmed"));
+
+        List<Integer> orderIds = ((List<?>) body.get("ids"))
+                .stream()
+                .map(o -> ((Number) o).intValue())
+                .toList();
+
+        return ResponseEntity.ok(service.confirmDestinationOrders(userId, orderIds, confirmed));
+    }
+
     @PatchMapping("/{id}/confirm")
     @Audit(
             entity = EntityType.ORDER,
@@ -281,4 +303,38 @@ public class OrderManagerController {
         service.confirmUrgentOrder(userId, id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    // 2. Manager claim đơn về office của mình
+//    @PostMapping("/{trackingNumber}/claim")
+//
+//    public ResponseEntity<?> claimOrder(
+//            @PathVariable String trackingNumber,
+//            HttpServletRequest request) throws Exception {
+//
+//        Integer userId = (Integer) request.getAttribute("currentUserId");
+//        urgentPickupService.claimOrder(trackingNumber, userId);
+//        return ResponseEntity.ok(Map.of("message", "Đã nhận đơn về bưu cục"));
+//    }
+
+    // 3. Load shipper available + shipment IN_TRANSIT hiện tại (nếu có)
+//    @GetMapping("/{orderId}/shippers")
+//    public ResponseEntity<List<ShipperWithShipmentResponse>> getAvailableShippers(
+//            @PathVariable Integer orderId,
+//            @RequestAttribute("employeeId") Integer employeeId
+//    ) {
+//        return ResponseEntity.ok(urgentPickupService.getAvailableShippers(orderId, employeeId));
+//    }
+
+    // 4. Assign shipper: add vào shipment IN_TRANSIT hoặc tạo mới PENDING → CONFIRMED
+//    @PostMapping("/{trackingNumber}/assign")
+//    public ResponseEntity<?> assignShipper(
+//            @PathVariable String trackingNumber,
+//            @RequestBody AssignShipperRequest assignShipperRequest,
+//            HttpServletRequest request,
+//            UserOrderSearchRequest userOrderSearchRequest) throws Exception {
+//
+//        Integer userId = (Integer) request.getAttribute("currentUserId");
+//        urgentPickupService.assignShipper(orderId, request.getShipperId(), request.getShipmentId(), employeeId);
+//        return ResponseEntity.ok(Map.of("message", "Đã assign shipper thành công"));
+//    }
 }

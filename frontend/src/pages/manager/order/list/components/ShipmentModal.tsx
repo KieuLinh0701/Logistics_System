@@ -8,6 +8,7 @@ import {
     SHIPMENT_FILTER_SORT,
     SHIPMENT_TYPES,
     translateShipmentFilterSort,
+    translateShipmentStatus,
     translateShipmentType
 } from "../../../../../utils/shipmentUtils";
 import locationApi from "../../../../../api/locationApi";
@@ -118,6 +119,13 @@ const ShipmentModal: React.FC<Props> = ({
       key: 'type',
       align: 'center',
       render: (type) => translateShipmentType(type)
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      align: 'center',
+      render: (status) => translateShipmentStatus(status)
     },
     {
       title: 'Phương tiện',

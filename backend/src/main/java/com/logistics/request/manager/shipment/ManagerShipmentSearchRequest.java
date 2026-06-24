@@ -18,4 +18,5 @@ public class ManagerShipmentSearchRequest {
     private String type;
     private String startDate;
     private String endDate;
+    private String direction;
 }

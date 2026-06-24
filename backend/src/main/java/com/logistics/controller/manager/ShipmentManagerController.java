@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -52,6 +53,16 @@ public class ShipmentManagerController {
         GetOrdersByShipmentIdManagerResponse result = service.getOrdersByShipmentId(userId, id,
                 searchRequest);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/{id}/all-ids")
+    public ResponseEntity<ApiResponse<List<Integer>>> getAllOrderIdsByShipmentId(
+            @PathVariable Integer id,
+            @Valid ManagerOrdersShipmentSearchRequest searchRequest,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(ApiResponse.success(service.getAllOrderIdsByShipmentId(userId, id, searchRequest)));
     }
 
     @GetMapping("/employee-performance/{id}/export")
@@ -88,7 +99,7 @@ public class ShipmentManagerController {
             HttpServletRequest request) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        ListResponse<ManagerShipmentListDto> result = service.getPendingShipments(userId, searchRequest);
+        ListResponse<ManagerShipmentListDto> result = service.getPendingAndInTransitShipments(userId, searchRequest);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
@@ -152,7 +163,11 @@ public class ShipmentManagerController {
         Integer userId = (Integer) request.getAttribute("currentUserId");
         byte[] data = service.export(userId, managerShipmentSearchRequest);
 
-        String fileName = "UTE Logistics_Báo cáo danh sách chuyến hàng của bưu cục.xlsx";
+        String direction = managerShipmentSearchRequest.getDirection();
+
+        String fileName = "INBOUND".equalsIgnoreCase(direction)
+                ? "UTE Logistics_Báo cáo danh sách chuyến hàng đến bưu cục.xlsx"
+                : "UTE Logistics_Báo cáo danh sách chuyến hàng đi của bưu cục.xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
                 .replaceAll("\\+", "%20");
 
