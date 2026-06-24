@@ -18,6 +18,8 @@ public enum ShipmentErrorCode implements BaseErrorCode {
     SHIPMENT_ORDER_OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST,"Một số đơn không nằm trong khu vực phân công của nhân viên giao hàng."),
     SHIPMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "Chuyến hàng không ở trạng thái PENDING"),
     SHIPMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "Trạng thái chuyến hàng không hợp lệ"),
+    SHIPMENT_CANNOT_ADD_ORDERS(HttpStatus.BAD_REQUEST, "Chuyến hàng không thể thêm đơn hàng!"),
+    SHIPMENT_CANNOT_DELETE_ORDERS(HttpStatus.BAD_REQUEST, "Chuyến hàng không thể xóa các đơn hàng!"),
     ;
 
     private final HttpStatus httpStatus;

@@ -12,6 +12,7 @@ import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.request.user.order.UserUrgentOrderSearchRequest;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.manager.order.UrgentOrderResponse;
 import com.logistics.service.manager.OrderManagerService;
@@ -171,6 +172,27 @@ public class OrderManagerController {
 
         service.confirmDestinationOrder(userId, id, confirmed);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/confirm-destination-bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_DESTINATION_BULK
+    )
+    public ResponseEntity<BulkResponse<String>> confirmDestinationOrders(
+            HttpServletRequest request,
+            @RequestBody Map<String, Object> body) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        boolean confirmed = Boolean.TRUE.equals(body.get("confirmed"));
+
+        List<Integer> orderIds = ((List<?>) body.get("ids"))
+                .stream()
+                .map(o -> ((Number) o).intValue())
+                .toList();
+
+        return ResponseEntity.ok(service.confirmDestinationOrders(userId, orderIds, confirmed));
     }
 
     @PatchMapping("/{id}/confirm")

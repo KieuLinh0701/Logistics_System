@@ -1,11 +1,7 @@
 package com.logistics.service.driver;
 
 import com.logistics.entity.*;
-import com.logistics.enums.OrderHistoryActionType;
-import com.logistics.enums.OrderPickupType;
-import com.logistics.enums.OrderStatus;
-import com.logistics.enums.ShipmentStatus;
-import com.logistics.enums.VehicleStatus;
+import com.logistics.enums.*;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.exception.enums.ShipmentErrorCode;

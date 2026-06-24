@@ -1,12 +1,12 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Col, Form, message, Row, Tag} from 'antd';
+import {Col, Form, message, Row, Tabs, Tag} from 'antd';
 import dayjs from 'dayjs';
 import SearchFilters from './components/SearchFilters';
 import Actions from './components/Actions';
 import RequestTable from './components/Table';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import Title from 'antd/es/typography/Title';
-import {TruckOutlined} from '@ant-design/icons';
+import {ExportOutlined, ImportOutlined} from '@ant-design/icons';
 import "./ManagerShipments.css"
 import ConfirmModal from '../../common/ConfirmModal';
 import type {ManagerShipment, ManagerShipmentSearchRequest} from '../../../types/shipment';
@@ -42,6 +42,18 @@ const ManagerShipments: React.FC = () => {
 
     const [selectedShipment, setSelectedShipment] = useState<ManagerShipment | null>(null);
 
+    const getTabFromUrl = () => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("tab")?.toUpperCase() || "OUTBOUND";
+    };
+
+    const handleTabChange = (key: string) => {
+        setActiveTab(key);
+        setPage(1);
+    };
+
+    const [activeTab, setActiveTab] = useState(getTabFromUrl());
+
     const updateURL = () => {
         const params: any = {};
 
@@ -55,6 +67,7 @@ const ManagerShipments: React.FC = () => {
             params.start = dateRange[0].format("YYYY-MM-DD");
             params.end = dateRange[1].format("YYYY-MM-DD");
         }
+        params.tab = activeTab.toLowerCase();
 
         setSearchParams(params, {replace: true});
     };
@@ -93,6 +106,7 @@ const ManagerShipments: React.FC = () => {
                 type: filterType !== "ALL" ? filterType : undefined,
                 status: filterStatus !== "ALL" ? filterStatus : undefined,
                 sort: filterSort,
+                direction: activeTab,
             };
             if (dateRange) {
                 param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
@@ -124,6 +138,7 @@ const ManagerShipments: React.FC = () => {
                 type: filterType !== "ALL" ? filterType : undefined,
                 status: filterStatus !== "ALL" ? filterStatus : undefined,
                 sort: filterSort,
+                direction: activeTab,
             };
             if (dateRange) {
                 param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
@@ -231,7 +246,99 @@ const ManagerShipments: React.FC = () => {
     useEffect(() => {
         updateURL();
         fetchShipments(page);
-    }, [page, limit, searchText, filterSort, filterStatus, dateRange, filterType]);
+    }, [page, limit, searchText, filterSort, filterStatus, dateRange, filterType, activeTab]);
+
+    const tabs = [
+        {
+            key: "OUTBOUND",
+            label: (
+                <span className="tab-label">
+                    <ExportOutlined /> Chuyến hàng đi
+                </span>
+            ),
+            children: (
+                <>
+                    <Row className="list-page-header" align="middle">
+                        <Col>
+                            <Title level={3} className="list-page-title-main">
+                                <ExportOutlined className="title-icon" />
+                                Danh sách chuyến hàng đi
+                            </Title>
+                        </Col>
+                        <Col>
+                            <Actions
+                                onAddRequest={() => {
+                                    setIsModalOpen(true);
+                                    setModalMode("create");
+                                    setShipment({});
+                                    form.resetFields();
+                                }}
+                                onExport={handleExport}
+                                total={total}
+                            />
+                        </Col>
+                    </Row>
+                    <Tag className="list-page-tag">Kết quả trả về: {total} chuyến hàng</Tag>
+                    <RequestTable
+                        data={shipments}
+                        currentPage={page}
+                        pageSize={limit}
+                        total={total}
+                        onEdit={handleEditShipment}
+                        onCancel={showConfirmCancel}
+                        onDetail={handleViewDetailShipment}
+                        onPageChange={(page, size) => {
+                            setPage(page);
+                            if (size) setLimit(size);
+                        }}
+                        tab={activeTab}
+                    />
+                </>
+            ),
+        },
+        {
+            key: "INBOUND",
+            label: (
+                <span className="tab-label">
+                    <ImportOutlined /> Chuyến hàng đến
+                </span>
+            ),
+            children: (
+                <>
+                    <Row className="list-page-header" justify="space-between" align="middle">
+                        <Col>
+                            <Title level={3} className="list-page-title-main">
+                                <ImportOutlined className="title-icon" />
+                                Danh sách chuyến hàng đến
+                            </Title>
+                        </Col>
+                        <Col>
+                            {/* INBOUND không có nút tạo mới */}
+                            <Actions
+                                onExport={handleExport}
+                                total={total}
+                            />
+                        </Col>
+                    </Row>
+                    <Tag className="list-page-tag">Kết quả trả về: {total} chuyến hàng</Tag>
+                    <RequestTable
+                        data={shipments}
+                        currentPage={page}
+                        pageSize={limit}
+                        total={total}
+                        onEdit={handleEditShipment}
+                        onCancel={showConfirmCancel}
+                        onDetail={handleViewDetailShipment}
+                        onPageChange={(page, size) => {
+                            setPage(page);
+                            if (size) setLimit(size);
+                        }}
+                        tab={activeTab}
+                    />
+                </>
+            ),
+        },
+    ];
 
     return (
         <div className="list-page-layout">
@@ -251,44 +358,13 @@ const ManagerShipments: React.FC = () => {
                     onHoverChange={setHover}
                 />
 
-                <Row className="list-page-header" justify="space-between" align="middle">
-                    <Col>
-                        <Title level={3} className="list-page-title-main">
-                            <TruckOutlined className="title-icon"/>
-                            Danh sách chuyến hàng
-                        </Title>
-                    </Col>
-
-                    <Col>
-                        <div className="list-page-actions">
-                            <Actions
-                                onAddRequest={() => {
-                                    setIsModalOpen(true);
-                                    setModalMode('create');
-                                    setShipment({});
-                                    form.resetFields();
-                                }}
-                                onExport={handleExport}
-                                total={total}
-                            />
-                        </div>
-                    </Col>
-                </Row>
-
-                <Tag className="list-page-tag">Kết quả trả về: {total} chuyến hàng</Tag>
-
-                <RequestTable
-                    data={shipments}
-                    currentPage={page}
-                    pageSize={limit}
-                    total={total}
-                    onEdit={handleEditShipment}
-                    onCancel={showConfirmCancel}
-                    onDetail={handleViewDetailShipment}
-                    onPageChange={(page, size) => {
-                        setPage(page);
-                        if (size) setLimit(size);
-                    }}
+                <Tabs
+                    activeKey={activeTab}
+                    onChange={handleTabChange}
+                    className="profile-tabs"
+                    items={tabs}
+                    style={{ marginTop: 22 }}
+                    tabBarStyle={{ marginBottom: -10 }}
                 />
             </div>
 

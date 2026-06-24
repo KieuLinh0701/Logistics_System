@@ -25,10 +25,18 @@ public class ShipmentUtils {
 
     // Những Status mà Manager được phép thêm đơn hàng vào chuyến
     private static final Set<ShipmentStatus> ADDED_ORDER_STATUSES_BY_MANAGER = Set.of(
-            ShipmentStatus.PENDING);
+            ShipmentStatus.PENDING, ShipmentStatus.IN_TRANSIT);
 
     public static boolean canManagerAddOrderForShipment(ShipmentStatus status) {
         return ADDED_ORDER_STATUSES_BY_MANAGER.contains(status);
+    }
+
+    // Những Status mà Manager được phép xóa đơn hàng ra khỏi chuyến
+    private static final Set<ShipmentStatus> DELETED_ORDER_STATUSES_BY_MANAGER = Set.of(
+            ShipmentStatus.PENDING);
+
+    public static boolean canManagerDeleteOrderForShipment(ShipmentStatus status) {
+        return DELETED_ORDER_STATUSES_BY_MANAGER.contains(status);
     }
 
     public static String translateShipmentStatus(ShipmentStatus value) {

@@ -6,28 +6,19 @@ import type {ListResponse} from "./response.ts";
 export interface ManagerShipment {
   id: number;
   code: string;
-
   vehicle: Vehicle;
-
   employee: ManagerEmployee;
-
   createdBy: ManagerEmployee;
-
   fromOffice: Office;
-
   toOffice: Office;
-
   status: string;
   type: string;
-
   startTime: string; 
   endTime: string; 
   createdAt: string;
   updatedAt: string;
-
   orderCount?: number;
   totalWeight?: number;
-
   orders: ManagerOrderShipment[];
 }
 
@@ -40,6 +31,7 @@ export interface ManagerShipmentSearchRequest {
   type?: string;
   startDate?: string;
   endDate?: string;
+  direction: string;
 }
 
 export interface ManagerOrderShipment {
@@ -51,14 +43,9 @@ export interface ManagerOrderShipment {
   totalFee: number;
   paymentStatus: string;
   payer: string;
-  recipient: {
-    id: number;
-    name: string;
-    phone: string;
-    cityCode: number;
-    wardCode: number;
-    detail: string;
-  }
+  recipientName: string;
+  recipientPhone: string;
+  recipientFullAddress: string;
   toOffice: {
     id: number;
     name: string;
@@ -69,11 +56,12 @@ export interface ManagerOrderShipment {
     latitude: number;
     longitude: number;
   };
+  pendingDestinationConfirm: boolean;
 }
 
 export interface ManagerOrderShipmentSearchRequest {
-  page: number;
-  limit: number;
+  page?: number;
+  limit?: number;
   search?: string; 
 }
 
@@ -159,4 +147,5 @@ export interface DriverDeliveryStop {
 export interface GetOrdersByShipmentIdManagerResponse {
   orders: ListResponse<ManagerOrderShipment>;
   status: string;
+  type: string;
 }
