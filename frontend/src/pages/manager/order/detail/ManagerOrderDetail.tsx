@@ -45,7 +45,7 @@ const UserOrderDetail: React.FC = () => {
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
     const [returnedModalConfirmOpen, setReturnedModalConfirmOpen] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-
+    const [modalConfirmDestinationOfficeOpen, setModalConfirmDestinationOfficeOpen] = useState(false);
 
     const [summary, setSummary] = useState<OrderFulfillmentSummary | null>(null);
     const [summaryLoading, setSummaryLoading] = useState(false);
@@ -156,8 +156,12 @@ const UserOrderDetail: React.FC = () => {
             const result = await orderApi.setManagerOrderAtOriginOffice(order.id);
 
             if (result.success) {
-                message.success("Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
-                fetchOrder();
+                if (result.data) {
+                    handleConfirmDestinationOrder();
+                } else {
+                    message.success("Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
+                    fetchOrder();
+                }
             } else {
                 message.error(result.message || "Có lỗi khi bàn giao đơn hàng cho bưu cục xuất phát!");
             }
@@ -212,6 +216,44 @@ const UserOrderDetail: React.FC = () => {
             }
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận đơn hàng!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConfirmDestinationOrder = () => {
+        if (!order) {
+            message.error("Không tìm thấy đơn hàng cần xác nhận bưu cục đích");
+            return;
+        }
+        setModalConfirmDestinationOfficeOpen(true);
+    };
+
+    const confirmDestinationOffice = async (confirmed: boolean) => {
+        if (order === null || order.id === null) {
+            message.error("Không tìm thấy đơn hàng cần xác nhận bưu cục đích");
+            return;
+        }
+
+        setModalConfirmDestinationOfficeOpen(false);
+
+        try {
+            setLoading(true);
+
+            const result = await orderApi.setManagerConfirmDestinationOffice(order.id, confirmed);
+
+            if (result.success) {
+                message.success(
+                    confirmed
+                        ? "Đã xác nhận đơn hàng đến bưu cục đích thành công."
+                        : "Đã xác nhận bưu cục hiện tại không phải bưu cục đích thành công."
+                );
+                fetchOrder();
+            } else {
+                message.error(result.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
         } finally {
             setLoading(false);
         }
@@ -366,6 +408,15 @@ const UserOrderDetail: React.FC = () => {
                 open={returnedModalConfirmOpen}
                 onOk={confirmReturnedOrder}
                 onCancel={() => setReturnedModalConfirmOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Đơn hàng đã đến bưu cục đích"
+                message="Hệ thống phát hiện bưu cục hiện tại trùng với địa chỉ giao hàng của đơn. Bạn có muốn xác nhận đơn hàng này đã đến nơi và sẵn sàng để giao không?"
+                open={modalConfirmDestinationOfficeOpen}
+                onOk={() => confirmDestinationOffice(true)}
+                onCancel={() => confirmDestinationOffice(false)}
                 loading={loading}
             />
 

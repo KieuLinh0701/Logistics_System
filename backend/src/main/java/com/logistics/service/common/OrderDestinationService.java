@@ -21,33 +21,18 @@ public class OrderDestinationService {
             }
         }
 
-        // 2. Fallback theo địa chỉ: Lấy cityCode/wardCode từ Order
-        Integer orderCityCode = null;
-        Integer orderWardCode = null;
+        // 2. Fallback theo địa chỉ: Lấy cityCode từ Order
+        Integer orderCityCode = order.getRecipientCityCode();
 
-        if (order.getRecipientAddress() != null) {
-            orderCityCode = order.getRecipientAddress().getCityCode();
-            orderWardCode = order.getRecipientAddress().getWardCode();
-        }
-
-        if (orderCityCode == null) {
-            orderCityCode = order.getRecipientCityCode();
-        }
-        if (orderWardCode == null) {
-            orderWardCode = order.getRecipientWardCode();
-        }
+        System.out.println("orderCityCode" + orderCityCode);
 
         // Lấy cityCode/wardCode từ office
         Integer officeCityCode = office.getCityCode();
-        Integer officeWardCode = office.getWardCode();
 
-        // 3. Nếu có đủ wardCode ở cả hai bên: so sánh cả cityCode + wardCode
-        if (orderWardCode != null && officeWardCode != null
-                && orderCityCode != null && officeCityCode != null) {
-            return orderCityCode.equals(officeCityCode) && orderWardCode.equals(officeWardCode);
-        }
+        System.out.println("officeCityCode" + officeCityCode);
 
-        // 4. Fallback cuối: chỉ so sánh cityCode
+
+        // 3. Nếu có đủ cityCode ở cả hai bên: so sánh cityCode
         if (orderCityCode != null && officeCityCode != null) {
             return orderCityCode.equals(officeCityCode);
         }

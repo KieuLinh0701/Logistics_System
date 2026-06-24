@@ -24,6 +24,7 @@ import com.logistics.response.Pagination;
 import com.logistics.response.manager.order.UrgentOrderResponse;
 import com.logistics.service.common.FeePublicService;
 import com.logistics.service.common.NotificationService;
+import com.logistics.service.common.OrderDestinationService;
 import com.logistics.service.user.OrderHistoryUserService;
 import com.logistics.service.user.ProductUserService;
 import com.logistics.service.user.PromotionUserService;
@@ -83,6 +84,8 @@ public class OrderManagerService {
     private final NotificationService notificationService;
 
     private final PickupAttemptRepository pickupAttemptRepository;
+
+    private final OrderDestinationService orderDestinationService;
 
     public ListResponse<ManagerOrderListDto> list(int userId, UserOrderSearchRequest request) {
         int page = request.getPage();
@@ -1087,7 +1090,7 @@ public class OrderManagerService {
         return tracking;
     }
 
-    public void setOrderAtOriginOffice(Integer userId, Integer orderId) {
+    public boolean setOrderAtOriginOffice(Integer userId, Integer orderId) {
         Order order = getOrderById(orderId);
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -1106,7 +1109,12 @@ public class OrderManagerService {
             throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
         }
 
+        boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
+        System.out.println("isDestination" + isDestination);
+
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
+        order.setCurrentOffice(userOffice);
+        order.setPendingDestinationConfirm(isDestination);
         repository.save(order);
 
         orderHistoryUserService.save(
@@ -1130,6 +1138,39 @@ public class OrderManagerService {
                     "orders/tracking",
                     order.getTrackingNumber());
         }
+
+        return isDestination;
+    }
+
+    public void confirmDestinationOrder(
+            Integer userId,
+            Integer orderId,
+            boolean confirmed) {
+        Order order = getOrderById(orderId);
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        if (order.getFromOffice() == null || !userOffice.getId()
+                .equals(order.getFromOffice()
+                        .getId())) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+
+        boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
+
+        if (!isDestination && !order.getPendingDestinationConfirm()) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_DESTINATION_OFFICE);
+        }
+
+        if (confirmed) {
+            order.setStatus(OrderStatus.AT_DEST_OFFICE);
+            order.setToOffice(userOffice);
+            order.setCurrentOffice(userOffice);
+        } else {
+            order.setPendingDestinationConfirm(false);
+        }
+
+        repository.save(order);
     }
 
     public void setOrderReturned(Integer userId, Integer orderId) {

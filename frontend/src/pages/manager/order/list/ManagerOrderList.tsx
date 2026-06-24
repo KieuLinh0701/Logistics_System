@@ -54,6 +54,7 @@ const ManagerOrderList = () => {
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
     const [modalReturnedOpen, setModalReturnedOpen] = useState(false);
     const [modalConfirmOpenAddOrders, setModalConfirmOpenAddOrders] = useState(false);
+    const [modalConfirmDestinationOfficeOpen, setModalConfirmDestinationOfficeOpen] = useState(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
 
     const [orderId, setOrderId] = useState<number | null>(null);
@@ -317,6 +318,46 @@ const ManagerOrderList = () => {
         setModalReturnedOpen(true);
     };
 
+    const handleConfirmDestinationOrder = (id: number) => {
+        if (orderId == null) {
+            message.error("Không tìm thấy đơn hàng cần xác nhận bưu cục đích");
+            return;
+        }
+        setModalConfirmDestinationOfficeOpen(true);
+    };
+
+    const confirmDestinationOffice = async (confirmed: boolean) => {
+        if (!orderId) {
+            message.error("Không tìm thấy đơn hàng cần xác nhận bưu cục đích");
+            return;
+        }
+
+        setModalConfirmDestinationOfficeOpen(false);
+
+        try {
+            setLoading(true);
+
+            const result = await orderApi.setManagerConfirmDestinationOffice(orderId, confirmed);
+
+            if (result.success) {
+                message.success(
+                    confirmed
+                        ? "Đã xác nhận đơn hàng đến bưu cục đích thành công."
+                        : "Đã xác nhận bưu cục hiện tại không phải bưu cục đích thành công."
+                );
+                fetchOrders(page);
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
+        } finally {
+            setLoading(false);
+            setOrderId(null);
+        }
+    };
+
     const confirmAtOriginOfficeOrder = async () => {
         if (!orderId) return;
 
@@ -328,9 +369,13 @@ const ManagerOrderList = () => {
             const result = await orderApi.setManagerOrderAtOriginOffice(orderId);
 
             if (result.success) {
-                message.success("Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
-                fetchOrders(page);
-                fetchStatusCounts();
+                if (result.data) {
+                    handleConfirmDestinationOrder(orderId);
+                } else {
+                    message.success("Đơn hàng đã bàn giao cho bưu cục xuất phát thành công.");
+                    fetchOrders(page);
+                    fetchStatusCounts();
+                }
             } else {
                 message.error(result.message || "Có lỗi khi xác nhận bàn giao đơn hàng cho bưu cục xuất phát!");
             }
@@ -338,7 +383,6 @@ const ManagerOrderList = () => {
             message.error(err.message || "Có lỗi khi xác nhận bàn giao đơn hàng cho bưu cục xuất phát!");
         } finally {
             setLoading(false);
-            setOrderId(null);
         }
     };
 
@@ -685,7 +729,7 @@ const ManagerOrderList = () => {
             />
 
             <ConfirmModal
-                title='Xác nhận nhận hàng'
+                title='Xác nhận nhận đơn hàng'
                 message='Bạn có chắc rằng bạn đơn hàng này đã đến bưu cục để chuyển giao cho đơn vị vận chuyển không?'
                 open={modalConfirmOpen}
                 onOk={confirmAtOriginOfficeOrder}
@@ -699,6 +743,24 @@ const ManagerOrderList = () => {
                 open={confirmModalOpen}
                 onOk={confirmConfirmOrder}
                 onCancel={() => setConfirmModalOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Xác nhận đơn hàng"
+                message="Bạn có chắc muốn xác nhận đơn hàng này để bưu cục tiếp nhận và xử lý không?"
+                open={confirmModalOpen}
+                onOk={confirmConfirmOrder}
+                onCancel={() => setConfirmModalOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Đơn hàng đã đến bưu cục đích"
+                message="Hệ thống phát hiện bưu cục hiện tại trùng với địa chỉ giao hàng của đơn. Bạn có muốn xác nhận đơn hàng này đã đến nơi và sẵn sàng để giao không?"
+                open={modalConfirmDestinationOfficeOpen}
+                onOk={() => confirmDestinationOffice(true)}
+                onCancel={() => confirmDestinationOffice(false)}
                 loading={loading}
             />
 

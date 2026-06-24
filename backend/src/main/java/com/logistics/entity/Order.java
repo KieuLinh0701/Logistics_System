@@ -208,6 +208,10 @@ public class Order {
     @JoinColumn(name = "to_office_id")
     private Office toOffice;
 
+    @ManyToOne
+    @JoinColumn(name = "current_office_id")
+    private Office currentOffice;
+
     private LocalDateTime paidAt;
     private LocalDateTime returnedAt;
 
