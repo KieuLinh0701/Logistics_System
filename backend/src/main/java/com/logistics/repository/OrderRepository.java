@@ -217,7 +217,7 @@ public interface OrderRepository
 
     @Query(value = "SELECT o.status, COUNT(o.id) "
             + "FROM orders o "
-            + "WHERE (o.from_office_id = :officeId OR o.to_office_id = :officeId) "
+            + "WHERE (o.from_office_id = :officeId OR o.to_office_id = :officeId OR o.current_office_id = :officeId) "
             + "AND o.status != 'DRAFT'"
             + "GROUP BY o.status",
             nativeQuery = true)

@@ -20,6 +20,7 @@ import com.logistics.response.manager.GetOrdersByShipmentIdManagerResponse;
 import com.logistics.service.common.NotificationService;
 import com.logistics.specification.ShipmentSpecification;
 import com.logistics.utils.ShipmentUtils;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -39,6 +40,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.logistics.utils.OrderUtils.*;
@@ -76,8 +78,12 @@ public class ShipmentManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
+        String direction = request.getDirection();
+
         Specification<Shipment> spec = ShipmentSpecification.unrestricted()
-                .and(ShipmentSpecification.fromOffice(userOffice.getId()))
+                .and(direction.equals("INBOUND")
+                        ? ShipmentSpecification.toOffice(userOffice.getId())
+                        : ShipmentSpecification.fromOffice(userOffice.getId()))
                 .and(ShipmentSpecification.search(search))
                 .and(ShipmentSpecification.status(status))
                 .and(ShipmentSpecification.type(type))
@@ -119,12 +125,16 @@ public class ShipmentManagerService {
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         Shipment shipment = repository.findById(shipmentId)
-                .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
+                .filter(s -> {
+                    boolean isFromOffice = s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId());
+                    boolean isToOffice = s.getToOffice() != null && s.getToOffice().getId().equals(userOffice.getId());
+                    return isFromOffice || isToOffice;
+                })
                 .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
         List<ManagerShipmentDetailDto> orders = shipment.getShipmentOrders()
                 .stream()
-                .map(so -> so.getOrder())
+                .map(ShipmentOrder::getOrder)
                 .filter(o -> search == null || o.getTrackingNumber().contains(search))
                 .map(OrderMapper::toManagerShipmentDetailDto)
                 .toList();
@@ -140,12 +150,36 @@ public class ShipmentManagerService {
         data.setList(pagedList);
         data.setPagination(pagination);
 
-        GetOrdersByShipmentIdManagerResponse response = GetOrdersByShipmentIdManagerResponse.builder()
+        return GetOrdersByShipmentIdManagerResponse.builder()
                 .orders(data)
                 .status(shipment.getStatus())
+                .type(shipment.getType())
                 .build();
+    }
 
-        return response;
+    public List<Integer> getAllOrderIdsByShipmentId(
+            int userId,
+            int shipmentId,
+            ManagerOrdersShipmentSearchRequest request) {
+        String search = request.getSearch();
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        Shipment shipment = repository.findById(shipmentId)
+                .filter(s -> {
+                    boolean isFromOffice = s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId());
+                    boolean isToOffice = s.getToOffice() != null && s.getToOffice().getId().equals(userOffice.getId());
+                    return isFromOffice || isToOffice;
+                })
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
+
+        return shipment.getShipmentOrders()
+                .stream()
+                .map(ShipmentOrder::getOrder)
+                .filter(o -> search == null || o.getTrackingNumber().contains(search))
+                .filter(Order::getPendingDestinationConfirm)
+                .map(Order::getId)
+                .toList();
     }
 
     public void cancelShipment(Integer userId, Integer shipmentId) {
@@ -166,7 +200,7 @@ public class ShipmentManagerService {
         repository.save(shipment);
     }
 
-    public ListResponse<ManagerShipmentListDto> getPendingShipments(
+    public ListResponse<ManagerShipmentListDto> getPendingAndInTransitShipments(
             Integer userId,
             SearchRequest request) {
         int page = request.getPage();
@@ -180,9 +214,23 @@ public class ShipmentManagerService {
         Specification<Shipment> spec = ShipmentSpecification.unrestricted()
                 .and(ShipmentSpecification.fromOffice(userOffice.getId()))
                 .and(ShipmentSpecification.search(search))
-                .and(ShipmentSpecification.status(ShipmentStatus.PENDING.name()))
-                .and(ShipmentSpecification.type(type));
+                .and((root, query, cb) -> {
+                    List<Predicate> predicates = new ArrayList<>();
 
+                    if (type == null || ShipmentType.TRANSFER.name().equals(type)) {
+                        predicates.add(cb.and(
+                                cb.equal(root.get("type"), ShipmentType.TRANSFER),
+                                root.get("status").in(ShipmentStatus.PENDING)
+                        ));
+                    }
+                    if (type == null || ShipmentType.DELIVERY.name().equals(type)) {
+                        predicates.add(cb.and(
+                                cb.equal(root.get("type"), ShipmentType.DELIVERY),
+                                root.get("status").in(ShipmentStatus.PENDING, ShipmentStatus.IN_TRANSIT)
+                        ));
+                    }
+                    return cb.or(predicates.toArray(new Predicate[0]));
+                });
         Sort sortOpt = switch (sort.toLowerCase()) {
             case "newest" -> Sort.by("createdAt").descending();
             case "oldest" -> Sort.by("createdAt").ascending();
@@ -308,129 +356,127 @@ public class ShipmentManagerService {
 
     @Transactional
     public void update(int userId, Integer shipmentId, ManagerShipmentAddEditRequest request) {
-            // Lấy shipment hiện tại
-            Shipment shipment = shipmentRepository.findById(shipmentId)
-                    .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
+        // Lấy shipment hiện tại
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
-            Office office = employeeManagerService.getManagedOfficeByUserId(userId);
+        Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            if (!office.getId().equals(shipment.getFromOffice().getId())) {
-                throw new AppException(ShipmentErrorCode.SHIPMENT_ACCESS_DENIED);
+        if (!office.getId().equals(shipment.getFromOffice().getId())) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_ACCESS_DENIED);
+        }
+
+        // Kiểm tra loại shipment
+        if (request.getType() == null || request.getType().isBlank()) {
+            throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, "Loại chuyến");
+        }
+        ShipmentType type = ShipmentType.valueOf(request.getType());
+
+        shipment.setType(type);
+
+        // Xử lý Vehicle
+        Vehicle vehicle = null;
+        if (request.getVehicleId() != null) {
+            if (type.equals(ShipmentType.DELIVERY)) {
+                throw new AppException(ShipmentErrorCode.SHIPMENT_INVALID_DELIVERY_TYPE);
+            }
+            vehicle = vehicleRepository.findById(request.getVehicleId())
+                    .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
+
+            if (!vehicle.getOffice().getId().equals(office.getId())) {
+                throw new AppException(VehicleErrorCode.VEHICLE_OFFICE_MISMATCH);
+            }
+        }
+        shipment.setVehicle(vehicle);
+
+        // Xử lý Employee
+        Employee employee = null;
+        if (request.getEmployeeId() != null) {
+            employee = employeeRepository.findById(request.getEmployeeId())
+                    .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
+
+            if (!employee.getOffice().getId().equals(office.getId())) {
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_OFFICE_MISMATCH);
             }
 
-            // Kiểm tra loại shipment
-            if (request.getType() == null || request.getType().isBlank()) {
-                throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, "Loại chuyến");
-            }
-            ShipmentType type = ShipmentType.valueOf(request.getType());
-
-            shipment.setType(type);
-
-            // Xử lý Vehicle
-            Vehicle vehicle = null;
-            if (request.getVehicleId() != null) {
-                if (type.equals(ShipmentType.DELIVERY)) {
-                    throw new AppException(ShipmentErrorCode.SHIPMENT_INVALID_DELIVERY_TYPE);
-                }
-                vehicle = vehicleRepository.findById(request.getVehicleId())
-                        .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
-
-                if (!vehicle.getOffice().getId().equals(office.getId())) {
-                    throw new AppException(VehicleErrorCode.VEHICLE_OFFICE_MISMATCH);
-                }
-            }
-            shipment.setVehicle(vehicle);
-
-            // Xử lý Employee
-            Employee employee = null;
-            if (request.getEmployeeId() != null) {
-                employee = employeeRepository.findById(request.getEmployeeId())
-                        .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
-
-                if (!employee.getOffice().getId().equals(office.getId())) {
-                    throw new AppException(EmployeeErrorCode.EMPLOYEE_OFFICE_MISMATCH);
-                }
-
-                if (type.equals(ShipmentType.DELIVERY)
-                        && (employee.getAccountRole() == null
-                        || !"Shipper".equalsIgnoreCase(employee.getAccountRole().getRole().getName()))) {
-                    throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIPPER_INVALID);
-                }
-
-                if (type.equals(ShipmentType.TRANSFER)
-                        && (employee.getAccountRole() == null
-                        || !"Driver".equalsIgnoreCase(employee.getAccountRole().getRole().getName()))) {
-                    throw new AppException(EmployeeErrorCode.EMPLOYEE_DRIVER_INVALID);
-                }
-            }
-            shipment.setEmployee(employee);
-
-            // Xử lý bưu cục đích
-            Office toOffice = null;
-            if (request.getToOfficeId() != null) {
-                if (type.equals(ShipmentType.DELIVERY)) {
-                    throw new AppException(ShipmentErrorCode.SHIPMENT_DELIVERY_INVALID_OFFICE_DESTINATION);
-                }
-                toOffice = officeRepository.findById(request.getToOfficeId())
-                        .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
-
-                if (office.getId().equals(toOffice.getId())) {
-                    throw new AppException(ShipmentErrorCode.SHIPMENT_INVALID_OFFICE_DESTINATION);
-                }
-            }
-            shipment.setToOffice(toOffice);
-
-            // Tính tổng trọng lượng hiện tại
-            BigDecimal totalWeight = shipment.getShipmentOrders().stream()
-                    .map(so -> so.getOrder().getWeight())
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            // Kiểm tra xe có đủ sức chứa với các recipientaddress hiện tại
-            if (vehicle != null && totalWeight.compareTo(vehicle.getCapacity()) > 0) {
-                throw new AppException(VehicleErrorCode.VEHICLE_CAPACITY_EXCEEDED);
+            if (type.equals(ShipmentType.DELIVERY)
+                    && (employee.getAccountRole() == null
+                    || !"Shipper".equalsIgnoreCase(employee.getAccountRole().getRole().getName()))) {
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_SHIPPER_INVALID);
             }
 
-            // Kiểm tra các recipientaddress có phân công khu vực hợp lệ (nếu có employee)
-            if (employee != null && type.equals(ShipmentType.DELIVERY)) {
-                LocalDateTime now = LocalDateTime.now();
-                boolean allOrdersValid = true;
-                StringBuilder msg = new StringBuilder();
-                for (var so : shipment.getShipmentOrders()) {
-                    var order = so.getOrder();
-                    Integer targetCityCode = order.getRecipientAddress().getCityCode();
-                    Integer targetWardCode = order.getRecipientAddress().getWardCode();
+            if (type.equals(ShipmentType.TRANSFER)
+                    && (employee.getAccountRole() == null
+                    || !"Driver".equalsIgnoreCase(employee.getAccountRole().getRole().getName()))) {
+                throw new AppException(EmployeeErrorCode.EMPLOYEE_DRIVER_INVALID);
+            }
+        }
+        shipment.setEmployee(employee);
 
-                    boolean hasActiveAssignment = shipperAssignmentRepository
-                            .findActiveAssignments(employee.getUser().getId(), now)
-                            .stream()
-                            .anyMatch(sa -> sa.getCityCode().equals(targetCityCode) &&
-                                    sa.getWardCode().equals(targetWardCode));
-                    if (!hasActiveAssignment) {
-                        allOrdersValid = false;
-                        msg.append(order.getTrackingNumber()).append(", ");
-                    }
-                }
+        // Xử lý bưu cục đích
+        Office toOffice = null;
+        if (request.getToOfficeId() != null) {
+            if (type.equals(ShipmentType.DELIVERY)) {
+                throw new AppException(ShipmentErrorCode.SHIPMENT_DELIVERY_INVALID_OFFICE_DESTINATION);
+            }
+            toOffice = officeRepository.findById(request.getToOfficeId())
+                    .orElseThrow(() -> new AppException(OfficeErrorCode.OFFICE_NOT_FOUND));
 
-                if (!allOrdersValid) {
-                    if (!msg.isEmpty()) {
-                        msg.setLength(msg.length() - 2);
-                    }
-                    throw new AppException(ShipmentErrorCode.SHIPMENT_ORDER_OUT_OF_SERVICE_AREA);
+            if (office.getId().equals(toOffice.getId())) {
+                throw new AppException(ShipmentErrorCode.SHIPMENT_INVALID_OFFICE_DESTINATION);
+            }
+        }
+        shipment.setToOffice(toOffice);
+
+        // Tính tổng trọng lượng hiện tại
+        BigDecimal totalWeight = shipment.getShipmentOrders().stream()
+                .map(so -> so.getOrder().getWeight())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Kiểm tra xe có đủ sức chứa với các recipientaddress hiện tại
+        if (vehicle != null && totalWeight.compareTo(vehicle.getCapacity()) > 0) {
+            throw new AppException(VehicleErrorCode.VEHICLE_CAPACITY_EXCEEDED);
+        }
+
+        // Kiểm tra các recipientaddress có phân công khu vực hợp lệ (nếu có employee)
+        if (employee != null && type.equals(ShipmentType.DELIVERY)) {
+            LocalDateTime now = LocalDateTime.now();
+            boolean allOrdersValid = true;
+            StringBuilder msg = new StringBuilder();
+            for (var so : shipment.getShipmentOrders()) {
+                var order = so.getOrder();
+                Integer targetCityCode = order.getRecipientAddress().getCityCode();
+
+                boolean hasActiveAssignment = shipperAssignmentRepository
+                        .findActiveAssignments(employee.getUser().getId(), now)
+                        .stream()
+                        .anyMatch(sa -> sa.getCityCode().equals(targetCityCode));
+                if (!hasActiveAssignment) {
+                    allOrdersValid = false;
+                    msg.append(order.getTrackingNumber()).append(", ");
                 }
             }
 
-            shipmentRepository.save(shipment);
-
-            if (employee != null && employee.getUser() != null) {
-                notificationService.create(
-                        "Chuyến hàng được cập nhật",
-                        "Bạn đã được gán vào chuyến hàng " + shipment.getCode(),
-                        "shipment",
-                        employee.getUser().getId(),
-                        null,
-                        "shipments",
-                        shipment.getCode());
+            if (!allOrdersValid) {
+                if (!msg.isEmpty()) {
+                    msg.setLength(msg.length() - 2);
+                }
+                throw new AppException(ShipmentErrorCode.SHIPMENT_ORDER_OUT_OF_SERVICE_AREA);
             }
+        }
+
+        shipmentRepository.save(shipment);
+
+        if (employee != null && employee.getUser() != null) {
+            notificationService.create(
+                    "Chuyến hàng được cập nhật",
+                    "Bạn đã được gán vào chuyến hàng " + shipment.getCode(),
+                    "shipment",
+                    employee.getUser().getId(),
+                    null,
+                    "shipments",
+                    shipment.getCode());
+        }
     }
 
     public ListResponse<ManagerShipmentPerformanceDto> getShipmentsByEmployeeId(int userId,
@@ -669,61 +715,61 @@ public class ShipmentManagerService {
             int userId,
             int employeeId,
             SearchRequest request) {
-            String search = request.getSearch();
-            String status = request.getStatus();
-            String sort = request.getSort();
-            LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
-                    ? LocalDateTime.parse(request.getStartDate())
-                    : null;
+        String search = request.getSearch();
+        String status = request.getStatus();
+        String sort = request.getSort();
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
 
-            LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
-                    ? LocalDateTime.parse(request.getEndDate())
-                    : null;
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate().isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
 
-            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-            Employee emp = employeeRepository.findById(employeeId)
-                    .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
 
-            if (!emp.getOffice().getId().equals(userOffice.getId())) {
-                throw new AppException(ShipmentErrorCode.SHIPMENT_ACCESS_DENIED);
-            }
+        if (!emp.getOffice().getId().equals(userOffice.getId())) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_ACCESS_DENIED);
+        }
 
-            Specification<Shipment> spec = ShipmentSpecification.unrestricted()
-                    .and(ShipmentSpecification.employeeId(emp.getId()))
-                    .and(ShipmentSpecification.searchByCode(search))
-                    .and(ShipmentSpecification.status(status))
-                    .and(ShipmentSpecification.createdAtBetween(startDate, endDate));
+        Specification<Shipment> spec = ShipmentSpecification.unrestricted()
+                .and(ShipmentSpecification.employeeId(emp.getId()))
+                .and(ShipmentSpecification.searchByCode(search))
+                .and(ShipmentSpecification.status(status))
+                .and(ShipmentSpecification.createdAtBetween(startDate, endDate));
 
-            Sort sortOpt = switch ((sort != null ? sort.toLowerCase() : "")) {
-                case "newest" -> Sort.by("createdAt").descending();
-                case "oldest" -> Sort.by("createdAt").ascending();
-                default -> Sort.unsorted();
-            };
+        Sort sortOpt = switch ((sort != null ? sort.toLowerCase() : "")) {
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            default -> Sort.unsorted();
+        };
 
-            // Lấy toàn bộ list không phân trang
-            List<Shipment> shipments = repository.findAll(spec, sortOpt);
+        // Lấy toàn bộ list không phân trang
+        List<Shipment> shipments = repository.findAll(spec, sortOpt);
 
-            // Map sang DTO
-            return shipments.stream().map(shipment -> {
-                long totalOrders = shipment.getShipmentOrders() != null
-                        ? shipment.getShipmentOrders().size()
-                        : 0;
+        // Map sang DTO
+        return shipments.stream().map(shipment -> {
+            long totalOrders = shipment.getShipmentOrders() != null
+                    ? shipment.getShipmentOrders().size()
+                    : 0;
 
-                long totalWeight = shipment.getShipmentOrders() != null
-                        ? shipment.getShipmentOrders()
-                        .stream()
-                        .map(so -> so.getOrder())
-                        .filter(o -> o != null && o.getWeight() != null)
-                        .mapToLong(o -> o.getWeight().longValue())
-                        .sum()
-                        : 0;
+            long totalWeight = shipment.getShipmentOrders() != null
+                    ? shipment.getShipmentOrders()
+                    .stream()
+                    .map(so -> so.getOrder())
+                    .filter(o -> o != null && o.getWeight() != null)
+                    .mapToLong(o -> o.getWeight().longValue())
+                    .sum()
+                    : 0;
 
-                return ShipmentMapper.toManagerShipmentPerformanceDto(
-                        shipment,
-                        totalOrders,
-                        totalWeight);
-            }).toList();
+            return ShipmentMapper.toManagerShipmentPerformanceDto(
+                    shipment,
+                    totalOrders,
+                    totalWeight);
+        }).toList();
     }
 
     public byte[] export(int userId, ManagerShipmentSearchRequest request) {
@@ -739,8 +785,12 @@ public class ShipmentManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
+        String direction = request.getDirection();
+
         Specification<Shipment> spec = ShipmentSpecification.unrestricted()
-                .and(ShipmentSpecification.fromOffice(userOffice.getId()))
+                .and(direction.equals("INBOUND")
+                        ? ShipmentSpecification.toOffice(userOffice.getId())
+                        : ShipmentSpecification.fromOffice(userOffice.getId()))
                 .and(ShipmentSpecification.search(search))
                 .and(ShipmentSpecification.status(status))
                 .and(ShipmentSpecification.type(type))
@@ -887,7 +937,11 @@ public class ShipmentManagerService {
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
         Shipment shipment = repository.findById(shipmentId)
-                .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
+                .filter(s -> {
+                    boolean isFromOffice = s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId());
+                    boolean isToOffice = s.getToOffice() != null && s.getToOffice().getId().equals(userOffice.getId());
+                    return isFromOffice || isToOffice;
+                })
                 .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
         List<ManagerShipmentDetailDto> orders = shipment.getShipmentOrders()
@@ -945,15 +999,9 @@ public class ShipmentManagerService {
                 row.createCell(5).setCellValue(o.getWeight() != null ? o.getWeight().doubleValue() : 0);
 
                 // Người nhận
-                if (o.getRecipient() != null) {
-                    row.createCell(6).setCellValue(o.getRecipient().getName() != null ? o.getRecipient().getName() : "");
-                    row.createCell(7).setCellValue(o.getRecipient().getPhone() != null ? o.getRecipient().getPhone() : "");
-                    row.createCell(8).setCellValue(o.getRecipient().getFullAddress());
-                } else {
-                    row.createCell(6).setCellValue("");
-                    row.createCell(7).setCellValue("");
-                    row.createCell(8).setCellValue("");
-                }
+                row.createCell(6).setCellValue(o.getRecipientName() != null ? o.getRecipientName() : "");
+                row.createCell(7).setCellValue(o.getRecipientPhone() != null ? o.getRecipientPhone() : "");
+                row.createCell(8).setCellValue(o.getRecipientFullAddress());
 
                 // Bưu cục đích
                 if (o.getToOffice() != null) {

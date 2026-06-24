@@ -9,6 +9,7 @@ import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ShipmentSpecification {
 
@@ -21,6 +22,14 @@ public class ShipmentSpecification {
             if (officeId == null)
                 return null;
             return cb.equal(root.get("fromOffice").get("id"), officeId);
+        };
+    }
+
+    public static Specification<Shipment> toOffice(Integer officeId) {
+        return (root, query, cb) -> {
+            if (officeId == null)
+                return null;
+            return cb.equal(root.get("toOffice").get("id"), officeId);
         };
     }
 
@@ -45,6 +54,15 @@ public class ShipmentSpecification {
             }
 
             return cb.equal(root.get("status"), parsed);
+        };
+    }
+
+    public static Specification<Shipment> statuses(List<ShipmentStatus> statusList) {
+        return (root, query, cb) -> {
+            if (statusList == null || statusList.isEmpty()) {
+                return null;
+            }
+            return root.get("status").in(statusList);
         };
     }
 

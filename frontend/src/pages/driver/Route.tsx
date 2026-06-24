@@ -1,18 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    List,
-    message,
-    Row,
-    Space,
-    Spin,
-    Statistic,
-    Tag,
-    Typography,
-} from "antd";
+import {Alert, Button, Card, Col, List, message, Row, Space, Spin, Statistic, Tag, Typography,} from "antd";
 import {CompassOutlined, EnvironmentOutlined, ReloadOutlined} from "@ant-design/icons";
 import {GoogleMap, MarkerF, PolylineF, useJsApiLoader} from "@react-google-maps/api";
 import shipmentApi from "../../api/shipmentApi";

@@ -26,12 +26,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.logistics.utils.ShipmentUtils.canManagerAddOrderForShipment;
+import static com.logistics.utils.ShipmentUtils.canManagerDeleteOrderForShipment;
+
 @Service
 @RequiredArgsConstructor
 public class ShipmentOrderManagerService {
 
     private final ShipmentRepository shipmentRepository;
     private final OrderRepository orderRepository;
+    private final OrderManagerService orderManagerService;
     private final ShipperAssignmentRepository shipperAssignmentRepository;
     private final EmployeeManagerService employeeManagerService;
 
@@ -42,8 +46,7 @@ public class ShipmentOrderManagerService {
         result.setName(order.getTrackingNumber());
 
         // Quyền
-        if (!((order.getFromOffice() != null && userOffice.getId().equals(order.getFromOffice().getId()))
-                || (order.getToOffice() != null && userOffice.getId().equals(order.getToOffice().getId())))) {
+        if (!orderManagerService.hasTransitPermission(order, userOffice)) {
             result.setSuccess(false);
             result.setMessage("Bạn không có quyền trên đơn hàng này");
             return result;
@@ -54,17 +57,27 @@ public class ShipmentOrderManagerService {
         // Trạng thái chung
         boolean isValid = ShipmentOrderUtils.isOrderAddableGeneral(order.getStatus())
                 && ((shipment.getType() == ShipmentType.DELIVERY
-                        && (ShipmentOrderUtils.isOrderAddableIfShipperFromOfficeAssigned(status)
-                                || ShipmentOrderUtils.isOrderAddableIfShipperToOfficeAssigned(status)))
-                        || (shipment.getType() == ShipmentType.TRANSFER
-                                && (ShipmentOrderUtils.isOrderAddableIfDriverFromOfficeAssigned(status)
-                                        || ShipmentOrderUtils.isOrderAddableIfDriverToOfficeAssigned(status))));
+                && (ShipmentOrderUtils.isOrderAddableIfShipperFromOfficeAssigned(status)
+                || ShipmentOrderUtils.isOrderAddableIfShipperToOfficeAssigned(status)))
+                || (shipment.getType() == ShipmentType.TRANSFER
+                && ShipmentOrderUtils.isOrderAddableIfDriverAssigned(status)));
 
         if (!isValid) {
             result.setSuccess(false);
             result.setMessage("Trạng thái đơn hàng là '" + OrderUtils.translateOrderStatus(status)
                     + "' không hợp lệ để thêm vào chuyến");
             return result;
+        }
+
+        // Check thêm nếu shipment IN_TRANSIT chỉ cho thêm đơn pickup
+        if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
+            boolean isPickupOrder = status == OrderStatus.CONFIRMED
+                    || status == OrderStatus.PICKUP_RETRY;
+            if (!isPickupOrder) {
+                result.setSuccess(false);
+                result.setMessage("Chuyến đang vận chuyển chỉ được thêm đơn có trạng thái 'Đã xác nhận' hoặc 'Thử lấy lại'");
+                return result;
+            }
         }
 
         // Kiểm tra trạng thái & vị trí shipper/driver theo loại shipment
@@ -81,12 +94,9 @@ public class ShipmentOrderManagerService {
                     validPosition = true; // shipper ở toOffice
                 }
             } else if (shipment.getType() == ShipmentType.TRANSFER) {
-                if (ShipmentOrderUtils.isOrderAddableIfDriverFromOfficeAssigned(status)
-                        && userOffice.getId().equals(order.getFromOffice().getId())) {
-                    validPosition = true; // driver ở fromOffice
-                } else if (ShipmentOrderUtils.isOrderAddableIfDriverToOfficeAssigned(status)
-                        && userOffice.getId().equals(order.getToOffice().getId())) {
-                    validPosition = true; // driver ở toOffice
+                if (ShipmentOrderUtils.isOrderAddableIfDriverAssigned(status)
+                        && userOffice.getId().equals(order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null)) {
+                    validPosition = true;
                 }
             }
 
@@ -95,7 +105,9 @@ public class ShipmentOrderManagerService {
 
                 String employeeType = shipment.getType() == ShipmentType.DELIVERY ? "Nhân viên giao hàng" : "Tài xế";
                 String employeePosition;
-                if (userOffice.getId().equals(order.getFromOffice().getId())) {
+                if (shipment.getType() == ShipmentType.TRANSFER) {
+                    employeePosition = "tại bưu cục hiện tại";
+                } else if (userOffice.getId().equals(order.getFromOffice().getId())) {
                     employeePosition = "tại nơi gửi";
                 } else if (userOffice.getId().equals(order.getToOffice().getId())) {
                     employeePosition = "tại nơi nhận";
@@ -115,14 +127,11 @@ public class ShipmentOrderManagerService {
 
                 // Xác định khu vực cần check:
                 Integer targetCityCode;
-                Integer targetWardCode;
 
                 if (userOffice.getId().equals(order.getFromOffice().getId())) {
                     targetCityCode = order.getSenderCityCode();
-                    targetWardCode = order.getSenderWardCode();
                 } else if (userOffice.getId().equals(order.getToOffice().getId())) {
                     targetCityCode = order.getRecipientAddress().getCityCode();
-                    targetWardCode = order.getRecipientAddress().getWardCode();
                 } else {
                     result.setSuccess(false);
                     result.setMessage("Vị trí phân công của nhân viên không phù hợp với đơn hàng");
@@ -132,8 +141,7 @@ public class ShipmentOrderManagerService {
                 boolean hasActiveAssignment = shipperAssignmentRepository
                         .findActiveAssignments(emp.getUser().getId(), now)
                         .stream()
-                        .anyMatch(sa -> sa.getCityCode().equals(targetCityCode)
-                                && sa.getWardCode().equals(targetWardCode));
+                        .anyMatch(sa -> sa.getCityCode().equals(targetCityCode));
 
                 if (!hasActiveAssignment) {
                     result.setSuccess(false);
@@ -186,8 +194,16 @@ public class ShipmentOrderManagerService {
         try {
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
             Shipment shipment = shipmentRepository.findById(shipmentId)
-                    .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
+                    .filter(s -> {
+                        boolean isFromOffice = s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId());
+                        boolean isToOffice = s.getToOffice() != null && s.getToOffice().getId().equals(userOffice.getId());
+                        return isFromOffice || isToOffice;
+                    })
                     .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
+
+            if (!canManagerAddOrderForShipment(shipment.getStatus())) {
+                throw new AppException(ShipmentErrorCode.SHIPMENT_CANNOT_ADD_ORDERS);
+            }
 
             BigDecimal totalWeight = shipment.getShipmentOrders().stream()
                     .map(so -> so.getOrder().getWeight())
@@ -217,8 +233,7 @@ public class ShipmentOrderManagerService {
                     continue;
                 }
 
-                BulkResult<ManagerShipmentDetailDto> result = validateOrderForShipment(userOffice, shipment, order,
-                        totalWeight);
+                BulkResult<ManagerShipmentDetailDto> result = validateOrderForShipment(userOffice, shipment, order, totalWeight);
                 results.add(result);
                 if (result.isSuccess()) {
                     totalValid++;
@@ -256,12 +271,23 @@ public class ShipmentOrderManagerService {
         try {
             Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
             Shipment shipment = shipmentRepository.findById(shipmentId)
-                    .filter(s -> s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId()))
+                    .filter(s -> {
+                        boolean isFromOffice = s.getFromOffice() != null && s.getFromOffice().getId().equals(userOffice.getId());
+                        boolean isToOffice = s.getToOffice() != null && s.getToOffice().getId().equals(userOffice.getId());
+                        return isFromOffice || isToOffice;
+                    })
                     .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
 
             // Xóa các đơn nếu có
+            if (removedOrderIds != null && !removedOrderIds.isEmpty() && !canManagerDeleteOrderForShipment(shipment.getStatus())) {
+                throw new AppException(ShipmentErrorCode.SHIPMENT_CANNOT_DELETE_ORDERS);
+            }
             if (removedOrderIds != null && !removedOrderIds.isEmpty()) {
                 shipment.getShipmentOrders().removeIf(so -> removedOrderIds.contains(so.getOrder().getId()));
+            }
+
+            if (addedOrderIds != null && !addedOrderIds.isEmpty() && !canManagerAddOrderForShipment(shipment.getStatus())) {
+                throw new AppException(ShipmentErrorCode.SHIPMENT_CANNOT_ADD_ORDERS);
             }
 
             // Tính tổng trọng lượng hiện tại
@@ -271,7 +297,9 @@ public class ShipmentOrderManagerService {
 
             List<Order> ordersToAdd = new ArrayList<>();
 
+            List<Order> pickingUpOrders = new ArrayList<>();
             if (addedOrderIds != null && !addedOrderIds.isEmpty()) {
+
                 for (Integer orderId : addedOrderIds) {
                     BulkResult<String> result = new BulkResult<>();
 
@@ -321,7 +349,16 @@ public class ShipmentOrderManagerService {
                     shipmentOrder.setId(id);
 
                     shipment.getShipmentOrders().add(shipmentOrder);
+
+                    if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
+                        order.setStatus(OrderStatus.PICKING_UP);
+                        pickingUpOrders.add(order);
+                    }
                 }
+            }
+
+            if (!pickingUpOrders.isEmpty()) {
+                orderRepository.saveAll(pickingUpOrders);
             }
 
             shipmentRepository.save(shipment);

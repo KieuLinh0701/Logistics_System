@@ -37,7 +37,8 @@ public class OrderSpecification {
     public static Specification<Order> officeId(Integer officeId) {
         return (root, query, cb) -> cb.or(
                 cb.equal(root.get("fromOffice").get("id"), officeId),
-                cb.equal(root.get("toOffice").get("id"), officeId));
+                cb.equal(root.get("toOffice").get("id"), officeId),
+                cb.equal(root.get("currentOffice").get("id"), officeId));
     }
 
     public static Specification<Order> payer(String value) {

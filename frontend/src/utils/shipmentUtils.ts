@@ -9,7 +9,21 @@ export const canEditManagerShipment = (value: string) => {
 };
 
 // Status có thể change orders in Shipment của Manager
-export const canEditOrdersManagerShipment = (value: string) => {
+export const canEditOrdersManagerShipment = (value: string, type: string) => {
+  return (["PENDING", "IN_TRANSIT"].includes(value) && type === "DELIVERY") ||
+      (["PENDING"].includes(value) && type === "TRANSFER");
+};
+
+// Status có thể xác nhận orders đã đến bưu cục đích in Shipment của Manager
+export const canConfirmDestinationOrderManagerShipment = (value: string, pendingDestinationConfirm: boolean) => {
+  return ["COMPLETED"].includes(value) && pendingDestinationConfirm;
+};
+
+export const canConfirmDestinationOrdersManagerShipment = (value: string) => {
+  return ["COMPLETED"].includes(value);
+};
+
+export const canDeleteOrdersManagerShipment = (value: string) => {
   return ["PENDING"].includes(value)
 };
 

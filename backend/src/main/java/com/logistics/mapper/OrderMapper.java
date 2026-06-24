@@ -54,16 +54,6 @@ public class OrderMapper {
         if (entity == null)
             return null;
 
-        ManagerShipmentDetailDto.Recipient recipient = null;
-        if (entity.getRecipientAddress() != null) {
-            recipient = new ManagerShipmentDetailDto.Recipient(
-                    entity.getRecipientAddress()
-                            .getName(),
-                    entity.getRecipientAddress()
-                            .getPhoneNumber(),
-                    entity.getRecipientAddress().getFullAddress());
-        }
-
         ManagerShipmentDetailDto.Office toOffice = null;
         if (entity.getToOffice() != null) {
             toOffice = new ManagerShipmentDetailDto.Office(
@@ -103,7 +93,6 @@ public class OrderMapper {
                 entity.getTrackingNumber(),
                 entity.getStatus() != null ? entity.getStatus()
                         .name() : null,
-                recipient,
                 toOffice,
                 currentOffice,
                 entity.getWeight() != null ? entity.getWeight() : BigDecimal.ZERO,
@@ -112,7 +101,12 @@ public class OrderMapper {
                 entity.getPayer() != null ? entity.getPayer()
                         .name() : null,
                 entity.getPaymentStatus() != null ? entity.getPaymentStatus()
-                        .name() : null);
+                        .name() : null,
+                entity.getPendingDestinationConfirm(),
+                entity.getRecipientName(),
+                entity.getRecipientPhone(),
+                entity.getRecipientFullAddress()
+        );
     }
 
     public static ManagerOrderDetailDto toManagerOrderDetailDto(Order entity,

@@ -1,4 +1,4 @@
-import type {ApiResponse, ListResponse} from "../types/response";
+import type {ApiResponse, BulkResponse, ListResponse} from "../types/response";
 import type {
     AdminOrder,
     CreateOrderSuccess,
@@ -576,17 +576,13 @@ const orderApi = {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/urgent-pickup/${id}/confirm`);
     },
 
-    // Stage 2 - Xác nhận đơn đã đến bưu cục đích
-    async confirmManagerDestinationOffice(orderId: number) {
-        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${orderId}/confirm-destination`);
+    async saveManagerConfirmDestinationOrdersInShipment(ids: number[], confirmed: boolean) {
+        const param = { ids, confirmed };
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-destination-bulk`, param);
     },
 
     async confirmShipperDestinationOffice(orderId: number) {
         return await axiosClient.patch<ApiResponse<void>>(`/shipper/orders/${orderId}/confirm-destination`);
-    },
-
-    async listManagerPendingDestinationConfirm(params: { page?: number; limit?: number }) {
-        return await axiosClient.get<ApiResponse<ListResponse<Order>>>(`/manager/orders/pending-destination-confirm`, { params });
     },
 
     async listShipperPendingDestinationConfirm() {

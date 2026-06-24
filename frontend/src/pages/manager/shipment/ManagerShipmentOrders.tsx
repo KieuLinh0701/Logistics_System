@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {Button, Col, Input, message, Row, Space, Table, Tag, Tooltip} from "antd";
 import {
     CloseCircleOutlined,
     DeleteOutlined,
     FileExcelOutlined,
+    PlayCircleOutlined,
     PlusOutlined,
     SaveOutlined,
     SearchOutlined,
@@ -17,14 +18,20 @@ import shipmentOrderApi from "../../../api/shipmentOrderApi";
 import BulkResult from "./components/BulkResult";
 import {translateOrderPayerType, translateOrderPaymentStatus, translateOrderStatus} from "../../../utils/orderUtils";
 import type {ColumnsType} from "antd/es/table";
-import locationApi from "../../../api/locationApi";
 import Title from "antd/es/typography/Title";
 import "./ManagerShipments.css"
-import {canEditOrdersManagerShipment} from "../../../utils/shipmentUtils.ts";
+import {
+    canConfirmDestinationOrdersManagerShipment,
+    canDeleteOrdersManagerShipment,
+    canEditOrdersManagerShipment
+} from "../../../utils/shipmentUtils.ts";
+import orderApi from "../../../api/orderApi.ts";
+import ConfirmModal from "../../common/ConfirmModal.tsx";
 
 const ManagerShipmentOrders: React.FC = () => {
     const {shipmentId} = useParams<{ shipmentId: string }>();
     const [shipmentStatus, setShipmentStatus] = useState<string>("");
+    const [shipmentType, setShipmentType] = useState<string>("");
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -42,8 +49,15 @@ const ManagerShipmentOrders: React.FC = () => {
 
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerOrderShipment>>();
+    const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
 
     const [addressMap, setAddressMap] = useState<Record<string, string>>({});
+    const [title, setTitle] = useState("");
+    const [modalConfirmDestinationOfficeOpen, setModalConfirmDestinationOfficeOpen] = useState(false);
+    const [modalConfirmDestinationOpen, setModalConfirmDestinationOpen] = useState(false);
+    const [orderId, setOrderId] = useState<number | null>(null);
+    const latestRequestRef = useRef(0);
+    const selectAllRequestRef = useRef(0);
 
     const updateURL = () => {
         const params: any = {};
@@ -65,17 +79,24 @@ const ManagerShipmentOrders: React.FC = () => {
     // Lấy danh sách đơn hàng của chuyến
     const fetchOrders = async (currentPage = 1) => {
         if (!shipmentId) return;
-        setLoading(true);
+
         try {
+            setLoading(true);
+            const requestId = ++latestRequestRef.current;
+
             const res = await shipmentApi.getManagerOrdersByShipmentId(Number(shipmentId), {
                 page: currentPage,
                 limit,
                 search: searchText,
             });
+
+            if (requestId !== latestRequestRef.current) return;
+
             if (res.success && res.data) {
                 setOrders(res.data.orders.list || []);
                 setTotal(res.data.orders.pagination?.total || 0);
                 setShipmentStatus(res.data.status);
+                setShipmentType(res.data.type);
             } else {
                 message.error(res.message || "Lỗi khi lấy đơn hàng");
             }
@@ -107,54 +128,6 @@ const ManagerShipmentOrders: React.FC = () => {
         }
     };
 
-    const formatAddress = async (
-        key: string,
-        detail?: string,
-        wardCode?: number,
-        cityCode?: number
-    ) => {
-        try {
-            const cityName = cityCode
-                ? await locationApi.getCityNameByCode(cityCode)
-                : "";
-            const wardName =
-                cityCode && wardCode
-                    ? await locationApi.getWardNameByCode(cityCode, wardCode)
-                    : "";
-
-            setAddressMap(prev => ({
-                ...prev,
-                [key]: [detail, wardName, cityName].filter(Boolean).join(", "),
-            }));
-        } catch (error) {
-            setAddressMap(prev => ({
-                ...prev,
-                [key]: detail || "",
-            }));
-        }
-    };
-
-    useEffect(() => {
-        [...orders, ...tempAddedOrders].forEach(o => {
-            if (o.recipient) {
-                formatAddress(
-                    `recipient-${o.id}`,
-                    o.recipient.detail,
-                    o.recipient.wardCode,
-                    o.recipient.cityCode
-                );
-            }
-            if (o.toOffice) {
-                formatAddress(
-                    `toOffice-${o.id}`,
-                    o.toOffice.detail,
-                    o.toOffice.wardCode,
-                    o.toOffice.cityCode
-                );
-            }
-        });
-    }, [orders, tempAddedOrders]);
-
     useEffect(() => {
         updateURL();
         fetchOrders(page);
@@ -182,6 +155,7 @@ const ManagerShipmentOrders: React.FC = () => {
 
             if (result.results) {
                 setBulkResult(result);
+                setTitle("Kết quả thêm đơn hàng vào chuyến");
                 setBulkModalOpen(true);
 
                 const successfulOrders = result.results
@@ -222,6 +196,42 @@ const ManagerShipmentOrders: React.FC = () => {
         }
     };
 
+    const confirmDestinationOrders = async (confirmed: boolean) => {
+        if (!selectedOrderIds.length) {
+            message.error("Bạn chưa chọn hoặc chưa có đơn hàng nào cần xác nhận");
+            setModalConfirmDestinationOfficeOpen(false);
+            return;
+        }
+
+        setModalConfirmDestinationOfficeOpen(false);
+        setAddingLoading(true);
+        try {
+            const result = await orderApi.saveManagerConfirmDestinationOrdersInShipment(
+                selectedOrderIds,
+                confirmed
+            );
+
+            setTitle("Kết quả xác nhận bưu cục đích");
+            setBulkResult(result as any);
+            setBulkModalOpen(true);
+
+            if (result.results) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+            } else {
+                message.warning(result.message || "Một số đơn hàng không thể xác nhận");
+                if (result.results) {
+                    setBulkResult(result as any);
+                    setBulkModalOpen(true);
+                }
+            }
+        } catch (error: any) {
+            message.error(error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
+        } finally {
+            setAddingLoading(false);
+        }
+    };
 
     const handleSaveOrders = async () => {
         if (!shipmentId) return;
@@ -249,6 +259,65 @@ const ManagerShipmentOrders: React.FC = () => {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSelectAllFiltered = async (select: boolean) => {
+        if (!select) {
+            setSelectedOrderIds([]);
+            return;
+        }
+
+        const requestId = ++selectAllRequestRef.current;
+        if (!shipmentId) return;
+        setLoading(true);
+        try {
+            const result = await shipmentApi.getManagerAllOrderIdsByShipmentId(Number(shipmentId), {
+                search: searchText,
+            });
+
+            if (requestId !== selectAllRequestRef.current) return;
+
+            if (result.success && result.data) {
+                setSelectedOrderIds(result.data);
+            } else {
+                message.error(result.message || "Lấy toàn bộ ID thất bại");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Lỗi server khi lấy toàn bộ ID");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const confirmDestinationOffice = async (confirmed: boolean) => {
+        if (!orderId) {
+            message.error("Không tìm thấy đơn hàng cần xác nhận bưu cục đích");
+            return;
+        }
+
+        setModalConfirmDestinationOpen(false);
+
+        try {
+            setLoading(true);
+
+            const result = await orderApi.setManagerConfirmDestinationOffice(orderId, confirmed);
+
+            if (result.success) {
+                message.success(
+                    confirmed
+                        ? "Đã xác nhận đơn hàng đến bưu cục đích thành công."
+                        : "Đã xác nhận bưu cục hiện tại không phải bưu cục đích thành công."
+                );
+                fetchOrders(page);
+            } else {
+                message.error(result.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
+        } finally {
+            setLoading(false);
+            setOrderId(null);
         }
     };
 
@@ -326,12 +395,12 @@ const ManagerShipmentOrders: React.FC = () => {
             render: (recipient, record) => {
                 return (
                     <div>
-                        <span className="custom-table-content-strong">{recipient?.name}</span>
+                        <span className="custom-table-content-strong">{record.recipientName}</span>
                         <br/>
-                        {recipient?.phone}
+                        {record.recipientPhone}
                         <br/>
                         <span
-                            className="custom-table-content-limit">{recipient?.fullAddress || "Chưa có địa chỉ"}</span>
+                            className="custom-table-content-limit">{record.recipientFullAddress || "Chưa có địa chỉ"}</span>
                     </div>
                 );
             },
@@ -370,10 +439,10 @@ const ManagerShipmentOrders: React.FC = () => {
                 );
             },
         },
-        {
+        ...(canDeleteOrdersManagerShipment(shipmentStatus) ? [{
             key: "action",
-            align: "center",
-            render: (_, record) => (
+            align: "center" as const,
+            render: (_: any, record: ManagerOrderShipment) => (
                 <Tooltip title="Xóa tạm thời">
                     <Button
                         type="link"
@@ -384,7 +453,26 @@ const ManagerShipmentOrders: React.FC = () => {
                     </Button>
                 </Tooltip>
             ),
-        },
+        }] : []),
+        {
+            key: "confirmDestination",
+            align: "center" as const,
+            title: "Xác nhận đích",
+            render: (_: any, record: ManagerOrderShipment) => (
+                <Tooltip title={record.pendingDestinationConfirm ? "Xác nhận đơn đã đến bưu cục đích" : "Đơn không cần xác nhận bưu cục đích"}>
+                    <Button
+                        className="primary-button"
+                        disabled={!record.pendingDestinationConfirm}
+                        onClick={() => {
+                            setOrderId(record.id);
+                            setModalConfirmDestinationOpen(true);
+                        }}
+                    >
+                        Xác nhận
+                    </Button>
+                </Tooltip>
+            ),
+        }
     ];
 
     const tableData = [
@@ -427,7 +515,7 @@ const ManagerShipmentOrders: React.FC = () => {
                             <Col>
                                 <div className="list-page-actions">
                                     <Space size={8}>
-                                        {canEditOrdersManagerShipment(shipmentStatus) && (
+                                        {canEditOrdersManagerShipment(shipmentStatus, shipmentType) && (
                                             <><Tooltip
                                                 title="Nhập mã đơn hàng (có thể nhập nhiều mã, cách nhau bằng dấu , ví dụ: UTE001,UTE002,UTE003)">
                                                 <Input
@@ -450,7 +538,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                         )}
 
                                         {(tempAddedOrders.length > 0 || tempRemovedOrders.length > 0) &&
-                                            canEditOrdersManagerShipment(shipmentStatus) && (
+                                            canEditOrdersManagerShipment(shipmentStatus, shipmentType) && (
                                                 <Button
                                                     className="modal-cancel-button"
                                                     icon={<CloseCircleOutlined/>}
@@ -460,7 +548,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                                 </Button>
                                             )}
 
-                                        {canEditOrdersManagerShipment(shipmentStatus) && (
+                                        {canEditOrdersManagerShipment(shipmentStatus, shipmentType) && (
                                             <Button
                                                 onClick={handleSaveOrders}
                                                 className="modal-ok-button"
@@ -468,6 +556,29 @@ const ManagerShipmentOrders: React.FC = () => {
                                             >
                                                 Lưu
                                             </Button>
+                                        )}
+
+                                        {canConfirmDestinationOrdersManagerShipment(shipmentStatus) && (
+                                            selectedOrderIds.length === 0 ? (
+                                                <Button
+                                                    onClick={async () => {
+                                                        await handleSelectAllFiltered(true);
+                                                        setModalConfirmDestinationOfficeOpen(true);
+                                                    }}
+                                                    className="modal-ok-button"
+                                                    icon={<PlayCircleOutlined/>}
+                                                >
+                                                    Xác nhận tất cả đơn đến bưu cục đích
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    onClick={() => setModalConfirmDestinationOfficeOpen(true)}
+                                                    className="modal-ok-button"
+                                                    icon={<PlayCircleOutlined/>}
+                                                >
+                                                    Xác nhận đến bưu cục đích ({selectedOrderIds.length})
+                                                </Button>
+                                            )
                                         )}
 
                                         <Button
@@ -509,6 +620,19 @@ const ManagerShipmentOrders: React.FC = () => {
                             onChange: setPage,
                         }}
                         loading={loading}
+                        rowSelection={{
+                            type: 'checkbox',
+                            preserveSelectedRowKeys: false,
+                            selectedRowKeys: selectedOrderIds,
+                            onChange: (keys) => setSelectedOrderIds(keys as number[]),
+                            onSelectAll: (selected) => handleSelectAllFiltered(selected),
+                            getCheckboxProps: (record) => ({
+                                disabled: !record.pendingDestinationConfirm,
+                            }),
+                        }}
+                        rowClassName={(record) =>
+                            selectedOrderIds.includes(record.id) ? "selectd-checkbox-table-row-selected" : ""
+                        }
                     />
                 </div>
 
@@ -517,9 +641,28 @@ const ManagerShipmentOrders: React.FC = () => {
                         open={bulkModalOpen}
                         results={bulkResult}
                         onClose={() => setBulkModalOpen(false)}
+                        title={title}
                     />
                 )}
             </div>
+
+            <ConfirmModal
+                title="Xác nhận đơn hàng đã đến bưu cục đích"
+                message="Xác nhận đơn hàng này đã đến nơi và đã sẵn sàng để giao hay không?"
+                open={modalConfirmDestinationOfficeOpen}
+                onOk={() => confirmDestinationOrders(true)}
+                onCancel={() => confirmDestinationOrders(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title="Xác nhận đơn hàng đã đến bưu cục đích"
+                message="Xác nhận đơn hàng này đã đến nơi và đã sẵn sàng để giao hay không?"
+                open={modalConfirmDestinationOpen}
+                onOk={() => confirmDestinationOffice(true)}
+                onCancel={() => confirmDestinationOffice(false)}
+                loading={loading}
+            />
         </div>
     );
 };

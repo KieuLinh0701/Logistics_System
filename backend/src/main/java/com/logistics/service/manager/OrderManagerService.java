@@ -19,6 +19,7 @@ import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.request.user.order.UserUrgentOrderSearchRequest;
+import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.response.manager.order.UrgentOrderResponse;
@@ -53,7 +54,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -180,7 +183,7 @@ public class OrderManagerService {
         long total = counts.stream()
                 .mapToLong(ManagerOrderStatusCountResponse::getCount)
                 .sum();
-        counts.add(0, new ManagerOrderStatusCountResponse("ALL", total));
+        counts.addFirst(new ManagerOrderStatusCountResponse("ALL", total));
 
         return counts;
     }
@@ -230,17 +233,7 @@ public class OrderManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        boolean hasAccess = (order.getFromOffice() != null
-                && userOffice.getId()
-                .equals(order.getFromOffice()
-                        .getId()))
-                || (order.getToOffice() != null && userOffice.getId()
-                .equals(order.getToOffice()
-                        .getId()));
-
-        if (!hasAccess) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        checkTransitPermission(order, userOffice);
 
         List<OrderHistory> orderHistories = orderHistoryRepository
                 .findByOrderIdOrderByActionTimeDesc(order.getId());
@@ -265,17 +258,7 @@ public class OrderManagerService {
 
             List<Order> printableOrders = orders.stream()
                     .filter(order -> OrderUtils.canManagerPrint(order.getStatus()))
-                    .filter(order -> {
-                        boolean fromMatch = order.getFromOffice() != null
-                                && userOffice.getId()
-                                .equals(order.getFromOffice()
-                                        .getId());
-                        boolean toMatch = order.getToOffice() != null
-                                && userOffice.getId()
-                                .equals(order.getToOffice()
-                                        .getId());
-                        return fromMatch || toMatch;
-                    })
+                    .filter(order -> hasTransitPermission(order, userOffice))
                     .toList();
 
             if (printableOrders.isEmpty()) {
@@ -299,11 +282,7 @@ public class OrderManagerService {
             throw new AppException(OrderErrorCode.ORDER_CANNOT_CANCEL);
         }
 
-        if (order.getFromOffice() == null || !userOffice.getId()
-                .equals(order.getFromOffice()
-                        .getId())) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        checkFromOfficePermission(order, userOffice);
 
         order.setStatus(OrderStatus.CANCELLED);
         repository.save(order);
@@ -354,11 +333,7 @@ public class OrderManagerService {
             throw new AppException(OrderErrorCode.ORDER_CANNOT_CONFIRM);
         }
 
-        if (order.getFromOffice() == null || !userOffice.getId()
-                .equals(order.getFromOffice()
-                        .getId())) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        checkFromOfficePermission(order, userOffice);
 
         order.setStatus(OrderStatus.CONFIRMED);
         repository.save(order);
@@ -508,14 +483,7 @@ public class OrderManagerService {
                 throw new AppException(OrderErrorCode.ORDER_CANNOT_EDIT);
             }
 
-            if (!((order.getFromOffice() != null && userOffice.getId()
-                    .equals(order.getFromOffice()
-                            .getId()))
-                    || (order.getToOffice() != null && userOffice.getId()
-                    .equals(order.getToOffice()
-                            .getId())))) {
-                throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-            }
+            checkTransitPermission(order, userOffice);
 
             OrderStatus currentStatus = order.getStatus();
             OrderCreatorType creatorType = order.getCreatedByType();
@@ -1096,11 +1064,7 @@ public class OrderManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        if (order.getFromOffice() == null || !userOffice.getId()
-                .equals(order.getFromOffice()
-                        .getId())) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        checkFromOfficePermission(order, userOffice);
 
         if (!OrderUtils.canManagerSetAtOriginOffice(order.getStatus())) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.AT_ORIGIN_OFFICE));
@@ -1114,15 +1078,8 @@ public class OrderManagerService {
         System.out.println("isDestination" + isDestination);
 
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
-
-        // Set currentOffice = bưu cục hiện tại của manager
         order.setCurrentOffice(userOffice);
-
-        // Stage 1 - Kiểm tra nếu office hiện tại là bưu cục đích thì set pendingDestinationConfirm = true
-        if (orderDestinationService.isDestinationOffice(order, userOffice)) {
-            order.setPendingDestinationConfirm(true);
-        }
-
+        order.setPendingDestinationConfirm(isDestination);
         repository.save(order);
 
         orderHistoryUserService.save(
@@ -1158,11 +1115,7 @@ public class OrderManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        if (order.getFromOffice() == null || !userOffice.getId()
-                .equals(order.getFromOffice()
-                        .getId())) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        checkTransitPermission(order, userOffice);
 
         boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
 
@@ -1170,8 +1123,13 @@ public class OrderManagerService {
             throw new AppException(OrderErrorCode.ORDER_NOT_DESTINATION_OFFICE);
         }
 
+        if (order.getStatus().equals(OrderStatus.AT_DEST_OFFICE) && confirmed) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
+        }
+
         if (confirmed) {
             order.setStatus(OrderStatus.AT_DEST_OFFICE);
+            order.setPendingDestinationConfirm(false);
             order.setToOffice(userOffice);
             order.setCurrentOffice(userOffice);
         } else {
@@ -1181,86 +1139,120 @@ public class OrderManagerService {
         repository.save(order);
     }
 
-    /**
-     * Stage 2 - Xác nhận thủ công đơn hàng đã đến bưu cục đích.
-     * Chỉ áp dụng cho đơn có pendingDestinationConfirm = true.
-     */
-    @Transactional
-    public void confirmDestinationOffice(Integer userId, Integer orderId) {
-        // Dùng findByIdForUpdate để tránh race condition
-        Order order = repository.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+    public BulkResponse<String> confirmDestinationOrders(
+            Integer userId, List<Integer> orderIds, boolean confirmed) {
 
-        // Validate pendingDestinationConfirm
-        if (order.getPendingDestinationConfirm() == null || !order.getPendingDestinationConfirm()) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
-                    "Trạng thái hiện tại không yêu cầu xác nhận bưu cục đích",
-                    "AT_DEST_OFFICE");
-        }
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalImported = 0, totalFailed = 0;
 
-        // Validate order status hợp lệ: IN_TRANSIT hoặc AT_ORIGIN_OFFICE
-        OrderStatus currentStatus = order.getStatus();
-        if (currentStatus != OrderStatus.IN_TRANSIT && currentStatus != OrderStatus.AT_ORIGIN_OFFICE) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
-                    translateOrderStatus(currentStatus),
-                    translateOrderStatus(OrderStatus.AT_DEST_OFFICE));
-        }
+        Set<Integer> processed = new HashSet<>();
 
-        // Validate user thuộc bưu cục hiện tại (dùng isDestinationOffice để handle toOffice null)
-        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-        if (!orderDestinationService.isDestinationOffice(order, userOffice)) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        try {
+            Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        // Set status
-        order.setStatus(OrderStatus.AT_DEST_OFFICE);
-        order.setPendingDestinationConfirm(false);
-        // Nếu toOffice null, set bằng office hiện tại để autoAssignOnArrival hoạt động đúng
-        if (order.getToOffice() == null) {
-            order.setToOffice(userOffice);
-        }
-        // Set currentOffice = bưu cục hiện tại của manager
-        order.setCurrentOffice(userOffice);
-        repository.save(order);
+            for (Integer orderId : orderIds) {
+                // Duplicate check
+                if (processed.contains(orderId)) {
+                    BulkResponse.BulkResult<String> r = new BulkResponse.BulkResult<>();
+                    r.setName(String.valueOf(orderId));
+                    r.setSuccess(false);
+                    r.setMessage("Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó");
+                    r.setResult(String.valueOf(orderId));
+                    results.add(r);
+                    totalFailed++;
+                    continue;
+                }
 
-        // Ghi OrderHistory AT_DEST_OFFICE
-        orderHistoryUserService.save(
-                order,
-                null,
-                userOffice,
-                null,
-                OrderHistoryActionType.AT_DEST_OFFICE,
-                null);
+                processed.add(orderId);
 
-        // Gửi notification cho user
-        if (order.getUser() != null) {
-            notificationService.create(
-                    "Hàng đã đến bưu cục đích",
-                    String.format("Đơn %s đã đến bưu cục đích và sẵn sàng giao đến bạn.", order.getTrackingNumber()),
-                    "order_status",
-                    order.getUser().getId(),
-                    null,
-                    "orders/tracking",
-                    order.getTrackingNumber());
+                // Tìm order
+                Order order = repository.findById(orderId).orElse(null);
+                if (order == null) {
+                    BulkResponse.BulkResult<String> r = new BulkResponse.BulkResult<>();
+                    r.setName(String.valueOf(orderId));
+                    r.setSuccess(false);
+                    r.setMessage("Đơn hàng không tồn tại");
+                    r.setResult(String.valueOf(orderId));
+                    results.add(r);
+                    totalFailed++;
+                    continue;
+                }
+
+                // Validate + confirm từng order
+                BulkResponse.BulkResult<String> result = validateAndConfirmDestination(order, userOffice, confirmed);
+                results.add(result);
+
+                if (result.isSuccess()) {
+                    totalImported++;
+                } else {
+                    totalFailed++;
+                }
+            }
+
+            return new BulkResponse<>(
+                    totalFailed == 0,
+                    totalFailed == 0 ? "Tất cả đơn hàng đã được xác nhận" : "Một số đơn hàng không hợp lệ",
+                    totalImported, totalFailed, results);
+
+        } catch (Exception e) {
+            results.clear();
+            for (Integer orderId : orderIds) {
+                BulkResponse.BulkResult<String> r = new BulkResponse.BulkResult<>();
+                r.setName(String.valueOf(orderId));
+                r.setSuccess(false);
+                r.setMessage(e.getMessage());
+                results.add(r);
+            }
+            return new BulkResponse<>(false, "Lỗi: " + e.getMessage(), 0, orderIds.size(), results);
         }
     }
 
-    /**
-     * Lấy danh sách đơn hàng có pendingDestinationConfirm = true tại bưu cục của manager.
-     */
-    public ListResponse<ManagerOrderListDto> getPendingDestinationConfirmOrders(Integer userId, int page, int limit) {
-        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
-        List<OrderStatus> statuses = List.of(OrderStatus.IN_TRANSIT, OrderStatus.AT_ORIGIN_OFFICE);
+    // Helper method tách logic validate + confirm
+    private BulkResponse.BulkResult<String> validateAndConfirmDestination(
+            Order order, Office userOffice, boolean confirmed) {
 
-        List<Order> orders = repository.findPendingDestinationConfirmByOfficeId(userOffice.getId(), userOffice.getCityCode(), statuses);
+        BulkResponse.BulkResult<String> result = new BulkResponse.BulkResult<>();
 
-        List<ManagerOrderListDto> dtos = orders.stream()
-                .map(OrderMapper::toManagerOrderListDto)
-                .collect(Collectors.toList());
+        try {
+            checkTransitPermission(order, userOffice);
 
-        int totalPages = (int) Math.ceil((double) dtos.size() / limit);
-        Pagination pagination = new Pagination(dtos.size(), page, limit, totalPages);
-        return new ListResponse<>(dtos, pagination);
+            boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
+            if (!isDestination && !order.getPendingDestinationConfirm()) {
+                result.setSuccess(false);
+                result.setName(order.getTrackingNumber());
+                result.setMessage("Đơn hàng không thuộc văn phòng đích này");
+                return result;
+            }
+
+            if (order.getStatus().equals(OrderStatus.AT_DEST_OFFICE) && confirmed) {
+                result.setSuccess(false);
+                result.setName(order.getTrackingNumber());
+                result.setMessage("Trạng thái đơn hàng không hợp lệ để chuyển");
+                return result;
+            }
+
+            if (confirmed) {
+                order.setStatus(OrderStatus.AT_DEST_OFFICE);
+                order.setToOffice(userOffice);
+                order.setPendingDestinationConfirm(false);
+                order.setCurrentOffice(userOffice);
+            } else {
+                order.setPendingDestinationConfirm(false);
+            }
+
+            repository.save(order);
+
+            result.setName(order.getTrackingNumber());
+            result.setSuccess(true);
+            result.setMessage(confirmed ? "Xác nhận thành công" : "Đã từ chối xác nhận");
+            return result;
+
+        } catch (AppException e) {
+            result.setSuccess(false);
+            result.setName(order.getTrackingNumber());
+            result.setMessage(e.getMessage());
+            return result;
+        }
     }
 
     public void setOrderReturned(Integer userId, Integer orderId) {
@@ -1268,11 +1260,7 @@ public class OrderManagerService {
 
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
 
-        if (order.getFromOffice() == null || !userOffice.getId()
-                .equals(order.getFromOffice()
-                        .getId())) {
-            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
-        }
+        checkFromOfficePermission(order, userOffice);
 
         if (!OrderUtils.canManagerSetReturned(order.getStatus())) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.AT_ORIGIN_OFFICE));
@@ -1480,5 +1468,62 @@ public class OrderManagerService {
     private Order getOrderById(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+    }
+
+    // Quyền thực sự: chỉ fromOffice hoặc toOffice
+    private void checkOwnerPermission(Order order, Office office) {
+        boolean isFromOffice = office.getId().equals(
+                order.getFromOffice() != null ? order.getFromOffice().getId() : null);
+        boolean isToOffice = office.getId().equals(
+                order.getToOffice() != null ? order.getToOffice().getId() : null);
+
+        if (!isFromOffice && !isToOffice) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+    }
+
+    // Quyền trung chuyển: fromOffice, toOffice, hoặc currentOffice
+    private void checkTransitPermission(Order order, Office office) {
+        boolean isFromOffice = office.getId().equals(
+                order.getFromOffice() != null ? order.getFromOffice().getId() : null);
+        boolean isToOffice = office.getId().equals(
+                order.getToOffice() != null ? order.getToOffice().getId() : null);
+        boolean isCurrentOffice = office.getId().equals(
+                order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null);
+
+        if (!isFromOffice && !isToOffice && !isCurrentOffice) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+    }
+
+    public boolean hasTransitPermission(Order order, Office office) {
+        boolean isFromOffice = office.getId().equals(
+                order.getFromOffice() != null ? order.getFromOffice().getId() : null);
+        boolean isToOffice = office.getId().equals(
+                order.getToOffice() != null ? order.getToOffice().getId() : null);
+        boolean isCurrentOffice = office.getId().equals(
+                order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null);
+
+        return isFromOffice || isToOffice || isCurrentOffice;    }
+
+    private void checkFromOfficePermission(Order order, Office office) {
+        if (!office.getId().equals(
+                order.getFromOffice() != null ? order.getFromOffice().getId() : null)) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+    }
+
+    private void checkToOfficePermission(Order order, Office office) {
+        if (!office.getId().equals(
+                order.getToOffice() != null ? order.getToOffice().getId() : null)) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+    }
+
+    public void checkCurrentOfficePermission(Order order, Office office) {
+        if (!office.getId().equals(
+                order.getCurrentOffice() != null ? order.getToOffice().getId() : null)) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
     }
 }

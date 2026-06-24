@@ -31,7 +31,6 @@ import {
     TruckOutlined,
     UserOutlined,
     UserSwitchOutlined,
-    WarningOutlined,
 } from "@ant-design/icons";
 import "./SideNav.css";
 import {getUserRole, hasPermissionGroup} from "../../utils/authUtils";
