@@ -3,14 +3,10 @@ import {Button, Col, DatePicker, Input, Row, Select, Tooltip} from "antd";
 import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
-    PAYMENT_SUBMISSION_FILTER_SORT,
-    PAYMENT_SUBMISSION_STATUSES,
-    translatePaymentSubmissionFilterSort,
-    translatePaymentSubmissionStatus
-} from "../../../../utils/paymentSubmissionUtils";
-import {
-  PAYMENT_SUBMISSION_BATCH_FILTER_SORT,
-  PAYMENT_SUBMISSION_BATCH_STATUSES, translatePaymentSubmissionBatchFilterSort, translatePaymentSubmissionBatchStatus
+    PAYMENT_SUBMISSION_BATCH_FILTER_SORT,
+    PAYMENT_SUBMISSION_BATCH_STATUSES,
+    translatePaymentSubmissionBatchFilterSort,
+    translatePaymentSubmissionBatchStatus
 } from "../../../../utils/paymentSubmissionBatchUtils.ts";
 
 type FilterKeys = "sort" | "status"

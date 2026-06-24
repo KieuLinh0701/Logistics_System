@@ -1,33 +1,33 @@
 import React, {useEffect, useState} from "react";
 import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    Descriptions,
-    Divider,
-    Form,
-    Input,
-    InputNumber,
-    message,
-    Modal,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Tag,
-    Typography,
+  Alert,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography,
 } from "antd";
 import {
-    ArrowLeftOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined,
-    CompassOutlined,
-    DollarOutlined,
-    EnvironmentOutlined,
-    PhoneOutlined,
-    PlayCircleOutlined,
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  CompassOutlined,
+  DollarOutlined,
+  EnvironmentOutlined,
+  PhoneOutlined,
+  PlayCircleOutlined,
 } from "@ant-design/icons";
 import {useNavigate, useParams} from "react-router-dom";
 import dayjs from "dayjs";
@@ -35,7 +35,7 @@ import type {ShipperOrder} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
 import {getUserRole} from "../../utils/authUtils";
 import {dispatchShipperRouteRefresh} from "./deliveryRouteEvents";
-import {translateOrderCodStatus, translatePaymentSubmissionStatus} from "../../utils/orderUtils";
+import {translatePaymentSubmissionStatus} from "../../utils/orderUtils";
 
 const { Title, Text, Paragraph } = Typography;
 
