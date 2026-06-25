@@ -236,7 +236,7 @@ const ShipperOrders: React.FC = () => {
           </div>
         </div>
 
-        <div className="list-page-header shipper-page-header">
+        <div className="list-page-header shipper-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h3 className="list-page-title-main">Đơn hàng cần giao</h3>
             <div className="shipper-header-meta">

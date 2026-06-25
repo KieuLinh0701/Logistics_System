@@ -134,11 +134,6 @@ const shipmentApi = {
     return await axiosClient.post<ApiResponse<string>>(`/shipper/shipments/${id}/finish`);
   },
 
-  async listShipperActiveShipments() {
-    const res = await axiosClient.get<ApiResponse<ManagerShipment[]>>(`/shipper/shipments/active`);
-    return (res.data as ManagerShipment[]) || [];
-  },
-
   async exportManagerShipmentPerformance(id: number, params: SearchRequest) {
     try {
       const res = await axiosExport.get(`/manager/employees/${id}/shipments/export`, {
@@ -215,6 +210,10 @@ const shipmentApi = {
     } catch (error) {
       return { success: false, error };
     }
+  },
+
+  async listShipperActiveShipments() {
+    return axiosClient.get("/shipper/shipments/active");
   },
 
   async exportManagerOrdersByShipmentId(id: number, params: ManagerOrderShipmentSearchRequest) {

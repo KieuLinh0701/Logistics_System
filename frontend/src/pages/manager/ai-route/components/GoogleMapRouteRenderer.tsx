@@ -58,7 +58,20 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
   const mapRef = useRef<google.maps.Map | null>(null);
   const routePolylinesRef = useRef<google.maps.Polyline[]>([]);
   const depotMarkerRef = useRef<google.maps.Marker | null>(null);
+  const directionsRenderersRef = useRef<google.maps.DirectionsRenderer[]>([]);
   const [mapReadyTick, setMapReadyTick] = React.useState(0);
+
+  const clearRouteRenderings = useCallback(() => {
+    routePolylinesRef.current.forEach((polyline) => {
+      polyline.setMap(null);
+    });
+    routePolylinesRef.current = [];
+
+    directionsRenderersRef.current.forEach((renderer) => {
+      renderer.setMap(null);
+    });
+    directionsRenderersRef.current = [];
+  }, []);
 
   const handleLoad = useCallback(
     (map: google.maps.Map) => {
@@ -109,10 +122,7 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
     const map = mapRef.current;
     if (!map) return;
 
-    routePolylinesRef.current.forEach((polyline) => {
-      polyline.setMap(null);
-    });
-    routePolylinesRef.current = [];
+    clearRouteRenderings();
 
     routes.forEach((route, routeIndex) => {
       const routeKey = getRouteKey(route, routeIndex);
@@ -121,34 +131,80 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
         return;
       }
 
-        const decodedPath = decodeEncodedPolyline(route.encodedPolyline);
+      const orderedStops = (route.stops || [])
+        .filter(isValidStop)
+        .sort((a, b) => (a.stopSequence ?? 0) - (b.stopSequence ?? 0));
 
-        if (decodedPath.length <= 1) return;
+      if (orderedStops.length < 2) {
+        return;
+      }
 
-        const color = getRouteColor(routeIndex);
-        const highlighted = highlightedRouteKey === routeKey;
-        const dimmed = highlightedRouteKey != null && !highlighted;
+      const origin = `${orderedStops[0].latitude},${orderedStops[0].longitude}`;
+      const destination = `${orderedStops[orderedStops.length - 1].latitude},${orderedStops[orderedStops.length - 1].longitude}`;
+      const waypoints = orderedStops
+        .slice(1, -1)
+        .map((stop) => ({
+          location: { lat: stop.latitude as number, lng: stop.longitude as number },
+          stopover: true,
+        }));
 
-        const polyline = new google.maps.Polyline({
-          path: decodedPath,
-          map,
-          strokeColor: color,
-          strokeOpacity: dimmed ? 0.28 : 0.92,
-          strokeWeight: highlighted ? 7 : 5,
-          geodesic: true,
-          zIndex: highlighted ? 300 : 100 + routeIndex,
-        });
+      const directionsService = new google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin,
+          destination,
+          waypoints,
+          travelMode: google.maps.TravelMode.DRIVING,
+          provideRouteAlternatives: false,
+        },
+        (result, status) => {
+          if (!mapRef.current) return;
 
-      routePolylinesRef.current.push(polyline);
+          if (status === "OK" && result?.routes?.[0]) {
+            const renderer = new google.maps.DirectionsRenderer({
+              map: mapRef.current,
+              directions: result,
+              routeIndex: 0,
+              suppressMarkers: true,
+              polylineOptions: {
+                strokeColor: getRouteColor(routeIndex),
+                strokeOpacity: highlightedRouteKey === routeKey ? 0.92 : 0.55,
+                strokeWeight: highlightedRouteKey === routeKey ? 7 : 5,
+              },
+            });
+
+            directionsRenderersRef.current.push(renderer);
+            console.log(
+              `[AI_ROUTE_DIRECTIONS] routeIndex=${routeIndex}, origin=${origin}, destination=${destination}, waypointCount=${waypoints.length}`
+            );
+          } else {
+            const fallbackPath = decodeEncodedPolyline(route.encodedPolyline);
+            if (fallbackPath.length > 1) {
+              const polyline = new google.maps.Polyline({
+                path: fallbackPath,
+                map: mapRef.current,
+                strokeColor: getRouteColor(routeIndex),
+                strokeOpacity: highlightedRouteKey === routeKey ? 0.28 : 0.92,
+                strokeWeight: highlightedRouteKey === routeKey ? 7 : 5,
+                geodesic: true,
+                zIndex: highlightedRouteKey === routeKey ? 300 : 100 + routeIndex,
+              });
+
+              routePolylinesRef.current.push(polyline);
+            }
+
+            console.warn(
+              `[AI_ROUTE_DIRECTIONS_ERROR] routeIndex=${routeIndex}, status=${status}, origin=${origin}, destination=${destination}`
+            );
+          }
+        }
+      );
     });
 
     return () => {
-      routePolylinesRef.current.forEach((polyline) => {
-        polyline.setMap(null);
-      });
-      routePolylinesRef.current = [];
+      clearRouteRenderings();
     };
-  }, [routes, visibleRouteKeys, highlightedRouteKey, mapReadyTick]);
+  }, [routes, visibleRouteKeys, highlightedRouteKey, mapReadyTick, clearRouteRenderings]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -189,7 +245,10 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
 
   useEffect(() => {
     if (!mapRef.current) return;
-    if (!routes || routes.length === 0) return;
+    if (!routes || routes.length === 0) {
+      clearRouteRenderings();
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       setMapReadyTick((v) => v + 1);
@@ -198,7 +257,7 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [routes, visibleRouteKeys]);
+  }, [routes, visibleRouteKeys, clearRouteRenderings]);
 
   const center = office
     ? { lat: office.latitude, lng: office.longitude }

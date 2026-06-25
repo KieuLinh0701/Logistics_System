@@ -7,6 +7,7 @@ import com.logistics.enums.EntityType;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.*;
+import com.logistics.dto.shipper.ShipperActiveShipmentDto;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
@@ -466,7 +467,7 @@ public class OrderShipperController {
     }
 
     @GetMapping("/shipments/active")
-    public ResponseEntity<ApiResponse<List<com.logistics.entity.Shipment>>> listActiveDeliveryShipments() {
+    public ResponseEntity<ApiResponse<List<ShipperActiveShipmentDto>>> listActiveDeliveryShipments() {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
@@ -490,8 +491,6 @@ public class OrderShipperController {
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.assignPickupToShipperRoute(body)));
     }
-
-    // ==================== Phase 3C: Pickup insert into Shipment ====================
 
     /**
      * Pickup insert trực tiếp vào Shipment (ShipmentOrder là source of truth).

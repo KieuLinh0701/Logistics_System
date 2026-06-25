@@ -80,7 +80,7 @@ public class AuditLog {
     private AuditLogStatus status = AuditLogStatus.SUCCESS;
 
     // Lưu
-    @Column(columnDefinition = "NVARCHAR(500)")
+    @Column(columnDefinition = "LONGTEXT")
     private String errorMessage;
 
     @CreatedDate

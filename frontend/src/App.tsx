@@ -81,6 +81,7 @@ import ShipperIncidentReport from "./pages/shipper/IncidentReport";
 import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 import FailedDeliveryOrders from "./pages/shipper/FailedDeliveryOrders";
+import ShipperPendingShipments from "./pages/shipper/ShipperPendingShipments";
 
 // Driver
 import DriverShipments from "./pages/driver/Shipments";
@@ -283,6 +284,8 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_shipper"]}><ContactManagerPage/></PrivateRoute>}/>
                         <Route path="/employee/leaves" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper", "group_driver"]}><MyLeavePage/></PrivateRoute>}/>
+                        <Route path="/shipper/shipments/pending" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperPendingShipments/></PrivateRoute>}/>
                         <Route path="/shipper/settings/vehicle" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><Navigate to="/account/settings?tab=vehicle" replace /></PrivateRoute>}/>
 
