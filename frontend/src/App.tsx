@@ -81,11 +81,8 @@ import ShipperIncidentReport from "./pages/shipper/IncidentReport";
 import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 import FailedDeliveryOrders from "./pages/shipper/FailedDeliveryOrders";
-<<<<<<< Updated upstream
 import ShipperPendingShipments from "./pages/shipper/ShipperPendingShipments";
-=======
 import ShipperShipmentHistory from "./pages/shipper/shipment/ShipperShipmentHistory.tsx";
->>>>>>> Stashed changes
 
 // Driver
 import DriverShipments from "./pages/driver/Shipments";
