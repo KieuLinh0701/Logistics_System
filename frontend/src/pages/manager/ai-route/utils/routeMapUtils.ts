@@ -31,10 +31,10 @@ export function decodeEncodedPolyline(encoded?: string | null): google.maps.LatL
 
 /**
  * Returns stop label for map markers.
- * Format: "R{routeIndex+1}-{stopSequence}" e.g. "R1-1", "R1-2", "R2-1"
+ * Format: "{routeIndex+1}.{stopSequence}" e.g. "1.1", "1.2", "2.1", "2.3"
  */
 export function getStopLabel(routeIndex: number, stopSequence: number): string {
-  return `R${routeIndex + 1}-${stopSequence}`;
+  return `${routeIndex + 1}.${stopSequence}`;
 }
 
 export function formatMinutes(minutes?: number): string {
