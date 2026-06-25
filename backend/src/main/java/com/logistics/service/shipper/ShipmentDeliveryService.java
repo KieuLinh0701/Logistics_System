@@ -1,22 +1,8 @@
 package com.logistics.service.shipper;
 
-<<<<<<< Updated upstream
 import com.logistics.dto.shipper.ShipperActiveShipmentDto;
-import com.logistics.entity.Employee;
-import com.logistics.entity.Order;
-import com.logistics.entity.OrderHistory;
-import com.logistics.entity.Shipment;
-import com.logistics.entity.ShipmentOrder;
-import com.logistics.enums.OrderHistoryActionType;
-import com.logistics.enums.OrderPickupType;
-import com.logistics.enums.OrderStatus;
-import com.logistics.enums.RouteStopType;
-import com.logistics.enums.ShipmentStatus;
-import com.logistics.enums.ShipmentType;
-=======
 import com.logistics.entity.*;
 import com.logistics.enums.*;
->>>>>>> Stashed changes
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.exception.enums.OrderErrorCode;
@@ -64,7 +50,7 @@ public class ShipmentDeliveryService {
         if (employees == null || employees.isEmpty()) {
             throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
         }
-        return employees.get(0);
+        return employees.getFirst();
     }
 
     public Shipment requireActiveDeliveryShipmentForOrder(Integer orderId) {
