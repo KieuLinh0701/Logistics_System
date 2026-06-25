@@ -2,6 +2,7 @@ package com.logistics.mapper;
 
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
+import com.logistics.dto.shipper.shipment.ShipperShipmentListDto;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Office;
 import com.logistics.entity.Shipment;
@@ -46,6 +47,38 @@ public class ShipmentMapper {
                 entity.getEndTime(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
+    }
+
+
+    public static ShipperShipmentListDto toShipperShipmentListDto(Shipment entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return new ShipperShipmentListDto(
+                entity.getId(),
+                entity.getCode(),
+                mapEmployeeShipper(entity.getCreatedBy()),
+                entity.getStatus() != null ? entity.getStatus().toString() : null,
+                entity.getStartTime(),
+                entity.getEndTime(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt());
+    }
+
+    private static ShipperShipmentListDto.EmployeeShipment mapEmployeeShipper(Employee e) {
+        if (e == null)
+            return null;
+
+        return new ShipperShipmentListDto.EmployeeShipment(
+                e.getId(),
+                e.getUser() != null ? e.getUser().getLastName() : null,
+                e.getUser() != null ? e.getUser().getFirstName() : null,
+                e.getCode(),
+                e.getUser() != null ? e.getUser().getPhoneNumber() : null,
+                e.getUser() != null && e.getUser().getAccount() != null
+                        ? e.getUser().getAccount().getEmail()
+                        : null);
     }
 
     private static ManagerShipmentListDto.VehicleShipment mapVehicle(Vehicle e) {

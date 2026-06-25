@@ -4,8 +4,8 @@ import {Button, Dropdown, Table, Tooltip} from "antd";
 import {DownOutlined} from "@ant-design/icons";
 import type {ColumnsType} from "antd/es/table";
 import {
-  canProcessManagerPaymetSubmissionBatch,
-  translatePaymentSubmissionBatchStatus
+    canProcessManagerPaymetSubmissionBatch,
+    translatePaymentSubmissionBatchStatus
 } from "../../../../utils/paymentSubmissionBatchUtils";
 import type {ManagerPaymentSubmissionBatch} from "../../../../types/paymentSubmissionBatch";
 

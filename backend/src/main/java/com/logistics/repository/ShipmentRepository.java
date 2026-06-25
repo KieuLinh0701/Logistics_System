@@ -3,7 +3,6 @@ package com.logistics.repository;
 import com.logistics.dto.manager.dashboard.ManagerShipmentStatsDTO;
 import com.logistics.entity.Shipment;
 import com.logistics.enums.ShipmentStatus;
-import com.logistics.enums.ShipmentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -72,4 +71,6 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
                 ORDER BY s.createdAt DESC
             """)
     List<Shipment> findActiveDeliveryShipmentsByEmployee(@Param("employeeId") Integer employeeId);
+
+    Optional<Shipment> findByEmployeeIdAndId(Integer employeeId, Integer id);
 }

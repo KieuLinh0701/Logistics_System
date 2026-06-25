@@ -37,10 +37,10 @@ import {getUserRole} from "../../utils/authUtils";
 import {dispatchShipperRouteRefresh} from "./deliveryRouteEvents";
 import {translatePaymentSubmissionStatus} from "../../utils/orderUtils";
 import {
-  isInActiveDeliveryShipment,
+  canMarkDelivered,
   canMarkPickedUp,
   canStartDelivery,
-  canMarkDelivered,
+  isInActiveDeliveryShipment,
 } from "../../utils/orderActionGuards";
 
 const { Title, Text, Paragraph } = Typography;

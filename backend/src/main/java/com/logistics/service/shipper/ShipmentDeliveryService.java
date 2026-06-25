@@ -1,5 +1,6 @@
 package com.logistics.service.shipper;
 
+<<<<<<< Updated upstream
 import com.logistics.dto.shipper.ShipperActiveShipmentDto;
 import com.logistics.entity.Employee;
 import com.logistics.entity.Order;
@@ -12,15 +13,15 @@ import com.logistics.enums.OrderStatus;
 import com.logistics.enums.RouteStopType;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
+=======
+import com.logistics.entity.*;
+import com.logistics.enums.*;
+>>>>>>> Stashed changes
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.exception.enums.ShipmentErrorCode;
-import com.logistics.repository.EmployeeRepository;
-import com.logistics.repository.OrderHistoryRepository;
-import com.logistics.repository.OrderRepository;
-import com.logistics.repository.ShipmentOrderRepository;
-import com.logistics.repository.ShipmentRepository;
+import com.logistics.repository.*;
 import com.logistics.request.shipper.InsertPickupShipmentRequest;
 import com.logistics.request.shipper.PickedUpRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
@@ -34,14 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Slf4j

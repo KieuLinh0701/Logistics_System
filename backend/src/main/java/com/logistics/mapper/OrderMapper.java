@@ -4,6 +4,7 @@ import com.logistics.dto.PickupAttemptDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
+import com.logistics.dto.shipper.shipment.ShipperShipmentDetailDto;
 import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.settlement.UserSettlementOrderDto;
@@ -106,6 +107,31 @@ public class OrderMapper {
                 entity.getRecipientName(),
                 entity.getRecipientPhone(),
                 entity.getRecipientFullAddress()
+        );
+    }
+
+    public static ShipperShipmentDetailDto toShipperShipmentDetailDto(Order entity) {
+        if (entity == null)
+            return null;
+
+        return new ShipperShipmentDetailDto(
+                entity.getId(),
+                entity.getTrackingNumber(),
+                entity.getStatus() != null ? entity.getStatus()
+                        .name() : null,
+                entity.getWeight() != null ? entity.getWeight() : BigDecimal.ZERO,
+                entity.getCod() != null ? entity.getCod() : 0,
+                entity.getTotalFee() != null ? entity.getTotalFee() : 0,
+                entity.getPayer() != null ? entity.getPayer()
+                        .name() : null,
+                entity.getPaymentStatus() != null ? entity.getPaymentStatus()
+                        .name() : null,
+                entity.getRecipientName(),
+                entity.getRecipientPhone(),
+                entity.getRecipientFullAddress(),
+                entity.getSenderName(),
+                entity.getSenderPhone(),
+                entity.getSenderFullAddress()
         );
     }
 
