@@ -9,10 +9,10 @@ interface Props {
 
 export const PaymentBatchStatsOverview: React.FC<Props> = ({ data }) => {
   const stats = [
-    { label: "Tổng số", value: data.total, key: "total" },
-    { label: "Đang mở", value: data.open, key: "open" },
-    { label: "Đang đối soát", value: data.processing, key: "processing" },
-    { label: "Đã đối soát", value: data.completed, key: "completed" },
+    { label: "Tổng số", value: data.total ?? 0, key: "total" },
+    { label: "Đang mở", value: data.open ?? 0, key: "open" },
+    { label: "Đang đối soát", value: data.processing ?? 0, key: "processing" },
+    { label: "Đã đối soát", value: data.completed ?? 0, key: "completed" },
   ];
 
   return (

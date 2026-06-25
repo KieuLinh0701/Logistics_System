@@ -18,8 +18,8 @@ import java.time.LocalDateTime;
 @Table(name = "vehicle_trackings")
 @EntityListeners(AuditingEntityListener.class)
 public class VehicleTracking {
-    @Id 
-    @GeneratedValue
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     // Liên kết tới xe

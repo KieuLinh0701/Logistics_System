@@ -9,18 +9,18 @@ interface Props {
 
 export const OrderStatsOverview: React.FC<Props> = ({ data }) => {
   const stats = [
-    { label: "Tổng đơn hàng", value: data.total, key: "total" },
-    { label: "Chờ xác nhận", value: data.pending, key: "pending" },          // PENDING
-    { label: "Đã xác nhận", value: data.confirmed, key: "confirmed" },       // CONFIRMED
-    { label: "Sẵn sàng lấy", value: data.readyForPickup, key: "readyForPickup" }, // READY_FOR_PICKUP
-    { label: "Đang lấy/đã lấy", value: data.pickingOrPicked, key: "pickingOrPicked" }, // PICKING_UP / PICKED_UP
-    { label: "Trong kho", value: data.inWarehouse, key: "inWarehouse" },     // AT_ORIGIN_OFFICE / AT_DEST_OFFICE
-    { label: "Khách tại bưu cục", value: data.customerAtOffice, key: "customerAtOffice" }, // CONFIRMED + pickupType = AT_OFFICE
-    { label: "Đang giao", value: data.delivering, key: "delivering" },      // DELIVERING
-    { label: "Đã giao", value: data.delivered, key: "delivered" },          // DELIVERED
-    { label: "Đang hoàn", value: data.returning, key: "returning" },        // RETURNING
-    { label: "Đã hoàn", value: data.returned, key: "returned" },            // RETURNED
-    { label: "Giao thất bại", value: data.failedDelivery, key: "failedDelivery" }, // FAILED_DELIVERY
+    { label: "Tổng đơn hàng", value: data.total ?? 0, key: "total" },
+    { label: "Chờ xác nhận", value: data.pending ?? 0, key: "pending" },          // PENDING
+    { label: "Đã xác nhận", value: data.confirmed ?? 0, key: "confirmed" },       // CONFIRMED
+    { label: "Sẵn sàng lấy", value: data.readyForPickup ?? 0, key: "readyForPickup" }, // READY_FOR_PICKUP
+    { label: "Đang lấy/đã lấy", value: data.pickingOrPicked ?? 0, key: "pickingOrPicked" }, // PICKING_UP / PICKED_UP
+    { label: "Trong kho", value: data.inWarehouse ?? 0, key: "inWarehouse" },     // AT_ORIGIN_OFFICE / AT_DEST_OFFICE
+    { label: "Khách tại bưu cục", value: data.customerAtOffice ?? 0, key: "customerAtOffice" }, // CONFIRMED + pickupType = AT_OFFICE
+    { label: "Đang giao", value: data.delivering ?? 0, key: "delivering" },      // DELIVERING
+    { label: "Đã giao", value: data.delivered ?? 0, key: "delivered" },          // DELIVERED
+    { label: "Đang hoàn", value: data.returning ?? 0, key: "returning" },        // RETURNING
+    { label: "Đã hoàn", value: data.returned ?? 0, key: "returned" },            // RETURNED
+    { label: "Giao thất bại", value: data.failedDelivery ?? 0, key: "failedDelivery" }, // FAILED_DELIVERY
   ];
 
   return (
