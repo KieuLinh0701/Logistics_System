@@ -47,10 +47,18 @@ const RouteSidebar: React.FC<RouteSidebarProps> = ({
     ? {
         routeCount: routes.length,
         ...summarizePlan(routes),
-        totalKm: plan.totalDistanceKm ?? summarizePlan(routes).totalKm,
-        totalEta: plan.totalDurationMinutes ?? summarizePlan(routes).totalEta,
-        totalFuel: plan.totalFuelCost ?? summarizePlan(routes).totalFuel,
-        totalCod: plan.totalCod ?? summarizePlan(routes).totalCod,
+        totalKm: plan.totalDistanceKm != null && plan.totalDistanceKm > 0
+          ? plan.totalDistanceKm
+          : summarizePlan(routes).totalKm,
+        totalEta: plan.totalDurationMinutes != null && plan.totalDurationMinutes > 0
+          ? plan.totalDurationMinutes
+          : summarizePlan(routes).totalEta,
+        totalFuel: plan.totalFuelCost != null && plan.totalFuelCost > 0
+          ? plan.totalFuelCost
+          : summarizePlan(routes).totalFuel,
+        totalCod: plan.totalCod != null && plan.totalCod > 0
+          ? plan.totalCod
+          : summarizePlan(routes).totalCod,
       }
     : {
         routeCount: 0,
