@@ -92,6 +92,7 @@ public class ShippingRequestShipperService {
 
         order.setStatus(com.logistics.enums.OrderStatus.PICKING_UP);
         orderRepository.save(order);
+        // Vehicle load KHÔNG cộng ở claim — chỉ cộng khi shipper thực sự lấy hàng (PICKED_UP).
 
         notificationService.create(
                 "Đã nhận yêu cầu",

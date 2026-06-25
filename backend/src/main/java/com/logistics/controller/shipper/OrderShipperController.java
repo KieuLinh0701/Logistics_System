@@ -9,6 +9,7 @@ import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.OrderShipperService;
+import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class OrderShipperController {
 
     @Autowired
     private OrderShipperService shipperService;
+
+    @Autowired
+    private ShipmentDeliveryService shipmentDeliveryService;
 
     private boolean isNotShipper() {
         return !SecurityUtils.hasRole("shipper");
@@ -109,19 +113,35 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success("Nhận đơn thành công"));
     }
 
-    @PostMapping("/orders/{id}/claim-request")
+    @PostMapping("/orders/{id}/accept-pickup")
     @Audit(
             entity = EntityType.ORDER,
             action = AuditLogAction.UPDATE_STATUS,
             description = AuditLogDescriptionConstant.ORDER_CLAIM_REQUEST,
             params = {"id"}
     )
-    public ResponseEntity<ApiResponse<String>> claimOrderRequest(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> acceptPickupRequest(@PathVariable Integer id) {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        shipperService.claimOrderRequest(id);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu nhận đơn thành công"));
+        Map<String, Object> result = shipmentDeliveryService.acceptPickupRequest(id);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PostMapping("/orders/{id}/start-pickup")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_PICKED_UP,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> startPickup(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        // start pickup: set PICKING_UP - yêu cầu đơn thuộc shipment IN_TRANSIT
+        shipmentDeliveryService.startPickup(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu đi lấy hàng"));
     }
 
     @PostMapping("/orders/{id}/unclaim")
@@ -239,8 +259,11 @@ public class OrderShipperController {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        shipperService.markPickedUp(id, request);
-        return ResponseEntity.ok(ApiResponse.success("Đã xác nhận lấy hàng"));
+        boolean alreadyPickedUp = shipperService.markPickedUp(id, request);
+        String message = alreadyPickedUp
+                ? "Đơn đã được lấy hàng trước đó"
+                : "Đã xác nhận lấy hàng";
+        return ResponseEntity.ok(ApiResponse.success(message));
     }
 
     @PostMapping("/orders/{id}/retry-pickup")
@@ -386,9 +409,68 @@ public class OrderShipperController {
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
-        Integer routeId = (Integer) request.get("routeId");
-        shipperService.startRoute(routeId);
-        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu lộ trình"));
+        // Theo rule mới: routeId là AiRoutePlanRoute.id (Long), KHÔNG phải Shipment.id.
+        // Endpoint này KHÔNG còn map routeId -> shipmentId. Frontend phải dùng
+        // /shipments/{id}/start với shipmentId.
+        Integer shipmentId = request.get("shipmentId") instanceof Number ? ((Number) request.get("shipmentId")).intValue() : null;
+        if (shipmentId == null) {
+            throw new AppException(com.logistics.exception.enums.ShipmentErrorCode.SHIPMENT_NOT_FOUND,
+                    "Vui lòng gọi /shipments/{id}/start với shipmentId. routeId không phải shipmentId.");
+        }
+        shipmentDeliveryService.startShipment(shipmentId);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu chuyến giao hàng"));
+    }
+
+    @PostMapping("/shipments/{id}/start")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = "Bắt đầu chuyến DELIVERY (shipper)",
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> startDeliveryShipment(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        shipmentDeliveryService.startShipment(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu chuyến giao hàng"));
+    }
+
+    @PostMapping("/shipments/{id}/finish")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = "Hoàn tất chuyến DELIVERY (shipper)",
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> finishDeliveryShipment(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        shipmentDeliveryService.finishShipment(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã hoàn tất chuyến giao hàng"));
+    }
+
+    @PostMapping("/shipments/{id}/start-delivery-all")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = "Bulk chuyển PICKED_UP -> DELIVERING cho toàn bộ order trong chuyến",
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Map<String, Object>>> startDeliveryAllForShipment(@PathVariable Integer id) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(shipmentDeliveryService.startDeliveryAll(id)));
+    }
+
+    @GetMapping("/shipments/active")
+    public ResponseEntity<ApiResponse<List<com.logistics.entity.Shipment>>> listActiveDeliveryShipments() {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(shipmentDeliveryService.listActiveShipmentsForCurrentShipper()));
     }
 
     @PostMapping("/route/re-optimize")
@@ -407,5 +489,28 @@ public class OrderShipperController {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.assignPickupToShipperRoute(body)));
+    }
+
+    // ==================== Phase 3C: Pickup insert into Shipment ====================
+
+    /**
+     * Pickup insert trực tiếp vào Shipment (ShipmentOrder là source of truth).
+     * Frontend dùng endpoint này khi routeInfo.source === "SHIPMENT".
+     * Old /route/pickup-insert (PickupInsertionRequest) giữ lại cho AI-source fallback.
+     */
+    @PostMapping("/shipments/{id}/pickup-insert")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE,
+            description = "Thêm đơn pickup vào chuyến DELIVERY (shipper)",
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Map<String, Object>>> insertPickupIntoShipment(
+            @PathVariable Integer id,
+            @RequestBody InsertPickupShipmentRequest body) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(shipperService.insertPickupIntoShipment(id, body)));
     }
 }

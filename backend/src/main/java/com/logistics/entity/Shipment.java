@@ -12,17 +12,19 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Audited
-@Data
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "shipments")
 @EntityListeners(AuditingEntityListener.class)
+@ToString(exclude = {"shipmentOrders"})
+@EqualsAndHashCode(exclude = {"shipmentOrders"})
 public class Shipment {
 
     @Id
@@ -45,7 +47,7 @@ public class Shipment {
     // Liên kết 1-n với ShipmentOrder
     @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL, orphanRemoval = true)
     @NotAudited
-    private List<ShipmentOrder> shipmentOrders;
+    private List<ShipmentOrder> shipmentOrders = new ArrayList<>();
 
     // Trạng thái chuyến hàng
     @Enumerated(EnumType.STRING)

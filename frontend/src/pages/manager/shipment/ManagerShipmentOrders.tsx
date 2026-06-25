@@ -558,6 +558,42 @@ const ManagerShipmentOrders: React.FC = () => {
                                             </Button>
                                         )}
 
+                                        {shipmentStatus === "PENDING" && shipmentType === "DELIVERY" && (
+                                            <Button
+                                                onClick={async () => {
+                                                    try {
+                                                        await shipmentApi.startManagerShipment(Number(shipmentId));
+                                                        message.success("Đã bắt đầu chuyến DELIVERY");
+                                                        fetchOrders(page);
+                                                    } catch (e: any) {
+                                                        message.error(e?.message || "Không thể bắt đầu chuyến");
+                                                    }
+                                                }}
+                                                className="primary-button"
+                                                icon={<PlayCircleOutlined/>}
+                                            >
+                                                Bắt đầu chuyến
+                                            </Button>
+                                        )}
+
+                                        {shipmentStatus === "IN_TRANSIT" && shipmentType === "DELIVERY" && (
+                                            <Button
+                                                onClick={async () => {
+                                                    try {
+                                                        await shipmentApi.finishManagerShipment(Number(shipmentId));
+                                                        message.success("Đã hoàn tất chuyến DELIVERY");
+                                                        fetchOrders(page);
+                                                    } catch (e: any) {
+                                                        message.error(e?.message || "Không thể hoàn tất chuyến");
+                                                    }
+                                                }}
+                                                className="success-button"
+                                                icon={<FileExcelOutlined/>}
+                                            >
+                                                Hoàn tất chuyến
+                                            </Button>
+                                        )}
+
                                         {canConfirmDestinationOrdersManagerShipment(shipmentStatus) && (
                                             selectedOrderIds.length === 0 ? (
                                                 <Button

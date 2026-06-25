@@ -17,6 +17,9 @@ export default function ShippingRequests() {
   const [pickupFailedModalOpen, setPickupFailedModalOpen] = useState(false);
   const [filters, setFilters] = useState<{ search?: string }>({});
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  // Track các order đang được accept để disable button chống double-click.
+  // Set thay vì single id vì sau refresh list có thể có nhiều đơn.
+  const [acceptingIds, setAcceptingIds] = useState<Set<number>>(new Set());
   const paginationRef = useRef(pagination);
   paginationRef.current = pagination;
   const filtersRef = useRef(filters);
@@ -112,6 +115,11 @@ export default function ShippingRequests() {
   }, []);
 
   async function accept(id: number) {
+    // [DOUBLE-CLICK GUARD] Nếu đang accept id này rồi thì bỏ qua.
+    if (acceptingIds.has(id)) {
+      console.log("[ACCEPT_PICKUP_GUARD] orderId={} đang xử lý, bỏ qua click trùng", id);
+      return;
+    }
     try {
       const rec: any = list.find((r) => r.id === id);
       if (!rec) {
@@ -119,14 +127,84 @@ export default function ShippingRequests() {
         return;
       }
 
-      await orderApi.claimShipperOrderRequest(rec.id);
-      message.success("Đã nhận đơn");
-      dispatchShipperRouteRefresh();
-      await refreshList(1, pagination.pageSize);
-      setPagination((p) => ({ ...p, current: 1 }));
-    } catch (e) {
-      console.error(e);
-      message.error("Lỗi khi nhận yêu cầu");
+      // [DOUBLE-CLICK GUARD] Đánh dấu đang accept -> disable button.
+      setAcceptingIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+
+      // [Phase] orderApi.claimShipperOrderRequest trả về response body đã được unwrap
+      // bởi axios interceptor, shape: { success, data: { message, requiresReoptimize, ... }, message }
+      // Một số trường hợp interceptor chưa unwrap -> fallback về res.data hoặc res.
+      const res: any = await orderApi.claimShipperOrderRequest(rec.id);
+      console.log("[ACCEPT_PICKUP_RESPONSE]", res);
+      const data = res?.data ?? res;
+      const isSuccess = res?.success !== false && data?.success !== false;
+      const requiresReoptimize = data?.requiresReoptimize === true;
+
+      // 1. Show message từ backend (ưu tiên), fallback nếu backend không trả.
+      //    Trường hợp success=false: dùng message.error để shipper thấy rõ là lỗi.
+      const msg = data?.message || res?.message || (requiresReoptimize
+          ? "Đã thêm đơn pickup vào chuyến đang chạy"
+          : isSuccess
+            ? "Đã nhận yêu cầu lấy hàng"
+            : "Không thể nhận yêu cầu lấy hàng");
+      if (isSuccess) {
+        message.success(msg);
+      } else {
+        message.error(msg);
+      }
+
+      // 3. Nếu đơn được auto-add vào shipment IN_TRANSIT -> cảnh báo tối ưu lại tuyến.
+      if (requiresReoptimize) {
+        message.warning(
+          "Đơn đã được thêm vào chuyến đang chạy. Vui lòng tối ưu lại tuyến."
+        );
+      }
+
+      // 5. Update local state NGAY để UI phản hồi tức thì (kể cả khi success=false vì
+      //    có thể backend vẫn đã set PICKING_UP, hoặc status đã chuyển).
+      //    Trường hợp success=false thì KHÔNG update local state - để user thấy button "Nhận"
+      //    và status cũ để retry.
+      if (isSuccess) {
+        setList((prev) =>
+          prev.map((r) =>
+            r.id === rec.id
+              ? { ...r, status: data?.status || "PICKING_UP" }
+              : r
+          )
+        );
+      }
+
+      // 4. Đồng bộ lại với backend để chắc chắn list đúng.
+      //    Sau refresh, đơn có thể đã được filter ra khỏi danh sách pickup-by-courier
+      //    (do backend loại đơn PICKING_UP khỏi danh sách "chờ nhận") - đó là behavior đúng.
+      try {
+        await refreshList(1, pagination.pageSize);
+        setPagination((p) => ({ ...p, current: 1 }));
+      } catch (refreshErr) {
+        console.warn("[ACCEPT_PICKUP_REFRESH_FAILED]", refreshErr);
+      }
+
+      // Phát event để các màn hình khác (DeliveryRoute) refresh tuyến nếu cần.
+      if (isSuccess) {
+        dispatchShipperRouteRefresh();
+      }
+    } catch (e: any) {
+      console.error("[ACCEPT_PICKUP_ERROR]", e);
+      const errMsg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Lỗi khi nhận yêu cầu";
+      message.error(errMsg);
+    } finally {
+      // [DOUBLE-CLICK GUARD] Luôn clear trạng thái đang accept (kể cả khi throw).
+      setAcceptingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
@@ -299,18 +377,32 @@ export default function ShippingRequests() {
     {
       title: "Thao tác",
       key: "action",
-      render: (record: any) => (
-        <Space>
-          {(record.status === "READY_FOR_PICKUP" || record.status === "URGENT_PICKUP") && (
-            <Button type="primary" className="primary-button" onClick={() => accept(record.id)}>
-              Nhận
+      render: (record: any) => {
+        const isAccepting = acceptingIds.has(record.id);
+        const canAccept = record.status === "READY_FOR_PICKUP" || record.status === "URGENT_PICKUP";
+        return (
+          <Space>
+            {canAccept && (
+              <Button
+                type="primary"
+                className="primary-button"
+                onClick={() => accept(record.id)}
+                loading={isAccepting}
+                disabled={isAccepting}
+              >
+                Nhận
+              </Button>
+            )}
+            <Button
+              icon={<EyeOutlined />}
+              onClick={() => openMapForOrder(record)}
+              disabled={isAccepting}
+            >
+              Chi tiết
             </Button>
-          )}
-          <Button icon={<EyeOutlined />} onClick={() => openMapForOrder(record)}>
-            Chi tiết
-          </Button>
-        </Space>
-      ),
+          </Space>
+        );
+      },
     },
   ];
 
@@ -409,7 +501,13 @@ export default function ShippingRequests() {
                 ) : selectedOrder.status === "URGENT_PICKUP" || selectedOrder.status === "READY_FOR_PICKUP" ? (
                   <Space>
                     <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                    <Button type="primary" className="primary-button" onClick={() => accept(selectedOrder.id)}>
+                    <Button
+                      type="primary"
+                      className="primary-button"
+                      onClick={() => accept(selectedOrder.id)}
+                      loading={acceptingIds.has(selectedOrder.id)}
+                      disabled={acceptingIds.has(selectedOrder.id)}
+                    >
                       Nhận
                     </Button>
                   </Space>

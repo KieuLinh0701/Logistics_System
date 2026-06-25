@@ -35,6 +35,14 @@ const RouteSidebar: React.FC<RouteSidebarProps> = ({
   onHighlightRoute,
   onSelectRoute,
 }) => {
+  const AVG_SPEED_KMH = 25;
+
+  const routeEtaMinutes = (route: AiShipperRoute): number => {
+    const distanceKm = route.estimatedDistanceKm ?? 0;
+    const eta = route.estimatedDurationMinutes ?? 0;
+    return eta > 0 ? eta : Math.ceil(distanceKm / AVG_SPEED_KMH * 60);
+  };
+
   const summary = plan
     ? {
         routeCount: routes.length,
@@ -157,7 +165,7 @@ const RouteSidebar: React.FC<RouteSidebarProps> = ({
                   </span>
                   <span>{Number(route.estimatedDistanceKm || 0).toFixed(2)} km</span>
                   <span>
-                    <ClockCircleOutlined /> {formatMinutes(route.estimatedDurationMinutes)}
+                    <ClockCircleOutlined /> {formatMinutes(routeEtaMinutes(route))}
                   </span>
                 </div>
 

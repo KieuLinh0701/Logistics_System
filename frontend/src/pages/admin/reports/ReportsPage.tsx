@@ -240,8 +240,8 @@ export default function ReportsPage() {
       </div>
 
       <Card title={<span style={{ color: '#1C3D90', fontWeight: 600, fontSize: 15 }}>Vận hành: Giao / Thất bại / Trả về</span>} style={{ borderRadius: 8, border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
-        <div style={{ width: '100%', height: 260 }}>
-          <ResponsiveContainer>
+        <div style={{ width: '100%', height: 280, minHeight: 280 }}>
+          <ResponsiveContainer width="100%" height={280}>
             <BarChart data={operations} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
@@ -455,8 +455,8 @@ export default function ReportsPage() {
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={12}>
             <Card title={<span style={{ color: '#1C3D90', fontWeight: 600, fontSize: 15 }}>Biểu đồ doanh thu theo ngày</span>} style={{ borderRadius: 8, border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
+              <div style={{ width: '100%', height: 280, minHeight: 280 }}>
+                <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={revenueByDay} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                     <XAxis dataKey="date" />
                     <YAxis tickFormatter={(v: any) => currency.format(Number(v)).replace('₫', '')} />
@@ -471,8 +471,8 @@ export default function ReportsPage() {
 
           <Col xs={24} lg={12}>
             <Card title={<span style={{ color: '#1C3D90', fontWeight: 600, fontSize: 15 }}>Biểu đồ COD theo ngày</span>} style={{ borderRadius: 8, border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
-              <div style={{ width: '100%', height: 260 }}>
-                <ResponsiveContainer>
+              <div style={{ width: '100%', height: 280, minHeight: 280 }}>
+                <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={codByDay} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                     <XAxis dataKey="date" />
                     <YAxis tickFormatter={(v: any) => currency.format(Number(v)).replace('₫', '')} />

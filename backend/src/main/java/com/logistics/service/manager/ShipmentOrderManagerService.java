@@ -69,13 +69,14 @@ public class ShipmentOrderManagerService {
             return result;
         }
 
-        // Check thêm nếu shipment IN_TRANSIT chỉ cho thêm đơn pickup
+        // Check thêm nếu shipment IN_TRANSIT: cho phép thêm đơn pickup (CONFIRMED/PICKUP_RETRY) hoặc đơn return (RETURN_RETRY)
         if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
             boolean isPickupOrder = status == OrderStatus.CONFIRMED
                     || status == OrderStatus.PICKUP_RETRY;
-            if (!isPickupOrder) {
+            boolean isReturnOrder = status == OrderStatus.RETURN_RETRY;
+            if (!isPickupOrder && !isReturnOrder) {
                 result.setSuccess(false);
-                result.setMessage("Chuyến đang vận chuyển chỉ được thêm đơn có trạng thái 'Đã xác nhận' hoặc 'Thử lấy lại'");
+                result.setMessage("Chuyến đang vận chuyển chỉ được thêm đơn có trạng thái 'Đã xác nhận', 'Thử lấy lại' hoặc 'Thử hoàn lại'");
                 return result;
             }
         }
@@ -351,8 +352,24 @@ public class ShipmentOrderManagerService {
                     shipment.getShipmentOrders().add(shipmentOrder);
 
                     if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
-                        order.setStatus(OrderStatus.PICKING_UP);
-                        pickingUpOrders.add(order);
+                        // Theo rule mới:
+                        // - CONFIRMED/PICKUP_RETRY -> PICKING_UP (shipper đi lấy ngay)
+                        // - RETURN_RETRY -> RETURNING (shipper bắt đầu hoàn)
+                        if (order.getStatus() == OrderStatus.CONFIRMED
+                                || order.getStatus() == OrderStatus.PICKUP_RETRY) {
+                            order.setStatus(OrderStatus.PICKING_UP);
+                            // KHÔNG cộng vehicle load ở đây — chỉ cộng khi shipper lấy hàng thật (PICKED_UP).
+                            pickingUpOrders.add(order);
+                        } else if (order.getStatus() == OrderStatus.RETURN_RETRY) {
+                            order.setStatus(OrderStatus.RETURNING);
+                            pickingUpOrders.add(order);
+                        }
+                    } else if (shipment.getStatus() == ShipmentStatus.PENDING
+                            && shipment.getEmployee() != null
+                            && order.getEmployee() == null) {
+                        // PENDING: gán employee = shipment.employee nếu chưa có
+                        order.setEmployee(shipment.getEmployee());
+                        orderRepository.save(order);
                     }
                 }
             }

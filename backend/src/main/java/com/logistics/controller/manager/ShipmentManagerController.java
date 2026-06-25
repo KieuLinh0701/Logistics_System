@@ -13,6 +13,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.manager.GetOrdersByShipmentIdManagerResponse;
 import com.logistics.service.manager.ShipmentManagerService;
+import com.logistics.service.shipper.ShipmentDeliveryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -33,6 +35,7 @@ import java.util.List;
 public class ShipmentManagerController {
 
     private final ShipmentManagerService service;
+    private final ShipmentDeliveryService shipmentDeliveryService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<ManagerShipmentListDto>>> list(
@@ -148,6 +151,30 @@ public class ShipmentManagerController {
 
         service.update(userId, id, editRequest);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PostMapping("/{id}/start")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SHIPMENT_START,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> startShipment(@PathVariable Integer id) {
+        shipmentDeliveryService.startShipment(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã bắt đầu chuyến DELIVERY"));
+    }
+
+    @PostMapping("/{id}/finish")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.SHIPMENT_FINISH,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> finishShipment(@PathVariable Integer id) {
+        shipmentDeliveryService.finishShipment(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã hoàn tất chuyến DELIVERY"));
     }
 
     @GetMapping("/export")

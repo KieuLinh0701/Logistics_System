@@ -215,18 +215,39 @@ public class AuditAspect {
     private String toJson(Object obj) {
         if (obj == null) return null;
         try {
+            Object target = obj;
             if (obj instanceof org.springframework.http.ResponseEntity<?> responseEntity) {
                 Object body = responseEntity.getBody();
                 if (body instanceof com.logistics.response.ApiResponse<?> apiResponse) {
-                    return objectMapper.writeValueAsString(apiResponse.getData());
+                    target = apiResponse.getData();
+                } else {
+                    target = body;
                 }
-                return objectMapper.writeValueAsString(body);
             }
-            return objectMapper.writeValueAsString(obj);
+
+            // Tuyệt đối KHÔNG serialize trực tiếp Hibernate entity ra JSON -
+            // có thể chứa back-reference gây StackOverflowError (vd: Shipment <-> ShipmentOrder).
+            String simpleName = target != null ? target.getClass().getName() : "";
+            if (isEntityClass(simpleName)) {
+                return null;
+            }
+
+            return objectMapper.writeValueAsString(target);
+        } catch (StackOverflowError soe) {
+            // Defensive: tránh làm hỏng cả request khi serialize chạm vòng lặp entity
+            log.warn("AuditAspect.toJson: StackOverflowError when serializing {} - skipping payload",
+                    obj.getClass().getName());
+            return null;
         } catch (Exception e) {
             log.warn("AuditAspect: could not serialize to json - {}", e.getMessage());
             return null;
         }
+    }
+
+    private boolean isEntityClass(String className) {
+        if (className == null) return false;
+        // Các package entity của project + Hibernate proxy thường nằm trong com.logistics.entity.*
+        return className.startsWith("com.logistics.entity.");
     }
 
     private String buildDescription(Audit audit) {

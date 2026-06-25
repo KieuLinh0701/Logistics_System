@@ -4,6 +4,7 @@ import com.logistics.config.properties.AiServiceProperties;
 import com.logistics.dto.ai.*;
 import com.logistics.dto.manager.ai.*;
 import com.logistics.entity.*;
+import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.enums.*;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.AiRouteErrorCode;
@@ -13,9 +14,12 @@ import com.logistics.service.ai.AiServiceClient;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.SQLException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,9 +40,11 @@ public class AiRouteOptimizationManagerService {
     private final ShipperAssignmentRepository shipperAssignmentRepository;
     private final EmployeeLeaveRequestRepository leaveRequestRepository;
     private final AiRoutePlanRepository aiRoutePlanRepository;
+    private final AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
     private final ShipperVehicleRepository shipperVehicleRepository;
     private final AiServiceClient aiServiceClient;
     private final AiServiceProperties aiServiceProperties;
+    private final ShipmentRepository shipmentRepository;
 
     public Map<String, Object> previewDeliveryReadyOrders(Integer managerUserId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
@@ -161,60 +167,243 @@ public class AiRouteOptimizationManagerService {
 
     @Transactional
     public ManagerAiRoutePlanDetailDto confirmPlan(Integer managerUserId, Long planId) {
-        Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
-        AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
-                .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
+        // === BEGIN CONFIRM PLAN ===
+        log.info("[AI_CONFIRM_PLAN_BEGIN] planId={} managerUserId={}", planId, managerUserId);
 
-        if (plan.getStatus() != AiRoutePlanStatus.DRAFT) {
-            throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS);
-        }
+        try {
+            Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
+            AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
+                    .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_PLAN_NOT_FOUND));
 
-        for (AiRoutePlanRoute route : plan.getRoutes()) {
-            Employee shipperEmployee = employeeRepository.findById(route.getShipperEmployeeId())
-                    .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_SHIPPER_NOT_FOUND));
+            if (plan.getStatus() != AiRoutePlanStatus.DRAFT) {
+                throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS);
+            }
 
-            for (AiRoutePlanStop stop : route.getStops()) {
-                RouteStopType stopType = stop.getStopType();
-                Order order = stop.getOrder();
+            int totalRoutes = plan.getRoutes() != null ? plan.getRoutes().size() : 0;
+            int totalOrders = plan.getRoutes() == null ? 0
+                    : plan.getRoutes().stream()
+                            .filter(Objects::nonNull)
+                            .mapToInt(r -> r.getStops() != null ? r.getStops().size() : 0)
+                            .sum();
 
-                // RETURN_TO_OFFICE stop: không có order, bỏ qua
-                if (stopType == RouteStopType.RETURN_TO_OFFICE) {
+            // === LOAD PLAN SUCCESS ===
+            log.info("[AI_CONFIRM_PLAN_LOADED] planId={} officeId={} planStatus={} totalRoutes={} totalOrders={}",
+                    planId, office.getId(), plan.getStatus(), totalRoutes, totalOrders);
+
+            List<ShipmentStatus> activeShipmentStatuses = List.of(ShipmentStatus.PENDING, ShipmentStatus.IN_TRANSIT);
+            int shipmentsCreated = 0;
+            int shipmentOrdersCreated = 0;
+
+            for (AiRoutePlanRoute route : plan.getRoutes()) {
+                Employee shipperEmployee = employeeRepository.findById(route.getShipperEmployeeId())
+                        .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_SHIPPER_NOT_FOUND));
+
+                String shipperName = (shipperEmployee.getUser() != null)
+                        ? ((shipperEmployee.getUser().getFirstName() != null
+                                ? shipperEmployee.getUser().getFirstName() : "")
+                            + " " + (shipperEmployee.getUser().getLastName() != null
+                                ? shipperEmployee.getUser().getLastName() : "")).trim()
+                        : "N/A";
+
+                List<AiRoutePlanStop> deliveryStops = route.getStops().stream()
+                        .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                        .filter(s -> s.getOrder() != null)
+                        .toList();
+
+                // === PROCESS ROUTE ===
+                log.info("[AI_CONFIRM_PROCESS_ROUTE] planId={} routeId={} shipperEmployeeId={} shipperName={} stopCount={}",
+                        planId, route.getId(), shipperEmployee.getId(), shipperName, deliveryStops.size());
+
+                if (deliveryStops.isEmpty()) {
+                    log.warn("[AI_CONFIRM_SKIP_ROUTE] planId={} routeId={} reason=empty_delivery_stops",
+                            planId, route.getId());
                     continue;
                 }
 
-                if (order != null) {
+                Shipment shipment = new Shipment();
+                shipment.setType(ShipmentType.DELIVERY);
+                shipment.setStatus(ShipmentStatus.PENDING);
+                shipment.setEmployee(shipperEmployee);
+                shipment.setFromOffice(office);
+                shipment.setToOffice(office);
+                shipment.setCreatedBy(plan.getManagerEmployee());
+                shipment.setVehicle(null);
+
+                // === CREATE SHIPMENT ===
+                log.info("[AI_CONFIRM_CREATE_SHIPMENT] planId={} routeId={} shipmentType={} shipmentStatus={} employeeId={}",
+                        planId, route.getId(),
+                        shipment.getType(), shipment.getStatus(), shipperEmployee.getId());
+
+                int ordersInRoute = 0;
+                for (AiRoutePlanStop stop : deliveryStops) {
+                    RouteStopType stopType = stop.getStopType();
+                    Order order = stop.getOrder();
+
+                    // === PROCESS STOP ===
+                    log.info("[AI_CONFIRM_PROCESS_STOP] planId={} routeId={} stopId={} stopType={} orderId={} trackingNumber={} orderStatus={}",
+                            planId, route.getId(), stop.getId(), stopType,
+                            order.getId(), order.getTrackingNumber(), order.getStatus());
+
                     if (order.getEmployee() != null && !Objects.equals(order.getEmployee().getId(), shipperEmployee.getId())) {
                         throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER);
                     }
-                    order.setEmployee(shipperEmployee);
 
-                    // DELIVERY: chuyển AT_DEST_OFFICE -> READY_FOR_PICKUP
+                    boolean alreadyInActiveShipment = orderRepository.existsByIdAndShipmentStatusIn(
+                            order.getId(), activeShipmentStatuses);
+                    if (alreadyInActiveShipment) {
+                        throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER,
+                                "Order " + order.getTrackingNumber() + " đã thuộc một chuyến đang hoạt động, không thể confirm AI plan.");
+                    }
+
+                    ShipmentOrder so = new ShipmentOrder();
+                    ShipmentOrderId soId = new ShipmentOrderId();
+                    soId.setShipmentId(null);
+                    soId.setOrderId(order.getId());
+                    so.setId(soId);
+                    so.setShipment(shipment);
+                    so.setOrder(order);
+                    // Defensive: đảm bảo shipment.shipmentOrders không null trước khi add
+                    if (shipment.getShipmentOrders() == null) {
+                        shipment.setShipmentOrders(new java.util.ArrayList<>());
+                    }
+                    // Phase 3A: snapshot sequence + ETA + leg từ AiRoutePlanStop
+                    so.setStopSequence(stop.getStopSequence());
+                    so.setStopType(stopType);
+                    so.setEtaTime(stop.getEtaTime());
+                    so.setEtaMinutesFromStart(stop.getEtaMinutesFromStart());
+                    so.setLegDistanceKm(stop.getLegDistanceKm());
+                    so.setLegDurationMinutes(stop.getLegDurationMinutes());
+                    shipment.getShipmentOrders().add(so);
+
+                    // === CREATE SHIPMENT ORDER ===
+                    log.info("[AI_CONFIRM_CREATE_SHIPMENT_ORDER] planId={} routeId={} shipmentId={} orderId={} stopSequence={} stopType={}",
+                            planId, route.getId(),
+                            shipment.getId() != null ? shipment.getId() : "PENDING_SAVE",
+                            order.getId(), stop.getStopSequence(), stopType);
+
+                    order.setEmployee(shipperEmployee);
                     if (stopType == RouteStopType.DELIVERY) {
                         if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
                             order.setStatus(OrderStatus.READY_FOR_PICKUP);
                         }
-                    }
-                    // PICKUP: giữ nguyên status hoặc chuyển CONFIRMED -> READY_FOR_PICKUP nếu cần
-                    else if (stopType == RouteStopType.PICKUP) {
+                    } else if (stopType == RouteStopType.PICKUP) {
                         if (order.getStatus() == OrderStatus.CONFIRMED) {
                             order.setStatus(OrderStatus.READY_FOR_PICKUP);
                         }
                     }
                     orderRepository.save(order);
+
+                    ordersInRoute++;
+                    shipmentOrdersCreated++;
                 }
+
+                if (ordersInRoute == 0) {
+                    log.warn("[AI_CONFIRM_SKIP_ROUTE] planId={} routeId={} reason=no_valid_orders_after_validation",
+                            planId, route.getId());
+                    continue;
+                }
+
+                // === BEFORE SAVE SHIPMENT ===
+                int beforeSaveCount = shipment.getShipmentOrders() != null ? shipment.getShipmentOrders().size() : 0;
+                log.info("[AI_CONFIRM_BEFORE_SAVE_SHIPMENT] planId={} routeId={} shipmentOrdersCount={}",
+                        planId, route.getId(), beforeSaveCount);
+
+                Shipment savedShipment = shipmentRepository.save(shipment);
+                route.setShipmentId(savedShipment.getId());
+
+                // === AFTER SAVE SHIPMENT ===
+                log.info("[AI_CONFIRM_AFTER_SAVE_SHIPMENT] planId={} routeId={} shipmentId={} shipmentCode={}",
+                        planId, route.getId(), savedShipment.getId(), savedShipment.getCode());
+
+                shipmentsCreated++;
+                log.info("[AI_CONFIRM_ROUTE] planId={} routeId={} shipmentId={} shipmentCode={} orders={}",
+                        planId, route.getId(), savedShipment.getId(), savedShipment.getCode(), ordersInRoute);
             }
+
+            aiRoutePlanRouteRepository.saveAll(plan.getRoutes());
+
+            // === BEFORE SAVE PLAN ===
+            log.info("[AI_CONFIRM_BEFORE_SAVE_PLAN] planId={} statusBefore={}",
+                    planId, plan.getStatus());
+
+            plan.setStatus(AiRoutePlanStatus.CONFIRMED);
+            plan.setConfirmedAt(LocalDateTime.now());
+            aiRoutePlanRepository.save(plan);
+
+            // === CONFIRM PLAN SUCCESS ===
+            log.info("[AI_CONFIRM_PLAN_SUCCESS] planId={} officeId={} shipmentsCreated={} shipmentOrdersCreated={}",
+                    planId, office.getId(), shipmentsCreated, shipmentOrdersCreated);
+
+            return toDetailDto(plan, List.of());
+
+        } catch (Exception ex) {
+            // ============== EXCEPTION HANDLER ==============
+            log.error("[AI_CONFIRM_PLAN_ERROR] planId={} errorType={} message={}",
+                    planId, ex.getClass().getName(), ex.getMessage(), ex);
+
+            Throwable root = ex;
+            while (root.getCause() != null && root.getCause() != root) {
+                root = root.getCause();
+            }
+            log.error("[AI_CONFIRM_PLAN_ROOT_CAUSE] planId={} rootType={} rootMessage={}",
+                    planId, root.getClass().getName(), root.getMessage());
+
+            // SQL / DataIntegrityViolation - log chi tiết
+            if (ex instanceof DataIntegrityViolationException dive) {
+                log.error("[AI_CONFIRM_PLAN_SQL] planId={} sqlState={} constraintName={} message={}",
+                        planId,
+                        safeSqlState(dive),
+                        safeConstraint(dive),
+                        dive.getMostSpecificCause() != null ? dive.getMostSpecificCause().getMessage() : dive.getMessage());
+            }
+            if (root instanceof DataIntegrityViolationException diveRoot) {
+                log.error("[AI_CONFIRM_PLAN_SQL_ROOT] planId={} sqlState={} constraintName={} message={}",
+                        planId,
+                        safeSqlState(diveRoot),
+                        safeConstraint(diveRoot),
+                        diveRoot.getMostSpecificCause() != null ? diveRoot.getMostSpecificCause().getMessage() : diveRoot.getMessage());
+            }
+            // Nếu SQLException nằm trong cause chain
+            Throwable t = ex;
+            while (t != null) {
+                if (t instanceof SQLException sqle) {
+                    log.error("[AI_CONFIRM_PLAN_SQL_DETAIL] planId={} sqlState={} errorCode={} sqlMessage={}",
+                            planId, sqle.getSQLState(), sqle.getErrorCode(), sqle.getMessage());
+                    break;
+                }
+                t = t.getCause();
+            }
+
+            // Re-throw để giữ nguyên behavior (transaction rollback + controller 500)
+            throw ex;
         }
+    }
 
-        plan.setStatus(AiRoutePlanStatus.CONFIRMED);
-        plan.setConfirmedAt(LocalDateTime.now());
-        aiRoutePlanRepository.save(plan);
+    private static String safeSqlState(DataIntegrityViolationException e) {
+        try {
+            Throwable cause = e.getCause();
+            if (cause instanceof SQLException sqle) {
+                return sqle.getSQLState();
+            }
+        } catch (Exception ignored) {
+        }
+        return "N/A";
+    }
 
-        log.info("confirmPlan: planId={} routeCount={} stopCount={}",
-                planId,
-                plan.getRoutes().size(),
-                plan.getRoutes().stream().mapToInt(r -> r.getStops().size()).sum());
-
-        return toDetailDto(plan, List.of());
+    private static String safeConstraint(DataIntegrityViolationException e) {
+        try {
+            String msg = e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : "";
+            if (msg == null) return "N/A";
+            // Tìm tên constraint dạng "constraint_name"
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                    "(?:constraint|key|index)\\s+[`\"']?([A-Za-z0-9_$.]+)",
+                    java.util.regex.Pattern.CASE_INSENSITIVE).matcher(msg);
+            if (m.find()) {
+                return m.group(1);
+            }
+        } catch (Exception ignored) {
+        }
+        return "N/A";
     }
 
     @Transactional
@@ -546,6 +735,9 @@ public class AiRouteOptimizationManagerService {
                         .returnToOffice(r.getReturnToOffice())
                         .routeVersion(r.getRouteVersion())
                         .isActive(r.getIsActive())
+                        .shipmentId(r.getShipmentId())
+                        .shipmentCode(r.getShipmentId() != null ? buildShipmentCode(plan, r) : null)
+                        .shipmentStatus(r.getShipmentId() != null ? ShipmentStatus.PENDING.name() : null)
                         .returnToOfficeStop(r.getStops().stream()
                                 .filter(s -> s.getStopType() == RouteStopType.RETURN_TO_OFFICE)
                                 .findFirst()
@@ -660,5 +852,16 @@ public class AiRouteOptimizationManagerService {
 
     private BigDecimal toBd(Double value) {
         return value == null ? null : BigDecimal.valueOf(value);
+    }
+
+    private String buildShipmentCode(AiRoutePlan plan, AiRoutePlanRoute route) {
+        if (route.getShipmentId() == null) {
+            return null;
+        }
+        List<Shipment> matched = shipmentRepository.findAllById(List.of(route.getShipmentId()));
+        if (matched.isEmpty()) {
+            return null;
+        }
+        return matched.get(0).getCode();
     }
 }

@@ -20,6 +20,14 @@ public enum ShipmentErrorCode implements BaseErrorCode {
     SHIPMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "Trạng thái chuyến hàng không hợp lệ"),
     SHIPMENT_CANNOT_ADD_ORDERS(HttpStatus.BAD_REQUEST, "Chuyến hàng không thể thêm đơn hàng!"),
     SHIPMENT_CANNOT_DELETE_ORDERS(HttpStatus.BAD_REQUEST, "Chuyến hàng không thể xóa các đơn hàng!"),
+    SHIPMENT_NOT_ACTIVE_FOR_ORDER(HttpStatus.BAD_REQUEST, "Đơn hàng không thuộc chuyến DELIVERY đang hoạt động"),
+    SHIPMENT_NOT_DELIVERY(HttpStatus.BAD_REQUEST, "Chỉ chấp nhận chuyến DELIVERY cho thao tác này"),
+    SHIPMENT_ALREADY_STARTED(HttpStatus.BAD_REQUEST, "Chuyến hàng đã được bắt đầu"),
+    SHIPMENT_NOT_STARTED(HttpStatus.BAD_REQUEST, "Chuyến hàng chưa được bắt đầu"),
+    SHIPMENT_EMPTY(HttpStatus.BAD_REQUEST, "Chuyến hàng chưa có đơn nào, không thể bắt đầu"),
+    SHIPMENT_HAS_ACTIVE_ORDERS(HttpStatus.BAD_REQUEST, "Chuyến hàng còn đơn chưa hoàn tất, không thể kết thúc"),
+    SHIPMENT_ORDER_NOT_IN_SHIPMENT(HttpStatus.BAD_REQUEST, "Đơn hàng không thuộc chuyến này"),
+    SHIPMENT_NOT_ASSIGNED(HttpStatus.FORBIDDEN, "Bạn không phải nhân viên được gán cho chuyến này"),
     ;
 
     private final HttpStatus httpStatus;

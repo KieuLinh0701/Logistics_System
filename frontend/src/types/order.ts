@@ -118,6 +118,11 @@ export interface Order {
     codAmount?: number;
     returnedAt: number;
     readyForPickupAt: string;
+    // Shipment context (do backend trả về cho shipper/manager)
+    shipmentId?: number | null;
+    shipmentCode?: string | null;
+    shipmentStatus?: "PENDING" | "IN_TRANSIT" | "COMPLETED" | "CANCELLED" | null;
+    shipmentType?: "DELIVERY" | "TRANSFER" | null;
 }
 
 export interface StatusCount {

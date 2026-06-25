@@ -29,4 +29,7 @@ public class ManagerAiShipperRouteDto {
     private Boolean isActive;
     private List<ManagerAiRouteStopDto> stops;
     private ManagerAiRouteStopDto returnToOfficeStop;
+    private Integer shipmentId;
+    private String shipmentCode;
+    private String shipmentStatus;
 }

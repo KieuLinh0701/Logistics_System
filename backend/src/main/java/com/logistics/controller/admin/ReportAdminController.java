@@ -4,12 +4,14 @@ import com.logistics.dto.admin.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ReportAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Date;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
@@ -21,6 +23,8 @@ import java.util.Map;
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin - Report", description = "Báo cáo thống kê và xuất dữ liệu")
 public class ReportAdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportAdminController.class);
 
     private final ReportAdminService reportService;
 
@@ -34,8 +38,13 @@ public class ReportAdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
-        List<com.logistics.dto.admin.AdminFinancialPoint> points = reportService.getFinancialByDate(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(ApiResponse.success(points));
+        try {
+            List<com.logistics.dto.admin.AdminFinancialPoint> points = reportService.getFinancialByDate(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+            return ResponseEntity.ok(ApiResponse.success(points));
+        } catch (Exception ex) {
+            log.error("[ADMIN_REPORT_ERROR] endpoint=financial start={} end={}", s, e, ex);
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
     }
 
     @GetMapping("/shipper")
@@ -84,24 +93,29 @@ public class ReportAdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
-        List<Object[]> rows = reportService.getOrderOperationSummary(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        List<Map<String, Object>> out = rows.stream().map(r -> {
-            Map<String, Object> m = new HashMap<>();
-            Date d = (Date) r[0];
-            m.put("date", d != null ? d.toLocalDate().toString() : null);
-            m.put("totalOrders", r[1] == null ? 0 : ((Number) r[1]).longValue());
-            m.put("delivered", r[2] == null ? 0 : ((Number) r[2]).longValue());
-            m.put("failed", r[3] == null ? 0 : ((Number) r[3]).longValue());
-            m.put("avgDeliverySeconds", r[4] == null ? 0 : ((Number) r[4]).doubleValue());
-            m.put("returning", r[5] == null ? 0 : ((Number) r[5]).longValue());
-            m.put("returned", r[6] == null ? 0 : ((Number) r[6]).longValue());
-            long total = m.get("totalOrders") == null ? 0L : ((Number) m.get("totalOrders")).longValue();
-            long returned = m.get("returned") == null ? 0L : ((Number) m.get("returned")).longValue();
-            double returnRate = total > 0 ? ((double) returned) / ((double) total) : 0.0;
-            m.put("returnRate", returnRate);
-            return m;
-        }).toList();
-        return ResponseEntity.ok(ApiResponse.success(out));
+        try {
+            List<Object[]> rows = reportService.getOrderOperationSummary(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+            List<Map<String, Object>> out = rows.stream().map(r -> {
+                Map<String, Object> m = new HashMap<>();
+                LocalDate d = com.logistics.repository.ReportRepository.toLocalDate(r[0]);
+                m.put("date", d != null ? d.toString() : null);
+                m.put("totalOrders", com.logistics.repository.ReportRepository.safeLong(r[1]));
+                m.put("delivered", com.logistics.repository.ReportRepository.safeLong(r[2]));
+                m.put("failed", com.logistics.repository.ReportRepository.safeLong(r[3]));
+                m.put("avgDeliverySeconds", com.logistics.repository.ReportRepository.safeBigDecimal(r[4]).doubleValue());
+                m.put("returning", com.logistics.repository.ReportRepository.safeLong(r[5]));
+                m.put("returned", com.logistics.repository.ReportRepository.safeLong(r[6]));
+                long total = ((Number) m.get("totalOrders")).longValue();
+                long returned = ((Number) m.get("returned")).longValue();
+                double returnRate = total > 0 ? ((double) returned) / ((double) total) : 0.0;
+                m.put("returnRate", returnRate);
+                return m;
+            }).toList();
+            return ResponseEntity.ok(ApiResponse.success(out));
+        } catch (Exception ex) {
+            log.error("[ADMIN_REPORT_ERROR] endpoint=operations start={} end={}", s, e, ex);
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
     }
 
     @GetMapping("/overview")
@@ -110,8 +124,13 @@ public class ReportAdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
-        AdminOverviewDto dto = reportService.getOverview(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(ApiResponse.success(dto));
+        try {
+            AdminOverviewDto dto = reportService.getOverview(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+            return ResponseEntity.ok(ApiResponse.success(dto));
+        } catch (Exception ex) {
+            log.error("[ADMIN_REPORT_ERROR] endpoint=overview start={} end={}", s, e, ex);
+            return ResponseEntity.ok(ApiResponse.success(null));
+        }
     }
 
     @GetMapping("/offices")
@@ -130,8 +149,13 @@ public class ReportAdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
-        List<java.util.Map<String, Object>> list = reportService.getShipperReportDetailed(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok(ApiResponse.success(list));
+        try {
+            List<java.util.Map<String, Object>> list = reportService.getShipperReportDetailed(s.atStartOfDay(), e.atTime(LocalTime.MAX));
+            return ResponseEntity.ok(ApiResponse.success(list));
+        } catch (Exception ex) {
+            log.error("[ADMIN_REPORT_ERROR] endpoint=shippers start={} end={}", s, e, ex);
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
     }
 
     @GetMapping("/finance")

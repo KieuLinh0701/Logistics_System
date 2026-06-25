@@ -228,6 +228,7 @@ const BarcodeScanner: React.FC = () => {
                 {!scanning ? (
                   <Button
                     type="primary"
+                    className="primary-button"
                     size="large"
                     icon={<CameraOutlined />}
                     onClick={handleStartCamera}
@@ -254,6 +255,7 @@ const BarcodeScanner: React.FC = () => {
                 >
                   <Button
                     size="large"
+                    className="filter-button"
                     icon={<FileImageOutlined />}
                     disabled={processing || scanning}
                   >

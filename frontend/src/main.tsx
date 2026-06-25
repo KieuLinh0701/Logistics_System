@@ -10,6 +10,11 @@ createRoot(document.getElementById('root')!).render(
     <ConfigProvider
       locale={viVN}
       getPopupContainer={() => document.body}
+      theme={{
+        token: {
+          colorPrimary: "#1C3D90",
+        },
+      }}
     >
       <App />
     </ConfigProvider>
