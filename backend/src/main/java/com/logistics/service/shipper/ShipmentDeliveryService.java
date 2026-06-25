@@ -412,25 +412,74 @@ public class ShipmentDeliveryService {
                 .findFirst();
 
         if (activeShipmentOpt.isEmpty()) {
-            // Không có shipment DELIVERY IN_TRANSIT → fallback: chỉ gán employee + set PICKING_UP, chờ manager gom.
-            Shipment contextShipment = null;
-            List<Shipment> activeShipments = shipmentOrderRepository.findActiveShipmentsForOrder(orderId);
-            if (activeShipments != null && !activeShipments.isEmpty()) {
-                contextShipment = activeShipments.get(0);
+            // Không có shipment DELIVERY IN_TRANSIT → tạo chuyến mới cho shipper rồi thêm đơn pickup vào.
+            Shipment shipment = new Shipment();
+            shipment.setStatus(ShipmentStatus.PENDING);
+            shipment.setType(ShipmentType.DELIVERY);
+            shipment.setEmployee(employee);
+            shipment.setFromOffice(order.getFromOffice());
+            shipment.setToOffice(order.getToOffice());
+            shipmentRepository.save(shipment);
+
+            log.info("[ACCEPT_PICKUP_CREATE_SHIPMENT] orderId={} newShipmentId={} employeeId={}",
+                    orderId, shipment.getId(), employee.getId());
+
+            try {
+                InsertPickupShipmentRequest body = new InsertPickupShipmentRequest();
+                body.setPickupOrderId(orderId);
+                Map<String, Object> insertResult = orderShipperService.insertPickupIntoShipment(
+                        shipment.getId(), body);
+
+                if (order.getStatus() != OrderStatus.PICKING_UP) {
+                    order.setStatus(OrderStatus.PICKING_UP);
+                    orderRepository.save(order);
+                }
+
+                try {
+                    saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
+                            "Shipper nhận đơn pickup và tự động tạo chuyến mới " + shipment.getCode());
+                } catch (Exception he) {
+                    log.warn("Failed to save new-shipment history: {}", he.getMessage());
+                }
+
+                insertResult.put("success", true);
+                insertResult.put("message",
+                        "Đã tạo chuyến mới và thêm đơn pickup. Vui lòng tối ưu lại tuyến.");
+
+                shipment.setStatus(ShipmentStatus.IN_TRANSIT);
+                shipment.setStartTime(LocalDateTime.now());
+                shipmentRepository.save(shipment);
+
+                log.info("[ACCEPT_PICKUP_NEW_SHIPMENT_ADDED] orderId={} shipmentId={} requiresReoptimize={}",
+                        orderId, shipment.getId(), insertResult.get("requiresReoptimize"));
+                return insertResult;
+
+            } catch (Exception ex) {
+                log.warn(
+                        "acceptPickupRequest: create new shipment failed for orderId={} shipmentId={} ({}): {}",
+                        orderId,
+                        shipment.getId(),
+                        ex.getClass().getSimpleName(),
+                        ex.getMessage(),
+                        ex);
+                try {
+                    saveHistory(order, shipment, OrderHistoryActionType.PENDING,
+                            "Shipper đăng ký nhận đơn pickup (tạo chuyến mới thất bại: "
+                                    + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
+                } catch (Exception he) {
+                    log.warn("Failed to save new-shipment fallback history: {}", he.getMessage());
+                }
+
+                resp.put("success", true);
+                resp.put("message", "Đã đăng ký nhận đơn pickup (chờ gom vào chuyến)");
+                resp.put("orderId", orderId);
+                resp.put("shipmentId", shipment.getId());
+                resp.put("requiresReoptimize", false);
+                resp.put("reason", "new_shipment_add_failed");
+                resp.put("errorClass", ex.getClass().getSimpleName());
+                resp.put("errorMessage", ex.getMessage());
+                return resp;
             }
-            saveHistory(order, contextShipment, OrderHistoryActionType.PICKING_UP,
-                    "Shipper đăng ký nhận đơn pickup (chờ gom vào chuyến - không có shipment DELIVERY IN_TRANSIT)");
-
-            log.info(
-                    "[ACCEPT_PICKUP_NO_SHIPMENT] orderId={} employeeId={} orderStatus=PICKING_UP",
-                    orderId, employee.getId());
-
-            resp.put("success", true);
-            resp.put("message", "Đã đăng ký nhận đơn pickup (chờ gom vào chuyến)");
-            resp.put("orderId", orderId);
-            resp.put("shipmentId", null);
-            resp.put("requiresReoptimize", false);
-            return resp;
         }
 
         Shipment activeShipment = activeShipmentOpt.get();

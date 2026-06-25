@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from "react";
 import {Button, Input, message, Select, Space, Table, Tag, Typography,} from "antd";
-import {EyeOutlined, ReloadOutlined, SearchOutlined,} from "@ant-design/icons";
+import {EyeOutlined, FileExcelOutlined, PlayCircleOutlined, ReloadOutlined, SearchOutlined,} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ShipperOrder} from "../../api/orderApi";
 import orderApi from "../../api/orderApi";
+import shipmentApi from "../../api/shipmentApi";
 import "../../styles/ListPage.css";
 import "./ShipperPagesShared.css";
 
@@ -25,6 +26,58 @@ const ShipperOrders: React.FC = () => {
     pageSize: 10,
     total: 0,
   });
+  const [activeShipments, setActiveShipments] = useState<any[]>([]);
+  const [shipmentActionLoading, setShipmentActionLoading] = useState(false);
+
+  useEffect(() => {
+    fetchOrders();
+    fetchActiveShipments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.current, pagination.pageSize, filters]);
+
+  const fetchActiveShipments = async () => {
+    try {
+      const items = await shipmentApi.listShipperActiveShipments();
+      setActiveShipments(items);
+    } catch (error) {
+      console.error("Error fetching active shipments:", error);
+    }
+  };
+
+  const handleStartShipment = async () => {
+    const pending = activeShipments.find((s) => s.status === "PENDING");
+    if (!pending?.id) return;
+    try {
+      setShipmentActionLoading(true);
+      await shipmentApi.startShipperDeliveryShipment(pending.id);
+      message.success("Đã bắt đầu chuyến giao hàng");
+      await fetchActiveShipments();
+      await fetchOrders();
+    } catch (e: any) {
+      message.error(e?.message || "Không thể bắt đầu chuyến");
+    } finally {
+      setShipmentActionLoading(false);
+    }
+  };
+
+  const handleFinishShipment = async () => {
+    const inTransit = activeShipments.find((s) => s.status === "IN_TRANSIT");
+    if (!inTransit?.id) return;
+    try {
+      setShipmentActionLoading(true);
+      await shipmentApi.finishShipperDeliveryShipment(inTransit.id);
+      message.success("Đã kết thúc chuyến giao hàng");
+      await fetchActiveShipments();
+      await fetchOrders();
+    } catch (e: any) {
+      message.error(e?.message || "Không thể kết thúc chuyến");
+    } finally {
+      setShipmentActionLoading(false);
+    }
+  };
+
+  const hasPendingShipment = activeShipments.some((s) => s.status === "PENDING");
+  const hasInTransitShipment = activeShipments.some((s) => s.status === "IN_TRANSIT");
 
   useEffect(() => {
     fetchOrders();
@@ -236,13 +289,40 @@ const ShipperOrders: React.FC = () => {
           </div>
         </div>
 
-        <div className="list-page-header shipper-page-header">
+        <div className="list-page-header shipper-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h3 className="list-page-title-main">Đơn hàng cần giao</h3>
             <div className="shipper-header-meta">
               <div className="list-page-tag">Kết quả: {orders.length} đơn</div>
             </div>
           </div>
+          {activeShipments.length > 0 && (
+            <Space>
+              {hasPendingShipment && (
+                <Button
+                  className="primary-button"
+                  icon={<PlayCircleOutlined />}
+                  onClick={handleStartShipment}
+                  loading={shipmentActionLoading}
+                >
+                  Bắt đầu chuyến
+                </Button>
+              )}
+              {hasInTransitShipment && (
+                <Button
+                  className="success-button"
+                  icon={<FileExcelOutlined />}
+                  onClick={handleFinishShipment}
+                  loading={shipmentActionLoading}
+                >
+                  Kết thúc chuyến
+                </Button>
+              )}
+              <span className="text-muted">
+                {activeShipments.map((s) => s.code).join(", ")}
+              </span>
+            </Space>
+          )}
         </div>
 
         <div className="list-page-table shipper-page-table">
