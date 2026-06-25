@@ -427,6 +427,23 @@ const SideNav: React.FC = () => {
                 ],
             },
             {
+                key: "shipper-shipments",
+                label: "Quản lý chuyến hàng",
+                icon: <TruckOutlined/>,
+                children: [
+                    {
+                        key: "shipper-pending-shipments",
+                        label: "Chuyến hàng cần giao",
+                        path: "/shipper/shipments/pending",
+                    },
+                    {
+                        key: "shipper-history-shipments",
+                        label: "Lịch sử chuyến hàng",
+                        path: "/shipper/shipments/history",
+                    },
+                ],
+            },
+            {
                 key: "/shipper/scan-barcode",
                 label: "Quét mã vận đơn",
                 path: "/shipper/scan-barcode",
