@@ -1,6 +1,7 @@
 package com.logistics.service.shipper;
 
 import com.logistics.entity.*;
+import com.logistics.enums.EmployeeStatus;
 import com.logistics.enums.OrderCodStatus;
 import com.logistics.enums.PaymentSubmissionBatchStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
@@ -56,7 +57,23 @@ public class CODShipperService {
         if (employees == null || employees.isEmpty()) {
             throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
         }
-        return employees.get(0).getUser();
+        return employees.getFirst().getUser();
+    }
+
+    private Employee getCurrentShipperEmployee() {
+        Integer userId = SecurityUtils.getAuthenticatedUserId();
+        List<Employee> employees = employeeRepository.findByUserId(userId);
+        if (employees == null || employees.isEmpty()) {
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
+        }
+        return employees.stream()
+                .filter(e -> e.getAccountRole() != null
+                        && e.getAccountRole().getRole() != null
+                        && "Shipper".equals(e.getAccountRole().getRole().getName())
+                        && e.getAccountRole().getRole().getUserOwner() == null
+                        && EmployeeStatus.ACTIVE.equals(e.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
     }
 
     public Map<String, Object> getCODTransactions(int page, int limit, String status, String dateFrom, String dateTo) {
@@ -126,6 +143,7 @@ public class CODShipperService {
         return result;
     }
 
+    // CHƯA CHECK
     @Transactional
     public Map<String, Object> collectCOD(CollectCODRequest request) {
         User shipperUser = getCurrentShipperUser();
@@ -209,35 +227,56 @@ public class CODShipperService {
             throw new AppException(OrderErrorCode.ORDER_INVALID_QUANTITY);
         }
 
-        PaymentSubmissionBatch batch =
-                paymentSubmissionBatchRepository.findByShipperIdAndStatus(
-                        shipperUser.getId(),
-                        PaymentSubmissionBatchStatus.OPEN)
-                .orElseThrow(() -> new AppException(SettlementErrorCode.SETTLEMENT_NO_OPEN_BATCH));
+        List<PaymentSubmission> submissions = paymentSubmissionRepository
+                .findAllByIdInAndStatus(request.getTransactionIds(), PaymentSubmissionStatus.PENDING);
 
-        if (batch.getSubmissions() == null || batch.getSubmissions().isEmpty()) {
+        if (submissions.isEmpty() || submissions.size() != request.getTransactionIds().size()) {
             throw new AppException(SettlementErrorCode.SETTLEMENT_NO_SUBMISSION);
         }
 
-        BigDecimal provided = BigDecimal.valueOf(request.getTotalAmount());
-        BigDecimal expected = batch.getTotalSystemAmount();
+        boolean allBelongToShipper = submissions.stream()
+                .allMatch(s -> s.getShipper().getId().equals(shipperUser.getId()));
+        if (!allBelongToShipper) {
+            throw new AppException(SettlementErrorCode.SETTLEMENT_ACCESS_DENIED);
+        }
 
-        if (provided.compareTo(expected) > 0) {
+        BigDecimal expected = submissions.stream()
+                .map(PaymentSubmission::getSystemAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal provided = BigDecimal.valueOf(request.getTotalAmount());
+
+        BigDecimal tolerance = BigDecimal.valueOf(1000);
+
+        if (provided.compareTo(expected.add(tolerance)) > 0) {
             throw new AppException(SettlementErrorCode.SETTLEMENT_AMOUNT_EXCEEDED);
         }
 
-        for (PaymentSubmission submission : batch.getSubmissions()) {
+        if (provided.compareTo(expected.subtract(tolerance)) < 0) {
+            throw new AppException(SettlementErrorCode.SETTLEMENT_AMOUNT_NOT_ENOUGH);
+        }
+
+        Employee employee = getCurrentShipperEmployee();
+        Office office = employee.getOffice();
+
+        // Tạo batch mới
+        PaymentSubmissionBatch batch = new PaymentSubmissionBatch();
+        batch.setShipper(shipperUser);
+        batch.setStatus(PaymentSubmissionBatchStatus.PROCESSING);
+        batch.setTotalSystemAmount(expected);
+        batch.setTotalActualAmount(provided);
+        batch.setNotes(request.getNotes());
+        batch.setOffice(office);
+        paymentSubmissionBatchRepository.save(batch);
+
+        for (PaymentSubmission submission : submissions) {
+            submission.setBatch(batch);
             submission.setStatus(PaymentSubmissionStatus.PROCESSING);
-            submission.setPaidAt(LocalDateTime.now());
             paymentSubmissionRepository.save(submission);
         }
 
-        batch.setNotes(request.getNotes());
-        batch.setTotalActualAmount(provided);
-        batch.setStatus(PaymentSubmissionBatchStatus.PROCESSING);
-
         Map<String, Object> result = new HashMap<>();
-        result.put("submissionCount", batch.getSubmissions().size());
+        result.put("submissionCount", submissions.size());
         result.put("systemAmount", batch.getTotalSystemAmount());
         result.put("actualAmount", batch.getTotalActualAmount());
         result.put("discrepancy", provided.subtract(expected).intValue());

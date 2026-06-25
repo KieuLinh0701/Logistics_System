@@ -1,5 +1,9 @@
-export const canProcessManagerPaymetSubmission = (value: string) => {
-    return ["MISMATCHED"].includes(value);
+export const canProcessManagerPaymentSubmission = (value: string) => {
+    return [
+        "PENDING",
+        "PROCESSING",
+        "MISMATCHED",
+    ].includes(value);
 };
 
 export const PAYMENT_SUBMISSION_STATUSES = ['PENDING', 'PROCESSING', 'MATCHED', 'MISMATCHED', 'ADJUSTED'] as const;

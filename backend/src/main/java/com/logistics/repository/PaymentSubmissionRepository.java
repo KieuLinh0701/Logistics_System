@@ -36,5 +36,6 @@ public interface PaymentSubmissionRepository extends JpaRepository<PaymentSubmis
         BigDecimal sumActualAmountByOrderIdAndStatusIn(@Param("orderId") Integer orderId,
                 @Param("statuses") List<PaymentSubmissionStatus> statuses);
 
+        List<PaymentSubmission> findAllByIdInAndStatus(List<Integer> ids, PaymentSubmissionStatus status);
 }
 

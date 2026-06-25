@@ -3,11 +3,11 @@ import {Button, Col, DatePicker, Input, Row, Select, Tooltip} from "antd";
 import {CloseCircleOutlined, SearchOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
-    PAYMENT_SUBMISSION_FILTER_SORT,
-    PAYMENT_SUBMISSION_STATUSES,
-    translatePaymentSubmissionFilterSort,
-    translatePaymentSubmissionStatus
-} from "../../../../utils/paymentSubmissionUtils";
+    PAYMENT_SUBMISSION_BATCH_FILTER_SORT,
+    PAYMENT_SUBMISSION_BATCH_STATUSES,
+    translatePaymentSubmissionBatchFilterSort,
+    translatePaymentSubmissionBatchStatus
+} from "../../../../utils/paymentSubmissionBatchUtils.ts";
 
 type FilterKeys = "sort" | "status"
 
@@ -51,19 +51,19 @@ const SearchFilters: React.FC<Props> = ({
               value={filters.sort}
               onChange={(val) => setFilters("sort", val)}
               className="filter-select"
-              listHeight={PAYMENT_SUBMISSION_FILTER_SORT.length * 40 + 50}
+              listHeight={PAYMENT_SUBMISSION_BATCH_FILTER_SORT.length * 40 + 50}
             >
-              {PAYMENT_SUBMISSION_FILTER_SORT.map((t) => <Select.Option key={t} value={t}>{translatePaymentSubmissionFilterSort(t)}</Select.Option>)}
+              {PAYMENT_SUBMISSION_BATCH_FILTER_SORT.map((t) => <Select.Option key={t} value={t}>{translatePaymentSubmissionBatchFilterSort(t)}</Select.Option>)}
             </Select>
 
             <Select
               value={filters.status}
               onChange={(val) => setFilters("status", val)}
               className="filter-select"
-              listHeight={PAYMENT_SUBMISSION_STATUSES.length * 40 + 50}
+              listHeight={PAYMENT_SUBMISSION_BATCH_STATUSES.length * 40 + 50}
             >
               <Select.Option value="ALL">Tất cả trạng thái</Select.Option>
-              {PAYMENT_SUBMISSION_STATUSES.map((t) => <Select.Option key={t} value={t}>{translatePaymentSubmissionStatus(t)}</Select.Option>)}
+              {PAYMENT_SUBMISSION_BATCH_STATUSES.map((t) => <Select.Option key={t} value={t}>{translatePaymentSubmissionBatchStatus(t)}</Select.Option>)}
             </Select>
 
             <DatePicker.RangePicker

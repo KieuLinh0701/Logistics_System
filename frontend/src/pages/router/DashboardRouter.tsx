@@ -21,7 +21,7 @@ const DashboardRouter = () => {
     case "driver":
       return <DriverDashboard />;
     default:
-      return <Forbidden />;
+      return <UserDashboard />;
   }
 };
 

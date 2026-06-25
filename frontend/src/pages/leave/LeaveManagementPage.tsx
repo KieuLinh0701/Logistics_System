@@ -112,7 +112,7 @@ const LeaveManagementPage: React.FC = () => {
         message.error(res.message || "Cập nhật trạng thái đơn nghỉ phép thất bại");
         return;
       }
-      message.success(res.message || "Cập nhật trạng thái đơn nghỉ phép thành công");
+      message.success("Cập nhật trạng thái đơn nghỉ phép thành công");
       await fetchData();
     } catch {
       message.error("Cập nhật trạng thái đơn nghỉ phép thất bại");

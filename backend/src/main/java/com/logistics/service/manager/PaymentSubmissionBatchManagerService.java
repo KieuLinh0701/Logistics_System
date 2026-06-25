@@ -317,8 +317,6 @@ public class PaymentSubmissionBatchManagerService {
                         orderRepository.save(order);
                     }
                     break;
-                case OPEN:
-                    break;
             }
         }
 
