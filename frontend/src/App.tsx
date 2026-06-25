@@ -81,7 +81,11 @@ import ShipperIncidentReport from "./pages/shipper/IncidentReport";
 import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
 import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 import FailedDeliveryOrders from "./pages/shipper/FailedDeliveryOrders";
+<<<<<<< Updated upstream
 import ShipperPendingShipments from "./pages/shipper/ShipperPendingShipments";
+=======
+import ShipperShipmentHistory from "./pages/shipper/shipment/ShipperShipmentHistory.tsx";
+>>>>>>> Stashed changes
 
 // Driver
 import DriverShipments from "./pages/driver/Shipments";
@@ -103,6 +107,7 @@ import JobDetailPage from "./pages/common/recruitment/JobDetailPage";
 import ApplyJobPage from "./pages/common/recruitment/ApplyJobPage";
 import JobPostingManagementPage from "./pages/hr/recruitment/job-posting/JobPostingManagementPage";
 import ApplicationReviewPage from "./pages/hr/recruitment/application/ApplicationReviewPage";
+import ShipperShipmentOrders from "./pages/shipper/shipment/ShipperShipmentOrders.tsx";
 
 const App: React.FC = () => {
     return (
@@ -288,6 +293,10 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_shipper"]}><ShipperPendingShipments/></PrivateRoute>}/>
                         <Route path="/shipper/settings/vehicle" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><Navigate to="/account/settings?tab=vehicle" replace /></PrivateRoute>}/>
+                        <Route path="/shipper/shipments/history" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperShipmentHistory/></PrivateRoute>}/>
+                        <Route path="/shipper/shipments/history/:shipmentId/orders" element={<PrivateRoute
+                            allowedPermissionGroups={["group_shipper"]}><ShipperShipmentOrders/></PrivateRoute>}/>
 
                         {/* Driver routes */}
                         <Route path="/driver/shipments"

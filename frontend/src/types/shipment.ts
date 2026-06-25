@@ -149,3 +149,19 @@ export interface GetOrdersByShipmentIdManagerResponse {
   status: string;
   type: string;
 }
+
+export interface ShipperShipmentSearchRequest {
+  page: number;
+  limit: number;
+  search?: string;
+  sort?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ShipperOrderShipmentSearchRequest {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
