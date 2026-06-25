@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -22,7 +20,6 @@ import java.util.List;
 @Setter
 @Table(name = "orders")
 @NoArgsConstructor
-@Audited
 @EntityListeners(AuditingEntityListener.class)
 public class Order {
 
@@ -163,12 +160,10 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "service_type_id", nullable = false)
-    @NotAudited
     private ServiceType serviceType;
 
     @ManyToOne
     @JoinColumn(name = "promotion_id")
-    @NotAudited
     private Promotion promotion;
 
     @Column(nullable = false)
@@ -210,7 +205,6 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_office_id")
-    @Audited
     private Office currentOffice;
 
     private LocalDateTime paidAt;

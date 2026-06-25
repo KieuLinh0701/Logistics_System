@@ -4,8 +4,6 @@ import com.logistics.enums.ProductStatus;
 import com.logistics.enums.ProductType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -20,7 +18,6 @@ import java.util.List;
 @Data
 @Getter
 @Setter
-@Audited
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -67,7 +64,6 @@ public class Product {
 
     // ------------------- Quan hệ với OrderProduct -------------------
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @NotAudited
     private List<OrderProduct> orderProducts;
 
     // ------------------- Thời gian tạo / cập nhật -------------------

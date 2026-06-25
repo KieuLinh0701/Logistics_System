@@ -5,7 +5,6 @@ import com.logistics.enums.IncidentStatus;
 import com.logistics.enums.IncidentType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -15,7 +14,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Entity
-@Audited
 @Setter
 @Getter
 @Table(name = "incident_reports")
@@ -63,7 +61,6 @@ public class IncidentReport {
     private IncidentPriority priority = IncidentPriority.MEDIUM;
 
     @ElementCollection
-    @org.hibernate.envers.NotAudited
     @CollectionTable(name = "incident_report_images", joinColumns = @JoinColumn(name = "incident_report_id"))
     @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private List<String> images;

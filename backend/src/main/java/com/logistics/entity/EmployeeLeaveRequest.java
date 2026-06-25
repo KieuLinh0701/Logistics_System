@@ -5,7 +5,6 @@ import com.logistics.enums.LeaveReasonType;
 import com.logistics.enums.LeaveRequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -14,7 +13,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Audited
 @Data
 @Getter
 @Setter

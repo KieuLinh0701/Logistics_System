@@ -4,8 +4,6 @@ import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -16,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Audited
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,7 +43,6 @@ public class Shipment {
 
     // Liên kết 1-n với ShipmentOrder
     @OneToMany(mappedBy = "shipment", cascade = CascadeType.ALL, orphanRemoval = true)
-    @NotAudited
     private List<ShipmentOrder> shipmentOrders = new ArrayList<>();
 
     // Trạng thái chuyến hàng

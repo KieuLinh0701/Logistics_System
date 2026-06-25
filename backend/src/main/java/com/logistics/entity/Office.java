@@ -4,7 +4,6 @@ import com.logistics.enums.OfficeStatus;
 import com.logistics.enums.OfficeType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -15,7 +14,6 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Entity
-@Audited
 @Data
 @Getter
 @Setter
