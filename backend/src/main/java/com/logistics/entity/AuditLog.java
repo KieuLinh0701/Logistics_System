@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_audit_user_id",     columnList = "user_id"),
         @Index(name = "idx_audit_office_id",   columnList = "office_id"),
         @Index(name = "idx_audit_shop_id",     columnList = "shop_id"),
-        @Index(name = "idx_audit_entity",      columnList = "entity_type, entity_id"),
+        @Index(name = "idx_audit_entity",      columnList = "entity, entity_id"),
         @Index(name = "idx_audit_created_at",  columnList = "created_at"),
         @Index(name = "idx_audit_action",      columnList = "action")
 })
