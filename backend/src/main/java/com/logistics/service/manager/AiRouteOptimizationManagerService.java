@@ -193,6 +193,7 @@ public class AiRouteOptimizationManagerService {
             List<ShipmentStatus> activeShipmentStatuses = List.of(ShipmentStatus.PENDING, ShipmentStatus.IN_TRANSIT);
             int shipmentsCreated = 0;
             int shipmentOrdersCreated = 0;
+            Map<Integer, Order> ordersToUpdate = new LinkedHashMap<>();
 
             for (AiRoutePlanRoute route : plan.getRoutes()) {
                 Employee shipperEmployee = employeeRepository.findById(route.getShipperEmployeeId())
@@ -234,7 +235,6 @@ public class AiRouteOptimizationManagerService {
                         planId, route.getId(),
                         shipment.getType(), shipment.getStatus(), shipperEmployee.getId());
 
-                int ordersInRoute = 0;
                 for (AiRoutePlanStop stop : deliveryStops) {
                     RouteStopType stopType = stop.getStopType();
                     Order order = stop.getOrder();
@@ -281,23 +281,22 @@ public class AiRouteOptimizationManagerService {
                             shipment.getId() != null ? shipment.getId() : "PENDING_SAVE",
                             order.getId(), stop.getStopSequence(), stopType);
 
-                    order.setEmployee(shipperEmployee);
+                    Order tracked = ordersToUpdate.computeIfAbsent(order.getId(), id -> order);
+                    tracked.setEmployee(shipperEmployee);
                     if (stopType == RouteStopType.DELIVERY) {
-                        if (order.getStatus() == OrderStatus.AT_DEST_OFFICE) {
-                            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+                        if (tracked.getStatus() == OrderStatus.AT_DEST_OFFICE) {
+                            tracked.setStatus(OrderStatus.READY_FOR_PICKUP);
                         }
                     } else if (stopType == RouteStopType.PICKUP) {
-                        if (order.getStatus() == OrderStatus.CONFIRMED) {
-                            order.setStatus(OrderStatus.READY_FOR_PICKUP);
+                        if (tracked.getStatus() == OrderStatus.CONFIRMED) {
+                            tracked.setStatus(OrderStatus.READY_FOR_PICKUP);
                         }
                     }
-                    orderRepository.save(order);
 
-                    ordersInRoute++;
                     shipmentOrdersCreated++;
                 }
 
-                if (ordersInRoute == 0) {
+                if (shipment.getShipmentOrders().isEmpty()) {
                     log.warn("[AI_CONFIRM_SKIP_ROUTE] planId={} routeId={} reason=no_valid_orders_after_validation",
                             planId, route.getId());
                     continue;
@@ -305,7 +304,7 @@ public class AiRouteOptimizationManagerService {
 
                 // === BEFORE SAVE SHIPMENT ===
                 int beforeSaveCount = shipment.getShipmentOrders() != null ? shipment.getShipmentOrders().size() : 0;
-                log.info("[AI_CONFIRM_BEFORE_SAVE_SHIPMENT] planId={} routeId={} shipmentOrdersCount={}",
+                log.info("[AI_CONFIRM_BEFORE_AVE_SHIPMENT] planId={} routeId={} shipmentOrdersCount={}",
                         planId, route.getId(), beforeSaveCount);
 
                 Shipment savedShipment = shipmentRepository.save(shipment);
@@ -317,7 +316,11 @@ public class AiRouteOptimizationManagerService {
 
                 shipmentsCreated++;
                 log.info("[AI_CONFIRM_ROUTE] planId={} routeId={} shipmentId={} shipmentCode={} orders={}",
-                        planId, route.getId(), savedShipment.getId(), savedShipment.getCode(), ordersInRoute);
+                        planId, route.getId(), savedShipment.getId(), savedShipment.getCode(), shipment.getShipmentOrders().size());
+            }
+
+            if (!ordersToUpdate.isEmpty()) {
+                orderRepository.saveAll(ordersToUpdate.values());
             }
 
             aiRoutePlanRouteRepository.saveAll(plan.getRoutes());
