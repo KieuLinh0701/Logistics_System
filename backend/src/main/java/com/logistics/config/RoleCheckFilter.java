@@ -110,8 +110,13 @@ public class RoleCheckFilter extends OncePerRequestFilter {
                 .filter(a -> a.contains("::"))
                 .anyMatch(a -> {
                     String[] parts = a.split("::", 2);
-                    return parts[0].equalsIgnoreCase(requestMethod)
-                            && matcher.match(parts[1], path);
+                    if (!parts[0].equalsIgnoreCase(requestMethod)) {
+                        return false;
+                    }
+                    String permUrl = parts[1].trim();
+                    return matcher.match(permUrl, path)
+                            || matcher.match(permUrl, path.replaceFirst("^/api", ""))
+                            || matcher.match(permUrl.replaceFirst("^/api", ""), path);
                 });
 
         if (!hasPermission) {

@@ -60,6 +60,10 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
 
     @Query("""
                 SELECT s FROM Shipment s
+                LEFT JOIN FETCH s.employee employee
+                LEFT JOIN FETCH s.vehicle vehicle
+                LEFT JOIN FETCH s.fromOffice fromOffice
+                LEFT JOIN FETCH s.toOffice toOffice
                 WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
                   AND s.employee.id = :employeeId
                   AND s.status IN (
