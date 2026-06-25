@@ -4,7 +4,6 @@ import com.logistics.enums.VehicleStatus;
 import com.logistics.enums.VehicleType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -13,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Audited
 @Table(name = "vehicles")
 @Data
 @Getter

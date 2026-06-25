@@ -3,8 +3,6 @@ package com.logistics.entity;
 import com.logistics.enums.ShippingRateRegionType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,7 +15,6 @@ import java.time.LocalDateTime;
 @Data
 @Getter
 @Setter
-@Audited
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -30,7 +27,6 @@ public class ShippingRate {
     // 1 ShippingRate thuộc về 1 ServiceType
     @ManyToOne
     @JoinColumn(name = "service_type_id", nullable = false)
-    @NotAudited
     private ServiceType serviceType;
 
     // Loại khu vực

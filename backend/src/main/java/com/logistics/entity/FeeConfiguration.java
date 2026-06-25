@@ -4,8 +4,6 @@ import com.logistics.enums.CodFeeType;
 import com.logistics.enums.FeeType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,7 +16,6 @@ import java.time.LocalDateTime;
 @Data
 @Getter
 @Setter
-@Audited
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -31,7 +28,6 @@ public class FeeConfiguration {
     // Áp dụng theo loại dịch vụ (ShippingService)
     @ManyToOne
     @JoinColumn(name = "service_type_id")
-    @NotAudited
     private ServiceType serviceType;
 
     // Loại phí

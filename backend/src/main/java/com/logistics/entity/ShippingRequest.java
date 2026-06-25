@@ -5,8 +5,6 @@ import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.enums.ShippingRequestType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -21,7 +19,6 @@ import java.util.List;
 @Data
 @Getter
 @Setter
-@Audited
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -109,7 +106,6 @@ public class ShippingRequest {
 
     // File/ảnh đính kèm
     @OneToMany(mappedBy = "shippingRequest", cascade = CascadeType.ALL, orphanRemoval = true)
-    @NotAudited
     private List<ShippingRequestAttachment> attachments;
 
     public List<ShippingRequestAttachment> getRequestAttachments() {
