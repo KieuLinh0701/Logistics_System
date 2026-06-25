@@ -4,6 +4,7 @@ import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentPerformanceDto;
 import com.logistics.entity.*;
+import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.enums.*;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.*;
@@ -35,6 +36,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -42,6 +45,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.logistics.utils.OrderUtils.*;
 import static com.logistics.utils.ShipmentUtils.translateShipmentStatus;
@@ -50,6 +54,8 @@ import static com.logistics.utils.ShipmentUtils.translateShipmentType;
 @Service
 @RequiredArgsConstructor
 public class ShipmentManagerService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShipmentManagerService.class);
 
     private final ShipmentRepository repository;
     private final ShipmentRepository shipmentRepository;

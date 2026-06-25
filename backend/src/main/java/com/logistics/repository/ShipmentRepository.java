@@ -3,6 +3,7 @@ package com.logistics.repository;
 import com.logistics.dto.manager.dashboard.ManagerShipmentStatsDTO;
 import com.logistics.entity.Shipment;
 import com.logistics.enums.ShipmentStatus;
+import com.logistics.enums.ShipmentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -42,4 +43,29 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
                 ORDER BY s.createdAt DESC
             """)
     Optional<Shipment> findActivePickupShipmentByEmployee(@Param("employeeId") Integer employeeId);
+
+    @Query("""
+                SELECT s FROM Shipment s
+                WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
+                  AND s.status = com.logistics.enums.ShipmentStatus.IN_TRANSIT
+                  AND s.employee.id = :employeeId
+                  AND EXISTS (
+                      SELECT 1 FROM ShipmentOrder so
+                      WHERE so.shipment.id = s.id AND so.order.id = :orderId
+                  )
+            """)
+    Optional<Shipment> findActiveDeliveryShipmentForOrder(
+            @Param("employeeId") Integer employeeId,
+            @Param("orderId") Integer orderId);
+
+    @Query("""
+                SELECT s FROM Shipment s
+                WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
+                  AND s.employee.id = :employeeId
+                  AND s.status IN (
+                      com.logistics.enums.ShipmentStatus.PENDING,
+                      com.logistics.enums.ShipmentStatus.IN_TRANSIT)
+                ORDER BY s.createdAt DESC
+            """)
+    List<Shipment> findActiveDeliveryShipmentsByEmployee(@Param("employeeId") Integer employeeId);
 }

@@ -67,6 +67,9 @@ export interface AiShipperRoute {
   reoptimizeReason?: string;
   stops: AiRouteStop[];
   returnToOfficeStop?: AiRouteStop | null;
+  shipmentId?: number | null;
+  shipmentCode?: string | null;
+  shipmentStatus?: string | null;
 }
 
 export interface AiUnassignedOrder {

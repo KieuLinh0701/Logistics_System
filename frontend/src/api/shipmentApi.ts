@@ -118,6 +118,27 @@ const shipmentApi = {
     return await axiosClient.put<ApiResponse<void>>(`/manager/shipments/${id}`, data);
   },
 
+  async startManagerShipment(id: number) {
+    return await axiosClient.post<ApiResponse<string>>(`/manager/shipments/${id}/start`);
+  },
+
+  async finishManagerShipment(id: number) {
+    return await axiosClient.post<ApiResponse<string>>(`/manager/shipments/${id}/finish`);
+  },
+
+  async startShipperDeliveryShipment(id: number) {
+    return await axiosClient.post<ApiResponse<string>>(`/shipper/shipments/${id}/start`);
+  },
+
+  async finishShipperDeliveryShipment(id: number) {
+    return await axiosClient.post<ApiResponse<string>>(`/shipper/shipments/${id}/finish`);
+  },
+
+  async listShipperActiveShipments() {
+    const res = await axiosClient.get<ApiResponse<ManagerShipment[]>>(`/shipper/shipments/active`);
+    return (res.data as ManagerShipment[]) || [];
+  },
+
   async exportManagerShipmentPerformance(id: number, params: SearchRequest) {
     try {
       const res = await axiosExport.get(`/manager/employees/${id}/shipments/export`, {

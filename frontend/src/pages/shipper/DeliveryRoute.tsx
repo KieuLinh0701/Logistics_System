@@ -5,6 +5,7 @@ import {
     Card,
     Col,
     Divider,
+    Flex,
     List,
     message,
     Modal,
@@ -21,6 +22,7 @@ import {
     CompassOutlined,
     DollarOutlined,
     EnvironmentOutlined,
+    ExclamationCircleFilled,
     EyeOutlined,
     NodeIndexOutlined,
     PauseCircleOutlined,
@@ -66,6 +68,9 @@ interface RouteInfo {
     totalCOD: number;
     status: string;
     source?: string;
+    shipmentId?: number;
+    shipmentCode?: string;
+    shipmentStatus?: string;
     encodedPolyline?: string;
     planCode?: string;
     fuelCost?: number;
@@ -79,24 +84,91 @@ interface DeliveryStop {
     recipientName: string;
     recipientPhone: string;
     recipientAddress: string;
+    recipientFullAddress?: string;
+    recipientLatitude?: number | null;
+    recipientLongitude?: number | null;
+    senderName?: string;
+    senderPhone?: string;
+    senderAddress?: string;
+    senderFullAddress?: string;
+    senderLatitude?: number | null;
+    senderLongitude?: number | null;
+    contactName?: string;
+    contactPhone?: string;
+    contactAddress?: string;
     codAmount: number;
     priority: string;
     serviceType: string;
     status: string;
+    orderStatus?: string;
     stopSequence?: number;
     etaTime?: string;
     latitude?: number;
     longitude?: number;
     stopType?: string;
-    senderName?: string;
-    senderPhone?: string;
-    senderAddress?: string;
 }
 
 
 const isFinalDeliveryStatus = (status?: string) => {
     const st = (status || "").toString().toUpperCase();
-    return st === "DELIVERED" || st === "FAILED_DELIVERY" || st === "COMPLETED" || st === "FAILED";
+    return st === "DELIVERED"
+        || st === "FAILED_DELIVERY"
+        || st === "COMPLETED"
+        || st === "FAILED"
+        // Backend có thể trả "final" cho đơn pickup fail final / delivery fail final / return fail final / cancelled / returned
+        || st === "FINAL";
+};
+
+// Helper: quyết định 1 stop có nên ẨN khỏi lộ trình hay không.
+// Dựa vào raw orderStatus (do backend set trong stop.orderStatus) thay vì mapped status
+// vì backend map cả PICKED_UP lẫn DELIVERED đều = "completed" cho DELIVERY stop.
+//   - PICKED_UP = đã lấy hàng -> vẫn hiển thị (shipper cần giao tiếp) - KHÔNG ẩn
+//   - DELIVERED = đã giao -> ẩn khỏi route
+//   - FAILED_DELIVERY / CANCELLED / RETURNED... = ẩn
+//   - RETURNING / DELIVERING / PICKING_UP = đang xử lý -> hiển thị
+const isStopHiddenFromRoute = (stop: DeliveryStop) => {
+    const rawOrderStatus = (stop.orderStatus || "").toString().toUpperCase();
+
+    // Trạng thái order "kết thúc vận chuyển" -> ẩn khỏi mọi route
+    // Lưu ý: KHÔNG bao gồm PICKED_UP (đã lấy hàng nhưng vẫn phải giao).
+    const TERMINAL = new Set([
+        "DELIVERED",
+        "FAILED_DELIVERY",
+        "DELIVERY_FAILED_FINAL",
+        "PICKUP_FAILED_FINAL",
+        "RETURNED",
+        "RETURN_FAILED_FINAL",
+        "CANCELLED",
+    ]);
+    if (TERMINAL.has(rawOrderStatus)) return true;
+
+    return false;
+};
+
+const isCompletedStop = (status?: string) => {
+    const st = (status || "").toString().toUpperCase();
+    return st === "COMPLETED" || st === "DELIVERED";
+};
+
+// Helper: lấy contact/address chính của stop theo stopType
+const getStopContact = (stop: DeliveryStop) => {
+    const isPickup = (stop.stopType || "").toUpperCase() === "PICKUP";
+    if (isPickup) {
+        return {
+            name: stop.senderName || stop.recipientName || "",
+            phone: stop.senderPhone || stop.recipientPhone || "",
+            address: stop.senderAddress || stop.recipientAddress || "",
+            latitude: stop.latitude ?? stop.senderLatitude ?? null,
+            longitude: stop.longitude ?? stop.senderLongitude ?? null,
+        };
+    }
+    return {
+        name: stop.recipientName || stop.senderName || "",
+        phone: stop.recipientPhone || stop.senderPhone || "",
+        address: stop.recipientAddress || stop.senderAddress || "",
+        latitude: stop.latitude ?? stop.recipientLatitude ?? null,
+        longitude: stop.longitude ?? stop.recipientLongitude ?? null,
+    };
 };
 
 const isDeliveryStop = (stop: DeliveryStop) => {
@@ -148,8 +220,10 @@ const ShipperDeliveryRoute: React.FC = () => {
 
 
     const displayTotalStops = deliveryStops.length;
+    // "Hoàn thành" = đã giao (DELIVERED) - đếm theo raw orderStatus, KHÔNG dùng mapped status
+    // vì backend map cả PICKED_UP (đã lấy hàng, chưa giao) lẫn DELIVERED (đã giao) đều = "completed".
     const displayCompletedStops = useMemo(
-        () => deliveryStops.filter((s) => isFinalDeliveryStatus(s.status)).length,
+        () => deliveryStops.filter((s) => (s.orderStatus || "").toUpperCase() === "DELIVERED").length,
         [deliveryStops]
     );
 
@@ -181,17 +255,21 @@ const ShipperDeliveryRoute: React.FC = () => {
             }
 
             setRouteInfo(routeData.routeInfo);
+            console.log("[DELIVERY_ROUTE_INFO]", routeData.routeInfo);
             console.log("[ROUTE_DURATION]", routeData.routeInfo?.estimatedDuration,
                 "totalDistance=", routeData.routeInfo?.totalDistance);
 
-            // Tách RETURN_TO_OFFICE ra khỏi deliveryStops
+            // Tách RETURN_TO_OFFICE + các stop đã kết thúc vận chuyển (DELIVERED/CANCELLED...) ra khỏi deliveryStops.
+            // Lưu ý: KHÔNG ẩn stop "completed" thuộc PICKUP stop (PICKED_UP = đã lấy hàng nhưng vẫn phải giao).
             const routeStops = (routeData.deliveryStops || []) as DeliveryStop[];
-            const filteredRouteStops = routeStops.filter((s) => !isFinalDeliveryStatus(s.status));
+            const filteredRouteStops = routeStops.filter((s) => !isStopHiddenFromRoute(s));
 
             try {
                 const ordersRes = await orderApi.getShipperOrders({ page: 1, limit: 200 });
                 const shipperOrders = (ordersRes.orders || []) as any[];
 
+                // Order PICKED_UP (Đã lấy hàng) là trạng thái hợp lệ - KHÔNG ẩn.
+                // Chỉ ẩn order đã DELIVERED hoặc FAILED_DELIVERY (xem isFinalDeliveryStatus).
                 const visibleOrders = (shipperOrders || []).filter(
                     (o: any) => !isFinalDeliveryStatus(o?.status)
                 );
@@ -204,25 +282,57 @@ const ShipperDeliveryRoute: React.FC = () => {
                     const mergedStops = filteredRouteStops.map((stop) => {
                         const order = orderByTracking.get(stop.trackingNumber);
                         if (!order) return stop;
-                        return {
+                        // Chỉ fill missing fields; KHÔNG override lat/lng backend đã set đúng theo stopType.
+                        const merged: DeliveryStop = {
                             ...stop,
                             codAmount: stop.codAmount ?? order.cod ?? 0,
                             serviceType: stop.serviceType || order.serviceType?.name || order.serviceType || "",
                             priority: stop.priority || order.priority || "normal",
-                            latitude: stop.latitude ?? order.latitude ?? order.recipientLatitude,
-                            longitude: stop.longitude ?? order.longitude ?? order.recipientLongitude,
-                        } as DeliveryStop;
+                        };
+                        const isPickup = (stop.stopType || "").toUpperCase() === "PICKUP";
+                        if (stop.latitude == null) {
+                            merged.latitude = isPickup
+                                ? (stop.senderLatitude ?? order.senderLatitude)
+                                : (stop.recipientLatitude ?? order.recipientLatitude);
+                        }
+                        if (stop.longitude == null) {
+                            merged.longitude = isPickup
+                                ? (stop.senderLongitude ?? order.senderLongitude)
+                                : (stop.recipientLongitude ?? order.recipientLongitude);
+                        }
+                        return merged;
                     });
 
                     const synced = mergedStops.filter((s): s is DeliveryStop => isDeliveryStop(s));
                     setAllStops(sortByStopSequence(synced));
+                    console.log("[DELIVERY_STOP_STATUS]", synced.map((s) => ({
+                        id: s.id,
+                        trackingNumber: s.trackingNumber,
+                        status: s.status,
+                        orderStatus: s.orderStatus,
+                        stopType: s.stopType,
+                    })));
                 } else {
                     const filtered = filteredRouteStops.filter(isDeliveryStop);
                     setAllStops(sortByStopSequence(filtered));
+                    console.log("[DELIVERY_STOP_STATUS]", filtered.map((s) => ({
+                        id: s.id,
+                        trackingNumber: s.trackingNumber,
+                        status: s.status,
+                        orderStatus: s.orderStatus,
+                        stopType: s.stopType,
+                    })));
                 }
             } catch {
                 const filtered = filteredRouteStops.filter(isDeliveryStop);
                 setAllStops(sortByStopSequence(filtered));
+                console.log("[DELIVERY_STOP_STATUS]", filtered.map((s) => ({
+                    id: s.id,
+                    trackingNumber: s.trackingNumber,
+                    status: s.status,
+                    orderStatus: s.orderStatus,
+                    stopType: s.stopType,
+                })));
             }
         } catch (error: any) {
             const backendMsg = error?.response?.data?.message
@@ -386,17 +496,121 @@ const ShipperDeliveryRoute: React.FC = () => {
     const handleStartRoute = async () => {
         if (!routeInfo) return;
 
+        // Shipment-centric: nếu routeInfo.source === "SHIPMENT" thì dùng shipmentId.
+        // Backend Phase 2 populate shipmentId/shipmentCode/shipmentStatus cho SHIPMENT source.
+        const source = (routeInfo as any).source;
+        const shipmentId = (routeInfo as any).shipmentId ?? routeInfo.id;
+        const useShipmentEndpoint = source === "SHIPMENT" || (routeInfo as any).shipmentId != null;
+
         Modal.confirm({
             title: "Bắt đầu tuyến giao hàng",
-            content: "Bạn có chắc chắn muốn bắt đầu tuyến giao hàng này?",
+            content: useShipmentEndpoint
+                ? `Bắt đầu chuyến ${(routeInfo as any).shipmentCode ?? shipmentId}?`
+                : "Bạn có chắc chắn muốn bắt đầu tuyến giao hàng này?",
             onOk: async () => {
                 try {
-                    await orderApi.startShipperRoute(routeInfo.id);
+                    if (useShipmentEndpoint) {
+                        await orderApi.startShipperShipment(Number(shipmentId));
+                    } else {
+                        await orderApi.startShipperRoute(routeInfo.id);
+                    }
                     setRouteInfo((prev) => (prev ? { ...prev, status: "in_progress" } : null));
                     message.success("Đã bắt đầu tuyến giao hàng");
                     mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                } catch {
-                    message.error("Không thể bắt đầu tuyến giao hàng");
+                } catch (err: any) {
+                    const backendMsg = err?.response?.data?.message
+                        || err?.response?.data
+                        || err?.message
+                        || "Không thể bắt đầu tuyến giao hàng";
+                    message.error(backendMsg);
+                }
+            },
+        });
+    };
+
+    // Đếm số stop đang ở trạng thái PICKED_UP (sẵn sàng bắt đầu giao).
+    // Backend trả deliveryStops[].orderStatus là raw status từ orders.status
+    // (còn deliveryStops[].status đã được map sang "in_progress"/"completed" cho UI).
+    const pickedUpStopCount = useMemo(
+        () => allStops.filter((s) => (s.orderStatus || "").toUpperCase() === "PICKED_UP").length,
+        [allStops]
+    );
+
+    const isShipmentRoute =
+        !!routeInfo &&
+        ((routeInfo as any).source === "SHIPMENT" ||
+            (routeInfo as any).shipmentId != null);
+    const shipmentStatus = (routeInfo?.shipmentStatus || "").toString().toUpperCase();
+    const routeStatus = (routeInfo?.status || "").toString().toUpperCase();
+    // Fallback: nếu backend không populate shipmentStatus nhưng route đang in_progress
+    // thì vẫn coi như shipment IN_TRANSIT.
+    const isShipmentInTransit =
+        shipmentStatus === "IN_TRANSIT" ||
+        (!shipmentStatus && routeStatus === "in_progress");
+
+    const canBulkStartDelivery =
+        !!isShipmentRoute &&
+        !!isShipmentInTransit &&
+        pickedUpStopCount > 0;
+
+    // Temporary diagnostic log
+    console.log("[BULK_START_GUARD]", {
+        isShipmentRoute,
+        shipmentStatus,
+        routeStatus,
+        isShipmentInTransit,
+        pickedUpStopCount,
+        canBulkStartDelivery,
+        routeInfoStatus: routeInfo?.status,
+        source: routeInfo?.source,
+        shipmentId: routeInfo?.shipmentId,
+        shipmentCode: routeInfo?.shipmentCode,
+    });
+
+    const handleStartDeliveryAll = async () => {
+        if (!routeInfo) return;
+        const shipmentId = Number((routeInfo as any).shipmentId ?? routeInfo.id);
+        if (!shipmentId || Number.isNaN(shipmentId)) {
+            message.error("Không xác định được shipmentId");
+            return;
+        }
+        const shipmentCode = (routeInfo as any).shipmentCode ?? `#${shipmentId}`;
+
+        Modal.confirm({
+            title: (
+                <div style={{ textAlign: "center" }}>
+                    <ExclamationCircleFilled style={{ color: "#faad14", marginRight: 8 }} />
+                    Bắt đầu giao tất cả
+                </div>
+            ),
+            icon: <span style={{ display: "none" }} />,
+            content: null,
+            okText: "Xác nhận",
+            cancelText: "Hủy",
+            okButtonProps: { className: "primary-button", style: { borderRadius: 8 } },
+            cancelButtonProps: { style: { borderRadius: 8 } },
+            onOk: async () => {
+                try {
+                    setLoading(true);
+                    const res = await orderApi.startDeliveryAll(shipmentId);
+                    const updated = res?.updatedCount ?? 0;
+                    const skipped = res?.skippedCount ?? 0;
+                    message.success(
+                        `Đã chuyển ${updated} đơn sang Đang giao hàng${
+                            skipped > 0 ? ` (bỏ qua ${skipped} đơn không ở PICKED_UP)` : ""
+                        }`
+                    );
+                    // Reload route/orders để cập nhật status
+                    await fetchRouteData();
+                } catch (err: any) {
+                    const backendMsg =
+                        err?.response?.data?.message ||
+                        err?.response?.data ||
+                        err?.message ||
+                        "Không thể bắt đầu giao tất cả";
+                    message.error(backendMsg);
+                } finally {
+                    setLoading(false);
                 }
             },
         });
@@ -411,7 +625,8 @@ const ShipperDeliveryRoute: React.FC = () => {
         mapRef.current?.panTo(pos);
         mapRef.current?.setZoom(16);
         mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        message.info(`Đã đưa bản đồ đến ${stop.recipientName}`);
+        const contact = getStopContact(stop);
+        message.info(`Đã đưa bản đồ đến ${contact.name || stop.trackingNumber}`);
     };
 
     const handleViewStopDetail = (stop: DeliveryStop) => {
@@ -431,14 +646,23 @@ const ShipperDeliveryRoute: React.FC = () => {
             return;
         }
 
-        const payload = {
-            routeId: currentRoute.id,
+        // Shipment-centric: routeInfo.id là shipmentId khi source === "SHIPMENT".
+        // Backend dispatch theo shipmentId để gọi reOptimizeShipmentRoute() mới.
+        const isShipment = currentRoute.source === "SHIPMENT"
+            || currentRoute.shipmentId != null;
+
+        const payload: any = {
             currentLatitude: currentPosition.lat,
             currentLongitude: currentPosition.lng,
             includeRemainingStopsOnly: true,
             returnToOffice: true,
             reason: "MANUAL",
         };
+        if (isShipment) {
+            payload.shipmentId = currentRoute.shipmentId ?? currentRoute.id;
+        } else {
+            payload.routeId = currentRoute.id;
+        }
 
         setReOptimizing(true);
         try {
@@ -548,6 +772,7 @@ const ShipperDeliveryRoute: React.FC = () => {
 
     const getStopDisplayData = (stop: DeliveryStop) => {
         if (isPickupStop(stop)) {
+            // PICKUP stop: status đã map từ raw (PICKED_UP -> "completed" mapped), dùng logic riêng
             const statusUpper = (stop.status || "").toString().toUpperCase();
             return {
                 contactName: stop.senderName || stop.recipientName,
@@ -568,12 +793,17 @@ const ShipperDeliveryRoute: React.FC = () => {
                 showCod: false,
             };
         }
+        // DELIVERY stop: PHẢI dùng raw orderStatus vì backend map cả PICKED_UP lẫn DELIVERED đều = "completed".
+        //   Nếu dùng stop.status (mapped) thì PICKED_UP sẽ hiển thị "Hoàn thành" - sai.
+        const rawOrderStatus = (stop.orderStatus || "").toString().toUpperCase();
         return {
             contactName: stop.recipientName,
             contactPhone: stop.recipientPhone,
             contactAddress: stop.recipientAddress,
             typeBadge: <Tag color="blue">Giao hàng</Tag>,
-            statusBadge: <Tag color={getStatusColor(stop.status)}>{getStatusText(stop.status)}</Tag>,
+            statusBadge: (
+                <Tag color={getStatusColor(rawOrderStatus)}>{getStatusText(rawOrderStatus)}</Tag>
+            ),
             showCod: true,
         };
     };
@@ -671,51 +901,66 @@ const ShipperDeliveryRoute: React.FC = () => {
                     />
                 )}
 
-                {nextStop && (
-                    <Alert
-                        style={{ marginTop: 16 }}
-                        type="info"
-                        showIcon
-                        message={
-                            <span>
-                                Điểm giao tiếp theo #{nextStop.stopSequence}:{" "}
-                                <strong>{nextStop.trackingNumber}</strong> — {nextStop.recipientName}
-                            </span>
-                        }
-                    />
-                )}
+                {nextStop && (() => {
+                    const isPickup = (nextStop.stopType || "").toUpperCase() === "PICKUP";
+                    const label = isPickup ? "Điểm lấy hàng tiếp theo" : "Điểm giao tiếp theo";
+                    const contact = getStopContact(nextStop);
+                    return (
+                        <Alert
+                            style={{ marginTop: 16 }}
+                            type="info"
+                            showIcon
+                            message={
+                                <span>
+                                    {label} #{nextStop.stopSequence}:{" "}
+                                    <strong>{nextStop.trackingNumber}</strong> — {contact.name}
+                                </span>
+                            }
+                        />
+                    );
+                })()}
 
-                <Space style={{ marginTop: 16 }}>
-                    {routeInfo.status === "not_started" && (
-                        <Button type="primary" icon={<PlayCircleOutlined />} onClick={handleStartRoute}>
-                            Bắt đầu tuyến
-                        </Button>
-                    )}
-                    {currentPosition && (
-                        <Button
-                            type="default"
-                            icon={<ReloadOutlined spin={false} />}
-                            onClick={handleReOptimize}
-                            disabled={reOptimizing}
-                        >
-                            {reOptimizing ? "Đang tối ưu..." : "Tối ưu lại tuyến"}
-                        </Button>
-                    )}
-                    {routeInfo.status === "in_progress" && (
-                        <>
-                            <Button icon={<PauseCircleOutlined />}>Tạm dừng</Button>
-                            <Button type="primary" icon={<CompassOutlined />} onClick={() => navigate("/shipper/orders")}>
+                <Flex style={{ marginTop: 16, width: "100%" }} justify="space-between" align="center" gap="middle" wrap="wrap">
+                    <Space wrap>
+                        {currentPosition && (
+                            <Button
+                                type="default"
+                                className="filter-button"
+                                icon={<ReloadOutlined spin={false} />}
+                                onClick={handleReOptimize}
+                                disabled={reOptimizing}
+                            >
+                                {reOptimizing ? "Đang tối ưu..." : "Tối ưu lại tuyến"}
+                            </Button>
+                        )}
+                        {routeInfo.status === "in_progress" && (
+                            <Button className="filter-button" icon={<PauseCircleOutlined />}>Tạm dừng</Button>
+                        )}
+                    </Space>
+                    <Space wrap>
+                        {routeInfo.status === "not_started" && (
+                            <Button type="primary" className="primary-button" icon={<PlayCircleOutlined />} onClick={handleStartRoute}>
+                                Bắt đầu tuyến
+                            </Button>
+                        )}
+                        {routeInfo.status === "in_progress" && (
+                            <Button type="primary" className="primary-button" icon={<CompassOutlined />} onClick={() => navigate("/shipper/orders")}>
                                 Xem đơn hàng
                             </Button>
+                        )}
+                        {canBulkStartDelivery && (
                             <Button
-                                icon={<EnvironmentOutlined />}
-                                onClick={() => mapCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                                type="primary"
+                                className="primary-button"
+                                icon={<PlayCircleOutlined />}
+                                loading={loading}
+                                onClick={handleStartDeliveryAll}
                             >
-                                Xem bản đồ tuyến
+                                Bắt đầu giao tất cả ({pickedUpStopCount})
                             </Button>
-                        </>
-                    )}
-                </Space>
+                        )}
+                    </Space>
+                </Flex>
             </Card>
 
             <Card
@@ -728,6 +973,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                         <Button
                             size="small"
                             type="primary"
+                            className="primary-button"
                             disabled={!isLoaded || !currentPosition || !nextStop || !hasValidCoords(nextStop)}
                             onClick={() => {
                                 if (!nextStop) return;
@@ -738,6 +984,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                         </Button>
                         <Button
                             size="small"
+                            className="filter-button"
                             icon={<EnvironmentOutlined />}
                             onClick={() => {
                                 if (!currentPosition) {
@@ -874,6 +1121,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                             <List.Item
                                 actions={[
                                     <Button
+                                        className="filter-button"
                                         icon={<EnvironmentOutlined />}
                                         onClick={() => {
                                             requestDirectionsToStop(stop);
@@ -882,10 +1130,10 @@ const ShipperDeliveryRoute: React.FC = () => {
                                     >
                                         Chỉ đường
                                     </Button>,
-                                    <Button icon={<EyeOutlined />} onClick={() => handleViewStopDetail(stop)}>
+                                    <Button className="filter-button" icon={<EyeOutlined />} onClick={() => handleViewStopDetail(stop)}>
                                         Chi tiết
                                     </Button>,
-                                    <Button type="link" onClick={() => navigate(`/orders/${stop.id}`)}>
+                                    <Button type="link" onClick={() => navigate(`/shipper/orders/${stop.id}`)}>
                                         Xem đơn
                                     </Button>,
                                 ]}
@@ -953,7 +1201,7 @@ const ShipperDeliveryRoute: React.FC = () => {
             </Card>
 
             <Modal
-                title="Chi tiết điểm giao hàng"
+                title={selectedStop?.stopType === "PICKUP" ? "Chi tiết điểm lấy hàng" : "Chi tiết điểm giao hàng"}
                 open={detailModal}
                 onCancel={() => {
                     setDetailModal(false);
@@ -962,46 +1210,67 @@ const ShipperDeliveryRoute: React.FC = () => {
                 footer={null}
                 width={600}
             >
-                {selectedStop && (
-                    <Space direction="vertical" size="large" style={{ width: "100%" }}>
-                        <div>
-                            <Text strong>Mã đơn hàng: </Text>
-                            <Text>{selectedStop.trackingNumber}</Text>
-                        </div>
-                        <div>
-                            <Text strong>Người nhận: </Text>
-                            <Text>{selectedStop.recipientName}</Text>
-                        </div>
-                        <div>
-                            <Text strong>SĐT: </Text>
-                            <Text>{selectedStop.recipientPhone}</Text>
-                        </div>
-                        <div>
-                            <Text strong>Địa chỉ: </Text>
-                            <Text>{selectedStop.recipientAddress}</Text>
-                        </div>
-                        <div>
-                            <Text strong>COD: </Text>
-                            <Text style={{ color: "#f50" }}>{selectedStop.codAmount.toLocaleString()}đ</Text>
-                        </div>
-                        <div>
-                            <Text strong>Dịch vụ: </Text>
-                            <Text>{selectedStop.serviceType}</Text>
-                        </div>
-                        <div>
-                            <Text strong>Trạng thái: </Text>
-                            <Tag color={getStatusColor(selectedStop.status)}>{getStatusText(selectedStop.status)}</Tag>
-                        </div>
-                        <Button
-                            type="primary"
-                            block
-                            icon={<EnvironmentOutlined />}
-                            onClick={() => handleFocusStopOnMap(selectedStop)}
-                        >
-                            Xem trên bản đồ
-                        </Button>
-                    </Space>
-                )}
+                {selectedStop && (() => {
+                    const isPickup = selectedStop.stopType === "PICKUP";
+                    const name = isPickup
+                        ? (selectedStop.senderName || selectedStop.recipientName)
+                        : selectedStop.recipientName;
+                    const phone = isPickup
+                        ? (selectedStop.senderPhone || selectedStop.recipientPhone)
+                        : selectedStop.recipientPhone;
+                    const address = isPickup
+                        ? (selectedStop.senderAddress || selectedStop.recipientAddress)
+                        : selectedStop.recipientAddress;
+                    return (
+                        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+                            <div>
+                                <Text strong>Mã đơn hàng: </Text>
+                                <Text>{selectedStop.trackingNumber}</Text>
+                            </div>
+                            <div>
+                                <Text strong>{isPickup ? "Người gửi: " : "Người nhận: "}</Text>
+                                <Text>{name}</Text>
+                            </div>
+                            <div>
+                                <Text strong>SĐT: </Text>
+                                <Text>{phone}</Text>
+                            </div>
+                            <div>
+                                <Text strong>Địa chỉ: </Text>
+                                <Text>{address}</Text>
+                            </div>
+                            <div>
+                                <Text strong>COD: </Text>
+                                <Text style={{ color: "#f50" }}>{selectedStop.codAmount.toLocaleString()}đ</Text>
+                            </div>
+                            <div>
+                                <Text strong>Dịch vụ: </Text>
+                                <Text>{selectedStop.serviceType}</Text>
+                            </div>
+                            <div>
+                                <Text strong>Trạng thái: </Text>
+                                {(() => {
+                                    // Dùng raw orderStatus (cho DELIVERY stop) thay vì mapped status,
+                                    // tránh PICKED_UP hiển thị "Hoàn thành".
+                                    const isPickup = (selectedStop.stopType || "").toUpperCase() === "PICKUP";
+                                    const statusKey = isPickup
+                                        ? selectedStop.status
+                                        : (selectedStop.orderStatus || selectedStop.status);
+                                    return <Tag color={getStatusColor(statusKey)}>{getStatusText(statusKey)}</Tag>;
+                                })()}
+                            </div>
+                            <Button
+                                type="primary"
+                                className="primary-button"
+                                block
+                                icon={<EnvironmentOutlined />}
+                                onClick={() => handleFocusStopOnMap(selectedStop)}
+                            >
+                                Xem trên bản đồ
+                            </Button>
+                        </Space>
+                    );
+                })()}
             </Modal>
         </div>
     );

@@ -56,6 +56,8 @@ const ShipperOrders: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "AT_DEST_OFFICE":
+        return "geekblue";
       case "PICKED_UP":
         return "orange";
       case "READY_FOR_PICKUP":
@@ -78,6 +80,8 @@ const ShipperOrders: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case "AT_DEST_OFFICE":
+        return "Tại bưu cục đích";
       case "PICKED_UP":
         return "Đã lấy hàng";
       case "READY_FOR_PICKUP":

@@ -36,6 +36,15 @@ import orderApi from "../../api/orderApi";
 import {getUserRole} from "../../utils/authUtils";
 import {dispatchShipperRouteRefresh} from "./deliveryRouteEvents";
 import {translateOrderCodStatus, translatePaymentSubmissionStatus} from "../../utils/orderUtils";
+import {
+  isInActiveDeliveryShipment,
+  canStartPickup,
+  canMarkPickedUp,
+  canStartDelivery,
+  canMarkDelivered,
+  canDeliverToOrigin,
+  canReturnFailed,
+} from "../../utils/orderActionGuards";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -371,10 +380,22 @@ const fetchOrderDetail = async () => {
               </Space>
             </Col>
             <Col>
+              {!isInActiveDeliveryShipment(order) && order.status !== "DELIVERED" && order.status !== "RETURNED" && order.status !== "CANCELLED" && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Đơn hàng chưa thuộc chuyến DELIVERY đang chạy"
+                  description="Bạn không thể thao tác giao/hoàn khi đơn chưa được gắn vào chuyến. Vui lòng liên hệ quản lý."
+                />
+              )}
+            </Col>
+            <Col>
               <Space>
                 {(getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && (
                   <Button
                     type="dashed"
+                    disabled={!canMarkPickedUp(order)}
+                    title={!canMarkPickedUp(order) ? "Đơn chưa thuộc chuyến DELIVERY đang chạy" : ""}
                     onClick={async () => {
                       try {
                         setLoading(true);
@@ -395,6 +416,8 @@ const fetchOrderDetail = async () => {
                   <Button
                     type="primary"
                     icon={<PlayCircleOutlined />}
+                    disabled={!canStartDelivery(order)}
+                    title={!canStartDelivery(order) ? "Đơn chưa thuộc chuyến DELIVERY đang chạy" : ""}
                     onClick={handleStartDelivery}
                   >
                     Bắt đầu giao hàng
@@ -405,6 +428,7 @@ const fetchOrderDetail = async () => {
                     <Button
                       type="primary"
                       icon={<CheckCircleOutlined />}
+                      disabled={!canMarkDelivered(order)}
                       onClick={handleFinishDelivery}
                     >
                       Giao thành công
@@ -452,6 +476,18 @@ const fetchOrderDetail = async () => {
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 <Tag color={getStatusColor(order.status)}>{getStatusText(order.status)}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Chuyến DELIVERY">
+                {order.shipmentCode ? (
+                  <Space>
+                    <Tag color="blue">{order.shipmentCode}</Tag>
+                    <Tag color={order.shipmentStatus === "IN_TRANSIT" ? "processing" : "default"}>
+                      {order.shipmentStatus}
+                    </Tag>
+                  </Space>
+                ) : (
+                  <Tag color="default">Chưa gắn chuyến</Tag>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Dịch vụ">
                 {typeof order.serviceType === "string"

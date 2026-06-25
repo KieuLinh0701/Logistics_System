@@ -48,4 +48,22 @@ public interface AiRoutePlanRouteRepository extends JpaRepository<AiRoutePlanRou
             ORDER BY s.stopSequence ASC
             """)
     Optional<AiRoutePlanRoute> findByIdWithDetails(@Param("routeId") Long routeId);
+
+    // ==================== Phase 3C: advisory mirror for Shipment ====================
+
+    /**
+     * Tìm active AI route theo shipmentId (dùng để mirror pickup stop vào AiRoutePlanStop
+     * khi shipper insert pickup vào shipment). Trả về nhiều route vì một shipment có thể
+     * đã qua vài lần re-optimize (version history).
+     */
+    @Query("""
+            SELECT r FROM AiRoutePlanRoute r
+            LEFT JOIN FETCH r.stops s
+            WHERE r.shipmentId = :shipmentId
+              AND r.isActive = true
+            ORDER BY CASE WHEN r.reoptimizedAt IS NULL THEN 1 ELSE 0 END ASC,
+                     r.reoptimizedAt DESC,
+                     r.id DESC
+            """)
+    List<AiRoutePlanRoute> findActiveByShipmentId(@Param("shipmentId") Integer shipmentId);
 }

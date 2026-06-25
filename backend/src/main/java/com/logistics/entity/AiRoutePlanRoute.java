@@ -85,6 +85,9 @@ public class AiRoutePlanRoute {
     @Column(length = 50)
     private String reoptimizeReason;
 
+    @Column(name = "shipment_id")
+    private Integer shipmentId;
+
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("stopSequence ASC")
     private List<AiRoutePlanStop> stops = new ArrayList<>();

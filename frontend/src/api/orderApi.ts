@@ -195,7 +195,17 @@ const orderApi = {
     },
 
     async claimShipperOrderRequest(orderId: number) {
-        await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/claim-request`);
+        // Phase 5 + auto-add: trả về response để frontend hiển thị toast phù hợp
+        // (requiresReoptimize=true nếu được auto-add vào shipment IN_TRANSIT).
+        const res = await axiosClient.post<ApiResponse<any>>(
+            `/shipper/orders/${orderId}/accept-pickup`
+        );
+        return res.data;
+    },
+
+    async startShipperPickup(orderId: number) {
+        // Phase 5: bắt đầu pickup - set PICKING_UP, yêu cầu shipment IN_TRANSIT
+        await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/start-pickup`);
     },
 
     async markShipperPickedUp(orderId: number, payload?: {
@@ -355,6 +365,9 @@ const orderApi = {
                     totalCOD: number;
                     status: string;
                     source?: string;
+                    shipmentId?: number;
+                    shipmentCode?: string;
+                    shipmentStatus?: string;
                     encodedPolyline?: string;
                     planCode?: string;
                     fuelCost?: number;
@@ -391,8 +404,27 @@ const orderApi = {
         await axiosClient.post<ApiResponse<any>>("/shipper/route/start", {routeId});
     },
 
+    async startShipperShipment(shipmentId: number) {
+        await axiosClient.post<ApiResponse<any>>(`/shipper/shipments/${shipmentId}/start`);
+    },
+
+    async startDeliveryAll(shipmentId: number) {
+        const res = await axiosClient.post<ApiResponse<any>>(
+            `/shipper/shipments/${shipmentId}/start-delivery-all`
+        );
+        return res.data as {
+            shipmentId: number;
+            shipmentCode: string;
+            updatedCount: number;
+            skippedCount: number;
+            updatedOrderIds: number[];
+            skippedOrderIds: number[];
+        } | null;
+    },
+
     async reOptimizeShipperRoute(payload: {
         routeId?: number;
+        shipmentId?: number;
         currentLatitude: number;
         currentLongitude: number;
         currentAddress?: string;
@@ -413,6 +445,45 @@ const orderApi = {
     }) {
         const res = await axiosClient.post<ApiResponse<any>>("/shipper/route/pickup-insert", payload);
         return res.data;
+    },
+
+    // Phase 3C: Pickup insert trực tiếp vào Shipment (ShipmentOrder là source of truth).
+    // Dùng khi routeInfo.source === "SHIPMENT" hoặc routeInfo.shipmentId != null.
+    async insertPickupIntoShipment(shipmentId: number, payload: { pickupOrderId: number }) {
+        const res = await axiosClient.post<ApiResponse<any>>(
+            `/shipper/shipments/${shipmentId}/pickup-insert`,
+            payload
+        );
+        return res.data;
+    },
+
+    /**
+     * Phase 3C: Wrapper tự chọn endpoint theo source.
+     * @param routeInfo từ getDeliveryRoute() - có fields source/shipmentId/routeId
+     * @param pickupOrderId ID đơn pickup cần insert
+     */
+    async smartInsertPickup(
+        routeInfo: {
+            source?: string;
+            shipmentId?: number | null;
+            id?: number | null;
+        },
+        pickupOrderId: number
+    ) {
+        const isShipmentSource =
+            routeInfo.source === "SHIPMENT" ||
+            (routeInfo.shipmentId != null && routeInfo.shipmentId !== undefined);
+
+        if (isShipmentSource) {
+            return this.insertPickupIntoShipment(Number(routeInfo.shipmentId ?? routeInfo.id), {
+                pickupOrderId,
+            });
+        }
+        // AI fallback
+        return this.pickupInsertion({
+            pickupOrderId,
+            targetRouteId: Number(routeInfo.id),
+        });
     },
 
     // Report

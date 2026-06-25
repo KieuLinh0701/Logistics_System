@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -54,26 +55,37 @@ public class ReportAdminService {
 
     public AdminOverviewDto getOverview(LocalDateTime start, LocalDateTime end) {
         Object[] r = reportRepo.overviewSummary(start, end);
-        Long totalOffices = r[0] == null ? 0L : ((Number) r[0]).longValue();
-        Long totalEmployees = r[1] == null ? 0L : ((Number) r[1]).longValue();
-        Long totalShippers = r[2] == null ? 0L : ((Number) r[2]).longValue();
-        Long totalOrders = r[3] == null ? 0L : ((Number) r[3]).longValue();
-        Long delivered = r[4] == null ? 0L : ((Number) r[4]).longValue();
-        Long failed = r[5] == null ? 0L : ((Number) r[5]).longValue();
-        Long returned = r[6] == null ? 0L : ((Number) r[6]).longValue();
-        BigDecimal shippingRevenue = r[7] == null ? BigDecimal.ZERO : new BigDecimal(r[7].toString());
-        BigDecimal totalCodCollected = r[8] == null ? BigDecimal.ZERO : new BigDecimal(r[8].toString());
-        BigDecimal codTransferred = r[9] == null ? BigDecimal.ZERO : new BigDecimal(r[9].toString());
+        if (r == null) {
+            r = new Object[10];
+        }
+        // Pad missing columns to length 10 to avoid AIOOBE
+        if (r.length < 10) {
+            Object[] padded = new Object[10];
+            System.arraycopy(r, 0, padded, 0, r.length);
+            r = padded;
+        }
 
-        Long inProgress = totalOrders - delivered - failed - returned;
-        double successRate = totalOrders > 0 ? ((double) delivered) / ((double) totalOrders) * 100.0 : 0.0;
-        BigDecimal codHeld = totalCodCollected.subtract(codTransferred);
+        Long totalOffices = nzLong(r[0]);
+        Long totalEmployees = nzLong(r[1]);
+        Long totalShippers = nzLong(r[2]);
+        Long totalOrders = nzLong(r[3]);
+        Long delivered = nzLong(r[4]);
+        Long failed = nzLong(r[5]);
+        Long returned = nzLong(r[6]);
+        BigDecimal shippingRevenue = nzBigDecimal(r[7]);
+        BigDecimal totalCodCollected = nzBigDecimal(r[8]);
+        BigDecimal codTransferred = nzBigDecimal(r[9]);
+
+        long inProgress = Math.max(0L, totalOrders - delivered - failed - returned);
+        double successRate = totalOrders > 0
+                ? ((double) delivered) / ((double) totalOrders) * 100.0
+                : 0.0;
+        BigDecimal codHeld = nzBigDecimal(totalCodCollected).subtract(nzBigDecimal(codTransferred));
 
         return new AdminOverviewDto(
             totalOffices,
             totalEmployees,
             totalShippers,
-
             totalOrders,
             delivered,
             failed,
@@ -87,6 +99,37 @@ public class ReportAdminService {
         );
     }
 
+    private static long nzLong(Object v) {
+        if (v == null) return 0L;
+        if (v instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(v.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    private static double nzDouble(Object v) {
+        if (v == null) return 0.0;
+        if (v instanceof Number n) return n.doubleValue();
+        try {
+            return Double.parseDouble(v.toString());
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private static BigDecimal nzBigDecimal(Object v) {
+        if (v == null) return BigDecimal.ZERO;
+        if (v instanceof BigDecimal bd) return bd;
+        if (v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try {
+            return new BigDecimal(v.toString());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
     public byte[] exportOperationsXlsx(LocalDateTime start, LocalDateTime end) {
         List<Object[]> rows = reportRepo.orderOperationSummary(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
@@ -98,12 +141,12 @@ public class ReportAdminService {
             int rIdx = 1;
             for (Object[] r : rows) {
                 Row row = sheet.createRow(rIdx++);
-                Date d = (Date) r[0];
+                LocalDate d = ReportRepository.toLocalDate(r[0]);
                 row.createCell(0).setCellValue(d != null ? d.toString() : "");
-                row.createCell(1).setCellValue(r[1] == null ? 0.0 : ((Number) r[1]).doubleValue());
-                row.createCell(2).setCellValue(r[2] == null ? 0.0 : ((Number) r[2]).doubleValue());
-                row.createCell(3).setCellValue(r[3] == null ? 0.0 : ((Number) r[3]).doubleValue());
-                row.createCell(4).setCellValue(r[4] == null ? 0.0 : ((Number) r[4]).doubleValue());
+                row.createCell(1).setCellValue(ReportRepository.safeBigDecimal(r[1]).doubleValue());
+                row.createCell(2).setCellValue(ReportRepository.safeBigDecimal(r[2]).doubleValue());
+                row.createCell(3).setCellValue(ReportRepository.safeBigDecimal(r[3]).doubleValue());
+                row.createCell(4).setCellValue(ReportRepository.safeBigDecimal(r[4]).doubleValue());
             }
 
             for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
@@ -357,10 +400,10 @@ public class ReportAdminService {
             Map<String, Object> m = new HashMap<>();
             m.put("officeId", r[0] == null ? null : ((Number) r[0]).intValue());
             m.put("officeName", r[1] == null ? "" : r[1].toString());
-            long totalOrders = r[2] == null ? 0L : ((Number) r[2]).longValue();
-            long delivered = r[3] == null ? 0L : ((Number) r[3]).longValue();
-            long failed = r[4] == null ? 0L : ((Number) r[4]).longValue();
-            long returned = r[5] == null ? 0L : ((Number) r[5]).longValue();
+            long totalOrders = ReportRepository.safeLong(r[2]);
+            long delivered = ReportRepository.safeLong(r[3]);
+            long failed = ReportRepository.safeLong(r[4]);
+            long returned = ReportRepository.safeLong(r[5]);
             long inProgress = totalOrders - delivered - failed - returned;
             double successRate = (delivered + failed + returned) > 0 ? ((double) delivered) / ((double) (delivered + failed + returned)) * 100.0 : 0.0;
             m.put("totalOrders", totalOrders);
@@ -369,11 +412,11 @@ public class ReportAdminService {
             m.put("returnedOrders", returned);
             m.put("inProgress", inProgress < 0 ? 0 : inProgress);
             m.put("successRate", Math.round(successRate * 100.0) / 100.0);
-            m.put("shippingRevenue", r[7] == null ? BigDecimal.ZERO : new BigDecimal(r[7].toString()));
-            m.put("totalCodCollected", r[8] == null ? BigDecimal.ZERO : new BigDecimal(r[8].toString()));
-            m.put("codSubmittedToCompany", r[9] == null ? BigDecimal.ZERO : new BigDecimal(r[9].toString()));
-            m.put("totalEmployees", r[10] == null ? 0L : ((Number) r[10]).longValue());
-            m.put("totalShippers", r[11] == null ? 0L : ((Number) r[11]).longValue());
+            m.put("shippingRevenue", ReportRepository.safeBigDecimal(r[7]));
+            m.put("totalCodCollected", ReportRepository.safeBigDecimal(r[8]));
+            m.put("codSubmittedToCompany", ReportRepository.safeBigDecimal(r[9]));
+            m.put("totalEmployees", ReportRepository.safeLong(r[10]));
+            m.put("totalShippers", ReportRepository.safeLong(r[11]));
             return m;
         }).toList();
         return out;
@@ -387,11 +430,11 @@ public class ReportAdminService {
             m.put("shipperName", r[1] == null ? "" : r[1].toString());
             m.put("phone", r[2] == null ? "" : r[2].toString());
             m.put("branchName", r[3] == null ? "" : r[3].toString());
-            long totalOrders = r[4] == null ? 0L : ((Number) r[4]).longValue();
-            long delivered = r[5] == null ? 0L : ((Number) r[5]).longValue();
-            long failed = r[6] == null ? 0L : ((Number) r[6]).longValue();
-            long returned = r[7] == null ? 0L : ((Number) r[7]).longValue();
-            long inProgress = r[8] == null ? 0L : ((Number) r[8]).longValue();
+            long totalOrders = ReportRepository.safeLong(r[4]);
+            long delivered = ReportRepository.safeLong(r[5]);
+            long failed = ReportRepository.safeLong(r[6]);
+            long returned = ReportRepository.safeLong(r[7]);
+            long inProgress = ReportRepository.safeLong(r[8]);
             double successRate = (delivered + failed + returned) > 0 ? ((double) delivered) / ((double) (delivered + failed + returned)) * 100.0 : 0.0;
             m.put("totalOrders", totalOrders);
             m.put("delivered", delivered);
@@ -399,9 +442,11 @@ public class ReportAdminService {
             m.put("returnedOrders", returned);
             m.put("inProgress", inProgress);
             m.put("successRate", Math.round(successRate * 100.0) / 100.0);
-            m.put("codCollected", r[9] == null ? BigDecimal.ZERO : new BigDecimal(r[9].toString()));
-            m.put("codSubmittedToCompany", r[10] == null ? BigDecimal.ZERO : new BigDecimal(r[10].toString()));
-            m.put("codHeldByShipper", ((r[9] == null ? BigDecimal.ZERO : new BigDecimal(r[9].toString())).subtract(r[10] == null ? BigDecimal.ZERO : new BigDecimal(r[10].toString()))));
+            BigDecimal codCollected = ReportRepository.safeBigDecimal(r[9]);
+            BigDecimal codSubmitted = ReportRepository.safeBigDecimal(r[10]);
+            m.put("codCollected", codCollected);
+            m.put("codSubmittedToCompany", codSubmitted);
+            m.put("codHeldByShipper", codCollected.subtract(codSubmitted));
             return m;
         }).toList();
         return out;
@@ -413,13 +458,17 @@ public class ReportAdminService {
         List<Object[]> byDay = reportRepo.financeReportByDay(start, end);
         List<Map<String, Object>> codByDay = byDay.stream().map(r -> {
             Map<String, Object> m = new HashMap<>();
-            java.sql.Date d = (java.sql.Date) r[0];
-            m.put("date", d != null ? d.toLocalDate().toString() : null);
-            m.put("shippingRevenue", r[1] == null ? BigDecimal.ZERO : new BigDecimal(r[1].toString()));
-            m.put("codCollected", r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString()));
-            m.put("codSubmittedToCompany", r[3] == null ? BigDecimal.ZERO : new BigDecimal(r[3].toString()));
-            m.put("codTransferredToShop", r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString()));
-            m.put("codHeldByCompany", ((r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString())).subtract(r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString()))));
+            LocalDate d = ReportRepository.toLocalDate(r[0]);
+            m.put("date", d != null ? d.toString() : null);
+            BigDecimal shippingRevenue = ReportRepository.safeBigDecimal(r[1]);
+            BigDecimal codCollected = ReportRepository.safeBigDecimal(r[2]);
+            BigDecimal codSubmitted = ReportRepository.safeBigDecimal(r[3]);
+            BigDecimal codTransferred = ReportRepository.safeBigDecimal(r[4]);
+            m.put("shippingRevenue", shippingRevenue);
+            m.put("codCollected", codCollected);
+            m.put("codSubmittedToCompany", codSubmitted);
+            m.put("codTransferredToShop", codTransferred);
+            m.put("codHeldByCompany", codCollected.subtract(codTransferred));
             return m;
         }).toList();
 
@@ -428,17 +477,21 @@ public class ReportAdminService {
             Map<String, Object> m = new HashMap<>();
             m.put("officeId", r[0] == null ? null : ((Number) r[0]).intValue());
             m.put("officeName", r[1] == null ? "" : r[1].toString());
-            m.put("shippingRevenue", r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString()));
-            m.put("codCollected", r[3] == null ? BigDecimal.ZERO : new BigDecimal(r[3].toString()));
-            m.put("codSubmittedToCompany", r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString()));
-            m.put("codTransferredToShop", r[5] == null ? BigDecimal.ZERO : new BigDecimal(r[5].toString()));
-            m.put("codHeldByCompany", ((r[3] == null ? BigDecimal.ZERO : new BigDecimal(r[3].toString())).subtract(r[5] == null ? BigDecimal.ZERO : new BigDecimal(r[5].toString()))));
+            BigDecimal shippingRevenue = ReportRepository.safeBigDecimal(r[2]);
+            BigDecimal codCollected = ReportRepository.safeBigDecimal(r[3]);
+            BigDecimal codSubmitted = ReportRepository.safeBigDecimal(r[4]);
+            BigDecimal codTransferred = ReportRepository.safeBigDecimal(r[5]);
+            m.put("shippingRevenue", shippingRevenue);
+            m.put("codCollected", codCollected);
+            m.put("codSubmittedToCompany", codSubmitted);
+            m.put("codTransferredToShop", codTransferred);
+            m.put("codHeldByCompany", codCollected.subtract(codTransferred));
             return m;
         }).toList();
 
-        BigDecimal totalShippingRevenue = byDay.stream().map(r -> r[1] == null ? BigDecimal.ZERO : new BigDecimal(r[1].toString())).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalCodCollected = byDay.stream().map(r -> r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString())).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalCodTransferred = byDay.stream().map(r -> r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString())).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalShippingRevenue = byDay.stream().map(r -> ReportRepository.safeBigDecimal(r[1])).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCodCollected = byDay.stream().map(r -> ReportRepository.safeBigDecimal(r[2])).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCodTransferred = byDay.stream().map(r -> ReportRepository.safeBigDecimal(r[4])).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         out.put("shippingRevenue", totalShippingRevenue);
         out.put("revenueByDay", codByDay.stream().map(d -> { Map<String, Object> m = new HashMap<>(); m.put("date", d.get("date")); m.put("shippingRevenue", d.get("shippingRevenue")); return m; }).toList());
@@ -446,7 +499,7 @@ public class ReportAdminService {
 
         Map<String, Object> codSummary = new HashMap<>();
         codSummary.put("totalCodCollected", totalCodCollected);
-        codSummary.put("codSubmittedToCompany", byBranch.stream().map(r -> r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString())).reduce(BigDecimal.ZERO, BigDecimal::add));
+        codSummary.put("codSubmittedToCompany", byBranch.stream().map(r -> ReportRepository.safeBigDecimal(r[4])).reduce(BigDecimal.ZERO, BigDecimal::add));
         codSummary.put("codTransferredToShop", totalCodTransferred);
         codSummary.put("codHeldByCompany", totalCodCollected.subtract(totalCodTransferred));
 

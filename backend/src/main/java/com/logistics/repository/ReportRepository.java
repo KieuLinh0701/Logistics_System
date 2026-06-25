@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,9 +33,9 @@ public class ReportRepository {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
         return rows.stream().map(r -> new AdminFinancialPoint(
-            ((Date) r[0]).toLocalDate(),
-            r[1] == null ? BigDecimal.ZERO : new BigDecimal(r[1].toString()),
-            r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString())
+            toLocalDate(r[0]),
+            safeBigDecimal(r[1]),
+            safeBigDecimal(r[2])
         )).toList();
     }
 
@@ -59,9 +59,9 @@ public class ReportRepository {
             String first = r[1] == null ? "" : r[1].toString();
             String last = r[2] == null ? "" : r[2].toString();
             String phone = r[3] == null ? "" : r[3].toString();
-            Long cnt = r[4] == null ? 0L : ((Number) r[4]).longValue();
-            BigDecimal s = r[5] == null ? BigDecimal.ZERO : new BigDecimal(r[5].toString());
-            BigDecimal a = r[6] == null ? BigDecimal.ZERO : new BigDecimal(r[6].toString());
+            Long cnt = safeLong(r[4]);
+            BigDecimal s = safeBigDecimal(r[5]);
+            BigDecimal a = safeBigDecimal(r[6]);
             return new AdminShipperReportDto(shipperId, last + " " + first, phone, cnt, s, a, s.subtract(a));
         }).toList();
     }
@@ -80,9 +80,9 @@ public class ReportRepository {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
         return rows.stream().map(r -> new AdminFinancialPoint(
-            ((Date) r[0]).toLocalDate(),
-            r[1] == null ? BigDecimal.ZERO : new BigDecimal(r[1].toString()),
-            r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString())
+            toLocalDate(r[0]),
+            safeBigDecimal(r[1]),
+            safeBigDecimal(r[2])
         )).toList();
         }
 
@@ -99,9 +99,9 @@ public class ReportRepository {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = q.getResultList();
         return rows.stream().map(r -> new AdminFinancialPoint(
-            ((Date) r[0]).toLocalDate(),
-            r[1] == null ? BigDecimal.ZERO : new BigDecimal(r[1].toString()),
-            r[2] == null ? BigDecimal.ZERO : new BigDecimal(r[2].toString())
+            toLocalDate(r[0]),
+            safeBigDecimal(r[1]),
+            safeBigDecimal(r[2])
         )).toList();
         }
 
@@ -143,7 +143,7 @@ public class ReportRepository {
         return rows.stream().map(r -> new com.logistics.dto.admin.AdminOfficeReportDto(
             r[0] == null ? null : ((Number) r[0]).intValue(),
             r[1] == null ? "" : r[1].toString(),
-            r[2] == null ? 0L : ((Number) r[2]).longValue()
+            safeLong(r[2])
         )).toList();
         }
 
@@ -180,22 +180,47 @@ public class ReportRepository {
         return rows;
     }
 
+    /**
+     * Báo cáo chi tiết theo shipper.
+     *
+     * Lưu ý: bảng `orders` KHÔNG có cột `shipper_id` (và không có `batch_id`).
+     * - Shipper của order được xác định thông qua bảng `payment_submissions.shipper_id`
+     *   (mỗi order COD có một payment_submission với shipper tương ứng).
+     * - `payment_submission_batches` không có cột shipper_id (chỉ có office_id) và không có
+     *   liên kết trực tiếp tới shipper trong schema, nên phần cod_submitted_to_company sẽ
+     *   fallback 0 (khoản này vốn là theo office, không thể quy về shipper một cách an toàn).
+     */
     @Transactional(readOnly = true)
     public List<Object[]> reportByShipperDetailed(LocalDateTime start, LocalDateTime end) {
         String sql = "SELECT u.id as shipper_id, CONCAT(u.last_name, ' ', u.first_name) as shipper_name, u.phone_number, ofc.name as branch_name, "
             + "COALESCE(t.total_orders,0) as total_orders, COALESCE(dv.delivered,0) as delivered, COALESCE(fd.failed,0) as failed, COALESCE(rn.returned,0) as returned_orders, "
             + "COALESCE(sf.inprogress,0) as in_progress, "
-            + "COALESCE(psum.total_cod,0) as cod_collected, COALESCE(pb.total_submitted,0) as cod_submitted_to_company "
+            + "COALESCE(psum.total_cod,0) as cod_collected, 0 as cod_submitted_to_company "
             + "FROM users u "
             + "LEFT JOIN employees e ON e.user_id = u.id "
             + "LEFT JOIN offices ofc ON ofc.id = e.office_id "
-            + "LEFT JOIN (SELECT o.shipper_id, COUNT(*) as total_orders FROM orders o WHERE o.created_at BETWEEN :start AND :end GROUP BY o.shipper_id) t ON t.shipper_id = u.id "
-            + "LEFT JOIN (SELECT o.shipper_id, COUNT(DISTINCT o.id) as delivered FROM orders o JOIN order_histories oh ON oh.order_id = o.id AND oh.action = 'DELIVERED' WHERE o.created_at BETWEEN :start AND :end GROUP BY o.shipper_id) dv ON dv.shipper_id = u.id "
-            + "LEFT JOIN (SELECT o.shipper_id, COUNT(DISTINCT o.id) as failed FROM orders o JOIN order_histories ohf ON ohf.order_id = o.id AND ohf.action = 'DELIVERY_FAILED_FINAL' WHERE o.created_at BETWEEN :start AND :end GROUP BY o.shipper_id) fd ON fd.shipper_id = u.id "
-            + "LEFT JOIN (SELECT o.shipper_id, COUNT(DISTINCT o.id) as returned FROM orders o JOIN order_histories ohr ON ohr.order_id = o.id AND ohr.action = 'RETURNED' WHERE o.created_at BETWEEN :start AND :end GROUP BY o.shipper_id) rn ON rn.shipper_id = u.id "
-            + "LEFT JOIN (SELECT o.shipper_id, SUM(CASE WHEN o.status = 'DELIVERING' THEN 1 ELSE 0 END) as inprogress FROM orders o WHERE o.created_at BETWEEN :start AND :end GROUP BY o.shipper_id) sf ON sf.shipper_id = u.id "
-            + "LEFT JOIN (SELECT ps.shipper_id, SUM(ps.system_amount) as total_cod FROM payment_submissions ps WHERE ps.paid_at BETWEEN :start AND :end GROUP BY ps.shipper_id) psum ON psum.shipper_id = u.id "
-            + "LEFT JOIN (SELECT b.shipper_id, SUM(b.total_actual_amount) as total_submitted FROM payment_submission_batches b WHERE b.status = 'COMPLETED' AND b.created_at BETWEEN :start AND :end GROUP BY b.shipper_id) pb ON pb.shipper_id = u.id "
+            // shipper_id của order lấy qua payment_submissions
+            + "LEFT JOIN (SELECT ps.shipper_id as shipper_id, COUNT(DISTINCT o.id) as total_orders "
+            + "           FROM orders o JOIN payment_submissions ps ON ps.order_id = o.id "
+            + "           WHERE o.created_at BETWEEN :start AND :end GROUP BY ps.shipper_id) t ON t.shipper_id = u.id "
+            + "LEFT JOIN (SELECT ps.shipper_id as shipper_id, COUNT(DISTINCT o.id) as delivered "
+            + "           FROM orders o JOIN payment_submissions ps ON ps.order_id = o.id "
+            + "           JOIN order_histories oh ON oh.order_id = o.id AND oh.action = 'DELIVERED' "
+            + "           WHERE o.created_at BETWEEN :start AND :end GROUP BY ps.shipper_id) dv ON dv.shipper_id = u.id "
+            + "LEFT JOIN (SELECT ps.shipper_id as shipper_id, COUNT(DISTINCT o.id) as failed "
+            + "           FROM orders o JOIN payment_submissions ps ON ps.order_id = o.id "
+            + "           JOIN order_histories ohf ON ohf.order_id = o.id AND ohf.action = 'DELIVERY_FAILED_FINAL' "
+            + "           WHERE o.created_at BETWEEN :start AND :end GROUP BY ps.shipper_id) fd ON fd.shipper_id = u.id "
+            + "LEFT JOIN (SELECT ps.shipper_id as shipper_id, COUNT(DISTINCT o.id) as returned "
+            + "           FROM orders o JOIN payment_submissions ps ON ps.order_id = o.id "
+            + "           JOIN order_histories ohr ON ohr.order_id = o.id AND ohr.action = 'RETURNED' "
+            + "           WHERE o.created_at BETWEEN :start AND :end GROUP BY ps.shipper_id) rn ON rn.shipper_id = u.id "
+            + "LEFT JOIN (SELECT ps.shipper_id as shipper_id, SUM(CASE WHEN o.status = 'DELIVERING' THEN 1 ELSE 0 END) as inprogress "
+            + "           FROM orders o JOIN payment_submissions ps ON ps.order_id = o.id "
+            + "           WHERE o.created_at BETWEEN :start AND :end GROUP BY ps.shipper_id) sf ON sf.shipper_id = u.id "
+            + "LEFT JOIN (SELECT ps.shipper_id, SUM(ps.system_amount) as total_cod "
+            + "           FROM payment_submissions ps "
+            + "           WHERE ps.paid_at BETWEEN :start AND :end GROUP BY ps.shipper_id) psum ON psum.shipper_id = u.id "
             + "WHERE EXISTS (SELECT 1 FROM account_roles ar JOIN roles r ON r.id = ar.role_id WHERE ar.account_id = u.account_id AND r.name = 'SHIPPER') "
             + "ORDER BY total_orders DESC";
 
@@ -263,9 +288,9 @@ public class ReportRepository {
         return rows.stream().map(r -> new com.logistics.dto.admin.AdminShopReportDto(
             r[0] == null ? null : ((Number) r[0]).intValue(),
             ((r[1] == null) ? "" : r[1].toString()),
-            r[2] == null ? 0L : ((Number) r[2]).longValue(),
-            r[3] == null ? BigDecimal.ZERO : new BigDecimal(r[3].toString()),
-            r[4] == null ? BigDecimal.ZERO : new BigDecimal(r[4].toString())
+            safeLong(r[2]),
+            safeBigDecimal(r[3]),
+            safeBigDecimal(r[4])
         )).toList();
         }
 
@@ -287,7 +312,88 @@ public class ReportRepository {
         Query q = em.createNativeQuery(sql);
         q.setParameter("start", start);
         q.setParameter("end", end);
-        Object[] row = (Object[]) q.getSingleResult();
-        return row;
+        try {
+            Object[] row = (Object[]) q.getSingleResult();
+            if (row == null) {
+                return new Object[10];
+            }
+            return row;
+        } catch (jakarta.persistence.NoResultException ex) {
+            return new Object[10];
+        } catch (RuntimeException ex) {
+            // Some drivers may return List instead of single result; fall back to list path
+            try {
+                List<?> list = q.getResultList();
+                if (list == null || list.isEmpty()) {
+                    return new Object[10];
+                }
+                Object first = list.get(0);
+                if (first instanceof Object[] arr) {
+                    return arr;
+                }
+                // Single scalar row -> wrap to length-10 array, first value at index 0
+                Object[] arr = new Object[10];
+                arr[0] = first;
+                return arr;
+            } catch (RuntimeException inner) {
+                throw inner;
+            }
+        }
+    }
+
+    // ----- Helpers -----
+
+    public static LocalDate toLocalDate(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDate d) {
+            return d;
+        }
+        if (value instanceof java.sql.Date d) {
+            return d.toLocalDate();
+        }
+        if (value instanceof java.sql.Timestamp t) {
+            return t.toLocalDateTime().toLocalDate();
+        }
+        if (value instanceof java.time.LocalDateTime dt) {
+            return dt.toLocalDate();
+        }
+        try {
+            return LocalDate.parse(value.toString());
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    public static Long safeLong(Object value) {
+        if (value == null) return 0L;
+        if (value instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    public static Integer safeInt(Object value) {
+        if (value == null) return 0;
+        if (value instanceof Number n) return n.intValue();
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    public static BigDecimal safeBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal bd) return bd;
+        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
     }
 }

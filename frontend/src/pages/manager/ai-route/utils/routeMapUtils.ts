@@ -29,8 +29,12 @@ export function decodeEncodedPolyline(encoded?: string | null): google.maps.LatL
   }
 }
 
+/**
+ * Returns stop label for map markers.
+ * Format: "R{routeIndex+1}-{stopSequence}" e.g. "R1-1", "R1-2", "R2-1"
+ */
 export function getStopLabel(routeIndex: number, stopSequence: number): string {
-  return `${routeIndex + 1}.${stopSequence}`;
+  return `R${routeIndex + 1}-${stopSequence}`;
 }
 
 export function formatMinutes(minutes?: number): string {
@@ -77,11 +81,14 @@ export function buildLatLngBounds(
 }
 
 export function summarizePlan(routes: AiShipperRoute[]) {
+  const AVG_SPEED_KMH = 25;
   return routes.reduce(
     (acc, route) => {
+      const distanceKm = route.estimatedDistanceKm ?? 0;
+      const etaMinutes = route.estimatedDurationMinutes ?? 0;
       acc.totalOrders += route.stops?.filter(s => !isReturnToOfficeStop(s)).length ?? route.stopCount ?? 0;
-      acc.totalKm += route.estimatedDistanceKm ?? 0;
-      acc.totalEta += route.estimatedDurationMinutes ?? 0;
+      acc.totalKm += distanceKm;
+      acc.totalEta += etaMinutes > 0 ? etaMinutes : Math.ceil(distanceKm / AVG_SPEED_KMH * 60);
       acc.totalFuel += route.fuelCost ?? 0;
       acc.totalCod += route.totalCod ?? 0;
       return acc;
