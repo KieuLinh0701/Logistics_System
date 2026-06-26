@@ -18,9 +18,6 @@ public enum OrderStatus {
                     // lưu toOffice
     DELIVERING,
     DELIVERED,
-
-    PARTIAL_DELIVERY,
-    PARTIAL_RETURN,
     DELIVERY_RETRY,
     DELIVERY_FAILED_FINAL,
 

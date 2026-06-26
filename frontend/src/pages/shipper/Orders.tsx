@@ -42,10 +42,10 @@ const ShipperOrders: React.FC = () => {
       } as any;
       const res = await orderApi.getShipperOrders(params);
       const visible = (res.orders || []).filter(
-        (o: any) => o.status !== "DELIVERED" && o.status !== "FAILED_DELIVERY"
+        (o: any) => o.status !== "DELIVERED" && o.status !== "FAILED_DELIVERY" && o.status !== "RETURNED"
       );
       setOrders(visible as ShipperOrder[]);
-      setPagination((prev) => ({ ...prev, total: res.pagination.total }));
+      setPagination((prev) => ({ ...prev, total: visible.length }));
     } catch (error) {
       console.error("Error fetching orders:", error);
       message.error("Lỗi khi tải danh sách đơn hàng");
@@ -96,10 +96,6 @@ const ShipperOrders: React.FC = () => {
         return "Chờ giao lại";
       case "DELIVERY_FAILED_FINAL":
         return "Giao thất bại";
-      case "PARTIAL_DELIVERY":
-        return "Giao 1 phần";
-      case "PARTIAL_RETURN":
-        return "Trả 1 phần";
       case "RETURNED":
         return "Đã hoàn";
       case "RETURNING":
@@ -228,7 +224,6 @@ const ShipperOrders: React.FC = () => {
               <Option value="DELIVERING">Đang giao</Option>
               <Option value="DELIVERED">Đã giao</Option>
               <Option value="FAILED_DELIVERY">Giao thất bại</Option>
-              <Option value="RETURNED">Đã hoàn</Option>
             </Select>
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               Làm mới

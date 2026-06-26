@@ -179,8 +179,6 @@ const BarcodeScanner: React.FC = () => {
       DELIVERING: "Đang giao hàng",
       DELIVERED: "Đã giao hàng",
       FAILED_DELIVERY: "Giao hàng thất bại",
-      PARTIAL_DELIVERY: "Giao 1 phần",
-      PARTIAL_RETURN: "Trả 1 phần",
       RETURNED: "Đã hoàn trả",
       RETURNING: "Đang hoàn",
       RETURN_RETRY: "Hoàn lại",
