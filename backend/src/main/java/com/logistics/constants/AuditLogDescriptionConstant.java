@@ -178,9 +178,6 @@ public class AuditLogDescriptionConstant {
     public static final String ORDER_DELIVERY_FAILED = "Ghi nhận giao hàng thất bại";
     public static final String ORDER_DELIVERY_ATTEMPT = "Ghi nhận lần giao hàng";
     public static final String ORDER_RETURN_FAILED = "Trả hàng giao thất bại về bưu cục";
-    public static final String ORDER_PARTIAL_DELIVERY = "Hoàn tất giao một phần";
-    public static final String ORDER_PRODUCT_DELIVERED = "Giao sản phẩm thành công";
-    public static final String ORDER_PRODUCT_RETURNED = "Trả lại sản phẩm chưa giao được";
     public static final String ORDER_RETURN_TO_ORIGIN = "Trả hàng về kho gốc";
 
     // Incident Report

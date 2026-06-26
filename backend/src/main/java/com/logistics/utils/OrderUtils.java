@@ -156,8 +156,6 @@ public class OrderUtils {
             case DELIVERING -> "Đang giao";
             case DELIVERED -> "Đã giao hàng";
 
-            case PARTIAL_DELIVERY -> "Giao hàng một phần";
-            case PARTIAL_RETURN -> "Hoàn trả một phần";
             case DELIVERY_RETRY -> "Giao thất bại - Thử lại";
             case DELIVERY_FAILED_FINAL -> "Giao thất bại - Dừng";
 

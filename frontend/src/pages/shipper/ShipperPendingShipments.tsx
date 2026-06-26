@@ -18,42 +18,25 @@ const ShipperPendingShipments: React.FC = () => {
     if (typeof raw === "string") {
       try {
         data = JSON.parse(raw);
-        console.log("[NORMALIZE] Parsed JSON string to object");
       } catch (e) {
         console.error("[NORMALIZE] Failed to parse JSON string:", raw);
         return [];
       }
     }
 
-    console.group("[NORMALIZE]");
-    console.log("raw =", raw);
-    console.log("data =", data);
-    console.log("typeof data =", typeof data);
-    console.log("isArray(data) =", Array.isArray(data));
-
     // Case 1: data is already an array
     if (Array.isArray(data)) {
-      console.log("Matched Case 1: data is array");
-      console.groupEnd();
       return data;
     }
 
     // Case 2: { success: true/false, data: [...] }
     if (data && typeof data === 'object' && 'success' in data) {
-      console.log("Matched Case 2: has success field");
-      console.log("data.data =", data.data);
-      console.log("isArray(data.data) =", Array.isArray(data.data));
-
       if (Array.isArray(data.data)) {
-        console.groupEnd();
         return data.data;
       }
 
       // Case 3: { success: true, data: { shipments: [...] } }
       if (data.data && typeof data.data === 'object' && 'shipments' in data.data) {
-        console.log("Matched Case 3: data.data.shipments");
-        console.log("data.data.shipments =", data.data.shipments);
-        console.groupEnd();
         return data.data.shipments || [];
       }
     }
@@ -62,14 +45,10 @@ const ShipperPendingShipments: React.FC = () => {
     const candidates = ['shipments', 'data', 'items', 'content'];
     for (const key of candidates) {
       if (Array.isArray(data?.[key])) {
-        console.log(`Matched Case 4: data.${key}`);
-        console.groupEnd();
         return data[key];
       }
     }
 
-    console.log("No match found, returning []");
-    console.groupEnd();
     return [];
   };
 
@@ -78,22 +57,7 @@ const ShipperPendingShipments: React.FC = () => {
       setLoading(true);
       const response = await shipmentApi.listShipperActiveShipments();
 
-      console.group("[SHIPPER_FETCH]");
-      console.log("response =", response);
-      console.log("typeof response =", typeof response);
-      console.groupEnd();
-
-      // normalizeShipments will handle JSON string parsing internally
       const normalized = normalizeShipments(response);
-
-      console.group("[TABLE]");
-      console.log("normalized =", normalized);
-      console.log("length =", normalized.length);
-      if (normalized.length > 0) {
-        console.log("First item keys:", Object.keys(normalized[0]));
-        console.log("First item:", normalized[0]);
-      }
-      console.groupEnd();
 
       setShipments(normalized);
     } catch (error) {
@@ -109,13 +73,6 @@ const ShipperPendingShipments: React.FC = () => {
     fetchShipments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchKey]);
-
-  useEffect(() => {
-    console.group("[STATE]");
-    console.log("shipments =", shipments);
-    console.log("length =", shipments.length);
-    console.groupEnd();
-  }, [shipments]);
 
   const getActionButton = (record: any) => {
     const status = record.status || record.shipmentStatus || record.state;

@@ -165,8 +165,6 @@ export const ORDER_STATUS = [
     'RETURN_RETRY',
     'RETURN_FAILED_FINAL',
     'RETURNED',
-    'PARTIAL_DELIVERY',
-    'PARTIAL_RETURN',
     'DELIVERY_RETRY',
     'DELIVERY_FAILED_FINAL',
 ] as const;
@@ -209,10 +207,6 @@ export const translateOrderStatus = (value: string): string => {
             return 'Chờ giao lại';
         case 'DELIVERY_FAILED_FINAL':
             return 'Giao thất bại - Dừng';
-        case 'PARTIAL_DELIVERY':
-            return 'Giao hàng một phần';
-        case 'PARTIAL_RETURN':
-            return 'Hoàn trả một phần';
         case 'CANCELLED':
             return 'Đã hủy';
         case 'RETURNING':

@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class SupportOrderLookupService {
 
-    private static final Pattern TRACKING_PATTERN = Pattern.compile("(?i)\\b([a-z]{2,6})[-_ ]?(\\d{4,}[a-zA-Z0-9]*)\\b");
+    private static final Pattern TRACKING_PATTERN = Pattern.compile("(?i)\\b([a-z]{2,6})[-_ ]?(\\d{3,}[a-zA-Z0-9]*)\\b");
 
     private final OrderRepository orderRepository;
     private final SupportTicketRepository supportTicketRepository;

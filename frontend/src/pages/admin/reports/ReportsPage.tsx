@@ -32,7 +32,9 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, color, loading }) => {
   return (
     <Card
       loading={loading}
-      bordered={true}
+      styles={{
+        body: { padding: '16px 20px' }
+      }}
       style={{
         borderRadius: 8,
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
@@ -40,7 +42,6 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, color, loading }) => {
         border: '1px solid #f0f0f0',
         height: '100%',
       }}
-      bodyStyle={{ padding: '16px 20px' }}
     >
       <div style={{ fontSize: 13, color: '#8c8c8c', marginBottom: 4, fontWeight: 500 }}>
         {title}
@@ -59,6 +60,28 @@ const cleanLocale = {
     </div>
   )
 };
+
+// Helper to extract data from ApiResponse or return fallback
+function extractData<T>(response: any, fallback: T): T {
+  if (!response) return fallback;
+  if (response.success !== undefined && response.data !== undefined) {
+    return response.data ?? fallback;
+  }
+  if (Array.isArray(response)) return response as unknown as T;
+  if (typeof response === 'object') return response as T;
+  return fallback;
+}
+
+// Safe API call wrapper
+async function safeCall<T>(apiCall: Promise<any>, fallback: T): Promise<T> {
+  try {
+    const response = await apiCall;
+    return extractData(response, fallback);
+  } catch (error) {
+    console.error("[ReportsPage] API error:", error);
+    return fallback;
+  }
+}
 
 export default function ReportsPage() {
   const [range, setRange] = useState<any>([dayjs().subtract(7, 'day'), dayjs()]);
@@ -103,15 +126,15 @@ export default function ReportsPage() {
         resOverview,
         resFinance
       ] = await Promise.all([
-        reportApi.getFinancial(start, end),
-        reportApi.getShippers(start, end),
-        reportApi.getTransferred(start, end),
-        reportApi.getFees(start, end),
-        reportApi.getOperations(start, end),
-        reportApi.getOffice(start, end),
-        reportApi.getShop(start, end),
-        reportApi.getOverview(start, end),
-        reportApi.getFinance(start, end)
+        safeCall(reportApi.getFinancial(start, end), []),
+        safeCall(reportApi.getShippers(start, end), []),
+        safeCall(reportApi.getTransferred(start, end), []),
+        safeCall(reportApi.getFees(start, end), []),
+        safeCall(reportApi.getOperations(start, end), []),
+        safeCall(reportApi.getOffice(start, end), []),
+        safeCall(reportApi.getShop(start, end), []),
+        safeCall(reportApi.getOverview(start, end), null),
+        safeCall(reportApi.getFinance(start, end), null)
       ]);
 
       setFinancial(resFinancial || []);
@@ -123,7 +146,7 @@ export default function ReportsPage() {
       setOverview(resOverview || null);
       setFinanceReport(resFinance || null);
     } catch (error) {
-      console.error(error);
+      console.error("[ReportsPage] Load error:", error);
     } finally {
       setLoading(false);
     }
@@ -222,7 +245,19 @@ export default function ReportsPage() {
 
       <div className="list-page-table">
         <Table
-          dataSource={operations}
+          dataSource={operations.map((r: AnyRecord) => {
+            const returning = Number(r.returning || 0);
+            const returned = Number(r.returned || 0);
+            const returnCount = returning + returned;
+            const totalOrders = Number(r.totalOrders || 0);
+            const delivered = Number(r.delivered || 0);
+            const successRate = totalOrders > 0 ? (delivered / totalOrders) * 100 : 0;
+            return {
+              ...r,
+              returnCount,
+              successRate,
+            };
+          })}
           pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Tổng cộng ${t} ngày` }}
           rowKey={(r: AnyRecord) => r.date}
           locale={cleanLocale}
@@ -231,10 +266,8 @@ export default function ReportsPage() {
             { title: 'Tổng đơn', dataIndex: 'totalOrders', key: 'totalOrders', width: 110 },
             { title: 'Giao thành công', dataIndex: 'delivered', key: 'delivered', width: 150 },
             { title: 'Thất bại', dataIndex: 'failed', key: 'failed', width: 110 },
-            { title: 'Đang trả', dataIndex: 'returning', key: 'returning', width: 110 },
-            { title: 'Đã trả', dataIndex: 'returned', key: 'returned', width: 110 },
-            { title: 'Tỷ lệ trả', dataIndex: 'returnRate', key: 'returnRate', width: 120, render: (v: any) => (typeof v === 'number' ? `${(v * 100).toFixed(2)}%` : '0.00%') },
-            { title: 'Thời gian trung bình (s)', dataIndex: 'avgDeliverySeconds', key: 'avgDeliverySeconds', width: 180 },
+            { title: 'Trả về', dataIndex: 'returnCount', key: 'returnCount', width: 110 },
+            { title: 'Tỉ lệ thành công', dataIndex: 'successRate', key: 'successRate', width: 140, render: (v: any) => (typeof v === 'number' ? `${v.toFixed(2)}%` : '0.00%') },
           ]}
         />
       </div>
@@ -250,7 +283,7 @@ export default function ReportsPage() {
               <Legend />
               <Bar dataKey="delivered" name="Giao thành công" fill="#2f9e44" />
               <Bar dataKey="failed" name="Thất bại" fill="#e03131" />
-              <Bar dataKey="returned" name="Đã trả" fill="#f76707" />
+              <Bar dataKey={(r: AnyRecord) => Number(r.returning || 0) + Number(r.returned || 0)} name="Trả về" fill="#f76707" />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -405,9 +405,9 @@ public class RecipientAddressUserService {
     ) {
         long total = orderRepository.countByRecipientPhoneAndRecipientFullAddress(phone, fullAddress);
         long success = orderRepository.countByRecipientPhoneAndRecipientFullAddressAndStatusIn(
-                phone, fullAddress, List.of(OrderStatus.DELIVERED, OrderStatus.PARTIAL_DELIVERY));
+                phone, fullAddress, List.of(OrderStatus.DELIVERED));
         long returned = orderRepository.countByRecipientPhoneAndRecipientFullAddressAndStatusIn(
-                phone, fullAddress, List.of(OrderStatus.RETURNED, OrderStatus.PARTIAL_RETURN));
+                phone, fullAddress, List.of(OrderStatus.RETURNED));
 
         return RecipientStats.builder()
                 .totalSystemOrders(total)
@@ -426,9 +426,9 @@ public class RecipientAddressUserService {
         long total = orderRepository.countByUserIdAndRecipientPhoneAndRecipientFullAddress(
                 userId, phone, fullAddress);
         long success = orderRepository.countByUserIdAndRecipientPhoneAndRecipientFullAddressAndStatusIn(
-                userId, phone, fullAddress, List.of(OrderStatus.DELIVERED, OrderStatus.PARTIAL_DELIVERY));
+                userId, phone, fullAddress, List.of(OrderStatus.DELIVERED));
         long returned = orderRepository.countByUserIdAndRecipientPhoneAndRecipientFullAddressAndStatusIn(
-                userId, phone, fullAddress, List.of(OrderStatus.RETURNED, OrderStatus.PARTIAL_RETURN));
+                userId, phone, fullAddress, List.of(OrderStatus.RETURNED));
 
         return RecipientStats.builder()
                 .totalSystemOrders(total)

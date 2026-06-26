@@ -166,9 +166,6 @@ public class AiRouteOptimizationManagerService {
 
     @Transactional
     public ManagerAiRoutePlanDetailDto confirmPlan(Integer managerUserId, Long planId) {
-        // === BEGIN CONFIRM PLAN ===
-        log.info("[AI_CONFIRM_PLAN_BEGIN] planId={} managerUserId={}", planId, managerUserId);
-
         try {
             Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
             AiRoutePlan plan = aiRoutePlanRepository.findByIdAndOfficeIdWithDetails(planId, office.getId())
@@ -178,16 +175,11 @@ public class AiRouteOptimizationManagerService {
                 throw new AppException(AiRouteErrorCode.AI_INVALID_PLAN_STATUS);
             }
 
-            int totalRoutes = plan.getRoutes() != null ? plan.getRoutes().size() : 0;
             int totalOrders = plan.getRoutes() == null ? 0
                     : plan.getRoutes().stream()
                             .filter(Objects::nonNull)
                             .mapToInt(r -> r.getStops() != null ? r.getStops().size() : 0)
                             .sum();
-
-            // === LOAD PLAN SUCCESS ===
-            log.info("[AI_CONFIRM_PLAN_LOADED] planId={} officeId={} planStatus={} totalRoutes={} totalOrders={}",
-                    planId, office.getId(), plan.getStatus(), totalRoutes, totalOrders);
 
             List<ShipmentStatus> activeShipmentStatuses = List.of(ShipmentStatus.PENDING, ShipmentStatus.IN_TRANSIT);
             int shipmentsCreated = 0;
@@ -210,13 +202,7 @@ public class AiRouteOptimizationManagerService {
                         .filter(s -> s.getOrder() != null)
                         .toList();
 
-                // === PROCESS ROUTE ===
-                log.info("[AI_CONFIRM_PROCESS_ROUTE] planId={} routeId={} shipperEmployeeId={} shipperName={} stopCount={}",
-                        planId, route.getId(), shipperEmployee.getId(), shipperName, deliveryStops.size());
-
                 if (deliveryStops.isEmpty()) {
-                    log.warn("[AI_CONFIRM_SKIP_ROUTE] planId={} routeId={} reason=empty_delivery_stops",
-                            planId, route.getId());
                     continue;
                 }
 
@@ -229,19 +215,9 @@ public class AiRouteOptimizationManagerService {
                 shipment.setCreatedBy(plan.getManagerEmployee());
                 shipment.setVehicle(null);
 
-                // === CREATE SHIPMENT ===
-                log.info("[AI_CONFIRM_CREATE_SHIPMENT] planId={} routeId={} shipmentType={} shipmentStatus={} employeeId={}",
-                        planId, route.getId(),
-                        shipment.getType(), shipment.getStatus(), shipperEmployee.getId());
-
                 for (AiRoutePlanStop stop : deliveryStops) {
                     RouteStopType stopType = stop.getStopType();
                     Order order = stop.getOrder();
-
-                    // === PROCESS STOP ===
-                    log.info("[AI_CONFIRM_PROCESS_STOP] planId={} routeId={} stopId={} stopType={} orderId={} trackingNumber={} orderStatus={}",
-                            planId, route.getId(), stop.getId(), stopType,
-                            order.getId(), order.getTrackingNumber(), order.getStatus());
 
                     if (order.getEmployee() != null && !Objects.equals(order.getEmployee().getId(), shipperEmployee.getId())) {
                         throw new AppException(AiRouteErrorCode.AI_ORDER_ASSIGNED_TO_OTHER);
@@ -274,12 +250,6 @@ public class AiRouteOptimizationManagerService {
                     so.setLegDurationMinutes(stop.getLegDurationMinutes());
                     shipment.getShipmentOrders().add(so);
 
-                    // === CREATE SHIPMENT ORDER ===
-                    log.info("[AI_CONFIRM_CREATE_SHIPMENT_ORDER] planId={} routeId={} shipmentId={} orderId={} stopSequence={} stopType={}",
-                            planId, route.getId(),
-                            shipment.getId() != null ? shipment.getId() : "PENDING_SAVE",
-                            order.getId(), stop.getStopSequence(), stopType);
-
                     Order tracked = ordersToUpdate.computeIfAbsent(order.getId(), id -> order);
                     tracked.setEmployee(shipperEmployee);
                     if (stopType == RouteStopType.DELIVERY) {
@@ -296,26 +266,13 @@ public class AiRouteOptimizationManagerService {
                 }
 
                 if (shipment.getShipmentOrders().isEmpty()) {
-                    log.warn("[AI_CONFIRM_SKIP_ROUTE] planId={} routeId={} reason=no_valid_orders_after_validation",
-                            planId, route.getId());
                     continue;
                 }
-
-                // === BEFORE SAVE SHIPMENT ===
-                int beforeSaveCount = shipment.getShipmentOrders() != null ? shipment.getShipmentOrders().size() : 0;
-                log.info("[AI_CONFIRM_BEFORE_AVE_SHIPMENT] planId={} routeId={} shipmentOrdersCount={}",
-                        planId, route.getId(), beforeSaveCount);
 
                 Shipment savedShipment = shipmentRepository.save(shipment);
                 route.setShipmentId(savedShipment.getId());
 
-                // === AFTER SAVE SHIPMENT ===
-                log.info("[AI_CONFIRM_AFTER_SAVE_SHIPMENT] planId={} routeId={} shipmentId={} shipmentCode={}",
-                        planId, route.getId(), savedShipment.getId(), savedShipment.getCode());
-
                 shipmentsCreated++;
-                log.info("[AI_CONFIRM_ROUTE] planId={} routeId={} shipmentId={} shipmentCode={} orders={}",
-                        planId, route.getId(), savedShipment.getId(), savedShipment.getCode(), shipment.getShipmentOrders().size());
             }
 
             if (!ordersToUpdate.isEmpty()) {
@@ -324,17 +281,9 @@ public class AiRouteOptimizationManagerService {
 
             aiRoutePlanRouteRepository.saveAll(plan.getRoutes());
 
-            // === BEFORE SAVE PLAN ===
-            log.info("[AI_CONFIRM_BEFORE_SAVE_PLAN] planId={} statusBefore={}",
-                    planId, plan.getStatus());
-
             plan.setStatus(AiRoutePlanStatus.CONFIRMED);
             plan.setConfirmedAt(LocalDateTime.now());
             aiRoutePlanRepository.save(plan);
-
-            // === CONFIRM PLAN SUCCESS ===
-            log.info("[AI_CONFIRM_PLAN_SUCCESS] planId={} officeId={} shipmentsCreated={} shipmentOrdersCreated={}",
-                    planId, office.getId(), shipmentsCreated, shipmentOrdersCreated);
 
             return toDetailDto(plan, List.of());
 

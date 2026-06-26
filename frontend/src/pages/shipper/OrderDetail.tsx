@@ -56,12 +56,6 @@ const ShipperOrderDetail: React.FC = () => {
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
   const [failedForm] = Form.useForm();
-  
-  // Biến Form cho modal giao 1 phần
-  const [partialForm] = Form.useForm();
-  // Có thể bật nút xác nhận hay không
-  const [canSubmit, setCanSubmit] = useState(false);
-  const [partialModalOpen, setPartialModalOpen] = useState(false);
   const [paymentSubmissionResponse, setPaymentSubmissionResponse] = useState<any | null>(null);
 
   const getCodPreviewItems = () => {
@@ -307,10 +301,6 @@ const fetchOrderDetail = async () => {
         return "Chờ nộp về bưu cục";
       case "DELIVERY_FAILED_FINAL":
         return "Giao thất bại cuối cùng";
-      case "PARTIAL_DELIVERY":
-        return "Giao 1 phần";
-      case "PARTIAL_RETURN":
-        return "Trả 1 phần";
       case "RETURNED":
         return "Đã hoàn";
       case "RETURNING":
@@ -377,16 +367,6 @@ const fetchOrderDetail = async () => {
               </Space>
             </Col>
             <Col>
-              {!isInActiveDeliveryShipment(order) && order.status !== "DELIVERED" && order.status !== "RETURNED" && order.status !== "CANCELLED" && (
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="Đơn hàng chưa thuộc chuyến DELIVERY đang chạy"
-                  description="Bạn không thể thao tác giao/hoàn khi đơn chưa được gắn vào chuyến. Vui lòng liên hệ quản lý."
-                />
-              )}
-            </Col>
-            <Col>
               <Space>
                 {(getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && (
                   <Button
@@ -439,21 +419,6 @@ const fetchOrderDetail = async () => {
                       Giao thất bại
                     </Button>
 
-                    <Button type="default" style={{ backgroundColor: '#FFFFFF', color: '#333333', border: '1px solid #333333', borderRadius: 5, padding: '10px 18px', fontSize: 14 }} onClick={async () => {
-                      // Bật chế độ giao 1 phần và mở modal
-                      try {
-                        setLoading(true);
-                        await orderApi.startPartialDelivery(Number(id));
-                        setPartialModalOpen(true);
-                        fetchOrderDetail();
-                        message.success('Đã bật chế độ Giao 1 phần');
-                      } catch (e:any) {
-                        message.error(e?.message || 'Không thể bắt đầu giao 1 phần');
-                      } finally { setLoading(false); }
-                    }}>
-                      Giao 1 phần
-                    </Button>
-
                     <Button icon={<CompassOutlined />} onClick={handleNavigateToRoute}>
                       Xem lộ trình
                     </Button>
@@ -462,6 +427,16 @@ const fetchOrderDetail = async () => {
               </Space>
             </Col>
           </Row>
+
+          {!isInActiveDeliveryShipment(order) && order.status !== "DELIVERED" && order.status !== "RETURNED" && order.status !== "CANCELLED" && (
+            <Row justify="center">
+              <Alert
+                type="warning"
+                showIcon
+                description="Bạn không thể thao tác giao/hoàn khi đơn chưa được gắn vào chuyến."
+              />
+            </Row>
+          )}
 
           <Divider />
 
@@ -735,182 +710,6 @@ const fetchOrderDetail = async () => {
           <Form.Item name="detail" label="Chi tiết (nếu có)">
             <Input.TextArea rows={3} placeholder="Mô tả chi tiết lý do (tuỳ chọn)" />
           </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal: Giao 1 phần (per-line inputs: deliver + return) */}
-      <Modal
-        title={<div style={{ width: '100%', textAlign: 'center' }}><span style={{ fontWeight: 700, fontSize: 16, color: '#003366' }}>Giao 1 phần</span></div>}
-        open={partialModalOpen}
-        onCancel={() => { setPartialModalOpen(false); partialForm.resetFields(); }}
-        width={1100}
-        centered
-        styles={{ body: { padding: 20, backgroundColor: '#FFFFFF' } }}
-        style={{ borderRadius: 10, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-        footer={null}
-      >
-        <Form
-          layout="vertical"
-          form={partialForm}
-          onFinish={async (values) => {
-            let hadErrors = false;
-            const errors: any[] = [];
-            try {
-              setLoading(true);
-              const items = values.items || [];
-              // Tạo mảng payload theo spec
-              const payload = items.map((it: any) => ({
-                productId: it.productId,
-                deliveredQty: Number(it.deliver || 0),
-                returnedQty: Number(it.returned || 0),
-                returnReason: it.reason || ''
-              }));
-
-              // Gửi payload cho giao 1 phần
-
-              // Gửi yêu cầu tuần tự cho từng sản phẩm (backend có thể không có endpoint batch)
-              for (const it of payload) {
-                if (it.deliveredQty > 0) {
-                  try {
-                    await orderApi.markProductDelivered(it.productId, it.deliveredQty);
-                  } catch (e: any) {
-                    hadErrors = true;
-                    errors.push({ phase: 'delivered', item: it, error: e });
-                  }
-                }
-                if (it.returnedQty > 0) {
-                  try {
-                    await orderApi.markProductReturned(it.productId, it.returnedQty, it.returnReason);
-                  } catch (e: any) {
-                    hadErrors = true;
-                    errors.push({ phase: 'returned', item: it, error: e });
-                  }
-                }
-              }
-
-              // Luôn gọi finishPartialDelivery để backend hoàn tất phiên giao 1 phần
-              try {
-                await orderApi.finishPartialDelivery(Number(order?.id));
-              } catch (e: any) {
-                hadErrors = true;
-                errors.push({ phase: 'finish', error: e });
-              }
-
-              if (hadErrors) {
-                console.warn('PartialDelivery completed with some errors', errors);
-                message.warning('Hoàn tất phiên giao 1 phần nhưng có vài lỗi (xem console)');
-              } else {
-                message.success('Cập nhật phiên giao 1 phần thành công');
-              }
-
-              setPartialModalOpen(false);
-              partialForm.resetFields();
-              fetchOrderDetail();
-            } catch (err: any) {
-              // Bắt các lỗi không mong đợi
-              const serverMsg = err?.response?.data?.message || err?.response?.data?.error || err?.response?.data || err?.message;
-              message.error(String(serverMsg || 'Lỗi khi cập nhật giao 1 phần'));
-            } finally {
-              setLoading(false);
-            }
-          }}
-          initialValues={{
-            items: (order?.orderProducts || []).map((p: any) => ({
-              productId: p.id || p.productId,
-              deliver: 0,
-              returned: 0,
-              reason: '',
-              remaining: (p.quantity || 0) - (p.deliveredQuantity || 0) - (p.returnedQuantity || 0)
-            }))
-          }}
-          onValuesChange={() => {
-            const items = partialForm.getFieldValue('items') || [];
-            const hasPositive = items.some((it: any) => Number(it?.deliver || 0) > 0 || Number(it?.returned || 0) > 0);
-            const hasErrors = partialForm.getFieldsError().some(f => f.errors && f.errors.length > 0);
-            setCanSubmit(hasPositive && !hasErrors);
-          }}
-        >
-          {(order?.orderProducts && order.orderProducts.length > 0) ? (
-            <>
-              <Form.List name="items">
-                {(fields) => (
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    {fields.map((field, idx) => {
-                          const { key, ...restField } = field;
-                          const p = order.orderProducts[idx];
-                      const remaining = (p.quantity || 0) - (p.deliveredQuantity || 0) - (p.returnedQuantity || 0);
-                      return (
-                        <Card key={key} size="small">
-                          <Row justify="space-between" align="middle">
-                            <Col>
-                                  <Text strong style={{ color: '#0b5ed7', fontSize: 15 }}>{p.productName || ''}</Text>
-                              <div style={{ marginTop: 6 }}><Text type="secondary">Số lượng: {p.quantity ?? 0} • Đã giao: {p.deliveredQuantity ?? 0} • Đã trả: {p.returnedQuantity ?? 0}</Text></div>
-                            </Col>
-                            <Col>
-                              <Tag color={remaining === 0 ? 'default' : 'blue'}>Còn lại: {remaining}</Tag>
-                            </Col>
-                          </Row>
-
-                          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
-                            <div style={{ minWidth: 220 }}>
-                              <Text style={{ display: 'block', marginBottom: 6, fontSize: 13 }}>Thao tác</Text>
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <Text type="secondary">Giao</Text>
-                                <Form.Item {...restField} name={[field.name, 'deliver']} style={{ margin: 0 }} rules={[{ validator: (_: any, value: any) => {
-                                  const v = Number(value || 0);
-                                  if (v < 0) return Promise.reject('Số lượng phải >= 0');
-                                  if (v > remaining) return Promise.reject('Không được lớn hơn số lượng còn lại');
-                                  const returned = Number(partialForm.getFieldValue(['items', field.name, 'returned']) || 0);
-                                  if (v + returned > remaining) return Promise.reject('Tổng giao + trả không được lớn hơn số lượng còn lại');
-                                  return Promise.resolve();
-                                } }]}>
-                                  <InputNumber min={0} max={remaining} disabled={remaining === 0} style={{ width: 72 }} />
-                                </Form.Item>
-
-                                <Text type="secondary" style={{ marginLeft: 12 }}>Trả</Text>
-                                <Form.Item {...restField} name={[field.name, 'returned']} style={{ margin: 0 }} rules={[{ validator: (_: any, value: any) => {
-                                  const v = Number(value || 0);
-                                  if (v < 0) return Promise.reject('Số lượng phải >= 0');
-                                  if (v > remaining) return Promise.reject('Không được lớn hơn số lượng còn lại');
-                                  const deliver = Number(partialForm.getFieldValue(['items', field.name, 'deliver']) || 0);
-                                  if (v + deliver > remaining) return Promise.reject('Tổng giao + trả không được lớn hơn số lượng còn lại');
-                                  return Promise.resolve();
-                                } }]}>
-                                  <InputNumber min={0} max={remaining} disabled={remaining === 0} style={{ width: 72 }} />
-                                </Form.Item>
-                              </div>
-                            </div>
-
-                            <div style={{ flex: 1 }}>
-                              <Text style={{ display: 'block', marginBottom: 6, fontSize: 13 }}>Lý do trả</Text>
-                              <Form.Item {...restField} name={[field.name, 'reason']} style={{ margin: 0 }}>
-                                <Select disabled={remaining === 0} allowClear placeholder="Lý do (tuỳ chọn)">
-                                  <Select.Option value="Người nhận không có mặt">Người nhận không có mặt</Select.Option>
-                                  <Select.Option value="Người nhận từ chối">Người nhận từ chối</Select.Option>
-                                  <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
-                                  <Select.Option value="Hàng hư hỏng">Hàng hư hỏng</Select.Option>
-                                  <Select.Option value="Khác">Khác</Select.Option>
-                                </Select>
-                              </Form.Item>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </Form.List>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-                <Button onClick={() => { setPartialModalOpen(false); partialForm.resetFields(); }} style={{ backgroundColor: '#E0E0E0', color: '#333333', borderRadius: 5 }}>Hủy</Button>
-                <Button type="primary" htmlType="submit" style={{ backgroundColor: '#003366', color: '#FFFFFF', borderRadius: 5 }} loading={loading} disabled={!canSubmit}>
-                  Xác nhận
-                </Button>
-              </div>
-            </>
-          ) : (
-            <Text type="secondary">Không có sản phẩm trong đơn.</Text>
-          )}
         </Form>
       </Modal>
     </div>

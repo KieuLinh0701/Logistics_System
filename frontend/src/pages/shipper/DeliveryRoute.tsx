@@ -255,9 +255,6 @@ const ShipperDeliveryRoute: React.FC = () => {
             }
 
             setRouteInfo(routeData.routeInfo);
-            console.log("[DELIVERY_ROUTE_INFO]", routeData.routeInfo);
-            console.log("[ROUTE_DURATION]", routeData.routeInfo?.estimatedDuration,
-                "totalDistance=", routeData.routeInfo?.totalDistance);
 
             // Tách RETURN_TO_OFFICE + các stop đã kết thúc vận chuyển (DELIVERED/CANCELLED...) ra khỏi deliveryStops.
             // Lưu ý: KHÔNG ẩn stop "completed" thuộc PICKUP stop (PICKED_UP = đã lấy hàng nhưng vẫn phải giao).
@@ -305,34 +302,13 @@ const ShipperDeliveryRoute: React.FC = () => {
 
                     const synced = mergedStops.filter((s): s is DeliveryStop => isDeliveryStop(s));
                     setAllStops(sortByStopSequence(synced));
-                    console.log("[DELIVERY_STOP_STATUS]", synced.map((s) => ({
-                        id: s.id,
-                        trackingNumber: s.trackingNumber,
-                        status: s.status,
-                        orderStatus: s.orderStatus,
-                        stopType: s.stopType,
-                    })));
                 } else {
                     const filtered = filteredRouteStops.filter(isDeliveryStop);
                     setAllStops(sortByStopSequence(filtered));
-                    console.log("[DELIVERY_STOP_STATUS]", filtered.map((s) => ({
-                        id: s.id,
-                        trackingNumber: s.trackingNumber,
-                        status: s.status,
-                        orderStatus: s.orderStatus,
-                        stopType: s.stopType,
-                    })));
                 }
             } catch {
                 const filtered = filteredRouteStops.filter(isDeliveryStop);
                 setAllStops(sortByStopSequence(filtered));
-                console.log("[DELIVERY_STOP_STATUS]", filtered.map((s) => ({
-                    id: s.id,
-                    trackingNumber: s.trackingNumber,
-                    status: s.status,
-                    orderStatus: s.orderStatus,
-                    stopType: s.stopType,
-                })));
             }
         } catch (error: any) {
             const backendMsg = error?.response?.data?.message
@@ -553,20 +529,6 @@ const ShipperDeliveryRoute: React.FC = () => {
         !!isShipmentInTransit &&
         pickedUpStopCount > 0;
 
-    // Temporary diagnostic log
-    console.log("[BULK_START_GUARD]", {
-        isShipmentRoute,
-        shipmentStatus,
-        routeStatus,
-        isShipmentInTransit,
-        pickedUpStopCount,
-        canBulkStartDelivery,
-        routeInfoStatus: routeInfo?.status,
-        source: routeInfo?.source,
-        shipmentId: routeInfo?.shipmentId,
-        shipmentCode: routeInfo?.shipmentCode,
-    });
-
     const handleStartDeliveryAll = async () => {
         if (!routeInfo) return;
         const shipmentId = Number((routeInfo as any).shipmentId ?? routeInfo.id);
@@ -667,7 +629,6 @@ const ShipperDeliveryRoute: React.FC = () => {
         setReOptimizing(true);
         try {
             const response = await orderApi.reOptimizeShipperRoute(payload);
-            console.log("[REOPTIMIZE_RESPONSE]", response);
             message.success("Đã tối ưu lại tuyến!");
             await fetchRouteData();
         } catch (err: any) {
@@ -730,10 +691,6 @@ const ShipperDeliveryRoute: React.FC = () => {
             case "FAILED":
             case "FAILED_DELIVERY":
                 return "Giao hàng thất bại";
-            case "PARTIAL_DELIVERY":
-                return "Giao 1 phần";
-            case "PARTIAL_RETURN":
-                return "Trả 1 phần";
             case "RETURNED":
                 return "Đã hoàn trả";
             case "RETURNING":
