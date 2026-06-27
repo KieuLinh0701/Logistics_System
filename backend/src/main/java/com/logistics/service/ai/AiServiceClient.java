@@ -36,8 +36,7 @@ public class AiServiceClient {
 
     public AiRouteOptimizationResponseDto optimizeRoutes(AiRouteOptimizationRequestDto request) {
         try {
-            log.info("AI request → POST {}/api/v1/optimization/route body: {}",
-                    properties.getBaseUrl(), objectMapper.writeValueAsString(request));
+            log.debug("Requesting route optimization from {}: {}", properties.getBaseUrl(), objectMapper.writeValueAsString(request));
         } catch (Exception e) {
             log.warn("Failed to serialize AI request for logging", e);
         }
@@ -56,7 +55,6 @@ public class AiServiceClient {
 
             String rawResponse = (rawEntity != null && rawEntity.getBody() != null)
                     ? rawEntity.getBody() : "null";
-            log.info("[AI_RAW_RESPONSE_JSON] {}", rawResponse);
 
             AiRouteOptimizationResponseDto response;
             try {
@@ -95,8 +93,7 @@ public class AiServiceClient {
                 throw new IllegalStateException(
                         response.getMessage() != null ? response.getMessage() : "AI optimization failed");
             }
-            log.info("AI response: success={} routes={}", response.getSuccess(),
-                    response.getRoutes() != null ? response.getRoutes().size() : 0);
+            log.info("AI returned {} optimized routes", response.getRoutes() != null ? response.getRoutes().size() : 0);
             return response;
         } catch (HttpClientErrorException ex) {
             log.error("AI service client error {}: {}", ex.getStatusCode(), ex.getResponseBodyAsString(), ex);
