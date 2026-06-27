@@ -1,12 +1,13 @@
 import React from "react";
 import {Button, Dropdown, message, Space, Table, Tooltip} from "antd";
 import {
+    CheckSquareOutlined,
     CloseCircleOutlined,
     DeleteOutlined,
     DownOutlined,
-    EditOutlined,
+    EditOutlined, EnvironmentOutlined,
     PlayCircleOutlined,
-    PrinterOutlined
+    PrinterOutlined, SendOutlined
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ColumnsType} from "antd/es/table";
@@ -320,21 +321,21 @@ const OrderTable: React.FC<Props> = ({
 
                     ...(canReady ? [{
                         key: "ready",
-                        icon: <PlayCircleOutlined/>,
+                        icon: <CheckSquareOutlined/>,
                         label: "Sẵn sàng để lấy",
                         onClick: () => onReady(record.id),
                     }] : []),
 
                     ...(canTransitToOffice ? [{
-                        key: "ready",
-                        icon: <PlayCircleOutlined/>,
+                        key: "transitToOffice",
+                        icon: <EnvironmentOutlined/>,
                         label: "Chuyển về bưu cục",
                         onClick: () => onTransitToOffice(record.id),
                     }] : []),
 
                     ...(canPublic ? [{
                         key: "public",
-                        icon: <PlayCircleOutlined/>,
+                        icon: <SendOutlined/>,
                         label: "Chuyển xử lý",
                         onClick: () => onPublic(record.id),
                     }] : []),

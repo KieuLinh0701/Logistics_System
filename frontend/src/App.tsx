@@ -83,6 +83,7 @@ import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
 import FailedDeliveryOrders from "./pages/shipper/FailedDeliveryOrders";
 import ShipperPendingShipments from "./pages/shipper/ShipperPendingShipments";
 import ShipperShipmentHistory from "./pages/shipper/shipment/ShipperShipmentHistory.tsx";
+import ShipperShipmentOrders from "./pages/shipper/shipment/ShipperShipmentOrders.tsx";
 
 // Driver
 import DriverShipments from "./pages/driver/Shipments";
@@ -104,7 +105,6 @@ import JobDetailPage from "./pages/common/recruitment/JobDetailPage";
 import ApplyJobPage from "./pages/common/recruitment/ApplyJobPage";
 import JobPostingManagementPage from "./pages/hr/recruitment/job-posting/JobPostingManagementPage";
 import ApplicationReviewPage from "./pages/hr/recruitment/application/ApplicationReviewPage";
-import ShipperShipmentOrders from "./pages/shipper/shipment/ShipperShipmentOrders.tsx";
 
 const App: React.FC = () => {
     return (

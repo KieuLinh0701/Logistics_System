@@ -88,11 +88,22 @@ public class OrderUtils {
     }
 
     // Những trạng thái mà manager được phép chuyển sang "Đã hoàn hàng"
-    private static final Set<OrderStatus> MANAGER_ALLOWED_TO_RETURNED_STATUSES = Set.of(
+    // Lấy hàng tại bưu cục (AT_OFFICE)
+    private static final Set<OrderStatus> MANAGER_ALLOWED_TO_RETURNED_AT_OFFICE_STATUSES = Set.of(
+            OrderStatus.RETURN_AT_ORIGIN_OFFICE);
+
+    // Lấy hàng tại nhà (PICKUP_BY_COURIER)
+    private static final Set<OrderStatus> MANAGER_ALLOWED_TO_RETURNED_PICKUP_BY_COURIER_STATUSES = Set.of(
             OrderStatus.RETURN_FAILED_FINAL);
 
-    public static boolean canManagerSetReturned(OrderStatus status) {
-        return MANAGER_ALLOWED_TO_RETURNED_STATUSES.contains(status);
+    public static boolean canManagerSetReturned(OrderStatus status, OrderPickupType pickupType) {
+        if (pickupType == OrderPickupType.AT_OFFICE) {
+            return MANAGER_ALLOWED_TO_RETURNED_AT_OFFICE_STATUSES.contains(status);
+        }
+        if (pickupType == OrderPickupType.PICKUP_BY_COURIER) {
+            return MANAGER_ALLOWED_TO_RETURNED_PICKUP_BY_COURIER_STATUSES.contains(status);
+        }
+        return false;
     }
 
     // Những trạng thái Order mà manager được phép tạo chuyến giao hàng

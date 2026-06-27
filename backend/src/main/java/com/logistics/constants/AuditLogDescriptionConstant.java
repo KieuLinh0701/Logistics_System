@@ -32,10 +32,15 @@ public class AuditLogDescriptionConstant {
     public static final String ORDER_CREATE = "Tạo đơn hàng mới";
     public static final String ORDER_UPDATE = "Cập nhật thông tin đơn hàng";
     public static final String ORDER_PUBLIC = "Chuyển đơn hàng sang xử lý";
+    public static final String ORDER_PUBLIC_BULK = "Chuyển các đơn hàng sang xử lý";
     public static final String ORDER_CANCEL = "Hủy đơn hàng";
+    public static final String ORDER_CANCEL_BULK = "Hủy các đơn hàng";
     public static final String ORDER_DELETE = "Xóa đơn hàng";
+    public static final String ORDER_DELETE_BULK = "Xóa các đơn hàng";
     public static final String ORDER_SET_READY_FOR_PICKUP = "Chuyển đơn hàng sang trạng thái sẵn sàng lấy hàng";
+    public static final String ORDER_SET_READY_FOR_PICKUP_BULK = "Chuyển các đơn hàng sang trạng thái sẵn sàng lấy hàng";
     public static final String ORDER_SET_TRANSIT_TO_OFFICE = "Chuyển đơn hàng sang trạng thái đang chuyển về bưu cục";
+    public static final String ORDER_SET_TRANSIT_TO_OFFICE_BULK = "Chuyển các đơn hàng sang trạng thái đang chuyển về bưu cục";
     public static final String ORDER_EXPORT = "Xuất báo cáo danh sách đơn hàng";
     public static final String ORDER_PRINT = "In đơn hàng";
     public static final String ORDER_SET_AT_ORIGIN_OFFICE = "Cập nhật trạng thái đơn hàng đã đến bưu cục gốc";
@@ -45,6 +50,9 @@ public class AuditLogDescriptionConstant {
     public static final String ORDER_RETURNED = "Xác nhận đã hoàn hàng cho đơn hàng hoàn thất bại";
     public static final String ORDER_URGENT_EXPORT = "Xuất báo cáo danh sách đơn hàng khẩn cấp c";
     public static final String ORDER_URGENT_CONFIRM = "Xác nhận đơn hàng khẩn cấp cần xử lý";
+    public static final String ORDER_SET_AT_ORIGIN_OFFICE_BULK = "Cập nhật các đơn hàng đã đến bưu cục gốc";
+    public static final String ORDER_CONFIRM_BULK = "Xác nhận các đơn hàng";
+    public static final String ORDER_RETURNED_BULK = "Xác nhận đã hoàn hàng cho các đơn hàng hoàn thất bại";
 
     // Payment
     public static final String PAYMENT_VNPAY_CREATE_SETTLEMENT = "Tạo yêu cầu thanh toán đối soát qua VNPAY";

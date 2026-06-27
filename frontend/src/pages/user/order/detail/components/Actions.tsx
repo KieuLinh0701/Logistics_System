@@ -1,10 +1,10 @@
 import React from "react";
 import {
     CloseCircleOutlined,
-    CustomerServiceOutlined,
-    EditOutlined,
+    CustomerServiceOutlined, DeleteOutlined,
+    EditOutlined, EnvironmentOutlined,
     PlayCircleOutlined,
-    PrinterOutlined
+    PrinterOutlined, SendOutlined
 } from "@ant-design/icons";
 
 interface Props {
@@ -95,19 +95,19 @@ const Actions: React.FC<Props> = ({
 
             {canReady && (
                 <button className="order-detail-public-btn" onClick={onReady}>
-                    <PlayCircleOutlined/> Sẵn sàng để lấy
+                    <DeleteOutlined/> Sẵn sàng để lấy
                 </button>
             )}
 
             {canTransitToOffice && (
                 <button className="order-detail-public-btn" onClick={onTransitToOffice}>
-                    <PlayCircleOutlined/> Chuyển về bưu cục
+                    <EnvironmentOutlined/> Chuyển về bưu cục
                 </button>
             )}
 
             {canPublic && (
                 <button className="order-detail-public-btn" onClick={onPublic}>
-                    <PlayCircleOutlined/> Chuyển xử lý
+                    <SendOutlined/> Chuyển xử lý
                 </button>
             )}
         </div>
