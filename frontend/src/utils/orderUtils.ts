@@ -81,8 +81,14 @@ export const canEditManagerOrder = (status: string, createdByType: string) => {
     return !MANAGER_FINAL_STATUSES.includes(status as typeof MANAGER_FINAL_STATUSES[number]);
 };
 
-export const canReturnedManagerOrder = (value: string) => {
-    return ["RETURN_FAILED_FINAL"].includes(value)
+export const canReturnedManagerOrder = (value: string, pickupType: string) => {
+    if (pickupType === "AT_OFFICE") {
+        return ["RETURN_AT_ORIGIN_OFFICE"].includes(value);
+    }
+    if (pickupType === "PICKUP_BY_COURIER") {
+        return ["RETURN_FAILED_FINAL"].includes(value);
+    }
+    return false;
 };
 
 // Các list enum của order và bản dịch

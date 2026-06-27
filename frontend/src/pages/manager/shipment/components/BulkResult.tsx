@@ -62,6 +62,7 @@ const BulkResult: React.FC<BulkResultProps> = ({
             footer={null}
             width={1000}
             centered
+            maskClosable={false}
             className="modal-bulk modal-hide-scrollbar"
         >
             {/* Thống kê */}

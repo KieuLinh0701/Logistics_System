@@ -1,6 +1,13 @@
 import React from "react";
 import {Button, Dropdown, Space, Table, Tooltip} from "antd";
-import {CheckCircleOutlined, CloseCircleOutlined, DownOutlined, EditOutlined, PrinterOutlined} from "@ant-design/icons";
+import {
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    DownOutlined,
+    EditOutlined,
+    EnvironmentOutlined,
+    PrinterOutlined, RollbackOutlined
+} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ColumnsType} from "antd/es/table";
 import type {Order} from "../../../../../types/order";
@@ -231,7 +238,7 @@ const OrderTable: React.FC<Props> = ({
                 const canEdit = canEditManagerOrder(record.status, record.createdByType);
                 const canPrint = canPrintManagerOrder(record.status);
                 const canAtOriginOffice = canAtOriginOfficeManagerOrder(record.status) && record.pickupType === 'AT_OFFICE';
-                const canReturned = canReturnedManagerOrder(record.status) && record.pickupType === 'PICKUP_BY_COURIER';
+                const canReturned = canReturnedManagerOrder(record.status, record.pickupType);
 
                 const items = [
                     ...(canPrint ? [{
@@ -250,7 +257,7 @@ const OrderTable: React.FC<Props> = ({
 
                     ...(canAtOriginOffice ? [{
                         key: "atOrginOffice",
-                        icon: <CheckCircleOutlined/>,
+                        icon: <EnvironmentOutlined/>,
                         label: "Đã đến bưu cục",
                         onClick: () => onAtOriginOffice(record.id),
                     }] : []),
@@ -264,7 +271,7 @@ const OrderTable: React.FC<Props> = ({
 
                     ...(canReturned ? [{
                         key: "returned",
-                        icon: <CloseCircleOutlined/>,
+                        icon: <RollbackOutlined/>,
                         label: "Đã hoàn hàng",
                         onClick: () => onReturned(record.id),
                     }] : []),

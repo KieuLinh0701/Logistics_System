@@ -1262,12 +1262,8 @@ public class OrderManagerService {
 
         checkFromOfficePermission(order, userOffice);
 
-        if (!OrderUtils.canManagerSetReturned(order.getStatus())) {
+        if (!OrderUtils.canManagerSetReturned(order.getStatus(), order.getPickupType())) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.AT_ORIGIN_OFFICE));
-        }
-
-        if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
-            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
         }
 
         order.setStatus(OrderStatus.RETURNED);
@@ -1437,6 +1433,275 @@ public class OrderManagerService {
                     "orders/list",
                     order.getTrackingNumber());
         }
+    }
+
+    public BulkResponse<String> confirmOrders(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Set<Integer> processed = new HashSet<>();
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                if (!OrderUtils.canManagerConfirm(order.getStatus(), order.getPickupType())) {
+                    throw new AppException(OrderErrorCode.ORDER_CANNOT_CONFIRM);
+                }
+                checkFromOfficePermission(order, userOffice);
+
+                order.setStatus(OrderStatus.CONFIRMED);
+                repository.save(order);
+                orderHistoryUserService.save(order, null, userOffice, null, OrderHistoryActionType.CONFIRMED, null);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Đơn hàng đã được xác nhận",
+                            String.format(
+                                    "Đơn hàng #%s đã được xác nhận. Vui lòng chuẩn bị hàng hóa và mang đến bưu cục để hoàn tất việc gửi hàng.",
+                                    order.getTrackingNumber()),
+                            "order", order.getUser().getId(), null,
+                            "orders/list", order.getTrackingNumber());
+                }
+
+                results.add(successResult(order.getTrackingNumber(), "Xác nhận thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng đã được xác nhận" : "Một số đơn hàng không hợp lệ",
+                totalSuccess, totalFailed, results);
+    }
+
+    public BulkResponse<String> setOrdersAtOriginOffice(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Set<Integer> processed = new HashSet<>();
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                checkFromOfficePermission(order, userOffice);
+
+                if (!OrderUtils.canManagerSetAtOriginOffice(order.getStatus())) {
+                    throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
+                            translateOrderStatus(order.getStatus()),
+                            translateOrderStatus(OrderStatus.AT_ORIGIN_OFFICE));
+                }
+                if (!order.getPickupType().equals(OrderPickupType.AT_OFFICE)) {
+                    throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
+                }
+
+                boolean isDestination = orderDestinationService.isDestinationOffice(order, userOffice);
+                order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
+                order.setCurrentOffice(userOffice);
+                order.setPendingDestinationConfirm(isDestination);
+                repository.save(order);
+
+                orderHistoryUserService.save(order, null, userOffice, null, OrderHistoryActionType.IMPORTED, null);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Đơn hàng của bạn đã được bàn giao cho đơn vị vận chuyển",
+                            String.format(
+                                    "Đơn hàng có mã vận đơn #%s của bạn đã được mang đến và bàn giao cho đơn vị vận chuyển thành công tại bưu cục xuất phát.",
+                                    order.getTrackingNumber()),
+                            "order", order.getUser().getId(), null,
+                            "orders/tracking", order.getTrackingNumber());
+                }
+
+                results.add(successResult(order.getTrackingNumber(), "Cập nhật thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng đã được cập nhật" : "Một số đơn hàng không hợp lệ",
+                totalSuccess, totalFailed, results);
+    }
+
+    public BulkResponse<String> cancelOrders(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Set<Integer> processed = new HashSet<>();
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                if (!OrderUtils.canManagerCancel(order.getStatus(), order.getCreatedByType())) {
+                    throw new AppException(OrderErrorCode.ORDER_CANNOT_CANCEL);
+                }
+                checkFromOfficePermission(order, userOffice);
+
+                order.setStatus(OrderStatus.CANCELLED);
+                repository.save(order);
+
+                List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+                productUserService.restoreStockFromOrder(orderProducts);
+
+                if (order.getPromotion() != null) {
+                    promotionUserService.decreaseUsage(order.getPromotion().getId(), userId);
+                }
+                if (!order.getCreatedByType().equals(OrderCreatorType.USER)
+                        && order.getPayer().equals(OrderPayerType.SHOP)) {
+                    order.setPaymentStatus(OrderPaymentStatus.REFUNDED);
+                }
+
+                orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.CANCELLED, null);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Đơn hàng của bạn đã bị hủy",
+                            String.format(
+                                    "Đơn hàng có mã vận đơn #%s của bạn đã bị hủy bởi nhân viên chúng tôi. Nếu bạn không yêu cầu hành động này, vui lòng liên hệ để được hỗ trợ.",
+                                    order.getTrackingNumber()),
+                            "order", order.getUser().getId(), null,
+                            "orders/list", order.getTrackingNumber());
+                }
+
+                results.add(successResult(order.getTrackingNumber(), "Hủy thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng đã được hủy" : "Một số đơn hàng không hợp lệ",
+                totalSuccess, totalFailed, results);
+    }
+
+    public BulkResponse<String> setOrdersReturned(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Set<Integer> processed = new HashSet<>();
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                checkFromOfficePermission(order, userOffice);
+
+                if (!OrderUtils.canManagerSetReturned(order.getStatus(), order.getPickupType())) {
+                    throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
+                            translateOrderStatus(order.getStatus()),
+                            translateOrderStatus(OrderStatus.RETURNED));
+                }
+
+                order.setStatus(OrderStatus.RETURNED);
+                order.setReturnedAt(LocalDateTime.now());
+                repository.save(order);
+
+                orderHistoryUserService.save(order, null, userOffice, null, OrderHistoryActionType.RETURNED, null);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Hoàn hàng thành công",
+                            String.format("Đơn hàng #%s đã được hoàn trả thành công đến người gửi.",
+                                    order.getTrackingNumber()),
+                            "order", order.getUser().getId(), null,
+                            "orders/tracking", order.getTrackingNumber());
+                }
+
+                results.add(successResult(order.getTrackingNumber(), "Hoàn hàng thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng đã được hoàn trả" : "Một số đơn hàng không hợp lệ",
+                totalSuccess, totalFailed, results);
+    }
+
+    // Helper dùng chung cho tất cả bulk methods
+    private BulkResponse.BulkResult<String> successResult(String name, String message) {
+        BulkResponse.BulkResult<String> r = new BulkResponse.BulkResult<>();
+        r.setName(name);
+        r.setSuccess(true);
+        r.setMessage(message);
+        r.setResult(name);
+        return r;
+    }
+
+    private BulkResponse.BulkResult<String> failResult(String name, String message) {
+        BulkResponse.BulkResult<String> r = new BulkResponse.BulkResult<>();
+        r.setName(name);
+        r.setSuccess(false);
+        r.setMessage(message);
+        r.setResult(name);
+        return r;
     }
 
     private void validateWeight(

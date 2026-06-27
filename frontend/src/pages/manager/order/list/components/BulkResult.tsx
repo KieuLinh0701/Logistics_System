@@ -54,12 +54,13 @@ const BulkResult: React.FC<BulkResultProps> = ({
 
   return (
     <Modal
-      title={<span className='modal-title'>Kết quả thêm đơn hàng vào chuyến</span>}
+      title={<span className='modal-title'>Kết quả xử lý</span>}
       open={open}
       onCancel={onClose}
       footer={null}
       width={1000}
       centered
+      maskClosable={false}
       className="modal-bulk modal-hide-scrollbar"
     >
       {/* Thống kê */}

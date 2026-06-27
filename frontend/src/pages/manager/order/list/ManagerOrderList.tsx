@@ -75,6 +75,10 @@ const ManagerOrderList = () => {
     const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerOrderShipment>>();
 
     const [statusCounts, setStatusCounts] = useState<StatusCount[]>([]);
+    const [confirmOrdersOpen, setConfirmOrdersOpen] = useState(false);
+    const [cancelOrdersOpen, setCancelOrdersOpen] = useState(false);
+    const [returnedOrdersOpen, setReturnedOrdersOpen] = useState(false);
+    const [atOriginOfficeOrdersOpen, setAtOriginOfficeOrdersOpen] = useState(false);
 
     const updateURL = () => {
         const params: any = {};
@@ -604,6 +608,174 @@ const ManagerOrderList = () => {
         }
     };
 
+    const handleConfirmOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận cho khách hàng mang đến bưu cục");
+            return;
+        }
+        setConfirmOrdersOpen(true);
+    };
+
+    const confirmConfirmOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận cho khách hàng mang đến bưu cục");
+            return;
+        }
+        try {
+            const result = await orderApi.confirmBulkManagerOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể chuyển sang trạng thái xác nhận");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setConfirmOrdersOpen(false);
+        }
+    };
+
+    const handleCancelOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để hủy");
+            return;
+        }
+        setCancelOrdersOpen(true);
+    };
+
+    const confirmCancelOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để hủy");
+            return;
+        }
+        try {
+            const result = await orderApi.cancelBulkManagerOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể hu");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setCancelOrdersOpen(false);
+        }
+    };
+
+    const handleReturnedOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận đã hoàn hàng");
+            return;
+        }
+        setReturnedOrdersOpen(true);
+    };
+
+    const confirmReturnedOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để hủy");
+            return;
+        }
+        try {
+            const result = await orderApi.returnedBulkManagerOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể xác nhận đã hoàn hàng");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setReturnedOrdersOpen(false);
+        }
+    };
+
+    const handleAtOriginOfficeOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận đã nhận các đơn hàng tại bưu cục");
+            return;
+        }
+        setAtOriginOfficeOrdersOpen(true);
+    };
+
+    const confirmAtOriginOfficeOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận đã nhận các đơn hàng tại bưu cục");
+            return;
+        }
+        try {
+            const result = await orderApi.atOriginOfficeBulkManagerOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+                fetchStatusCounts();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể xác nhận đã nhận các đơn hàng tại bưu cục");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setAtOriginOfficeOrdersOpen(false);
+        }
+    };
+
     useEffect(() => {
         if (!isShipmentModalOpen) return;
         fetchShipments(page);
@@ -651,6 +823,10 @@ const ManagerOrderList = () => {
                                 onAdd={handleAdd}
                                 onPrint={handlePrintSelectedOrders}
                                 onAddShipment={handleAddShipment}
+                                onCancel={handleCancelOrders}
+                                onConfirm={handleConfirmOrders}
+                                onAtOriginOffice={handleAtOriginOfficeOrders}
+                                onReturned={handleReturnedOrders}
                                 disabled={selectedOrderIds.length !== 0}
                                 recordNumber={selectedOrderIds.length}
                                 total={total}
@@ -768,6 +944,42 @@ const ManagerOrderList = () => {
                 open={cancelModalOpen}
                 onOk={confirmCancelOrder}
                 onCancel={() => setCancelModalOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn muốn xác nhận các đơn hàng này để khách hàng mang đến bưu cục không?'
+                open={confirmOrdersOpen}
+                onOk={confirmConfirmOrders}
+                onCancel={() => setConfirmOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn muốn hủy các đơn hàng này không?'
+                open={cancelOrdersOpen}
+                onOk={confirmCancelOrders}
+                onCancel={() => setCancelOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn xác nhận đã hoàn hàng cho các đơn hàng này không?'
+                open={returnedOrdersOpen}
+                onOk={confirmReturnedOrders}
+                onCancel={() => setReturnedOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn xác nhận đã nhận các đơn hàng tại bưu cục không?'
+                open={atOriginOfficeOrdersOpen}
+                onOk={confirmAtOriginOfficeOrders}
+                onCancel={() => setAtOriginOfficeOrdersOpen(false)}
                 loading={loading}
             />
 

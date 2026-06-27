@@ -8,9 +8,11 @@ import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
+import com.logistics.request.manager.shipmentOrder.SaveShipmentOrdersRequest;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.OrderCreateSuccess;
 import com.logistics.service.user.OrderUserService;
@@ -124,6 +126,21 @@ public class OrderUserController {
         return ResponseEntity.ok(ApiResponse.success(service.publicOrder(userId, id)));
     }
 
+    @PatchMapping("/public/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_PUBLIC_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> publicOrders(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.publicOrders(userId, parseOrderIds(orderIdsStr)));
+    }
+
     @PatchMapping("/{id}/cancel")
     @Audit(
             entity = EntityType.ORDER,
@@ -137,6 +154,21 @@ public class OrderUserController {
 
         service.cancelOrder(userId, id);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/cancel/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.ORDER_CANCEL_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> cancelOrders(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.cancelOrders(userId, parseOrderIds(orderIdsStr)));
     }
 
     @DeleteMapping("/{id}")
@@ -154,6 +186,21 @@ public class OrderUserController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PatchMapping("/delete/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.DELETE,
+            description = AuditLogDescriptionConstant.ORDER_DELETE_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> deleteOrders(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.deleteOrders(userId, parseOrderIds(orderIdsStr)));
+    }
+
     @GetMapping("/print")
     @Audit(
             entity = EntityType.ORDER,
@@ -167,13 +214,7 @@ public class OrderUserController {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        List<Integer> orderIds = Arrays.stream(orderIdsStr.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Integer::parseInt)
-                .toList();
-
-        return ResponseEntity.ok(ApiResponse.success(service.getOrdersForPrint(userId, orderIds)));
+        return ResponseEntity.ok(ApiResponse.success(service.getOrdersForPrint(userId, parseOrderIds(orderIdsStr))));
     }
 
     @PatchMapping("/{id}/ready")
@@ -191,6 +232,22 @@ public class OrderUserController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PatchMapping("/ready/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_SET_READY_FOR_PICKUP_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> setOrdersReadyForPickup(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.setOrdersReadyForPickup(userId, parseOrderIds(orderIdsStr)));
+    }
+
     @PatchMapping("/{id}/transit-to-office")
     @Audit(
             entity = EntityType.ORDER,
@@ -204,6 +261,21 @@ public class OrderUserController {
 
         service.setOrderTransitToOffice(userId, id);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/transit-to-office/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_SET_TRANSIT_TO_OFFICE_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> setOrdersTransitToOffice(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        return ResponseEntity.ok(service.setOrdersTransitToOffice(userId, parseOrderIds(orderIdsStr)));
     }
 
     @GetMapping("/export")
@@ -231,5 +303,13 @@ public class OrderUserController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(data);
+    }
+
+    private List<Integer> parseOrderIds(String orderIdsStr) {
+        return Arrays.stream(orderIdsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Integer::parseInt)
+                .toList();
     }
 }

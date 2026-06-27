@@ -1,5 +1,11 @@
 import React from "react";
-import {CheckCircleOutlined, CloseCircleOutlined, EditOutlined, PrinterOutlined} from "@ant-design/icons";
+import {
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    EditOutlined, EnvironmentOutlined,
+    PrinterOutlined,
+    RollbackOutlined
+} from "@ant-design/icons";
 
 interface Props {
     canEdit: boolean;
@@ -62,13 +68,13 @@ const Actions: React.FC<Props> = ({
 
           {canReturned && (
               <button className="order-detail-cancel-btn" onClick={onReturned}>
-                <CheckCircleOutlined/> Đã hoàn hàng
+                <RollbackOutlined/> Đã hoàn hàng
               </button>
           )}
 
             {canSetAtOriginOffice && (
                 <button className="order-detail-public-btn" onClick={onSetAtOriginOffice}>
-                    <CheckCircleOutlined/> Đã đến bưu cục
+                    <EnvironmentOutlined/> Đã đến bưu cục
                 </button>
             )}
 

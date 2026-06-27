@@ -39,6 +39,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.logistics.utils.OrderUtils.translateOrderStatus;
+
 @Service
 @Slf4j
 public class OrderShipperService {
@@ -1069,8 +1071,8 @@ public class OrderShipperService {
         // Validate pendingDestinationConfirm
         if (order.getPendingDestinationConfirm() == null || !order.getPendingDestinationConfirm()) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
-                    "Trạng thái hiện tại không yêu cầu xác nhận bưu cục đích",
-                    "AT_DEST_OFFICE");
+                    translateOrderStatus(order.getStatus()),
+                    translateOrderStatus(OrderStatus.AT_DEST_OFFICE));
         }
 
         // Validate order status hợp lệ: IN_TRANSIT hoặc AT_ORIGIN_OFFICE

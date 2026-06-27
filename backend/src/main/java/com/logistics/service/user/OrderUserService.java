@@ -13,6 +13,7 @@ import com.logistics.mapper.OrderPrintMapper;
 import com.logistics.repository.*;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
+import com.logistics.response.BulkResponse;
 import com.logistics.response.ListResponse;
 import com.logistics.response.OrderCreateSuccess;
 import com.logistics.response.Pagination;
@@ -45,6 +46,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.logistics.utils.OrderUtils.*;
@@ -551,92 +553,41 @@ public class OrderUserService {
     public String publicOrder(Integer userId, Integer orderId) {
         Integer shopId = userUserService.getShopId(userId);
 
-        User user = userUserService.getUser(shopId);
-        if (user.getLocked()) {
-            throw new AppException(AccountErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
-        }
-
         Order order = getOrderByIdAndUserId(orderId, shopId);
 
-        if (!OrderUtils.canMoveToPending(order.getStatus())) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, order.getStatus(), OrderStatus.PENDING);
-        }
+        return performPublic(shopId, order);
+    }
 
-        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-        for (OrderProduct op : orderProducts) {
-            Product product = op.getProduct();
-            if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new AppException(OrderErrorCode.ORDER_PRODUCT_INACTIVE, product.getName());
-            }
-            if (product.getStock() < op.getQuantity()) {
-                throw new AppException(ProductErrorCode.PRODUCT_INSUFFICIENT_STOCK, product.getName(), product.getStock());
-            }
-        }
+    @Transactional
+    public BulkResponse<String> publicOrders(Integer userId, List<Integer> orderIds) {
+        Integer shopId = userUserService.getShopId(userId);
 
-        Promotion promotion = order.getPromotion();
-        if (promotion != null) {
-            boolean canUse = promotionUserService.canUsePromotion(
-                    shopId,
-                    promotion.getId(),
-                    order.getServiceType()
-                            .getId(),
-                    order.getShippingFee(),
-                    order.getWeight());
-            if (!canUse) {
-                throw new AppException(PromotionErrorCode.PROMOTION_NOT_ELIGIBLE);
-            }
-        }
-
-        for (OrderProduct op : orderProducts) {
-            Product product = op.getProduct();
-            int quantity = op.getQuantity();
-            product.setStock(product.getStock() - quantity);
-            product.setSoldQuantity(product.getSoldQuantity() + quantity);
-            productRepository.save(product);
-        }
-
-        if (promotion != null) {
-            promotionUserService.increaseUsage(promotion.getId(), shopId);
-        }
-
-        order.setStatus(OrderStatus.PENDING);
-
-        String trackingNumber = generateUniqueTrackingNumber(order.getStatus());
-        order.setTrackingNumber(trackingNumber);
-        repository.save(order);
-
-        orderHistoryUserService.save(order, null, null,
-                null, OrderHistoryActionType.PENDING, null);
-
-        return trackingNumber;
+        return performBulkOrderAction(
+                shopId,
+                orderIds,
+                order -> performPublic(shopId, order),
+                "Chuyển đơn hàng sang xử lý thành công");
     }
 
     public void cancelOrder(Integer userId, Integer orderId) {
         Integer shopId = userUserService.getShopId(userId);
         Order order = getOrderByIdAndUserId(orderId, shopId);
 
-        if (!OrderUtils.canUserCancel(order.getStatus())) {
-            throw new AppException(OrderErrorCode.ORDER_CANNOT_CANCEL);
-        }
+        performCancel(shopId, order);
+    }
 
-        order.setStatus(OrderStatus.CANCELLED);
-        repository.save(order);
+    @Transactional
+    public BulkResponse<String> cancelOrders(Integer userId, List<Integer> orderIds) {
+        Integer shopId = userUserService.getShopId(userId);
 
-        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-        productUserService.restoreStockFromOrder(orderProducts);
-
-        if (order.getPromotion() != null) {
-            promotionUserService.decreaseUsage(order.getPromotion()
-                    .getId(), shopId);
-        }
-
-        orderHistoryUserService.save(
-                order,
-                null,
-                null,
-                null,
-                OrderHistoryActionType.CANCELLED,
-                null);
+        return performBulkOrderAction(
+                shopId,
+                orderIds,
+                order -> {
+                    performCancel(shopId, order);
+                    return null;
+                },
+                "Hủy đơn hàng thành công");
     }
 
     @Transactional
@@ -645,27 +596,52 @@ public class OrderUserService {
 
         Order order = getOrderByIdAndUserId(orderId, shopId);
 
-        if (!OrderUtils.canUserSetReady(order.getStatus())) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.READY_FOR_PICKUP));
+        performReadyForPickup(order);
+    }
+
+    @Transactional
+    public BulkResponse<String> setOrdersReadyForPickup(Integer userId, List<Integer> orderIds) {
+        Integer shopId = userUserService.getShopId(userId);
+
+        List<Order> foundOrders = repository.findAllByIdInAndUserId(orderIds, shopId);
+
+        Map<Integer, Order> orderMap = foundOrders.stream()
+                .collect(Collectors.toMap(Order::getId, o -> o));
+
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+
+        for (Integer orderId : orderIds) {
+            Order order = orderMap.get(orderId);
+
+            BulkResponse.BulkResult<String> result = new BulkResponse.BulkResult<>();
+
+            if (order == null) {
+                result.setSuccess(false);
+                result.setName(orderId.toString());
+                result.setMessage("Đơn hàng không tồn tại hoặc không thuộc shop này");
+            } else {
+                result.setName(order.getTrackingNumber());
+                try {
+                    performReadyForPickup(order);
+                    result.setSuccess(true);
+                    result.setMessage("Chuyển đơn hàng sang trạng thái sẵn sàng để lấy thành công");
+                } catch (Exception e) {
+                    result.setSuccess(false);
+                    result.setMessage("Lỗi: " + e.getMessage());
+                }
+            }
+            results.add(result);
         }
 
-        if (!order.getPickupType()
-                .equals(OrderPickupType.PICKUP_BY_COURIER)) {
-            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
-        }
+        int totalSuccess = (int) results.stream().filter(BulkResponse.BulkResult::isSuccess).count();
+        BulkResponse<String> response = new BulkResponse<>();
+        response.setSuccess(true);
+        response.setMessage("Xử lý hoàn tất: " + totalSuccess + " thành công, " + (results.size() - totalSuccess) + " lỗi");
+        response.setTotalImported(totalSuccess);
+        response.setTotalFailed(results.size() - totalSuccess);
+        response.setResults(results);
 
-        order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        order.setReadyForPickupAt(LocalDateTime.now());
-        order.setPickupNotificationStage(PickupNotificationStage.NONE);
-        repository.save(order);
-
-        orderHistoryUserService.save(
-                order,
-                null,
-                null,
-                null,
-                OrderHistoryActionType.READY_FOR_PICKUP,
-                null);
+        return response;
     }
 
     @Transactional
@@ -674,25 +650,21 @@ public class OrderUserService {
 
         Order order = getOrderByIdAndUserId(orderId, shopId);
 
-        if (!OrderUtils.canUserSetTransitToOffice(order.getStatus())) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.TRANSIT_TO_OFFICE));
-        }
+        performTransitToOffice(order);
+    }
 
-        if (!order.getPickupType()
-                .equals(OrderPickupType.AT_OFFICE)) {
-            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
-        }
+    @Transactional
+    public BulkResponse<String> setOrdersTransitToOffice(Integer userId, List<Integer> orderIds) {
+        Integer shopId = userUserService.getShopId(userId);
 
-        order.setStatus(OrderStatus.TRANSIT_TO_OFFICE);
-        repository.save(order);
-
-        orderHistoryUserService.save(
-                order,
-                null,
-                null,
-                null,
-                OrderHistoryActionType.TRANSIT_TO_OFFICE,
-                null);
+        return performBulkOrderAction(
+                shopId,
+                orderIds,
+                order -> {
+                    performTransitToOffice(order);
+                    return null;
+                },
+                "Chuyển đơn hàng sang trạng thái đang chuyển về bưu cục thành công");
     }
 
     @Transactional
@@ -701,21 +673,21 @@ public class OrderUserService {
         // Lấy recipientaddress
         Order order = getOrderByIdAndUserId(orderId, shopId);
 
-        if (!OrderUtils.canUserDelete(order.getStatus())) {
-            throw new AppException(OrderErrorCode.ORDER_CANNOT_DELETE);
-        }
+        performDelete(order);
+    }
 
-        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
-        if (!orderProducts.isEmpty()) {
-            orderProductRepository.deleteAll(orderProducts);
-        }
+    @Transactional
+    public BulkResponse<String> deleteOrders(Integer userId, List<Integer> orderIds) {
+        Integer shopId = userUserService.getShopId(userId);
 
-        List<OrderHistory> histories = orderHistoryRepository.findByOrderId(order.getId());
-        if (!histories.isEmpty()) {
-            orderHistoryRepository.deleteAll(histories);
-        }
-
-        repository.delete(order);
+        return performBulkOrderAction(
+                shopId,
+                orderIds,
+                order -> {
+                    performDelete(order);
+                    return null;
+                },
+                "Xóa đơn hàng thành công");
     }
 
     @Transactional
@@ -782,7 +754,7 @@ public class OrderUserService {
                 productRepository.save(product);
             }
         } else if (currentStatus != newStatus) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, currentStatus, newStatus);
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, translateOrderStatus(currentStatus), translateOrderStatus(newStatus));
         }
 
         // 4. Cập nhật các field theo rule
@@ -1765,4 +1737,205 @@ public class OrderUserService {
             throw new AppException(OfficeErrorCode.OFFICE_LOCATION_MISMATCH);
         }
     }
+
+    private <T> BulkResponse<T> performBulkOrderAction(
+            Integer shopId,
+            List<Integer> orderIds,
+            Function<Order, T> action,
+            String successMessage) {
+        List<Order> foundOrders = repository.findAllByIdInAndUserId(orderIds, shopId);
+        Map<Integer, Order> orderMap = foundOrders.stream()
+                .collect(Collectors.toMap(Order::getId, o -> o));
+
+        List<BulkResponse.BulkResult<T>> results = new ArrayList<>();
+
+        for (Integer orderId : orderIds) {
+            Order order = orderMap.get(orderId);
+            BulkResponse.BulkResult<T> result = new BulkResponse.BulkResult<>();
+
+            if (order == null) {
+                result.setSuccess(false);
+                result.setName(String.valueOf(orderId));
+                result.setMessage("Đơn hàng không tồn tại hoặc bạn không có quyền trên đơn hàng này");
+            } else {
+                result.setName(getOrderResultName(order));
+                try {
+                    T actionResult = action.apply(order);
+                    result.setSuccess(true);
+                    result.setMessage(successMessage);
+                    result.setResult(actionResult);
+                } catch (Exception e) {
+                    result.setSuccess(false);
+                    result.setMessage("Lỗi: " + e.getMessage());
+                }
+            }
+
+            results.add(result);
+        }
+
+        int totalSuccess = (int) results.stream().filter(BulkResponse.BulkResult::isSuccess).count();
+        int totalFailed = results.size() - totalSuccess;
+
+        BulkResponse<T> response = new BulkResponse<>();
+        response.setSuccess(totalFailed == 0);
+        response.setMessage("Xử lý hoàn tất: " + totalSuccess + " thành công, " + totalFailed + " lỗi");
+        response.setTotalImported(totalSuccess);
+        response.setTotalFailed(totalFailed);
+        response.setResults(results);
+
+        return response;
+    }
+
+    private String getOrderResultName(Order order) {
+        if (order.getTrackingNumber() != null && !order.getTrackingNumber().isBlank()) {
+            return order.getTrackingNumber();
+        }
+        return String.valueOf(order.getId());
+    }
+
+    private String performPublic(Integer shopId, Order order) {
+        User user = userUserService.getUser(shopId);
+        if (user.getLocked()) {
+            throw new AppException(AccountErrorCode.ACCOUNT_LOCKED_DUE_TO_OVERDUE);
+        }
+
+        if (!OrderUtils.canMoveToPending(order.getStatus())) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION, translateOrderStatus(order.getStatus()), translateOrderStatus(OrderStatus.PENDING));
+        }
+
+        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+        for (OrderProduct op : orderProducts) {
+            Product product = op.getProduct();
+            if (product.getStatus() != ProductStatus.ACTIVE) {
+                throw new AppException(OrderErrorCode.ORDER_PRODUCT_INACTIVE, product.getName());
+            }
+            if (product.getStock() < op.getQuantity()) {
+                throw new AppException(ProductErrorCode.PRODUCT_INSUFFICIENT_STOCK, product.getName(), product.getStock());
+            }
+        }
+
+        Promotion promotion = order.getPromotion();
+        if (promotion != null) {
+            boolean canUse = promotionUserService.canUsePromotion(
+                    shopId,
+                    promotion.getId(),
+                    order.getServiceType()
+                            .getId(),
+                    order.getShippingFee(),
+                    order.getWeight());
+            if (!canUse) {
+                throw new AppException(PromotionErrorCode.PROMOTION_NOT_ELIGIBLE);
+            }
+        }
+
+        for (OrderProduct op : orderProducts) {
+            Product product = op.getProduct();
+            int quantity = op.getQuantity();
+            product.setStock(product.getStock() - quantity);
+            product.setSoldQuantity(product.getSoldQuantity() + quantity);
+            productRepository.save(product);
+        }
+
+        if (promotion != null) {
+            promotionUserService.increaseUsage(promotion.getId(), shopId);
+        }
+
+        order.setStatus(OrderStatus.PENDING);
+
+        String trackingNumber = generateUniqueTrackingNumber(order.getStatus());
+        order.setTrackingNumber(trackingNumber);
+        repository.save(order);
+
+        orderHistoryUserService.save(order, null, null,
+                null, OrderHistoryActionType.PENDING, null);
+
+        return trackingNumber;
+    }
+
+    private void performCancel(Integer shopId, Order order) {
+        if (!OrderUtils.canUserCancel(order.getStatus())) {
+            throw new AppException(OrderErrorCode.ORDER_CANNOT_CANCEL);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        repository.save(order);
+
+        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+        productUserService.restoreStockFromOrder(orderProducts);
+
+        if (order.getPromotion() != null) {
+            promotionUserService.decreaseUsage(order.getPromotion()
+                    .getId(), shopId);
+        }
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                null,
+                null,
+                OrderHistoryActionType.CANCELLED,
+                null);
+    }
+
+    private void performReadyForPickup(Order order) {
+        if (!OrderUtils.canUserSetReady(order.getStatus())) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
+                    translateOrderStatus(order.getStatus()),
+                    translateOrderStatus(OrderStatus.READY_FOR_PICKUP));
+        }
+
+        if (!order.getPickupType().equals(OrderPickupType.PICKUP_BY_COURIER)) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
+        }
+
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        order.setReadyForPickupAt(LocalDateTime.now());
+        order.setPickupNotificationStage(PickupNotificationStage.NONE);
+        repository.save(order);
+
+        orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.READY_FOR_PICKUP, null);
+    }
+
+    private void performTransitToOffice(Order order) {
+        if (!OrderUtils.canUserSetTransitToOffice(order.getStatus())) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_STATUS_TRANSITION,
+                    translateOrderStatus(order.getStatus()),
+                    translateOrderStatus(OrderStatus.TRANSIT_TO_OFFICE));
+        }
+
+        if (!order.getPickupType()
+                .equals(OrderPickupType.AT_OFFICE)) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
+        }
+
+        order.setStatus(OrderStatus.TRANSIT_TO_OFFICE);
+        repository.save(order);
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                null,
+                null,
+                OrderHistoryActionType.TRANSIT_TO_OFFICE,
+                null);
+    }
+
+    private void performDelete(Order order) {
+        if (!OrderUtils.canUserDelete(order.getStatus())) {
+            throw new AppException(OrderErrorCode.ORDER_CANNOT_DELETE);
+        }
+
+        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+        if (!orderProducts.isEmpty()) {
+            orderProductRepository.deleteAll(orderProducts);
+        }
+
+        List<OrderHistory> histories = orderHistoryRepository.findByOrderId(order.getId());
+        if (!histories.isEmpty()) {
+            orderHistoryRepository.deleteAll(histories);
+        }
+
+        repository.delete(order);
+    }
+
 }

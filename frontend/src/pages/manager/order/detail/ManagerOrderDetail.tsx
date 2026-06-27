@@ -268,7 +268,7 @@ const UserOrderDetail: React.FC = () => {
     const canPrint = canPrintManagerOrder(order.status);
     const canSetAtOriginOffice = canAtOriginOfficeManagerOrder(order.status);
     const canConfirm = canConfirmManagerOrder(order.status as OrderStatus, order.pickupType as OrderPickupType);
-    const canReturn = canReturnedManagerOrder(order.status);
+    const canReturn = canReturnedManagerOrder(order.status, order.pickupType);
 
     return (
         <div className="order-detail container">
@@ -324,45 +324,6 @@ const UserOrderDetail: React.FC = () => {
                 </div>
             )}
             <OrderPayment order={order}/>
-            <div className="order-detail-card">
-                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-                    Kết quả giao hàng
-                </Title>
-
-                <Descriptions column={2} size="small">
-
-                    <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
-                        {summaryLoading
-                            ? "Đang tải..."
-                            : summary
-                                ? `${summary.deliveredItems} / ${summary.totalItems}`
-                                : "Không có dữ liệu"}
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Sản phẩm hoàn trả">
-                        {summaryLoading
-                            ? "Đang tải..."
-                            : (summary?.returnedItems ?? "Không có dữ liệu")}
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="COD đã thu / COD dự kiến">
-                        {summaryLoading
-                            ? "Đang tải..."
-                            : summary
-                                ? `${summary.collectedCOD.toLocaleString()} / ${summary.expectedCOD.toLocaleString()} VNĐ`
-                                : "Không có dữ liệu"}
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Giá trị hoàn trả">
-                        {summaryLoading
-                            ? "Đang tải..."
-                            : summary
-                                ? `${summary.returnedValue.toLocaleString()} VNĐ`
-                                : "Không có dữ liệu"}
-                    </Descriptions.Item>
-
-                </Descriptions>
-            </div>
             <OrderActions
                 canEdit={canEdit}
                 canCancel={canCancel}
