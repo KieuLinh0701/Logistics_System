@@ -304,37 +304,67 @@ public class OrderManagerController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    // 2. Manager claim đơn về office của mình
-//    @PostMapping("/{trackingNumber}/claim")
-//
-//    public ResponseEntity<?> claimOrder(
-//            @PathVariable String trackingNumber,
-//            HttpServletRequest request) throws Exception {
-//
-//        Integer userId = (Integer) request.getAttribute("currentUserId");
-//        urgentPickupService.claimOrder(trackingNumber, userId);
-//        return ResponseEntity.ok(Map.of("message", "Đã nhận đơn về bưu cục"));
-//    }
+    @PatchMapping("/confirm/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> confirmOrders(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.confirmOrders(userId, parseOrderIds(orderIdsStr)));
+    }
 
-    // 3. Load shipper available + shipment IN_TRANSIT hiện tại (nếu có)
-//    @GetMapping("/{orderId}/shippers")
-//    public ResponseEntity<List<ShipperWithShipmentResponse>> getAvailableShippers(
-//            @PathVariable Integer orderId,
-//            @RequestAttribute("employeeId") Integer employeeId
-//    ) {
-//        return ResponseEntity.ok(urgentPickupService.getAvailableShippers(orderId, employeeId));
-//    }
+    @PatchMapping("/at-origin-office/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_SET_AT_ORIGIN_OFFICE_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> setOrdersAtOriginOffice(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.setOrdersAtOriginOffice(userId, parseOrderIds(orderIdsStr)));
+    }
 
-    // 4. Assign shipper: add vào shipment IN_TRANSIT hoặc tạo mới PENDING → CONFIRMED
-//    @PostMapping("/{trackingNumber}/assign")
-//    public ResponseEntity<?> assignShipper(
-//            @PathVariable String trackingNumber,
-//            @RequestBody AssignShipperRequest assignShipperRequest,
-//            HttpServletRequest request,
-//            UserOrderSearchRequest userOrderSearchRequest) throws Exception {
-//
-//        Integer userId = (Integer) request.getAttribute("currentUserId");
-//        urgentPickupService.assignShipper(orderId, request.getShipperId(), request.getShipmentId(), employeeId);
-//        return ResponseEntity.ok(Map.of("message", "Đã assign shipper thành công"));
-//    }
+    @PatchMapping("/cancel/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.CANCEL,
+            description = AuditLogDescriptionConstant.ORDER_CANCEL_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> cancelOrders(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.cancelOrders(userId, parseOrderIds(orderIdsStr)));
+    }
+
+    @PatchMapping("/returned/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_RETURNED_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> setOrdersReturned(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.setOrdersReturned(userId, parseOrderIds(orderIdsStr)));
+    }
+
+    private List<Integer> parseOrderIds(String orderIdsStr) {
+        return Arrays.stream(orderIdsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Integer::parseInt)
+                .toList();
+    }
 }

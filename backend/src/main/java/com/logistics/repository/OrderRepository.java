@@ -315,4 +315,6 @@ public interface OrderRepository
             @Param("cityCode") Integer cityCode,
             @Param("statuses") List<OrderStatus> statuses
     );
+
+    List<Order> findAllByIdInAndUserId(List<Integer> ids, Integer shopId);
 }

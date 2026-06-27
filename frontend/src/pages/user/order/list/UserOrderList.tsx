@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {Col, message, Row, Tag} from "antd";
 import dayjs from "dayjs";
@@ -18,10 +18,15 @@ import ConfirmDeleteModal from "../detail/components/ConfirmDeleteModal";
 import ConfirmModal from "../../../common/ConfirmModal";
 import userApi from "../../../../api/userApi";
 import StatusBar from "../../../../components/order/StatusBar.tsx";
+import BulkResult from "../../../manager/order/list/components/BulkResult.tsx";
+import type {BulkResponse} from "../../../../types/response.ts";
+import type {ManagerOrderShipment} from "../../../../types/shipment.ts";
+import shipmentOrderApi from "../../../../api/shipmentOrderApi.ts";
 
 const UserOrderList = () => {
     const navigate = useNavigate();
     const latestRequestRef = useRef(0);
+    const selectAllRequestRef = useRef(0);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [limit, setLimit] = useState(10);
@@ -47,6 +52,11 @@ const UserOrderList = () => {
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [publicModalOpen, setPublicModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [readyOrdersOpen, setReadyOrdersOpen] = useState(false);
+    const [cancelOrdersOpen, setCancelOrdersOpen] = useState(false);
+    const [deleteOrdersOpen, setDeleteOrdersOpen] = useState(false);
+    const [transitToOfficeOrdersOpen, setTransitToOfficeOrdersOpen] = useState(false);
+    const [publicOrdersOpen, setPublicOrdersOpen] = useState(false);
     const [modalConfirmOpen, setModalConfirmOpen] = useState(false);
     const [transitToOfficeModalOpen, setTransitToOfficeModalOpen] = useState(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
@@ -56,6 +66,9 @@ const UserOrderList = () => {
     const [orderId, setOrderId] = useState<number | null>(null);
 
     const [statusCounts, setStatusCounts] = useState<StatusCount[]>([]);
+
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerOrderShipment>>();
 
     const updateURL = () => {
         const params: any = {};
@@ -261,6 +274,7 @@ const UserOrderList = () => {
 
     const handleExport = async () => {
         try {
+            setLoading(true);
             const param: UserOrderSearchRequest = {
                 page: page,
                 limit: limit,
@@ -289,6 +303,8 @@ const UserOrderList = () => {
         } catch (error: any) {
             message.error("Xuất file Excel thất bại");
             console.error("Export thất bại:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -351,6 +367,211 @@ const UserOrderList = () => {
     const handleTransitToOffice = (id: number) => {
         setOrderId(id);
         setTransitToOfficeModalOpen(true);
+    };
+
+    const handleReadyOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận đã hoàn thành việc đóng gói và sẵn sàng để đơn vị vận chuyển đến lấy");
+            return;
+        }
+        setReadyOrdersOpen(true);
+    };
+
+    const handleCancelOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận hủy");
+            return;
+        }
+        setCancelOrdersOpen(true);
+    };
+
+    const handleDeleteOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận xóa");
+            return;
+        }
+        setDeleteOrdersOpen(true);
+    };
+
+    const handlePublicOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận muốn chuyển qua trạng thái công khai");
+            return;
+        }
+        setPublicOrdersOpen(true);
+    };
+
+    const handleTransitToOfficeOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận chuyển sang trạng thái đang đưa đến bưu cục");
+            return;
+        }
+        setTransitToOfficeOrdersOpen(true);
+    };
+
+    const confirmReadyOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận đã hoàn thành việc đóng gói và sẵn sàng để đơn vị vận chuyển đến lấy");
+            return;
+        }
+        try {
+            const result = await orderApi.readyBulkUserOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể cập nhật trạng thái");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setReadyOrdersOpen(false);
+        }
+    };
+
+    const confirmTransitToOfficeOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận đang trên đường giao đến bưu cục");
+            return;
+        }
+        try {
+            const result = await orderApi.transitToOfficeBulkUserOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders();
+            } else {
+                message.error(result.message || "Một số đơn hàng không cập nhật trạng thái");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setTransitToOfficeOrdersOpen(false);
+        }
+    };
+
+    const confirmCancelOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để hủy");
+            return;
+        }
+        try {
+            const result = await orderApi.cancelBulkUserOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders();
+            } else {
+                message.error(result.message || "Một số đơn hàng không cập nhật trạng thái");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setCancelOrdersOpen(false);
+        }
+    };
+
+    const confirmDeleteOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xóa");
+            return;
+        }
+        try {
+            const result = await orderApi.deleteBulkUserOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Xóa thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể xóa");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setDeleteOrdersOpen(false);
+        }
+    };
+
+    const confirmPublicOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để chuyển đơn hàng này sang trạng thái công khai");
+            return;
+        }
+        try {
+            const result = await orderApi.publicBulkUserOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders();
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể chuyển sang trạng thái công khai");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setPublicOrdersOpen(false);
+        }
     };
 
     const confirmReadyOrder = async () => {
@@ -533,8 +754,14 @@ const UserOrderList = () => {
                                 onAdd={handleAdd}
                                 onPrint={handlePrintSelectedOrders}
                                 onExport={handleExport}
-                                disabled={selectedOrderIds.length !== 0}
-                                recordNumber={selectedOrderIds.length}
+                                onReadyBulk={handleReadyOrders}
+                                hasSelection={selectedOrderIds.length !== 0}
+                                selectedCount={selectedOrderIds.length}
+                                onCancel={handleCancelOrders}
+                                onDelete={handleDeleteOrders}
+                                onPublic={handlePublicOrders}
+                                onTransitToOffice={handleTransitToOfficeOrders}
+                                total={total}
                             />
                         </div>
                     </Col>
@@ -588,7 +815,7 @@ const UserOrderList = () => {
             />
 
             <ConfirmModal
-                title='Xác nhận đơn hàng đã sẵn sàng'
+                title='Xác nhận đơn hàng'
                 message='Bạn có chắc chắn đơn hàng này đã sẵn sàng để bàn giao cho đơn vị vận chuyển không?'
                 open={modalConfirmOpen}
                 onOk={confirmReadyOrder}
@@ -597,13 +824,66 @@ const UserOrderList = () => {
             />
 
             <ConfirmModal
-                title='Xác nhận đơn hàng đang chuyển về bưu cục'
+                title='Xác nhận đơn hàng'
                 message='Bạn có chắc chắn đơn hàng này đang chuyển về bưu cục đã chọn trước đó không?'
                 open={transitToOfficeModalOpen}
                 onOk={confirmTransitToOfficeOrder}
                 onCancel={() => setTransitToOfficeModalOpen(false)}
                 loading={loading}
             />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn các đơn hàng này đã sẵn sàng để bàn giao cho đơn vị vận chuyển không?'
+                open={readyOrdersOpen}
+                onOk={confirmReadyOrders}
+                onCancel={() => setReadyOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn muốn hủy các đơn hàng này không?'
+                open={cancelOrdersOpen}
+                onOk={confirmCancelOrders}
+                onCancel={() => setCancelOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn muốn xóa các đơn hàng này không?'
+                open={deleteOrdersOpen}
+                onOk={confirmDeleteOrders}
+                onCancel={() => setDeleteOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn muốn chuyển các đơn hàng này sang trạng thái công khai không?'
+                open={publicOrdersOpen}
+                onOk={confirmPublicOrders}
+                onCancel={() => setPublicOrdersOpen(false)}
+                loading={loading}
+            />
+
+            <ConfirmModal
+                title='Xác nhận đơn hàng'
+                message='Bạn có chắc chắn muốn chuyển các đơn hàng này sang trạng thái đang vận chuyển đến bưu cục đích không?'
+                open={transitToOfficeOrdersOpen}
+                onOk={confirmTransitToOfficeOrders}
+                onCancel={() => setTransitToOfficeOrdersOpen(false)}
+                loading={loading}
+            />
+
+            {bulkResult && (
+                <BulkResult
+                    open={bulkModalOpen}
+                    results={bulkResult}
+                    onClose={() => setBulkModalOpen(false)}
+                />
+            )}
         </div>
     );
 };

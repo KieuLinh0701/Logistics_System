@@ -353,22 +353,6 @@ const UserOrderDetail: React.FC = () => {
             )}
             <OrderInfo order={order}/>
             <OrderProducts products={order.orderProducts || []}/>
-            <div className="order-detail-card">
-                <Title level={5} className="order-detail-card-title order-detail-card-title-main">
-                    Kết quả giao hàng
-                </Title>
-                <Descriptions column={2} size="small">
-                    <Descriptions.Item label="Sản phẩm đã giao / Tổng sản phẩm">
-                        {summaryLoading ? "Đang tải..." : summary ? `${summary.deliveredItems} / ${summary.totalItems}` : "N/A"}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Sản phẩm hoàn">
-                        {summaryLoading ? "Đang tải..." : (summary?.returnedItems ?? "N/A")}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="COD đã thu / COD dự kiến">
-                        {summaryLoading ? "Đang tải..." : summary ? `${summary.collectedCOD.toLocaleString()} / ${summary.expectedCOD.toLocaleString()} VNĐ` : "N/A"}
-                    </Descriptions.Item>
-                </Descriptions>
-            </div>
 
             {order.orderProducts.length !== 0 && (
                 <div className="order-detail-card">

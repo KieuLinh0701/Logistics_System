@@ -80,23 +80,35 @@ const orderApi = {
     },
 
     async getUserOrderById(id: number) {
-        const res = await axiosClient.get<ApiResponse<Order>>(`/user/orders/id/${id}`);
-        return res;
+        return await axiosClient.get<ApiResponse<Order>>(`/user/orders/id/${id}`);
     },
 
     async publicUserOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<string>>(`/user/orders/${id}/public`);
-        return res;
+        return await axiosClient.patch<ApiResponse<string>>(`/user/orders/${id}/public`);
+    },
+
+    async publicBulkUserOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/user/orders/public/bulk?orderIds=${query}`);
     },
 
     async cancelUserOrder(id: number) {
-        const res = await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/cancel`);
-        return res;
+        return await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/cancel`);
+    },
+
+    async cancelBulkUserOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/user/orders/cancel/bulk?orderIds=${query}`);
     },
 
     async deleteUserOrder(id: number) {
         const res = await axiosClient.delete<ApiResponse<void>>(`/user/orders/${id}`);
         return res;
+    },
+
+    async deleteBulkUserOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/user/orders/delete/bulk?orderIds=${query}`);
     },
 
     async printUserOrders(orderIds: number[]) {
@@ -106,12 +118,21 @@ const orderApi = {
     },
 
     async setUserOrderReadyForPickup(id: number) {
-        const res = await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/ready`);
-        return res;
+        return await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/ready`);
+    },
+
+    async readyBulkUserOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/user/orders/ready/bulk?orderIds=${query}`);
     },
 
     async setUserOrderTransitToOffice(id: number) {
         return await axiosClient.patch<ApiResponse<void>>(`/user/orders/${id}/transit-to-office`);
+    },
+
+    async transitToOfficeBulkUserOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/user/orders/transit-to-office/bulk?orderIds=${query}`);
     },
 
     async exportUserOrders(params: UserOrderSearchRequest) {
@@ -519,8 +540,18 @@ const orderApi = {
         return await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/cancel`);
     },
 
+    async cancelBulkManagerOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/cancel/bulk?orderIds=${query}`);
+    },
+
     async setManagerOrderAtOriginOffice(id: number) {
          return await axiosClient.patch<ApiResponse<boolean>>(`/manager/orders/${id}/at-origin-office`);
+    },
+
+    async atOriginOfficeBulkManagerOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/at-origin-office/bulk?orderIds=${query}`);
     },
 
     async setManagerConfirmDestinationOffice(id: number, confirmed: boolean) {
@@ -533,8 +564,18 @@ const orderApi = {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/returned`);
     },
 
+    async returnedBulkManagerOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/returned/bulk?orderIds=${query}`);
+    },
+
     async confirmManagerOrder(id: number) {
         return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${id}/confirm`);
+    },
+
+    async confirmBulkManagerOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm/bulk?orderIds=${query}`);
     },
 
     async listUrgentManagerOrders(params: ManagerUrgentOrderSearchRequest) {
@@ -626,15 +667,6 @@ const orderApi = {
     async saveManagerConfirmDestinationOrdersInShipment(ids: number[], confirmed: boolean) {
         const param = { ids, confirmed };
         return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-destination-bulk`, param);
-    },
-
-    async confirmShipperDestinationOffice(orderId: number) {
-        return await axiosClient.patch<ApiResponse<void>>(`/shipper/orders/${orderId}/confirm-destination`);
-    },
-
-    async listShipperPendingDestinationConfirm() {
-        const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders/pending-destination-confirm");
-        return res.data ?? { orders: [] };
     },
 
     // Public
