@@ -11,9 +11,10 @@ import orderApi from "../../../../api/orderApi";
 import "../../../../styles/ListPage.css";
 import {ShoppingOutlined} from "@ant-design/icons";
 import ConfirmModal from "../../../common/ConfirmModal";
+import type {BulkResponse} from "../../../../types/response.ts";
+import BulkResult from "./components/BulkResult.tsx";
 
 const ManagerUrgentOrderList = () => {
-    const latestRequestRef = useRef(0);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [limit, setLimit] = useState(10);
@@ -30,6 +31,13 @@ const ManagerUrgentOrderList = () => {
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
     const [orderId, setOrderId] = useState<number | null>(null);
+
+    const [selectedOrderIds, setSelectedOrderIds] = useState<number[] | []>([]);
+    const latestRequestRef = useRef(0);
+    const selectAllRequestRef = useRef(0);
+    const [confirmOrdersOpen, setConfirmOrdersOpen] = useState(false);
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [bulkResult, setBulkResult] = useState<BulkResponse<string>>();
 
     const updateURL = () => {
         const params: any = {};
@@ -125,6 +133,38 @@ const ManagerUrgentOrderList = () => {
         }
     };
 
+    const handleSelectAllFiltered = async (select: boolean) => {
+        if (!select) {
+            setSelectedOrderIds([]);
+            return;
+        }
+        const requestId = ++selectAllRequestRef.current;
+        try {
+            const param: ManagerOrderSearchRequest = {
+                page: page,
+                limit: limit,
+                search: search,
+                sort: filterSort,
+            };
+            if (dateRange) {
+                param.startDate = dateRange[0].startOf("day").format("YYYY-MM-DDTHH:mm:ss");
+                param.endDate = dateRange[1].endOf("day").format("YYYY-MM-DDTHH:mm:ss");
+            }
+
+            const result = await orderApi.getAllUrgentManagerOrderIds(param);
+
+            if (requestId !== selectAllRequestRef.current) return;
+
+            if (result.success && result.data) {
+                setSelectedOrderIds(result.data);
+            } else {
+                message.error(result.message || "Lấy toàn bộ ID thất bại");
+            }
+        } catch (err: any) {
+            message.error(err.message || "Lỗi server khi lấy toàn bộ ID");
+        }
+    };
+
     const handleClearFilters = () => {
         setSearch("");
         setFilterSort("NEWEST");
@@ -176,6 +216,47 @@ const ManagerUrgentOrderList = () => {
         }
     };
 
+    const handleConfirmOrders = () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận muốn bưu cục tiếp nhận và xử lý");
+            return;
+        }
+        setConfirmOrdersOpen(true);
+    };
+
+    const confirmConfirmOrders = async () => {
+        if (!selectedOrderIds.length) {
+            message.warning("Vui lòng chọn đơn hàng để xác nhận muốn bưu cục tiếp nhận và xử lý");
+            return;
+        }
+        try {
+            const result = await orderApi.confirmBulkManagerUrgentOrders(
+                selectedOrderIds
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể xác nhận đã nhận các đơn hàng tại bưu cục");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setSelectedOrderIds([]);
+            setConfirmOrdersOpen(false);
+        }
+    };
+
     return (
         <div className="list-page-layout">
             <div className="list-page-content">
@@ -203,6 +284,8 @@ const ManagerUrgentOrderList = () => {
                             <OrderActions
                                 total={total}
                                 onExport={handleExport}
+                                onConfirm={handleConfirmOrders}
+                                hasSelected={selectedOrderIds.length !== 0}
                             />
                         </div>
                     </Col>
@@ -221,6 +304,9 @@ const ManagerUrgentOrderList = () => {
                         setPage(page);
                         if (size) setLimit(size);
                     }}
+                    selectedOrderIds={selectedOrderIds}
+                    setSelectedOrderIds={setSelectedOrderIds}
+                    onSelectAllFiltered={handleSelectAllFiltered}
                 />
 
             </div>
@@ -233,6 +319,23 @@ const ManagerUrgentOrderList = () => {
                 onCancel={() => setConfirmModalOpen(false)}
                 loading={loading}
             />
+
+            <ConfirmModal
+                title="Xác nhận đơn hàng"
+                message="Bạn có chắc muốn xác nhận các đơn hàng này để bưu cục tiếp nhận và xử lý không?"
+                open={confirmOrdersOpen}
+                onOk={confirmConfirmOrders}
+                onCancel={() => setConfirmOrdersOpen(false)}
+                loading={loading}
+            />
+
+            {bulkResult && (
+                <BulkResult
+                    open={bulkModalOpen}
+                    results={bulkResult}
+                    onClose={() => setBulkModalOpen(false)}
+                />
+            )}
         </div>
     );
 };

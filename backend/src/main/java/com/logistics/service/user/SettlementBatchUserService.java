@@ -65,28 +65,15 @@ public class SettlementBatchUserService {
     public UserSettlementSummaryResponse getSummary(Integer userId) {
         Integer shopId = userService.getShopId(userId);
 
-        List<SettlementBatch> batches = batchRepository.findByShop_Id(shopId);
+        UserRevenueStatsDTO revenue = getUserRevenueStats(shopId);
+        UserSettlementSummaryResponse response = new UserSettlementSummaryResponse();
+        if (revenue != null) {
+            response.setDebt(revenue.getPendingDebt());
+            response.setPending(revenue.getNextSettlement());
+            response.setReceived(revenue.getReceived());
+        }
 
-        BigDecimal received = batches.stream()
-                .filter(b -> b.getStatus() == SettlementStatus.COMPLETED
-                        && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
-                .map(SettlementBatch::getBalanceAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal pending = batches.stream()
-                .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
-                        && b.getBalanceAmount().compareTo(BigDecimal.ZERO) > 0)
-                .map(SettlementBatch::getBalanceAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal debt = batches.stream()
-                .filter(b -> b.getStatus() != SettlementStatus.COMPLETED
-                        && b.getBalanceAmount().compareTo(BigDecimal.ZERO) < 0)
-                .map(b -> b.getBalanceAmount().abs().subtract(b.getPaidAmount()))
-                .filter(r -> r.compareTo(BigDecimal.ZERO) > 0)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return new UserSettlementSummaryResponse(received, pending, debt);
+        return response;
     }
 
     public ListResponse<UserSettlementBatchListDto> list(

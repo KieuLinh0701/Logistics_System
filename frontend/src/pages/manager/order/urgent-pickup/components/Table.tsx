@@ -13,6 +13,9 @@ interface Props {
     total: number;
     loading: boolean;
     onPageChange: (page: number, limit?: number) => void;
+    selectedOrderIds: number[];
+    setSelectedOrderIds: React.Dispatch<React.SetStateAction<number[]>>;
+    onSelectAllFiltered: (select: boolean) => void;
 }
 
 const OrderTable: React.FC<Props> = ({
@@ -23,6 +26,9 @@ const OrderTable: React.FC<Props> = ({
                                          total,
                                          loading,
                                          onPageChange,
+                                         selectedOrderIds,
+                                         setSelectedOrderIds,
+                                         onSelectAllFiltered
                                      }) => {
 
     const columns: ColumnsType<any> = [
@@ -76,17 +82,21 @@ const OrderTable: React.FC<Props> = ({
         },
         {
             key: "action",
+            title: "Thao tác",
             align: "center",
+            width: 80,
             render: (_, record) => {
                 return (
-                    <Button
-                        type="primary"
-                        className="primary-button"
-                        icon={<CheckCircleOutlined />}
-                        onClick={() => onConfirm(record.id)}
-                    >
-                        Xác nhận
-                    </Button>
+                    <Tooltip title="Xác nhận đơn hàng" placement="top">
+                        <Button
+                            type="primary"
+                            shape="circle"
+                            size="middle"
+                            icon={<CheckCircleOutlined style={{fontSize: '18px'}}/>}
+                            className="primary-button-circle"
+                            onClick={() => onConfirm(record.id)}
+                        />
+                    </Tooltip>
                 );
             },
         },
@@ -107,6 +117,21 @@ const OrderTable: React.FC<Props> = ({
                     total,
                     onChange: (page, pageSize) => onPageChange(page, pageSize)
                 }}
+                rowSelection={{
+                    type: 'checkbox',
+                    preserveSelectedRowKeys: false,
+                    selectedRowKeys: selectedOrderIds,
+                    onChange: (keys) => setSelectedOrderIds(keys as number[]),
+                    onSelectAll: (selected) => {
+                        onSelectAllFiltered(selected);
+                    },
+                    getCheckboxProps: (record) => ({
+                        disabled: !record.trackingNumber,
+                    }),
+                }}
+                rowClassName={(record) =>
+                    selectedOrderIds.includes(record.id) ? "selectd-checkbox-table-row-selected" : ""
+                }
             />
         </div>
     );

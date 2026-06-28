@@ -69,7 +69,10 @@ public class ShippingRequestUtils {
             case PICKUP_REMINDER:
                 return EnumSet.of(
                         OrderStatus.READY_FOR_PICKUP,
-                        OrderStatus.PICKING_UP).contains(orderStatus);
+                        OrderStatus.CONFIRMED,
+                        OrderStatus.PICKING_UP,
+                        OrderStatus.PICKUP_RETRY,
+                        OrderStatus.URGENT_PICKUP).contains(orderStatus);
 
             case COMPLAINT:
                 return !EnumSet.of(

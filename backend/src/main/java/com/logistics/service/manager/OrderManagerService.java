@@ -897,6 +897,67 @@ public class OrderManagerService {
         }
     }
 
+    public BulkResponse<String> confirmUrgentOrders(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Set<Integer> processed = new HashSet<>();
+
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                if (!OrderUtils.canManagerUrgentConfirm(order.getStatus(), order.getPickupType())) {
+                    throw new AppException(OrderErrorCode.ORDER_CANNOT_CONFIRM);
+                }
+
+                order.setStatus(OrderStatus.CONFIRMED);
+                order.setFromOffice(userOffice);
+                repository.save(order);
+
+                orderHistoryUserService.save(order, null, userOffice,
+                        null, OrderHistoryActionType.CONFIRMED, null);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Đơn hàng đã được xác nhận",
+                            String.format(
+                                    "Đơn hàng #%s đã được xác nhận. Chúng tôi sẽ phân phối nhân viên giao hàng đến lấy hàng trong thời gian sớm nhất.",
+                                    order.getTrackingNumber()),
+                            "order",
+                            order.getUser().getId(),
+                            null,
+                            "orders/list",
+                            order.getTrackingNumber());
+                }
+
+                results.add(successResult(order.getTrackingNumber(), "Xác nhận thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng urgent đã được xác nhận" : "Một số đơn hàng không hợp lệ",
+                totalSuccess, totalFailed, results);
+    }
+
     private <T> void updateManagerField(
             String fieldName,
             T oldValue,
@@ -1339,6 +1400,36 @@ public class OrderManagerService {
         );
 
         return new ListResponse<>(list, pagination);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Integer> getUrgentOrderIds(
+            Integer userId,
+            UserUrgentOrderSearchRequest request) {
+
+        Office office = employeeManagerService.getManagedOfficeByUserId(userId);
+
+        LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getStartDate())
+                : null;
+
+        LocalDateTime endDate = request.getEndDate() != null && !request.getEndDate()
+                .isBlank()
+                ? LocalDateTime.parse(request.getEndDate())
+                : null;
+
+        List<Order> orders = repository.findUrgentOrdersForExport(
+                OrderStatus.URGENT_PICKUP,
+                office.getCityCode(),
+                request.getSearch(),
+                startDate,
+                endDate
+        );
+
+        return orders.stream()
+                .map(Order::getId)
+                .toList();
     }
 
     @Transactional(readOnly = true)

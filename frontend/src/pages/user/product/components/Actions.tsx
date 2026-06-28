@@ -34,6 +34,7 @@ const Actions: React.FC<ActionsProps> = ({
                         Nhập từ Excel
                     </Button>
                 </Upload><Button
+                    className="info-button"
                     icon={<DownloadOutlined/>}
                     onClick={onDownloadTemplate}
                 >
