@@ -582,6 +582,15 @@ const orderApi = {
         return await axiosClient.get<ApiResponse<ListResponse<Order>>>("/manager/orders/urgent-pickup", {params});
     },
 
+    async getAllUrgentManagerOrderIds(params: ManagerUrgentOrderSearchRequest) {
+        return await axiosClient.get<ApiResponse<number[]>>("/manager/orders/urgent-pickup/all-ids", {params});
+    },
+
+    async confirmBulkManagerUrgentOrders(orderIds: number[]) {
+        const query = orderIds.join(",");
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/urgent-pickup/confirm/bulk?orderIds=${query}`);
+    },
+
     async exportManagerOrders(params: ManagerOrderSearchRequest) {
         try {
             const res = await axiosExport.get("/manager/orders/export", {

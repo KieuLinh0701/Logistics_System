@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Space} from 'antd';
-import {FileExcelOutlined, PlusOutlined} from '@ant-design/icons';
+import {CloseCircleOutlined, FileExcelOutlined, PlusOutlined} from '@ant-design/icons';
 
 interface ActionsProps {
     onAddRequest?: () => void,

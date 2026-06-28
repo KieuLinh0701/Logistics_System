@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Button, Col, Input, message, Row, Space, Table, Tag, Tooltip} from "antd";
+import {Button, Col, Input, message, Popconfirm, Row, Space, Table, Tag, Tooltip} from "antd";
 import {
+    CheckCircleOutlined,
     CloseCircleOutlined,
     DeleteOutlined,
     FileExcelOutlined,
@@ -458,21 +459,27 @@ const ManagerShipmentOrders: React.FC = () => {
             key: "confirmDestination",
             align: "center" as const,
             title: "Xác nhận đích",
+            width: 100,
             render: (_: any, record: ManagerOrderShipment) => (
-                <Tooltip title={record.pendingDestinationConfirm ? "Xác nhận đơn đã đến bưu cục đích" : "Đơn không cần xác nhận bưu cục đích"}>
+                <Tooltip
+                    title={record.pendingDestinationConfirm ? "Xác nhận đơn đã đến bưu cục đích" : "Đơn không cần xác nhận bưu cục đích"}
+                    placement="top"
+                >
                     <Button
-                        className="primary-button"
+                        type="primary"
+                        shape="circle"
+                        size="middle"
+                        icon={<CheckCircleOutlined style={{ fontSize: '18px' }} />}
+                        className="primary-button-circle"
                         disabled={!record.pendingDestinationConfirm}
                         onClick={() => {
                             setOrderId(record.id);
                             setModalConfirmDestinationOpen(true);
                         }}
-                    >
-                        Xác nhận
-                    </Button>
+                    />
                 </Tooltip>
             ),
-        }
+        },
     ];
 
     const tableData = [
@@ -620,7 +627,7 @@ const ManagerShipmentOrders: React.FC = () => {
                             onChange: setPage,
                         }}
                         loading={loading}
-                        rowSelection={{
+                        rowSelection={shipmentStatus === 'COMPLETED' ? {
                             type: 'checkbox',
                             preserveSelectedRowKeys: false,
                             selectedRowKeys: selectedOrderIds,
@@ -629,7 +636,7 @@ const ManagerShipmentOrders: React.FC = () => {
                             getCheckboxProps: (record) => ({
                                 disabled: !record.pendingDestinationConfirm,
                             }),
-                        }}
+                        }: undefined}
                         rowClassName={(record) =>
                             selectedOrderIds.includes(record.id) ? "selectd-checkbox-table-row-selected" : ""
                         }

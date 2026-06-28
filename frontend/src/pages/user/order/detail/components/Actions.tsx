@@ -1,5 +1,6 @@
 import React from "react";
 import {
+    CheckSquareOutlined,
     CloseCircleOutlined,
     CustomerServiceOutlined, DeleteOutlined,
     EditOutlined, EnvironmentOutlined,
@@ -95,7 +96,7 @@ const Actions: React.FC<Props> = ({
 
             {canReady && (
                 <button className="order-detail-public-btn" onClick={onReady}>
-                    <DeleteOutlined/> Sẵn sàng để lấy
+                    <CheckSquareOutlined/> Sẵn sàng để lấy
                 </button>
             )}
 

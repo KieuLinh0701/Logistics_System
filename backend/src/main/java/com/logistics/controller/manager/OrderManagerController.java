@@ -252,7 +252,6 @@ public class OrderManagerController {
                 .body(data);
     }
 
-    // Danh sách đơn URGENT thuộc cityCode của office manager
     @GetMapping("/urgent-pickup")
     public ResponseEntity<ApiResponse<ListResponse<UrgentOrderResponse>>> getUrgentOrders(
             HttpServletRequest request,
@@ -260,6 +259,29 @@ public class OrderManagerController {
 
         Integer userId = (Integer) request.getAttribute("currentUserId");
         return ResponseEntity.ok(ApiResponse.success(service.getUrgentOrders(userId, userUrgentOrderSearchRequest)));
+    }
+
+    @GetMapping("/urgent-pickup/all-ids")
+    public ResponseEntity<ApiResponse<List<Integer>>> getUrgentOrderIds(
+            HttpServletRequest request,
+            UserUrgentOrderSearchRequest userUrgentOrderSearchRequest) {
+
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(ApiResponse.success(service.getUrgentOrderIds(userId, userUrgentOrderSearchRequest)));
+    }
+
+    @PatchMapping("/urgent-pickup/confirm/bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_URGENT_CONFIRM_BULK,
+            params = {"orderIds"}
+    )
+    public ResponseEntity<BulkResponse<String>> confirmUrgentOrders(
+            @RequestParam(name = "orderIds") String orderIdsStr,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+        return ResponseEntity.ok(service.confirmUrgentOrders(userId, parseOrderIds(orderIdsStr)));
     }
 
     @GetMapping("/urgent-pickup/export")

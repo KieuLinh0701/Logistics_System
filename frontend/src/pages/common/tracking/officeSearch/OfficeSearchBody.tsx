@@ -17,6 +17,7 @@ const OfficeSearchBody: React.FC = () => {
   const [wards, setWards] = useState<Ward[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
   const [selectedCity, setSelectedCity] = useState<number | null>(null);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [total, setTotal] = useState(0);
@@ -41,7 +42,7 @@ const OfficeSearchBody: React.FC = () => {
 
   const fetchWards = async (codeCity: number) => {
     try {
-      setLoading(true);
+      setLoadingWards(true);
       const response = await locationApi.getWardsByCity(codeCity);
       if (response) {
         setWards(response);
@@ -49,7 +50,7 @@ const OfficeSearchBody: React.FC = () => {
     } catch (error) {
       console.error("Error fetching Wards:", error);
     } finally {
-      setLoading(false);
+      setLoadingWards(false);
     }
   };
 
@@ -152,7 +153,8 @@ const OfficeSearchBody: React.FC = () => {
                     <Select
                       placeholder="Chọn xã/phường"
                       size="large"
-                      disabled={!selectedCity}
+                      disabled={!selectedCity || loadingWards}
+                      loading={loadingWards}
                       showSearch
                       filterOption={(input, option) =>
                         (option?.label as string)?.toLowerCase().includes(input.toLowerCase())

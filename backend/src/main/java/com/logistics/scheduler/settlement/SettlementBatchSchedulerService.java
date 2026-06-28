@@ -71,7 +71,7 @@ public class SettlementBatchSchedulerService {
                             .filter(s -> s.getStatus() == PaymentSubmissionStatus.MATCHED
                                     || s.getStatus() == PaymentSubmissionStatus.ADJUSTED)
                             .findFirst()
-                            .orElse(submissions.get(0));
+                            .orElse(submissions.getFirst());
                 }
 
                 if (ps == null && order.getCod() == 0 && order.getPayer() == OrderPayerType.SHOP) {
