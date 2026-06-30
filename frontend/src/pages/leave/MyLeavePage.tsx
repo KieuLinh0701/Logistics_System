@@ -104,6 +104,7 @@ const MyLeavePage: React.FC = () => {
       const res = await leaveApi.createLeave(payload);
       if (!res.success) {
         message.error(res.message || "Gửi đơn xin nghỉ thất bại");
+        setSubmitting(false);
         return;
       }
       message.success("Gửi đơn xin nghỉ thành công");

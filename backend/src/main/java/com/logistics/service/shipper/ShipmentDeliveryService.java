@@ -59,6 +59,15 @@ public class ShipmentDeliveryService {
                 .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_ACTIVE_FOR_ORDER));
     }
 
+    // Tìm shipment PENDING của shipper cho order.
+    // Dùng khi quét mã để xác nhận lên xe (trước khi bắt đầu chuyến).
+    public Shipment requirePendingDeliveryShipmentForOrder(Integer orderId) {
+        Employee employee = getCurrentEmployee();
+        return shipmentRepository.findPendingDeliveryShipmentForOrder(employee.getId(), orderId)
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_ORDER_NOT_IN_SHIPMENT_OF_SHIPPER,
+                        "Đơn hàng không thuộc chuyến hàng PENDING của bạn"));
+    }
+
     public Shipment loadDeliveryShipment(Integer shipmentId) {
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND));
@@ -166,8 +175,6 @@ public class ShipmentDeliveryService {
         }
 
         // Ràng buộc: một shipper chỉ được có TỐI ĐA 1 shipment DELIVERY IN_TRANSIT tại một thời điểm.
-        // Tránh shipper chạy 2 chuyến cùng lúc dẫn đến xung đột trạng thái đơn.
-        // Manager vẫn được phép (override cho việc test/force start).
         if (!isManager) {
             List<Shipment> activeByShipper = shipmentRepository
                     .findActiveDeliveryShipmentsByEmployee(shipment.getEmployee().getId());
@@ -185,53 +192,35 @@ public class ShipmentDeliveryService {
             throw new AppException(ShipmentErrorCode.SHIPMENT_EMPTY);
         }
 
-        // Auto transition orders theo rule mới (đã chốt với user)
-        // DELIVERY orders: AT_DEST_OFFICE/READY_FOR_PICKUP GIỮ NGUYÊN - chờ shipper quét QR -> PICKED_UP
-        // PICKUP orders: CONFIRMED/PICKUP_RETRY -> PICKING_UP (shipper đi lấy ngay)
-        // RETURN orders: RETURN_RETRY -> RETURNING
+        // Kiểm tra tất cả orders phải ở trạng thái PICKED_UP
+        // Không cho phép DELIVERED, DELIVERY_RETRY, RETURNING, RETURNED, AT_ORIGIN_OFFICE
+        List<String> invalidOrders = new ArrayList<>();
+        int totalCount = shipmentOrders.size();
+        int scannedCount = 0;
+
         for (ShipmentOrder so : shipmentOrders) {
             Order order = so.getOrder();
-            OrderStatus current = order.getStatus();
-            OrderStatus next = current;
-            OrderHistoryActionType action = null;
-            String note = null;
-
-            if (current == OrderStatus.AT_DEST_OFFICE) {
-                // AT_DEST_OFFICE -> chuyển sang READY_FOR_PICKUP khi manager bắt đầu chuyến
-                next = OrderStatus.READY_FOR_PICKUP;
-                action = OrderHistoryActionType.READY_FOR_PICKUP;
-                note = "Chuyến DELIVERY " + shipment.getCode() + " khởi hành, đơn chuyển sang sẵn sàng lấy hàng";
-            } else if (current == OrderStatus.READY_FOR_PICKUP) {
-                // GIỮ NGUYÊN - shipper sẽ quét QR từng đơn để chuyển PICKED_UP
-                note = "Chuyến DELIVERY " + shipment.getCode() + " khởi hành, đơn chờ shipper quét QR";
-            } else if (current == OrderStatus.CONFIRMED || current == OrderStatus.PICKUP_RETRY) {
-                next = OrderStatus.PICKING_UP;
-                action = OrderHistoryActionType.PICKING_UP;
-                note = "Chuyến DELIVERY " + shipment.getCode() + " khởi hành, đơn pickup bắt đầu đi lấy";
-            } else if (current == OrderStatus.RETURN_RETRY) {
-                next = OrderStatus.RETURNING;
-                action = OrderHistoryActionType.RETURNING;
-                note = "Chuyến DELIVERY " + shipment.getCode() + " khởi hành, đơn chuyển sang đang hoàn";
-            } else if (current == OrderStatus.RETURNING || current == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
-                // giữ nguyên
+            if (order.getStatus() == OrderStatus.PICKED_UP) {
+                scannedCount++;
             } else {
-                log.warn("Shipment {} starts but order {} has unexpected status {}",
-                        shipment.getCode(), order.getId(), current);
+                invalidOrders.add(order.getTrackingNumber() + " (" + order.getStatus().name() + ")");
             }
+        }
 
-            if (next != current) {
-                order.setStatus(next);
-            }
-            // Set employee = shipment.employee nếu chưa có
-            if (order.getEmployee() == null) {
-                order.setEmployee(shipment.getEmployee());
-            }
+        if (!invalidOrders.isEmpty()) {
+            throw new AppException(
+                    ShipmentErrorCode.SHIPMENT_ORDERS_NOT_SCANNED,
+                    "Không thể bắt đầu chuyến. Vẫn còn đơn hàng chưa lên xe."
+            );
+}
+
+        // Tất cả orders đã sẵn sàng - chuyển sang DELIVERING
+        for (ShipmentOrder so : shipmentOrders) {
+            Order order = so.getOrder();
+            order.setStatus(OrderStatus.DELIVERING);
             orderRepository.save(order);
-            if (action != null) {
-                saveHistory(order, shipment, action, note);
-            } else if (note != null) {
-                saveHistory(order, shipment, OrderHistoryActionType.CONFIRMED, note);
-            }
+            saveHistory(order, shipment, OrderHistoryActionType.DELIVERING,
+                    "Shipper bắt đầu chuyến giao hàng (chuyến " + shipment.getCode() + ")");
         }
 
         shipment.setStatus(ShipmentStatus.IN_TRANSIT);
@@ -563,16 +552,17 @@ public class ShipmentDeliveryService {
     }
 
     /**
-     * Shipper markPickedUp.
+     * Shipper quét mã để xác nhận hàng đã lên xe.
      * Theo flow mới:
      *  - Delivery order: READY_FOR_PICKUP -> PICKED_UP (sau khi quét QR tại bưu cục đích)
      *  - Pickup order: PICKING_UP / PICKUP_RETRY -> PICKED_UP (sau khi lấy tại nhà người gửi)
-     * Yêu cầu: đơn thuộc shipment IN_TRANSIT.
+     * Yêu cầu: đơn thuộc shipment PENDING của shipper hiện tại.
      */
     @Transactional
     public void markPickedUp(Integer orderId, PickedUpRequest req) {
         Employee employee = getCurrentEmployee();
-        Shipment shipment = requireActiveDeliveryShipmentForOrder(orderId);
+        // Tìm shipment PENDING của shipper cho order này
+        Shipment shipment = requirePendingDeliveryShipmentForOrder(orderId);
         Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
@@ -580,16 +570,12 @@ public class ShipmentDeliveryService {
             throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
-        // Idempotent: nếu order đã PICKED_UP → trả về ngay, KHÔNG cộng vehicle lần nữa.
-        // Workload đã được áp dụng ở lần gọi trước.
+        // Idempotent: nếu order đã PICKED_UP → trả về ngay
         if (order.getStatus() == OrderStatus.PICKED_UP) {
             return;
         }
 
-        // Xác định stopType của order trong shipment hiện tại để biết đây là PICKUP hay DELIVERY stop.
-        // Dùng stopType (entity RouteStopType) thay vì order.pickupType vì:
-        //   - pickupType chỉ nói cách lấy hàng GỐC của đơn, không nói stop hiện tại trong shipment là gì.
-        //   - stopType mới là nguồn chân lý: đơn có thể vừa là pickup stop (lấy) vừa là delivery stop (giao).
+        // Xác định stopType để biết đây là PICKUP hay DELIVERY stop
         RouteStopType stopType = null;
         List<ShipmentOrder> sos = shipmentOrderRepository.findByShipmentId(shipment.getId());
         if (sos != null) {
@@ -605,7 +591,7 @@ public class ShipmentDeliveryService {
         Set<OrderStatus> allowed;
         if (stopType == RouteStopType.PICKUP) {
             // PICKUP stop: cho phép nhiều status vì order có thể được thêm vào shipment
-            // ở các trạng thái khác nhau (READY_FOR_PICKUP, CONFIRMED, URGENT_PICKUP, PICKING_UP, PICKUP_RETRY).
+            // ở các trạng thái khác nhau
             allowed = EnumSet.of(
                     OrderStatus.PICKING_UP,
                     OrderStatus.PICKUP_RETRY,
@@ -615,10 +601,19 @@ public class ShipmentDeliveryService {
             );
         } else {
             // DELIVERY stop: chỉ từ READY_FOR_PICKUP (sau QR scan tại bưu cục đích)
+            // Không cho phép AT_DEST_OFFICE vì cần xác nhận sẵn sàng trước
             allowed = EnumSet.of(OrderStatus.READY_FOR_PICKUP);
         }
 
         if (!allowed.contains(current)) {
+            if (current == OrderStatus.AT_DEST_OFFICE) {
+                throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                        "Đơn chưa sẵn sàng lấy hàng tại bưu cục đích. Cần xác nhận trước.");
+            }
+            if (current == OrderStatus.DELIVERING || current == OrderStatus.DELIVERED) {
+                throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                        "Đơn đang ở trạng thái " + current.name() + ", không thể xác nhận lên xe.");
+            }
             throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
@@ -1028,7 +1023,17 @@ public class ShipmentDeliveryService {
 
         // Order count
         if (s.getShipmentOrders() != null) {
-            builder.orderCount(s.getShipmentOrders().size());
+            int totalCount = s.getShipmentOrders().size();
+            int scannedCount = 0;
+            for (ShipmentOrder so : s.getShipmentOrders()) {
+                if (so.getOrder() != null && so.getOrder().getStatus() == OrderStatus.PICKED_UP) {
+                    scannedCount++;
+                }
+            }
+            builder.orderCount(totalCount);
+            builder.totalCount(totalCount);
+            builder.scannedCount(scannedCount);
+            builder.isReadyToStart(totalCount > 0 && scannedCount == totalCount);
         }
 
         return builder.build();

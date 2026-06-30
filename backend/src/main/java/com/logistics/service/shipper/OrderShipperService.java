@@ -851,6 +851,7 @@ public class OrderShipperService {
         List<Shipment> activeShipments =
                 shipmentOrderRepository.findActiveShipmentsForOrder(order.getId());
         Shipment inTransitShipment = null;
+        Shipment pendingShipment = null;
         if (activeShipments != null) {
             for (Shipment s : activeShipments) {
                 if (s.getStatus() == ShipmentStatus.IN_TRANSIT
@@ -860,10 +861,43 @@ public class OrderShipperService {
                     inTransitShipment = s;
                     break;
                 }
+                if (s.getStatus() == ShipmentStatus.PENDING
+                        && s.getType() == ShipmentType.DELIVERY
+                        && s.getEmployee() != null
+                        && Objects.equals(s.getEmployee().getId(), employee.getId())) {
+                    pendingShipment = s;
+                    break;
+                }
             }
         }
 
         OrderStatus orderStatusBefore = order.getStatus();
+
+        String pendingStatus = "null";
+        String stopTypeLog = "null";
+        if (activeShipments != null) {
+            for (Shipment s : activeShipments) {
+                if (s.getStatus() == ShipmentStatus.PENDING
+                        && s.getType() == ShipmentType.DELIVERY
+                        && s.getEmployee() != null
+                        && Objects.equals(s.getEmployee().getId(), employee.getId())) {
+                    pendingStatus = s.getStatus().name();
+                    List<ShipmentOrder> sos = shipmentOrderRepository.findByShipmentId(s.getId());
+                    if (sos != null) {
+                        for (ShipmentOrder so : sos) {
+                            if (Objects.equals(so.getOrder().getId(), order.getId())) {
+                                stopTypeLog = so.getStopType().name();
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        log.info("markPickedUp: shipmentStatus={}, orderId={}, orderStatus={}, employeeId={}, stopType={}",
+                pendingStatus, id, order.getStatus(), employee.getId(), stopTypeLog);
+
         String branch;
         if (inTransitShipment != null) {
             branch = "SHIPMENT";
@@ -898,7 +932,27 @@ public class OrderShipperService {
             return false;
         }
 
-        // 3b. Nếu có shipment khác (PENDING, COMPLETED, CANCELLED...) nhưng KHÔNG phải IN_TRANSIT
+        // 3d. Nếu thuộc shipment PENDING → ủy quyền cho ShipmentDeliveryService
+        if (pendingShipment != null) {
+            shipmentDeliveryService.markPickedUp(id, request);
+            // refresh + apply workload (idempotent nhờ oldStatus guard)
+            order = orderRepository.findById(id)
+                    .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+            applyVehicleWorkloadByStatus(order, employee, orderStatusBefore, OrderStatus.PICKED_UP);
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Đã lấy hàng thành công",
+                        String.format("Đơn %s đã được lấy hàng thành công.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
+            return false;
+        }
+
+        // 3e. Nếu có shipment khác (COMPLETED, CANCELLED...) nhưng KHÔNG phải PENDING/IN_TRANSIT
         // → trả 400 rõ ràng thay vì 500.
         boolean belongsToAnyShipment = activeShipments != null && !activeShipments.isEmpty();
         if (belongsToAnyShipment) {
@@ -1967,6 +2021,8 @@ public class OrderShipperService {
         attempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.FAILED);
         attempt.setFailReason(com.logistics.enums.DeliveryFailReason.valueOf(reason.trim().toUpperCase()));
         attempt.setNote(note);
+        attempt.setAttemptedAt(LocalDateTime.now());
+        attempt.setUpdatedAt(LocalDateTime.now());
         deliveryAttemptRepository.save(attempt);
 
         if (finalFail) {

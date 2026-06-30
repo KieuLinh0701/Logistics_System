@@ -28,6 +28,8 @@ public enum ShipmentErrorCode implements BaseErrorCode {
     SHIPMENT_HAS_ACTIVE_ORDERS(HttpStatus.BAD_REQUEST, "Chuyến hàng còn đơn chưa hoàn tất, không thể kết thúc"),
     SHIPMENT_ORDER_NOT_IN_SHIPMENT(HttpStatus.BAD_REQUEST, "Đơn hàng không thuộc chuyến này"),
     SHIPMENT_NOT_ASSIGNED(HttpStatus.FORBIDDEN, "Bạn không phải nhân viên được gán cho chuyến này"),
+    SHIPMENT_ORDERS_NOT_SCANNED(HttpStatus.CONFLICT, "Không thể bắt đầu chuyến. Còn %d/%d đơn chưa xác nhận lên xe: %s"),
+    SHIPMENT_ORDER_NOT_IN_SHIPMENT_OF_SHIPPER(HttpStatus.FORBIDDEN, "Đơn hàng không thuộc chuyến hàng của bạn"),
     ;
 
     private final HttpStatus httpStatus;

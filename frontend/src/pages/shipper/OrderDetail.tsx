@@ -449,14 +449,9 @@ const fetchOrderDetail = async () => {
               <Descriptions.Item label="Trạng thái">
                 <Tag color={getStatusColor(order.status)}>{getStatusText(order.status)}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Chuyến DELIVERY">
+              <Descriptions.Item label="Chuyến vận chuyển">
                 {order.shipmentCode ? (
-                  <Space>
-                    <Tag color="blue">{order.shipmentCode}</Tag>
-                    <Tag color={order.shipmentStatus === "IN_TRANSIT" ? "processing" : "default"}>
-                      {order.shipmentStatus}
-                    </Tag>
-                  </Space>
+                  <Tag color="blue">{order.shipmentCode}</Tag>
                 ) : (
                   <Tag color="default">Chưa gắn chuyến</Tag>
                 )}

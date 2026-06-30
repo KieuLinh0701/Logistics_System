@@ -114,7 +114,8 @@ const ShipperPendingShipments: React.FC = () => {
       message.success("Đã bắt đầu chuyến giao hàng");
       setFetchKey((k) => k + 1);
     } catch (e: any) {
-      message.error(e?.message || "Không thể bắt đầu chuyến");
+      const errorMsg = e?.response?.data?.message || e?.message || "Không thể bắt đầu chuyến";
+      message.error(errorMsg);
     } finally {
       setActionLoading(false);
     }
@@ -128,7 +129,8 @@ const ShipperPendingShipments: React.FC = () => {
       message.success("Đã kết thúc chuyến giao hàng");
       setFetchKey((k) => k + 1);
     } catch (e: any) {
-      message.error(e?.message || "Không thể kết thúc chuyến");
+      const errorMsg = e?.response?.data?.message || e?.message || "Không thể kết thúc chuyến";
+      message.error(errorMsg);
     } finally {
       setActionLoading(false);
     }
