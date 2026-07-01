@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface DeliveryAttemptRepository extends JpaRepository<DeliveryAttempt, Long> {
     List<DeliveryAttempt> findByOrderIdOrderByAttemptNumberDesc(Integer orderId);
+    List<DeliveryAttempt> findByOrderIdAndStatus(Integer orderId, DeliveryAttemptStatus status);
     long countByOrderIdAndStatus(Integer orderId, DeliveryAttemptStatus status);
     long countByOrderId(Integer orderId);
 }

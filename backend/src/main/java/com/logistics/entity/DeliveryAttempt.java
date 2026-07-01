@@ -46,6 +46,9 @@ public class DeliveryAttempt {
     @Column(columnDefinition = "NVARCHAR(1000)")
     private String note;
 
+    @Column(name = "proof_image_url", length = 500)
+    private String proofImageUrl;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime attemptedAt;

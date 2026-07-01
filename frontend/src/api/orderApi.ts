@@ -254,9 +254,18 @@ const orderApi = {
         await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
     },
 
-    async createDeliveryAttempt(id: number, payload: { status: string; failReason?: string; note?: string; notes?: string }) {
+    async createDeliveryAttempt(id: number, payload: { status: string; failReason?: string; note?: string; notes?: string; proofImageUrl?: string }) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${id}/delivery-attempt`, payload);
         return res.data;
+    },
+
+    async uploadShipperProofImage(file: File) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await axiosClient.post<ApiResponse<{ imageUrl: string }>>("/shipper/orders/proof-image", fd, {
+            headers: {"Content-Type": "multipart/form-data"},
+        });
+        return res;
     },
 
     async returnFailedToOffice(orderId: number) {

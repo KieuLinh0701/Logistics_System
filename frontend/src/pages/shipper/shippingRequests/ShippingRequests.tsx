@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react";
-import {Button, Input, message, Modal, Space, Table, Tag, Typography} from "antd";
-import {EyeOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
+import {Button, Input, message, Modal, Space, Spin, Table, Tag, Typography} from "antd";
+import {EyeOutlined, PictureOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import {connectWebSocket, disconnectWebSocket} from "../../../socket/socket";
 import {getUserId} from "../../../utils/authUtils";
 import orderApi from "../../../api/orderApi";
@@ -20,6 +20,11 @@ export default function ShippingRequests() {
   // Track các order đang được accept để disable button chống double-click.
   // Set thay vì single id vì sau refresh list có thể có nhiều đơn.
   const [acceptingIds, setAcceptingIds] = useState<Set<number>>(new Set());
+  // Modal xác nhận đã lấy hàng với upload ảnh
+  const [confirmPickupModalVisible, setConfirmPickupModalVisible] = useState(false);
+  const [confirmPickupImageFile, setConfirmPickupImageFile] = useState<File | null>(null);
+  const [confirmPickupImagePreview, setConfirmPickupImagePreview] = useState<string | null>(null);
+  const [confirmPickupLoading, setConfirmPickupLoading] = useState(false);
   const paginationRef = useRef(pagination);
   paginationRef.current = pagination;
   const filtersRef = useRef(filters);
@@ -225,32 +230,54 @@ export default function ShippingRequests() {
   }
 
   async function markPickedUpFromMap(order: any) {
+    setSelectedOrder(order);
+    setConfirmPickupImageFile(null);
+    setConfirmPickupImagePreview(null);
+    setConfirmPickupModalVisible(true);
+  }
+
+  const handleConfirmPickupWithImage = async () => {
+    if (!selectedOrder) return;
+    setConfirmPickupLoading(true);
     try {
-      let payload: any = {};
-      try {
-        await new Promise<void>((resolve) => {
-          if (!navigator.geolocation) return resolve();
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              payload.latitude = pos.coords.latitude;
-              payload.longitude = pos.coords.longitude;
-              resolve();
-            },
-            () => resolve(),
-            { timeout: 5000 }
-          );
-        });
-      } catch (e) {}
-      await orderApi.recordPickupAttempt(order.id, { status: "SUCCESS" });
-      await orderApi.markShipperPickedUp(order.id, payload);
+      let photoUrl: string | undefined;
+      if (confirmPickupImageFile) {
+        const uploadRes: any = await orderApi.uploadShipperProofImage(confirmPickupImageFile);
+        photoUrl = uploadRes?.data?.imageUrl || (uploadRes as any)?.imageUrl || undefined;
+      }
+      await orderApi.markShipperPickedUp(selectedOrder.id, { photoUrl });
       message.success("Đã xác nhận đã lấy hàng");
+      setConfirmPickupModalVisible(false);
       setMapVisible(false);
       await refreshList();
-    } catch (e) {
-      console.error(e);
-      message.error("Lỗi khi xác nhận đã lấy");
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi xác nhận đã lấy");
+    } finally {
+      setConfirmPickupLoading(false);
     }
-  }
+  };
+
+  const readFilePreview = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleSelectPickupImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setConfirmPickupImageFile(file);
+      setConfirmPickupImagePreview(await readFilePreview(file));
+    }
+    e.target.value = "";
+  };
+
+  const handleRemovePickupImage = () => {
+    setConfirmPickupImageFile(null);
+    setConfirmPickupImagePreview(null);
+  };
 
   async function deliverToOriginFromMap(order: any) {
     try {
@@ -538,6 +565,59 @@ export default function ShippingRequests() {
             onCancel={() => setPickupFailedModalOpen(false)}
             onSubmit={submitPickupFailed}
           />
+
+          {/* Modal: Xác nhận đã lấy hàng với upload ảnh */}
+          <Modal
+            title="Xác nhận đã lấy hàng"
+            open={confirmPickupModalVisible}
+            onOk={handleConfirmPickupWithImage}
+            onCancel={() => setConfirmPickupModalVisible(false)}
+            confirmLoading={confirmPickupLoading}
+            width={640}
+            okText="Xác nhận"
+          >
+            <Space direction="vertical" size="large" style={{ width: "100%" }}>
+              <Typography.Text type="secondary">
+                Bạn đang xác nhận đã lấy hàng cho đơn: <strong>{selectedOrder?.trackingNumber || selectedOrder?.id}</strong>
+              </Typography.Text>
+
+              {/* Image picker */}
+              <div style={{ marginBottom: 12 }}>
+                <Typography.Text strong>Ảnh minh chứng lấy hàng (tuỳ chọn)</Typography.Text>
+                <div style={{ marginTop: 8 }}>
+                  <input
+                    id="confirm-pickup-image-input"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleSelectPickupImage}
+                  />
+                  <Space>
+                    <Button
+                      icon={<PictureOutlined />}
+                      onClick={() => document.getElementById("confirm-pickup-image-input")?.click()}
+                    >
+                      Chọn ảnh
+                    </Button>
+                    {confirmPickupImagePreview && (
+                      <Button danger onClick={handleRemovePickupImage}>
+                        Xóa ảnh
+                      </Button>
+                    )}
+                  </Space>
+                </div>
+                {confirmPickupImagePreview && (
+                  <div style={{ marginTop: 12 }}>
+                    <img
+                      src={confirmPickupImagePreview}
+                      alt="Ảnh minh chứng lấy hàng"
+                      style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                    />
+                  </div>
+                )}
+              </div>
+            </Space>
+          </Modal>
         </div>
       </div>
     </div>

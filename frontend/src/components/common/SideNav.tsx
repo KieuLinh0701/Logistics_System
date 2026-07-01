@@ -400,6 +400,23 @@ const SideNav: React.FC = () => {
                 icon: <DashboardOutlined/>,
             },
             {
+                key: "shipper-shipments",
+                label: "Quản lý chuyến hàng",
+                icon: <TruckOutlined/>,
+                children: [
+                    {
+                        key: "/shipper/shipments/pending",
+                        label: "Chuyến hàng cần giao",
+                        path: "/shipper/shipments/pending",
+                    },
+                    {
+                        key: "/shipper/shipments/history",
+                        label: "Lịch sử chuyến hàng",
+                        path: "/shipper/shipments/history",
+                    },
+                ],
+            },
+            {
                 key: "shipper-orders",
                 label: "Quản lý đơn hàng",
                 icon: <ShoppingOutlined/>,
@@ -423,23 +440,6 @@ const SideNav: React.FC = () => {
                         key: "/shipper/failed-deliveries",
                         label: "Hàng giao thất bại",
                         path: "/shipper/failed-deliveries",
-                    },
-                ],
-            },
-            {
-                key: "shipper-shipments",
-                label: "Quản lý chuyến hàng",
-                icon: <TruckOutlined/>,
-                children: [
-                    {
-                        key: "shipper-pending-shipments",
-                        label: "Chuyến hàng cần giao",
-                        path: "/shipper/shipments/pending",
-                    },
-                    {
-                        key: "shipper-history-shipments",
-                        label: "Lịch sử chuyến hàng",
-                        path: "/shipper/shipments/history",
                     },
                 ],
             },
@@ -566,7 +566,7 @@ const SideNav: React.FC = () => {
     useEffect(() => {
         const keys: string[] = [];
         menuItems.forEach((item) => {
-            if (item.children?.some((child) => pathname.startsWith(child.key))) {
+            if (item.children?.some((child) => child.path && pathname.startsWith(child.path))) {
                 keys.push(item.key);
             }
         });

@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.dto.ai.*;
 import com.logistics.entity.*;
+import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.enums.*;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.*;
@@ -22,6 +23,7 @@ import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -107,6 +109,42 @@ public class OrderShipperService {
 
     @Autowired
     private ShipmentDeliveryService shipmentDeliveryService;
+
+    private static final long MAX_PROOF_IMAGE_SIZE = 5 * 1024 * 1024;
+    private static final String PROOF_IMAGE_FOLDER = "shipper_proofs";
+
+    public String uploadProofImage(MultipartFile file) {
+        validateProofImage(file);
+
+        try {
+            Map<String, Object> result = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", PROOF_IMAGE_FOLDER,
+                            "resource_type", "image"
+                    )
+            );
+            return result.get("secure_url").toString();
+        } catch (Exception e) {
+            log.error("Failed to upload shipper proof image to Cloudinary", e);
+            throw new AppException(CloudinaryErrorCode.CLOUDINARY_UPLOAD_FAILED);
+        }
+    }
+
+    private void validateProofImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new AppException(CommonErrorCode.BAD_REQUEST, "File ảnh không được để trống");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new AppException(CommonErrorCode.BAD_REQUEST, "Chỉ chấp nhận file ảnh");
+        }
+
+        if (file.getSize() > MAX_PROOF_IMAGE_SIZE) {
+            throw new AppException(CommonErrorCode.BAD_REQUEST, "Kích thước ảnh vượt quá 5MB");
+        }
+    }
 
     private void saveHistory(Order order, OrderHistoryActionType action, String note) {
         // Backward-compat: tìm shipment active của order (nếu có) để set shipmentId
@@ -632,25 +670,71 @@ public class OrderShipperService {
             throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
         }
 
-        // SHIPMENT-CENTERED: đơn giao phải thuộc shipment IN_TRANSIT trước khi shipper nhận
-        shipmentRepository.findActiveDeliveryShipmentForOrder(employee.getId(), id)
-                .orElseThrow(() -> new AppException(com.logistics.exception.enums.ShipmentErrorCode.SHIPMENT_NOT_ACTIVE_FOR_ORDER));
+        boolean pickupStatus = order.getStatus() == OrderStatus.READY_FOR_PICKUP || order.getStatus() == OrderStatus.PICKUP_RETRY;
+
+        if (pickupStatus) {
+            order.setStatus(OrderStatus.PICKING_UP);
+            order.setEmployee(employee);
+            orderRepository.save(order);
+
+            com.logistics.entity.Shipment activeShipment = shipmentRepository
+                    .findActiveDeliveryShipmentForOrder(employee.getId(), id).orElse(null);
+            saveHistory(order, activeShipment, OrderHistoryActionType.PICKING_UP,
+                    "Shipper nhận đơn lấy hàng");
+
+            try {
+                assignOrderToActiveAiRoute(employee, order);
+            } catch (Exception e) {
+                // ignore AI route assign failure
+            }
+            return;
+        }
 
         if (order.getStatus() != OrderStatus.AT_DEST_OFFICE && order.getStatus() != OrderStatus.READY_FOR_PICKUP) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_CLAIM_STATUS);
+        }
+
+        // Kiểm tra xem order đã thuộc shipment DELIVERY PENDING/IN_TRANSIT của shipper chưa
+        Shipment activeShipment = shipmentRepository.findActiveDeliveryShipmentForOrder(employee.getId(), id).orElse(null);
+
+        if (activeShipment == null) {
+            // Order chưa thuộc shipment nào -> tìm shipment đang mở hoặc tạo mới
+            List<Shipment> openShipments = shipmentRepository.findActiveDeliveryShipmentsByEmployee(employee.getId());
+            if (!openShipments.isEmpty()) {
+                activeShipment = openShipments.get(0);
+            } else {
+                activeShipment = new Shipment();
+                activeShipment.setType(ShipmentType.DELIVERY);
+                activeShipment.setStatus(ShipmentStatus.PENDING);
+                activeShipment.setEmployee(employee);
+                activeShipment.setFromOffice(employee.getOffice());
+                activeShipment.setToOffice(employee.getOffice());
+                activeShipment.setShipmentOrders(new ArrayList<>());
+                activeShipment = shipmentRepository.save(activeShipment);
+            }
+
+            // Thêm order vào shipment_orders nếu chưa có
+            if (!shipmentOrderRepository.existsByShipmentIdAndOrderId(activeShipment.getId(), id)) {
+                ShipmentOrder so = new ShipmentOrder();
+                ShipmentOrderId soId = new ShipmentOrderId();
+                soId.setShipmentId(activeShipment.getId());
+                soId.setOrderId(id);
+                so.setId(soId);
+                so.setShipment(activeShipment);
+                so.setOrder(order);
+                shipmentOrderRepository.save(so);
+            }
         }
 
         order.setStatus(OrderStatus.READY_FOR_PICKUP);
         order.setEmployee(employee);
         orderRepository.save(order);
 
-        // Ghi history có shipmentId
-        com.logistics.entity.Shipment activeShipment = shipmentRepository
-                .findActiveDeliveryShipmentForOrder(employee.getId(), id).orElse(null);
+        // READY_FOR_PICKUP = shipper đã nhận đơn, đơn đang chờ xác nhận lấy hàng lên xe.
+        // Đơn sẽ chuyển sang DELIVERING khi shipper quét QR / xác nhận hàng lên xe.
         saveHistory(order, activeShipment, OrderHistoryActionType.READY_FOR_PICKUP,
                 "Shipper nhận đơn giao (sẵn sàng lấy tại bưu cục)");
 
-        // Thêm đơn vào AI route hiện tại của shipper
         try {
             assignOrderToActiveAiRoute(employee, order);
         } catch (Exception e) {
@@ -912,7 +996,47 @@ public class OrderShipperService {
             return true;
         }
 
-        // 3. Nếu thuộc shipment IN_TRANSIT → ủy quyền cho ShipmentDeliveryService và return
+        // 3. ƯU TIÊN: Xử lý order PICKING_UP cho luồng pickup tại nhà
+        // Không phụ thuộc vào shipment - luồng pickup tại nhà không dùng ShipmentDeliveryService
+        if (order.getStatus() == OrderStatus.PICKING_UP) {
+            // Ghi notes / ảnh / vị trí nếu có
+            if (request != null) {
+                if (request.getLatitude() != null && request.getLongitude() != null) {
+                    String extra = "Location:" + request.getLatitude() + "," + request.getLongitude();
+                    if (request.getNotes() != null) {
+                        extra += "; Notes:" + request.getNotes();
+                    }
+                    String old = order.getNotes() != null ? order.getNotes() + "\n" : "";
+                    order.setNotes(old + extra);
+                } else if (request.getNotes() != null) {
+                    String old = order.getNotes() != null ? order.getNotes() + "\n" : "";
+                    order.setNotes(old + request.getNotes());
+                }
+                // Lưu ảnh minh chứng pickup
+                if (request.getPhotoUrl() != null && !request.getPhotoUrl().isBlank()) {
+                    order.setPickupProofImageUrl(request.getPhotoUrl());
+                }
+            }
+
+            order.setStatus(OrderStatus.PICKED_UP);
+            orderRepository.save(order);
+            saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper đã lấy hàng thành công");
+            applyVehicleWorkloadByStatus(order, employee, orderStatusBefore, OrderStatus.PICKED_UP);
+
+            if (order.getUser() != null) {
+                notificationService.create(
+                        "Đã lấy hàng thành công",
+                        String.format("Đơn %s đã được lấy hàng thành công.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber());
+            }
+            return true;
+        }
+
+        // 4. Xử lý shipment DELIVERY IN_TRANSIT → ủy quyền cho ShipmentDeliveryService
         if (inTransitShipment != null) {
             shipmentDeliveryService.markPickedUp(id, request);
             // refresh + apply workload (idempotent nhờ oldStatus guard)
@@ -932,7 +1056,7 @@ public class OrderShipperService {
             return false;
         }
 
-        // 3d. Nếu thuộc shipment PENDING → ủy quyền cho ShipmentDeliveryService
+        // 4d. Xử lý shipment DELIVERY PENDING → ủy quyền cho ShipmentDeliveryService
         if (pendingShipment != null) {
             shipmentDeliveryService.markPickedUp(id, request);
             // refresh + apply workload (idempotent nhờ oldStatus guard)
@@ -952,14 +1076,14 @@ public class OrderShipperService {
             return false;
         }
 
-        // 3e. Nếu có shipment khác (COMPLETED, CANCELLED...) nhưng KHÔNG phải PENDING/IN_TRANSIT
+        // 4e. Nếu có shipment khác (COMPLETED, CANCELLED...) nhưng KHÔNG phải PENDING/IN_TRANSIT
         // → trả 400 rõ ràng thay vì 500.
         boolean belongsToAnyShipment = activeShipments != null && !activeShipments.isEmpty();
         if (belongsToAnyShipment) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
-        // 4. Else: standalone pickup (order không thuộc shipment nào)
+        // 5. Standalone pickup (order không thuộc shipment DELIVERY nào)
         OrderStatus cur = order.getStatus();
         Set<OrderStatus> standaloneAllowed = EnumSet.of(
                 OrderStatus.PICKING_UP,
@@ -977,21 +1101,22 @@ public class OrderShipperService {
             order.setEmployee(employee);
         }
 
-        // Ghi notes / ảnh / vị trí nếu có (lưu tạm vào notes để không thay đổi schema)
+        // Ghi notes / ảnh / vị trí nếu có
         if (request != null) {
-            String extra = "";
             if (request.getLatitude() != null && request.getLongitude() != null) {
-                extra += "Location:" + request.getLatitude() + "," + request.getLongitude() + ";";
-            }
-            if (request.getPhotoUrl() != null) {
-                extra += "Photo:" + request.getPhotoUrl() + ";";
-            }
-            if (request.getNotes() != null) {
-                extra += "Notes:" + request.getNotes();
-            }
-            if (!extra.isBlank()) {
+                String extra = "Location:" + request.getLatitude() + "," + request.getLongitude();
+                if (request.getNotes() != null) {
+                    extra += "; Notes:" + request.getNotes();
+                }
                 String old = order.getNotes() != null ? order.getNotes() + "\n" : "";
                 order.setNotes(old + extra);
+            } else if (request.getNotes() != null) {
+                String old = order.getNotes() != null ? order.getNotes() + "\n" : "";
+                order.setNotes(old + request.getNotes());
+            }
+            // Lưu ảnh minh chứng vào field riêng
+            if (request.getPhotoUrl() != null && !request.getPhotoUrl().isBlank()) {
+                order.setPickupProofImageUrl(request.getPhotoUrl());
             }
         }
 
@@ -1583,6 +1708,7 @@ public class OrderShipperService {
         map.put("serviceType", order.getServiceType() != null ? order.getServiceType().getName() : null);
         map.put("deliveryTime", order.getServiceType() != null ? order.getServiceType().getDeliveryTime() : null);
         map.put("notes", order.getNotes());
+        map.put("pickupProofImageUrl", order.getPickupProofImageUrl());
         map.put("createdAt", order.getCreatedAt());
         map.put("deliveredAt", order.getDeliveredAt());
         if (order.getFromOffice() != null) {
@@ -1985,6 +2111,23 @@ public class OrderShipperService {
             }
         }
 
+        // Lưu ảnh minh chứng giao hàng thành công
+        if (request != null && request.getProofImageUrl() != null && !request.getProofImageUrl().isBlank()) {
+            List<DeliveryAttempt> existingSuccess = deliveryAttemptRepository.findByOrderIdAndStatus(order.getId(), com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
+            if (existingSuccess.isEmpty()) {
+                DeliveryAttempt successAttempt = new DeliveryAttempt();
+                successAttempt.setOrder(order);
+                successAttempt.setShipper(shipperUser);
+                successAttempt.setAttemptNumber(1);
+                successAttempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
+                successAttempt.setNote("Giao hàng thành công");
+                successAttempt.setProofImageUrl(request.getProofImageUrl());
+                successAttempt.setAttemptedAt(LocalDateTime.now());
+                successAttempt.setUpdatedAt(LocalDateTime.now());
+                deliveryAttemptRepository.save(successAttempt);
+            }
+        }
+
         saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
 
         if (order.getUser() != null) {
@@ -2023,6 +2166,9 @@ public class OrderShipperService {
         attempt.setNote(note);
         attempt.setAttemptedAt(LocalDateTime.now());
         attempt.setUpdatedAt(LocalDateTime.now());
+        if (request != null && request.getProofImageUrl() != null && !request.getProofImageUrl().isBlank()) {
+            attempt.setProofImageUrl(request.getProofImageUrl());
+        }
         deliveryAttemptRepository.save(attempt);
 
         if (finalFail) {

@@ -195,6 +195,9 @@ public class Order {
 
     private LocalDateTime deliveredAt;
 
+    @Column(name = "pickup_proof_image_url", length = 500)
+    private String pickupProofImageUrl;
+
     @ManyToOne
     @JoinColumn(name = "from_office_id")
     private Office fromOffice;

@@ -8,7 +8,6 @@ import {
   Divider,
   Form,
   Input,
-  InputNumber,
   message,
   Modal,
   Row,
@@ -28,6 +27,7 @@ import {
   EnvironmentOutlined,
   PhoneOutlined,
   PlayCircleOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
 import {useNavigate, useParams} from "react-router-dom";
 import dayjs from "dayjs";
@@ -53,6 +53,13 @@ const ShipperOrderDetail: React.FC = () => {
   const [deliveryModal, setDeliveryModal] = useState(false);
   const [codModal, setCodModal] = useState(false);
   const [failedModal, setFailedModal] = useState(false);
+  const [pickedUpModal, setPickedUpModal] = useState(false);
+  const [pickedUpImageFile, setPickedUpImageFile] = useState<File | null>(null);
+  const [pickedUpImagePreview, setPickedUpImagePreview] = useState<string | null>(null);
+  const [deliveryProofImageFile, setDeliveryProofImageFile] = useState<File | null>(null);
+  const [deliveryProofImagePreview, setDeliveryProofImagePreview] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
   const [failedForm] = Form.useForm();
@@ -76,7 +83,6 @@ const ShipperOrderDetail: React.FC = () => {
     const totalByDelivered = baseItems.reduce((s, it) => s + (it.amount || 0), 0);
     const orderCod = Number(order?.cod ?? 0);
 
-    // Fallback cho luồng giao thành công nhanh: chưa cập nhật deliveredQuantity nhưng vẫn cần hiển thị COD phải thu
     if (totalByDelivered <= 0 && orderCod > 0) {
       const first = baseItems[0];
       if (first) {
@@ -134,40 +140,91 @@ const ShipperOrderDetail: React.FC = () => {
     }
   }, [id]);
 
-const fetchOrderDetail = async () => {
-  try {
-    setLoading(true);
-    const res = await orderApi.getShipperOrderDetail(Number(id));
+  const fetchOrderDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await orderApi.getShipperOrderDetail(Number(id));
 
-    if (!res) {
+      if (!res) {
+        setOrder(null);
+        message.error("Không tìm thấy đơn hàng (API trả về dữ liệu rỗng)");
+        return;
+      }
+
+      if ("data" in res) {
+        setOrder((res as any).data || null);
+      } else {
+        setOrder(res as any);
+      }
+
+    } catch (error) {
+      message.error("Lỗi khi tải thông tin đơn hàng");
       setOrder(null);
-      message.error("Không tìm thấy đơn hàng (API trả về dữ liệu rỗng)");
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    if ("data" in res) {
-      setOrder((res as any).data || null);
-    } else {
-      setOrder(res as any);
-    }
-
-  } catch (error) {
-    message.error("Lỗi khi tải thông tin đơn hàng");
-    setOrder(null);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleStartDelivery = () => {
     deliveryForm.resetFields();
     setDeliveryModal(true);
   };
 
-  const handleFinishDelivery = () => {
+  const uploadProofImageIfSelected = async (file: File | null) => {
+    if (!file) return undefined;
+    setUploading(true);
+    try {
+      const res = await orderApi.uploadShipperProofImage(file);
+      return res?.data?.imageUrl || undefined;
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Upload ảnh minh chứng thất bại");
+      throw error;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleConfirmPickedUp = async () => {
     if (!order) return;
-    updateDeliveryAttempt({ status: "SUCCESS", note: "Đã giao thành công" });
+    try {
+      setLoading(true);
+      const photoUrl = await uploadProofImageIfSelected(pickedUpImageFile);
+      await orderApi.markShipperPickedUp(Number(id), {
+        photoUrl: photoUrl || order.pickupProofImageUrl || undefined,
+      });
+      message.success("Đã xác nhận lấy hàng");
+      setPickedUpImageFile(null);
+      setPickedUpImagePreview(null);
+      setPickedUpModal(false);
+      fetchOrderDetail();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Lỗi khi đánh dấu đã lấy hàng");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFinishDelivery = async () => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      const proofImageUrl = await uploadProofImageIfSelected(deliveryProofImageFile);
+      await orderApi.createDeliveryAttempt(Number(id), {
+        status: "SUCCESS",
+        note: "Đã giao thành công",
+        proofImageUrl: proofImageUrl || undefined,
+      });
+      message.success("Đã giao thành công");
+      setDeliveryProofImageFile(null);
+      setDeliveryProofImagePreview(null);
+      setSuccessModal(false);
+      fetchOrderDetail();
+      dispatchShipperRouteRefresh();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Lỗi khi cập nhật trạng thái");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitDelivery = async (values: any) => {
@@ -180,7 +237,6 @@ const fetchOrderDetail = async () => {
       message.success("Đã bắt đầu giao hàng");
       setDeliveryModal(false);
       fetchOrderDetail();
-      // Chuyển đến trang lộ trình
       navigate("/route");
     } catch (error) {
       message.error("Lỗi khi cập nhật trạng thái");
@@ -192,13 +248,11 @@ const fetchOrderDetail = async () => {
   const handleSubmitCOD = async (values: any) => {
     try {
       setLoading(true);
-      // Thu COD - tạo transaction INCOME. Không thay đổi trạng thái giao.
       const res = await orderApi.collectShipperCOD({
         orderId: Number(id),
         notes: values.codNotes,
       });
 
-      // Lưu phản hồi để UI hiển thị chi tiết
       setPaymentSubmissionResponse(res || null);
 
       message.success("Đã thu COD thành công");
@@ -211,11 +265,20 @@ const fetchOrderDetail = async () => {
     }
   };
 
-  const updateDeliveryAttempt = async (payload: { status: string; note?: string; failReason?: string }) => {
+  const handleSubmitFailedDelivery = async (values: any) => {
     try {
       setLoading(true);
-      await orderApi.createDeliveryAttempt(Number(id), payload);
+      const proofImageUrl = await uploadProofImageIfSelected(deliveryProofImageFile);
+      await orderApi.createDeliveryAttempt(Number(id), {
+        status: "FAILED",
+        failReason: mapFailReason(values?.reason),
+        note: values?.detail || "",
+        proofImageUrl: proofImageUrl || undefined,
+      });
       message.success("Đã cập nhật trạng thái giao hàng");
+      setFailedModal(false);
+      setDeliveryProofImageFile(null);
+      setDeliveryProofImagePreview(null);
       fetchOrderDetail();
       dispatchShipperRouteRefresh();
     } catch (error) {
@@ -229,6 +292,94 @@ const fetchOrderDetail = async () => {
     failedForm.resetFields();
     setFailedModal(true);
   };
+
+  const readFilePreview = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const attachPickedUpImage = async (file: File) => {
+    setPickedUpImageFile(file);
+    setPickedUpImagePreview(await readFilePreview(file));
+  };
+
+  const attachDeliveryProofImage = async (file: File) => {
+    setDeliveryProofImageFile(file);
+    setDeliveryProofImagePreview(await readFilePreview(file));
+  };
+
+  const removePickedUpImage = () => {
+    setPickedUpImageFile(null);
+    setPickedUpImagePreview(null);
+  };
+
+  const removeDeliveryProofImage = () => {
+    setDeliveryProofImageFile(null);
+    setDeliveryProofImagePreview(null);
+  };
+
+  const renderImagePicker = ({
+    file,
+    preview,
+    onChange,
+    onRemove,
+    label,
+  }: {
+    file: File | null;
+    preview: string | null;
+    onChange: (file: File) => void;
+    onRemove: () => void;
+    label: string;
+  }) => (
+    <div style={{ marginBottom: 12 }}>
+      <Text strong>{label}</Text>
+      <div style={{ marginTop: 8 }}>
+        <input
+          id={`${label}-input`}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(event) => {
+            const selected = event.target.files?.[0];
+            if (selected) {
+              onChange(selected);
+              event.target.value = "";
+            }
+          }}
+        />
+        <Space>
+          <Button
+            icon={<PictureOutlined />}
+            onClick={() => document.getElementById(`${label}-input`)?.click()}
+          >
+            Chọn ảnh
+          </Button>
+          {preview && (
+            <Button danger onClick={onRemove}>
+              Xóa ảnh
+            </Button>
+          )}
+        </Space>
+      </div>
+      {preview && (
+        <div style={{ marginTop: 12 }}>
+          <img
+            src={preview}
+            alt={label}
+            style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 8, border: "1px solid #e5e7eb" }}
+          />
+        </div>
+      )}
+      {uploading && (
+        <div style={{ marginTop: 8 }}>
+          <Spin size="small" /> <Text type="secondary">Đang tải ảnh lên...</Text>
+        </div>
+      )}
+    </div>
+  );
 
   const mapFailReason = (label: string): string => {
     switch (label) {
@@ -373,17 +524,10 @@ const fetchOrderDetail = async () => {
                     type="dashed"
                     disabled={!canMarkPickedUp(order)}
                     title={!canMarkPickedUp(order) ? "Đơn chưa thuộc chuyến DELIVERY đang chạy" : ""}
-                    onClick={async () => {
-                      try {
-                        setLoading(true);
-                        await orderApi.markShipperPickedUp(Number(id));
-                        message.success("Đã cập nhật: đã lấy hàng");
-                        fetchOrderDetail();
-                      } catch (error: any) {
-                        message.error(error?.response?.data?.message || "Lỗi khi đánh dấu đã lấy hàng");
-                      } finally {
-                        setLoading(false);
-                      }
+                    onClick={() => {
+                      setPickedUpImageFile(null);
+                      setPickedUpImagePreview(null);
+                      setPickedUpModal(true);
                     }}
                   >
                     Đã lấy hàng
@@ -406,7 +550,11 @@ const fetchOrderDetail = async () => {
                       type="primary"
                       icon={<CheckCircleOutlined />}
                       disabled={!canMarkDelivered(order)}
-                      onClick={handleFinishDelivery}
+                      onClick={() => {
+                        setDeliveryProofImageFile(null);
+                        setDeliveryProofImagePreview(null);
+                        setSuccessModal(true);
+                      }}
                     >
                       Giao thành công
                     </Button>
@@ -502,9 +650,11 @@ const fetchOrderDetail = async () => {
                   pagination={false}
                   columns={[
                     { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
-                    { title: 'Số lượng đã giao', dataIndex: 'deliveredQuantity', key: 'deliveredQuantity' },
-                    { title: 'Giá', dataIndex: 'price', key: 'price', render: (v:number) => v?.toLocaleString() + 'đ' },
-                    { title: 'Số tiền', dataIndex: 'amount', key: 'amount', render: (v:number) => v?.toLocaleString() + 'đ' },
+                    { title: 'Số hệ thống', dataIndex: 'systemAmount', key: 'systemAmount', render: (v:number) => v?.toLocaleString() + 'đ' },
+                    { title: 'Số thực thu', dataIndex: 'actualAmount', key: 'actualAmount', render: (v:number) => v?.toLocaleString() + 'đ' },
+                    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s:string) => <Tag>{translatePaymentSubmissionStatus(s)}</Tag> },
+                    { title: 'Ngày', dataIndex: 'paidAt', key: 'paidAt', render: (d:string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—' },
+                    { title: 'Ghi chú', dataIndex: 'notes', key: 'notes' },
                   ]}
                 />
               ) : (
@@ -583,7 +733,7 @@ const fetchOrderDetail = async () => {
                   { title: "Số hệ thống", dataIndex: "systemAmount", key: "systemAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
                   { title: "Số thực thu", dataIndex: "actualAmount", key: "actualAmount", render: (v:number) => v?.toLocaleString() + 'đ' },
                   { title: "Trạng thái", dataIndex: "status", key: "status", render: (s:string) => <Tag>{translatePaymentSubmissionStatus(s)}</Tag> },
-                  { title: "Ngày", dataIndex: "paidAt", key: "paidAt", render: (d:string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—' },
+                  { title: 'Ngày', dataIndex: 'paidAt', key: 'paidAt', render: (d:string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '—' },
                   { title: "Ghi chú", dataIndex: "notes", key: "notes" },
                 ]}
               />
@@ -600,6 +750,31 @@ const fetchOrderDetail = async () => {
           )}
         </Space>
       </Card>
+
+      {/* Modal: Xác nhận đã lấy hàng */}
+      <Modal
+        title="Xác nhận đã lấy hàng"
+        open={pickedUpModal}
+        onOk={handleConfirmPickedUp}
+        onCancel={() => setPickedUpModal(false)}
+        confirmLoading={uploading}
+        width={640}
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Alert
+            message="Bạn đang xác nhận lấy hàng cho đơn này."
+            type="info"
+            showIcon
+          />
+          {renderImagePicker({
+            file: pickedUpImageFile,
+            preview: pickedUpImagePreview,
+            onChange: attachPickedUpImage,
+            onRemove: removePickedUpImage,
+            label: "Ảnh minh chứng lấy hàng",
+          })}
+        </Space>
+      </Modal>
 
       {/* Modal: Bắt đầu giao hàng */}
       <Modal
@@ -633,7 +808,6 @@ const fetchOrderDetail = async () => {
         okText="Xác nhận thu COD"
       >
           <Form form={codForm} layout="vertical" onFinish={handleSubmitCOD}>
-            {/* COD preview (frontend-only) */}
             <div style={{ marginBottom: 12 }}>
               <Text strong>COD cần thu: </Text>
               <Text style={{ color: '#f50', fontSize: 16 }}>{getTotalCodPreview().toLocaleString()}đ</Text>
@@ -672,40 +846,73 @@ const fetchOrderDetail = async () => {
         open={failedModal}
         onOk={() => failedForm.submit()}
         onCancel={() => setFailedModal(false)}
-        width={600}
+        width={640}
         okText="Xác nhận"
       >
         <Form
           form={failedForm}
           layout="vertical"
           onFinish={(values: any) => {
-            updateDeliveryAttempt({
-              status: "FAILED",
-              failReason: mapFailReason(values?.reason),
-              note: values?.detail || "",
-            });
-            setFailedModal(false);
+            setDeliveryProofImageFile(null);
+            setDeliveryProofImagePreview(null);
+            handleSubmitFailedDelivery(values);
           }}
         >
-          <Form.Item
-            name="reason"
-            label="Lý do thất bại"
-            rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
-          >
-            <Select placeholder="Chọn lý do thất bại">
-              <Select.Option value="Khách không có mặt">Khách không có mặt</Select.Option>
-              <Select.Option value="Không liên lạc được">Không liên lạc được</Select.Option>
-              <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
-              <Select.Option value="Khách từ chối nhận">Khách từ chối nhận</Select.Option>
-              <Select.Option value="Khách hẹn giao lại">Khách hẹn giao lại</Select.Option>
-              <Select.Option value="Khác">Khác</Select.Option>
-            </Select>
-          </Form.Item>
+          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+            {renderImagePicker({
+              file: deliveryProofImageFile,
+              preview: deliveryProofImagePreview,
+              onChange: attachDeliveryProofImage,
+              onRemove: removeDeliveryProofImage,
+              label: "Ảnh minh chứng giao thất bại",
+            })}
+            <Form.Item
+              name="reason"
+              label="Lý do thất bại"
+              rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
+            >
+              <Select placeholder="Chọn lý do thất bại">
+                <Select.Option value="Khách không có mặt">Khách không có mặt</Select.Option>
+                <Select.Option value="Không liên lạc được">Không liên lạc được</Select.Option>
+                <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
+                <Select.Option value="Khách từ chối nhận">Khách từ chối nhận</Select.Option>
+                <Select.Option value="Khách hẹn giao lại">Khách hẹn giao lại</Select.Option>
+                <Select.Option value="Khác">Khác</Select.Option>
+              </Select>
+            </Form.Item>
 
-          <Form.Item name="detail" label="Chi tiết (nếu có)">
-            <Input.TextArea rows={3} placeholder="Mô tả chi tiết lý do (tuỳ chọn)" />
-          </Form.Item>
+            <Form.Item name="detail" label="Chi tiết (nếu có)">
+              <Input.TextArea rows={3} placeholder="Mô tả chi tiết lý do (tuỳ chọn)" />
+            </Form.Item>
+          </Space>
         </Form>
+      </Modal>
+
+      {/* Modal: Giao thành công */}
+      <Modal
+        title="Xác nhận giao thành công"
+        open={successModal}
+        onOk={handleFinishDelivery}
+        onCancel={() => setSuccessModal(false)}
+        confirmLoading={uploading}
+        width={640}
+        okText="Xác nhận giao"
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Alert
+            message="Xác nhận giao hàng thành công"
+            description="Đơn hàng sẽ được đánh dấu là đã giao."
+            type="success"
+            showIcon
+          />
+          {renderImagePicker({
+            file: deliveryProofImageFile,
+            preview: deliveryProofImagePreview,
+            onChange: attachDeliveryProofImage,
+            onRemove: removeDeliveryProofImage,
+            label: "Ảnh minh chứng giao hàng thành công (tuỳ chọn)",
+          })}
+        </Space>
       </Modal>
     </div>
   );

@@ -618,6 +618,10 @@ public class ShipmentDeliveryService {
         }
 
         order.setStatus(OrderStatus.PICKED_UP);
+        // Lưu ảnh minh chứng khi lấy hàng
+        if (req != null && req.getPhotoUrl() != null && !req.getPhotoUrl().isBlank()) {
+            order.setPickupProofImageUrl(req.getPhotoUrl());
+        }
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP,
                 "Shipper xác nhận đã lấy hàng (chuyến " + shipment.getCode() + ")");
