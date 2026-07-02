@@ -123,6 +123,7 @@ export interface Order {
     shipmentCode?: string | null;
     shipmentStatus?: "PENDING" | "IN_TRANSIT" | "COMPLETED" | "CANCELLED" | null;
     shipmentType?: "DELIVERY" | "TRANSFER" | null;
+    pickupProofImageUrl?: string | null;
 }
 
 export interface StatusCount {

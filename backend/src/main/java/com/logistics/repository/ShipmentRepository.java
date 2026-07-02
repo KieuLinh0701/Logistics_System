@@ -46,7 +46,10 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     @Query("""
                 SELECT s FROM Shipment s
                 WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
-                  AND s.status = com.logistics.enums.ShipmentStatus.IN_TRANSIT
+                  AND s.status IN (
+                      com.logistics.enums.ShipmentStatus.PENDING,
+                      com.logistics.enums.ShipmentStatus.IN_TRANSIT
+                  )
                   AND s.employee.id = :employeeId
                   AND EXISTS (
                       SELECT 1 FROM ShipmentOrder so
@@ -73,4 +76,18 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     List<Shipment> findActiveDeliveryShipmentsByEmployee(@Param("employeeId") Integer employeeId);
 
     Optional<Shipment> findByEmployeeIdAndId(Integer employeeId, Integer id);
+
+    @Query("""
+                SELECT s FROM Shipment s
+                WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
+                  AND s.status = com.logistics.enums.ShipmentStatus.PENDING
+                  AND s.employee.id = :employeeId
+                  AND EXISTS (
+                      SELECT 1 FROM ShipmentOrder so
+                      WHERE so.shipment.id = s.id AND so.order.id = :orderId
+                  )
+            """)
+    Optional<Shipment> findPendingDeliveryShipmentForOrder(
+            @Param("employeeId") Integer employeeId,
+            @Param("orderId") Integer orderId);
 }

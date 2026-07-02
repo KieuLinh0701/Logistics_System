@@ -37,17 +37,7 @@ axiosClient.interceptors.response.use(
             window.location.href = "/login";
         }
 
-        if (error.response?.data) {
-            return Promise.resolve(error.response.data);
-        }
-
-        return Promise.resolve({
-            success: false,
-            message: error.code === "ECONNABORTED"
-                ? "Yêu cầu quá thời gian, vui lòng thử lại"
-                : "Không thể kết nối đến máy chủ",
-            data: null,
-        });
+        return Promise.reject(error);
     }
 );
 

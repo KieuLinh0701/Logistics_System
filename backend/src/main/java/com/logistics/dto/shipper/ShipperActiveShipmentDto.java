@@ -37,6 +37,11 @@ public class ShipperActiveShipmentDto {
     // Order count
     private Integer orderCount;
 
+    // Tiến độ quét mã 
+    private Integer totalCount;
+    private Integer scannedCount;
+    private Boolean isReadyToStart;
+
     @Data
     @Builder
     @NoArgsConstructor

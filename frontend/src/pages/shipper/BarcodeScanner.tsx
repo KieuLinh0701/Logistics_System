@@ -144,7 +144,7 @@ const BarcodeScanner: React.FC = () => {
       }, 2000);
 
     } catch (error: any) {
-      message.error(error.message || "Không thể cập nhật trạng thái đơn hàng");
+      message.error(error?.response?.data?.message || error?.message || "Không thể cập nhật trạng thái đơn hàng");
       setProcessing(false);
     }
   };

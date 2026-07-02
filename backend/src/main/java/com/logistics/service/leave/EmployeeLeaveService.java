@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +38,20 @@ public class EmployeeLeaveService {
     public EmployeeLeaveDto createLeave(CreateLeaveRequest request) {
             Employee employee = getCurrentEmployeeForDriverOrShipper();
             validateLeaveInput(request);
+
+            Set<LeaveRequestStatus> blockingStatuses = Set.of(
+                    LeaveRequestStatus.PENDING,
+                    LeaveRequestStatus.APPROVED
+            );
+            boolean hasDuplicate = leaveRepository.existsByEmployeeIdAndLeaveDateAndShiftAndStatusIn(
+                    employee.getId(),
+                    request.getLeaveDate(),
+                    request.getShift(),
+                    blockingStatuses
+            );
+            if (hasDuplicate) {
+                throw new AppException(EmployeeLeaveRequestErrorCode.EMPLOYEE_LEAVE_REQUEST_DUPLICATE);
+            }
 
             Office office = employee.getOffice();
             if (office == null) {

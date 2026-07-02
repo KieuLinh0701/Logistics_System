@@ -9,6 +9,7 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.request.shipper.*;
 import com.logistics.response.ApiResponse;
+import com.logistics.response.ProofImageResponse;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.SecurityUtils;
@@ -247,6 +248,16 @@ public class OrderShipperController {
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.createIncidentReport(orderId, incidentType, title, description, priority, images)));
+    }
+
+    @PostMapping(value = "/orders/proof-image", consumes = {"multipart/form-data"})
+    public ResponseEntity<ApiResponse<ProofImageResponse>> uploadProofImage(@RequestParam MultipartFile file) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+
+        String imageUrl = shipperService.uploadProofImage(file);
+        return ResponseEntity.ok(ApiResponse.success(new ProofImageResponse(imageUrl)));
     }
 
     @PostMapping("/orders/{id}/picked-up")

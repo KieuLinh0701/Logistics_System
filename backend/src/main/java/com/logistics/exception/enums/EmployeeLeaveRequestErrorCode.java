@@ -18,6 +18,7 @@ public enum EmployeeLeaveRequestErrorCode implements BaseErrorCode {
     EMPLOYEE_LEAVE_REQUEST_UNAUTHORIZED_APPROVE(HttpStatus.FORBIDDEN, "Bạn không có quyền duyệt đơn nghỉ phép của bưu cục khác"),
     EMPLOYEE_LEAVE_REQUEST_ROLE_REQUIRED_DRIVER_OR_SHIPPER(HttpStatus.FORBIDDEN, "Chỉ tài xế hoặc shipper mới được thao tác đơn nghỉ phép"),
     EMPLOYEE_LEAVE_REQUEST_ROLE_REQUIRED_MANAGER(HttpStatus.FORBIDDEN, "Chỉ quản lý bưu cục mới được thao tác chức năng này"),
+    EMPLOYEE_LEAVE_REQUEST_DUPLICATE(HttpStatus.CONFLICT, "Bạn đã có đơn xin nghỉ cho ngày và ca này"),
     ;
     private final HttpStatus httpStatus;
     private final String message;

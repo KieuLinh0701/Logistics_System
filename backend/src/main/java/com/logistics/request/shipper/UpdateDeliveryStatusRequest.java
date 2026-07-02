@@ -10,4 +10,5 @@ public class UpdateDeliveryStatusRequest {
     private String failReason;
     private String actualRecipient;
     private String actualRecipientPhone;
+    private String proofImageUrl;
 }
