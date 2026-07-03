@@ -15,18 +15,18 @@ import com.logistics.service.common.UserPublicService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user")
 @Tag(name = "User", description = "Quản lý thông tin cá nhân, cập nhật mật khẩu và xác thực thay đổi email")
 public class UserPublicController {
 
-    @Autowired
-    private UserPublicService userService;
+    private final UserPublicService userService;
 
     @PostMapping("/password/update")
     @Audit(

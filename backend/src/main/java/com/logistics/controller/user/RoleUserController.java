@@ -14,19 +14,19 @@ import com.logistics.service.user.RoleUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/roles")
 @Tag(name = "User - Role", description = "Quản lý phân quyền và vai trò người dùng trong hệ thống (thêm, sửa, xóa, liệt kê danh sách vai trò)")
 public class RoleUserController {
 
-    @Autowired
-    private RoleUserService service;
+    private final RoleUserService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<RoleListUserDto>>> list(

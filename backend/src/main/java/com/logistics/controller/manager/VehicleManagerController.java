@@ -13,7 +13,7 @@ import com.logistics.service.manager.VehicleManagerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +24,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/vehicles")
 @Tag(name = "Manager - Vehicle", description = "Quản lý phương tiện vận tải, trạng thái khả dụng và xuất báo cáo tại bưu cục")
 public class VehicleManagerController {
 
-    @Autowired
-    private VehicleManagerService service;
+    private final VehicleManagerService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<VehicleDto>>> list(

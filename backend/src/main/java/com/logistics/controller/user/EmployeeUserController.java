@@ -16,7 +16,7 @@ import com.logistics.service.user.EmployeeUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +26,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/employees")
 @Tag(
         name = "User - Employee",
@@ -33,8 +34,7 @@ import java.nio.charset.StandardCharsets;
 )
 public class EmployeeUserController {
 
-    @Autowired
-    private EmployeeUserService service;
+    private final EmployeeUserService service;
 
     @GetMapping("/{roleId}")
     public ResponseEntity<ApiResponse<ListResponse<EmployeeByRoleIdListUserDto>>> listByRoleId(

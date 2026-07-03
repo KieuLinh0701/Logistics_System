@@ -15,13 +15,12 @@ import com.logistics.exception.enums.EmployeeErrorCode;
 import com.logistics.exception.enums.ShipmentErrorCode;
 import com.logistics.mapper.OrderMapper;
 import com.logistics.mapper.ShipmentMapper;
-import com.logistics.repository.*;
+import com.logistics.repository.EmployeeRepository;
+import com.logistics.repository.ShipmentRepository;
 import com.logistics.request.shipper.ShipperOrdersShipmentSearchRequest;
 import com.logistics.request.shipper.ShipperShipmentSearchRequest;
 import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
-import com.logistics.service.common.NotificationService;
-import com.logistics.service.manager.EmployeeManagerService;
 import com.logistics.specification.ShipmentSpecification;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -49,13 +48,7 @@ import static com.logistics.utils.ShipmentUtils.translateShipmentStatus;
 public class ShipmentHistoryShipperService {
 
     private final ShipmentRepository repository;
-    private final ShipmentRepository shipmentRepository;
     private final EmployeeRepository employeeRepository;
-    private final VehicleRepository vehicleRepository;
-    private final OfficeRepository officeRepository;
-    private final ShipperAssignmentRepository shipperAssignmentRepository;
-    private final EmployeeManagerService employeeManagerService;
-    private final NotificationService notificationService;
 
     private Employee getCurrentShipperEmployee(Integer userId) {
         List<Employee> employees = employeeRepository.findByUserId(userId);
