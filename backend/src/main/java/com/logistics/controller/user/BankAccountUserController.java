@@ -11,19 +11,19 @@ import com.logistics.service.user.BankAccountUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/bank-accounts")
 @Tag(name = "User - Bank Account", description = "Quản lý thông tin tài khoản ngân hàng của người dùng để thực hiện giao dịch thanh toán")
 public class BankAccountUserController {
 
-    @Autowired
-    private BankAccountUserService service;
+    private final BankAccountUserService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<BankAccountDto>>> list(HttpServletRequest request) {

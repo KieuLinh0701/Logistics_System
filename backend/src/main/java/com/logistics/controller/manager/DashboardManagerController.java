@@ -2,22 +2,22 @@ package com.logistics.controller.manager;
 
 import com.logistics.dto.manager.dashboard.ManagerDashboardOverviewResponseDTO;
 import com.logistics.response.ApiResponse;
-import com.logistics.service.manager.DashboardManagerService;
+import com.logistics.service.manager.impl.DashboardManagerServiceImpl;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/dashboard")
 @Tag(name = "Manager - Dashboard", description = "Tổng quan số liệu vận hành và báo cáo cho quản lý bưu cục")
 public class DashboardManagerController {
 
-    @Autowired
-    private DashboardManagerService service;
+    private final DashboardManagerServiceImpl service;
 
     @GetMapping("/overview")
     public ResponseEntity<ApiResponse<ManagerDashboardOverviewResponseDTO>> getOverview(

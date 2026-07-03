@@ -13,7 +13,7 @@ import com.logistics.service.manager.PaymentSubmissionManagerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +23,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/payment-submissions")
 @Tag(name = "Manager - Payment Submission", description = "Quản lý chi tiết các khoản đối soát thanh toán và xuất báo cáo cho từng phiên đối soát")
 public class PaymentSubmissionManagerController {
 
-        @Autowired
-        private PaymentSubmissionManagerService service;
+        private final PaymentSubmissionManagerService service;
 
         @GetMapping("/{id}")
         public ResponseEntity<ApiResponse<ListResponse<ManagerPaymentSubmissionListDto>>> list(

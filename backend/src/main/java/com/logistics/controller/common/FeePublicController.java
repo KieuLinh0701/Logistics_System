@@ -3,7 +3,7 @@ package com.logistics.controller.common;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.common.FeePublicService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,11 +14,11 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/public/fees")
+@RequiredArgsConstructor
 @Tag(name = "Public - Fee", description = "Tính toán cước phí vận chuyển và quy đổi khối lượng")
 public class FeePublicController {
 
-    @Autowired
-    private FeePublicService feeService;
+    private final FeePublicService feeService;
 
     @GetMapping("/shipping")
     public ResponseEntity<ApiResponse<Integer>> calculateShippingFee(

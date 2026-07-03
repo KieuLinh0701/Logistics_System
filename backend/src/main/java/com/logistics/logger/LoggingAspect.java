@@ -15,7 +15,7 @@ import java.lang.annotation.Annotation;
 @Component
 public class LoggingAspect {
 
-    @Around("execution(* com.logistics.service..*(..))")
+    @Around("execution(* com.logistics.service..impl.*.*(..))")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
 
         String className = joinPoint.getTarget().getClass().getSimpleName();

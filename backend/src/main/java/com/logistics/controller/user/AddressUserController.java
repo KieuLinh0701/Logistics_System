@@ -11,19 +11,19 @@ import com.logistics.service.user.AddressUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/addresses")
 @Tag(name = "User - Address", description = "Quản lý sổ địa chỉ của người dùng (thêm, sửa, xóa và đặt làm địa chỉ mặc định)")
 public class AddressUserController {
 
-    @Autowired
-    private AddressUserService service;
+    private final AddressUserService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AddressDto>>> list(

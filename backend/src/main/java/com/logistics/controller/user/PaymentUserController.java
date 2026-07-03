@@ -10,7 +10,7 @@ import com.logistics.service.user.PaymentUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,12 +18,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/payment")
 @Tag(name = "User - Payment", description = "Quản lý tích hợp thanh toán trực tuyến qua VNPAY cho các giao dịch và đối soát của người dùng")
 public class PaymentUserController {
 
-    @Autowired
-    private PaymentUserService service;
+    private final PaymentUserService service;
 
     @PostMapping("/vnpay/check")
     public ResponseEntity<ApiResponse<Void>> vnPayReturn(

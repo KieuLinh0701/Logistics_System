@@ -10,7 +10,7 @@ import com.logistics.response.BulkResponse;
 import com.logistics.service.manager.ShipmentOrderManagerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,12 +18,12 @@ import java.util.Arrays;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/shipment-orders")
 @Tag(name = "Manager - Shipment Order", description = "Quản lý chi tiết danh sách đơn hàng được gán vào chuyến hàng tại bưu cục")
 public class ShipmentOrderManagerController {
 
-        @Autowired
-        private ShipmentOrderManagerService service;
+        private final ShipmentOrderManagerService service;
 
         @GetMapping("/{id}/check")
         public ResponseEntity<BulkResponse<ManagerShipmentDetailDto>> checkOrderForShipment(

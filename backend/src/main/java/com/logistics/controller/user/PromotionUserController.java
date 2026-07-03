@@ -8,19 +8,19 @@ import com.logistics.service.user.PromotionUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/promotions")
 @Tag(name = "User - Promotion", description = "Quản lý và truy vấn các chương trình khuyến mãi hiện hành dành cho người dùng")
 public class PromotionUserController {
 
-    @Autowired
-    private PromotionUserService service;
+    private final PromotionUserService service;
 
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<ListResponse<UserPromotionDto>>> getActiveUserPromotions(

@@ -14,7 +14,7 @@ import com.logistics.service.manager.IncidentReportManagerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +24,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/incident-reports")
 @Tag(name = "Manager - Incident Report", description = "Quản lý và xử lý các báo cáo sự cố vận hành tại bưu cục")
 public class IncidentReportManagerController {
 
-    @Autowired
-    private IncidentReportManagerService service;
+    private final IncidentReportManagerService service;
 
     @GetMapping()
     public ResponseEntity<ApiResponse<ListResponse<ManagerIncidentReportListDto>>> list(

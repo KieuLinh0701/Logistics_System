@@ -15,7 +15,7 @@ import com.logistics.service.user.RecipientAddressUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +25,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/recipient-addresses")
 @Tag(name = "User - Recipient Address", description = "Quản lý danh bạ khách hàng nhận hàng: thêm, sửa, xóa, gợi ý thông tin và xuất báo cáo dữ liệu khách hàng")
 public class RecipientAddressUserController {
 
-    @Autowired
-    private RecipientAddressUserService service;
+    private final RecipientAddressUserService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<RecipientAddressResponse>>> list(
