@@ -12,7 +12,7 @@ import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.request.admin.CreateFeeConfigurationRequest;
 import com.logistics.request.admin.UpdateFeeConfigurationRequest;
 import com.logistics.response.Pagination;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,13 +27,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class FeeConfigurationAdminService {
 
-    @Autowired
-    private FeeConfigurationRepository feeConfigurationRepository;
-
-    @Autowired
-    private ServiceTypeRepository serviceTypeRepository;
+    private final FeeConfigurationRepository feeConfigurationRepository;
+    private final ServiceTypeRepository serviceTypeRepository;
 
     public Map<String, Object> listFeeConfigurations(int page, int limit, String search, String feeType, Integer serviceTypeId, Boolean active) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

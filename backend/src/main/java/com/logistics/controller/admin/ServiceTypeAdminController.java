@@ -12,7 +12,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ServiceTypeAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/service-types")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Service Type", description = "Quản lý loại dịch vụ vận chuyển")
 public class ServiceTypeAdminController {
 
-    @Autowired
-    private ServiceTypeAdminService serviceTypeAdminService;
+    private final ServiceTypeAdminService serviceTypeAdminService;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

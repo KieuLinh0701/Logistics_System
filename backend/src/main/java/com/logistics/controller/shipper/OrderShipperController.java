@@ -14,25 +14,22 @@ import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/shipper")
+@RequiredArgsConstructor
 @Tag(name = "Shipper - Order", description = "Quản lý đơn hàng, quy trình giao nhận, xử lý sự cố và lộ trình cho nhân viên giao hàng")
 public class OrderShipperController {
 
-    @Autowired
-    private OrderShipperService shipperService;
-
-    @Autowired
-    private ShipmentDeliveryService shipmentDeliveryService;
+    private final OrderShipperService shipperService;
+    private final ShipmentDeliveryService shipmentDeliveryService;
 
     private boolean isNotShipper() {
         return !SecurityUtils.hasRole("shipper");

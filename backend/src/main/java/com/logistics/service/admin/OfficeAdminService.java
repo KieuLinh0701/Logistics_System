@@ -10,7 +10,7 @@ import com.logistics.repository.OfficeRepository;
 import com.logistics.request.admin.CreateOfficeRequest;
 import com.logistics.request.admin.UpdateOfficeRequest;
 import com.logistics.response.Pagination;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class OfficeAdminService {
 
-    @Autowired
-    private OfficeRepository officeRepository;
+    private final OfficeRepository officeRepository;
 
     public Map<String, Object> listOffices(int page, int limit, String search) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

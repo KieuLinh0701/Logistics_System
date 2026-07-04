@@ -15,7 +15,7 @@ import com.logistics.request.shipper.SubmitCODRequest;
 import com.logistics.response.Pagination;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,22 +34,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CODShipperService {
 
-    @Autowired
-    private PaymentSubmissionRepository paymentSubmissionRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private OrderProductRepository orderProductRepository;
-
-    @Autowired
-    private PaymentSubmissionBatchRepository paymentSubmissionBatchRepository;
+    private final PaymentSubmissionRepository paymentSubmissionRepository;
+    private final EmployeeRepository employeeRepository;
+    private final OrderRepository orderRepository;
+    private final OrderProductRepository orderProductRepository;
+    private final PaymentSubmissionBatchRepository paymentSubmissionBatchRepository;
 
     private User getCurrentShipperUser() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();

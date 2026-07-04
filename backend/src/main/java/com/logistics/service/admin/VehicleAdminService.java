@@ -13,7 +13,7 @@ import com.logistics.repository.VehicleTrackingRepository;
 import com.logistics.request.admin.CreateVehicleRequest;
 import com.logistics.request.admin.UpdateVehicleRequest;
 import com.logistics.response.Pagination;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,16 +28,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class VehicleAdminService {
 
-    @Autowired
-    private VehicleRepository vehicleRepository;
-
-    @Autowired
-    private OfficeRepository officeRepository;
-
-    @Autowired
-    private VehicleTrackingRepository vehicleTrackingRepository;
+    private final VehicleRepository vehicleRepository;
+    private final OfficeRepository officeRepository;
+    private final VehicleTrackingRepository vehicleTrackingRepository;
 
     public Map<String, Object> listVehicles(int page, int limit, String search, String type, String status) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

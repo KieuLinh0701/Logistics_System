@@ -12,7 +12,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.OfficeAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/offices")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Office", description = "Quản lý bưu cục")
 public class OfficeAdminController {
 
-    @Autowired
-    private OfficeAdminService officeAdminService;
+    private final OfficeAdminService officeAdminService;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

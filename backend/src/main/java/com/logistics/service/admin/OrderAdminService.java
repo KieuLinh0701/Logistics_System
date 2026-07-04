@@ -13,7 +13,7 @@ import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.response.Pagination;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,19 +27,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class OrderAdminService {
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private OrderHistoryRepository orderHistoryRepository;
-
-    @Autowired
-    private OrderProductRepository orderProductRepository;
-
-    @Autowired
-    private PickupAttemptRepository pickupAttemptRepository;
+    private final OrderRepository orderRepository;
+    private final OrderHistoryRepository orderHistoryRepository;
+    private final OrderProductRepository orderProductRepository;
+    private final PickupAttemptRepository pickupAttemptRepository;
 
     public Map<String, Object> listOrders(int page, int limit, String search, String status) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

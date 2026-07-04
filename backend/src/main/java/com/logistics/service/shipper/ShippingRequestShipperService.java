@@ -11,32 +11,22 @@ import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.repository.*;
 import com.logistics.service.common.NotificationService;
 import com.logistics.utils.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ShippingRequestShipperService {
 
-    @Autowired
-    private ShippingRequestRepository shippingRequestRepo;
-
-    @Autowired
-    private ShipperAssignmentRepository shipperAssignmentRepo;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private NotificationService notificationService;
+    private final ShippingRequestRepository shippingRequestRepo;
+    private final ShipperAssignmentRepository shipperAssignmentRepo;
+    private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
+    private final EmployeeRepository employeeRepository;
+    private final NotificationService notificationService;
 
     public List<ShippingRequest> listForCurrentShipper() {
         List<ShippingRequest> all = shippingRequestRepo.findAll();

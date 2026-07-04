@@ -21,12 +21,12 @@ import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.specification.AuditLogSpecification;
 import com.logistics.utils.PasswordUtils;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,19 +49,13 @@ import static com.logistics.utils.AuditLogUtils.translateAuditLogStatus;
 import static com.logistics.utils.EntityTypeUtils.translateEntityType;
 
 @Service
+@RequiredArgsConstructor
 public class UserAdminService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
+    private final AuditLogRepository auditLogRepository;
 
     public Map<String, Object> listUsers(int page, int limit, String search, String status, String roleName) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

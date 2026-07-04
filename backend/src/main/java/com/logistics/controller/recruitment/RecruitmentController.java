@@ -18,19 +18,19 @@ import com.logistics.service.recruitment.RecruitmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Validated
+@RequiredArgsConstructor
 @Tag(name = "Recruitment", description = "API quản lý tuyển dụng nhân sự logistics")
 @RequestMapping
 public class RecruitmentController {
 
-    @Autowired
-    private RecruitmentService recruitmentService;
+    private final RecruitmentService recruitmentService;
 
     @PostMapping("/api/jobs")
     @Audit(

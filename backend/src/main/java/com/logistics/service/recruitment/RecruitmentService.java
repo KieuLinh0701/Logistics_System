@@ -19,7 +19,7 @@ import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.email.EmailService;
 import com.logistics.utils.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,37 +32,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class RecruitmentService {
 
-    @Autowired
-    private JobPostingRepository jobPostingRepository;
-
-    @Autowired
-    private JobApplicationRepository jobApplicationRepository;
-
-    @Autowired
-    private OfficeRepository officeRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private AccountRoleRepository accountRoleRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private EmailService emailService;
+    private final JobPostingRepository jobPostingRepository;
+    private final JobApplicationRepository jobApplicationRepository;
+    private final OfficeRepository officeRepository;
+    private final RoleRepository roleRepository;
+    private final AccountRoleRepository accountRoleRepository;
+    private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public JobPostingDto createJob(CreateJobPostingRequest request) {
         assertCanManageJobPosting();

@@ -8,7 +8,7 @@ import com.logistics.repository.ServiceTypeRepository;
 import com.logistics.request.admin.CreateServiceTypeRequest;
 import com.logistics.request.admin.UpdateServiceTypeRequest;
 import com.logistics.response.Pagination;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ServiceTypeAdminService {
 
-    @Autowired
-    private ServiceTypeRepository serviceTypeRepository;
+    private final ServiceTypeRepository serviceTypeRepository;
 
     public Map<String, Object> listServiceTypes(int page, int limit, String search) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

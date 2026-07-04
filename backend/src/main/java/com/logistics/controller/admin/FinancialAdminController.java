@@ -14,7 +14,7 @@ import com.logistics.response.ListResponse;
 import com.logistics.service.admin.FinancialAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +25,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/financial")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Financial", description = "Quản lý đối soát và thanh toán")
 public class FinancialAdminController {
 
-    @Autowired
-    private FinancialAdminService service;
+    private final FinancialAdminService service;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

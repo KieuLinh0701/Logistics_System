@@ -17,7 +17,7 @@ import com.logistics.service.admin.UserAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,14 +29,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/users")
+@RequiredArgsConstructor
 @Tag(name = "Admin - User", description = "Quản lý người dùng và phân quyền")
 public class UserAdminController {
 
-    @Autowired
-    private UserAdminService userAdminService;
-
-    @Autowired
-    private RoleRepository roleRepository;
+    private final UserAdminService userAdminService;
+    private final RoleRepository roleRepository;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

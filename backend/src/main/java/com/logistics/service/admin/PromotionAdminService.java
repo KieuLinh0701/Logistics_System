@@ -15,7 +15,7 @@ import com.logistics.repository.UserRepository;
 import com.logistics.request.admin.CreatePromotionRequest;
 import com.logistics.request.admin.UpdatePromotionRequest;
 import com.logistics.response.Pagination;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,19 +31,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class PromotionAdminService {
 
-    @Autowired
-    private PromotionRepository promotionRepository;
-
-    @Autowired
-    private ServiceTypeRepository serviceTypeRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private UserPromotionRepository userPromotionRepository;
+    private final PromotionRepository promotionRepository;
+    private final ServiceTypeRepository serviceTypeRepository;
+    private final UserRepository userRepository;
+    private final UserPromotionRepository userPromotionRepository;
 
     public Map<String, Object> listPromotions(int page, int limit, String search, String status, Boolean isGlobal) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());

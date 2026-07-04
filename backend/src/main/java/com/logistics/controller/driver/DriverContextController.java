@@ -10,7 +10,7 @@ import com.logistics.repository.VehicleRepository;
 import com.logistics.response.ApiResponse;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,14 +22,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/driver")
+@RequiredArgsConstructor
 @Tag(name = "Driver", description = "Quản lý thông tin ngữ cảnh của tài xế: bưu cục làm việc và phương tiện")
 public class DriverContextController {
 
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private VehicleRepository vehicleRepository;
+    private final EmployeeRepository employeeRepository;
+    private final VehicleRepository vehicleRepository;
 
     @GetMapping("/context")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getContext() {

@@ -7,7 +7,7 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.repository.*;
 import com.logistics.service.common.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,25 +19,15 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class AutoAssignService {
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private ShipperAssignmentRepository shipperAssignmentRepo;
-
-    @Autowired
-    private ShippingRequestRepository shippingRequestRepo;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private NotificationService notificationService;
+    private final OrderRepository orderRepository;
+    private final ShipperAssignmentRepository shipperAssignmentRepo;
+    private final ShippingRequestRepository shippingRequestRepo;
+    private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
+    private final NotificationService notificationService;
 
     @Value("${logistics.auto-assign.enabled:true}")
     private boolean autoAssignEnabled;

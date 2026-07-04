@@ -9,20 +9,18 @@ import com.logistics.exception.enums.ShippingRequestErrorCode;
 import com.logistics.repository.OfficeRepository;
 import com.logistics.repository.ShippingRequestRepository;
 import com.logistics.service.common.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class ShippingRequestAdminService {
 
-    @Autowired
-    private ShippingRequestRepository shippingRequestRepository;
-    @Autowired
-    private OfficeRepository officeRepository;
-    @Autowired
-    private NotificationService notificationService;
+    private final ShippingRequestRepository shippingRequestRepository;
+    private final OfficeRepository officeRepository;
+    private final NotificationService notificationService;
 
     public List<Map<String, Object>> listAll() {
         List<ShippingRequest> list = shippingRequestRepository.findAll();

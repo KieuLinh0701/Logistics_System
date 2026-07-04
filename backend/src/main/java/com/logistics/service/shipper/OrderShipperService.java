@@ -21,8 +21,8 @@ import com.logistics.service.common.OrderDestinationService;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,70 +45,30 @@ import static com.logistics.utils.OrderUtils.translateOrderStatus;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class OrderShipperService {
 
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private IncidentReportRepository incidentReportRepository;
-
-    @Autowired
-    private Cloudinary cloudinary;
-
-    @Autowired
-    private OrderHistoryRepository orderHistoryRepository;
-
-    @Autowired
-    private OrderProductRepository orderProductRepository;
-
-    @Autowired
-    private PaymentSubmissionRepository paymentSubmissionRepository;
-
-    @Autowired
-    private AutoAssignService autoAssignService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private OfficeRepository officeRepository;
-
-    @Autowired
-    private PickupAttemptRepository pickupAttemptRepository;
-
-    @Autowired
-    private DeliveryAttemptRepository deliveryAttemptRepository;
-
-    @Autowired
-    private ConfigService configService;
-
-    @Autowired
-    private AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
-
-    @Autowired
-    private AiRoutePlanStopRepository aiRoutePlanStopRepository;
-
-    @Autowired
-    private ShipperVehicleRepository shipperVehicleRepository;
-
-    @Autowired
-    private AiServiceClient aiServiceClient;
-
-    @Autowired
-    private OrderDestinationService orderDestinationService;
-
-    @Autowired
-    private ShipmentRepository shipmentRepository;
-
-    @Autowired
-    private ShipmentOrderRepository shipmentOrderRepository;
-
-    @Autowired
-    private ShipmentDeliveryService shipmentDeliveryService;
+    private final OrderRepository orderRepository;
+    private final EmployeeRepository employeeRepository;
+    private final IncidentReportRepository incidentReportRepository;
+    private final Cloudinary cloudinary;
+    private final OrderHistoryRepository orderHistoryRepository;
+    private final OrderProductRepository orderProductRepository;
+    private final PaymentSubmissionRepository paymentSubmissionRepository;
+    private final AutoAssignService autoAssignService;
+    private final NotificationService notificationService;
+    private final OfficeRepository officeRepository;
+    private final PickupAttemptRepository pickupAttemptRepository;
+    private final DeliveryAttemptRepository deliveryAttemptRepository;
+    private final ConfigService configService;
+    private final AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
+    private final AiRoutePlanStopRepository aiRoutePlanStopRepository;
+    private final ShipperVehicleRepository shipperVehicleRepository;
+    private final AiServiceClient aiServiceClient;
+    private final OrderDestinationService orderDestinationService;
+    private final ShipmentRepository shipmentRepository;
+    private final ShipmentOrderRepository shipmentOrderRepository;
+    private final ShipmentDeliveryService shipmentDeliveryService;
 
     private static final long MAX_PROOF_IMAGE_SIZE = 5 * 1024 * 1024;
     private static final String PROOF_IMAGE_FOLDER = "shipper_proofs";

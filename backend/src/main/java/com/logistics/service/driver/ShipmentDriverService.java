@@ -14,7 +14,7 @@ import com.logistics.service.common.OrderDestinationService;
 import com.logistics.service.common.OrderOriginService;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,40 +29,20 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ShipmentDriverService {
 
-    @Autowired
-    private ShipmentRepository shipmentRepository;
-
-    @Autowired
-    private ShipmentOrderRepository shipmentOrderRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private OrderHistoryRepository orderHistoryRepository;
-
-    @Autowired
-    private VehicleRepository vehicleRepository;
-
-    @Autowired
-    private VehicleTrackingRepository vehicleTrackingRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private OfficeRepository officeRepository;
-
-    @Autowired
-    private OrderDestinationService orderDestinationService;
-
-    @Autowired
-    private OrderOriginService orderOriginService;
+    private final ShipmentRepository shipmentRepository;
+    private final ShipmentOrderRepository shipmentOrderRepository;
+    private final OrderRepository orderRepository;
+    private final OrderHistoryRepository orderHistoryRepository;
+    private final VehicleRepository vehicleRepository;
+    private final VehicleTrackingRepository vehicleTrackingRepository;
+    private final EmployeeRepository employeeRepository;
+    private final NotificationService notificationService;
+    private final OfficeRepository officeRepository;
+    private final OrderDestinationService orderDestinationService;
+    private final OrderOriginService orderOriginService;
 
     private Employee getCurrentEmployee() {
         Integer userId = SecurityUtils.getAuthenticatedUserId();

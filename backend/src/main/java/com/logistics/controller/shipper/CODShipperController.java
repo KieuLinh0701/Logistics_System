@@ -12,7 +12,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.shipper.CODShipperService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shipper/cod")
+@RequiredArgsConstructor
 @Tag(name = "Shipper - COD", description = "Quản lý thu hộ (COD), nộp tiền thu hộ và lịch sử đối soát của nhân viên giao hàng")
 public class CODShipperController {
 
-    @Autowired
-    private CODShipperService codShipperService;
+    private final CODShipperService codShipperService;
 
     private boolean isNotShipper() {
         return !SecurityUtils.hasRole("shipper");

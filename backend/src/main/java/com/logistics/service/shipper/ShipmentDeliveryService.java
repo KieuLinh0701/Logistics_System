@@ -11,8 +11,8 @@ import com.logistics.repository.*;
 import com.logistics.request.shipper.InsertPickupShipmentRequest;
 import com.logistics.request.shipper.PickedUpRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
+import com.logistics.service.common.NotificationService;
 import com.logistics.utils.SecurityUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -25,7 +25,6 @@ import java.util.*;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ShipmentDeliveryService {
 
     private final ShipmentRepository shipmentRepository;
@@ -33,17 +32,27 @@ public class ShipmentDeliveryService {
     private final OrderRepository orderRepository;
     private final OrderHistoryRepository orderHistoryRepository;
     private final EmployeeRepository employeeRepository;
+    private final NotificationService notificationService;
 
-    /**
-     * Lazy inject để tránh circular bean giữa OrderShipperService ↔ ShipmentDeliveryService.
-     * Dùng để auto-add pickup vào shipment IN_TRANSIT đang chạy khi shipper accept.
-     */
-    @Autowired
-    @Lazy
-    private OrderShipperService orderShipperService;
+    private final OrderShipperService orderShipperService;
 
     @Autowired
-    private com.logistics.service.common.NotificationService notificationService;
+    public ShipmentDeliveryService(
+            ShipmentRepository shipmentRepository,
+            ShipmentOrderRepository shipmentOrderRepository,
+            OrderRepository orderRepository,
+            OrderHistoryRepository orderHistoryRepository,
+            EmployeeRepository employeeRepository,
+            NotificationService notificationService,
+            @Lazy OrderShipperService orderShipperService) {
+        this.shipmentRepository = shipmentRepository;
+        this.shipmentOrderRepository = shipmentOrderRepository;
+        this.orderRepository = orderRepository;
+        this.orderHistoryRepository = orderHistoryRepository;
+        this.employeeRepository = employeeRepository;
+        this.notificationService = notificationService;
+        this.orderShipperService = orderShipperService;
+    }
 
     // ==================== Helpers ====================
 
