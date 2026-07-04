@@ -1,0 +1,148 @@
+package com.logistics.service.admin.impl;
+
+import com.logistics.entity.ServiceType;
+import com.logistics.enums.ServiceTypeStatus;
+import com.logistics.exception.AppException;
+import com.logistics.exception.enums.ServiceTypeErrorCode;
+import com.logistics.repository.ServiceTypeRepository;
+import com.logistics.request.admin.CreateServiceTypeRequest;
+import com.logistics.request.admin.UpdateServiceTypeRequest;
+import com.logistics.response.Pagination;
+import com.logistics.service.admin.ServiceTypeAdminService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ServiceTypeAdminServiceImpl implements ServiceTypeAdminService {
+
+    private final ServiceTypeRepository serviceTypeRepository;
+
+    @Override
+    public Map<String, Object> listServiceTypes(int page, int limit, String search) {
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by("createdAt").descending());
+        Page<ServiceType> serviceTypePage;
+
+        if (search != null && !search.trim().isEmpty()) {
+            serviceTypePage = serviceTypeRepository.findAll((root, query, cb) ->
+                    cb.like(cb.lower(root.get("name")), "%" + search.toLowerCase() + "%"), pageable);
+        } else {
+            serviceTypePage = serviceTypeRepository.findAll(pageable);
+        }
+
+        List<Map<String, Object>> data = serviceTypePage.getContent().stream()
+                .map(this::mapServiceType)
+                .collect(Collectors.toList());
+
+        Pagination pagination = new Pagination(
+                (int) serviceTypePage.getTotalElements(),
+                page,
+                limit,
+                serviceTypePage.getTotalPages());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", data);
+        result.put("pagination", pagination);
+
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getServiceTypeById(Integer id) {
+        ServiceType serviceType = serviceTypeRepository.findById(id)
+                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
+        return mapServiceType(serviceType);
+    }
+
+    @Override
+    @Transactional
+    public void createServiceType(CreateServiceTypeRequest request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NAME_REQUIRED);
+        }
+
+        ServiceType serviceType = new ServiceType();
+        serviceType.setName(request.getName());
+        serviceType.setDescription(request.getDescription());
+        serviceType.setStatus(resolveStatus(request.getStatus()));
+        serviceType.setDeliveryTime(buildDeliveryTime(request));
+        serviceType = serviceTypeRepository.save(serviceType);
+    }
+
+    @Override
+    @Transactional
+    public void updateServiceType(Integer id, UpdateServiceTypeRequest request) {
+        ServiceType serviceType = serviceTypeRepository.findById(id)
+                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
+
+        if (request.getName() != null) serviceType.setName(request.getName());
+        if (request.getDescription() != null) serviceType.setDescription(request.getDescription());
+        if (request.getStatus() != null) serviceType.setStatus(resolveStatus(request.getStatus()));
+
+        String deliveryTime = buildDeliveryTime(request);
+        if (deliveryTime != null) {
+            serviceType.setDeliveryTime(deliveryTime);
+        }
+
+        serviceType = serviceTypeRepository.save(serviceType);
+    }
+
+    @Override
+    @Transactional
+    public void deleteServiceType(Integer id) {
+        ServiceType serviceType = serviceTypeRepository.findById(id)
+                .orElseThrow(() -> new AppException(ServiceTypeErrorCode.SERVICE_TYPE_NOT_FOUND));
+        serviceTypeRepository.delete(serviceType);
+    }
+
+    private ServiceTypeStatus resolveStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return ServiceTypeStatus.ACTIVE;
+        }
+        return ServiceTypeStatus.valueOf(status.toUpperCase());
+    }
+
+    private String buildDeliveryTime(CreateServiceTypeRequest request) {
+        if (request.getDeliveryTimeFrom() != null && request.getDeliveryTimeTo() != null
+                && request.getDeliveryTimeUnit() != null && !request.getDeliveryTimeUnit().isBlank()) {
+            return String.format("%d - %d %s",
+                    request.getDeliveryTimeFrom(),
+                    request.getDeliveryTimeTo(),
+                    request.getDeliveryTimeUnit());
+        }
+        return request.getDeliveryTime();
+    }
+
+    private String buildDeliveryTime(UpdateServiceTypeRequest request) {
+        if (request.getDeliveryTimeFrom() != null && request.getDeliveryTimeTo() != null
+                && request.getDeliveryTimeUnit() != null && !request.getDeliveryTimeUnit().isBlank()) {
+            return String.format("%d - %d %s",
+                    request.getDeliveryTimeFrom(),
+                    request.getDeliveryTimeTo(),
+                    request.getDeliveryTimeUnit());
+        }
+        return request.getDeliveryTime();
+    }
+
+    private Map<String, Object> mapServiceType(ServiceType serviceType) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", serviceType.getId());
+        map.put("name", serviceType.getName());
+        map.put("description", serviceType.getDescription());
+        map.put("status", serviceType.getStatus() != null ? serviceType.getStatus().name() : null);
+        map.put("deliveryTime", serviceType.getDeliveryTime());
+        map.put("createdAt", serviceType.getCreatedAt());
+        map.put("updatedAt", serviceType.getUpdatedAt());
+        return map;
+    }
+}
