@@ -41,6 +41,8 @@ import {
   canMarkPickedUp,
   canStartDelivery,
   isInActiveDeliveryShipment,
+  isReturnOrder,
+  canMarkReturnDelivered,
 } from "../../utils/orderActionGuards";
 
 const { Title, Text, Paragraph } = Typography;
@@ -59,6 +61,9 @@ const ShipperOrderDetail: React.FC = () => {
   const [deliveryProofImageFile, setDeliveryProofImageFile] = useState<File | null>(null);
   const [deliveryProofImagePreview, setDeliveryProofImagePreview] = useState<string | null>(null);
   const [successModal, setSuccessModal] = useState(false);
+  const [returnDeliveryModal, setReturnDeliveryModal] = useState(false);
+  const [returnDeliveryProofImageFile, setReturnDeliveryProofImageFile] = useState<File | null>(null);
+  const [returnDeliveryProofImagePreview, setReturnDeliveryProofImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
@@ -293,6 +298,31 @@ const ShipperOrderDetail: React.FC = () => {
     setFailedModal(true);
   };
 
+  const handleReturnDelivery = async () => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      const proofImageUrl = await uploadProofImageIfSelected(returnDeliveryProofImageFile);
+      await orderApi.markReturnDelivered(Number(id), proofImageUrl);
+      message.success("Đã xác nhận giao trả hàng hoàn thành công");
+      setReturnDeliveryProofImageFile(null);
+      setReturnDeliveryProofImagePreview(null);
+      setReturnDeliveryModal(false);
+      fetchOrderDetail();
+      dispatchShipperRouteRefresh();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Lỗi khi xác nhận giao trả hàng hoàn");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenReturnDeliveryModal = () => {
+    setReturnDeliveryProofImageFile(null);
+    setReturnDeliveryProofImagePreview(null);
+    setReturnDeliveryModal(true);
+  };
+
   const readFilePreview = (file: File) =>
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -309,6 +339,11 @@ const ShipperOrderDetail: React.FC = () => {
   const attachDeliveryProofImage = async (file: File) => {
     setDeliveryProofImageFile(file);
     setDeliveryProofImagePreview(await readFilePreview(file));
+  };
+
+  const attachReturnDeliveryProofImage = async (file: File) => {
+    setReturnDeliveryProofImageFile(file);
+    setReturnDeliveryProofImagePreview(await readFilePreview(file));
   };
 
   const removePickedUpImage = () => {
@@ -423,6 +458,7 @@ const ShipperOrderDetail: React.FC = () => {
         return "error";
       case "RETURNING":
       case "RETURN_RETRY":
+      case "RETURN_AT_ORIGIN_OFFICE":
         return "warning";
       default:
         return "default";
@@ -455,7 +491,9 @@ const ShipperOrderDetail: React.FC = () => {
       case "RETURNED":
         return "Đã hoàn";
       case "RETURNING":
-        return "Đang hoàn";
+        return "Đang hoàn trả";
+      case "RETURN_AT_ORIGIN_OFFICE":
+        return "Đã hoàn về bưu cục gốc";
       case "RETURN_RETRY":
         return "Hoàn lại";
       case "RETURN_FAILED_FINAL":
@@ -519,7 +557,8 @@ const ShipperOrderDetail: React.FC = () => {
             </Col>
             <Col>
               <Space>
-                {(getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && (
+                {/* Đơn giao hàng thường - không áp dụng cho đơn hoàn trả */}
+                {!isReturnOrder(order) && (getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && order.status !== "DELIVERING" && (
                   <Button
                     type="dashed"
                     disabled={!canMarkPickedUp(order)}
@@ -533,7 +572,8 @@ const ShipperOrderDetail: React.FC = () => {
                     Đã lấy hàng
                   </Button>
                 )}
-                {order.status === "PICKED_UP" && (
+                {/* Đơn giao hàng - Bắt đầu giao */}
+                {!isReturnOrder(order) && order.status === "PICKED_UP" && (
                   <Button
                     type="primary"
                     icon={<PlayCircleOutlined />}
@@ -544,7 +584,8 @@ const ShipperOrderDetail: React.FC = () => {
                     Bắt đầu giao hàng
                   </Button>
                 )}
-                {order.status === "DELIVERING" && (
+                {/* Đơn giao hàng - Đang giao */}
+                {!isReturnOrder(order) && order.status === "DELIVERING" && (
                   <>
                     <Button
                       type="primary"
@@ -572,16 +613,45 @@ const ShipperOrderDetail: React.FC = () => {
                     </Button>
                   </>
                 )}
+                {/* Đơn hoàn trả - Đã giao trả hàng hoàn */}
+                {isReturnOrder(order) && (order.status === "RETURNING" || order.status === "RETURN_RETRY") && (
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    disabled={!canMarkReturnDelivered(order)}
+                    title={!canMarkReturnDelivered(order) ? "Đơn chưa thuộc chuyến đang chạy" : ""}
+                    onClick={handleOpenReturnDeliveryModal}
+                  >
+                    Xác nhận hoàn trả
+                  </Button>
+                )}
+                {/* Đơn hoàn trả - Xem lộ trình khi đang hoàn trả */}
+                {isReturnOrder(order) && (order.status === "RETURNING" || order.status === "RETURN_RETRY") && (
+                  <Button icon={<CompassOutlined />} onClick={handleNavigateToRoute}>
+                    Xem lộ trình
+                  </Button>
+                )}
               </Space>
             </Col>
           </Row>
 
-          {!isInActiveDeliveryShipment(order) && order.status !== "DELIVERED" && order.status !== "RETURNED" && order.status !== "CANCELLED" && (
+          {/* Alert chỉ hiện cho đơn giao hàng chưa thuộc shipment active */}
+          {!isReturnOrder(order) && !isInActiveDeliveryShipment(order) && !["DELIVERED", "CANCELLED"].includes(order.status) && (
             <Row justify="center">
               <Alert
                 type="warning"
                 showIcon
-                description="Bạn không thể thao tác giao/hoàn khi đơn chưa được gắn vào chuyến."
+                description="Bạn không thể thao tác giao hàng khi đơn chưa được gắn vào chuyến."
+              />
+            </Row>
+          )}
+          {/* Alert cho đơn hoàn trả chưa thuộc shipment */}
+          {isReturnOrder(order) && !isInActiveDeliveryShipment(order) && !["RETURNED", "CANCELLED", "RETURN_AT_ORIGIN_OFFICE"].includes(order.status) && (
+            <Row justify="center">
+              <Alert
+                type="warning"
+                showIcon
+                description="Đơn hoàn trả chưa được nhận. Vui lòng nhận đơn trước khi thao tác."
               />
             </Row>
           )}
@@ -911,6 +981,36 @@ const ShipperOrderDetail: React.FC = () => {
             onChange: attachDeliveryProofImage,
             onRemove: removeDeliveryProofImage,
             label: "Ảnh minh chứng giao hàng thành công (tuỳ chọn)",
+          })}
+        </Space>
+      </Modal>
+
+      {/* Modal: Giao trả hàng hoàn */}
+      <Modal
+        title="Xác nhận giao trả hàng hoàn"
+        open={returnDeliveryModal}
+        onOk={handleReturnDelivery}
+        onCancel={() => setReturnDeliveryModal(false)}
+        confirmLoading={loading}
+        width={640}
+        okText="Xác nhận giao trả"
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Alert
+            message="Xác nhận giao trả hàng hoàn cho người gửi"
+            description="Đơn hàng sẽ được đánh dấu là đã hoàn trả thành công."
+            type="success"
+            showIcon
+          />
+          {renderImagePicker({
+            file: returnDeliveryProofImageFile,
+            preview: returnDeliveryProofImagePreview,
+            onChange: attachReturnDeliveryProofImage,
+            onRemove: () => {
+              setReturnDeliveryProofImageFile(null);
+              setReturnDeliveryProofImagePreview(null);
+            },
+            label: "Ảnh minh chứng giao trả hàng hoàn (tuỳ chọn)",
           })}
         </Space>
       </Modal>

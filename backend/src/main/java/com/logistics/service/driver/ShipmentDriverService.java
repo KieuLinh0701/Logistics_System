@@ -105,11 +105,9 @@ public class ShipmentDriverService {
         shipment.setStartTime(LocalDateTime.now());
         shipmentRepository.save(shipment);
 
-        // Cập nhật trạng thái tất cả đơn trong shipment -> IN_TRANSIT
+        // Cập nhật trạng thái đơn trong shipment 
         for (ShipmentOrder so : shipmentOrders) {
             Order order = so.getOrder();
-            order.setStatus(OrderStatus.IN_TRANSIT);
-            orderRepository.save(order);
 
             // Ghi OrderHistory
             OrderHistory history = new OrderHistory();
@@ -118,18 +116,40 @@ public class ShipmentDriverService {
             history.setToOffice(order.getToOffice());
             history.setShipment(shipment);
             history.setAction(OrderHistoryActionType.EXPORTED);
-            history.setNote("Đơn hàng đang được vận chuyển giữa bưu cục");
-            orderHistoryRepository.save(history);
 
-            if (order.getUser() != null) {
-                notificationService.create(
-                        "Hàng đang vận chuyển",
-                        String.format("Đơn %s đang được vận chuyển đến bưu cục đích.", order.getTrackingNumber()),
-                        "order_status",
-                        order.getUser().getId(),
-                        null,
-                        "orders/tracking",
-                        order.getTrackingNumber());
+            if (order.getStatus() == OrderStatus.RETURNING) {
+                // Giữ nguyên RETURNING - đơn hoàn đang được trung chuyển về bưu cục gốc
+                history.setNote("Đơn hàng hoàn đang được trung chuyển về bưu cục gốc");
+                orderHistoryRepository.save(history);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Đơn hàng đang được hoàn về",
+                            String.format("Đơn %s đang được trung chuyển về bưu cục gốc.", order.getTrackingNumber()),
+                            "order_status",
+                            order.getUser().getId(),
+                            null,
+                            "orders/tracking",
+                            order.getTrackingNumber());
+                }
+            } else {
+                // Các đơn thường: chuyển sang IN_TRANSIT
+                order.setStatus(OrderStatus.IN_TRANSIT);
+                orderRepository.save(order);
+
+                history.setNote("Đơn hàng đang được vận chuyển giữa bưu cục");
+                orderHistoryRepository.save(history);
+
+                if (order.getUser() != null) {
+                    notificationService.create(
+                            "Hàng đang vận chuyển",
+                            String.format("Đơn %s đang được vận chuyển đến bưu cục đích.", order.getTrackingNumber()),
+                            "order_status",
+                            order.getUser().getId(),
+                            null,
+                            "orders/tracking",
+                            order.getTrackingNumber());
+                }
             }
         }
     }
@@ -190,48 +210,17 @@ public class ShipmentDriverService {
                 // Flow 2: RETURNING -> kiem tra co ve dung bu cua goc khong
                 if (orderStatus == OrderStatus.RETURNING
                         && orderOriginService.isOriginOffice(order, currentOffice)) {
-                    // Ve dung bu cua goc: chuyen doi trang thai + ghi history + notification
-                    if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
-                        order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
-                        orderRepository.save(order);
-                        OrderHistory history = new OrderHistory();
-                        history.setOrder(order);
-                        history.setFromOffice(currentOffice);
-                        history.setToOffice(currentOffice);
-                        history.setAction(OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE);
-                        history.setNote("Driver hoan tat shipment, don da ve bu cua goc, cho giao lai cho nguoi gui");
-                        orderHistoryRepository.save(history);
-                        if (order.getUser() != null) {
-                            notificationService.create(
-                                    "Don hang da ve bu cua goc",
-                                    String.format("Don %s da ve bu cua goc va se duoc giao lai cho nguoi gui.", order.getTrackingNumber()),
-                                    "order_status",
-                                    order.getUser().getId(),
-                                    null,
-                                    "orders/tracking",
-                                    order.getTrackingNumber());
-                        }
-                    } else {
-                        order.setStatus(OrderStatus.RETURNED);
-                        orderRepository.save(order);
-                        OrderHistory history = new OrderHistory();
-                        history.setOrder(order);
-                        history.setFromOffice(currentOffice);
-                        history.setToOffice(currentOffice);
-                        history.setAction(OrderHistoryActionType.RETURNED);
-                        history.setNote("Driver hoan tat shipment, don hoan da ve bu cua goc, nguoi gui tu den nhan");
-                        orderHistoryRepository.save(history);
-                        if (order.getUser() != null) {
-                            notificationService.create(
-                                    "Don hang da ve bu cua goc",
-                                    String.format("Don %s da ve bu cua goc, vui long den bu cua de nhan hang hoan.", order.getTrackingNumber()),
-                                    "order_status",
-                                    order.getUser().getId(),
-                                    null,
-                                    "orders/tracking",
-                                    order.getTrackingNumber());
-                        }
-                    }
+                    // Ve dung bu cua goc: giu RETURNING, set pendingReturnConfirm
+                    // Manager bưu cục gốc sẽ xác nhận sau
+                    order.setPendingReturnConfirm(true);
+                    orderRepository.save(order);
+                    OrderHistory history = new OrderHistory();
+                    history.setOrder(order);
+                    history.setFromOffice(currentOffice);
+                    history.setToOffice(currentOffice);
+                    history.setAction(OrderHistoryActionType.RETURNING);
+                    history.setNote("Driver hoan tat shipment, don da ve bu cua goc, cho manager xac nhan");
+                    orderHistoryRepository.save(history);
                     continue;
                 }
 

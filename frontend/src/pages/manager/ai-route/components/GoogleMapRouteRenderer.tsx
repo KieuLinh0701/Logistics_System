@@ -135,18 +135,42 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
         .filter(isValidStop)
         .sort((a, b) => (a.stopSequence ?? 0) - (b.stopSequence ?? 0));
 
-      if (orderedStops.length < 2) {
+      if (orderedStops.length < 1) {
         return;
       }
 
-      const origin = `${orderedStops[0].latitude},${orderedStops[0].longitude}`;
-      const destination = `${orderedStops[orderedStops.length - 1].latitude},${orderedStops[orderedStops.length - 1].longitude}`;
-      const waypoints = orderedStops
-        .slice(1, -1)
-        .map((stop) => ({
-          location: { lat: stop.latitude as number, lng: stop.longitude as number },
-          stopover: true,
-        }));
+      let origin: string;
+      let destination: string;
+      let waypoints: google.maps.DirectionsWaypoint[];
+
+      if (office && office.latitude != null && office.longitude != null) {
+        // Origin = office
+        origin = `${office.latitude},${office.longitude}`;
+        if (orderedStops.length === 1) {
+          // Chỉ có 1 stop: origin=office, destination=stop
+          destination = `${orderedStops[0].latitude},${orderedStops[0].longitude}`;
+          waypoints = [];
+        } else {
+          // Nhiều hơn 1 stop: destination = last stop
+          destination = `${orderedStops[orderedStops.length - 1].latitude},${orderedStops[orderedStops.length - 1].longitude}`;
+          waypoints = orderedStops
+            .slice(0, -1) // Tất cả trừ stop cuối
+            .map((stop) => ({
+              location: { lat: stop.latitude as number, lng: stop.longitude as number },
+              stopover: true,
+            }));
+        }
+      } else {
+        // Không có office: dùng first stop làm origin
+        origin = `${orderedStops[0].latitude},${orderedStops[0].longitude}`;
+        destination = `${orderedStops[orderedStops.length - 1].latitude},${orderedStops[orderedStops.length - 1].longitude}`;
+        waypoints = orderedStops
+          .slice(1, -1)
+          .map((stop) => ({
+            location: { lat: stop.latitude as number, lng: stop.longitude as number },
+            stopover: true,
+          }));
+      }
 
       const directionsService = new google.maps.DirectionsService();
       directionsService.route(
@@ -338,7 +362,7 @@ const GoogleMapRouteRenderer: React.FC<GoogleMapRouteRendererProps> = ({
               );
             })()}
             <p>
-              <strong>Người nhận:</strong> {selectedStop.stop.recipientName || "—"}
+              <strong>{selectedStop.stop.stopType === "RETURN_TO_OFFICE" ? "Người gửi:" : "Người nhận:"}</strong> {selectedStop.stop.recipientName || "—"}
             </p>
             <p>
               <strong>Địa chỉ:</strong> {selectedStop.stop.recipientAddress || "—"}

@@ -289,6 +289,7 @@ public class SupportAssistantService {
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case RETURNING -> "Đang hoàn hàng";
             case RETURN_AT_ORIGIN_OFFICE -> "Hàng hoàn đã về bưu cục gốc";
+            case RETURN_DELIVERY_ASSIGNED -> "Đã giao đơn hoàn cho shipper";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn hàng";

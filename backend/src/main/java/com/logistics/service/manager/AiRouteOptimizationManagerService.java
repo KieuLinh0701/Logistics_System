@@ -47,11 +47,11 @@ public class AiRouteOptimizationManagerService {
 
     public Map<String, Object> previewDeliveryReadyOrders(Integer managerUserId) {
         Office office = employeeManagerService.getManagedOfficeByUserId(managerUserId);
-        List<Order> orders = findDeliveryReadyOrders(office.getId());
+        List<OrderWithStopTypeDto> orders = findReadyOrdersForOptimization(office.getId());
         Map<String, Object> data = new HashMap<>();
         data.put("orderCount", orders.size());
         data.put("aiServiceHealthy", aiServiceClient.isHealthy());
-        data.put("orders", orders.stream().map(this::toOrderPreview).limit(50).toList());
+        data.put("orders", orders.stream().limit(50).map(this::toOrderPreviewWithStopType).toList());
         return data;
     }
 
@@ -72,21 +72,23 @@ public class AiRouteOptimizationManagerService {
                 ? request.getRouteMode()
                 : RouteMode.CLOSED_LOOP;
 
-        // Lấy delivery orders
-        List<Order> deliveryOrders = findDeliveryReadyOrders(office.getId());
-        List<AiRouteStopInputDto> deliveryStops = deliveryOrders.stream()
-                .map(this::toAiRouteStop).toList();
+        // Lấy đơn sẵn sàng cho tối ưu (giao thường + hoàn trả)
+        List<OrderWithStopTypeDto> readyOrders = findReadyOrdersForOptimization(office.getId());
 
-        if (deliveryStops.isEmpty()) {
+        if (readyOrders.isEmpty()) {
             throw new AppException(AiRouteErrorCode.AI_NO_ORDERS_READY);
         }
+
+        List<AiRouteStopInputDto> stops = readyOrders.stream()
+                .map(o -> toAiRouteStop(o.getOrder(), o.getStopType())).toList();
+
+        List<Order> deliveryOrders = readyOrders.stream().map(o -> o.getOrder()).toList();
 
         List<AiShipperInputDto> shippers = buildAvailableShippers(office, capacity, startTime);
         if (shippers.isEmpty()) {
             throw new AppException(AiRouteErrorCode.AI_NO_AVAILABLE_SHIPPERS);
         }
 
-        // Build AI request với closed loop
         AiLocationDto startLocation = new AiLocationDto();
         startLocation.setType("OFFICE");
         startLocation.setId(office.getId());
@@ -110,13 +112,13 @@ public class AiRouteOptimizationManagerService {
                 .routeMode(routeMode.name())
                 .optimizationScope(RouteOptimizationScope.MANAGER_GLOBAL.name())
                 .shippers(shippers)
-                .stops(deliveryStops)
+                .stops(stops)
                 .options(Map.of("ortools_time_limit_seconds", 8))
                 .build();
 
         AiRouteOptimizationResponseDto aiResponse = aiServiceClient.optimizeRoutes(aiRequest);
 
-        AiRoutePlan plan = persistDraftPlan(office, manager, deliveryOrders, aiResponse, aiRequest, routeMode, returnToOffice);
+        AiRoutePlan plan = persistDraftPlan(office, manager, deliveryOrders, aiResponse, aiRequest, routeMode, returnToOffice, readyOrders);
 
         return toDetailDto(plan, aiResponse.getUnassignedOrders());
     }
@@ -197,12 +199,12 @@ public class AiRouteOptimizationManagerService {
                                 ? shipperEmployee.getUser().getLastName() : "")).trim()
                         : "N/A";
 
-                List<AiRoutePlanStop> deliveryStops = route.getStops().stream()
-                        .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                // Lấy tất cả stops có order
+                List<AiRoutePlanStop> routeStops = route.getStops().stream()
                         .filter(s -> s.getOrder() != null)
                         .toList();
 
-                if (deliveryStops.isEmpty()) {
+                if (routeStops.isEmpty()) {
                     continue;
                 }
 
@@ -215,7 +217,7 @@ public class AiRouteOptimizationManagerService {
                 shipment.setCreatedBy(plan.getManagerEmployee());
                 shipment.setVehicle(null);
 
-                for (AiRoutePlanStop stop : deliveryStops) {
+                for (AiRoutePlanStop stop : routeStops) {
                     RouteStopType stopType = stop.getStopType();
                     Order order = stop.getOrder();
 
@@ -243,7 +245,7 @@ public class AiRouteOptimizationManagerService {
                     }
                     // Phase 3A: snapshot sequence + ETA + leg từ AiRoutePlanStop
                     so.setStopSequence(stop.getStopSequence());
-                    so.setStopType(stopType);
+                    so.setStopType(stopType); // DELIVERY hoặc RETURN_TO_OFFICE
                     so.setEtaTime(stop.getEtaTime());
                     so.setEtaMinutesFromStart(stop.getEtaMinutesFromStart());
                     so.setLegDistanceKm(stop.getLegDistanceKm());
@@ -253,9 +255,16 @@ public class AiRouteOptimizationManagerService {
                     Order tracked = ordersToUpdate.computeIfAbsent(order.getId(), id -> order);
                     tracked.setEmployee(shipperEmployee);
                     if (stopType == RouteStopType.DELIVERY) {
+                        // Đơn giao thường: AT_DEST_OFFICE -> READY_FOR_PICKUP
                         if (tracked.getStatus() == OrderStatus.AT_DEST_OFFICE) {
                             tracked.setStatus(OrderStatus.READY_FOR_PICKUP);
                         }
+                    } else if (stopType == RouteStopType.RETURN_TO_OFFICE) {
+                        // Đơn hoàn trả: RETURN_AT_ORIGIN_OFFICE -> RETURNING (giao trả cho người gửi)
+                        if (tracked.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
+                            tracked.setStatus(OrderStatus.RETURNING);
+                        }
+                        // Không chuyển sang READY_FOR_PICKUP
                     } else if (stopType == RouteStopType.PICKUP) {
                         if (tracked.getStatus() == OrderStatus.CONFIRMED) {
                             tracked.setStatus(OrderStatus.READY_FOR_PICKUP);
@@ -377,8 +386,20 @@ public class AiRouteOptimizationManagerService {
                 .orElseThrow(() -> new AppException(AiRouteErrorCode.AI_MANAGER_RESOLVE_FAILED));
     }
 
-    private List<Order> findDeliveryReadyOrders(Integer officeId) {
-        Specification<Order> spec = (root, query, cb) -> {
+    // Xác định RouteStopType dựa trên OrderStatus.
+    private RouteStopType determineStopTypeForManagerAi(Order order) {
+        if (order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
+            return RouteStopType.RETURN_TO_OFFICE;
+        }
+        return RouteStopType.DELIVERY;
+    }
+
+    // Lấy đơn sẵn sàng cho tối ưu - bao gồm cả đơn giao thường và đơn hoàn trả.
+    private List<OrderWithStopTypeDto> findReadyOrdersForOptimization(Integer officeId) {
+        List<OrderWithStopTypeDto> result = new ArrayList<>();
+
+        // A. Đơn giao thường
+        Specification<Order> deliverySpec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
             predicates.add(cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE));
@@ -389,7 +410,37 @@ public class AiRouteOptimizationManagerService {
             predicates.add(cb.notEqual(root.get("recipientLongitude"), 0));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-        return orderRepository.findAll(spec);
+        List<Order> deliveryOrders = orderRepository.findAll(deliverySpec);
+        for (Order order : deliveryOrders) {
+            result.add(new OrderWithStopTypeDto(order, RouteStopType.DELIVERY));
+        }
+
+        // B. Đơn hoàn trả
+        Specification<Order> returnSpec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("status"), OrderStatus.RETURN_AT_ORIGIN_OFFICE));
+            predicates.add(cb.isNull(root.get("employee")));
+            // Thuộc bưu cục gốc (fromOffice) HOẶC bưu cục hiện tại (currentOffice)
+            Predicate officeMatch = cb.or(
+                    cb.equal(root.get("fromOffice").get("id"), officeId),
+                    cb.equal(root.get("currentOffice").get("id"), officeId)
+            );
+            predicates.add(officeMatch);
+            predicates.add(cb.isNotNull(root.get("senderLatitude")));
+            predicates.add(cb.isNotNull(root.get("senderLongitude")));
+            predicates.add(cb.notEqual(root.get("senderLatitude"), 0));
+            predicates.add(cb.notEqual(root.get("senderLongitude"), 0));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        List<Order> returnOrders = orderRepository.findAll(returnSpec);
+        for (Order order : returnOrders) {
+            result.add(new OrderWithStopTypeDto(order, RouteStopType.RETURN_TO_OFFICE));
+        }
+
+        log.info("findReadyOrdersForOptimization: {} delivery orders, {} return orders",
+                deliveryOrders.size(), returnOrders.size());
+
+        return result;
     }
 
     private List<AiShipperInputDto> buildAvailableShippers(Office office, int capacity, String startTime) {
@@ -459,21 +510,23 @@ public class AiRouteOptimizationManagerService {
         return result;
     }
 
-    private AiRouteStopInputDto toAiRouteStop(Order order) {
+    private AiRouteStopInputDto toAiRouteStop(Order order, RouteStopType stopType) {
         Double weightKg = normalizeOrderWeight(order);
+        boolean isReturn = stopType == RouteStopType.RETURN_TO_OFFICE;
+
         return AiRouteStopInputDto.builder()
                 .stopId(order.getId().longValue())
                 .orderId(order.getId())
                 .trackingNumber(order.getTrackingNumber())
-                .stopType("DELIVERY")
-                .recipientName(order.getRecipientName())
-                .recipientPhone(order.getRecipientPhone())
-                .address(order.getRecipientFullAddress())
-                .wardCode(order.getRecipientWardCode())
-                .cityCode(order.getRecipientCityCode())
-                .latitude(order.getRecipientLatitude())
-                .longitude(order.getRecipientLongitude())
-                .codAmount(order.getCod() != null ? order.getCod() : 0)
+                .stopType(stopType.name()) // DELIVERY hoặc RETURN_TO_OFFICE
+                .recipientName(isReturn ? order.getSenderName() : order.getRecipientName())
+                .recipientPhone(isReturn ? order.getSenderPhone() : order.getRecipientPhone())
+                .address(isReturn ? order.getSenderFullAddress() : order.getRecipientFullAddress())
+                .wardCode(isReturn ? order.getSenderWardCode() : order.getRecipientWardCode())
+                .cityCode(isReturn ? order.getSenderCityCode() : order.getRecipientCityCode())
+                .latitude(isReturn ? order.getSenderLatitude() : order.getRecipientLatitude())
+                .longitude(isReturn ? order.getSenderLongitude() : order.getRecipientLongitude())
+                .codAmount(isReturn ? 0 : (order.getCod() != null ? order.getCod() : 0))
                 .priority("NORMAL")
                 .serviceTimeMinutes(5)
                 .weightKg(weightKg)
@@ -527,7 +580,8 @@ public class AiRouteOptimizationManagerService {
             AiRouteOptimizationResponseDto aiResponse,
             AiRouteOptimizationRequestDto aiRequest,
             RouteMode routeMode,
-            boolean returnToOffice) {
+            boolean returnToOffice,
+            List<OrderWithStopTypeDto> readyOrders) {
 
         AiRoutePlan plan = new AiRoutePlan();
         plan.setOffice(office);
@@ -550,6 +604,11 @@ public class AiRouteOptimizationManagerService {
             plan.setTotalFuelCost(toBd(s.getTotalFuelCost()));
             plan.setTotalCod(s.getTotalCod());
             plan.setUnassignedCount(s.getUnassignedOrderCount() != null ? s.getUnassignedOrderCount() : 0);
+        }
+
+        Map<Integer, RouteStopType> orderStopTypeMap = new HashMap<>();
+        for (OrderWithStopTypeDto owt : readyOrders) {
+            orderStopTypeMap.put(owt.getOrder().getId(), owt.getStopType());
         }
 
         // Collect order IDs from AI response
@@ -594,7 +653,7 @@ public class AiRouteOptimizationManagerService {
             List<AiRoutePlanStop> stops = new ArrayList<>();
             int stopSeq = 1;
 
-            // Business stops (DELIVERY / PICKUP)
+            // Business stops (DELIVERY / RETURN_TO_OFFICE)
             if (routeDto.getStops() != null) {
                 for (AiRouteStopOutputDto stopDto : routeDto.getStops()) {
                     // Try orderId first, then fall back to trackingNumber
@@ -609,10 +668,12 @@ public class AiRouteOptimizationManagerService {
                         continue;
                     }
 
+                    RouteStopType stopType = orderStopTypeMap.getOrDefault(order.getId(), RouteStopType.DELIVERY);
+
                     AiRoutePlanStop stop = new AiRoutePlanStop();
                     stop.setRoute(route);
                     stop.setOrder(order);
-                    stop.setStopType(RouteStopType.DELIVERY); // AI mặc định DELIVERY
+                    stop.setStopType(stopType); // DELIVERY hoặc RETURN_TO_OFFICE
                     stop.setStopSequence(stopSeq++);
                     stop.setTrackingNumber(stopDto.getTrackingNumber());
                     stop.setRecipientName(stopDto.getRecipientName());
@@ -656,7 +717,8 @@ public class AiRouteOptimizationManagerService {
             }
 
             route.setStops(stops);
-            long businessStopCount = stops.stream().filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE).count();
+            // Đếm tất cả stops có order (DELIVERY, PICKUP, RETURN_TO_OFFICE)
+            long businessStopCount = stops.stream().filter(s -> s.getOrder() != null).count();
             route.setStopCount((int) businessStopCount);
             plan.getRoutes().add(route);
         }
@@ -690,7 +752,7 @@ public class AiRouteOptimizationManagerService {
                         .shipmentCode(r.getShipmentId() != null ? buildShipmentCode(plan, r) : null)
                         .shipmentStatus(r.getShipmentId() != null ? ShipmentStatus.PENDING.name() : null)
                         .returnToOfficeStop(r.getStops().stream()
-                                .filter(s -> s.getStopType() == RouteStopType.RETURN_TO_OFFICE)
+                                .filter(s -> s.getStopType() == RouteStopType.RETURN_TO_OFFICE && s.getOrder() != null)
                                 .findFirst()
                                 .map(s -> ManagerAiRouteStopDto.builder()
                                         .stopId(s.getId())
@@ -714,7 +776,8 @@ public class AiRouteOptimizationManagerService {
                                 .orElse(null))
                         .stops(r.getStops().stream()
                                 .sorted(Comparator.comparing(AiRoutePlanStop::getStopSequence))
-                                .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                                // Bao gồm tất cả stops có order (DELIVERY, PICKUP, RETURN_TO_OFFICE)
+                                .filter(s -> s.getOrder() != null)
                                 .map(s -> ManagerAiRouteStopDto.builder()
                                         .stopId(s.getId())
                                         .orderId(s.getOrder() != null ? s.getOrder().getId() : null)
@@ -790,14 +853,24 @@ public class AiRouteOptimizationManagerService {
                 .build();
     }
 
-    private Map<String, Object> toOrderPreview(Order order) {
+    private Map<String, Object> toOrderPreviewWithStopType(OrderWithStopTypeDto owt) {
+        Order order = owt.getOrder();
         Map<String, Object> m = new HashMap<>();
         m.put("id", order.getId());
         m.put("trackingNumber", order.getTrackingNumber());
-        m.put("recipientName", order.getRecipientName());
-        m.put("recipientWardCode", order.getRecipientWardCode());
-        m.put("recipientCityCode", order.getRecipientCityCode());
-        m.put("cod", order.getCod());
+        m.put("orderStatus", order.getStatus() != null ? order.getStatus().name() : null);
+        m.put("stopType", owt.getStopType().name()); // DELIVERY hoặc RETURN_TO_OFFICE
+        if (owt.getStopType() == RouteStopType.RETURN_TO_OFFICE) {
+            m.put("recipientName", order.getSenderName()); // Giao trả cho người gửi
+            m.put("recipientWardCode", order.getSenderWardCode());
+            m.put("recipientCityCode", order.getSenderCityCode());
+            m.put("cod", 0); // Hoàn trả không thu COD
+        } else {
+            m.put("recipientName", order.getRecipientName());
+            m.put("recipientWardCode", order.getRecipientWardCode());
+            m.put("recipientCityCode", order.getRecipientCityCode());
+            m.put("cod", order.getCod());
+        }
         return m;
     }
 

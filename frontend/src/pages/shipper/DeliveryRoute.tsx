@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from "react";
 import {
     Alert,
     Button,
@@ -173,7 +173,7 @@ const getStopContact = (stop: DeliveryStop) => {
 
 const isDeliveryStop = (stop: DeliveryStop) => {
     const st = (stop.stopType || "").toString().toUpperCase();
-    return st === "DELIVERY" || st === "PICKUP";
+    return st === "DELIVERY" || st === "PICKUP" || st === "RETURN_TO_OFFICE";
 };
 
 const sortByStopSequence = <T extends { stopSequence?: number }>(stops: T[]): T[] => {
@@ -196,7 +196,6 @@ const ShipperDeliveryRoute: React.FC = () => {
     const [detailModal, setDetailModal] = useState(false);
     const [currentPosition, setCurrentPosition] = useState<google.maps.LatLngLiteral | null>(null);
     const [realtimeDirections, setRealtimeDirections] = useState<google.maps.DirectionsResult | null>(null);
-    const [directionsLoading, setDirectionsLoading] = useState(false);
     const [directionsRenderKey, setDirectionsRenderKey] = useState(0);
     const [reOptimizing, setReOptimizing] = useState(false);
 
@@ -206,6 +205,7 @@ const ShipperDeliveryRoute: React.FC = () => {
     const directionsRequestSeqRef = useRef(0);
     const lastDirectionsQueryRef = useRef<{ stopId: number; origin: google.maps.LatLngLiteral } | null>(null);
     const directionsCacheRef = useRef<Map<string, google.maps.DirectionsResult>>(new Map());
+    const routeDataVersionRef = useRef<number>(0);
 
     // --- Google Maps loader (singleton, không re-load khi re-render) ---
     const { isLoaded, loadError } = useJsApiLoader({
@@ -213,10 +213,33 @@ const ShipperDeliveryRoute: React.FC = () => {
         googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) || "",
     });
 
-    // deliveryStops = chỉ DELIVERY/PICKUP, không tính RETURN_TO_OFFICE
+    // deliveryStops = chỉ DELIVERY/PICKUP/RETURN_TO_OFFICE, theo stopSequence
     const deliveryStops = useMemo(() => {
         return sortByStopSequence(allStops.filter(isDeliveryStop));
     }, [allStops]);
+
+    // Tính map center và bounds từ stops coords
+    const mapCenterAndBounds = useMemo(() => {
+        const validStops = deliveryStops.filter(hasValidCoords);
+        if (validStops.length === 0) {
+            return { center: DEFAULT_CENTER, bounds: null, hasBounds: false };
+        }
+
+        const lats = validStops.map((s) => Number(s.latitude));
+        const lngs = validStops.map((s) => Number(s.longitude));
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+        const centerLat = (minLat + maxLat) / 2;
+        const centerLng = (minLng + maxLng) / 2;
+
+        return {
+            center: { lat: centerLat, lng: centerLng },
+            bounds: { north: maxLat, south: minLat, east: maxLng, west: minLng },
+            hasBounds: true,
+        };
+    }, [deliveryStops]);
 
 
     const displayTotalStops = deliveryStops.length;
@@ -255,6 +278,9 @@ const ShipperDeliveryRoute: React.FC = () => {
             }
 
             setRouteInfo(routeData.routeInfo);
+
+            // Tăng version để force re-render polyline
+            routeDataVersionRef.current += 1;
 
             // Tách RETURN_TO_OFFICE + các stop đã kết thúc vận chuyển (DELIVERED/CANCELLED...) ra khỏi deliveryStops.
             // Lưu ý: KHÔNG ẩn stop "completed" thuộc PICKUP stop (PICKED_UP = đã lấy hàng nhưng vẫn phải giao).
@@ -333,6 +359,18 @@ const ShipperDeliveryRoute: React.FC = () => {
         return () => window.removeEventListener(SHIPPER_ROUTE_REFRESH_EVENT, onRefresh);
     }, [fetchRouteData]);
 
+    // Refit map bounds khi deliveryStops hoặc routeInfo thay đổi
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map || !mapCenterAndBounds.hasBounds || !mapCenterAndBounds.bounds) return;
+
+        const bounds = new google.maps.LatLngBounds(
+            { lat: mapCenterAndBounds.bounds.south, lng: mapCenterAndBounds.bounds.west },
+            { lat: mapCenterAndBounds.bounds.north, lng: mapCenterAndBounds.bounds.east }
+        );
+        map.fitBounds(bounds, 50);
+    }, [deliveryStops, routeInfo, mapCenterAndBounds]);
+
     useEffect(() => {
         if (!navigator.geolocation) {
             console.warn("Geolocation không được hỗ trợ");
@@ -363,16 +401,8 @@ const ShipperDeliveryRoute: React.FC = () => {
         return () => navigator.geolocation.clearWatch(watchId);
     }, []);
 
-    useEffect(() => {
-        if (!nextStop) return;
-
-        if (lastNextStopIdRef.current !== nextStop.id) {
-            lastNextStopIdRef.current = nextStop.id;
-            setRealtimeDirections(null);
-            setDirectionsRenderKey((k) => k + 1);
-        }
-    }, [nextStop?.id]);
-
+    // Vẽ đường đi trên map từ vị trí hiện tại tới điểm tiếp theo
+    // Chỉ gọi Directions API khi bấm nút "Chỉ đường tới điểm tiếp theo"
     const requestDirectionsToStop = useCallback(
         (stop: DeliveryStop) => {
             if (!isLoaded || typeof google === "undefined") {
@@ -387,10 +417,6 @@ const ShipperDeliveryRoute: React.FC = () => {
 
             if (!hasValidCoords(stop)) {
                 message.warning("Điểm giao chưa có tọa độ GPS trên bản đồ");
-                return;
-            }
-
-            if (directionsLoading) {
                 return;
             }
 
@@ -412,6 +438,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                 lng: Number(destination.lng.toFixed(5)),
             };
 
+            // Kiểm tra cache để tránh gọi API trùng lặp
             const lastQuery = lastDirectionsQueryRef.current;
             if (
                 lastQuery &&
@@ -430,10 +457,9 @@ const ShipperDeliveryRoute: React.FC = () => {
                 return;
             }
 
+            // Gọi Directions API để vẽ đường trên map
             const service = new google.maps.DirectionsService();
             const requestSeq = ++directionsRequestSeqRef.current;
-            setDirectionsLoading(true);
-            setRealtimeDirections(null);
             setDirectionsRenderKey((k) => k + 1);
 
             service.route(
@@ -447,9 +473,8 @@ const ShipperDeliveryRoute: React.FC = () => {
                         return;
                     }
 
-                    setDirectionsLoading(false);
-
                     if (status === google.maps.DirectionsStatus.OK && result) {
+                        // Lưu vào cache (tối đa 20 items)
                         directionsCacheRef.current.set(cacheKey, result);
                         if (directionsCacheRef.current.size > 20) {
                             const firstKey = directionsCacheRef.current.keys().next().value;
@@ -457,16 +482,17 @@ const ShipperDeliveryRoute: React.FC = () => {
                         }
                         lastDirectionsQueryRef.current = { stopId: stop.id, origin: roundedOrigin };
 
+                        // Vẽ đường trên map
                         setRealtimeDirections(result);
                         setDirectionsRenderKey((k) => k + 1);
-                        return;
+                    } else {
+                        console.warn("[DeliveryRoute] Directions API failed:", status);
+                        message.warning("Không thể vẽ đường đi, vui lòng thử lại");
                     }
-
-                    message.warning("Không thể lấy chỉ đường, vui lòng thử lại");
                 }
             );
         },
-        [currentPosition, directionsLoading, isLoaded]
+        [currentPosition, isLoaded]
     );
 
     const handleStartRoute = async () => {
@@ -665,6 +691,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                 return "error";
             case "RETURNING":
             case "RETURN_RETRY":
+            case "RETURN_AT_ORIGIN_OFFICE":
                 return "warning";
             default:
                 return "default";
@@ -694,7 +721,9 @@ const ShipperDeliveryRoute: React.FC = () => {
             case "RETURNED":
                 return "Đã hoàn trả";
             case "RETURNING":
-                return "Đang hoàn";
+                return "Đang hoàn trả";
+            case "RETURN_AT_ORIGIN_OFFICE":
+                return "Đã hoàn về bưu cục gốc";
             case "RETURN_RETRY":
                 return "Hoàn lại";
             case "RETURN_FAILED_FINAL":
@@ -721,11 +750,17 @@ const ShipperDeliveryRoute: React.FC = () => {
         if (stopType === "DELIVERY") {
             return <Tag color="blue" style={{ marginLeft: 4 }}>Giao hàng</Tag>;
         }
+        if (stopType === "RETURN_TO_OFFICE") {
+            return <Tag color="orange" style={{ marginLeft: 4 }}>Hoàn trả</Tag>;
+        }
         return null;
     };
 
     const isPickupStop = (stop: DeliveryStop) =>
         (stop.stopType || "").toString().toUpperCase() === "PICKUP";
+
+    const isReturnStop = (stop: DeliveryStop) =>
+        (stop.stopType || "").toString().toUpperCase() === "RETURN_TO_OFFICE";
 
     const getStopDisplayData = (stop: DeliveryStop) => {
         if (isPickupStop(stop)) {
@@ -748,6 +783,20 @@ const ShipperDeliveryRoute: React.FC = () => {
                     </Tag>
                 ),
                 showCod: false,
+            };
+        }
+        if (isReturnStop(stop)) {
+            // RETURN_TO_OFFICE stop: giao trả hàng hoàn cho người gửi/shop
+            const rawOrderStatus = (stop.orderStatus || "").toString().toUpperCase();
+            return {
+                contactName: stop.senderName || stop.recipientName,
+                contactPhone: stop.senderPhone || stop.recipientPhone,
+                contactAddress: stop.senderAddress || stop.recipientAddress,
+                typeBadge: <Tag color="orange">Hoàn trả</Tag>,
+                statusBadge: (
+                    <Tag color={getStatusColor(rawOrderStatus)}>{getStatusText(rawOrderStatus)}</Tag>
+                ),
+                showCod: false, // Đơn hoàn không thu COD
             };
         }
         // DELIVERY stop: PHẢI dùng raw orderStatus vì backend map cả PICKED_UP lẫn DELIVERED đều = "completed".
@@ -987,7 +1036,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                     {isLoaded && !loadError && (
                         <GoogleMap
                             mapContainerStyle={MAP_CONTAINER_STYLE}
-                            center={DEFAULT_CENTER}
+                            center={mapCenterAndBounds.center}
                             zoom={13}
                             options={{
                                 gestureHandling: "greedy",
@@ -995,30 +1044,40 @@ const ShipperDeliveryRoute: React.FC = () => {
                             }}
                             onLoad={(map) => {
                                 mapRef.current = map;
+                                // Fit bounds khi map load xong
+                                if (mapCenterAndBounds.hasBounds && mapCenterAndBounds.bounds) {
+                                    const bounds = new google.maps.LatLngBounds(
+                                        { lat: mapCenterAndBounds.bounds.south, lng: mapCenterAndBounds.bounds.west },
+                                        { lat: mapCenterAndBounds.bounds.north, lng: mapCenterAndBounds.bounds.east }
+                                    );
+                                    map.fitBounds(bounds, 50);
+                                }
                             }}
                         >
                             {currentPosition && (
                                 <MarkerWithIcon
                                     position={currentPosition}
-                                    title="Vị trí hiện tại"
+                                    title="Vị trí hiện tại của bạn"
                                     zIndex={10000}
                                     isCurrentPosition
                                 />
                             )}
 
+                            {/* AI baseline path - vẽ mờ dạng tham khảo */}
                             {aiBaselinePath.length > 0 && (
                                 <PolylineF
                                     key={`ai-baseline-${routeInfo?.id ?? "route"}`}
                                     path={aiBaselinePath}
                                     options={{
                                         strokeColor: "#8c8c8c",
-                                        strokeOpacity: 0.45,
-                                        strokeWeight: 5,
-                                        zIndex: 3000,
+                                        strokeOpacity: 0.35,
+                                        strokeWeight: 4,
+                                        zIndex: 1000,
                                     }}
                                 />
                             )}
 
+                            {/* Đường đi thực tế từ vị trí shipper tới điểm tiếp theo */}
                             {realtimeDirections?.routes?.[0]?.overview_path && (
                                 <PolylineF
                                     key={`route-polyline-${directionsRenderKey}`}
@@ -1027,7 +1086,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                                         strokeColor: "#1890ff",
                                         strokeOpacity: 0.95,
                                         strokeWeight: 6,
-                                        zIndex: 6000,
+                                        zIndex: 5000,
                                     }}
                                 />
                             )}
@@ -1069,7 +1128,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                 </div>
             </Card>
 
-            <Card title={`Danh sách điểm giao hàng (${displayTotalStops} điểm, theo thứ tự AI)`}>
+            <Card title={`Danh sách điểm xử lý (${displayTotalStops} điểm, theo thứ tự AI)`}>
                 <List
                     dataSource={deliveryStops}
                     renderItem={(stop) => {
@@ -1158,7 +1217,7 @@ const ShipperDeliveryRoute: React.FC = () => {
             </Card>
 
             <Modal
-                title={selectedStop?.stopType === "PICKUP" ? "Chi tiết điểm lấy hàng" : "Chi tiết điểm giao hàng"}
+                title={selectedStop?.stopType === "PICKUP" ? "Chi tiết điểm lấy hàng" : selectedStop?.stopType === "RETURN_TO_OFFICE" ? "Chi tiết điểm hoàn trả" : "Chi tiết điểm giao hàng"}
                 open={detailModal}
                 onCancel={() => {
                     setDetailModal(false);
@@ -1169,14 +1228,21 @@ const ShipperDeliveryRoute: React.FC = () => {
             >
                 {selectedStop && (() => {
                     const isPickup = selectedStop.stopType === "PICKUP";
+                    const isReturn = selectedStop.stopType === "RETURN_TO_OFFICE";
                     const name = isPickup
                         ? (selectedStop.senderName || selectedStop.recipientName)
+                        : isReturn
+                        ? selectedStop.senderName
                         : selectedStop.recipientName;
                     const phone = isPickup
                         ? (selectedStop.senderPhone || selectedStop.recipientPhone)
+                        : isReturn
+                        ? selectedStop.senderPhone
                         : selectedStop.recipientPhone;
                     const address = isPickup
                         ? (selectedStop.senderAddress || selectedStop.recipientAddress)
+                        : isReturn
+                        ? selectedStop.senderAddress
                         : selectedStop.recipientAddress;
                     return (
                         <Space direction="vertical" size="large" style={{ width: "100%" }}>
@@ -1185,7 +1251,7 @@ const ShipperDeliveryRoute: React.FC = () => {
                                 <Text>{selectedStop.trackingNumber}</Text>
                             </div>
                             <div>
-                                <Text strong>{isPickup ? "Người gửi: " : "Người nhận: "}</Text>
+                                <Text strong>{isPickup ? "Người gửi: " : isReturn ? "Người gửi (Shop): " : "Người nhận: "}</Text>
                                 <Text>{name}</Text>
                             </div>
                             <div>
@@ -1196,10 +1262,12 @@ const ShipperDeliveryRoute: React.FC = () => {
                                 <Text strong>Địa chỉ: </Text>
                                 <Text>{address}</Text>
                             </div>
+                            {!isReturn && (
                             <div>
                                 <Text strong>COD: </Text>
                                 <Text style={{ color: "#f50" }}>{selectedStop.codAmount.toLocaleString()}đ</Text>
                             </div>
+                            )}
                             <div>
                                 <Text strong>Dịch vụ: </Text>
                                 <Text>{selectedStop.serviceType}</Text>
@@ -1209,8 +1277,8 @@ const ShipperDeliveryRoute: React.FC = () => {
                                 {(() => {
                                     // Dùng raw orderStatus (cho DELIVERY stop) thay vì mapped status,
                                     // tránh PICKED_UP hiển thị "Hoàn thành".
-                                    const isPickup = (selectedStop.stopType || "").toUpperCase() === "PICKUP";
-                                    const statusKey = isPickup
+                                    const isPickupStatus = (selectedStop.stopType || "").toUpperCase() === "PICKUP";
+                                    const statusKey = isPickupStatus
                                         ? selectedStop.status
                                         : (selectedStop.orderStatus || selectedStop.status);
                                     return <Tag color={getStatusColor(statusKey)}>{getStatusText(statusKey)}</Tag>;
@@ -1233,11 +1301,55 @@ const ShipperDeliveryRoute: React.FC = () => {
     );
 };
 
-const CURRENT_POSITION_ICON = {
-    url: "data:image/svg+xml;utf8,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 20 20%22%3E%3Ccircle cx%3D%2210%22 cy%3D%2210%22 r%3D%228%22 fill%3D%22%231890ff%22 stroke%3D%22white%22 stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E",
-    scaledSize: { width: 20, height: 20 } as unknown as google.maps.Size,
-    anchor: { x: 10, y: 10 } as unknown as google.maps.Point,
-};
+// Tạo icon marker vị trí shipper 
+const createShipperMarkerIcon = (): google.maps.Icon => ({
+    url:
+        "data:image/svg+xml;charset=UTF-8," +
+        encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
+                <defs>
+                    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.22"/>
+                    </filter>
+                </defs>
+
+                <path
+                    filter="url(#shadow)"
+                    d="M22 1.5C11.2 1.5 2.5 10.2 2.5 21c0 14.2 19.5 29.5 19.5 29.5S41.5 35.2 41.5 21C41.5 10.2 32.8 1.5 22 1.5Z"
+                    fill="#1890ff"
+                    stroke="#ffffff"
+                    stroke-width="3"
+                />
+
+                <g fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- thùng hàng -->
+                    <rect x="9" y="20" width="7" height="6" rx="1.2" fill="#ffffff" stroke="none"/>
+
+                    <!-- thân xe -->
+                    <path d="M15.5 28H27.5L31 22"/>
+                    <path d="M24 20L27.5 28"/>
+
+                    <!-- đầu + thân người đơn giản -->
+                    <circle cx="24" cy="13" r="3" fill="#ffffff" stroke="none"/>
+                    <path d="M23 17.5L20 22L24.5 24.5"/>
+                    <path d="M25 18L29 22"/>
+
+                    <!-- tay lái -->
+                    <path d="M30.5 21.5H34"/>
+
+                    <!-- bánh xe -->
+                    <circle cx="14" cy="31" r="4.2"/>
+                    <circle cx="30" cy="31" r="4.2"/>
+
+                    <!-- gạch chuyển động nhẹ -->
+                    <path d="M7 25H11"/>
+                    <path d="M5.5 29H9"/>
+                </g>
+            </svg>
+        `),
+    scaledSize: new google.maps.Size(44, 52),
+    anchor: new google.maps.Point(22, 52),
+});
 
 const MarkerWithIcon: React.FC<{
     position: google.maps.LatLngLiteral;
@@ -1250,7 +1362,11 @@ const MarkerWithIcon: React.FC<{
             position={position}
             title={title}
             zIndex={zIndex}
-            icon={isCurrentPosition ? CURRENT_POSITION_ICON : undefined}
+            icon={
+                isCurrentPosition && typeof google !== "undefined"
+                    ? createShipperMarkerIcon()
+                    : undefined
+            }
         />
     );
 };

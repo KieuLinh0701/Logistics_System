@@ -432,6 +432,11 @@ const SideNav: React.FC = () => {
                         path: "/shipper/orders",
                     },
                     {
+                        key: "/shipper/return-orders",
+                        label: "Đơn hàng hoàn trả",
+                        path: "/shipper/return-orders",
+                    },
+                    {
                         key: "/shipper/shipping-requests",
                         label: "Yêu cầu lấy hàng",
                         path: "/shipper/shipping-requests",

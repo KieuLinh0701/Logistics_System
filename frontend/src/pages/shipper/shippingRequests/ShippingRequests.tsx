@@ -151,9 +151,9 @@ export default function ShippingRequests() {
       // 1. Show message từ backend (ưu tiên), fallback nếu backend không trả.
       //    Trường hợp success=false: dùng message.error để shipper thấy rõ là lỗi.
       const msg = data?.message || res?.message || (requiresReoptimize
-          ? "Đã thêm đơn pickup vào chuyến đang chạy"
+          ? "Đơn đã được thêm vào chuyến lấy hàng hiện tại."
           : isSuccess
-            ? "Đã nhận yêu cầu lấy hàng"
+            ? "Nhận yêu cầu lấy hàng thành công."
             : "Không thể nhận yêu cầu lấy hàng");
       if (isSuccess) {
         message.success(msg);

@@ -241,6 +241,10 @@ public class Order {
     @Column(nullable = false)
     private Boolean pendingDestinationConfirm = false;
 
+    // Flag gợi ý đơn hàng hoàn đã về bưu cục gốc, chờ Manager xác nhận
+    @Column(nullable = false)
+    private Boolean pendingReturnConfirm = false;
+
     private LocalDateTime readyForPickupAt;
 
     @Enumerated(EnumType.STRING)

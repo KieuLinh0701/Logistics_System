@@ -202,6 +202,15 @@ const orderApi = {
         };
     },
 
+    async getShipperReturnOrders(params: { page?: number; limit?: number; status?: string; search?: string }) {
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/return-orders", {params});
+        const data = res.data || {};
+        return {
+            orders: (data.orders || []) as ShipperOrder[],
+            pagination: data.pagination || {page: 1, limit: 10, total: 0},
+        };
+    },
+
     async getShipperPickupByCourierRequests(params: { page?: number; limit?: number }) {
         const res = await axiosClient.get<ApiResponse<any>>("/shipper/pickup-requests", {params});
         const data = res.data || {};
@@ -270,6 +279,12 @@ const orderApi = {
 
     async returnFailedToOffice(orderId: number) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/return-failed-to-office`);
+        return res.data;
+    },
+
+    async markReturnDelivered(orderId: number, proofImageUrl?: string) {
+        const payload = proofImageUrl ? { proofImageUrl } : {};
+        const res = await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${orderId}/return-delivered`, payload);
         return res.data;
     },
 
@@ -685,6 +700,15 @@ const orderApi = {
     async saveManagerConfirmDestinationOrdersInShipment(ids: number[], confirmed: boolean) {
         const param = { ids, confirmed };
         return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-destination-bulk`, param);
+    },
+
+    async confirmReturnArrival(orderId: number) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${orderId}/confirm-return-arrival`);
+    },
+
+    async confirmReturnArrivals(orderIds: number[]) {
+        const param = { orderIds };
+        return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-return-arrival-bulk`, param);
     },
 
     // Public

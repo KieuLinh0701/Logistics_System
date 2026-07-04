@@ -3,7 +3,9 @@ package com.logistics.service.manager;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
 import com.logistics.entity.*;
 import com.logistics.entity.id.ShipmentOrderId;
+import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
+import com.logistics.enums.RouteStopType;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
 import com.logistics.exception.AppException;
@@ -349,6 +351,8 @@ public class ShipmentOrderManagerService {
                     id.setOrderId(order.getId());
                     shipmentOrder.setId(id);
 
+                    shipmentOrder.setStopType(determineStopType(order));
+
                     shipment.getShipmentOrders().add(shipmentOrder);
 
                     if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
@@ -399,5 +403,46 @@ public class ShipmentOrderManagerService {
             return new BulkResponse<>(false, "Lỗi: " + e.getMessage(), 0,
                     addedOrderIds != null ? addedOrderIds.size() : 0, results);
         }
+    }
+
+    // Xác định stopType cho ShipmentOrder dựa trên Order status và pickupType
+    private RouteStopType determineStopType(Order order) {
+        OrderStatus status = order.getStatus();
+
+        Set<OrderStatus> pickupPhaseStatuses = Set.of(
+                OrderStatus.READY_FOR_PICKUP,
+                OrderStatus.URGENT_PICKUP,
+                OrderStatus.PICKING_UP,
+                OrderStatus.PICKED_UP
+        );
+
+        Set<OrderStatus> deliveryPhaseStatuses = Set.of(
+                OrderStatus.AT_ORIGIN_OFFICE,
+                OrderStatus.IN_TRANSIT,
+                OrderStatus.AT_DEST_OFFICE,
+                OrderStatus.DELIVERY_RETRY,
+                OrderStatus.DELIVERY_FAILED_FINAL,
+                OrderStatus.DELIVERING
+        );
+
+        Set<OrderStatus> returnStatuses = Set.of(
+                OrderStatus.RETURNING,
+                OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+                OrderStatus.RETURN_RETRY,
+                OrderStatus.RETURNED
+        );
+
+        if (deliveryPhaseStatuses.contains(status) || returnStatuses.contains(status)) {
+            return RouteStopType.DELIVERY;
+        }
+
+        if (pickupPhaseStatuses.contains(status)) {
+            if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+                return RouteStopType.PICKUP;
+            }
+            return RouteStopType.DELIVERY;
+        }
+
+        return RouteStopType.DELIVERY;
     }
 }

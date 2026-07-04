@@ -220,9 +220,9 @@ export const translateOrderStatus = (value: string): string => {
         case 'RETURN_AT_ORIGIN_OFFICE':
             return 'Đã hoàn về bưu cục gốc';
         case 'RETURN_RETRY':
-            return 'Hoàn hàng lại';
+            return 'Hoàn lại';
         case 'RETURN_FAILED_FINAL':
-            return 'Hoàn hàng thất bại cuối cùng';
+            return 'Hoàn thất bại';
         case 'RETURNED':
             return 'Đã hoàn trả';
         default:

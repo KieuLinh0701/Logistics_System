@@ -73,6 +73,7 @@ import UserEmployeeHistory from "./pages/user/employee/history/UserEmployeeHisto
 // Shipper
 import ShipperOrders from "./pages/shipper/Orders";
 import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
+import ShipperReturnOrders from "./pages/shipper/ReturnOrders";
 import ShipperOrderDetail from "./pages/shipper/OrderDetail";
 import ShipperDeliveryRoute from "./pages/shipper/DeliveryRoute";
 import ShipperDeliveryHistory from "./pages/shipper/DeliveryHistory";
@@ -266,6 +267,8 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_shipper"]}><ShipperUnassignedOrders/></PrivateRoute>}/>
                         <Route path="/shipper/orders"
                                element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperOrders/></PrivateRoute>}/>
+                        <Route path="/shipper/return-orders"
+                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperReturnOrders/></PrivateRoute>}/>
                         <Route path="/shipper/orders/:id"
                                element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperOrderDetail/></PrivateRoute>}/>
                         <Route path="/shipper/scan-barcode" element={<PrivateRoute

@@ -247,6 +247,8 @@ public interface OrderRepository
                 WHERE o.status = :status
                   AND o.pickupNotificationStage = :stage
                   AND o.readyForPickupAt <= :before
+                  AND o.pickupType = 'PICKUP_BY_COURIER'
+                  AND o.employee IS NULL
             """)
     List<Order> findReadyOrdersForNotification(
             @Param("status") OrderStatus status,

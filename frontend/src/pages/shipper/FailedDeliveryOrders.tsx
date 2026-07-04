@@ -19,8 +19,12 @@ const FailedDeliveryOrders: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await orderApi.getShipperOrders({ page: 1, limit: 200, status: "DELIVERY_RETRY", search });
-      setOrders((res.orders || []).filter((o: ShipperOrder) => o.status === "DELIVERY_RETRY"));
+      // Lấy cả DELIVERY_RETRY và DELIVERY_FAILED_FINAL
+      const resRetry = await orderApi.getShipperOrders({ page: 1, limit: 200, status: "DELIVERY_RETRY", search });
+      const resFailed = await orderApi.getShipperOrders({ page: 1, limit: 200, status: "DELIVERY_FAILED_FINAL", search });
+      const retryOrders = (resRetry.orders || []).filter((o: ShipperOrder) => o.status === "DELIVERY_RETRY");
+      const failedOrders = (resFailed.orders || []).filter((o: ShipperOrder) => o.status === "DELIVERY_FAILED_FINAL");
+      setOrders([...retryOrders, ...failedOrders]);
     } catch {
       message.error("Lỗi khi tải danh sách hàng giao thất bại");
     } finally {
@@ -90,7 +94,7 @@ const FailedDeliveryOrders: React.FC = () => {
       dataIndex: "status",
       key: "status",
       render: (status: string) => (
-        <Tag color="orange" style={{ fontWeight: 600 }}>
+        <Tag color={status === "DELIVERY_FAILED_FINAL" ? "red" : "orange"} style={{ fontWeight: 600 }}>
           {translateOrderStatus(status)}
         </Tag>
       ),
@@ -100,7 +104,7 @@ const FailedDeliveryOrders: React.FC = () => {
       key: "action",
       render: (_, record) => (
         <Button icon={<InboxOutlined />} onClick={() => handleReturnToOffice(record.id)}>
-          Nộp về bưu cục
+          Nộp bưu cục
         </Button>
       ),
     },

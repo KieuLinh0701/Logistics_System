@@ -257,10 +257,11 @@ const ShipperDeliveryHistory: React.FC = () => {
               <Option value="DELIVERY_RETRY">Chờ giao lại</Option>
               <Option value="AT_DEST_OFFICE">Đã nộp về bưu cục</Option>
               <Option value="DELIVERY_FAILED_FINAL">Giao thất bại</Option>
-              <Option value="RETURNING">Đang hoàn hàng</Option>
-              <Option value="RETURN_RETRY">Hoàn hàng lại</Option>
+              <Option value="RETURNING">Đang hoàn trả</Option>
+              <Option value="RETURN_AT_ORIGIN_OFFICE">Đã hoàn về bưu cục gốc</Option>
+              <Option value="RETURN_RETRY">Hoàn lại</Option>
               <Option value="RETURN_FAILED_FINAL">Hoàn thất bại</Option>
-              <Option value="RETURNED">Đã hoàn hàng</Option>
+              <Option value="RETURNED">Đã hoàn</Option>
             </Select>
             <RangePicker
               value={filters.dateRange ?? null}

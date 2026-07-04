@@ -55,8 +55,10 @@ const ShipperUnassignedOrders: React.FC = () => {
       case "PENDING":
         return "default";
       case "CONFIRMED":
-      case "AT_DEST_OFFICE":
         return "blue";
+      case "AT_DEST_OFFICE":
+      case "RETURN_AT_ORIGIN_OFFICE":
+        return "orange";
       case "READY_FOR_PICKUP":
         return "blue";
       case "PICKED_UP":
@@ -80,6 +82,8 @@ const ShipperUnassignedOrders: React.FC = () => {
         return "Đã xác nhận";
       case "AT_DEST_OFFICE":
         return "Đã đến bưu cục";
+      case "RETURN_AT_ORIGIN_OFFICE":
+        return "Đã hoàn về bưu cục gốc";
       case "READY_FOR_PICKUP":
         return "Sẵn sàng lấy hàng";
       case "PICKED_UP":

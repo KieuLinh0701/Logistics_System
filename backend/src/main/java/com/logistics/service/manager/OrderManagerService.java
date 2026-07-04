@@ -1193,6 +1193,7 @@ public class OrderManagerService {
             order.setPendingDestinationConfirm(false);
             order.setToOffice(userOffice);
             order.setCurrentOffice(userOffice);
+            order.setEmployee(null);
         } else {
             order.setPendingDestinationConfirm(false);
         }
@@ -1268,6 +1269,90 @@ public class OrderManagerService {
         }
     }
 
+    public void confirmReturnArrival(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        validateReturnArrival(order, userOffice);
+        applyReturnArrivalConfirm(order, userOffice);
+    }
+
+    public BulkResponse<String> confirmReturnArrivals(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        Set<Integer> processed = new HashSet<>();
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                validateReturnArrival(order, userOffice);
+                applyReturnArrivalConfirm(order, userOffice);
+                results.add(successResult(order.getTrackingNumber(), "Xác nhận thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng đã được xác nhận" : "Một số đơn hàng không hợp lệ",
+                totalSuccess, totalFailed, results);
+    }
+
+    private void validateReturnArrival(Order order, Office userOffice) {
+        if (!userOffice.getId().equals(order.getFromOffice() != null ? order.getFromOffice().getId() : null)) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED, "Chỉ Manager bưu cục gốc mới được xác nhận");
+        }
+        if (order.getStatus() != OrderStatus.RETURNING) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS, "Đơn hàng phải có trạng thái RETURNING");
+        }
+        if (!Boolean.TRUE.equals(order.getPendingReturnConfirm())) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS, "Đơn hàng không có pendingReturnConfirm = true");
+        }
+    }
+
+    private void applyReturnArrivalConfirm(Order order, Office userOffice) {
+        order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
+        order.setPendingReturnConfirm(false);
+        order.setCurrentOffice(userOffice);
+        order.setEmployee(null);
+        repository.save(order);
+
+        orderHistoryUserService.save(order, null, userOffice, null,
+                OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE, "Manager xac nhan don hoan da ve bu cua goc");
+
+        if (order.getUser() != null) {
+            if (order.getPickupType() == OrderPickupType.AT_OFFICE) {
+                // AT_OFFICE: User đến bưu cục nhận lại hàng
+                notificationService.create(
+                        "Đơn hàng hoàn đã về bưu cục gốc",
+                        String.format("Đơn %s đã về bưu cục gốc. Vui lòng đến bưu cục để nhận lại hàng.", order.getTrackingNumber()),
+                        "order_status", order.getUser().getId(), null, "orders/tracking", order.getTrackingNumber());
+            } else if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+                // PICKUP_BY_COURIER: Sẽ được giao trả đến địa chỉ
+                notificationService.create(
+                        "Đơn hàng hoàn đã về bưu cục gốc",
+                        String.format("Đơn %s đã về bưu cục gốc. Chúng tôi sẽ sắp xếp giao trả đến địa chỉ của bạn.", order.getTrackingNumber()),
+                        "order_status", order.getUser().getId(), null, "orders/tracking", order.getTrackingNumber());
+            }
+        }
+    }
+
     // Helper method tách logic validate + confirm
     private BulkResponse.BulkResult<String> validateAndConfirmDestination(
             Order order, Office userOffice, boolean confirmed) {
@@ -1297,6 +1382,7 @@ public class OrderManagerService {
                 order.setToOffice(userOffice);
                 order.setPendingDestinationConfirm(false);
                 order.setCurrentOffice(userOffice);
+                order.setEmployee(null);
             } else {
                 order.setPendingDestinationConfirm(false);
             }

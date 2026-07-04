@@ -2,6 +2,7 @@ package com.logistics.scheduler.order;
 
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
+import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.PickupNotificationStage;
 import com.logistics.repository.OrderRepository;
@@ -100,6 +101,13 @@ public class PickupStageProcessor {
 
         for (Order order : orders) {
             try {
+                if (order.getPickupType() != com.logistics.enums.OrderPickupType.PICKUP_BY_COURIER
+                        || order.getEmployee() != null) {
+                    log.debug("[Pickup URGENT] Skip order #{}: not a pickup order or already assigned",
+                            order.getId());
+                    continue;
+                }
+
                 order.setStatus(OrderStatus.URGENT_PICKUP);
                 order.setPickupNotificationStage(PickupNotificationStage.URGENT);
                 orderRepository.save(order);
