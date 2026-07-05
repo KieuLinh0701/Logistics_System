@@ -90,7 +90,7 @@ const ShipperShipmentOrdersPage: React.FC = () => {
             render: (trackingNumber, record) =>
                 trackingNumber ? (
                     <Tooltip title="Click để xem chi tiết đơn hàng">
-                        <span className="navigate-link" onClick={() => navigate(`/shipper/orders/${record.id}`)}>
+                        <span className="navigate-link" onClick={() => navigate(`/shipper/orders/${record.id}`, { state: { from: `/shipper/shipments/history/${shipmentId}/orders` } })}>
                             {trackingNumber}
                         </span>
                     </Tooltip>

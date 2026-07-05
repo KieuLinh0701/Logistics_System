@@ -1,6 +1,6 @@
 import React from "react";
-import { Button, Table, Tag, Typography } from "antd";
-import { FileExcelOutlined, PlayCircleOutlined } from "@ant-design/icons";
+import { Button, Popover, Progress, Table, Tag, Typography } from "antd";
+import { FileExcelOutlined, PlayCircleOutlined, ScanOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
@@ -11,6 +11,37 @@ interface PendingShipmentsTableProps {
   onStartShipment: (shipmentId: number) => void;
   onFinishShipment: (shipmentId: number) => void;
 }
+
+interface StartValidation {
+  ready: boolean;
+  message?: string;
+  scannedCount: number;
+  totalCount: number;
+}
+
+const isShipmentReadyToStart = (shipment: any): StartValidation => {
+  const scannedCount = shipment.scannedCount ?? 0;
+  const totalCount = shipment.totalCount ?? shipment.orderCount ?? 0;
+  const isReady = shipment.isReadyToStart ?? false;
+
+  if (isReady) {
+    return { ready: true, scannedCount, totalCount };
+  }
+
+  if (totalCount > 0) {
+    const remaining = totalCount - scannedCount;
+    if (remaining > 0) {
+      return {
+        ready: false,
+        message: `Còn ${remaining}/${totalCount} đơn giao chưa lên xe. Vui lòng quét QR trước khi bắt đầu.`,
+        scannedCount,
+        totalCount,
+      };
+    }
+  }
+
+  return { ready: true, scannedCount, totalCount };
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -43,16 +74,53 @@ const PendingShipmentsTable: React.FC<PendingShipmentsTableProps> = ({
     const status = record.status || record.shipmentStatus || record.state;
 
     if (status === "PENDING") {
-      return (
+      const validation = isShipmentReadyToStart(record);
+      const percent = validation.totalCount > 0
+        ? Math.round((validation.scannedCount / validation.totalCount) * 100)
+        : 0;
+
+      const button = (
         <Button
           className="primary-button"
           icon={<PlayCircleOutlined />}
           onClick={() => onStartShipment(record.id)}
           loading={actionLoading}
+          disabled={!validation.ready}
         >
           Bắt đầu chuyến
         </Button>
       );
+
+      // Show progress popover when not ready
+      if (!validation.ready) {
+        return (
+          <Popover
+            content={
+              <div style={{ minWidth: 200 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <ScanOutlined style={{ marginRight: 6 }} />
+                  <Text type="secondary">Tiến độ quét QR</Text>
+                </div>
+                <Progress
+                  percent={percent}
+                  size="small"
+                  status="exception"
+                  format={() => `${validation.scannedCount}/${validation.totalCount}`}
+                />
+                <Text type="warning" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
+                  {validation.message}
+                </Text>
+              </div>
+            }
+            title="Chưa thể bắt đầu chuyến"
+            trigger="hover"
+          >
+            {button}
+          </Popover>
+        );
+      }
+
+      return button;
     }
 
     if (status === "IN_TRANSIT") {
@@ -107,9 +175,11 @@ const PendingShipmentsTable: React.FC<PendingShipmentsTableProps> = ({
     },
     {
       title: "Số đơn",
-      dataIndex: "orderCount",
-      key: "orderCount",
-      render: (value: number) => <Text>{value ?? 0}</Text>,
+      key: "totalOrders",
+      render: (_: any, record: any) => {
+        const value = record.totalOrders ?? record.orderCount ?? 0;
+        return <Text>{value}</Text>;
+      },
     },
     {
       title: "Thời gian tạo",

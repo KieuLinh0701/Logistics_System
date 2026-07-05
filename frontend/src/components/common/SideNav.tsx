@@ -433,7 +433,7 @@ const SideNav: React.FC = () => {
                     },
                     {
                         key: "/shipper/failed-deliveries",
-                        label: "Hàng giao thất bại",
+                        label: "Hàng cần nộp bưu cục",
                         path: "/shipper/failed-deliveries",
                     },
                 ],

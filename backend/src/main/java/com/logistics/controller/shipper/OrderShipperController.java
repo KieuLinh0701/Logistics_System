@@ -95,6 +95,20 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success(shipperService.listPickupByCourierRequests(page, limit)));
     }
 
+    // Đơn pickup đã lấy từ khách, chờ nộp bưu cục
+    @GetMapping("/orders/picked-up-by-customer")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> listPickedUpByCustomer(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(required = false) String search) {
+
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(shipperService.listPickedUpByCustomerOrders(page, limit, search)));
+    }
+
     @GetMapping("/orders/{id}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOrder(@PathVariable Integer id) {
         if (isNotShipper()) {

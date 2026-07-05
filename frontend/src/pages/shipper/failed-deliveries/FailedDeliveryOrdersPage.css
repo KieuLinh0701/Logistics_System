@@ -1,0 +1,221 @@
+/* FailedDeliveryOrdersPage - styled like MyOrdersPage */
+.failed-deliveries-page-root {
+  /* Use same container style as my-orders */
+}
+
+.failed-deliveries-page-root .failed-deliveries-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.failed-deliveries-page-root .failed-deliveries-search-wrapper {
+  flex: 1;
+  min-width: 220px;
+}
+
+.failed-deliveries-page-root .failed-deliveries-search-wrapper .ant-input-affix-wrapper {
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  height: 36px;
+  padding: 4px 11px;
+}
+
+.failed-deliveries-page-root .failed-deliveries-search-wrapper .ant-input-affix-wrapper:hover {
+  border-color: #1C3D90;
+}
+
+.failed-deliveries-page-root .failed-deliveries-search-wrapper .ant-input-affix-wrapper:focus,
+.failed-deliveries-page-root .failed-deliveries-search-wrapper .ant-input-affix-wrapper-focused {
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1);
+}
+
+.failed-deliveries-page-root .failed-deliveries-search-wrapper .ant-input {
+  border: none;
+  background: transparent;
+}
+
+.failed-deliveries-page-root .failed-deliveries-search-wrapper .ant-input:focus {
+  box-shadow: none;
+}
+
+.failed-deliveries-page-root .failed-deliveries-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Tabs styling - matching MyOrdersPage */
+.failed-deliveries-tabs {
+  padding: 0;
+  margin-top: 16px;
+}
+
+.failed-deliveries-tabs .ant-tabs-nav-list {
+  display: flex;
+  gap: 10px;
+}
+
+.failed-deliveries-tabs .ant-tabs-tab {
+  padding: 12px 20px;
+  margin: 0 !important;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+}
+
+.failed-deliveries-tabs .ant-tabs-tab:hover {
+  background-color: #f8f9fa;
+}
+
+.failed-deliveries-tabs .ant-tabs-tab-active {
+  background-color: #1c3d90;
+}
+
+.failed-deliveries-tabs .ant-tabs-tab-active .tab-label {
+  color: white;
+}
+
+.failed-deliveries-tabs .ant-tabs-ink-bar {
+  background: #1c3d90;
+  height: 3px;
+}
+
+/* Results badge */
+.failed-deliveries-results-wrapper {
+  margin: 16px 0 12px;
+}
+
+.failed-deliveries-results {
+  display: inline-block;
+  background: #f0f8ff;
+  color: #1C3D90;
+  border: 1px solid #1C3D90;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* Table styling */
+.failed-deliveries-table {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.failed-deliveries-table .ant-table-thead > tr > th {
+  background: #fafafa !important;
+  color: #1c3d90 !important;
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.failed-deliveries-table .ant-table-header,
+.failed-deliveries-table .ant-table-body {
+  min-width: auto !important;
+}
+
+.failed-deliveries-table .ant-table-tbody > tr > td {
+  color: #000 !important;
+  white-space: normal !important;
+  word-break: break-word;
+  border-bottom: 1px solid #f5f5f5;
+  padding: 15px 20px;
+}
+
+.failed-deliveries-table .ant-table-tbody > tr:hover > td {
+  background: #f8f9ff !important;
+}
+
+.failed-deliveries-table .ant-pagination {
+  padding: 16px 20px !important;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.failed-deliveries-table .ant-pagination-item {
+  border: 1px solid #e8edff;
+  border-radius: 8px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  min-width: 32px;
+  height: 32px;
+}
+
+.failed-deliveries-table .ant-pagination-item a {
+  color: #666;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 30px;
+}
+
+.failed-deliveries-table .ant-pagination-item:hover {
+  border-color: #1C3D90;
+}
+
+.failed-deliveries-table .ant-pagination-item:hover a {
+  color: #1C3D90;
+}
+
+.failed-deliveries-table .ant-pagination-item-active {
+  border-color: #1C3D90;
+  background: linear-gradient(135deg, #1C3D90, #2E5BBA);
+}
+
+.failed-deliveries-table .ant-pagination-item-active a {
+  color: white;
+}
+
+.failed-deliveries-table .ant-table-container,
+.failed-deliveries-table .ant-table-content,
+.failed-deliveries-table .ant-table-body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overflow-x: auto !important;
+}
+
+.failed-deliveries-table .ant-table-container::-webkit-scrollbar,
+.failed-deliveries-table .ant-table-content::-webkit-scrollbar,
+.failed-deliveries-table .ant-table-body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .failed-deliveries-page-root .failed-deliveries-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .failed-deliveries-page-root .failed-deliveries-search-wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .failed-deliveries-page-root .failed-deliveries-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .failed-deliveries-tabs .ant-tabs-nav {
+    overflow-x: auto;
+  }
+
+  .failed-deliveries-tabs .ant-tabs-tab {
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+}

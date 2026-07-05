@@ -62,10 +62,26 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
 
     @Query("""
                 SELECT s FROM Shipment s
+                WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
+                  AND s.employee.id = :employeeId
+                  AND s.status = com.logistics.enums.ShipmentStatus.IN_TRANSIT
+                  AND EXISTS (
+                      SELECT 1 FROM ShipmentOrder so
+                      WHERE so.shipment.id = s.id AND so.order.id = :orderId
+                  )
+            """)
+    Optional<Shipment> findActiveInTransitDeliveryShipmentForOrder(
+            @Param("employeeId") Integer employeeId,
+            @Param("orderId") Integer orderId);
+
+    @Query("""
+                SELECT s FROM Shipment s
                 LEFT JOIN FETCH s.employee employee
                 LEFT JOIN FETCH s.vehicle vehicle
                 LEFT JOIN FETCH s.fromOffice fromOffice
                 LEFT JOIN FETCH s.toOffice toOffice
+                LEFT JOIN FETCH s.shipmentOrders so
+                LEFT JOIN FETCH so.order o
                 WHERE s.type = com.logistics.enums.ShipmentType.DELIVERY
                   AND s.employee.id = :employeeId
                   AND s.status IN (

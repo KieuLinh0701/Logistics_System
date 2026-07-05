@@ -124,6 +124,7 @@ const isStopHiddenFromRoute = (stop: DeliveryStop) => {
     const TERMINAL = new Set([
         "DELIVERED",
         "FAILED_DELIVERY",
+        "DELIVERY_RETRY",
         "DELIVERY_FAILED_FINAL",
         "PICKUP_FAILED_FINAL",
         "RETURNED",
@@ -224,11 +225,9 @@ const DeliveryRoutePage: React.FC = () => {
         };
     }, [deliveryStops]);
 
-    const displayTotalStops = deliveryStops.length;
-    const displayCompletedStops = useMemo(
-        () => deliveryStops.filter((s) => (s.orderStatus || "").toUpperCase() === "DELIVERED").length,
-        [deliveryStops]
-    );
+    // Dùng dữ liệu từ backend cho tiến độ
+    const displayTotalStops = routeInfo?.totalStops ?? deliveryStops.length;
+    const displayCompletedStops = routeInfo?.completedStops ?? 0;
 
     const nextStop = useMemo(() => {
         for (const stop of deliveryStops) {
@@ -673,19 +672,15 @@ const DeliveryRoutePage: React.FC = () => {
         return <Tag color="green" style={{ marginLeft: 4 }}>Cần thu COD</Tag>;
     };
 
-    // Badge Trễ ETA: chỉ hiển thị nếu etaTime đã qua giờ hiện tại (theo timezone Việt Nam)
+    // Badge Trễ ETA: chỉ hiển thị nếu etaTime đã qua giờ hiện tại
     const getEtaWarningBadge = (stop: DeliveryStop) => {
         const etaTime = stop.etaTime;
         if (!etaTime) return null;
 
         try {
             const now = new Date();
-            // Lấy giờ Việt Nam (UTC+7)
-            const vietnamOffset = 7 * 60; // phút
-            const localNow = new Date(now.getTime() + vietnamOffset * 60 * 1000);
 
             // Parse etaTime
-            // Format có thể là HH:mm hoặc ISO datetime
             let etaDate: Date;
             if (etaTime.includes('T') || etaTime.includes('-')) {
                 // ISO datetime format
@@ -693,13 +688,12 @@ const DeliveryRoutePage: React.FC = () => {
             } else {
                 // HH:mm format - ghép với ngày hôm nay
                 const [hours, minutes] = etaTime.split(':').map(Number);
-                const today = new Date(localNow);
-                today.setHours(hours, minutes, 0, 0);
-                etaDate = today;
+                etaDate = new Date(now);
+                etaDate.setHours(hours, minutes, 0, 0);
             }
 
-            // So sánh với giờ hiện tại (UTC+7)
-            if (etaDate < localNow) {
+            // So sánh: chỉ trễ khi giờ hiện tại đã qua ETA
+            if (etaDate < now) {
                 return <Tag color="red" style={{ marginLeft: 4 }}>Trễ ETA</Tag>;
             }
         } catch {
@@ -1090,7 +1084,7 @@ const DeliveryRoutePage: React.FC = () => {
                                     <Button className="filter-button" icon={<EyeOutlined />} onClick={() => handleViewStopDetail(stop)}>
                                         Chi tiết
                                     </Button>,
-                                    <Button type="link" onClick={() => navigate(`/shipper/orders/${stop.id}`)}>
+                                    <Button type="link" onClick={() => navigate(`/shipper/orders/${stop.id}`, { state: { from: "/route" } })}>
                                         Xem đơn
                                     </Button>,
                                 ]}

@@ -12,6 +12,8 @@ public interface ShipmentDeliveryService {
 
     Shipment requireActiveDeliveryShipmentForOrder(Integer orderId);
 
+    Shipment requireActiveInTransitShipmentForOrder(Integer orderId);
+
     Shipment requirePendingDeliveryShipmentForOrder(Integer orderId);
 
     Shipment loadDeliveryShipment(Integer shipmentId);
@@ -51,4 +53,6 @@ public interface ShipmentDeliveryService {
     void markReturnDelivered(Integer orderId, String proofImageUrl);
 
     List<ShipperActiveShipmentDto> listActiveShipmentsForCurrentShipper();
+
+    void checkAndAutoFinishForOrder(Integer orderId);
 }

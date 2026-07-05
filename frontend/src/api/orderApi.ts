@@ -220,6 +220,15 @@ const orderApi = {
         };
     },
 
+    async getShipperPickedUpByCustomerOrders(params: { page?: number; limit?: number; search?: string }) {
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders/picked-up-by-customer", {params});
+        const data = res.data || {};
+        return {
+            orders: (data.orders || []) as ShipperOrder[],
+            pagination: data.pagination || {page: 1, limit: 10, total: 0},
+        };
+    },
+
     async claimShipperOrder(orderId: number) {
         await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/claim`);
     },
