@@ -2,6 +2,7 @@ package com.logistics.service.shipper;
 
 import com.logistics.entity.Employee;
 import com.logistics.entity.Order;
+import com.logistics.enums.OrderStatus;
 import com.logistics.request.shipper.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,9 +15,9 @@ public interface OrderShipperService {
 
     Order quickClaimOrderForPickup(Integer orderId, Employee employee);
 
-    void applyVehicleWorkloadByStatus(Order order, Employee employee, com.logistics.enums.OrderStatus newStatus);
+    void applyVehicleWorkloadByStatus(Order order, Employee employee, OrderStatus newStatus);
 
-    void applyVehicleWorkloadByStatus(Order order, Employee employee, com.logistics.enums.OrderStatus oldStatus, com.logistics.enums.OrderStatus newStatus);
+    void applyVehicleWorkloadByStatus(Order order, Employee employee, OrderStatus oldStatus, OrderStatus newStatus);
 
     Map<String, Object> getDashboard();
 
@@ -78,5 +79,5 @@ public interface OrderShipperService {
 
     Map<String, Object> assignPickupToShipperRoute(PickupInsertionRequest request);
 
-    Map<String, Object> insertPickupIntoShipment(Integer shipmentId, com.logistics.request.shipper.InsertPickupShipmentRequest request);
+    Map<String, Object> insertPickupIntoShipment(Integer shipmentId, InsertPickupShipmentRequest request);
 }

@@ -51,7 +51,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
         if (employees == null || employees.isEmpty()) {
             throw new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND);
         }
-        return employees.get(0);
+        return employees.getFirst();
     }
 
     @Override

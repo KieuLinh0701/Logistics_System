@@ -13,7 +13,7 @@ import com.logistics.service.manager.ShipperAssignmentManagerService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +23,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/manager/shipper-assignments")
 @Tag(name = "Manager - Shipper Assignment", description = "Quản lý việc phân công khu vực/đơn hàng cho nhân viên giao hàng và xuất báo cáo")
 public class ShipperAssignmentManagerController {
 
-    @Autowired
-    private ShipperAssignmentManagerService service;
+    private final ShipperAssignmentManagerService service;
 
     @PostMapping
     @Audit(

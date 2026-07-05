@@ -8,7 +8,6 @@ import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.order.UserOrderStatusCountResponse;
 import com.logistics.enums.AuditLogAction;
 import com.logistics.enums.EntityType;
-import com.logistics.request.manager.shipmentOrder.SaveShipmentOrdersRequest;
 import com.logistics.request.user.order.UserOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.response.ApiResponse;
@@ -19,7 +18,7 @@ import com.logistics.service.user.OrderUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,12 +30,12 @@ import java.util.Arrays;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user/orders")
 @Tag(name = "User - Order", description = "Quản lý đơn hàng của người dùng: tạo mới, cập nhật, theo dõi lộ trình, in ấn và xuất báo cáo")
 public class OrderUserController {
 
-    @Autowired
-    private OrderUserService service;
+    private final OrderUserService service;
 
     @GetMapping
     public ResponseEntity<ApiResponse<ListResponse<UserOrderListDto>>> list(
