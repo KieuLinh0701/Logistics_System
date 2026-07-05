@@ -72,6 +72,14 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
     }
 
     @Override
+    public Shipment requireActiveInTransitShipmentForOrder(Integer orderId) {
+        Employee employee = getCurrentEmployee();
+        return shipmentRepository.findActiveInTransitDeliveryShipmentForOrder(employee.getId(), orderId)
+                .orElseThrow(() -> new AppException(ShipmentErrorCode.SHIPMENT_NOT_ACTIVE_FOR_ORDER,
+                        "Vui lòng bắt đầu chuyến trước khi xử lý đơn hàng."));
+    }
+
+    @Override
     public Shipment requirePendingDeliveryShipmentForOrder(Integer orderId) {
         Employee employee = getCurrentEmployee();
         return shipmentRepository.findPendingDeliveryShipmentForOrder(employee.getId(), orderId)
@@ -100,16 +108,40 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderHistoryRepository.save(history);
     }
 
-    private boolean isTerminalOrderStatus(OrderStatus status) {
-        return EnumSet.of(
-                OrderStatus.DELIVERED,
-                OrderStatus.AT_ORIGIN_OFFICE,
-                OrderStatus.RETURN_AT_ORIGIN_OFFICE,
-                OrderStatus.RETURNED,
-                OrderStatus.CANCELLED
-        ).contains(status);
+    // Kiểm tra xem order có được coi là đã xử lý xong stop trên route hay không.
+    private boolean isStopHandledForRoute(OrderStatus status, RouteStopType stopType) {
+        if (stopType == RouteStopType.PICKUP) {
+            // Pickup stop hoàn thành khi:
+            // - PICKED_UP: shipper đã lấy hàng
+            // - AT_ORIGIN_OFFICE: shipper đã nộp bưu cục
+            // - PICKUP_FAILED_FINAL: giao hàng không thành công
+            // - CANCELLED: đơn bị hủy
+            return status == OrderStatus.PICKED_UP
+                    || status == OrderStatus.AT_ORIGIN_OFFICE
+                    || status == OrderStatus.PICKUP_FAILED_FINAL
+                    || status == OrderStatus.CANCELLED;
+        }
+        if (stopType == RouteStopType.RETURN_TO_OFFICE) {
+            return status == OrderStatus.RETURNED
+                    || status == OrderStatus.RETURN_FAILED_FINAL
+                    || status == OrderStatus.AT_ORIGIN_OFFICE
+                    || status == OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                    || status == OrderStatus.CANCELLED;
+        }
+        // DELIVERY: completed = đã xử lý xong điểm giao (thành công hoặc thất bại tạm thời)
+        // RETURNING = đang hoàn hàng về bưu cục, stop đã xử lý xong
+        return status == OrderStatus.DELIVERED
+                || status == OrderStatus.DELIVERY_RETRY
+                || status == OrderStatus.DELIVERY_FAILED_FINAL
+                || status == OrderStatus.AT_DEST_OFFICE
+                || status == OrderStatus.RETURNING
+                || status == OrderStatus.CANCELLED;
     }
 
+    /**
+     * Kiểm tra xem order status có được coi là completed cho delivery shipment hay không.
+     * Dùng trong finishShipment() để validate trước khi cho phép kết thúc thủ công.
+     */
     private boolean isCompletedForDeliveryShipment(OrderStatus status) {
         return status == OrderStatus.DELIVERED
                 || status == OrderStatus.AT_DEST_OFFICE
@@ -133,18 +165,56 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         return code.getClass().getSimpleName();
     }
 
+    // Kiểm tra xem shipment còn item nào cần shipper nộp về bưu cục hay không.: DELIVERY_RETRY và PICKED_UP với PICKUP_BY_COURIER
+    private boolean hasItemsNeedReturnToOffice(Shipment shipment) {
+        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
+        if (shipmentOrders == null || shipmentOrders.isEmpty()) {
+            return false;
+        }
+        for (ShipmentOrder so : shipmentOrders) {
+            Order order = so.getOrder();
+            if (order == null) continue;
+
+            OrderStatus status = order.getStatus();
+            RouteStopType stopType = so.getStopType();
+
+            // Đơn giao thất bại cần nộp bưu cục
+            if (stopType == RouteStopType.DELIVERY) {
+                if (status == OrderStatus.DELIVERY_RETRY) {
+                    return true;
+                }
+            }
+
+            // Pickup đã lấy cần nộp bưu cục
+            if (stopType == RouteStopType.PICKUP
+                    && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER
+                    && status == OrderStatus.PICKED_UP) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isShipmentWorkDone(Shipment shipment) {
+        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
+        if (shipmentOrders == null || shipmentOrders.isEmpty()) {
+            return false;
+        }
+        // Tất cả stop phải được xử lý xong
+        boolean allStopsHandled = shipmentOrders.stream()
+                .allMatch(so -> isStopHandledForRoute(so.getOrder().getStatus(), so.getStopType()));
+        if (!allStopsHandled) {
+            return false;
+        }
+        // Không còn item cần nộp bưu cục
+        return !hasItemsNeedReturnToOffice(shipment);
+    }
+
     private void checkAndAutoFinish(Shipment shipment) {
         if (shipment.getStatus() != ShipmentStatus.IN_TRANSIT) {
             return;
         }
-        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
-        if (shipmentOrders == null || shipmentOrders.isEmpty()) {
-            return;
-        }
-        boolean allTerminal = shipmentOrders.stream()
-                .map(ShipmentOrder::getOrder)
-                .allMatch(o -> isTerminalOrderStatus(o.getStatus()));
-        if (allTerminal) {
+        if (isShipmentWorkDone(shipment)) {
             finishShipmentInternal(shipment);
         }
     }
@@ -259,15 +329,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_ASSIGNED);
         }
 
-        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
-        if (shipmentOrders == null || shipmentOrders.isEmpty()) {
-            throw new AppException(ShipmentErrorCode.SHIPMENT_EMPTY);
-        }
-
-        boolean hasActive = shipmentOrders.stream()
-                .map(ShipmentOrder::getOrder)
-                .anyMatch(o -> !isCompletedForDeliveryShipment(o.getStatus()));
-        if (hasActive) {
+        if (!isShipmentWorkDone(shipment)) {
             throw new AppException(ShipmentErrorCode.SHIPMENT_HAS_ACTIVE_ORDERS);
         }
 
@@ -565,6 +627,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP,
                 "Shipper xác nhận đã lấy hàng (chuyến " + shipment.getCode() + ")");
+        checkAndAutoFinish(shipment);
     }
 
     @Override
@@ -694,6 +757,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.DELIVERY_RETRY,
                 "Giao thất bại, sẽ thử lại (chuyến " + shipment.getCode() + ")");
+        checkAndAutoFinish(shipment);
     }
 
     @Override
@@ -892,6 +956,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
     @Transactional
     public void markReturnDelivered(Integer orderId, String proofImageUrl) {
         Employee employee = getCurrentEmployee();
+        // Yêu cầu shipment phải IN_TRANSIT, không cho thao tác khi shipment còn PENDING
+        Shipment shipment = requireActiveInTransitShipmentForOrder(orderId);
         Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
@@ -930,14 +996,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     "Bạn không có quyền xác nhận giao trả cho đơn hàng này");
         }
 
-        Shipment shipment = null;
-        List<Shipment> shipments = shipmentOrderRepository.findActiveShipmentsForOrder(orderId);
-        for (Shipment s : shipments) {
-            if (s.getType() == ShipmentType.DELIVERY) {
-                shipment = s;
-                break;
-            }
-        }
+        // shipment đã được lấy từ requireActiveInTransitShipmentForOrder ở trên
 
         order.setStatus(OrderStatus.RETURNED);
         order.setReturnedAt(LocalDateTime.now());
@@ -1064,20 +1123,49 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     .build());
         }
 
-        if (s.getShipmentOrders() != null) {
-            int totalCount = s.getShipmentOrders().size();
-            int scannedCount = 0;
-            for (ShipmentOrder so : s.getShipmentOrders()) {
-                if (so.getOrder() != null && so.getOrder().getStatus() == OrderStatus.PICKED_UP) {
-                    scannedCount++;
-                }
-            }
-            builder.orderCount(totalCount);
-            builder.totalCount(totalCount);
-            builder.scannedCount(scannedCount);
-            builder.isReadyToStart(totalCount > 0 && scannedCount == totalCount);
+        List<ShipmentOrder> shipmentOrders = s.getShipmentOrders();
+        int totalOrders = (shipmentOrders != null) ? shipmentOrders.size() : 0;
+
+        if (totalOrders > 0) {
+            // Chỉ tính DELIVERY stops cho logic QR scan và start validation
+            long deliveryStopCount = shipmentOrders.stream()
+                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY)
+                    .count();
+            long scannedCount = shipmentOrders.stream()
+                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY)
+                    .filter(so -> so.getOrder() != null && so.getOrder().getStatus() == OrderStatus.PICKED_UP)
+                    .count();
+            // isReadyToStart: nếu không có delivery stop nào thì luôn ready (pickup-only shipment)
+            boolean readyToStart = deliveryStopCount == 0 || scannedCount == deliveryStopCount;
+
+            builder.totalOrders(totalOrders);
+            builder.orderCount((int) deliveryStopCount);
+            builder.totalCount((int) deliveryStopCount);
+            builder.scannedCount((int) scannedCount);
+            builder.isReadyToStart(readyToStart);
+        } else {
+            builder.totalOrders(0);
+            builder.orderCount(0);
+            builder.totalCount(0);
+            builder.scannedCount(0);
+            builder.isReadyToStart(true);
         }
 
         return builder.build();
+    }
+
+    @Override
+    public void checkAndAutoFinishForOrder(Integer orderId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) {
+            return;
+        }
+        List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByOrderId(orderId);
+        for (ShipmentOrder so : shipmentOrders) {
+            Shipment shipment = so.getShipment();
+            if (shipment != null && shipment.getStatus() == ShipmentStatus.IN_TRANSIT) {
+                checkAndAutoFinish(shipment);
+            }
+        }
     }
 }

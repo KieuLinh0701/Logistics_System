@@ -92,6 +92,7 @@ const ReturnOrdersPage: React.FC = () => {
             loading={loading}
             pagination={pagination}
             onPageChange={handlePageChange}
+            from="/shipper/my-orders?tab=return"
           />
         </div>
       </div>

@@ -35,6 +35,8 @@ public class ShipperActiveShipmentDto {
     private OfficeInfo toOffice;
 
     // Order count
+    private Integer totalOrders;
+
     private Integer orderCount;
 
     // Tiến độ quét mã 

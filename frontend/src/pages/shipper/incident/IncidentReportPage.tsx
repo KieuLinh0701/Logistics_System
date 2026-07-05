@@ -6,6 +6,7 @@ import {
   message,
   Modal,
   Select,
+  Spin,
   Upload,
 } from "antd";
 import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
@@ -30,6 +31,15 @@ interface IncidentReport {
   handledAt?: string;
 }
 
+interface OrderOption {
+  id: number;
+  trackingNumber: string;
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  status: string;
+}
+
 const IncidentReportPage: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -37,10 +47,8 @@ const IncidentReportPage: React.FC = () => {
   const [submitModal, setSubmitModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadList, setUploadList] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchReports();
-  }, []);
+  const [orderOptions, setOrderOptions] = useState<OrderOption[]>([]);
+  const [orderLoading, setOrderLoading] = useState(false);
 
   const fetchReports = async () => {
     try {
@@ -55,44 +63,93 @@ const IncidentReportPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  // Fetch orders cho Select khi mở modal
+  useEffect(() => {
+    if (submitModal) {
+      fetchOrderOptions();
+    }
+  }, [submitModal]);
+
+  const fetchOrderOptions = async () => {
+    setOrderLoading(true);
+    try {
+      // Lấy tất cả orders của shipper (limit cao để hiển thị nhiều options)
+      const response = await orderApi.getShipperOrders({ page: 1, limit: 200 });
+      const orders = response?.orders || [];
+
+      // Map sang OrderOption format
+      const options: OrderOption[] = orders.map((order: any) => ({
+        id: order.id,
+        trackingNumber: order.trackingNumber,
+        recipientName: order.recipientName,
+        recipientPhone: order.recipientPhone || '',
+        recipientAddress: order.recipientFullAddress || `${order.recipientDetail || ''}, ${order.recipientWardName || ''}, ${order.recipientCityName || ''}`.replace(/^, |, $/g, ''),
+        status: order.status,
+      }));
+
+      setOrderOptions(options);
+    } catch (error) {
+      console.error("Error fetching orders for select:", error);
+      message.error("Lỗi khi tải danh sách đơn hàng");
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+  // Filter orders theo search text (mã vận đơn, tên, số điện thoại)
+  const filterOrderOptions = (input: string, option: any) => {
+    if (!input || input.length < 2) return true; // Hiển thị tất cả nếu chưa search
+    const searchLower = input.toLowerCase();
+    const order: OrderOption = option.orderData;
+
+    const matchTracking = order.trackingNumber?.toLowerCase().includes(searchLower);
+    const matchName = order.recipientName?.toLowerCase().includes(searchLower);
+    const matchPhone = order.recipientPhone?.toLowerCase().includes(searchLower);
+
+    return matchTracking || matchName || matchPhone;
+  };
+
+  // Format hiển thị option
+  const orderOptionLabel = (order: OrderOption) => {
+    const shortAddress = order.recipientAddress.length > 40
+      ? order.recipientAddress.substring(0, 40) + "..."
+      : order.recipientAddress;
+    return `${order.trackingNumber} - ${order.recipientName} - ${shortAddress}`;
+  };
+
+  // Tạo Option children cho Select
+  const orderOptionsList = orderOptions.map((order) => (
+    <Option
+      key={order.id}
+      value={order.id}
+      orderData={order}
+      label={orderOptionLabel(order)}
+    >
+      <div style={{ padding: '4px 0' }}>
+        <div style={{ fontWeight: 500 }}>{order.trackingNumber}</div>
+        <div style={{ fontSize: 12, color: '#888' }}>
+          {order.recipientName}
+        </div>
+        <div style={{ fontSize: 11, color: '#aaa' }}>
+          {order.recipientAddress.length > 50
+            ? order.recipientAddress.substring(0, 50) + "..."
+            : order.recipientAddress}
+        </div>
+      </div>
+    </Option>
+  ));
+
   const handleSubmitReport = async (values: any) => {
     try {
       setLoading(true);
 
-      let orderIdToSend: number | undefined = undefined;
-      const idOrTracking = values.orderId;
-      if (!idOrTracking) {
-        message.error("Vui lòng nhập mã vận đơn hoặc ID đơn hàng");
-        setLoading(false);
-        return;
-      }
-
-      if (!isNaN(Number(idOrTracking))) {
-        orderIdToSend = Number(idOrTracking);
-      } else {
-        try {
-          const sh = await orderApi.getShipperOrderByTrackingNumber(idOrTracking);
-          if (sh && sh.id) {
-            orderIdToSend = sh.id;
-          }
-        } catch (e) {
-          try {
-            const res = await orderApi.getUserOrderByTrackingNumber(idOrTracking);
-            if (res && res.data && res.data.id) {
-              orderIdToSend = res.data.id;
-            }
-          } catch (e2) {
-            try {
-              await orderApi.getPublicOrderByTrackingNumber(idOrTracking);
-            } catch (e3) {
-              // ignore
-            }
-          }
-        }
-      }
-
+      const orderIdToSend = values.orderId;
       if (!orderIdToSend) {
-        message.error("Không tìm thấy đơn hàng với mã/ID cung cấp");
+        message.error("Vui lòng chọn đơn hàng");
         setLoading(false);
         return;
       }
@@ -189,10 +246,19 @@ const IncidentReportPage: React.FC = () => {
         <Form form={form} layout="vertical" onFinish={handleSubmitReport}>
           <Form.Item
             name="orderId"
-            label="Mã vận đơn"
-            rules={[{ required: true, message: "Vui lòng nhập mã vận đơn hoặc ID đơn hàng" }]}
+            label="Đơn hàng"
+            rules={[{ required: true, message: "Vui lòng chọn đơn hàng" }]}
           >
-            <Input placeholder="Nhập mã vận đơn hoặc ID đơn hàng" />
+            <Select
+              showSearch
+              placeholder="Chọn hoặc tìm đơn hàng"
+              filterOption={filterOrderOptions}
+              notFoundContent={orderLoading ? <Spin size="small" /> : "Không tìm thấy đơn hàng"}
+              loading={orderLoading}
+              allowClear
+            >
+              {orderOptionsList}
+            </Select>
           </Form.Item>
           <Form.Item
             name="incidentType"

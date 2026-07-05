@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import {Button, Descriptions, Modal, Space, Tooltip, Typography, Upload} from "antd";
+import React, {useState} from "react";
+import {Button, Descriptions, Image, Modal, Space, Tooltip, Typography} from "antd";
 import type {Incident} from "../../../../../types/incidentReport";
 import {
     canEditManagerIncident,
@@ -7,7 +7,6 @@ import {
     translateIncidentStatus,
     translateIncidentType
 } from "../../../../../utils/incidentUtils";
-import type {UploadFile} from 'antd/es/upload/interface';
 import {EditOutlined} from "@ant-design/icons";
 
 const { Text } = Typography;
@@ -22,42 +21,29 @@ interface Props {
 }
 
 const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, loading, onViewOrderDetail, onEdit }) => {
-  const [files, setFiles] = useState<UploadFile[]>([]);
-
-  useEffect(() => {
-    if (!incident) return;
-
-    const imgs = (incident.images || []).map((url, idx) => ({
-      uid: idx.toString(),
-      name: `image-${idx + 1}`,
-      status: 'done' as const,
-      url,
-      thumbUrl: url
-    }));
-    setFiles(imgs);
-
-  }, [incident]);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   if (!incident) return null;
 
-  const handlePreview = (file: UploadFile) => {
-    if (!file.url) return;
-    const newWindow = window.open();
-    if (!newWindow) return;
-    newWindow.document.write(`
-      <html>
-        <head><title>Xem ảnh</title></head>
-        <body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#f0f0f0;">
-          <img src="${file.url}" style="max-width:90%;max-height:90%;object-fit:contain;" />
-        </body>
-      </html>
-    `);
-  };
+  const images = incident.images || [];
+  const hasImages = images.length > 0;
 
   const handleViewOrder = () => {
     if (incident.order.trackingNumber) {
       onViewOrderDetail?.(incident.order.trackingNumber);
     }
+  };
+
+  const handleImageClick = (index: number) => {
+    setPreviewImages(images);
+    setPreviewIndex(index);
+    setPreviewVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setPreviewVisible(false);
   };
 
   return (
@@ -114,16 +100,25 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
           </div>
         </Descriptions.Item>
 
-        {files.length > 0 && (
-          <Descriptions.Item label="Ảnh đính kèm">
-            <Upload
-              listType="picture-card"
-              fileList={files}
-              showUploadList={{ showRemoveIcon: false }}
-              onPreview={handlePreview}
-            />
-          </Descriptions.Item>
-        )}
+        <Descriptions.Item label="Ảnh đính kèm">
+          {hasImages ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {images.map((url, index) => (
+                <Image
+                  key={index}
+                  src={url}
+                  width={80}
+                  height={80}
+                  style={{ objectFit: "cover", cursor: "pointer", borderRadius: 4 }}
+                  onClick={() => handleImageClick(index)}
+                  preview={false}
+                />
+              ))}
+            </div>
+          ) : (
+            <Text className="text-muted">Không có ảnh đính kèm</Text>
+          )}
+        </Descriptions.Item>
 
         <Descriptions.Item label="Người gửi">
           <div>
@@ -155,6 +150,17 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
           </Descriptions.Item>
         )}
       </Descriptions>
+      <Image.PreviewGroup
+        preview={{
+          visible: previewVisible,
+          onVisibleChange: (vis) => setPreviewVisible(vis),
+          current: previewIndex,
+        }}
+      >
+        {previewImages.map((url, index) => (
+          <Image key={index} src={url} style={{ display: "none" }} />
+        ))}
+      </Image.PreviewGroup>
     </Modal>
   );
 };

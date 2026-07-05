@@ -29,6 +29,8 @@ public interface OrderShipperService {
 
     Map<String, Object> listPickupByCourierRequests(int page, int limit);
 
+    Map<String, Object> listPickedUpByCustomerOrders(int page, int limit, String search);
+
     Map<String, Object> getOrderById(Integer id);
 
     Map<String, Object> getOrderByTrackingNumber(String trackingNumber);

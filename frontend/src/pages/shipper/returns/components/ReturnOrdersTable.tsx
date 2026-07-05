@@ -16,6 +16,7 @@ interface ReturnOrdersTableProps {
     total: number;
   };
   onPageChange: (page: number, pageSize: number) => void;
+  from?: string;
 }
 
 const getStatusColor = (status: string) => {
@@ -57,6 +58,7 @@ const ReturnOrdersTable: React.FC<ReturnOrdersTableProps> = ({
   loading,
   pagination,
   onPageChange,
+  from,
 }) => {
   const navigate = useNavigate();
 
@@ -136,7 +138,7 @@ const ReturnOrdersTable: React.FC<ReturnOrdersTableProps> = ({
       key: "action",
       render: (record: ShipperOrder) => (
         <Space>
-          <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`)}>
+          <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`, { state: { from: from || "/shipper/my-orders?tab=return" } })}>
             Chi tiết
           </Button>
         </Space>

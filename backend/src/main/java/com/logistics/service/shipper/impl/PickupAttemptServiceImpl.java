@@ -38,6 +38,7 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
     private final OrderShipperService orderShipperService;
     private final NotificationService notificationService;
     private final ProductUserService productUserService;
+    private final ShipmentOrderRepository shipmentOrderRepository;
 
     @Override
     @Transactional
@@ -52,6 +53,19 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
 
         User shipper = userRepository.findById(shipperId)
                 .orElseThrow(() -> new AppException(UserErrorCode.USER_NOT_FOUND));
+
+        // Nếu order thuộc shipment, yêu cầu shipment phải IN_TRANSIT mới được thao tác pickup
+        if (status == PickupAttemptStatus.SUCCESS || status == PickupAttemptStatus.FAILED) {
+            List<com.logistics.entity.Shipment> activeShipments =
+                    shipmentOrderRepository.findActiveShipmentsForOrder(orderId);
+            if (activeShipments != null && !activeShipments.isEmpty()) {
+                com.logistics.entity.Shipment shipment = activeShipments.get(0);
+                if (shipment.getStatus() != com.logistics.enums.ShipmentStatus.IN_TRANSIT) {
+                    throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                            "Vui lòng bắt đầu chuyến trước khi xử lý yêu cầu lấy hàng.");
+                }
+            }
+        }
 
         Integer nextAttempt = 1;
         var recent = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(orderId);

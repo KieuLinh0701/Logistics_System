@@ -40,8 +40,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -609,14 +614,14 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             availablePreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
             availablePreds.add(cb.isNull(root.get("employee")));
 
-            // Điều kiện: (employee = currentEmployee && status IN (READY_FOR_PICKUP, URGENT_PICKUP, PICKING_UP, PICKED_UP) && pickupType = PICKUP_BY_COURIER)
+            // Điều kiện: (employee = currentEmployee && status IN (...) && pickupType = PICKUP_BY_COURIER)
+            // KHÔNG bao gồm PICKED_UP vì đã lấy hàng xong → chuyển sang tab "Đã lấy từ khách"
             List<Predicate> assignedPreds = new ArrayList<>();
             assignedPreds.add(cb.equal(root.get("employee").get("id"), employee.getId()));
             assignedPreds.add(root.get("status").in(
                 OrderStatus.READY_FOR_PICKUP,
                 OrderStatus.URGENT_PICKUP,
                 OrderStatus.PICKING_UP,
-                OrderStatus.PICKED_UP,
                 OrderStatus.PICKUP_RETRY
             ));
             assignedPreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
@@ -635,6 +640,63 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             // Kết hợp: tạo predicate chính là createdByUser AND (available OR assignedToMe)
             return cb.and(createdByUser, cb.or(available, assignedToMe));
+        };
+
+        Page<Order> orderPage = orderRepository.findAll(spec, pageable);
+        List<Map<String, Object>> orders = orderPage.getContent()
+                .stream()
+                .map(this::mapOrderDetail)
+                .toList();
+
+        Pagination pagination = new Pagination(
+                (int) orderPage.getTotalElements(),
+                page,
+                limit,
+                orderPage.getTotalPages()
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orders", orders);
+        result.put("pagination", pagination);
+
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> listPickedUpByCustomerOrders(int page, int limit, String search) {
+        Employee employee = getCurrentEmployee();
+        Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+
+        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "updatedAt"));
+
+        Specification<Order> spec = (root, query, cb) -> {
+            List<Predicate> preds = new ArrayList<>();
+
+            // Đơn pickup tại nhà đã lấy
+            preds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
+            preds.add(cb.equal(root.get("status"), OrderStatus.PICKED_UP));
+
+            // Shipper được gán
+            preds.add(cb.equal(root.get("employee").get("id"), employee.getId()));
+
+            // Lọc theo office (từ bưu cục của shipper)
+            if (officeId != null) {
+                preds.add(cb.or(
+                        cb.isNull(root.get("fromOffice")),
+                        cb.equal(root.get("fromOffice").get("id"), officeId)
+                ));
+            }
+
+            // Search nếu có
+            if (search != null && !search.isBlank()) {
+                String searchPattern = "%" + search.toLowerCase() + "%";
+                Predicate trackingMatch = cb.like(cb.lower(root.get("trackingNumber")), searchPattern);
+                Predicate senderMatch = cb.like(cb.lower(root.get("senderName")), searchPattern);
+                Predicate phoneMatch = cb.like(cb.lower(root.get("senderPhone")), searchPattern);
+                preds.add(cb.or(trackingMatch, senderMatch, phoneMatch));
+            }
+
+            return cb.and(preds.toArray(new Predicate[0]));
         };
 
         Page<Order> orderPage = orderRepository.findAll(spec, pageable);
@@ -1159,8 +1221,16 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         // 3. ƯU TIÊN: Xử lý order PICKING_UP cho luồng pickup tại nhà
-        // Không phụ thuộc vào shipment - luồng pickup tại nhà không dùng ShipmentDeliveryService
+        // Nếu order thuộc shipment, yêu cầu shipment phải IN_TRANSIT mới được pickup
         if (order.getStatus() == OrderStatus.PICKING_UP) {
+            // Kiểm tra shipment - nếu thuộc shipment thì phải IN_TRANSIT
+            if (activeShipments != null && !activeShipments.isEmpty()) {
+                Shipment shipment = activeShipments.get(0);
+                if (shipment.getStatus() != ShipmentStatus.IN_TRANSIT) {
+                    throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                            "Vui lòng bắt đầu chuyến trước khi xử lý yêu cầu lấy hàng.");
+                }
+            }
             // Ghi notes / ảnh / vị trí nếu có
             if (request != null) {
                 if (request.getLatitude() != null && request.getLongitude() != null) {
@@ -1888,6 +1958,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         } else {
             map.put("fromOffice", null);
         }
+        map.put("pickupType", order.getPickupType() != null ? order.getPickupType().name() : null);
         if (order.getCurrentOffice() != null) {
             Map<String, Object> c = new HashMap<>();
             c.put("id", order.getCurrentOffice().getId());
@@ -1988,6 +2059,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         map.put("createdAt", incident.getCreatedAt());
         map.put("handledAt", incident.getHandledAt());
         map.put("officeId", incident.getOffice() != null ? incident.getOffice().getId() : null);
+        map.put("images", incident.getImages() != null ? incident.getImages() : Collections.emptyList());
         return map;
     }
 
@@ -2302,6 +2374,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     "orders/tracking",
                     order.getTrackingNumber());
         }
+        shipmentDeliveryService.checkAndAutoFinishForOrder(order.getId());
     }
 
     private void handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
@@ -2363,6 +2436,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     "orders/tracking",
                     order.getTrackingNumber());
         }
+        // SHIPMENT-CENTERED: kiểm tra và tự động hoàn thành shipment nếu tất cả stops đã xử lý xong
+        shipmentDeliveryService.checkAndAutoFinishForOrder(order.getId());
     }
 
     @Transactional
@@ -2385,6 +2460,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_FAILED_FINAL);
             shipmentDeliveryService.returnFailedFinalToDestOffice(id);
         }
+        shipmentDeliveryService.checkAndAutoFinishForOrder(id);
     }
 
     private void handleDeliveryFailedFinal(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
@@ -2520,11 +2596,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             }
 
             currentEta = currentEta.plusMinutes(legMin);
-            s.setEtaTime(currentEta.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+            s.setEtaTime(currentEta.format(DateTimeFormatter.ofPattern("HH:mm")));
             s.setLegDistanceKm(BigDecimal.valueOf(Math.round(distanceKm * 100.0) / 100.0));
             s.setLegDurationMinutes(legMin);
 
-            int minsFromStart = (int) java.time.Duration.between(baseTime, currentEta).toMinutes();
+            int minsFromStart = (int) Duration.between(baseTime, currentEta).toMinutes();
             s.setEtaMinutesFromStart(minsFromStart);
 
             // Service time: ưu tiên AI, fallback theo rule
@@ -2886,8 +2962,50 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         List<Map<String, Object>> deliveryStops = new ArrayList<>();
         int totalCOD = 0;
+
+        // đếm tổng số stop và số stop đã hoàn thành (trước khi filter)
+        int totalStops = sortedSos.size();
         int completedStops = 0;
 
+        for (ShipmentOrder so : sortedSos) {
+            Order order = so.getOrder();
+            if (order == null) {
+                totalStops--;
+                continue;
+            }
+
+            String stopType = so.getStopType() != null ? so.getStopType().name() : "DELIVERY";
+            boolean isPickup = "PICKUP".equalsIgnoreCase(stopType);
+            boolean isReturnToOffice = "RETURN_TO_OFFICE".equalsIgnoreCase(stopType);
+            OrderStatus os = order.getStatus();
+
+            // Đếm completed theo stopType
+            boolean isCompleted = false;
+            if (isPickup) {
+                // PICKUP stop: completed khi PICKED_UP, PICKUP_FAILED_FINAL, CANCELLED
+                isCompleted = os == OrderStatus.PICKED_UP
+                        || os == OrderStatus.PICKUP_FAILED_FINAL
+                        || os == OrderStatus.CANCELLED;
+            } else if (isReturnToOffice) {
+                // RETURN_TO_OFFICE stop: completed khi AT_ORIGIN_OFFICE, RETURNED, RETURN_FAILED_FINAL, CANCELLED
+                isCompleted = os == OrderStatus.AT_ORIGIN_OFFICE
+                        || os == OrderStatus.RETURNED
+                        || os == OrderStatus.RETURN_FAILED_FINAL
+                        || os == OrderStatus.CANCELLED;
+            } else {
+                // DELIVERY stop: completed khi DELIVERED, DELIVERY_RETRY, DELIVERY_FAILED_FINAL, CANCELLED
+                isCompleted = os == OrderStatus.DELIVERED
+                        || os == OrderStatus.DELIVERY_RETRY
+                        || os == OrderStatus.DELIVERY_FAILED_FINAL
+                        || os == OrderStatus.CANCELLED;
+            }
+
+            if (isCompleted) {
+                completedStops++;
+            }
+        }
+
+        // Phase 2: build deliveryStops (đã filter các stop completed)
         for (ShipmentOrder so : sortedSos) {
             Order order = so.getOrder();
             if (order == null) {
@@ -2906,19 +3024,35 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             OrderStatus os = order.getStatus();
 
             // Phase pickup-status mapping:
-            //   DELIVERED => completed (đã giao - tính vào hoàn thành route)
-            //   PICKED_UP / AT_ORIGIN_OFFICE => "completed" mapped nhưng KHÔNG tính completedStops
-            //     (PICKED_UP = đã lấy hàng, còn phải giao tiếp)
-            //   PICKUP_FAILED_FINAL / DELIVERY_FAILED_FINAL / RETURNED => final (filter ra khỏi route)
-            //   PICKING_UP / DELIVERING / RETURNING => in_progress
+            //   DELIVERED => completed (filter ra khỏi route vì đã giao xong)
+            //   DELIVERY_RETRY => đã xử lý xong lần giao này -> filter ra
+            //   DELIVERY_FAILED_FINAL => giao thất bại vĩnh viễn -> filter ra
+            //   PICKED_UP => completed CHO DELIVERY, nhưng FILTER RA cho PICKUP stop
+            //   AT_ORIGIN_OFFICE => completed, nhưng FILTER RA cho RETURN_TO_OFFICE stop
+            //   DELIVERY_FAILED_FINAL / PICKUP_FAILED_FINAL / RETURN_FAILED_FINAL / CANCELLED / RETURNED => filter ra
             String stopStatus = "pending";
             if (os == OrderStatus.DELIVERED) {
+                // DELIVERED: đã giao thành công -> filter ra khỏi route
+                continue;
+            } else if (os == OrderStatus.DELIVERY_RETRY) {
+                // DELIVERY_RETRY: đã xử lý xong lần giao này (thành công hoặc thất bại tạm thời)
+                // Shipper sẽ đem hàng quay lại xe và đi điểm tiếp theo -> filter ra khỏi route
+                continue;
+            } else if (os == OrderStatus.PICKED_UP) {
+                // PICKED_UP là completed cho DELIVERY stop
+                // NHƯNG filter ra cho PICKUP stop vì đã hoàn thành việc lấy hàng
                 stopStatus = "completed";
-                completedStops++;
-            } else if (os == OrderStatus.PICKED_UP
-                    || os == OrderStatus.AT_ORIGIN_OFFICE) {
-                // PICKED_UP = đã lấy hàng, vẫn đang trên đường giao -> KHÔNG tính completed
+                if (isPickup) {
+                    // Skip pickup stop đã hoàn thành
+                    continue;
+                }
+            } else if (os == OrderStatus.AT_ORIGIN_OFFICE) {
+                // AT_ORIGIN_OFFICE là completed
                 stopStatus = "completed";
+                if (isReturnToOffice) {
+                    // Skip return stop đã hoàn thành
+                    continue;
+                }
             } else if (os == OrderStatus.DELIVERING
                     || os == OrderStatus.PICKING_UP
                     || os == OrderStatus.RETURNING) {
@@ -2929,6 +3063,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     || os == OrderStatus.CANCELLED
                     || os == OrderStatus.RETURNED) {
                 stopStatus = "final";
+                // Filter ra các stop final
+                continue;
             }
 
             // Phase PICKUP-correctness: PICKUP stop phải dùng sender address/contact,
@@ -3020,7 +3156,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         routeInfo.put("source", "SHIPMENT");
         routeInfo.put("status", shipment.getStatus() == ShipmentStatus.IN_TRANSIT ? "in_progress" : "pending");
         routeInfo.put("name", "Chuyến " + (shipment.getCode() != null ? shipment.getCode() : shipment.getId()));
-        routeInfo.put("totalStops", deliveryStops.size());
+        routeInfo.put("totalStops", totalStops);
         routeInfo.put("completedStops", completedStops);
         routeInfo.put("estimatedDuration", estimatedMinutes);
         routeInfo.put("totalDistance", totalDistanceKm);
@@ -3221,6 +3357,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                         "Tất cả đơn hợp lệ đều thiếu tọa độ GPS, không thể gửi AI");
             }
 
+            // Lấy thời gian hiện tại làm startTime cho AI
+            String currentStartTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             AiShipperInputDto shipper = AiShipperInputDto.builder()
                     .id(employee.getUser().getId())
                     .employeeId(employee.getId())
@@ -3228,7 +3366,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     .capacity(20)
                     .speedKmh(25.0)
                     .fuelCostPerKm(3000.0)
-                    .startTime("08:00")
+                    .startTime(currentStartTime)
                     .assignments(List.of())
                     .build();
 
@@ -3336,8 +3474,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 applied++;
             }
 
-            // Recompute cumulative ETA từ now() theo thứ tự orderedForEta
-            LocalDateTime baseTime = LocalDateTime.now();
+            LocalDateTime baseTime = resolveBaseTime(request.getDepartureTime());
             Double startLat = hasValidLatLng(request.getCurrentLatitude(), request.getCurrentLongitude())
                     ? request.getCurrentLatitude()
                     : (office.getLatitude() != null ? office.getLatitude().doubleValue() : null);
@@ -3375,7 +3512,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
                 currentEta = currentEta.plusMinutes(legMin);
                 so.setEtaTime(currentEta.format(HHmm));
-                int minsFromStart = (int) java.time.Duration.between(baseTime, currentEta).toMinutes();
+                int minsFromStart = (int) Duration.between(baseTime, currentEta).toMinutes();
                 so.setEtaMinutesFromStart(minsFromStart);
 
                 // Service time 5 phút (giống stopInput bên trên)
@@ -3561,6 +3698,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 })
                 .toList();
 
+            // Lấy thời gian hiện tại làm startTime cho AI
+            String currentStartTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             AiShipperInputDto shipper = AiShipperInputDto.builder()
                     .id(employee.getUser().getId())
                     .employeeId(employee.getId())
@@ -3568,7 +3707,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     .capacity(20)
                     .speedKmh(25.0)
                     .fuelCostPerKm(3000.0)
-                    .startTime("08:00")
+                    .startTime(currentStartTime)
                     .assignments(List.of())
                     .build();
 
@@ -3667,8 +3806,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 newStop.setRecipientLongitude(stopDto.getLongitude());
                 newStop.setCodAmount(stopDto.getCodAmount());
                 newStop.setPriority(stopDto.getPriority());
-                newStop.setEtaTime(stopDto.getEtaTime());
-                newStop.setEtaMinutesFromStart(stopDto.getEtaMinutesFromStart());
                 Double legDist = stopDto.getLegDistanceKm() != null ? stopDto.getLegDistanceKm() : 0.0;
                 newStop.setLegDistanceKm(BigDecimal.valueOf(legDist));
                 newStop.setLegDurationMinutes(stopDto.getLegDurationMinutes());
@@ -3696,8 +3833,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 returnStop.setRecipientLatitude(office.getLatitude().doubleValue());
                 returnStop.setRecipientLongitude(office.getLongitude().doubleValue());
                 returnStop.setCodAmount(0);
-                returnStop.setEtaTime(returnDto.getEtaTime());
-                returnStop.setEtaMinutesFromStart(returnDto.getEtaMinutesFromStart());
                 returnStop.setStopStatus(RouteStopStatus.PENDING);
                 returnStop.setIsInserted(false);
                 newStops.add(returnStop);
@@ -3729,8 +3864,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // route.startTime chỉ lưu HH:mm (cột VARCHAR(10)), KHÔNG lưu LocalDateTime đầy đủ
             String persistedStartTime = currentRoute.getStartTime();
             if (persistedStartTime == null || persistedStartTime.isBlank()) {
-                persistedStartTime = java.time.LocalTime.now()
-                        .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+                persistedStartTime = LocalTime.now()
+                        .format(DateTimeFormatter.ofPattern("HH:mm"));
             }
             newRoute.setStartTime(persistedStartTime);
             newRoute.setReoptimizedAt(LocalDateTime.now());
@@ -3744,8 +3879,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             newRoute.setReoptimizeReason(request.getReason() != null ? request.getReason() : "MANUAL");
 
             // Tính ETA theo leg thật: currentPos -> stop1 -> stop2 -> ... -> office
-            // Không chia đều - dùng khoảng cách Haversine / tốc độ thực tế
-            LocalDateTime etaBaseTime = LocalDateTime.now();
+            LocalDateTime etaBaseTime = resolveBaseTime(request.getDepartureTime());
             Double startLat = request.getCurrentLatitude();
             Double startLng = request.getCurrentLongitude();
             Double officeLat = office.getLatitude() != null ? office.getLatitude().doubleValue() : null;
@@ -3754,6 +3888,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             double computedDuration = computeLegBasedEtas(
                     newStops, etaBaseTime, startLat, startLng,
                     officeLat, officeLng, speedKmh);
+
+            aiRoutePlanStopRepository.saveAll(newStops);
 
             // Tổng estimatedDuration của route = sum(leg + service) từ computeLegBasedEtas
             // Re-optimize: ETA đã tự tính theo leg thật → duration phải đồng bộ cùng nguồn.
@@ -3835,7 +3971,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         AiRoutePlanRoute route = aiRoutePlanRouteRepository.findById(routeId)
                 .orElseThrow(() -> new IllegalStateException("Route not found: " + routeId));
         route.setStopCount(operationalStops.size());
-        route.setReoptimizedAt(java.time.LocalDateTime.now());
+        route.setReoptimizedAt(LocalDateTime.now());
         aiRoutePlanRouteRepository.save(route);
     }
 
@@ -4149,6 +4285,42 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 "stopSequence", nextSeq,
                 "requiresReoptimize", true
         );
+    }
+
+    private LocalDateTime resolveBaseTime(String departureTimeStr) {
+        if (departureTimeStr != null && !departureTimeStr.isBlank()) {
+            try {
+                OffsetDateTime utcTime = OffsetDateTime.parse(departureTimeStr.trim(),
+                        DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                ZonedDateTime vietnamTime = utcTime.atZoneSameInstant(
+                        ZoneId.of("Asia/Ho_Chi_Minh"));
+                LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                LocalDateTime localDt = vietnamTime.toLocalDateTime();
+                // Nếu thời gian đã qua trong ngày → dùng now
+                if (!localDt.isBefore(now)) {
+                    return localDt;
+                }
+                log.debug("departureTime {} is in the past, using LocalDateTime.now()", departureTimeStr);
+                return now;
+            } catch (Exception e1) {
+                try {
+                    // Thử parse HH:mm
+                    LocalTime t = LocalTime.parse(departureTimeStr.trim(),
+                            DateTimeFormatter.ofPattern("HH:mm"));
+                    LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                    LocalDateTime dt = LocalDateTime.of(today, t);
+                    LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                    if (!dt.isBefore(now)) {
+                        return dt;
+                    }
+                    log.debug("departureTime {} is in the past, using LocalDateTime.now()", departureTimeStr);
+                    return now;
+                } catch (Exception e2) {
+                    log.warn("Cannot parse departureTime '{}', using now. Error: {}", departureTimeStr, e2.getMessage());
+                }
+            }
+        }
+        return LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     private boolean hasValidLatLng(Double lat, Double lng) {

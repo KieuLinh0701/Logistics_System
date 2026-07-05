@@ -2,7 +2,6 @@ import React from "react";
 import { Button, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { InboxOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import { translateOrderStatus } from "../../../../utils/orderUtils";
 import type { ShipperOrder } from "../../../../api/orderApi";
 
@@ -11,7 +10,7 @@ const { Text } = Typography;
 interface FailedDeliveriesTableProps {
   orders: ShipperOrder[];
   loading: boolean;
-  onReturnToOffice: (orderId: number) => void;
+  onReturnToOffice: (orderId: number, trackingNumber: string) => void;
   isReturning: boolean;
 }
 
@@ -21,22 +20,12 @@ const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
   onReturnToOffice,
   isReturning,
 }) => {
-  const navigate = useNavigate();
-
   const columns: ColumnsType<ShipperOrder> = [
     {
       title: "Mã đơn",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string, record) => (
-        <Button
-          type="link"
-          onClick={() => navigate(`/shipper/orders/${record.id}`)}
-          style={{ padding: 0, height: "auto" }}
-        >
-          <Text strong style={{ color: "#111111" }}>{text}</Text>
-        </Button>
-      ),
+      render: (text: string) => <Text strong>{text}</Text>,
     },
     {
       title: "Thông tin người nhận",
@@ -55,6 +44,8 @@ const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      align: "center" as const,
+      width: 150,
       render: (status: string) => (
         <Tag color={status === "DELIVERY_FAILED_FINAL" ? "red" : "orange"} style={{ fontWeight: 600 }}>
           {translateOrderStatus(status)}
@@ -64,11 +55,15 @@ const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
     {
       title: "Thao tác",
       key: "action",
+      width: 150,
       render: (_, record) => (
         <Button
+          type="primary"
           icon={<InboxOutlined />}
-          onClick={() => onReturnToOffice(record.id)}
+          onClick={() => onReturnToOffice(record.id, record.trackingNumber)}
           loading={isReturning}
+          size="small"
+          style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
         >
           Nộp bưu cục
         </Button>
@@ -79,6 +74,7 @@ const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
   return (
     <Table
       rowKey="id"
+      className="failed-deliveries-table"
       columns={columns}
       dataSource={orders}
       pagination={false}

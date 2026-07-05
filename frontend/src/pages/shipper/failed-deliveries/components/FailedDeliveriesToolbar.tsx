@@ -14,19 +14,17 @@ const FailedDeliveriesToolbar: React.FC<FailedDeliveriesToolbarProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="shipper-filter-panel">
-      <div className="shipper-filter-grow">
+    <div className="failed-deliveries-toolbar">
+      <div className="failed-deliveries-search-wrapper">
         <Input
           allowClear
-          className="search-input"
           placeholder="Tìm theo mã đơn, người nhận, SĐT"
           prefix={<SearchOutlined />}
           value={search}
           onChange={(e) => onSearchChange(e.target.value || undefined)}
-          style={{ width: "100%" }}
         />
       </div>
-      <div className="shipper-filter-actions">
+      <div className="failed-deliveries-toolbar-actions">
         <Button icon={<ReloadOutlined />} onClick={onRefresh}>
           Làm mới
         </Button>

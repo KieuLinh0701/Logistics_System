@@ -124,6 +124,7 @@ const isStopHiddenFromRoute = (stop: DeliveryStop) => {
     const TERMINAL = new Set([
         "DELIVERED",
         "FAILED_DELIVERY",
+        "DELIVERY_RETRY",
         "DELIVERY_FAILED_FINAL",
         "PICKUP_FAILED_FINAL",
         "RETURNED",
@@ -224,11 +225,9 @@ const DeliveryRoutePage: React.FC = () => {
         };
     }, [deliveryStops]);
 
-    const displayTotalStops = deliveryStops.length;
-    const displayCompletedStops = useMemo(
-        () => deliveryStops.filter((s) => (s.orderStatus || "").toUpperCase() === "DELIVERED").length,
-        [deliveryStops]
-    );
+    // Dùng dữ liệu từ backend cho tiến độ
+    const displayTotalStops = routeInfo?.totalStops ?? deliveryStops.length;
+    const displayCompletedStops = routeInfo?.completedStops ?? 0;
 
     const nextStop = useMemo(() => {
         for (const stop of deliveryStops) {
@@ -562,6 +561,8 @@ const DeliveryRoutePage: React.FC = () => {
             includeRemainingStopsOnly: true,
             returnToOffice: true,
             reason: "MANUAL",
+            // Truyền thời gian hiện tại để backend tính ETA đúng
+            departureTime: new Date().toISOString(),
         };
         if (isShipment) {
             payload.shipmentId = currentRoute.shipmentId ?? currentRoute.id;
@@ -651,14 +652,6 @@ const DeliveryRoutePage: React.FC = () => {
         }
     };
 
-    const getPriorityColor = (priority: string) => {
-        return priority === "urgent" ? "red" : "default";
-    };
-
-    const getPriorityText = (priority: string) => {
-        return priority === "urgent" ? "Ưu tiên" : "Bình thường";
-    };
-
     const getStopTypeBadge = (stopType?: string) => {
         if (stopType === "PICKUP") {
             return <Tag color="purple" style={{ marginLeft: 4 }}>Lấy hàng</Tag>;
@@ -668,6 +661,43 @@ const DeliveryRoutePage: React.FC = () => {
         }
         if (stopType === "RETURN_TO_OFFICE") {
             return <Tag color="orange" style={{ marginLeft: 4 }}>Hoàn trả</Tag>;
+        }
+        return null;
+    };
+
+    // Badge Cần thu COD: chỉ hiển thị nếu codAmount > 0
+    const getCodBadge = (stop: DeliveryStop) => {
+        const cod = stop.codAmount ?? 0;
+        if (cod <= 0) return null;
+        return <Tag color="green" style={{ marginLeft: 4 }}>Cần thu COD</Tag>;
+    };
+
+    // Badge Trễ ETA: chỉ hiển thị nếu etaTime đã qua giờ hiện tại
+    const getEtaWarningBadge = (stop: DeliveryStop) => {
+        const etaTime = stop.etaTime;
+        if (!etaTime) return null;
+
+        try {
+            const now = new Date();
+
+            // Parse etaTime
+            let etaDate: Date;
+            if (etaTime.includes('T') || etaTime.includes('-')) {
+                // ISO datetime format
+                etaDate = new Date(etaTime);
+            } else {
+                // HH:mm format - ghép với ngày hôm nay
+                const [hours, minutes] = etaTime.split(':').map(Number);
+                etaDate = new Date(now);
+                etaDate.setHours(hours, minutes, 0, 0);
+            }
+
+            // So sánh: chỉ trễ khi giờ hiện tại đã qua ETA
+            if (etaDate < now) {
+                return <Tag color="red" style={{ marginLeft: 4 }}>Trễ ETA</Tag>;
+            }
+        } catch {
+            // Invalid etaTime format
         }
         return null;
     };
@@ -1033,7 +1063,7 @@ const DeliveryRoutePage: React.FC = () => {
                 </div>
             </Card>
 
-            <Card title={`Danh sách điểm xử lý (${displayTotalStops} điểm, theo thứ tự AI)`}>
+            <Card title={`Danh sách điểm xử lý (${displayTotalStops} điểm)`}>
                 <List
                     dataSource={deliveryStops}
                     renderItem={(stop) => {
@@ -1054,7 +1084,7 @@ const DeliveryRoutePage: React.FC = () => {
                                     <Button className="filter-button" icon={<EyeOutlined />} onClick={() => handleViewStopDetail(stop)}>
                                         Chi tiết
                                     </Button>,
-                                    <Button type="link" onClick={() => navigate(`/shipper/orders/${stop.id}`)}>
+                                    <Button type="link" onClick={() => navigate(`/shipper/orders/${stop.id}`, { state: { from: "/route" } })}>
                                         Xem đơn
                                     </Button>,
                                 ]}
@@ -1082,7 +1112,8 @@ const DeliveryRoutePage: React.FC = () => {
                                             {isNext && <Tag color="orange">Tiếp theo</Tag>}
                                             <Text strong>{stop.trackingNumber}</Text>
                                             {getStopTypeBadge(stop.stopType)}
-                                            <Tag color={getPriorityColor(stop.priority)}>{getPriorityText(stop.priority)}</Tag>
+                                            {getCodBadge(stop)}
+                                            {getEtaWarningBadge(stop)}
                                             {(() => {
                                                 const d = getStopDisplayData(stop);
                                                 return d.statusBadge;

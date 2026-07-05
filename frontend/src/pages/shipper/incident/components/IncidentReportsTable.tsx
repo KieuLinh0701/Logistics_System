@@ -1,7 +1,8 @@
-import React from "react";
-import { Table, Tag, Typography } from "antd";
+import React, { useState } from "react";
+import { Image, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import defaultImage from "../../../../assets/images/imageDefault.jpg";
 
 const { Text } = Typography;
 
@@ -16,6 +17,7 @@ interface IncidentReport {
   status?: string;
   createdAt: string;
   handledAt?: string;
+  images?: string[];
 }
 
 interface IncidentReportsTableProps {
@@ -74,6 +76,61 @@ const getIncidentTypeText = (incidentType: string) => {
 };
 
 const IncidentReportsTable: React.FC<IncidentReportsTableProps> = ({ reports, loading }) => {
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+
+  const handleImageClick = (images: string[], index: number = 0) => {
+    setPreviewImages(images);
+    setPreviewIndex(index);
+    setPreviewVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setPreviewVisible(false);
+  };
+
+  const renderImageCell = (images?: string[]) => {
+    const hasImages = images && images.length > 0;
+    const firstImage = hasImages ? images[0] : defaultImage;
+    const remainingCount = hasImages ? images.length - 1 : 0;
+
+    return (
+      <div
+        style={{
+          position: "relative",
+          display: "inline-block",
+          cursor: hasImages ? "pointer" : "default",
+        }}
+        onClick={() => hasImages && handleImageClick(images, 0)}
+      >
+        <img
+          src={firstImage}
+          alt="incident"
+          className="table-image"
+        />
+        {remainingCount > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 2,
+              right: 2,
+              background: "rgba(0, 0, 0, 0.65)",
+              color: "#fff",
+              fontSize: 10,
+              padding: "1px 5px",
+              borderRadius: 4,
+              fontWeight: 500,
+              lineHeight: 1.4,
+            }}
+          >
+            +{remainingCount}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const columns: ColumnsType<IncidentReport> = [
     {
       title: "Mã đơn hàng",
@@ -125,6 +182,13 @@ const IncidentReportsTable: React.FC<IncidentReportsTableProps> = ({ reports, lo
       ),
     },
     {
+      title: "Ảnh",
+      key: "images",
+      width: 95,
+      align: "center",
+      render: (_: any, record: IncidentReport) => renderImageCell(record.images),
+    },
+    {
       title: "Ngày tạo",
       dataIndex: "createdAt",
       key: "createdAt",
@@ -134,13 +198,26 @@ const IncidentReportsTable: React.FC<IncidentReportsTableProps> = ({ reports, lo
   ];
 
   return (
-    <Table
-      rowKey="id"
-      loading={loading}
-      columns={columns}
-      dataSource={reports}
-      pagination={{ pageSize: 10 }}
-    />
+    <>
+      <Table
+        rowKey="id"
+        loading={loading}
+        columns={columns}
+        dataSource={reports}
+        pagination={{ pageSize: 10 }}
+      />
+      <Image.PreviewGroup
+        preview={{
+          visible: previewVisible,
+          onVisibleChange: (vis) => setPreviewVisible(vis),
+          current: previewIndex,
+        }}
+      >
+        {previewImages.map((url, index) => (
+          <Image key={index} src={url} style={{ display: "none" }} />
+        ))}
+      </Image.PreviewGroup>
+    </>
   );
 };
 

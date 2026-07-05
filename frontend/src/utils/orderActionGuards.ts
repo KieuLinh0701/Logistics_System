@@ -1,7 +1,3 @@
-// Helpers for order action guards based on shipment membership (Phase 8)
-// Một shipper chỉ được thao tác với đơn nếu đơn thuộc chuyến DELIVERY đang IN_TRANSIT
-// (trừ acceptPickup - chỉ gán employee, không cần shipment IN_TRANSIT)
-
 export type ShipperOrderLike = {
   status?: string;
   pickupType?: string;
@@ -71,8 +67,9 @@ export const isInActiveReturnShipment = (order: ShipperOrderLike): boolean => {
   const returnStatuses = ["RETURN_AT_ORIGIN_OFFICE", "RETURNING", "RETURN_RETRY"];
   if (!returnStatuses.includes(order.status || "")) return false;
 
+  // Return orders yêu cầu shipment phải IN_TRANSIT (không phải PENDING)
   return order.shipmentType === "DELIVERY" &&
-    (order.shipmentStatus === "PENDING" || order.shipmentStatus === "IN_TRANSIT");
+    order.shipmentStatus === "IN_TRANSIT";
 };
 
 export const canMarkReturnDelivered = (order: ShipperOrderLike): boolean => {

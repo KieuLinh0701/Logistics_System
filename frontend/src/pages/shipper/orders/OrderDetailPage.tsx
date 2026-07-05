@@ -42,6 +42,7 @@ import {
   canMarkPickedUp,
   canStartDelivery,
   isInActiveDeliveryShipment,
+  isInActiveReturnShipment,
   isReturnOrder,
   canMarkReturnDelivered,
 } from "../../../utils/orderActionGuards";
@@ -685,8 +686,10 @@ const ShipperOrderDetail: React.FC = () => {
   );
 
   const navigateToOrders = () => {
+    // Hỗ trợ cả `from` (My Orders tabs, route page) và `returnTo` (legacy)
     const from = location.state?.from as string | undefined;
-    navigate(from || "/shipper/my-orders?tab=delivery");
+    const returnTo = location.state?.returnTo as string | undefined;
+    navigate(from || returnTo || "/shipper/my-orders?tab=delivery");
   };
 
   if (loading && !order) {
@@ -742,7 +745,7 @@ const ShipperOrderDetail: React.FC = () => {
                   </Button>
                 )}
                 {/* Đơn pickup - PICKING_UP: Nút Xác nhận đã lấy và Báo lấy hàng thất bại */}
-                {isPickupOrder(order) && order.status === "PICKING_UP" && (
+                {isPickupOrder(order) && order.status === "PICKING_UP" && (order.shipmentStatus === "IN_TRANSIT" || !order.shipmentCode) && (
                   <>
                     <Button
                       danger
@@ -760,7 +763,7 @@ const ShipperOrderDetail: React.FC = () => {
                   </>
                 )}
                 {/* Đơn pickup - PICKUP_RETRY: Nút Tiến hành đến lấy lại */}
-                {isPickupOrder(order) && order.status === "PICKUP_RETRY" && (
+                {isPickupOrder(order) && order.status === "PICKUP_RETRY" && (order.shipmentStatus === "IN_TRANSIT" || !order.shipmentCode) && (
                   <Button
                     type="primary"
                     className="primary-button"
@@ -770,8 +773,9 @@ const ShipperOrderDetail: React.FC = () => {
                     Tiến hành đến lấy lại
                   </Button>
                 )}
-                {/* Đơn pickup - PICKED_UP: Nút Nộp tại bưu cục */}
-                {isPickupOrder(order) && order.status === "PICKED_UP" && (
+                {/* Đơn pickup tại nhà - PICKED_UP: Nút Nộp tại bưu cục */}
+                {/* Chỉ dành cho PICKUP_BY_COURIER, không phải đơn giao hàng thường */}
+                {order.pickupType === "PICKUP_BY_COURIER" && order.status === "PICKED_UP" && (
                   <Button
                     type="primary"
                     style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
@@ -870,13 +874,23 @@ const ShipperOrderDetail: React.FC = () => {
               />
             </Row>
           )}
-          {/* Alert cho đơn hoàn trả chưa thuộc shipment */}
-          {isReturnOrder(order) && !isInActiveDeliveryShipment(order) && !["RETURNED", "CANCELLED", "RETURN_AT_ORIGIN_OFFICE"].includes(order.status) && (
+          {/* Alert cho đơn pickup thuộc shipment PENDING (chưa bắt đầu chuyến) */}
+          {isPickupOrder(order) && order.shipmentCode && order.shipmentStatus === "PENDING" && !["PICKED_UP", "AT_ORIGIN_OFFICE", "CANCELLED"].includes(order.status) && (
             <Row justify="center">
               <Alert
                 type="warning"
                 showIcon
-                description="Đơn hoàn trả chưa được nhận. Vui lòng nhận đơn trước khi thao tác."
+                description="Vui lòng bắt đầu chuyến trước khi xử lý yêu cầu lấy hàng."
+              />
+            </Row>
+          )}
+          {/* Alert cho đơn hoàn trả chưa thuộc shipment IN_TRANSIT */}
+          {isReturnOrder(order) && !isInActiveReturnShipment(order) && !["RETURNED", "CANCELLED"].includes(order.status) && (
+            <Row justify="center">
+              <Alert
+                type="warning"
+                showIcon
+                description="Vui lòng bắt đầu chuyến trước khi xử lý đơn hoàn trả."
               />
             </Row>
           )}

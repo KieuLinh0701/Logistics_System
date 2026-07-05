@@ -14,4 +14,5 @@ public class ShipperReOptimizeRequest {
     private Boolean includeRemainingStopsOnly = true;
     private Boolean returnToOffice = true;
     private String reason; // MANUAL, PICKUP_INSERTION, GPS_DEVIATION, TRAFFIC
+    private String departureTime;
 }
