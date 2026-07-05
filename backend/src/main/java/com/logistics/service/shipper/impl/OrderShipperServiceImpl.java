@@ -40,8 +40,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -1988,6 +1993,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         map.put("createdAt", incident.getCreatedAt());
         map.put("handledAt", incident.getHandledAt());
         map.put("officeId", incident.getOffice() != null ? incident.getOffice().getId() : null);
+        map.put("images", incident.getImages() != null ? incident.getImages() : Collections.emptyList());
         return map;
     }
 
@@ -2520,11 +2526,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             }
 
             currentEta = currentEta.plusMinutes(legMin);
-            s.setEtaTime(currentEta.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+            s.setEtaTime(currentEta.format(DateTimeFormatter.ofPattern("HH:mm")));
             s.setLegDistanceKm(BigDecimal.valueOf(Math.round(distanceKm * 100.0) / 100.0));
             s.setLegDurationMinutes(legMin);
 
-            int minsFromStart = (int) java.time.Duration.between(baseTime, currentEta).toMinutes();
+            int minsFromStart = (int) Duration.between(baseTime, currentEta).toMinutes();
             s.setEtaMinutesFromStart(minsFromStart);
 
             // Service time: ưu tiên AI, fallback theo rule
@@ -3221,6 +3227,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                         "Tất cả đơn hợp lệ đều thiếu tọa độ GPS, không thể gửi AI");
             }
 
+            // Lấy thời gian hiện tại làm startTime cho AI
+            String currentStartTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             AiShipperInputDto shipper = AiShipperInputDto.builder()
                     .id(employee.getUser().getId())
                     .employeeId(employee.getId())
@@ -3228,7 +3236,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     .capacity(20)
                     .speedKmh(25.0)
                     .fuelCostPerKm(3000.0)
-                    .startTime("08:00")
+                    .startTime(currentStartTime)
                     .assignments(List.of())
                     .build();
 
@@ -3336,8 +3344,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 applied++;
             }
 
-            // Recompute cumulative ETA từ now() theo thứ tự orderedForEta
-            LocalDateTime baseTime = LocalDateTime.now();
+            LocalDateTime baseTime = resolveBaseTime(request.getDepartureTime());
             Double startLat = hasValidLatLng(request.getCurrentLatitude(), request.getCurrentLongitude())
                     ? request.getCurrentLatitude()
                     : (office.getLatitude() != null ? office.getLatitude().doubleValue() : null);
@@ -3375,7 +3382,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
                 currentEta = currentEta.plusMinutes(legMin);
                 so.setEtaTime(currentEta.format(HHmm));
-                int minsFromStart = (int) java.time.Duration.between(baseTime, currentEta).toMinutes();
+                int minsFromStart = (int) Duration.between(baseTime, currentEta).toMinutes();
                 so.setEtaMinutesFromStart(minsFromStart);
 
                 // Service time 5 phút (giống stopInput bên trên)
@@ -3561,6 +3568,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 })
                 .toList();
 
+            // Lấy thời gian hiện tại làm startTime cho AI
+            String currentStartTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
             AiShipperInputDto shipper = AiShipperInputDto.builder()
                     .id(employee.getUser().getId())
                     .employeeId(employee.getId())
@@ -3568,7 +3577,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     .capacity(20)
                     .speedKmh(25.0)
                     .fuelCostPerKm(3000.0)
-                    .startTime("08:00")
+                    .startTime(currentStartTime)
                     .assignments(List.of())
                     .build();
 
@@ -3667,8 +3676,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 newStop.setRecipientLongitude(stopDto.getLongitude());
                 newStop.setCodAmount(stopDto.getCodAmount());
                 newStop.setPriority(stopDto.getPriority());
-                newStop.setEtaTime(stopDto.getEtaTime());
-                newStop.setEtaMinutesFromStart(stopDto.getEtaMinutesFromStart());
                 Double legDist = stopDto.getLegDistanceKm() != null ? stopDto.getLegDistanceKm() : 0.0;
                 newStop.setLegDistanceKm(BigDecimal.valueOf(legDist));
                 newStop.setLegDurationMinutes(stopDto.getLegDurationMinutes());
@@ -3696,8 +3703,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 returnStop.setRecipientLatitude(office.getLatitude().doubleValue());
                 returnStop.setRecipientLongitude(office.getLongitude().doubleValue());
                 returnStop.setCodAmount(0);
-                returnStop.setEtaTime(returnDto.getEtaTime());
-                returnStop.setEtaMinutesFromStart(returnDto.getEtaMinutesFromStart());
                 returnStop.setStopStatus(RouteStopStatus.PENDING);
                 returnStop.setIsInserted(false);
                 newStops.add(returnStop);
@@ -3729,8 +3734,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // route.startTime chỉ lưu HH:mm (cột VARCHAR(10)), KHÔNG lưu LocalDateTime đầy đủ
             String persistedStartTime = currentRoute.getStartTime();
             if (persistedStartTime == null || persistedStartTime.isBlank()) {
-                persistedStartTime = java.time.LocalTime.now()
-                        .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+                persistedStartTime = LocalTime.now()
+                        .format(DateTimeFormatter.ofPattern("HH:mm"));
             }
             newRoute.setStartTime(persistedStartTime);
             newRoute.setReoptimizedAt(LocalDateTime.now());
@@ -3744,8 +3749,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             newRoute.setReoptimizeReason(request.getReason() != null ? request.getReason() : "MANUAL");
 
             // Tính ETA theo leg thật: currentPos -> stop1 -> stop2 -> ... -> office
-            // Không chia đều - dùng khoảng cách Haversine / tốc độ thực tế
-            LocalDateTime etaBaseTime = LocalDateTime.now();
+            LocalDateTime etaBaseTime = resolveBaseTime(request.getDepartureTime());
             Double startLat = request.getCurrentLatitude();
             Double startLng = request.getCurrentLongitude();
             Double officeLat = office.getLatitude() != null ? office.getLatitude().doubleValue() : null;
@@ -3754,6 +3758,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             double computedDuration = computeLegBasedEtas(
                     newStops, etaBaseTime, startLat, startLng,
                     officeLat, officeLng, speedKmh);
+
+            aiRoutePlanStopRepository.saveAll(newStops);
 
             // Tổng estimatedDuration của route = sum(leg + service) từ computeLegBasedEtas
             // Re-optimize: ETA đã tự tính theo leg thật → duration phải đồng bộ cùng nguồn.
@@ -3835,7 +3841,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         AiRoutePlanRoute route = aiRoutePlanRouteRepository.findById(routeId)
                 .orElseThrow(() -> new IllegalStateException("Route not found: " + routeId));
         route.setStopCount(operationalStops.size());
-        route.setReoptimizedAt(java.time.LocalDateTime.now());
+        route.setReoptimizedAt(LocalDateTime.now());
         aiRoutePlanRouteRepository.save(route);
     }
 
@@ -4149,6 +4155,42 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 "stopSequence", nextSeq,
                 "requiresReoptimize", true
         );
+    }
+
+    private LocalDateTime resolveBaseTime(String departureTimeStr) {
+        if (departureTimeStr != null && !departureTimeStr.isBlank()) {
+            try {
+                OffsetDateTime utcTime = OffsetDateTime.parse(departureTimeStr.trim(),
+                        DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                ZonedDateTime vietnamTime = utcTime.atZoneSameInstant(
+                        ZoneId.of("Asia/Ho_Chi_Minh"));
+                LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                LocalDateTime localDt = vietnamTime.toLocalDateTime();
+                // Nếu thời gian đã qua trong ngày → dùng now
+                if (!localDt.isBefore(now)) {
+                    return localDt;
+                }
+                log.debug("departureTime {} is in the past, using LocalDateTime.now()", departureTimeStr);
+                return now;
+            } catch (Exception e1) {
+                try {
+                    // Thử parse HH:mm
+                    LocalTime t = LocalTime.parse(departureTimeStr.trim(),
+                            DateTimeFormatter.ofPattern("HH:mm"));
+                    LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                    LocalDateTime dt = LocalDateTime.of(today, t);
+                    LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                    if (!dt.isBefore(now)) {
+                        return dt;
+                    }
+                    log.debug("departureTime {} is in the past, using LocalDateTime.now()", departureTimeStr);
+                    return now;
+                } catch (Exception e2) {
+                    log.warn("Cannot parse departureTime '{}', using now. Error: {}", departureTimeStr, e2.getMessage());
+                }
+            }
+        }
+        return LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     private boolean hasValidLatLng(Double lat, Double lng) {

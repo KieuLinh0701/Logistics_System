@@ -136,9 +136,6 @@ export default function ShippingRequests() {
         return next;
       });
 
-      // [Phase] orderApi.claimShipperOrderRequest trả về response body đã được unwrap
-      // bởi axios interceptor, shape: { success, data: { message, requiresReoptimize, ... }, message }
-      // Một số trường hợp interceptor chưa unwrap -> fallback về res.data hoặc res.
       const res: any = await orderApi.claimShipperOrderRequest(rec.id);
       console.log("[ACCEPT_PICKUP_RESPONSE]", res);
       const data = res?.data ?? res;

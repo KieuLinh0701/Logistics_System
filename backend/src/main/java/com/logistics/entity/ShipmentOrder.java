@@ -32,11 +32,6 @@ public class ShipmentOrder {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    // ==================== Phase 3A: stop sequence + ETA snapshot ====================
-    // These fields make ShipmentOrder the source of truth for stop order.
-    // They are snapshot from AiRoutePlanStop at confirm-plan time and updated
-    // in-place by re-optimize (Phase 3B) and pickup-insert (Phase 3C).
-
     @Column(name = "stop_sequence")
     private Integer stopSequence;
 

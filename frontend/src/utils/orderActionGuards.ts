@@ -1,7 +1,3 @@
-// Helpers for order action guards based on shipment membership (Phase 8)
-// Một shipper chỉ được thao tác với đơn nếu đơn thuộc chuyến DELIVERY đang IN_TRANSIT
-// (trừ acceptPickup - chỉ gán employee, không cần shipment IN_TRANSIT)
-
 export type ShipperOrderLike = {
   status?: string;
   pickupType?: string;

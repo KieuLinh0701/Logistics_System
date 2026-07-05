@@ -225,8 +225,6 @@ const orderApi = {
     },
 
     async claimShipperOrderRequest(orderId: number) {
-        // Phase 5 + auto-add: trả về response để frontend hiển thị toast phù hợp
-        // (requiresReoptimize=true nếu được auto-add vào shipment IN_TRANSIT).
         const res = await axiosClient.post<ApiResponse<any>>(
             `/shipper/orders/${orderId}/accept-pickup`
         );
@@ -234,7 +232,6 @@ const orderApi = {
     },
 
     async startShipperPickup(orderId: number) {
-        // Phase 5: bắt đầu pickup - set PICKING_UP, yêu cầu shipment IN_TRANSIT
         await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/start-pickup`);
     },
 
@@ -452,6 +449,7 @@ const orderApi = {
         includeRemainingStopsOnly?: boolean;
         returnToOffice?: boolean;
         reason?: string;
+        departureTime?: string;
     }) {
         const res = await axiosClient.post<ApiResponse<any>>("/shipper/route/re-optimize", payload);
         return res.data;
@@ -468,7 +466,6 @@ const orderApi = {
         return res.data;
     },
 
-    // Phase 3C: Pickup insert trực tiếp vào Shipment (ShipmentOrder là source of truth).
     // Dùng khi routeInfo.source === "SHIPMENT" hoặc routeInfo.shipmentId != null.
     async insertPickupIntoShipment(shipmentId: number, payload: { pickupOrderId: number }) {
         const res = await axiosClient.post<ApiResponse<any>>(
@@ -478,11 +475,6 @@ const orderApi = {
         return res.data;
     },
 
-    /**
-     * Phase 3C: Wrapper tự chọn endpoint theo source.
-     * @param routeInfo từ getDeliveryRoute() - có fields source/shipmentId/routeId
-     * @param pickupOrderId ID đơn pickup cần insert
-     */
     async smartInsertPickup(
         routeInfo: {
             source?: string;
