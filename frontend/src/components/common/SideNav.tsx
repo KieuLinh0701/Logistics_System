@@ -427,14 +427,9 @@ const SideNav: React.FC = () => {
                         path: "/shipper/orders-unassigned",
                     },
                     {
-                        key: "/shipper/orders",
-                        label: "Đơn hàng cần giao",
-                        path: "/shipper/orders",
-                    },
-                    {
-                        key: "/shipper/shipping-requests",
-                        label: "Yêu cầu lấy hàng",
-                        path: "/shipper/shipping-requests",
+                        key: "/shipper/my-orders",
+                        label: "Đơn hàng của tôi",
+                        path: "/shipper/my-orders",
                     },
                     {
                         key: "/shipper/failed-deliveries",
@@ -563,22 +558,42 @@ const SideNav: React.FC = () => {
 
     const [openKeys, setOpenKeys] = useState<string[]>([]);
 
+    const getPathnameBase = (path: string) => {
+        return path.split('?')[0];
+    };
+
     useEffect(() => {
         const keys: string[] = [];
         menuItems.forEach((item) => {
-            if (item.children?.some((child) => child.path && pathname.startsWith(child.path))) {
+            if (item.children?.some((child) => child.path && getPathnameBase(pathname).startsWith(getPathnameBase(child.path)))) {
                 keys.push(item.key);
             }
         });
         setOpenKeys(keys);
     }, [pathname, menuItems]);
 
+    const selectedKey = (() => {
+        for (const item of menuItems) {
+            if (item.path && getPathnameBase(pathname) === getPathnameBase(item.path)) {
+                return [item.key];
+            }
+            if (item.children) {
+                for (const child of item.children) {
+                    if (child.path && getPathnameBase(pathname).startsWith(getPathnameBase(child.path))) {
+                        return [child.key];
+                    }
+                }
+            }
+        }
+        return [pathname];
+    })();
+
     return (
         <div className="sidenav">
             <Menu
                 theme="light"
                 mode="inline"
-                selectedKeys={[pathname]}
+                selectedKeys={selectedKey}
                 openKeys={openKeys}
                 onOpenChange={(keys) => setOpenKeys(keys as string[])}
                 className="sidenav-menu"

@@ -147,7 +147,7 @@ const RouteSidebar: React.FC<RouteSidebarProps> = ({
             const color = getRouteColor(index);
             const visible = visibleRouteKeys.has(routeKey);
             const active = highlightedRouteKey === routeKey;
-            const stopCount = route.stops?.filter(s => !isReturnToOfficeStop(s)).length ?? route.stopCount ?? 0;
+            const stopCount = route.stops?.filter(s => s.orderId != null).length ?? route.stopCount ?? 0;
 
             return (
               <Card

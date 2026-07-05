@@ -109,6 +109,7 @@ const ShipperDashboard: React.FC = () => {
         return "error";
       case "RETURNING":
       case "RETURN_RETRY":
+      case "RETURN_AT_ORIGIN_OFFICE":
         return "warning";
       default:
         return "default";
@@ -136,7 +137,9 @@ const ShipperDashboard: React.FC = () => {
       case "RETURNED":
         return "Đã hoàn";
       case "RETURNING":
-        return "Đang hoàn";
+        return "Đang hoàn trả";
+      case "RETURN_AT_ORIGIN_OFFICE":
+        return "Đã hoàn về bưu cục gốc";
       case "RETURN_RETRY":
         return "Hoàn lại";
       case "RETURN_FAILED_FINAL":

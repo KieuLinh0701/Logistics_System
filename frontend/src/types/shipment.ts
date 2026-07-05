@@ -56,7 +56,28 @@ export interface ManagerOrderShipment {
     latitude: number;
     longitude: number;
   };
+  fromOffice: {
+    id: number;
+    name: string;
+    postalCode: string;
+    cityCode: number;
+    wardCode: number;
+    detail: string;
+    latitude: number;
+    longitude: number;
+  };
+  currentOffice?: {
+    id: number;
+    name: string;
+    postalCode: string;
+    cityCode: number;
+    wardCode: number;
+    detail: string;
+    latitude: number;
+    longitude: number;
+  };
   pendingDestinationConfirm: boolean;
+  pendingReturnConfirm: boolean;
 }
 
 export interface ManagerOrderShipmentSearchRequest {

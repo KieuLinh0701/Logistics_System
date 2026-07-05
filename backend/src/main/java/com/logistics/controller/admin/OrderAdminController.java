@@ -11,7 +11,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.OrderAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +19,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/orders")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Order", description = "Quản lý đơn hàng")
 public class OrderAdminController {
 
-    @Autowired
-    private OrderAdminService orderAdminService;
+    private final OrderAdminService orderAdminService;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

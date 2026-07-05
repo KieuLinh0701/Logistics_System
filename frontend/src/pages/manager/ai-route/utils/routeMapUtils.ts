@@ -86,7 +86,7 @@ export function summarizePlan(routes: AiShipperRoute[]) {
     (acc, route) => {
       const distanceKm = route.estimatedDistanceKm ?? 0;
       const etaMinutes = route.estimatedDurationMinutes ?? 0;
-      acc.totalOrders += route.stops?.filter(s => !isReturnToOfficeStop(s)).length ?? route.stopCount ?? 0;
+      acc.totalOrders += route.stops?.filter(s => s.orderId != null).length ?? route.stopCount ?? 0;
       acc.totalKm += distanceKm;
       acc.totalEta += etaMinutes > 0 ? etaMinutes : Math.ceil(distanceKm / AVG_SPEED_KMH * 60);
       acc.totalFuel += route.fuelCost ?? 0;
@@ -117,7 +117,7 @@ export function getStopTypeLabel(stopType?: RouteStopType): string {
   switch (stopType) {
     case "DELIVERY": return "Giao hàng";
     case "PICKUP": return "Lấy hàng";
-    case "RETURN_TO_OFFICE": return "Quay về bưu cục";
+    case "RETURN_TO_OFFICE": return "Hoàn trả";
     default: return "Giao hàng";
   }
 }
@@ -129,7 +129,7 @@ export function getStopTypeBadge(stopType?: RouteStopType): { color: string; bg:
     case "PICKUP":
       return { color: "#722ed1", bg: "#f3e5f5", label: "Lấy" };
     case "RETURN_TO_OFFICE":
-      return { color: "#E53935", bg: "#ffebee", label: "Về BC" };
+      return { color: "#E53935", bg: "#ffebee", label: "Hoàn" };
     default:
       return { color: "#1C3D90", bg: "#e3f2fd", label: "Giao" };
   }

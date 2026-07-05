@@ -12,7 +12,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.FeeConfigurationAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/fee-configurations")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Fee Configuration", description = "Quản lý cấu hình phí")
 public class FeeConfigurationAdminController {
 
-    @Autowired
-    private FeeConfigurationAdminService feeConfigurationAdminService;
+    private final FeeConfigurationAdminService feeConfigurationAdminService;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

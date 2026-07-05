@@ -28,10 +28,10 @@ import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.OrderDestinationService;
 import com.logistics.service.manager.EmployeeManagerService;
 import com.logistics.service.manager.OrderManagerService;
+import com.logistics.service.user.OrderHistoryUserService;
 import com.logistics.service.user.ProductUserService;
 import com.logistics.service.user.PromotionUserService;
 import com.logistics.service.user.ServiceTypeUserService;
-import com.logistics.service.user.impl.OrderHistoryUserServiceImpl;
 import com.logistics.specification.OrderSpecification;
 import com.logistics.utils.AddressUtils;
 import com.logistics.utils.ManagerOrderEditRuleUtils;
@@ -82,7 +82,7 @@ public class OrderManagerServiceImpl implements OrderManagerService {
 
     private final ProductUserService productUserService;
 
-    private final OrderHistoryUserServiceImpl orderHistoryUserService;
+    private final OrderHistoryUserService orderHistoryUserService;
 
     private final EmployeeManagerService employeeManagerService;
 
@@ -1899,7 +1899,8 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         boolean isCurrentOffice = office.getId().equals(
                 order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null);
 
-        return isFromOffice || isToOffice || isCurrentOffice;    }
+        return isFromOffice || isToOffice || isCurrentOffice;    
+    }
 
     private void checkFromOfficePermission(Order order, Office office) {
         if (!office.getId().equals(
@@ -1919,6 +1920,111 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         if (!office.getId().equals(
                 order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null)) {
             throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void confirmReturnArrival(Integer userId, Integer orderId) {
+        Order order = getOrderById(orderId);
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        validateReturnArrival(order, userOffice);
+        applyReturnArrivalConfirm(order, userOffice);
+    }
+
+    @Override
+    @Transactional
+    public BulkResponse<String> confirmReturnArrivals(Integer userId, List<Integer> orderIds) {
+        List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
+        int totalSuccess = 0, totalFailed = 0;
+        Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
+        Set<Integer> processed = new HashSet<>();
+
+        for (Integer orderId : orderIds) {
+            if (processed.contains(orderId)) {
+                results.add(failResult(String.valueOf(orderId), "Đã tồn tại đơn hàng này trong yêu cầu được xử lý trước đó"));
+                totalFailed++;
+                continue;
+            }
+            processed.add(orderId);
+
+            Order order = repository.findById(orderId).orElse(null);
+            if (order == null) {
+                results.add(failResult(String.valueOf(orderId), "Đơn hàng không tồn tại"));
+                totalFailed++;
+                continue;
+            }
+
+            try {
+                validateReturnArrival(order, userOffice);
+                applyReturnArrivalConfirm(order, userOffice);
+                results.add(successResult(order.getTrackingNumber(), "Xác nhận thành công"));
+                totalSuccess++;
+            } catch (AppException e) {
+                results.add(failResult(order.getTrackingNumber(), e.getMessage()));
+                totalFailed++;
+            }
+        }
+
+        return new BulkResponse<>(
+                totalFailed == 0,
+                totalFailed == 0 ? "Tất cả đơn hàng đã được xác nhận" : "Một số đơn hàng không hợp lệ",
+                totalSuccess,
+                totalFailed,
+                results
+        );
+    }
+
+    private void validateReturnArrival(Order order, Office userOffice) {
+        if (!userOffice.getId().equals(order.getFromOffice() != null ? order.getFromOffice().getId() : null)) {
+            throw new AppException(OrderErrorCode.ORDER_ACCESS_DENIED, "Chỉ Manager bưu cục gốc mới được xác nhận");
+        }
+        if (order.getStatus() != OrderStatus.RETURNING) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS, "Đơn hàng phải có trạng thái RETURNING");
+        }
+        if (!Boolean.TRUE.equals(order.getPendingReturnConfirm())) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS, "Đơn hàng không có pendingReturnConfirm = true");
+        }
+    }
+
+    private void applyReturnArrivalConfirm(Order order, Office userOffice) {
+        order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
+        order.setPendingReturnConfirm(false);
+        order.setCurrentOffice(userOffice);
+        order.setEmployee(null);
+        repository.save(order);
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                userOffice,
+                null,
+                OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
+                "Manager xac nhan don hoan da ve bu cua goc"
+        );
+
+        if (order.getUser() != null) {
+            if (order.getPickupType() == OrderPickupType.AT_OFFICE) {
+                notificationService.create(
+                        "Đơn hàng hoàn đã về bưu cục gốc",
+                        String.format("Đơn %s đã về bưu cục gốc. Vui lòng đến bưu cục để nhận lại hàng.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber()
+                );
+            } else if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+                notificationService.create(
+                        "Đơn hàng hoàn đã về bưu cục gốc",
+                        String.format("Đơn %s đã về bưu cục gốc. Chúng tôi sẽ sắp xếp giao trả đến địa chỉ của bạn.", order.getTrackingNumber()),
+                        "order_status",
+                        order.getUser().getId(),
+                        null,
+                        "orders/tracking",
+                        order.getTrackingNumber()
+                );
+            }
         }
     }
 }

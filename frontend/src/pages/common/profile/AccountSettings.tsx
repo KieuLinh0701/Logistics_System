@@ -8,7 +8,7 @@ import Title from 'antd/es/typography/Title';
 import './AccountSettings.css';
 import {getUserRole, hasPermissionGroup} from '../../../utils/authUtils';
 import AddressSettingsUser from './components/userAddress/AddressSettingsUser';
-import ShipperVehicleSettingPage from '../../shipper/ShipperVehicleSetting';
+import ShipperVehicleSettingPage from '../../shipper/vehicle/ShipperVehicleSettingPage';
 
 const AccountSettings: React.FC = () => {
   const role = getUserRole();

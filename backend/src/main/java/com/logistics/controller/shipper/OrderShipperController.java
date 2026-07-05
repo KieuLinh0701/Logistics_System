@@ -14,7 +14,7 @@ import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,14 +24,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shipper")
+@RequiredArgsConstructor
 @Tag(name = "Shipper - Order", description = "Quản lý đơn hàng, quy trình giao nhận, xử lý sự cố và lộ trình cho nhân viên giao hàng")
 public class OrderShipperController {
 
-    @Autowired
-    private OrderShipperService shipperService;
-
-    @Autowired
-    private ShipmentDeliveryService shipmentDeliveryService;
+    private final OrderShipperService shipperService;
+    private final ShipmentDeliveryService shipmentDeliveryService;
 
     private boolean isNotShipper() {
         return !SecurityUtils.hasRole("shipper");
@@ -69,6 +67,20 @@ public class OrderShipperController {
         }
 
         return ResponseEntity.ok(ApiResponse.success(shipperService.listUnassignedOrders(page, limit)));
+    }
+
+    @GetMapping("/return-orders")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> listReturnOrders(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
+
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(shipperService.listReturnOrders(page, limit, status, search)));
     }
 
     @GetMapping("/pickup-requests")
@@ -439,11 +451,6 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success(shipperService.assignPickupToShipperRoute(body)));
     }
 
-    /**
-     * Pickup insert trực tiếp vào Shipment (ShipmentOrder là source of truth).
-     * Frontend dùng endpoint này khi routeInfo.source === "SHIPMENT".
-     * Old /route/pickup-insert (PickupInsertionRequest) giữ lại cho AI-source fallback.
-     */
     @PostMapping("/shipments/{id}/pickup-insert")
     @Audit(
             entity = EntityType.SHIPMENT,
@@ -458,5 +465,24 @@ public class OrderShipperController {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
         return ResponseEntity.ok(ApiResponse.success(shipperService.insertPickupIntoShipment(id, body)));
+    }
+
+    @PutMapping("/orders/{id}/return-delivered")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = "Shipper xác nhận giao trả hàng hoàn",
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> markReturnDelivered(
+            @PathVariable Integer id,
+            @RequestBody(required = false) Map<String, Object> body) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        String proofImageUrl = body != null && body.get("proofImageUrl") != null
+                ? body.get("proofImageUrl").toString() : null;
+        shipmentDeliveryService.markReturnDelivered(id, proofImageUrl);
+        return ResponseEntity.ok(ApiResponse.success("Đã xác nhận giao trả hàng hoàn thành công"));
     }
 }

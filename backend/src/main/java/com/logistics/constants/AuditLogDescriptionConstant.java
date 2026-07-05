@@ -54,6 +54,8 @@ public class AuditLogDescriptionConstant {
     public static final String ORDER_CONFIRM_BULK = "Xác nhận các đơn hàng";
     public static final String ORDER_RETURNED_BULK = "Xác nhận đã hoàn hàng cho các đơn hàng hoàn thất bại";
     public static final String ORDER_URGENT_CONFIRM_BULK = "Xác nhận các đơn hàng cần xử lý khẩn cấp";
+    public static final String ORDER_CONFIRM_RETURN_ARRIVAL = "Xác nhận đơn hoàn đã về bưu cục gốc";
+    public static final String ORDER_CONFIRM_RETURN_ARRIVAL_BULK = "Xác nhận các đơn hoàn đã về bưu cục gốc";
 
     // Payment
     public static final String PAYMENT_VNPAY_CREATE_SETTLEMENT = "Tạo yêu cầu thanh toán đối soát qua VNPAY";

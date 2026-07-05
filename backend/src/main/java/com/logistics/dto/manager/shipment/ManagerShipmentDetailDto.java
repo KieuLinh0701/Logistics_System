@@ -17,6 +17,7 @@ public class ManagerShipmentDetailDto {
     private String status;
 
     private Office toOffice;
+    private Office fromOffice;
     private Office currentOffice;
 
     private BigDecimal weight;
@@ -25,6 +26,7 @@ public class ManagerShipmentDetailDto {
     private String payer;
     private String paymentStatus;
     private boolean pendingDestinationConfirm;
+    private boolean pendingReturnConfirm;
     private String recipientName;
     private String recipientPhone;
     private String recipientFullAddress;

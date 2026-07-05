@@ -1,0 +1,238 @@
+.my-orders-page-root .my-orders-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.my-orders-page-root .my-orders-search-wrapper {
+  flex: 1;
+  min-width: 220px;
+}
+
+.my-orders-page-root .my-orders-search-wrapper .ant-input-affix-wrapper {
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  height: 36px;
+  padding: 4px 11px;
+}
+
+.my-orders-page-root .my-orders-search-wrapper .ant-input-affix-wrapper:hover {
+  border-color: #1C3D90;
+}
+
+.my-orders-page-root .my-orders-search-wrapper .ant-input-affix-wrapper:focus,
+.my-orders-page-root .my-orders-search-wrapper .ant-input-affix-wrapper-focused {
+  border-color: #1C3D90;
+  box-shadow: 0 0 0 2px rgba(28, 61, 144, 0.1);
+}
+
+.my-orders-page-root .my-orders-search-wrapper .ant-input {
+  border: none;
+  background: transparent;
+}
+
+.my-orders-page-root .my-orders-search-wrapper .ant-input:focus {
+  box-shadow: none;
+}
+
+.my-orders-page-root .my-orders-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.my-orders-tabs {
+  padding: 0;
+  margin-top: 16px;
+}
+
+.my-orders-tabs .ant-tabs-nav-list {
+  display: flex;
+  gap: 10px;
+}
+
+.my-orders-tabs .ant-tabs-tab {
+  padding: 12px 20px;
+  margin: 0 !important;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+}
+
+.my-orders-tabs .ant-tabs-tab:hover {
+  background-color: #f8f9fa;
+}
+
+.my-orders-tabs .ant-tabs-tab-active {
+  background-color: #1c3d90;
+}
+
+.my-orders-tabs .ant-tabs-tab-active .tab-label {
+  color: white;
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.my-orders-tabs .ant-tabs-ink-bar {
+  background: #1c3d90;
+  height: 3px;
+}
+
+.my-orders-tab-wrapper {
+  margin-top: 16px;
+}
+
+.my-orders-results {
+  display: inline-block;
+  background: #f0f8ff;
+  color: #1C3D90;
+  border: 1px solid #1C3D90;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.my-orders-table {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Table header - matching shipper-page-table */
+.my-orders-table .ant-table-thead > tr > th {
+  background: #fafafa !important;
+  color: #1c3d90 !important;
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.my-orders-table .ant-table-header,
+.my-orders-table .ant-table-body {
+  min-width: auto !important;
+}
+
+.my-orders-table .ant-table-tbody > tr > td {
+  color: #000 !important;
+  white-space: normal !important;
+  word-break: break-word;
+  border-bottom: 1px solid #f5f5f5;
+  padding: 15px 20px;
+}
+
+.my-orders-table .ant-table-tbody > tr:hover > td {
+  background: #f8f9ff !important;
+}
+
+.my-orders-table .table-strong {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+.my-orders-table .table-muted {
+  color: #595959 !important;
+  font-size: 12px;
+}
+
+.my-orders-table .table-cod {
+  color: #cf1322 !important;
+  font-weight: 600;
+}
+
+.my-orders-table .ant-pagination {
+  padding: 16px 20px !important;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.my-orders-table .ant-pagination-item {
+  border: 1px solid #e8edff;
+  border-radius: 8px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  min-width: 32px;
+  height: 32px;
+}
+
+.my-orders-table .ant-pagination-item a {
+  color: #666;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 30px;
+}
+
+.my-orders-table .ant-pagination-item:hover {
+  border-color: #1C3D90;
+}
+
+.my-orders-table .ant-pagination-item:hover a {
+  color: #1C3D90;
+}
+
+.my-orders-table .ant-pagination-item-active {
+  border-color: #1C3D90;
+  background: linear-gradient(135deg, #1C3D90, #2E5BBA);
+}
+
+.my-orders-table .ant-pagination-item-active a {
+  color: white;
+}
+
+.my-orders-table .ant-table-container,
+.my-orders-table .ant-table-content,
+.my-orders-table .ant-table-body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overflow-x: auto !important;
+}
+
+.my-orders-table .ant-table-container::-webkit-scrollbar,
+.my-orders-table .ant-table-content::-webkit-scrollbar,
+.my-orders-table .ant-table-body::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .my-orders-page-root .my-orders-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-orders-page-root .my-orders-search-wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .my-orders-page-root .my-orders-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .my-orders-tabs .ant-tabs-nav {
+    overflow-x: auto;
+  }
+
+  .my-orders-tabs .ant-tabs-tab {
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+}

@@ -76,6 +76,27 @@ public class OrderMapper {
                             .getLongitude());
         }
 
+        ManagerShipmentDetailDto.Office fromOffice = null;
+        if (entity.getFromOffice() != null) {
+            fromOffice = new ManagerShipmentDetailDto.Office(
+                    entity.getFromOffice()
+                            .getId(),
+                    entity.getFromOffice()
+                            .getName(),
+                    entity.getFromOffice()
+                            .getPostalCode(),
+                    entity.getFromOffice()
+                            .getCityCode(),
+                    entity.getFromOffice()
+                            .getWardCode(),
+                    entity.getFromOffice()
+                            .getDetail(),
+                    entity.getFromOffice()
+                            .getLatitude(),
+                    entity.getFromOffice()
+                            .getLongitude());
+        }
+
         ManagerShipmentDetailDto.Office currentOffice = null;
         if (entity.getCurrentOffice() != null) {
             currentOffice = new ManagerShipmentDetailDto.Office(
@@ -95,6 +116,7 @@ public class OrderMapper {
                 entity.getStatus() != null ? entity.getStatus()
                         .name() : null,
                 toOffice,
+                fromOffice,
                 currentOffice,
                 entity.getWeight() != null ? entity.getWeight() : BigDecimal.ZERO,
                 entity.getCod() != null ? entity.getCod() : 0,
@@ -104,6 +126,7 @@ public class OrderMapper {
                 entity.getPaymentStatus() != null ? entity.getPaymentStatus()
                         .name() : null,
                 entity.getPendingDestinationConfirm(),
+                Boolean.TRUE.equals(entity.getPendingReturnConfirm()),
                 entity.getRecipientName(),
                 entity.getRecipientPhone(),
                 entity.getRecipientFullAddress()

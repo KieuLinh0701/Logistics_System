@@ -12,7 +12,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.PromotionAdminService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/promotions")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Promotion", description = "Quản lý chương trình khuyến mãi")
 public class PromotionAdminController {
 
-    @Autowired
-    private PromotionAdminService promotionAdminService;
+    private final PromotionAdminService promotionAdminService;
 
     private boolean isNotAdmin() {
         return !SecurityUtils.hasRole("admin");

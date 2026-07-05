@@ -1,0 +1,1 @@
+ALTER TABLE orders ADD COLUMN pending_return_confirm BOOLEAN NOT NULL DEFAULT FALSE;

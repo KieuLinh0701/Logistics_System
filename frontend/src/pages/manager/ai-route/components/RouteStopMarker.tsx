@@ -37,9 +37,7 @@ const RouteStopMarker: React.FC<RouteStopMarkerProps> = ({
     const size = highlighted || selected ? 40 : 34;
     let url: string;
 
-    if (isReturn) {
-      url = createReturnToOfficeMarkerSvg("VỀ BC");
-    } else if (isPickup) {
+    if (isPickup) {
       url = createPickupMarkerSvg(label);
     } else {
       url = createStopMarkerSvg(color, label, highlighted || selected, stop.stopType);

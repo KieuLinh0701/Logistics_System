@@ -12,7 +12,7 @@ import com.logistics.response.ApiResponse;
 import com.logistics.service.driver.ShipmentDriverService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/driver/shipments")
+@RequiredArgsConstructor
 @Tag(name = "Driver - Shipment", description = "Quản lý hành trình, lộ trình và cập nhật vị trí đơn hàng của tài xế")
 public class ShipmentDriverController {
 
-    @Autowired
-    private ShipmentDriverService shipmentDriverService;
+    private final ShipmentDriverService shipmentDriverService;
 
     private boolean isNotDriver() {
         return !SecurityUtils.hasRole("driver");

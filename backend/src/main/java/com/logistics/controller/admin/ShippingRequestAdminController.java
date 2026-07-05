@@ -9,7 +9,7 @@ import com.logistics.enums.ShippingRequestStatus;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ShippingRequestAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,10 +18,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/shipping-requests")
+@RequiredArgsConstructor
 @Tag(name = "Admin - Shipping Request", description = "Quản lý yêu cầu vận chuyển")
 public class ShippingRequestAdminController {
-    @Autowired
-    private ShippingRequestAdminService shippingRequestAdminService;
+    private final ShippingRequestAdminService shippingRequestAdminService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> list() {

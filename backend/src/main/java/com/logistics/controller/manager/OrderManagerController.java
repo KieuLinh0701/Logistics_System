@@ -225,6 +225,41 @@ public class OrderManagerController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PatchMapping("/{id}/confirm-return-arrival")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_RETURN_ARRIVAL,
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<Void>> confirmReturnArrival(
+            @PathVariable Integer id,
+            HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        service.confirmReturnArrival(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/confirm-return-arrival-bulk")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_CONFIRM_RETURN_ARRIVAL_BULK
+    )
+    public ResponseEntity<BulkResponse<String>> confirmReturnArrivals(
+            HttpServletRequest request,
+            @RequestBody Map<String, Object> body) {
+        Integer userId = (Integer) request.getAttribute("currentUserId");
+
+        List<Integer> orderIds = ((List<?>) body.get("orderIds"))
+                .stream()
+                .map(o -> ((Number) o).intValue())
+                .toList();
+
+        return ResponseEntity.ok(service.confirmReturnArrivals(userId, orderIds));
+    }
+
     @GetMapping("/export")
     @Audit(
             entity = EntityType.ORDER,
