@@ -1,9 +1,3 @@
-/**
- * Layout & table styling dùng chung cho các trang shipper (danh sách),
- * căn chỉnh với admin/manager: hàng bộ lọc trên → tiêu đề → khoảng cách → bảng.
- * Không import JobPostingComponents.css — file độc lập cho shipper.
- */
-
 .shipper-page-root .shipper-filter-panel {
   display: flex;
   align-items: center;

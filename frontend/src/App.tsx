@@ -71,25 +71,26 @@ import UserEmployeeList from "./pages/user/employee/list/UserEmployeeList.tsx";
 import UserEmployeeHistory from "./pages/user/employee/history/UserEmployeeHistory.tsx";
 
 // Shipper
-import ShipperOrders from "./pages/shipper/Orders";
-import ShipperUnassignedOrders from "./pages/shipper/UnassignedOrders";
-import ShipperReturnOrders from "./pages/shipper/ReturnOrders";
-import ShipperOrderDetail from "./pages/shipper/OrderDetail";
-import ShipperDeliveryRoute from "./pages/shipper/DeliveryRoute";
-import ShipperDeliveryHistory from "./pages/shipper/DeliveryHistory";
-import ShipperCODManagement from "./pages/shipper/CODManagement";
-import ShipperIncidentReport from "./pages/shipper/IncidentReport";
-import ShippingRequests from "./pages/shipper/shippingRequests/ShippingRequests";
-import ShipperBarcodeScanner from "./pages/shipper/BarcodeScanner";
-import FailedDeliveryOrders from "./pages/shipper/FailedDeliveryOrders";
-import ShipperPendingShipments from "./pages/shipper/ShipperPendingShipments";
-import ShipperShipmentHistory from "./pages/shipper/shipment/ShipperShipmentHistory.tsx";
-import ShipperShipmentOrders from "./pages/shipper/shipment/ShipperShipmentOrders.tsx";
+import ShipperOrders from "./pages/shipper/orders/OrdersPage";
+import ShipperOrderDetail from "./pages/shipper/orders/OrderDetailPage";
+import ShipperDeliveryRoute from "./pages/shipper/delivery-route/DeliveryRoutePage";
+import ShipperDeliveryHistory from "./pages/shipper/delivery-history/DeliveryHistoryPage";
+import ShipperCODManagement from "./pages/shipper/cod/CODManagementPage";
+import ShipperIncidentReport from "./pages/shipper/incident/IncidentReportPage";
+import ShippingRequests from "./pages/shipper/shipping-requests/ShippingRequestsPage";
+import ShipperBarcodeScanner from "./pages/shipper/scanner/BarcodeScannerPage";
+import ShipperShipmentHistory from "./pages/shipper/shipment/ShipperShipmentHistoryPage";
+import ShipperShipmentOrders from "./pages/shipper/shipment/ShipperShipmentOrdersPage";
+import MyOrdersPage from "./pages/shipper/my-orders/MyOrdersPage";
+import ShipperUnassignedOrders from "./pages/shipper/unassigned/UnassignedOrdersPage";
+import ShipperReturnOrders from "./pages/shipper/returns/ReturnOrdersPage";
+import FailedDeliveryOrders from "./pages/shipper/failed-deliveries/FailedDeliveryOrdersPage";
+import ShipperPendingShipments from "./pages/shipper/pending-shipments/ShipperPendingShipmentsPage";
 
 // Driver
-import DriverShipments from "./pages/driver/Shipments";
-import DriverRoute from "./pages/driver/Route";
-import DriverHistory from "./pages/driver/History";
+import DriverShipmentsPage from "./pages/driver/shipments/DriverShipmentsPage";
+import DriverRoutePage from "./pages/driver/route/DriverRoutePage";
+import DriverHistoryPage from "./pages/driver/history/DriverHistoryPage";
 import PromotionList from "./pages/common/info/PromotionList";
 import AdminPromotions from "./pages/admin/promotions/PromotionsPage";
 import ShippingRequestsAdmin from "./pages/admin/shipping-requests/ShippingRequestsPage";
@@ -265,18 +266,18 @@ const App: React.FC = () => {
                         {/* Shipper routes */}
                         <Route path="/shipper/orders-unassigned" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><ShipperUnassignedOrders/></PrivateRoute>}/>
-                        <Route path="/shipper/orders"
-                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperOrders/></PrivateRoute>}/>
-                        <Route path="/shipper/return-orders"
-                               element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperReturnOrders/></PrivateRoute>}/>
+                        {/* Redirect old routes to new MyOrders page */}
+                        <Route path="/shipper/orders" element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><Navigate to="/shipper/my-orders?tab=delivery" replace /></PrivateRoute>} />
+                        <Route path="/shipper/return-orders" element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><Navigate to="/shipper/my-orders?tab=return" replace /></PrivateRoute>} />
+                        <Route path="/shipper/shipping-requests" element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><Navigate to="/shipper/my-orders?tab=pickup" replace /></PrivateRoute>} />
+                        {/* New unified MyOrders page */}
+                        <Route path="/shipper/my-orders" element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><MyOrdersPage/></PrivateRoute>}/>
                         <Route path="/shipper/orders/:id"
                                element={<PrivateRoute allowedPermissionGroups={["group_shipper"]}><ShipperOrderDetail/></PrivateRoute>}/>
                         <Route path="/shipper/scan-barcode" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><ShipperBarcodeScanner/></PrivateRoute>}/>
                         <Route path="/route" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><ShipperDeliveryRoute/></PrivateRoute>}/>
-                        <Route path="/shipper/shipping-requests" element={<PrivateRoute 
-                            allowedPermissionGroups={["group_shipper"]}><ShippingRequests/></PrivateRoute>}/>
                         <Route path="/shipper/failed-deliveries" element={<PrivateRoute
                             allowedPermissionGroups={["group_shipper"]}><FailedDeliveryOrders/></PrivateRoute>}/>
                         <Route path="/history" element={<PrivateRoute
@@ -300,11 +301,11 @@ const App: React.FC = () => {
 
                         {/* Driver routes */}
                         <Route path="/driver/shipments"
-                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverShipments/></PrivateRoute>}/>
+                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverShipmentsPage/></PrivateRoute>}/>
                         <Route path="/driver/route"
-                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverRoute/></PrivateRoute>}/>
+                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverRoutePage/></PrivateRoute>}/>
                         <Route path="/driver/history"
-                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverHistory/></PrivateRoute>}/>
+                               element={<PrivateRoute allowedPermissionGroups={["group_driver"]}><DriverHistoryPage/></PrivateRoute>}/>
                         <Route path="/driver/contact-manager" element={<PrivateRoute
                             allowedPermissionGroups={["group_driver"]}><ContactManagerPage/></PrivateRoute>}/>
                     </Route>

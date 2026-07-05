@@ -25,6 +25,7 @@ import com.logistics.service.common.OrderDestinationService;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
@@ -2624,20 +2625,22 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             return buildAiDeliveryRouteResponseData(employee, aiRoute);
         }
 
-        Integer officeId = employee.getOffice().getId();
-
+        // FALLBACK: Chỉ lấy orders đã assigned cho shipper (employee tạo/assigned)
+        // Không lấy AT_DEST_OFFICE vì đó là đơn chưa assigned
         Specification<Order> routeSpec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("toOffice").get("id"), officeId));
-            predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
-            // Lấy tất cả đơn hàng ở trạng thái cần giao, không giới hạn ngày tạo
+
+            // Orders đã assigned cho shipper = employee (người tạo đơn tại bưu cục)
+            predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
+
+            // Chỉ lấy đơn shipper đang xử lý, không lấy AT_DEST_OFFICE (chưa assigned)
             predicates.add(root.get("status").in(
-                    OrderStatus.AT_DEST_OFFICE,
+                    OrderStatus.PICKING_UP,
                     OrderStatus.PICKED_UP,
                     OrderStatus.DELIVERING,
-                    OrderStatus.READY_FOR_PICKUP,
-                    OrderStatus.PICKING_UP
+                    OrderStatus.READY_FOR_PICKUP
             ));
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
@@ -2674,7 +2677,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         Map<String, Object> routeInfo = new HashMap<>();
         routeInfo.put("id", 1);
-        routeInfo.put("name", "Tuyến " + officeId);
+        routeInfo.put("name", "Tuyến " + employee.getOffice().getId());
         routeInfo.put("startLocation", employee.getOffice().getName());
         routeInfo.put("totalStops", routeOrders.size());
         routeInfo.put("completedStops", (int) routeOrders.stream().filter(o -> o.getStatus() == OrderStatus.DELIVERED).count());
