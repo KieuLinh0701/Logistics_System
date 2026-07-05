@@ -1,11 +1,11 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { Button, Modal, Space, Table, Tag, Typography } from "antd";
-import { EyeOutlined, PictureOutlined } from "@ant-design/icons";
+import { Button, Space, Table, Tag, Typography } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import { connectWebSocket, disconnectWebSocket } from "../../../../socket/socket";
 import { getUserId } from "../../../../utils/authUtils";
 import orderApi from "../../../../api/orderApi";
 import { dispatchShipperRouteRefresh } from "../../delivery-route/deliveryRouteEvents";
-import PickupAttemptModal from "../../shared/components/PickupAttemptModal";
 import type { TabRefreshHandle } from "../MyOrdersPage";
 
 const { Text } = Typography;
@@ -29,17 +29,11 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
   ({ search }, ref) => {
+    const navigate = useNavigate();
     const [list, setList] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [mapVisible, setMapVisible] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
-    const [pickupFailedModalOpen, setPickupFailedModalOpen] = useState(false);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [acceptingIds, setAcceptingIds] = useState<Set<number>>(new Set());
-    const [confirmPickupModalVisible, setConfirmPickupModalVisible] = useState(false);
-    const [confirmPickupImageFile, setConfirmPickupImageFile] = useState<File | null>(null);
-    const [confirmPickupImagePreview, setConfirmPickupImagePreview] = useState<string | null>(null);
-    const [confirmPickupLoading, setConfirmPickupLoading] = useState(false);
     const paginationRef = useRef(pagination);
     paginationRef.current = pagination;
     const searchRef = useRef(search);
@@ -176,25 +170,11 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
         }
 
         if (isSuccess) {
-          setList((prev) =>
-            prev.map((r) =>
-              r.id === rec.id
-                ? { ...r, status: data?.status || "PICKING_UP" }
-                : r
-            )
-          );
-        }
-
-        try {
-          await refreshList();
-          setPagination((p) => ({ ...p, current: 1 }));
-        } catch (refreshErr) {
-          console.warn("[ACCEPT_PICKUP_REFRESH_FAILED]", refreshErr);
-        }
-
-        if (isSuccess) {
           dispatchShipperRouteRefresh();
         }
+
+        await refreshList();
+        setPagination((p) => ({ ...p, current: 1 }));
       } catch (e: any) {
         import("antd").then(({ message }) => {
           message.error(e?.response?.data?.message || e?.message || "Lỗi khi nhận yêu cầu");
@@ -205,122 +185,6 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
           next.delete(id);
           return next;
         });
-      }
-    }
-
-    async function openMapForOrder(order: any) {
-      try {
-        setLoading(true);
-        const detail = await orderApi.getShipperOrderDetail(order.id);
-        setSelectedOrder(detail || order);
-        setMapVisible(true);
-      } catch (e) {
-        setSelectedOrder(order);
-        setMapVisible(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    async function markPickedUpFromMap(order: any) {
-      setSelectedOrder(order);
-      setConfirmPickupImageFile(null);
-      setConfirmPickupImagePreview(null);
-      setConfirmPickupModalVisible(true);
-    }
-
-    const handleConfirmPickupWithImage = async () => {
-      if (!selectedOrder) return;
-      setConfirmPickupLoading(true);
-      try {
-        let photoUrl: string | undefined;
-        if (confirmPickupImageFile) {
-          const uploadRes: any = await orderApi.uploadShipperProofImage(confirmPickupImageFile);
-          photoUrl = uploadRes?.data?.imageUrl || (uploadRes as any)?.imageUrl || undefined;
-        }
-        await orderApi.markShipperPickedUp(selectedOrder.id, { photoUrl });
-        import("antd").then(({ message }) => message.success("Đã xác nhận đã lấy hàng"));
-        setConfirmPickupModalVisible(false);
-        setMapVisible(false);
-        await refreshList();
-      } catch (e: any) {
-        import("antd").then(({ message }) => {
-          message.error(e?.response?.data?.message || "Lỗi khi xác nhận đã lấy");
-        });
-      } finally {
-        setConfirmPickupLoading(false);
-      }
-    };
-
-    const readFilePreview = (file: File): Promise<string> =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
-
-    const handleSelectPickupImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        setConfirmPickupImageFile(file);
-        setConfirmPickupImagePreview(await readFilePreview(file));
-      }
-      e.target.value = "";
-    };
-
-    const handleRemovePickupImage = () => {
-      setConfirmPickupImageFile(null);
-      setConfirmPickupImagePreview(null);
-    };
-
-    async function deliverToOriginFromMap(order: any) {
-      try {
-        await orderApi.deliverShipperToOrigin(order.id, {});
-        import("antd").then(({ message }) => message.success("Đã nộp hàng tại bưu cục"));
-        setMapVisible(false);
-        await refreshList();
-      } catch (e) {
-        import("antd").then(({ message }) => message.error("Lỗi khi nộp tại bưu cục"));
-      }
-    }
-
-    async function submitPickupFailed(values: { failReason: string; note?: string }) {
-      if (!selectedOrder) return;
-      try {
-        setLoading(true);
-        await orderApi.recordPickupAttempt(selectedOrder.id, {
-          status: "FAILED",
-          failReason: values.failReason,
-          note: values.note,
-        });
-        import("antd").then(({ message }) => message.success("Đã ghi nhận lấy hàng thất bại"));
-        setPickupFailedModalOpen(false);
-        await refreshList();
-        const detail = await orderApi.getShipperOrderDetail(selectedOrder.id);
-        setSelectedOrder(detail || selectedOrder);
-      } catch (e: any) {
-        import("antd").then(({ message }) => {
-          message.error(e?.response?.data?.message || "Lỗi khi báo lấy hàng thất bại");
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    async function handleRetryPickup(order: any) {
-      try {
-        setLoading(true);
-        await orderApi.retryPickup(order.id);
-        import("antd").then(({ message }) => message.success("Đã tiến hành đến lấy lại. Người gửi sẽ được thông báo."));
-        setSelectedOrder((prev: any) => prev ? { ...prev, status: "PICKING_UP" } : prev);
-        await refreshList();
-      } catch (e: any) {
-        import("antd").then(({ message }) => {
-          message.error(e?.response?.data?.message || "Lỗi khi tiến hành lấy lại");
-        });
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -403,7 +267,7 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
               )}
               <Button
                 icon={<EyeOutlined />}
-                onClick={() => openMapForOrder(record)}
+                onClick={() => navigate(`/shipper/orders/${record.id}`, { state: { from: "/shipper/my-orders?tab=pickup" } })}
                 disabled={isAccepting}
               >
                 Chi tiết
@@ -433,137 +297,6 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
           scroll={{ x: 960 }}
           className="my-orders-table"
         />
-
-        <Modal
-          title={selectedOrder ? `Chi tiết đơn hàng - ${selectedOrder.trackingNumber || selectedOrder.id}` : "Chi tiết đơn hàng"}
-          open={mapVisible}
-          onCancel={() => setMapVisible(false)}
-          footer={
-            selectedOrder ? (
-              selectedOrder.status === "PICKED_UP" ? (
-                <Space>
-                  <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                  <Button
-                    type="primary"
-                    style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
-                    onClick={() => selectedOrder && deliverToOriginFromMap(selectedOrder)}
-                  >
-                    Nộp tại bưu cục
-                  </Button>
-                </Space>
-              ) : selectedOrder.status === "PICKUP_RETRY" ? (
-                <Space>
-                  <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                  <Button
-                    type="primary"
-                    className="primary-button"
-                    onClick={() => selectedOrder && handleRetryPickup(selectedOrder)}
-                    loading={loading}
-                  >
-                    Tiến hành đến lấy lại
-                  </Button>
-                </Space>
-              ) : selectedOrder.status === "PICKING_UP" ? (
-                <Space>
-                  <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                  <Button danger onClick={() => setPickupFailedModalOpen(true)}>
-                    Báo lấy hàng thất bại
-                  </Button>
-                  <Button type="primary" className="primary-button" onClick={() => selectedOrder && markPickedUpFromMap(selectedOrder)}>
-                    Xác nhận đã lấy
-                  </Button>
-                </Space>
-              ) : selectedOrder.status === "URGENT_PICKUP" || selectedOrder.status === "READY_FOR_PICKUP" ? (
-                <Space>
-                  <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                  <Button
-                    type="primary"
-                    className="primary-button"
-                    onClick={() => accept(selectedOrder.id)}
-                    loading={acceptingIds.has(selectedOrder.id)}
-                    disabled={acceptingIds.has(selectedOrder.id)}
-                  >
-                    Nhận
-                  </Button>
-                </Space>
-              ) : (
-                <Space>
-                  <Button onClick={() => setMapVisible(false)}>Đóng</Button>
-                </Space>
-              )
-            ) : null
-          }
-          width={600}
-        >
-          {selectedOrder && (() => {
-            const attempts = selectedOrder.pickupAttempts || [];
-            const maxAttempts = selectedOrder.maxPickupAttempts || 0;
-            const failedAttempts = attempts.filter((a: any) => a.status === "FAILED").length;
-            return (
-              <Text type="secondary" style={{ display: "block" }}>
-                Lần thử {failedAttempts} / {maxAttempts || "-"}
-              </Text>
-            );
-          })()}
-        </Modal>
-
-        <PickupAttemptModal
-          open={pickupFailedModalOpen}
-          loading={loading}
-          onCancel={() => setPickupFailedModalOpen(false)}
-          onSubmit={submitPickupFailed}
-        />
-
-        <Modal
-          title="Xác nhận đã lấy hàng"
-          open={confirmPickupModalVisible}
-          onOk={handleConfirmPickupWithImage}
-          onCancel={() => setConfirmPickupModalVisible(false)}
-          confirmLoading={confirmPickupLoading}
-          width={640}
-          okText="Xác nhận"
-        >
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
-            <Text type="secondary">
-              Bạn đang xác nhận đã lấy hàng cho đơn: <strong>{selectedOrder?.trackingNumber || selectedOrder?.id}</strong>
-            </Text>
-
-            <div style={{ marginBottom: 12 }}>
-              <Text strong>Ảnh minh chứng lấy hàng (tuỳ chọn)</Text>
-              <div style={{ marginTop: 8 }}>
-                <input
-                  id="confirm-pickup-image-input"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleSelectPickupImage}
-                />
-                <Space>
-                  <Button
-                    icon={<PictureOutlined />}
-                    onClick={() => document.getElementById("confirm-pickup-image-input")?.click()}
-                  >
-                    Chọn ảnh
-                  </Button>
-                  {confirmPickupImagePreview && (
-                    <Button danger onClick={handleRemovePickupImage}>
-                      Xóa ảnh
-                    </Button>
-                  )}
-                </Space>
-              </div>
-              {confirmPickupImagePreview && (
-                <div style={{ marginTop: 12 }}>
-                  <img
-                    src={confirmPickupImagePreview}
-                    alt="Ảnh minh chứng lấy hàng"
-                    style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 8, border: "1px solid #e5e7eb" }}
-                  />
-                </div>
-              )}
-            </div>
-          </Space>
-        </Modal>
       </div>
     );
   }

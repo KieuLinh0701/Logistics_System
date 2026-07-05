@@ -664,12 +664,28 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
 
-        boolean allowed = false;
-        if (order.getEmployee() != null && order.getEmployee().getId() != null) {
-            allowed = Objects.equals(order.getEmployee().getId(), employee.getId());
-        } else if (order.getToOffice() != null && officeId != null) {
-            allowed = Objects.equals(order.getToOffice().getId(), officeId);
+        boolean isAssignedToMe = order.getEmployee() != null && order.getEmployee().getId() != null
+                && Objects.equals(order.getEmployee().getId(), employee.getId());
+        boolean isDeliveryToMyOffice = order.getToOffice() != null && officeId != null
+                && Objects.equals(order.getToOffice().getId(), officeId);
+
+        // Trường hợp 3: Đơn pickup tại nhà (PICKUP_BY_COURIER) chưa nhận
+        boolean canViewUnassignedPickup = false;
+        if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER
+                && order.getEmployee() == null
+                && (order.getStatus() == OrderStatus.READY_FOR_PICKUP || order.getStatus() == OrderStatus.URGENT_PICKUP)) {
+            // Logic khớp với list pickup: cho phép cả khi fromOffice == null
+            Integer currentOfficeId = order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null;
+            Integer fromOfficeId = order.getFromOffice() != null ? order.getFromOffice().getId() : null;
+            boolean isPickupOfficeMatched = (currentOfficeId == null && fromOfficeId == null)
+                    || (officeId != null && (
+                        (currentOfficeId != null && Objects.equals(currentOfficeId, officeId))
+                        || (fromOfficeId != null && Objects.equals(fromOfficeId, officeId))
+                    ));
+            canViewUnassignedPickup = isPickupOfficeMatched;
         }
+
+        boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup;
 
         if (!allowed) {
             throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
@@ -685,12 +701,26 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
 
-        boolean allowed = false;
-        if (order.getEmployee() != null && order.getEmployee().getId() != null) {
-            allowed = Objects.equals(order.getEmployee().getId(), employee.getId());
-        } else if (order.getToOffice() != null && officeId != null) {
-            allowed = Objects.equals(order.getToOffice().getId(), officeId);
-        }
+        boolean isAssignedToMe = order.getEmployee() != null && order.getEmployee().getId() != null
+                && Objects.equals(order.getEmployee().getId(), employee.getId());
+        boolean isDeliveryToMyOffice = order.getToOffice() != null && officeId != null
+                && Objects.equals(order.getToOffice().getId(), officeId);
+        boolean isUnassignedPickup = order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER
+                && order.getEmployee() == null;
+        boolean isPickupStatusAllowed = order.getStatus() == OrderStatus.READY_FOR_PICKUP
+                || order.getStatus() == OrderStatus.URGENT_PICKUP;
+
+        // Logic khớp với list pickup: cho phép cả khi fromOffice == null
+        Integer currentOfficeId = order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null;
+        Integer fromOfficeId = order.getFromOffice() != null ? order.getFromOffice().getId() : null;
+        boolean isPickupOfficeMatched = (currentOfficeId == null && fromOfficeId == null)
+                || (officeId != null && (
+                    (currentOfficeId != null && Objects.equals(currentOfficeId, officeId))
+                    || (fromOfficeId != null && Objects.equals(fromOfficeId, officeId))
+                ));
+        boolean canViewUnassignedPickup = isUnassignedPickup && isPickupStatusAllowed && isPickupOfficeMatched;
+
+        boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup;
 
         if (!allowed) {
             throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);

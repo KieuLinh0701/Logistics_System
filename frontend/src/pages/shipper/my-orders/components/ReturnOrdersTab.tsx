@@ -153,7 +153,7 @@ const ReturnOrdersTab = forwardRef<TabRefreshHandle, ReturnOrdersTabProps>(
         key: "action",
         render: (record: ShipperOrder) => (
           <Space>
-            <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`)}>
+            <Button icon={<EyeOutlined />} onClick={() => navigate(`/shipper/orders/${record.id}`, { state: { from: "/shipper/my-orders?tab=return" } })}>
               Chi tiết
             </Button>
           </Space>

@@ -26,16 +26,17 @@ import {
   DollarOutlined,
   EnvironmentOutlined,
   PhoneOutlined,
-  PlayCircleOutlined,
   PictureOutlined,
+  PlayCircleOutlined,
 } from "@ant-design/icons";
-import {useNavigate, useParams} from "react-router-dom";
+import {useLocation, useNavigate, useParams} from "react-router-dom";
 import dayjs from "dayjs";
 import type {ShipperOrder} from "../../../api/orderApi";
 import orderApi from "../../../api/orderApi";
 import {getUserRole} from "../../../utils/authUtils";
 import {dispatchShipperRouteRefresh} from "../delivery-route/deliveryRouteEvents";
 import {translatePaymentSubmissionStatus} from "../../../utils/orderUtils";
+import PickupAttemptModal from "../shared/components/PickupAttemptModal";
 import {
   canMarkDelivered,
   canMarkPickedUp,
@@ -50,8 +51,10 @@ const { Title, Text, Paragraph } = Typography;
 const ShipperOrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [order, setOrder] = useState<ShipperOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState(false);
   const [deliveryModal, setDeliveryModal] = useState(false);
   const [codModal, setCodModal] = useState(false);
   const [failedModal, setFailedModal] = useState(false);
@@ -69,6 +72,12 @@ const ShipperOrderDetail: React.FC = () => {
   const [codForm] = Form.useForm();
   const [failedForm] = Form.useForm();
   const [paymentSubmissionResponse, setPaymentSubmissionResponse] = useState<any | null>(null);
+
+  // Pickup action states
+  const [pickupFailedModalOpen, setPickupFailedModalOpen] = useState(false);
+  const [confirmPickupModalVisible, setConfirmPickupModalVisible] = useState(false);
+  const [confirmPickupImageFile, setConfirmPickupImageFile] = useState<File | null>(null);
+  const [confirmPickupImagePreview, setConfirmPickupImagePreview] = useState<string | null>(null);
 
   const getCodPreviewItems = () => {
     if (!order || !order.orderProducts) return [];
@@ -323,6 +332,146 @@ const ShipperOrderDetail: React.FC = () => {
     setReturnDeliveryModal(true);
   };
 
+  // ========== PICKUP ACTIONS ==========
+
+  const isPickupOrder = (order: ShipperOrder) => {
+    const status = order.status;
+    return [
+      "READY_FOR_PICKUP",
+      "URGENT_PICKUP",
+      "PICKING_UP",
+      "PICKUP_RETRY",
+      "PICKED_UP",
+      "AT_ORIGIN_OFFICE",
+    ].includes(status);
+  };
+
+  const handleAcceptPickup = async () => {
+    if (!order) return;
+    try {
+      setAccepting(true);
+      const res: any = await orderApi.claimShipperOrderRequest(order.id);
+      const data = res?.data ?? res;
+      const isSuccess = res?.success !== false && data?.success !== false;
+      const requiresReoptimize = data?.requiresReoptimize === true;
+
+      const msg = data?.message || res?.message || (requiresReoptimize
+          ? "Đơn đã được thêm vào chuyến lấy hàng hiện tại."
+          : isSuccess
+            ? "Nhận yêu cầu lấy hàng thành công."
+            : "Không thể nhận yêu cầu lấy hàng");
+
+      if (isSuccess) {
+        message.success(msg);
+      } else {
+        message.error(msg);
+      }
+
+      if (requiresReoptimize) {
+        message.warning("Đơn đã được thêm vào chuyến đang chạy. Vui lòng tối ưu lại tuyến.");
+      }
+
+      if (isSuccess) {
+        dispatchShipperRouteRefresh();
+      }
+
+      fetchOrderDetail();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || e?.message || "Lỗi khi nhận yêu cầu");
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleRetryPickup = async () => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      await orderApi.retryPickup(order.id);
+      message.success("Đã tiến hành đến lấy lại. Người gửi sẽ được thông báo.");
+      fetchOrderDetail();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi tiến hành lấy lại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitPickupFailed = async (values: { failReason: string; note?: string }) => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      await orderApi.recordPickupAttempt(order.id, {
+        status: "FAILED",
+        failReason: values.failReason,
+        note: values.note,
+      });
+      message.success("Đã ghi nhận lấy hàng thất bại");
+      setPickupFailedModalOpen(false);
+      fetchOrderDetail();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi báo lấy hàng thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenConfirmPickup = () => {
+    setConfirmPickupImageFile(null);
+    setConfirmPickupImagePreview(null);
+    setConfirmPickupModalVisible(true);
+  };
+
+  const handleSelectPickupImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setConfirmPickupImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setConfirmPickupImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleRemovePickupImage = () => {
+    setConfirmPickupImageFile(null);
+    setConfirmPickupImagePreview(null);
+  };
+
+  const handleConfirmPickupWithImage = async () => {
+    if (!order) return;
+    setUploading(true);
+    try {
+      let photoUrl: string | undefined;
+      if (confirmPickupImageFile) {
+        const uploadRes: any = await orderApi.uploadShipperProofImage(confirmPickupImageFile);
+        photoUrl = uploadRes?.data?.imageUrl || (uploadRes as any)?.imageUrl || undefined;
+      }
+      await orderApi.markShipperPickedUp(order.id, { photoUrl });
+      message.success("Đã xác nhận đã lấy hàng");
+      setConfirmPickupModalVisible(false);
+      fetchOrderDetail();
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || "Lỗi khi xác nhận đã lấy");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeliverToOrigin = async () => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      await orderApi.deliverShipperToOrigin(order.id, {});
+      message.success("Đã nộp hàng tại bưu cục");
+      fetchOrderDetail();
+    } catch (e) {
+      message.error("Lỗi khi nộp tại bưu cục");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const readFilePreview = (file: File) =>
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -460,6 +609,14 @@ const ShipperOrderDetail: React.FC = () => {
       case "RETURN_RETRY":
       case "RETURN_AT_ORIGIN_OFFICE":
         return "warning";
+      case "READY_FOR_PICKUP":
+      case "URGENT_PICKUP":
+        return "blue";
+      case "PICKING_UP":
+      case "PICKUP_RETRY":
+        return "orange";
+      case "AT_ORIGIN_OFFICE":
+        return "green";
       default:
         return "default";
     }
@@ -475,9 +632,15 @@ const ShipperOrderDetail: React.FC = () => {
       case "AT_DEST_OFFICE":
         return "Đã đến bưu cục";
       case "READY_FOR_PICKUP":
-        return "Sẵn sàng lấy";
+        return "Sẵn sàng lấy hàng";
+      case "URGENT_PICKUP":
+        return "Ưu tiên lấy hàng";
       case "PICKED_UP":
         return "Đã lấy hàng";
+      case "PICKING_UP":
+        return "Đang lấy hàng";
+      case "PICKUP_RETRY":
+        return "Lấy hàng thất bại - Thử lại";
       case "DELIVERING":
         return "Đang giao hàng";
       case "DELIVERED":
@@ -498,6 +661,10 @@ const ShipperOrderDetail: React.FC = () => {
         return "Hoàn lại";
       case "RETURN_FAILED_FINAL":
         return "Hoàn thất bại";
+      case "AT_ORIGIN_OFFICE":
+        return "Đã nộp tại bưu cục";
+      case "CANCELLED":
+        return "Đã huỷ";
       default:
         return status;
     }
@@ -517,6 +684,11 @@ const ShipperOrderDetail: React.FC = () => {
     order?.recipientFullAddress
   );
 
+  const navigateToOrders = () => {
+    const from = location.state?.from as string | undefined;
+    navigate(from || "/shipper/my-orders?tab=delivery");
+  };
+
   if (loading && !order) {
     return (
       <div style={{ textAlign: "center", padding: 50 }}>
@@ -533,7 +705,7 @@ const ShipperOrderDetail: React.FC = () => {
         type="error"
         showIcon
         action={
-          <Button onClick={() => navigate("/shipper/orders")}>Quay lại</Button>
+          <Button onClick={navigateToOrders}>Quay lại</Button>
         }
       />
     );
@@ -547,7 +719,7 @@ const ShipperOrderDetail: React.FC = () => {
           <Row justify="space-between" align="middle">
             <Col>
               <Space>
-                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/shipper/orders")}>
+                <Button icon={<ArrowLeftOutlined />} onClick={navigateToOrders}>
                   Quay lại
                 </Button>
                 <Title level={3} style={{ margin: 0 }}>
@@ -557,8 +729,61 @@ const ShipperOrderDetail: React.FC = () => {
             </Col>
             <Col>
               <Space>
+                {/* ========== PICKUP ACTIONS ========== */}
+                {/* Đơn pickup - READY_FOR_PICKUP / URGENT_PICKUP: Nút Nhận */}
+                {isPickupOrder(order) && (order.status === "READY_FOR_PICKUP" || order.status === "URGENT_PICKUP") && (
+                  <Button
+                    type="primary"
+                    className="primary-button"
+                    loading={accepting}
+                    onClick={handleAcceptPickup}
+                  >
+                    Nhận
+                  </Button>
+                )}
+                {/* Đơn pickup - PICKING_UP: Nút Xác nhận đã lấy và Báo lấy hàng thất bại */}
+                {isPickupOrder(order) && order.status === "PICKING_UP" && (
+                  <>
+                    <Button
+                      danger
+                      onClick={() => setPickupFailedModalOpen(true)}
+                    >
+                      Báo lấy hàng thất bại
+                    </Button>
+                    <Button
+                      type="primary"
+                      className="primary-button"
+                      onClick={handleOpenConfirmPickup}
+                    >
+                      Xác nhận đã lấy
+                    </Button>
+                  </>
+                )}
+                {/* Đơn pickup - PICKUP_RETRY: Nút Tiến hành đến lấy lại */}
+                {isPickupOrder(order) && order.status === "PICKUP_RETRY" && (
+                  <Button
+                    type="primary"
+                    className="primary-button"
+                    onClick={handleRetryPickup}
+                    loading={loading}
+                  >
+                    Tiến hành đến lấy lại
+                  </Button>
+                )}
+                {/* Đơn pickup - PICKED_UP: Nút Nộp tại bưu cục */}
+                {isPickupOrder(order) && order.status === "PICKED_UP" && (
+                  <Button
+                    type="primary"
+                    style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
+                    onClick={handleDeliverToOrigin}
+                    loading={loading}
+                  >
+                    Nộp tại bưu cục
+                  </Button>
+                )}
+
                 {/* Đơn giao hàng thường - không áp dụng cho đơn hoàn trả */}
-                {!isReturnOrder(order) && (getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && order.status !== "DELIVERING" && (
+                {!isReturnOrder(order) && !isPickupOrder(order) && (getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && order.status !== "DELIVERING" && (
                   <Button
                     type="dashed"
                     disabled={!canMarkPickedUp(order)}
@@ -573,7 +798,7 @@ const ShipperOrderDetail: React.FC = () => {
                   </Button>
                 )}
                 {/* Đơn giao hàng - Bắt đầu giao */}
-                {!isReturnOrder(order) && order.status === "PICKED_UP" && (
+                {!isReturnOrder(order) && !isPickupOrder(order) && order.status === "PICKED_UP" && (
                   <Button
                     type="primary"
                     icon={<PlayCircleOutlined />}
@@ -585,7 +810,7 @@ const ShipperOrderDetail: React.FC = () => {
                   </Button>
                 )}
                 {/* Đơn giao hàng - Đang giao */}
-                {!isReturnOrder(order) && order.status === "DELIVERING" && (
+                {!isReturnOrder(order) && !isPickupOrder(order) && order.status === "DELIVERING" && (
                   <>
                     <Button
                       type="primary"
@@ -636,7 +861,7 @@ const ShipperOrderDetail: React.FC = () => {
           </Row>
 
           {/* Alert chỉ hiện cho đơn giao hàng chưa thuộc shipment active */}
-          {!isReturnOrder(order) && !isInActiveDeliveryShipment(order) && !["DELIVERED", "CANCELLED"].includes(order.status) && (
+          {!isReturnOrder(order) && !isPickupOrder(order) && !isInActiveDeliveryShipment(order) && !["DELIVERED", "CANCELLED"].includes(order.status) && (
             <Row justify="center">
               <Alert
                 type="warning"
@@ -652,6 +877,16 @@ const ShipperOrderDetail: React.FC = () => {
                 type="warning"
                 showIcon
                 description="Đơn hoàn trả chưa được nhận. Vui lòng nhận đơn trước khi thao tác."
+              />
+            </Row>
+          )}
+          {/* Alert cho đơn pickup chưa được nhận */}
+          {isPickupOrder(order) && !["PICKED_UP", "AT_ORIGIN_OFFICE", "DELIVERED", "CANCELLED"].includes(order.status) && (order.status === "READY_FOR_PICKUP" || order.status === "URGENT_PICKUP") && (
+            <Row justify="center">
+              <Alert
+                type="info"
+                showIcon
+                description="Bấm Nhận để nhận yêu cầu lấy hàng này."
               />
             </Row>
           )}
@@ -695,6 +930,17 @@ const ShipperOrderDetail: React.FC = () => {
                   {dayjs(order.deliveredAt).format("DD/MM/YYYY HH:mm")}
                 </Descriptions.Item>
               )}
+              {/* Pickup attempts info */}
+              {isPickupOrder(order) && (
+                <Descriptions.Item label="Lần thử lấy hàng">
+                  {(() => {
+                    const attempts = (order as any).pickupAttempts || [];
+                    const failedAttempts = attempts.filter((a: any) => a.status === "FAILED").length;
+                    const maxAttempts = (order as any).maxPickupAttempts || 0;
+                    return `${failedAttempts} / ${maxAttempts || "-"}`;
+                  })()}
+                </Descriptions.Item>
+              )}
             </Descriptions>
           </Card>
 
@@ -735,26 +981,51 @@ const ShipperOrderDetail: React.FC = () => {
 
           {/* Partial delivery modal is opened when user clicks Giao 1 phần */}
 
-          {/* Recipient Info */}
-          <Card title="Thông tin người nhận">
-            <Descriptions column={1} bordered>
-              <Descriptions.Item label="Họ tên">
-                <Text strong>{order.recipientName}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">
-                <Space>
-                  <PhoneOutlined />
-                  <Text>{order.recipientPhone}</Text>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Địa chỉ">
-                <Space>
-                  <EnvironmentOutlined />
-                  <Text>{recipientAddressText}</Text>
-                </Space>
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
+          {/* Pickup orders - show sender info instead of recipient */}
+          {isPickupOrder(order) && (
+            <Card title="Thông tin người gửi">
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="Họ tên">
+                  <Text strong>{(order as any).senderName || "—"}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Số điện thoại">
+                  <Space>
+                    <PhoneOutlined />
+                    <Text>{(order as any).senderPhone || "—"}</Text>
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ">
+                  <Space>
+                    <EnvironmentOutlined />
+                    <Text>{(order as any).senderFullAddress || (order as any).senderAddress || "—"}</Text>
+                  </Space>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          )}
+
+          {/* Regular orders - show recipient info */}
+          {!isPickupOrder(order) && (
+            <Card title="Thông tin người nhận">
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="Họ tên">
+                  <Text strong>{order.recipientName}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Số điện thoại">
+                  <Space>
+                    <PhoneOutlined />
+                    <Text>{order.recipientPhone}</Text>
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ">
+                  <Space>
+                    <EnvironmentOutlined />
+                    <Text>{recipientAddressText}</Text>
+                  </Space>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          )}
 
           {/* Payment Info */}
           <Card title="Thông tin thanh toán">
@@ -1012,6 +1283,70 @@ const ShipperOrderDetail: React.FC = () => {
             },
             label: "Ảnh minh chứng giao trả hàng hoàn (tuỳ chọn)",
           })}
+        </Space>
+      </Modal>
+
+      {/* ========== PICKUP MODALS ========== */}
+
+      {/* Modal: Báo lấy hàng thất bại */}
+      <PickupAttemptModal
+        open={pickupFailedModalOpen}
+        loading={loading}
+        onCancel={() => setPickupFailedModalOpen(false)}
+        onSubmit={handleSubmitPickupFailed}
+      />
+
+      {/* Modal: Xác nhận đã lấy hàng cho pickup */}
+      <Modal
+        title="Xác nhận đã lấy hàng"
+        open={confirmPickupModalVisible}
+        onOk={handleConfirmPickupWithImage}
+        onCancel={() => setConfirmPickupModalVisible(false)}
+        confirmLoading={uploading}
+        width={640}
+        okText="Xác nhận"
+      >
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Alert
+            message="Xác nhận đã lấy hàng"
+            description={`Bạn đang xác nhận đã lấy hàng cho đơn: ${order?.trackingNumber || order?.id}`}
+            type="info"
+            showIcon
+          />
+          <div style={{ marginBottom: 12 }}>
+            <Text strong>Ảnh minh chứng lấy hàng (tuỳ chọn)</Text>
+            <div style={{ marginTop: 8 }}>
+              <input
+                id="pickup-confirm-image-input"
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleSelectPickupImage}
+              />
+              <Space>
+                <Button
+                  icon={<PictureOutlined />}
+                  onClick={() => document.getElementById("pickup-confirm-image-input")?.click()}
+                >
+                  Chọn ảnh
+                </Button>
+                {confirmPickupImagePreview && (
+                  <Button danger onClick={handleRemovePickupImage}>
+                    Xóa ảnh
+                  </Button>
+                )}
+              </Space>
+            </div>
+            {confirmPickupImagePreview && (
+              <div style={{ marginTop: 12 }}>
+                <img
+                  src={confirmPickupImagePreview}
+                  alt="Ảnh minh chứng lấy hàng"
+                  style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                />
+              </div>
+            )}
+          </div>
         </Space>
       </Modal>
     </div>
