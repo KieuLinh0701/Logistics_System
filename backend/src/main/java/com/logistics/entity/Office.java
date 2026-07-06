@@ -14,17 +14,19 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Entity
-@Data
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"employees", "manager"})
 @Table(name = "offices")
 @EntityListeners(AuditingEntityListener.class)
 public class Office {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 50)

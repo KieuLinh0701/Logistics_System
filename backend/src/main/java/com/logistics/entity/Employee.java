@@ -12,16 +12,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Entity
-@Data
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"user", "office", "accountRole"})
 @Table(name = "employees")
 @EntityListeners(AuditingEntityListener.class)
 public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Integer id;
 
     @Column(length = 50, nullable = true, unique = true)

@@ -1,5 +1,5 @@
 import React from "react";
-import { Checkbox, Table, Tag, Typography } from "antd";
+import { Table, Tag, Typography, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -21,18 +21,17 @@ interface PaymentSubmissionItem {
 
 interface CODTransactionsTableProps {
   transactions: PaymentSubmissionItem[];
-  selectedTransactions: number[];
   loading: boolean;
   pagination: { current: number; pageSize: number; total: number };
-  onSelectionChange: (selected: number[]) => void;
   onPageChange: (page: number, pageSize: number) => void;
 }
 
 const getSubmissionStatusColor = (status: string) => {
   switch (status.toUpperCase()) {
     case "PENDING":
-    case "IN_BATCH":
       return "orange";
+    case "IN_BATCH":
+      return "cyan";
     case "MATCHED":
       return "success";
     case "ADJUSTED":
@@ -47,7 +46,7 @@ const getSubmissionStatusColor = (status: string) => {
 const getSubmissionStatusText = (status: string) => {
   switch (status.toUpperCase()) {
     case "PENDING":
-      return "Chờ thu";
+      return "Chờ nộp";
     case "IN_BATCH":
       return "Đang nộp";
     case "MATCHED":
@@ -56,8 +55,8 @@ const getSubmissionStatusText = (status: string) => {
       return "Đã điều chỉnh";
     case "MISMATCHED":
       return "Không khớp";
-    case "SUCCESS":
-      return "Đã thu";
+    case "PROCESSING":
+      return "Đang xử lý";
     default:
       return status;
   }
@@ -65,10 +64,8 @@ const getSubmissionStatusText = (status: string) => {
 
 const CODTransactionsTable: React.FC<CODTransactionsTableProps> = ({
   transactions,
-  selectedTransactions,
   loading,
   pagination,
-  onSelectionChange,
   onPageChange,
 }) => {
   const columns: ColumnsType<PaymentSubmissionItem> = [
@@ -76,52 +73,69 @@ const CODTransactionsTable: React.FC<CODTransactionsTableProps> = ({
       title: "Mã đơn hàng",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
-      render: (text: string) => (
-        <Text strong className="shipper-table-strong">
-          {text || "-"}
-        </Text>
+      width: 160,
+      render: (text: string, record: PaymentSubmissionItem) => (
+        <Tooltip title={record.code || ""}>
+          <Text strong className="shipper-table-strong">
+            {text || "-"}
+          </Text>
+        </Tooltip>
       ),
     },
     {
-      title: "Số tiền",
+      title: "Số tiền hệ thống",
+      dataIndex: "systemAmount",
+      key: "systemAmount",
+      width: 150,
+      align: "right",
+      render: (amount: number) => (
+        <Text>{(amount || 0).toLocaleString()}đ</Text>
+      ),
+    },
+    {
+      title: "Số tiền thực thu",
       dataIndex: "actualAmount",
       key: "actualAmount",
+      width: 150,
+      align: "right",
       render: (amount: number) => (
         <Text strong className="shipper-cod-value">{(amount || 0).toLocaleString()}đ</Text>
       ),
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => (
-        <Tag color={getSubmissionStatusColor(status)}>{getSubmissionStatusText(status)}</Tag>
+      title: "Chênh lệch",
+      dataIndex: "discrepancy",
+      key: "discrepancy",
+      width: 120,
+      align: "right",
+      render: (val: number) => {
+        if (!val || val === 0) return <Text type="secondary">—</Text>;
+        return (
+          <Text type={val > 0 ? "success" : "danger"}>
+            {val > 0 ? "+" : ""}{val.toLocaleString()}đ
+          </Text>
+        );
+      },
+    },
+    {
+      title: "Ghi chú",
+      dataIndex: "notes",
+      key: "notes",
+      ellipsis: true,
+      render: (notes: string) => (
+        <Tooltip title={notes || ""}>
+          <Text type="secondary" style={{ maxWidth: 200 }} ellipsis>
+            {notes || "—"}
+          </Text>
+        </Tooltip>
       ),
     },
     {
       title: "Ngày thu",
       dataIndex: "paidAt",
       key: "paidAt",
+      width: 150,
       render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "—"),
-    },
-    {
-      title: "Thao tác",
-      key: "action",
-      render: (record: PaymentSubmissionItem) => (
-        <Checkbox
-          checked={selectedTransactions.includes(record.id)}
-          onChange={(e) => {
-            if (e.target.checked) {
-              onSelectionChange([...selectedTransactions, record.id]);
-            } else {
-              onSelectionChange(selectedTransactions.filter((id) => id !== record.id));
-            }
-          }}
-          disabled={record.status !== 'PENDING'}
-        >
-          Chọn
-        </Checkbox>
-      ),
     },
   ];
 
@@ -136,8 +150,11 @@ const CODTransactionsTable: React.FC<CODTransactionsTableProps> = ({
         pageSize: pagination.pageSize,
         total: pagination.total,
         onChange: onPageChange,
+        showSizeChanger: true,
+        showTotal: (total, range) => `${range[0]}-${range[1]} / ${total} đơn`,
       }}
       scroll={{ x: 900 }}
+      size="middle"
     />
   );
 };

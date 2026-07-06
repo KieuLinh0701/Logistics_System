@@ -8,8 +8,10 @@ import {
   Divider,
   Form,
   Input,
+  InputNumber,
   message,
   Modal,
+  Radio,
   Row,
   Select,
   Space,
@@ -46,6 +48,7 @@ import {
   isReturnOrder,
   canMarkReturnDelivered,
 } from "../../../utils/orderActionGuards";
+import "../ShipperPagesShared.css";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -72,7 +75,10 @@ const ShipperOrderDetail: React.FC = () => {
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
   const [failedForm] = Form.useForm();
+  const [successForm] = Form.useForm();
   const [paymentSubmissionResponse, setPaymentSubmissionResponse] = useState<any | null>(null);
+  const [collectionMode, setCollectionMode] = useState<"FULL" | "CUSTOM">("FULL");
+  const [customCollectedAmount, setCustomCollectedAmount] = useState<number | undefined>(undefined);
 
   // Pickup action states
   const [pickupFailedModalOpen, setPickupFailedModalOpen] = useState(false);
@@ -224,15 +230,30 @@ const ShipperOrderDetail: React.FC = () => {
     try {
       setLoading(true);
       const proofImageUrl = await uploadProofImageIfSelected(deliveryProofImageFile);
-      await orderApi.createDeliveryAttempt(Number(id), {
+
+      const payload: any = {
         status: "SUCCESS",
         note: "Đã giao thành công",
         proofImageUrl: proofImageUrl || undefined,
-      });
+        collectionMode,
+      };
+
+      if (collectionMode === "CUSTOM" && customCollectedAmount !== undefined) {
+        payload.actualCollected = customCollectedAmount;
+      }
+
+      const collectionNote = successForm.getFieldValue("collectionNote");
+      if (collectionNote) {
+        payload.collectionNote = collectionNote;
+      }
+
+      await orderApi.createDeliveryAttempt(Number(id), payload);
       message.success("Đã giao thành công");
       setDeliveryProofImageFile(null);
       setDeliveryProofImagePreview(null);
       setSuccessModal(false);
+      setCollectionMode("FULL");
+      setCustomCollectedAmount(undefined);
       fetchOrderDetail();
       dispatchShipperRouteRefresh();
     } catch (error: any) {
@@ -512,16 +533,18 @@ const ShipperOrderDetail: React.FC = () => {
     onChange,
     onRemove,
     label,
+    showLabel = true,
   }: {
     file: File | null;
     preview: string | null;
     onChange: (file: File) => void;
     onRemove: () => void;
     label: string;
+    showLabel?: boolean;
   }) => (
     <div style={{ marginBottom: 12 }}>
-      <Text strong>{label}</Text>
-      <div style={{ marginTop: 8 }}>
+      {showLabel && <Text strong>{label}</Text>}
+      <div style={{ marginTop: showLabel ? 8 : 0 }}>
         <input
           id={`${label}-input`}
           type="file"
@@ -823,6 +846,9 @@ const ShipperOrderDetail: React.FC = () => {
                       onClick={() => {
                         setDeliveryProofImageFile(null);
                         setDeliveryProofImagePreview(null);
+                        setCollectionMode("FULL");
+                        setCustomCollectedAmount(undefined);
+                        successForm.resetFields();
                         setSuccessModal(true);
                       }}
                     >
@@ -1250,24 +1276,138 @@ const ShipperOrderDetail: React.FC = () => {
         onOk={handleFinishDelivery}
         onCancel={() => setSuccessModal(false)}
         confirmLoading={uploading}
-        width={640}
+        width={520}
         okText="Xác nhận giao"
       >
-        <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <Alert
-            message="Xác nhận giao hàng thành công"
-            description="Đơn hàng sẽ được đánh dấu là đã giao."
-            type="success"
-            showIcon
-          />
-          {renderImagePicker({
-            file: deliveryProofImageFile,
-            preview: deliveryProofImagePreview,
-            onChange: attachDeliveryProofImage,
-            onRemove: removeDeliveryProofImage,
-            label: "Ảnh minh chứng giao hàng thành công (tuỳ chọn)",
-          })}
+        <div className="delivery-success-modal">
+          <Space direction="vertical" size={12} style={{ width: "100%" }}>
+            <Alert
+              message="Xác nhận giao hàng thành công"
+              description="Đơn hàng sẽ được đánh dấu là đã giao."
+              type="success"
+              showIcon
+            />
+
+            {/* Section title: Ảnh minh chứng */}
+            <div className="delivery-success-section-title">Ảnh minh chứng giao hàng (tuỳ chọn)</div>
+
+            {/* Ảnh minh chứng - chỉ hiện phần input ảnh */}
+            {renderImagePicker({
+              file: deliveryProofImageFile,
+              preview: deliveryProofImagePreview,
+              onChange: attachDeliveryProofImage,
+              onRemove: removeDeliveryProofImage,
+              label: "Ảnh minh chứng",
+              showLabel: false,
+            })}
+
+          {/* Phần thu tiền - chỉ hiện khi cần thu tiền */}
+          {(() => {
+            const cod = Number(order?.cod || 0);
+            const shippingFee = Number(order?.shippingFee || 0);
+            const isCustomerPayer = (order?.payer || "").toUpperCase() === "CUSTOMER";
+            const totalNeedCollect = isCustomerPayer ? cod + shippingFee : cod;
+
+            if (totalNeedCollect <= 0) {
+              return null;
+            }
+
+            return (
+              <>
+                {/* Section title: Thu tiền */}
+                <div className="delivery-success-section-title">Thu tiền</div>
+
+                {/* Card thông tin thu tiền compact */}
+                <Card size="small" className="collection-summary-card" style={{ marginBottom: 16 }}>
+                  <Row gutter={16}>
+                    {cod > 0 && (
+                      <Col span={12}>
+                        <div className="summary-item">
+                          <Text strong className="summary-label">COD</Text>
+                          <Text className="summary-value">{cod.toLocaleString()}đ</Text>
+                        </div>
+                      </Col>
+                    )}
+                    {isCustomerPayer && shippingFee > 0 && (
+                      <Col span={12}>
+                        <div className="summary-item">
+                          <Text strong className="summary-label">Phí ship</Text>
+                          <Text className="summary-value">{shippingFee.toLocaleString()}đ</Text>
+                        </div>
+                      </Col>
+                    )}
+                  </Row>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div className="total-row">
+                    <Text strong>Tổng cần thu</Text>
+                    <Text className="total-amount">{totalNeedCollect.toLocaleString()}đ</Text>
+                  </div>
+                </Card>
+
+                {/* Section title: Xác nhận thu tiền */}
+                <div className="delivery-success-section-title">Xác nhận thu tiền</div>
+
+                {/* Hai lựa chọn thu tiền dạng card nhỏ */}
+                <Row gutter={8}>
+                  <Col span={12}>
+                    <div
+                      className={`collection-card ${collectionMode === "FULL" ? "selected" : ""}`}
+                      onClick={() => {
+                        setCollectionMode("FULL");
+                        setCustomCollectedAmount(undefined);
+                      }}
+                    >
+                      <CheckCircleOutlined className="card-icon" />
+                      <span className="card-text">Đã thu đủ</span>
+                    </div>
+                  </Col>
+                  <Col span={12}>
+                    <div
+                      className={`collection-card ${collectionMode === "CUSTOM" ? "selected" : ""}`}
+                      onClick={() => setCollectionMode("CUSTOM")}
+                    >
+                      <DollarOutlined className="card-icon" />
+                      <span className="card-text">Thu số tiền khác</span>
+                    </div>
+                  </Col>
+                </Row>
+
+                {/* Input số tiền thực thu - chỉ hiện khi CUSTOM */}
+                {collectionMode === "CUSTOM" && (
+                  <div style={{ marginTop: 8 }}>
+                    <InputNumber
+                      value={customCollectedAmount}
+                      onChange={(value) => setCustomCollectedAmount(value ?? undefined)}
+                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                      parser={(value) => Number(value?.replace(/[^\d]/g, "") || 0)}
+                      placeholder="Nhập số tiền thực thu"
+                      style={{ width: '100%' }}
+                      suffix="đồng"
+                    />
+                    {customCollectedAmount !== undefined && customCollectedAmount !== totalNeedCollect && (
+                      <Alert
+                        style={{ marginTop: 6 }}
+                        type={customCollectedAmount > totalNeedCollect ? "warning" : "error"}
+                        message={
+                          customCollectedAmount > totalNeedCollect
+                            ? `Dư ${(customCollectedAmount - totalNeedCollect).toLocaleString()} đồng`
+                            : `Thiếu ${(totalNeedCollect - customCollectedAmount).toLocaleString()} đồng`
+                        }
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Ghi chú - compact */}
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Ghi chú thu tiền..."
+                />
+              </>
+            );
+          })()}
         </Space>
+        </div>
       </Modal>
 
       {/* Modal: Giao trả hàng hoàn */}

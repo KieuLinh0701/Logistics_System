@@ -11,4 +11,8 @@ public class UpdateDeliveryStatusRequest {
     private String actualRecipient;
     private String actualRecipientPhone;
     private String proofImageUrl;
+
+    private String collectionMode;
+    private Integer actualCollected;
+    private String collectionNote;
 }

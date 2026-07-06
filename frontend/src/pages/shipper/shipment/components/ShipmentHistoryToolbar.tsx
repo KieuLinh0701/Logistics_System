@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button, DatePicker, Input, Row, Select, Tooltip} from 'antd';
+import {Button, DatePicker, Input, Select, Tooltip} from 'antd';
 import {CloseCircleOutlined, SearchOutlined} from '@ant-design/icons';
 import type {Dayjs} from 'dayjs';
 import {
@@ -8,6 +8,7 @@ import {
     translateShipmentFilterSort,
     translateShipmentStatus,
 } from '../../../../utils/shipmentUtils';
+import './ShipmentHistoryToolbar.css';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -48,59 +49,58 @@ const ShipmentHistoryToolbar: React.FC<ShipmentHistoryToolbarProps> = ({
     };
 
     return (
-        <div className="search-filters-container">
-            <Row gutter={16} className="search-filters-row">
-                <div className="list-page-actions">
-                    <Tooltip title="Tìm theo mã chuyến hàng">
-                        <Input
-                            className="search-input"
-                            placeholder="Tìm theo mã chuyến hàng"
-                            prefix={<SearchOutlined />}
-                            value={searchText}
-                            onChange={(e) => onSearchChange(e.target.value)}
-                            allowClear
-                        />
-                    </Tooltip>
-
-                    <Select
-                        value={filterStatus}
-                        onChange={(val) => onFilterChange('status', val)}
-                        className="filter-select"
-                    >
-                        <Option value="ALL">Tất cả trạng thái</Option>
-                        {SHIPMENT_STATUSES.map((s) => (
-                            <Option key={s} value={s}>{translateShipmentStatus(s)}</Option>
-                        ))}
-                    </Select>
-
-                    <Select
-                        value={sort}
-                        onChange={onSortChange}
-                        className="filter-select-fit"
-                    >
-                        {SHIPMENT_FILTER_SORT.map((t) => (
-                            <Option key={t} value={t}>{translateShipmentFilterSort(t)}</Option>
-                        ))}
-                    </Select>
-
-                    <RangePicker
-                        className="date-picker"
-                        value={dateRange}
-                        onChange={handleDateRangeChange}
+        <div className="shipment-history-toolbar">
+            <div className="shipment-history-search-wrapper">
+                <Tooltip title="Tìm theo mã chuyến hàng">
+                    <Input
+                        className="shipment-history-search"
+                        placeholder="Tìm theo mã chuyến hàng"
+                        prefix={<SearchOutlined />}
+                        value={searchText}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        allowClear
                     />
+                </Tooltip>
+            </div>
 
-                    <Button
-                        type="default"
-                        icon={<CloseCircleOutlined />}
-                        onClick={onClearFilters}
-                        onMouseEnter={() => onHoverChange(true)}
-                        onMouseLeave={() => onHoverChange(false)}
-                        className="filter-button filter-button-icon-only"
-                    >
-                        {hover && 'Bỏ lọc'}
-                    </Button>
-                </div>
-            </Row>
+            <div className="shipment-history-toolbar-actions">
+                <Select
+                    value={filterStatus}
+                    onChange={(val) => onFilterChange('status', val)}
+                    style={{ width: 180 }}
+                >
+                    <Option value="ALL">Tất cả trạng thái</Option>
+                    {SHIPMENT_STATUSES.map((s) => (
+                        <Option key={s} value={s}>{translateShipmentStatus(s)}</Option>
+                    ))}
+                </Select>
+
+                <Select
+                    value={sort}
+                    onChange={onSortChange}
+                    style={{ width: 150 }}
+                >
+                    {SHIPMENT_FILTER_SORT.map((t) => (
+                        <Option key={t} value={t}>{translateShipmentFilterSort(t)}</Option>
+                    ))}
+                </Select>
+
+                <RangePicker
+                    value={dateRange}
+                    onChange={handleDateRangeChange}
+                    style={{ minWidth: 280 }}
+                />
+
+                <Button
+                    type="default"
+                    icon={<CloseCircleOutlined />}
+                    onClick={onClearFilters}
+                    onMouseEnter={() => onHoverChange(true)}
+                    onMouseLeave={() => onHoverChange(false)}
+                >
+                    {hover && 'Bỏ lọc'}
+                </Button>
+            </div>
         </div>
     );
 };

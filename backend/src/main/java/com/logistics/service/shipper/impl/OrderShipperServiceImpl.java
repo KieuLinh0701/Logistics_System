@@ -66,6 +66,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     private final OrderHistoryRepository orderHistoryRepository;
     private final OrderProductRepository orderProductRepository;
     private final PaymentSubmissionRepository paymentSubmissionRepository;
+    private final PaymentSubmissionBatchRepository paymentSubmissionBatchRepository;
     private final AutoAssignService autoAssignService;
     private final NotificationService notificationService;
     private final OfficeRepository officeRepository;
@@ -490,15 +491,12 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             // ========== Đơn giao trả hàng hoàn ==========
             // RETURN_AT_ORIGIN_OFFICE: đơn đã hoàn về bưu cục gốc, chờ shipper giao trả
-            // Shipper phải thuộc bưu cục gốc (fromOffice hoặc currentOffice)
+            // Chỉ hiển thị nếu shipper thuộc bưu cục gốc (fromOffice.id = shipper.office.id)
             Predicate returnOriginPredicate = cb.and(
                 cb.equal(root.get("status"), OrderStatus.RETURN_AT_ORIGIN_OFFICE),
                 cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER),
                 cb.isNull(root.get("employee")),
-                cb.or(
-                    cb.equal(root.get("fromOffice").get("id"), officeId),
-                    cb.equal(root.get("currentOffice").get("id"), officeId)
-                )
+                cb.equal(root.get("fromOffice").get("id"), officeId)
             );
 
             // Kết hợp: (normalDelivery OR returnOrigin) AND createdByType = USER
@@ -2328,21 +2326,74 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         orderRepository.save(order);
         applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
 
-        int cashCollected = 0;
+        // Tinh expected values
+        int expectedCod = (order.getCod() != null) ? order.getCod() : 0;
+        int expectedShippingFee = 0;
         if (order.getPayer() == OrderPayerType.CUSTOMER) {
-            cashCollected += order.getShippingFee() != null ? order.getShippingFee() : 0;
+            expectedShippingFee = (order.getShippingFee() != null) ? order.getShippingFee() : 0;
         }
-        if (cashCollected > 0) {
-            createPaymentSubmission(order, shipperUser, cashCollected, "Đối soát sau khi giao thành công");
+        int expectedTotal = expectedCod + expectedShippingFee;
+
+        String collectionMode = (request != null) ? request.getCollectionMode() : null;
+        boolean isFullCollection = (collectionMode == null || "FULL".equalsIgnoreCase(collectionMode));
+
+        // Tinh actualTotal
+        int actualTotal;
+        if (isFullCollection) {
+            actualTotal = expectedTotal;
+        } else if (request != null && request.getActualCollected() != null) {
+            actualTotal = request.getActualCollected();
+        } else {
+            actualTotal = expectedTotal;
         }
-        if (order.getCod() != null && order.getCod() > 0) {
-            List<PaymentSubmission> existing = paymentSubmissionRepository.findByOrderId(order.getId());
-            boolean hasPositive = existing.stream().anyMatch(ps -> ps.getActualAmount() != null && ps.getActualAmount().compareTo(BigDecimal.ZERO) > 0);
-            if (!hasPositive) {
-                createPaymentSubmission(order, shipperUser, order.getCod(), "Thu COD sau khi giao");
-                order.setCodStatus(OrderCodStatus.PENDING);
-                orderRepository.save(order);
+
+        // Phan bo actualTotal cho shipping fee va COD
+        int shippingFeeActual = 0;
+        int codActual = 0;
+
+        if (expectedShippingFee > 0) {
+            // Lay phan shipping fee tu actualTotal
+            shippingFeeActual = Math.min(expectedShippingFee, actualTotal);
+            int remaining = actualTotal - shippingFeeActual;
+            codActual = Math.max(remaining, 0);
+        } else {
+            // Khong co shipping fee, toan bo la COD
+            codActual = actualTotal;
+        }
+
+        // Tao submission phí ship neu can thu
+        String collectionNote = "";
+        if (request != null && request.getCollectionNote() != null && !request.getCollectionNote().isBlank()) {
+            collectionNote = request.getCollectionNote();
+        }
+
+        if (expectedShippingFee > 0) {
+            String shipNote = "Thu phí vận chuyển sau khi giao thành công";
+            if (!collectionNote.isEmpty()) {
+                shipNote += ". " + collectionNote;
             }
+            createPaymentSubmissionWithAmounts(order, shipperUser, expectedShippingFee, shippingFeeActual, shipNote);
+        }
+
+        // Tao submission COD neu co
+        if (expectedCod > 0 || codActual > 0) {
+            String codNote = "Thu COD sau khi giao";
+            if (!collectionNote.isEmpty()) {
+                codNote += ". " + collectionNote;
+            }
+
+            // Tinh chenh lech tong
+            int discrepancy = actualTotal - expectedTotal;
+            if (discrepancy != 0) {
+                String discrepancyNote = String.format("[Lệch %s%dđ] ",
+                        (discrepancy > 0 ? "+" : ""), discrepancy);
+                codNote = discrepancyNote + codNote;
+            }
+
+            createPaymentSubmissionWithAmounts(order, shipperUser, expectedCod, codActual, codNote);
+
+            order.setCodStatus(OrderCodStatus.PENDING);
+            orderRepository.save(order);
         }
 
         // Lưu ảnh minh chứng giao hàng thành công
@@ -2375,6 +2426,68 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     order.getTrackingNumber());
         }
         shipmentDeliveryService.checkAndAutoFinishForOrder(order.getId());
+    }
+
+    @Transactional
+    protected void createPaymentSubmissionWithAmounts(Order order, User shipperUser, int systemAmount, int actualAmount, String note) {
+        if (systemAmount <= 0 && actualAmount <= 0) return;
+
+        Employee employee = employeeRepository.findByUserId(shipperUser.getId())
+                .stream()
+                .filter(e -> e.getOffice() != null)
+                .findFirst()
+                .orElse(null);
+        Office office = (employee != null) ? employee.getOffice() : null;
+
+        // Luon tao submission moi, khong update existing
+        PaymentSubmission toSave = new PaymentSubmission();
+        toSave.setOrder(order);
+        toSave.setSystemAmount(BigDecimal.valueOf(systemAmount));
+        toSave.setActualAmount(BigDecimal.valueOf(actualAmount));
+        toSave.setStatus(PaymentSubmissionStatus.PENDING);
+        toSave.setShipper(shipperUser);
+        toSave.setNotes(note);
+        toSave = paymentSubmissionRepository.save(toSave);
+
+        String submissionCode = "SUB_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" + toSave.getId();
+        toSave.setCode(submissionCode);
+        final PaymentSubmission submission = paymentSubmissionRepository.save(toSave);
+
+        // Tim hoac tao batch OPEN cho shipper
+        PaymentSubmissionBatch batch = paymentSubmissionBatchRepository
+                .findByShipperIdAndStatus(shipperUser.getId(), PaymentSubmissionBatchStatus.OPEN)
+                .orElse(null);
+
+        if (batch == null) {
+            batch = new PaymentSubmissionBatch();
+            batch.setShipper(shipperUser);
+            batch.setStatus(PaymentSubmissionBatchStatus.OPEN);
+            batch.setTotalSystemAmount(BigDecimal.ZERO);
+            batch.setTotalActualAmount(BigDecimal.ZERO);
+            batch.setOffice(office);
+            batch = paymentSubmissionBatchRepository.save(batch);
+
+            String batchCode = "PSB" + java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + batch.getId();
+            batch.setCode(batchCode);
+            batch = paymentSubmissionBatchRepository.save(batch);
+        }
+
+        // Gan submission vao batch va cap nhat tong
+        submission.setBatch(batch);
+        paymentSubmissionRepository.save(submission);
+
+        if (batch.getSubmissions() == null) {
+            batch.setSubmissions(new ArrayList<>());
+        }
+        boolean alreadyInBatch = batch.getSubmissions().stream()
+                .anyMatch(s -> s.getId() != null && s.getId().equals(submission.getId()));
+        if (!alreadyInBatch) {
+            batch.getSubmissions().add(submission);
+        }
+
+        batch.setTotalSystemAmount(batch.getTotalSystemAmount().add(BigDecimal.valueOf(systemAmount)));
+        batch.setTotalActualAmount(batch.getTotalActualAmount().add(BigDecimal.valueOf(actualAmount)));
+        paymentSubmissionBatchRepository.save(batch);
     }
 
     private void handleDeliveryFailure(Order order, Employee employee, User shipperUser, UpdateDeliveryStatusRequest request) {
