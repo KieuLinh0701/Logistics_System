@@ -87,4 +87,28 @@ public class CODShipperController {
 
         return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODSubmissionHistory(page, limit, status, dateFrom, dateTo)));
     }
+
+    @GetMapping("/batch-history")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getCODBatchHistory(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODBatchHistory(page, limit, status, dateFrom, dateTo)));
+    }
+
+    @GetMapping("/batches/{batchId}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getCODBatchDetail(@PathVariable Long batchId) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(codShipperService.getCODBatchDetail(batchId)));
+    }
 }

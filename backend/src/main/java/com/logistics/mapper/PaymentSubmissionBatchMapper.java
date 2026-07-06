@@ -19,7 +19,7 @@ public class PaymentSubmissionBatchMapper {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
         dto.setNotes(entity.getNotes());
-        dto.setTotalOrders(entity.getSubmissions().size());
+        dto.setTotalOrders(entity.getSubmissions() != null ? entity.getSubmissions().size() : 0);
 
         // Checked by user
         if (entity.getCheckedBy() != null) {

@@ -14,4 +14,8 @@ public interface CODShipperService {
     Map<String, Object> submitCOD(SubmitCODRequest request);
 
     Map<String, Object> getCODSubmissionHistory(int page, int limit, String status, String dateFrom, String dateTo);
+
+    Map<String, Object> getCODBatchHistory(int page, int limit, String status, String dateFrom, String dateTo);
+
+    Map<String, Object> getCODBatchDetail(Long batchId);
 }

@@ -351,12 +351,30 @@ const orderApi = {
     },
 
     async submitShipperCOD(payload: {
-        transactionIds: number[];
-        totalAmount: number;
+        batchId: number;
         notes?: string;
-        imageUrls?: string[]
     }) {
         await axiosClient.post<ApiResponse<any>>("/shipper/cod/submit", payload);
+    },
+
+    async getShipperCODBatchHistory(params: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string
+    }) {
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/cod/batch-history", { params });
+        const data = res.data || {};
+        return {
+            batches: (data.batches || []) as any[],
+            pagination: data.pagination || { page: 1, limit: 10, total: 0 },
+        };
+    },
+
+    async getShipperCODBatchDetail(batchId: number) {
+        const res = await axiosClient.get<ApiResponse<any>>(`/shipper/cod/batches/${batchId}`);
+        return res.data || {};
     },
 
     async getShipperCODSubmissionHistory(params: {
