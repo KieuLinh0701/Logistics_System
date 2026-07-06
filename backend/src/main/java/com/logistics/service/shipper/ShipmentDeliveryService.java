@@ -42,6 +42,8 @@ public interface ShipmentDeliveryService {
 
     void returnFailedFinalToDestOffice(Integer orderId);
 
+    void submitReturnFailedToOffice(Integer orderId);
+
     void startReturn(Integer orderId);
 
     void markReturnAtOrigin(Integer orderId);
@@ -51,6 +53,8 @@ public interface ShipmentDeliveryService {
     void finalizeReturn(Integer orderId);
 
     void markReturnDelivered(Integer orderId, String proofImageUrl);
+
+    void markReturnFailedFinal(Integer orderId, UpdateDeliveryStatusRequest req);
 
     List<ShipperActiveShipmentDto> listActiveShipmentsForCurrentShipper();
 

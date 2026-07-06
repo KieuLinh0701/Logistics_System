@@ -115,10 +115,12 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             // - PICKED_UP: shipper đã lấy hàng
             // - AT_ORIGIN_OFFICE: shipper đã nộp bưu cục
             // - PICKUP_FAILED_FINAL: giao hàng không thành công
+            // - PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này, sẽ quay lại sau
             // - CANCELLED: đơn bị hủy
             return status == OrderStatus.PICKED_UP
                     || status == OrderStatus.AT_ORIGIN_OFFICE
                     || status == OrderStatus.PICKUP_FAILED_FINAL
+                    || status == OrderStatus.PICKUP_RETRY
                     || status == OrderStatus.CANCELLED;
         }
         if (stopType == RouteStopType.RETURN_TO_OFFICE) {
@@ -178,9 +180,28 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             OrderStatus status = order.getStatus();
             RouteStopType stopType = so.getStopType();
 
-            // Đơn giao thất bại cần nộp bưu cục
+            // DELIVERY stop: đơn cần nộp bưu cục
             if (stopType == RouteStopType.DELIVERY) {
+                // DELIVERY_RETRY: giao lại (vẫn còn trên xe)
                 if (status == OrderStatus.DELIVERY_RETRY) {
+                    return true;
+                }
+                // DELIVERY_FAILED_FINAL: giao thất bại cuối cùng - cần nộp bưu cục nếu chưa nộp
+                // Chỉ cần nộp khi employee != null (shipper đang giữ hàng)
+                if (status == OrderStatus.DELIVERY_FAILED_FINAL && order.getEmployee() != null) {
+                    return true;
+                }
+                // RETURN_FAILED_FINAL: giao hoàn thất bại cuối cùng - cần nộp bưu cục nếu chưa nộp
+                // Chỉ cần nộp khi employee != null (shipper đang giữ hàng)
+                if (status == OrderStatus.RETURN_FAILED_FINAL && order.getEmployee() != null) {
+                    return true;
+                }
+            }
+
+            // RETURN_TO_OFFICE stop: đơn hoàn cần nộp bưu cục
+            if (stopType == RouteStopType.RETURN_TO_OFFICE) {
+                // RETURN_FAILED_FINAL: hoàn thất bại cuối cùng - cần nộp bưu cục nếu chưa nộp
+                if (status == OrderStatus.RETURN_FAILED_FINAL && order.getEmployee() != null) {
                     return true;
                 }
             }
@@ -834,6 +855,52 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
 
     @Override
     @Transactional
+    public void submitReturnFailedToOffice(Integer orderId) {
+        Employee employee = getCurrentEmployee();
+        Shipment shipment = requireActiveDeliveryShipmentForOrder(orderId);
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getEmployee() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
+        }
+        if (order.getStatus() != OrderStatus.RETURN_FAILED_FINAL) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
+        }
+
+        // Giữ nguyên status RETURN_FAILED_FINAL - hàng đã ở bưu cục gốc rồi
+        order.setCurrentOffice(shipment.getFromOffice());
+        order.setEmployee(null);
+        orderRepository.save(order);
+        saveHistory(order, shipment, OrderHistoryActionType.RETURN_FAILED_FINAL,
+                "Nộp hàng giao hoàn thất bại về bưu cục gốc (chuyến " + shipment.getCode() + ")");
+
+        // Gửi notification cho người gửi
+        if (order.getUser() != null) {
+            Office fromOffice = shipment.getFromOffice();
+            String officeName = fromOffice != null ? fromOffice.getName() : "bưu cục gốc";
+            String officeAddress = fromOffice != null && fromOffice.getDetail() != null
+                    ? fromOffice.getDetail() : "";
+            notificationService.create(
+                    "Hàng hoàn đã được lưu tại bưu cục",
+                    String.format("Đơn hàng %s không thể giao tới địa chỉ của bạn. "
+                                    + "Hàng hiện đang được lưu tại:\n%s\n%s\nVui lòng đến nhận hàng.",
+                            order.getTrackingNumber(),
+                            officeName,
+                            officeAddress),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
+        }
+
+        // Check auto finish shipment
+        checkAndAutoFinish(shipment);
+    }
+
+    @Override
+    @Transactional
     public void startReturn(Integer orderId) {
         Employee employee = getCurrentEmployee();
         Shipment shipment = requireActiveDeliveryShipmentForOrder(orderId);
@@ -1030,6 +1097,59 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
 
         if (shipment != null) {
             checkAndAutoFinish(shipment);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void markReturnFailedFinal(Integer orderId, UpdateDeliveryStatusRequest req) {
+        Employee employee = getCurrentEmployee();
+        Shipment shipment = requireActiveDeliveryShipmentForOrder(orderId);
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getStatus() != OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                && order.getStatus() != OrderStatus.RETURNING) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                    "Đơn phải có trạng thái RETURN_AT_ORIGIN_OFFICE hoặc RETURNING");
+        }
+
+        boolean hasPermission = false;
+        if (order.getEmployee() != null && Objects.equals(order.getEmployee().getId(), employee.getId())) {
+            hasPermission = true;
+        }
+        if (!hasPermission && shipment.getEmployee() != null
+                && Objects.equals(shipment.getEmployee().getId(), employee.getId())) {
+            hasPermission = true;
+        }
+        if (!hasPermission) {
+            throw new AppException(EmployeeErrorCode.EMPLOYEE_PERMISSION_DENIED,
+                    "Bạn không có quyền xác nhận giao hoàn thất bại cho đơn hàng này");
+        }
+
+        order.setStatus(OrderStatus.RETURN_FAILED_FINAL);
+        // Shipper vẫn đang giữ hàng, chưa nộp về bưu cục
+        // Giữ nguyên employee để submitReturnFailedToOffice() có thể verify
+        // Order sẽ xuất hiện ở "Hàng cần nộp bưu cục" vì listOrders gọi với status = RETURN_FAILED_FINAL
+        orderRepository.save(order);
+
+        String failReason = req != null && req.getFailReason() != null ? req.getFailReason() : "OTHER";
+        String note = req != null && req.getNotes() != null ? req.getNotes() : "Giao hoàn thất bại";
+        saveHistory(order, shipment, OrderHistoryActionType.RETURN_FAILED_FINAL,
+                note + " (Lý do: " + failReason + ", chuyến " + shipment.getCode() + ")");
+
+        if (order.getUser() != null) {
+            notificationService.create(
+                    "Không thể giao hoàn đơn hàng",
+                    String.format("Đơn hàng %s không thể giao tới địa chỉ của bạn. "
+                                    + "Hàng hiện đang được lưu tại bưu cục %s. Vui lòng đến nhận hàng.",
+                            order.getTrackingNumber(),
+                            shipment.getFromOffice() != null ? shipment.getFromOffice().getName() : "bưu cục gốc"),
+                    "order_status",
+                    order.getUser().getId(),
+                    null,
+                    "orders/tracking",
+                    order.getTrackingNumber());
         }
     }
 

@@ -71,6 +71,8 @@ const ShipperOrderDetail: React.FC = () => {
   const [returnDeliveryModal, setReturnDeliveryModal] = useState(false);
   const [returnDeliveryProofImageFile, setReturnDeliveryProofImageFile] = useState<File | null>(null);
   const [returnDeliveryProofImagePreview, setReturnDeliveryProofImagePreview] = useState<string | null>(null);
+  const [returnFailedModal, setReturnFailedModal] = useState(false);
+  const [returnFailedForm] = Form.useForm();
   const [uploading, setUploading] = useState(false);
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
@@ -352,6 +354,31 @@ const ShipperOrderDetail: React.FC = () => {
     setReturnDeliveryProofImageFile(null);
     setReturnDeliveryProofImagePreview(null);
     setReturnDeliveryModal(true);
+  };
+
+  const handleOpenReturnFailedModal = () => {
+    returnFailedForm.resetFields();
+    setReturnFailedModal(true);
+  };
+
+  const handleSubmitReturnFailed = async (values: { failReason: string; note?: string }) => {
+    if (!order) return;
+    try {
+      setLoading(true);
+      await orderApi.markReturnFailedFinal(order.id, {
+        failReason: values.failReason,
+        notes: values.note,
+      });
+      message.success("Đã ghi nhận giao hoàn thất bại");
+      setReturnFailedModal(false);
+      returnFailedForm.resetFields();
+      fetchOrderDetail();
+      dispatchShipperRouteRefresh();
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Lỗi khi ghi nhận giao hoàn thất bại");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ========== PICKUP ACTIONS ==========
@@ -757,7 +784,8 @@ const ShipperOrderDetail: React.FC = () => {
               <Space>
                 {/* ========== PICKUP ACTIONS ========== */}
                 {/* Đơn pickup - READY_FOR_PICKUP / URGENT_PICKUP: Nút Nhận */}
-                {isPickupOrder(order) && (order.status === "READY_FOR_PICKUP" || order.status === "URGENT_PICKUP") && (
+                {/* Chỉ hiển thị nút "Nhận" khi đơn CHƯA thuộc shipment (shipmentCode = null) */}
+                {isPickupOrder(order) && !order.shipmentCode && (order.status === "READY_FOR_PICKUP" || order.status === "URGENT_PICKUP") && (
                   <Button
                     type="primary"
                     className="primary-button"
@@ -869,16 +897,27 @@ const ShipperOrderDetail: React.FC = () => {
                   </>
                 )}
                 {/* Đơn hoàn trả - Đã giao trả hàng hoàn */}
-                {isReturnOrder(order) && (order.status === "RETURNING" || order.status === "RETURN_RETRY") && (
-                  <Button
-                    type="primary"
-                    icon={<CheckCircleOutlined />}
-                    disabled={!canMarkReturnDelivered(order)}
-                    title={!canMarkReturnDelivered(order) ? "Đơn chưa thuộc chuyến đang chạy" : ""}
-                    onClick={handleOpenReturnDeliveryModal}
-                  >
-                    Xác nhận hoàn trả
-                  </Button>
+                {isReturnOrder(order) && (order.status === "RETURNING" || order.status === "RETURN_RETRY" || order.status === "RETURN_AT_ORIGIN_OFFICE") && (
+                  <>
+                    <Button
+                      type="primary"
+                      icon={<CheckCircleOutlined />}
+                      disabled={!canMarkReturnDelivered(order)}
+                      title={!canMarkReturnDelivered(order) ? "Đơn chưa thuộc chuyến đang chạy" : ""}
+                      onClick={handleOpenReturnDeliveryModal}
+                    >
+                      Xác nhận hoàn trả
+                    </Button>
+                    <Button
+                      danger
+                      icon={<CloseCircleOutlined />}
+                      disabled={!canMarkReturnDelivered(order)}
+                      title={!canMarkReturnDelivered(order) ? "Đơn chưa thuộc chuyến đang chạy" : ""}
+                      onClick={handleOpenReturnFailedModal}
+                    >
+                      Giao hoàn thất bại
+                    </Button>
+                  </>
                 )}
                 {/* Đơn hoàn trả - Xem lộ trình khi đang hoàn trả */}
                 {isReturnOrder(order) && (order.status === "RETURNING" || order.status === "RETURN_RETRY") && (
@@ -920,8 +959,8 @@ const ShipperOrderDetail: React.FC = () => {
               />
             </Row>
           )}
-          {/* Alert cho đơn pickup chưa được nhận */}
-          {isPickupOrder(order) && !["PICKED_UP", "AT_ORIGIN_OFFICE", "DELIVERED", "CANCELLED"].includes(order.status) && (order.status === "READY_FOR_PICKUP" || order.status === "URGENT_PICKUP") && (
+          {/* Alert cho đơn pickup CHƯA được nhận (không thuộc shipment) */}
+          {isPickupOrder(order) && !order.shipmentCode && !["PICKED_UP", "AT_ORIGIN_OFFICE", "DELIVERED", "CANCELLED"].includes(order.status) && (order.status === "READY_FOR_PICKUP" || order.status === "URGENT_PICKUP") && (
             <Row justify="center">
               <Alert
                 type="info"
@@ -1438,6 +1477,70 @@ const ShipperOrderDetail: React.FC = () => {
             label: "Ảnh minh chứng giao trả hàng hoàn (tuỳ chọn)",
           })}
         </Space>
+      </Modal>
+
+      {/* Modal: Giao hoàn thất bại */}
+      <Modal
+        title="Giao hoàn thất bại"
+        open={returnFailedModal}
+        onCancel={() => {
+          setReturnFailedModal(false);
+          returnFailedForm.resetFields();
+        }}
+        footer={null}
+        width={680}
+      >
+        <Form
+          form={returnFailedForm}
+          layout="vertical"
+          onFinish={handleSubmitReturnFailed}
+        >
+          <Alert
+            message="Giao hoàn không thành công"
+            description="Đơn hàng sẽ được đánh dấu là giao hoàn thất bại. Hàng sẽ được giữ lại để nộp về bưu cục."
+            type="error"
+            showIcon
+            style={{
+              marginBottom: 24,
+              backgroundColor: "#fff2f0",
+              borderColor: "#ffccc7",
+            }}
+          />
+          <Form.Item
+            name="failReason"
+            label="Lý do"
+            rules={[{ required: true, message: "Vui lòng chọn lý do" }]}
+          >
+            <Select placeholder="Chọn lý do giao hoàn thất bại">
+              <Select.Option value="RECIPIENT_NOT_AVAILABLE">Không liên lạc được</Select.Option>
+              <Select.Option value="WRONG_ADDRESS">Sai địa chỉ</Select.Option>
+              <Select.Option value="RECIPIENT_REFUSED">Khách từ chối nhận</Select.Option>
+              <Select.Option value="OTHER">Khác</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="note"
+            label="Ghi chú (tuỳ chọn)"
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập ghi chú thêm..."
+            />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+            <Space>
+              <Button onClick={() => {
+                setReturnFailedModal(false);
+                returnFailedForm.resetFields();
+              }}>
+                Hủy
+              </Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Xác nhận giao hoàn thất bại
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* ========== PICKUP MODALS ========== */}
