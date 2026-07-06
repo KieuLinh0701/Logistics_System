@@ -29,6 +29,7 @@ export const isInActiveDeliveryShipment = (order: ShipperOrderLike): boolean => 
 };
 
 export const canAcceptPickup = (order: ShipperOrderLike): boolean =>
+  !order.shipmentId &&
   ["CONFIRMED", "READY_FOR_PICKUP", "URGENT_PICKUP", "PICKUP_RETRY"].includes(
     order.status || ""
   );

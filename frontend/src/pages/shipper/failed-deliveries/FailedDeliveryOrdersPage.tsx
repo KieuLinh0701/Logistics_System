@@ -20,9 +20,11 @@ const FailedDeliveryOrdersPage: React.FC = () => {
       setLoadingFailed(true);
       const resRetry = await orderApi.getShipperOrders({ page: 1, limit: 200, status: "DELIVERY_RETRY", search });
       const resFailed = await orderApi.getShipperOrders({ page: 1, limit: 200, status: "DELIVERY_FAILED_FINAL", search });
+      const resReturnFailed = await orderApi.getShipperOrders({ page: 1, limit: 200, status: "RETURN_FAILED_FINAL", search });
       const retryOrders = (resRetry.orders || []).filter((o: ShipperOrder) => o.status === "DELIVERY_RETRY");
       const failedOrderList = (resFailed.orders || []).filter((o: ShipperOrder) => o.status === "DELIVERY_FAILED_FINAL");
-      setFailedOrders([...retryOrders, ...failedOrderList]);
+      const returnFailedList = (resReturnFailed.orders || []).filter((o: ShipperOrder) => o.status === "RETURN_FAILED_FINAL");
+      setFailedOrders([...retryOrders, ...failedOrderList, ...returnFailedList]);
     } catch {
       // Silently handle error
     } finally {

@@ -294,6 +294,11 @@ const orderApi = {
         return res.data;
     },
 
+    async markReturnFailedFinal(orderId: number, payload: { failReason?: string; notes?: string; proofImageUrl?: string }) {
+        const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/return-failed-final`, payload);
+        return res.data;
+    },
+
     async recordPickupAttempt(orderId: number, payload: { status: string; failReason?: string; note?: string }) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/pickup-attempt`, payload);
         return res.data;

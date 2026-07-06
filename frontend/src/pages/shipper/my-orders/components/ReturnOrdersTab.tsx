@@ -124,18 +124,14 @@ const ReturnOrdersTab = forwardRef<TabRefreshHandle, ReturnOrdersTabProps>(
       },
       {
         title: "Dịch vụ",
+        dataIndex: "serviceType",
         key: "service",
-        render: (record: ShipperOrder) => {
+        render: (serviceType: any) => {
           const serviceName =
-            typeof record.serviceType === "string"
-              ? record.serviceType
-              : (record.serviceType as any)?.name ?? "";
-          return (
-            <Space direction="vertical" size={2}>
-              <Text className="table-strong">{serviceName || "—"}</Text>
-              <Tag color="warning">Hoàn trả</Tag>
-            </Space>
-          );
+            typeof serviceType === "string"
+              ? serviceType
+              : serviceType?.name ?? "";
+          return <Text className="table-strong">{serviceName || "—"}</Text>;
         },
       },
       {

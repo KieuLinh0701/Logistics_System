@@ -499,4 +499,27 @@ public class OrderShipperController {
         shipmentDeliveryService.markReturnDelivered(id, proofImageUrl);
         return ResponseEntity.ok(ApiResponse.success("Đã xác nhận giao trả hàng hoàn thành công"));
     }
+
+    @PostMapping("/orders/{id}/return-failed-final")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = "Shipper ghi nhận giao hoàn thất bại",
+            params = {"id"}
+    )
+    public ResponseEntity<ApiResponse<String>> markReturnFailedFinal(
+            @PathVariable Integer id,
+            @RequestBody(required = false) Map<String, String> body) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        UpdateDeliveryStatusRequest req = new UpdateDeliveryStatusRequest();
+        if (body != null) {
+            req.setFailReason(body.get("failReason"));
+            req.setNotes(body.get("notes"));
+            req.setProofImageUrl(body.get("proofImageUrl"));
+        }
+        shipmentDeliveryService.markReturnFailedFinal(id, req);
+        return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận giao hoàn thất bại"));
+    }
 }

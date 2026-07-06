@@ -426,24 +426,31 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             // Kết hợp: chỉ delivery, KHÔNG bao gồm return orders
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(normalDeliveryPredicate);
-
-            // Request status filter (nếu có)
-            if (status != null && !status.isBlank()) {
-                try {
-                    OrderStatus os = OrderStatus.valueOf(status.toUpperCase());
-                    predicates.add(cb.equal(root.get("status"), os));
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
 
             // Search filter (nếu có)
+            Predicate searchPredicate = null;
             if (search != null && !search.isBlank()) {
                 String like = "%" + search.toLowerCase() + "%";
                 Predicate byTracking = cb.like(cb.lower(root.get("trackingNumber")), like);
                 Predicate byRecipient = cb.like(cb.lower(root.get("recipientName")), like);
                 Predicate byPhone = cb.like(cb.lower(root.get("recipientPhone")), like);
-                predicates.add(cb.or(byTracking, byRecipient, byPhone));
+                searchPredicate = cb.or(byTracking, byRecipient, byPhone);
+            }
+
+            if (status != null && !status.isBlank()) {
+                try {
+                    OrderStatus os = OrderStatus.valueOf(status.toUpperCase());
+                    Predicate basePredicate = cb.and(employeeOrShipment, cb.equal(root.get("status"), os));
+                    if (searchPredicate != null) {
+                        predicates.add(cb.and(basePredicate, searchPredicate));
+                    } else {
+                        predicates.add(basePredicate);
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    predicates.add(normalDeliveryPredicate);
+                }
+            } else {
+                predicates.add(normalDeliveryPredicate);
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -2562,16 +2569,19 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         if (order.getEmployee() == null || order.getEmployee().getId() == null || !Objects.equals(order.getEmployee().getId(), employee.getId())) {
             throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
-        if (order.getStatus() != OrderStatus.DELIVERY_RETRY && order.getStatus() != OrderStatus.DELIVERY_FAILED_FINAL) {
+        if (order.getStatus() != OrderStatus.DELIVERY_RETRY && order.getStatus() != OrderStatus.DELIVERY_FAILED_FINAL && order.getStatus() != OrderStatus.RETURN_FAILED_FINAL) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
         if (order.getStatus() == OrderStatus.DELIVERY_RETRY) {
             applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_RETRY);
             shipmentDeliveryService.returnFailedToDestOffice(id);
-        } else {
+        } else if (order.getStatus() == OrderStatus.DELIVERY_FAILED_FINAL) {
             applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_FAILED_FINAL);
             shipmentDeliveryService.returnFailedFinalToDestOffice(id);
+        } else if (order.getStatus() == OrderStatus.RETURN_FAILED_FINAL) {
+            applyVehicleWorkloadByStatus(order, employee, OrderStatus.RETURN_FAILED_FINAL);
+            shipmentDeliveryService.submitReturnFailedToOffice(id);
         }
         shipmentDeliveryService.checkAndAutoFinishForOrder(id);
     }
@@ -3092,21 +3102,28 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             boolean isReturnToOffice = "RETURN_TO_OFFICE".equalsIgnoreCase(stopType);
             OrderStatus os = order.getStatus();
 
+            // Phase 1: Đếm totalStops (tất cả orders) và completedStops
+            // totalStops không filter theo status - lấy tổng số stops ban đầu
+
             // Đếm completed theo stopType
             boolean isCompleted = false;
             if (isPickup) {
-                // PICKUP stop: completed khi PICKED_UP, PICKUP_FAILED_FINAL, CANCELLED
+                // PICKUP stop: completed khi PICKED_UP, PICKUP_FAILED_FINAL, PICKUP_RETRY, CANCELLED
+                // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này, sẽ quay lại sau
                 isCompleted = os == OrderStatus.PICKED_UP
                         || os == OrderStatus.PICKUP_FAILED_FINAL
+                        || os == OrderStatus.PICKUP_RETRY
                         || os == OrderStatus.CANCELLED;
             } else if (isReturnToOffice) {
                 // RETURN_TO_OFFICE stop: completed khi AT_ORIGIN_OFFICE, RETURNED, RETURN_FAILED_FINAL, CANCELLED
+                // RETURN_FAILED_FINAL: shipper đã xử lý xong điểm giao hoàn ngoài đường, còn phải nộp bưu cục
                 isCompleted = os == OrderStatus.AT_ORIGIN_OFFICE
                         || os == OrderStatus.RETURNED
                         || os == OrderStatus.RETURN_FAILED_FINAL
                         || os == OrderStatus.CANCELLED;
             } else {
                 // DELIVERY stop: completed khi DELIVERED, DELIVERY_RETRY, DELIVERY_FAILED_FINAL, CANCELLED
+                // DELIVERY_FAILED_FINAL: shipper đã xử lý xong điểm giao ngoài đường, còn phải nộp bưu cục
                 isCompleted = os == OrderStatus.DELIVERED
                         || os == OrderStatus.DELIVERY_RETRY
                         || os == OrderStatus.DELIVERY_FAILED_FINAL
@@ -3170,13 +3187,17 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     || os == OrderStatus.PICKING_UP
                     || os == OrderStatus.RETURNING) {
                 stopStatus = "in_progress";
+            } else if (os == OrderStatus.PICKUP_RETRY) {
+                // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này
+                // Stop phải biến mất khỏi route, đơn vẫn ở tab "Yêu cầu lấy hàng" để retry sau
+                continue;
             } else if (os == OrderStatus.PICKUP_FAILED_FINAL
                     || os == OrderStatus.DELIVERY_FAILED_FINAL
                     || os == OrderStatus.RETURN_FAILED_FINAL
                     || os == OrderStatus.CANCELLED
                     || os == OrderStatus.RETURNED) {
-                stopStatus = "final";
-                // Filter ra các stop final
+                // Filter ra các stop final - shipper đã xử lý xong tại điểm này
+                // RETURN_FAILED_FINAL / DELIVERY_FAILED_FINAL: chuyển sang "Hàng cần nộp bưu cục"
                 continue;
             }
 
