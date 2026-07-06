@@ -145,3 +145,314 @@
     grid-template-columns: 1fr;
   }
 }
+
+.delivery-success-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.delivery-success-modal .ant-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.delivery-success-modal .ant-modal-body {
+  padding: 0;
+}
+
+.success-modal-content {
+  padding: 0;
+}
+
+.success-modal-content .success-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.success-modal-content .success-banner .success-icon {
+  font-size: 20px;
+}
+
+.success-modal-content .collection-info-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  margin: 16px 20px;
+  overflow: hidden;
+}
+
+.success-modal-content .collection-info-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 600;
+  color: #333;
+}
+
+.success-modal-content .collection-info-card .card-body {
+  padding: 12px 16px;
+}
+
+.success-modal-content .collection-info-card .info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.success-modal-content .collection-info-card .info-row .info-label {
+  color: #666;
+  font-size: 14px;
+}
+
+.success-modal-content .collection-info-card .info-row .info-value {
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-modal-content .collection-info-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f0f7ff;
+  border-top: 1px solid #e8e8e8;
+}
+
+.success-modal-content .collection-info-card .card-footer .total-label {
+  color: #1c3d90;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.success-modal-content .collection-info-card .card-footer .total-value {
+  color: #f50;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.success-modal-content .collection-options {
+  padding: 0 20px 16px;
+}
+
+.success-modal-content .collection-option {
+  padding: 14px 16px;
+  border: 2px solid #e8e8e8;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.success-modal-content .collection-option:hover {
+  border-color: #1c3d90;
+  background: #fafafa;
+}
+
+.success-modal-content .collection-option.selected {
+  border-color: #1c3d90;
+  background: #f0f7ff;
+}
+
+.success-modal-content .collection-option .option-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.success-modal-content .collection-option .option-check {
+  color: #1c3d90;
+  font-size: 16px;
+}
+
+.success-modal-content .collection-option .option-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.success-modal-content .collection-option .option-desc {
+  color: #888;
+  font-size: 13px;
+  padding-left: 26px;
+}
+
+.success-modal-content .custom-amount-section {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.success-modal-content .custom-amount-section.expanded {
+  max-height: 200px;
+  opacity: 1;
+  margin-top: 10px;
+}
+
+.success-modal-content .custom-amount-input {
+  padding: 12px;
+  background: #fff9f0;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+}
+
+.success-modal-content .custom-amount-input .custom-input {
+  width: 100%;
+}
+
+.success-modal-content .custom-amount-input .discrepancy-alert {
+  margin-top: 10px;
+}
+
+.success-modal-content .proof-image-section {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.success-modal-content .proof-image-section .section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 14px;
+}
+
+.success-modal-content .proof-image-section .optional-label {
+  color: #999;
+  font-size: 12px;
+}
+
+.success-modal-content .proof-image-section .image-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.success-modal-content .proof-image-section .image-preview img {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.success-modal-content .notes-section {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.success-modal-content .modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #fafafa;
+  border-top: 1px solid #e8e8e8;
+  gap: 12px;
+}
+
+.success-modal-content .modal-footer .ant-btn-primary {
+  flex: 1;
+  height: 40px;
+  font-weight: 600;
+}
+
+.delivery-success-modal .delivery-success-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.collection-summary-card {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+}
+
+.collection-summary-card .summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.collection-summary-card .summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.collection-summary-card .summary-value {
+  color: #1f1f1f;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.collection-summary-card .total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.collection-summary-card .total-amount {
+  font-weight: 700;
+  color: #f5222d;
+  font-size: 15px;
+}
+
+.collection-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 2px solid #d9d9d9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+.collection-card:hover {
+  border-color: #1c3d90;
+  background: #f5f7ff;
+}
+
+.collection-card.selected {
+  border-color: #1c3d90;
+  background: #e8f0ff;
+}
+
+.collection-card .card-icon {
+  font-size: 16px;
+  color: #666;
+}
+
+.collection-card.selected .card-icon {
+  color: #1c3d90;
+}
+
+.collection-card .card-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.collection-card.selected .card-text {
+  color: #1c3d90;
+}

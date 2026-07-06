@@ -269,7 +269,7 @@ const orderApi = {
         await axiosClient.put<ApiResponse<any>>(`/shipper/orders/${id}/status`, payload);
     },
 
-    async createDeliveryAttempt(id: number, payload: { status: string; failReason?: string; note?: string; notes?: string; proofImageUrl?: string }) {
+    async createDeliveryAttempt(id: number, payload: { status: string; failReason?: string; note?: string; notes?: string; proofImageUrl?: string; collectionMode?: string; actualCollected?: number; collectionNote?: string }) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${id}/delivery-attempt`, payload);
         return res.data;
     },
