@@ -11,7 +11,6 @@ import com.logistics.service.user.DashboardUserService;
 import com.logistics.service.user.SettlementBatchUserService;
 import com.logistics.service.user.UserUserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -134,17 +133,15 @@ public class DashboardUserServiceImpl implements DashboardUserService {
 
             List<UserTopProductItemDto> topSelling = orderProductRepository.findTopSellingProducts(
                     shopId,
-                    OrderStatus.DELIVERED,
+                    List.of(OrderStatus.DELIVERED, OrderStatus.DELIVERING, OrderStatus.DELIVERY_RETRY, OrderStatus.DELIVERY_FAILED_FINAL),
                     startDate,
-                    endDate,
-                    PageRequest.of(0, 5));
+                    endDate);
 
             List<UserTopProductItemDto> topReturned = orderProductRepository.findTopReturnedProducts(
                     shopId,
                     List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
                     startDate,
-                    endDate,
-                    PageRequest.of(0, 5));
+                    endDate);
 
             UserDashboardChartProductResponseDTO data = new UserDashboardChartProductResponseDTO();
             data.setTopSelling(topSelling);

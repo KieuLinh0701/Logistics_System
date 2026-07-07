@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { message } from "antd";
-import type { ShipperOrder } from "../../../api/orderApi";
+import React, {useEffect, useState} from "react";
+import {message} from "antd";
+import type {ShipperOrder} from "../../../api/orderApi";
 import orderApi from "../../../api/orderApi";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";

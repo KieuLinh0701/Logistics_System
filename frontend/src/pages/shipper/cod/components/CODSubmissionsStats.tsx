@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, Col, Row, Statistic } from "antd";
-import { DollarOutlined } from "@ant-design/icons";
+import {Card, Col, Row, Statistic} from "antd";
+import {DollarOutlined} from "@ant-design/icons";
 
 interface SubmissionSummary {
   totalSubmitted: number;

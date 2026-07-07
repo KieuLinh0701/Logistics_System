@@ -1,8 +1,8 @@
 import React from "react";
-import { Button, Table, Tag, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { InboxOutlined } from "@ant-design/icons";
-import type { ShipperOrder } from "../../../../api/orderApi";
+import {Button, Table, Tag, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import {InboxOutlined} from "@ant-design/icons";
+import type {ShipperOrder} from "../../../../api/orderApi";
 
 const { Text } = Typography;
 

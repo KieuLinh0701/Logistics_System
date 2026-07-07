@@ -1,10 +1,10 @@
 package com.logistics.service.shipper;
 
+import com.logistics.dto.shipper.shipment.ShipperShipmentDetailDto;
+import com.logistics.dto.shipper.shipment.ShipperShipmentListDto;
 import com.logistics.request.shipper.ShipperOrdersShipmentSearchRequest;
 import com.logistics.request.shipper.ShipperShipmentSearchRequest;
 import com.logistics.response.ListResponse;
-import com.logistics.dto.shipper.shipment.ShipperShipmentDetailDto;
-import com.logistics.dto.shipper.shipment.ShipperShipmentListDto;
 
 public interface ShipmentHistoryShipperService {
 

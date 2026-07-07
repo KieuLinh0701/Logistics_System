@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { message } from "antd";
+import React, {useEffect, useState} from "react";
+import {message} from "antd";
 import shipmentApi from "../../../api/shipmentApi";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";

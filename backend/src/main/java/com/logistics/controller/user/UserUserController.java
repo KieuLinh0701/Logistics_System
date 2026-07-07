@@ -26,5 +26,4 @@ public class UserUserController {
 
                 return ResponseEntity.ok(ApiResponse.success(service.checkLocked(userId)));
         }
-
 }

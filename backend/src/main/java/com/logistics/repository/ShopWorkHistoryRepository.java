@@ -25,6 +25,7 @@ public interface ShopWorkHistoryRepository
             LEFT JOIN swh.role r
             LEFT JOIN swh.shop s
             WHERE swh.user.id = :userId
+            AND swh.shop.id = :shopId
             AND (:isCurrent IS NULL OR swh.isCurrent = :isCurrent)
             AND (
                 :search IS NULL OR :search = ''
@@ -37,6 +38,7 @@ public interface ShopWorkHistoryRepository
             """)
     Page<ShopWorkHistory> findAllByUserIdWithFilter(
             @Param("userId") int userId,
+            @Param("shopId") int shopId,
             @Param("isCurrent") Boolean isCurrent,
             @Param("search") String search,
             @Param("startDate") LocalDateTime startDate,

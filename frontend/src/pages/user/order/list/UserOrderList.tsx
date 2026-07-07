@@ -21,7 +21,6 @@ import StatusBar from "../../../../components/order/StatusBar.tsx";
 import BulkResult from "../../../manager/order/list/components/BulkResult.tsx";
 import type {BulkResponse} from "../../../../types/response.ts";
 import type {ManagerOrderShipment} from "../../../../types/shipment.ts";
-import shipmentOrderApi from "../../../../api/shipmentOrderApi.ts";
 
 const UserOrderList = () => {
     const navigate = useNavigate();

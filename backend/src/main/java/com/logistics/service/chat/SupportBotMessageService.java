@@ -1,6 +1,5 @@
 package com.logistics.service.chat;
 
-import com.logistics.dto.chat.SupportMessageDto;
 import com.logistics.entity.SupportMessage;
 import com.logistics.enums.SupportMessageSenderType;
 

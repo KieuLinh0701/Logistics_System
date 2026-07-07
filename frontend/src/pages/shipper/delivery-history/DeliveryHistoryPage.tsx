@@ -1,25 +1,9 @@
-import React, { useEffect, useState } from "react";
-import {
-  Card,
-  Col,
-  message,
-  Modal,
-  Row,
-  Space,
-  Statistic,
-  Table,
-  Tag,
-  Typography,
-} from "antd";
-import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DollarOutlined,
-} from "@ant-design/icons";
-import type { ShipperOrder, ShipperStats } from "../../../api/orderApi";
+import React, {useEffect, useState} from "react";
+import {Card, Col, message, Modal, Row, Space, Statistic, Table, Tag, Typography,} from "antd";
+import {CheckCircleOutlined, ClockCircleOutlined, DollarOutlined,} from "@ant-design/icons";
+import type {ShipperOrder, ShipperStats} from "../../../api/orderApi";
 import orderApi from "../../../api/orderApi";
 import dayjs from "dayjs";
-import { translateOrderCodStatus } from "../../../utils/orderUtils";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";
 import DeliveryHistoryToolbar from "./components/DeliveryHistoryToolbar";

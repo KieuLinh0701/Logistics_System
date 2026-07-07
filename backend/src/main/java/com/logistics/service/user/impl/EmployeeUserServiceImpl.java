@@ -151,7 +151,7 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
                 endDate,
                 pageable);
 
-        List<EmployeeListUserDto> list = UserMapper.toEmployeeListDto(pageData.getContent());
+        List<EmployeeListUserDto> list = UserMapper.toEmployeeListDto(pageData.getContent(), shopId);
 
         int total = (int) pageData.getTotalElements();
         Pagination pagination = new Pagination(total, page, limit, pageData.getTotalPages());
@@ -172,8 +172,6 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
         User currentUser = getUser(userId);
         User targetUser = getUser(id);
 
-        checkShopPermission(currentUser, targetUser);
-
         Role role = roleUserService.getRole(request.getRoleId());
         roleUserService.checkOwnerPermission(currentUser, role);
 
@@ -186,14 +184,20 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
         Integer shopId = userUserService.getShopId(currentUser);
 
         if (request.getIsActive()) {
+            if (currentUser.getCurrentShop() != null && shopId.equals(shopId)) {
+                throw new AppException(UserErrorCode.USER_EMPLOYEE_ALREADY_IN_ANOTHER_SHOP);
+            }
+
             validateNoActiveShopRole(targetUser, shopId);
 
             accountRole.setIsActive(true);
             accountRoleRepository.save(accountRole);
 
-            targetUser.getAccount()
-                    .setIsActive(true);
+            targetUser.getAccount().setIsActive(true);
             accountRepository.save(targetUser.getAccount());
+
+            User shop = userUserService.getShop(currentUser);
+            targetUser.setCurrentShop(shop);
 
             shopWorkHistoryRepository.findByUserIdAndIsCurrentTrue(targetUser.getId())
                     .forEach(wh -> {
@@ -213,8 +217,13 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
             shopWorkHistoryRepository.save(newWorkHistory);
 
         } else {
+            checkShopPermission(currentUser, targetUser);
+
             accountRole.setIsActive(false);
             accountRoleRepository.save(accountRole);
+
+            targetUser.setCurrentShop(null);
+            userRepository.save(targetUser);
 
             boolean hasOtherActiveRole = targetUser.getAccount()
                     .getAccountRoles()
@@ -345,10 +354,8 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
             int userId,
             int targetUserId,
             ShopWorkHistorySearchUserRequest request) {
-        User currentUser = getUser(userId);
-        User targetUser = getUser(targetUserId);
 
-        checkShopPermission(currentUser, targetUser);
+        Integer shopId = userUserService.getShopId(userId);
 
         int page = request.getPage();
         int limit = request.getLimit();
@@ -373,6 +380,7 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
 
         Page<ShopWorkHistory> pageData = shopWorkHistoryRepository.findAllByUserIdWithFilter(
                 targetUserId,
+                shopId,
                 isCurrent,
                 search,
                 startDate,
@@ -398,10 +406,7 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
             Integer employeeId,
             AuditLogSearchRequest request) {
 
-        User currentUser = getUser(userId);
-        User employee = getUser(employeeId);
-
-        checkShopPermission(currentUser, employee);
+        Integer shopId = userUserService.getShopId(userId);
 
         int page = request.getPage();
         int limit = request.getLimit();
@@ -420,6 +425,7 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
 
         Specification<AuditLog> spec = AuditLogSpecification.unrestricted()
                 .and(AuditLogSpecification.user(employeeId))
+                .and(AuditLogSpecification.shop(shopId))
                 .and(AuditLogSpecification.search(search))
                 .and(AuditLogSpecification.status(status))
                 .and(AuditLogSpecification.entityType(entity))
@@ -455,9 +461,7 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
             Integer employeeId,
             AuditLogSearchRequest request) {
 
-        User currentUser = getUser(userId);
-        User employee = getUser(employeeId);
-        checkShopPermission(currentUser, employee);
+        Integer shopId = userUserService.getShopId(userId);
 
         LocalDateTime startDate = request.getStartDate() != null && !request.getStartDate().isBlank()
                 ? LocalDateTime.parse(request.getStartDate()) : null;
@@ -466,6 +470,7 @@ public class EmployeeUserServiceImpl implements EmployeeUserService {
 
         Specification<AuditLog> spec = AuditLogSpecification.unrestricted()
                 .and(AuditLogSpecification.user(employeeId))
+                .and(AuditLogSpecification.shop(shopId))
                 .and(AuditLogSpecification.search(request.getSearch()))
                 .and(AuditLogSpecification.status(request.getStatus()))
                 .and(AuditLogSpecification.entityType(request.getEntity()))

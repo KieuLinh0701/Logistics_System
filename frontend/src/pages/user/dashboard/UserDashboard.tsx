@@ -1,6 +1,6 @@
 import {Col, message, Row} from "antd";
 import {useEffect, useState} from "react";
-import dayjs, {Dayjs} from "dayjs";
+import {Dayjs} from "dayjs";
 import dashboardApi from "../../../api/dashboardApi";
 import {OrderStatusOverview} from "./components/OrderStatusOverview";
 import {ProductStatsOverview} from "./components/ProductStatsOverview";
@@ -26,7 +26,7 @@ const UserDashboard: React.FC = () => {
     const [revenueOverview, setRevenueOverview] = useState<UserRevenueStats | undefined>(undefined);
     const [productsChart, setProductsChart] = useState<UserDashboardChartProductsResponse | undefined>(undefined);
     const [ordersChart, setOrdersChart] = useState<UserOrderTimeLineItem[] | undefined>(undefined);
-    const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>([dayjs().subtract(7, "day"), dayjs()]);
+    const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingChart, setLoadingChart] = useState(true);
 

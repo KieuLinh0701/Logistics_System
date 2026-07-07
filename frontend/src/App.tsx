@@ -71,19 +71,16 @@ import UserEmployeeList from "./pages/user/employee/list/UserEmployeeList.tsx";
 import UserEmployeeHistory from "./pages/user/employee/history/UserEmployeeHistory.tsx";
 
 // Shipper
-import ShipperOrders from "./pages/shipper/orders/OrdersPage";
 import ShipperOrderDetail from "./pages/shipper/orders/OrderDetailPage";
 import ShipperDeliveryRoute from "./pages/shipper/delivery-route/DeliveryRoutePage";
 import ShipperDeliveryHistory from "./pages/shipper/delivery-history/DeliveryHistoryPage";
 import ShipperCODManagement from "./pages/shipper/cod/CODManagementPage";
 import ShipperIncidentReport from "./pages/shipper/incident/IncidentReportPage";
-import ShippingRequests from "./pages/shipper/shipping-requests/ShippingRequestsPage";
 import ShipperBarcodeScanner from "./pages/shipper/scanner/BarcodeScannerPage";
 import ShipperShipmentHistory from "./pages/shipper/shipment/ShipperShipmentHistoryPage";
 import ShipperShipmentOrders from "./pages/shipper/shipment/ShipperShipmentOrdersPage";
 import MyOrdersPage from "./pages/shipper/my-orders/MyOrdersPage";
 import ShipperUnassignedOrders from "./pages/shipper/unassigned/UnassignedOrdersPage";
-import ShipperReturnOrders from "./pages/shipper/returns/ReturnOrdersPage";
 import FailedDeliveryOrders from "./pages/shipper/failed-deliveries/FailedDeliveryOrdersPage";
 import ShipperPendingShipments from "./pages/shipper/pending-shipments/ShipperPendingShipmentsPage";
 

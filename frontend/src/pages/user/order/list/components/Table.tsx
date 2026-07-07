@@ -5,9 +5,10 @@ import {
     CloseCircleOutlined,
     DeleteOutlined,
     DownOutlined,
-    EditOutlined, EnvironmentOutlined,
-    PlayCircleOutlined,
-    PrinterOutlined, SendOutlined
+    EditOutlined,
+    EnvironmentOutlined,
+    PrinterOutlined,
+    SendOutlined
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ColumnsType} from "antd/es/table";

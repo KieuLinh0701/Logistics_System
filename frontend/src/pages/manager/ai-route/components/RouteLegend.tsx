@@ -1,6 +1,6 @@
 import React from "react";
 import type {AiShipperRoute} from "../../../../types/aiRoute";
-import {getRouteColor, getRouteKey, isReturnToOfficeStop} from "../utils/routeMapUtils";
+import {getRouteColor, getRouteKey} from "../utils/routeMapUtils";
 
 interface RouteLegendProps {
   routes: AiShipperRoute[];

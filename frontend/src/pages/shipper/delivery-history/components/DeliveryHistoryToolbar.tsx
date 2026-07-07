@@ -1,6 +1,6 @@
 import React from "react";
-import { Button, DatePicker, Input, Select } from "antd";
-import { ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import {Button, DatePicker, Input, Select} from "antd";
+import {ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import type dayjs from "dayjs";
 import "../../../../styles/ListPage.css";
 
