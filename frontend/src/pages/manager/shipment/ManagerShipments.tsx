@@ -20,6 +20,7 @@ const ManagerShipments: React.FC = () => {
 
     const [shipments, setShipments] = useState<ManagerShipment[] | []>([]);
     const [loading, setLoading] = useState(false)
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
 
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1);
@@ -171,7 +172,7 @@ const ManagerShipments: React.FC = () => {
     }
 
     const handleCancelShipment = async (id: number) => {
-        setLoading(true);
+        setLoadingConfirm(true);
         try {
             const result = await shipmentApi.cancelManagerShipment(id);
 
@@ -191,7 +192,7 @@ const ManagerShipments: React.FC = () => {
             message.error(error.message || "Lỗi khi hủy chuyến hàng:");
         } finally {
             setModalConfirmOpen(false);
-            setLoading(false);
+            setLoadingConfirm(false);
         }
     };
 
@@ -382,7 +383,7 @@ const ManagerShipments: React.FC = () => {
                 open={modalConfirmOpen}
                 onOk={confirmCancelShipment}
                 onCancel={() => setModalConfirmOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
         </div>
     );

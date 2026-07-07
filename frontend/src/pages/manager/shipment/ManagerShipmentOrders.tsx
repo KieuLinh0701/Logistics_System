@@ -38,6 +38,8 @@ const ManagerShipmentOrders: React.FC = () => {
 
     const [orders, setOrders] = useState<ManagerOrderShipment[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
+
     const [page, setPage] = useState(1);
     const limit = 10;
     const [total, setTotal] = useState(0);
@@ -210,7 +212,7 @@ const ManagerShipmentOrders: React.FC = () => {
         }
 
         setModalConfirmDestinationOfficeOpen(false);
-        setAddingLoading(true);
+        setLoadingConfirm(true);
 
         try {
             // Filter orders by confirmation type
@@ -281,7 +283,7 @@ const ManagerShipmentOrders: React.FC = () => {
         } catch (error: any) {
             message.error(error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
         } finally {
-            setAddingLoading(false);
+            setLoadingConfirm(false);
         }
     };
 
@@ -351,7 +353,7 @@ const ManagerShipmentOrders: React.FC = () => {
         setModalConfirmDestinationOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await orderApi.setManagerConfirmDestinationOffice(orderId, confirmed);
 
@@ -368,7 +370,7 @@ const ManagerShipmentOrders: React.FC = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setOrderId(null);
         }
     };
@@ -382,7 +384,7 @@ const ManagerShipmentOrders: React.FC = () => {
         setModalConfirmReturnArrivalOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await orderApi.confirmReturnArrival(orderId);
 
@@ -395,7 +397,7 @@ const ManagerShipmentOrders: React.FC = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận đơn hoàn!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setOrderId(null);
         }
     };
@@ -769,7 +771,7 @@ const ManagerShipmentOrders: React.FC = () => {
                 open={modalConfirmDestinationOfficeOpen}
                 onOk={() => confirmDestinationOrders(true)}
                 onCancel={() => confirmDestinationOrders(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -778,7 +780,7 @@ const ManagerShipmentOrders: React.FC = () => {
                 open={modalConfirmDestinationOpen}
                 onOk={() => confirmDestinationOffice(true)}
                 onCancel={() => confirmDestinationOffice(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -787,7 +789,7 @@ const ManagerShipmentOrders: React.FC = () => {
                 open={modalConfirmReturnArrivalOpen}
                 onOk={handleConfirmReturnArrival}
                 onCancel={() => setModalConfirmReturnArrivalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
         </div>
     );

@@ -25,6 +25,7 @@ const ManagerShipperAssigns = () => {
     const latestRequestRef = useRef(0);
     const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
     const [employees, setEmployees] = useState<ManagerEmployeeWithShipperAssignments[] | []>([]);
     const [shippers, setShippers] = useState<ManagerEmployee[] | []>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -242,7 +243,7 @@ const ManagerShipperAssigns = () => {
         setModalConfirmOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await shipperAssignmentApi.deleteManagerFutureShipperAssignment(selectedDeleteId);
 
@@ -255,7 +256,7 @@ const ManagerShipperAssigns = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xóa phân công giao hàng!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setSelectedDeleteId(null);
         }
     };
@@ -360,7 +361,7 @@ const ManagerShipperAssigns = () => {
                 open={modalConfirmOpen}
                 onOk={confirmDelete}
                 onCancel={() => setModalConfirmOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
         </div>
     );

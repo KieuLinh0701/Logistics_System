@@ -23,6 +23,7 @@ const ManagerUrgentOrderList = () => {
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
 
     const [search, setSearch] = useState("");
     const [filterSort, setFilterSort] = useState("NEWEST");
@@ -198,7 +199,7 @@ const ManagerUrgentOrderList = () => {
         setConfirmModalOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await orderApi.confirmManagerUrgentOrder(orderId);
 
@@ -211,7 +212,7 @@ const ManagerUrgentOrderList = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận đơn hàng!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setOrderId(null);
         }
     };
@@ -230,6 +231,7 @@ const ManagerUrgentOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.confirmBulkManagerUrgentOrders(
                 selectedOrderIds
             );
@@ -252,6 +254,7 @@ const ManagerUrgentOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setConfirmOrdersOpen(false);
         }
@@ -317,7 +320,7 @@ const ManagerUrgentOrderList = () => {
                 open={confirmModalOpen}
                 onOk={confirmConfirmOrder}
                 onCancel={() => setConfirmModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -326,7 +329,7 @@ const ManagerUrgentOrderList = () => {
                 open={confirmOrdersOpen}
                 onOk={confirmConfirmOrders}
                 onCancel={() => setConfirmOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             {bulkResult && (

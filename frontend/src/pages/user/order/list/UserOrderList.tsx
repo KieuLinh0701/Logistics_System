@@ -34,6 +34,7 @@ const UserOrderList = () => {
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
 
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
 
@@ -180,11 +181,11 @@ const UserOrderList = () => {
     };
 
     const confirmCancelOrder = async () => {
-        setLoading(true);
+        setLoadingConfirm(true);
         try {
             if (!orderId) return;
             const result = await orderApi.cancelUserOrder(orderId);
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success("Hủy đơn hàng thành công");
                 fetchOrders();
                 fetchStatusCounts();
@@ -195,7 +196,7 @@ const UserOrderList = () => {
             message.error(error.message || "Lỗi server khi hủy đơn hàng");
         } finally {
             setCancelModalOpen(false);
-            setLoading(false);
+            setLoadingConfirm(false);
         }
     };
 
@@ -209,12 +210,12 @@ const UserOrderList = () => {
     };
 
     const confirmPublicOrder = async () => {
-        setLoading(true);
+        setLoadingConfirm(true);
         try {
             if (!orderId) return;
             const result = await orderApi.publicUserOrder(orderId);
 
-            if (result.success && result.data) {
+            if (result.success) {
                 message.success("Đã chuyển đơn hàng sang xử lý thành công");
 
                 fetchOrders();
@@ -226,7 +227,7 @@ const UserOrderList = () => {
             message.error(error.message || "Lỗi khi chuyển trạng thái đơn hàng");
         } finally {
             setPublicModalOpen(false);
-            setLoading(false);
+            setLoadingConfirm(false);
         }
     };
 
@@ -236,7 +237,7 @@ const UserOrderList = () => {
     };
 
     const confirmDeleteOrder = async () => {
-        setLoading(true);
+        setLoadingConfirm(true);
         try {
             if (!orderId) return;
             const result = await orderApi.deleteUserOrder(orderId);
@@ -252,7 +253,7 @@ const UserOrderList = () => {
             message.error(error.message || "Lỗi khi xóa đơn hàng");
         } finally {
             setDeleteModalOpen(false);
-            setLoading(false);
+            setLoadingConfirm(false);
         }
     };
 
@@ -414,6 +415,7 @@ const UserOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.readyBulkUserOrders(
                 selectedOrderIds
             );
@@ -436,6 +438,7 @@ const UserOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setReadyOrdersOpen(false);
         }
@@ -447,6 +450,7 @@ const UserOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.transitToOfficeBulkUserOrders(
                 selectedOrderIds
             );
@@ -469,6 +473,7 @@ const UserOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setTransitToOfficeOrdersOpen(false);
         }
@@ -480,6 +485,7 @@ const UserOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.cancelBulkUserOrders(
                 selectedOrderIds
             );
@@ -502,6 +508,7 @@ const UserOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setCancelOrdersOpen(false);
         }
@@ -513,6 +520,7 @@ const UserOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.deleteBulkUserOrders(
                 selectedOrderIds
             );
@@ -535,6 +543,7 @@ const UserOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setDeleteOrdersOpen(false);
         }
@@ -546,6 +555,7 @@ const UserOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.publicBulkUserOrders(
                 selectedOrderIds
             );
@@ -568,6 +578,7 @@ const UserOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setPublicOrdersOpen(false);
         }
@@ -604,7 +615,7 @@ const UserOrderList = () => {
         setTransitToOfficeModalOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await orderApi.setUserOrderTransitToOffice(orderId);
 
@@ -618,7 +629,7 @@ const UserOrderList = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi chuyển đơn hàng sang trạng thái 'Đang chuyển về bưu cục'!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setOrderId(null);
         }
     };
@@ -796,21 +807,21 @@ const UserOrderList = () => {
                 open={cancelModalOpen}
                 onOk={confirmCancelOrder}
                 onCancel={() => setCancelModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmPublicModal
                 open={publicModalOpen}
                 onOk={confirmPublicOrder}
                 onCancel={() => setPublicModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmDeleteModal
                 open={deleteModalOpen}
                 onOk={confirmDeleteOrder}
                 onCancel={() => setDeleteModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -819,7 +830,7 @@ const UserOrderList = () => {
                 open={modalConfirmOpen}
                 onOk={confirmReadyOrder}
                 onCancel={() => setModalConfirmOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -828,7 +839,7 @@ const UserOrderList = () => {
                 open={transitToOfficeModalOpen}
                 onOk={confirmTransitToOfficeOrder}
                 onCancel={() => setTransitToOfficeModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -837,7 +848,7 @@ const UserOrderList = () => {
                 open={readyOrdersOpen}
                 onOk={confirmReadyOrders}
                 onCancel={() => setReadyOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -846,7 +857,7 @@ const UserOrderList = () => {
                 open={cancelOrdersOpen}
                 onOk={confirmCancelOrders}
                 onCancel={() => setCancelOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -855,7 +866,7 @@ const UserOrderList = () => {
                 open={deleteOrdersOpen}
                 onOk={confirmDeleteOrders}
                 onCancel={() => setDeleteOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -864,7 +875,7 @@ const UserOrderList = () => {
                 open={publicOrdersOpen}
                 onOk={confirmPublicOrders}
                 onCancel={() => setPublicOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -873,7 +884,7 @@ const UserOrderList = () => {
                 open={transitToOfficeOrdersOpen}
                 onOk={confirmTransitToOfficeOrders}
                 onCancel={() => setTransitToOfficeOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             {bulkResult && (
