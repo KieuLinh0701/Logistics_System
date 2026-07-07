@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Tabs } from "antd";
-import { useSearchParams } from "react-router-dom";
+import React, {useRef, useState} from "react";
+import {Tabs} from "antd";
+import {useSearchParams} from "react-router-dom";
 import DeliveryOrdersTab from "./components/DeliveryOrdersTab";
 import ReturnOrdersTab from "./components/ReturnOrdersTab";
 import PickupRequestsTab from "./components/PickupRequestsTab";
-import MyOrdersToolbar, { type TabKey } from "./components/MyOrdersToolbar";
+import MyOrdersToolbar, {type TabKey} from "./components/MyOrdersToolbar";
 import "./MyOrdersPage.css";
 
 export interface TabRefreshHandle {

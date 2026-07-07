@@ -2,12 +2,14 @@ import React from "react";
 import {Button, Dropdown, type MenuProps, Space} from "antd";
 import {
     CheckSquareOutlined,
-    CloseCircleOutlined, DeleteOutlined,
-    DownOutlined, EnvironmentOutlined,
+    CloseCircleOutlined,
+    DeleteOutlined,
+    DownOutlined,
+    EnvironmentOutlined,
     FileExcelOutlined,
-    PlayCircleOutlined,
     PlusOutlined,
-    PrinterOutlined, SendOutlined
+    PrinterOutlined,
+    SendOutlined
 } from "@ant-design/icons";
 import {hasPermissionGroup} from "../../../../../utils/authUtils.ts";
 

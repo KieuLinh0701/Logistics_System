@@ -6,7 +6,8 @@ import {
     DownOutlined,
     EditOutlined,
     EnvironmentOutlined,
-    PrinterOutlined, RollbackOutlined
+    PrinterOutlined,
+    RollbackOutlined
 } from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ColumnsType} from "antd/es/table";

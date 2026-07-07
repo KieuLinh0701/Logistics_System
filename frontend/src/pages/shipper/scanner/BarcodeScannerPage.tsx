@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Button, Card, message, Space, Spin, Typography, Upload } from "antd";
-import { CameraOutlined, FileImageOutlined, ScanOutlined, StopOutlined } from "@ant-design/icons";
-import { Html5Qrcode } from "html5-qrcode";
+import React, {useEffect, useRef, useState} from "react";
+import {Alert, Button, Card, message, Space, Spin, Typography, Upload} from "antd";
+import {CameraOutlined, FileImageOutlined, ScanOutlined, StopOutlined} from "@ant-design/icons";
+import {Html5Qrcode} from "html5-qrcode";
 import orderApi from "../../../api/orderApi";
 
 const { Title, Text } = Typography;

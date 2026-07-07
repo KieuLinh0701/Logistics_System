@@ -93,6 +93,7 @@ const DataTable: React.FC<DataTableProps> = ({
                             <Button
                                 type="text"
                                 icon={<EditOutlined style={{color: '#1c3d90'}}/>}
+                                disabled={!record.isActive}
                                 onClick={() => onEdit(record)}
                                 title="Cập nhật thông tin nhân viên"
                             />

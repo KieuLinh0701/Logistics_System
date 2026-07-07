@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Input, InputNumber, Modal } from "antd";
+import {Form, Input, InputNumber, Modal} from "antd";
 
 interface SubmitCODModalProps {
   open: boolean;

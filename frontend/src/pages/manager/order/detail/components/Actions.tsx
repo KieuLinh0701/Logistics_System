@@ -2,7 +2,8 @@ import React from "react";
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
-    EditOutlined, EnvironmentOutlined,
+    EditOutlined,
+    EnvironmentOutlined,
     PrinterOutlined,
     RollbackOutlined
 } from "@ant-design/icons";

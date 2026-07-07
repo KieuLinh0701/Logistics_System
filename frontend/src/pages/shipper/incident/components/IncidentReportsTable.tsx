@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Image, Table, Tag, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import React, {useState} from "react";
+import {Image, Table, Tag, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
 import dayjs from "dayjs";
 import defaultImage from "../../../../assets/images/imageDefault.jpg";
 

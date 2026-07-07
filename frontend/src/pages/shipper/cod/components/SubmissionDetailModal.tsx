@@ -1,5 +1,5 @@
 import React from "react";
-import { Descriptions, Modal, Tag, Typography } from "antd";
+import {Descriptions, Modal, Tag, Typography} from "antd";
 import dayjs from "dayjs";
 
 const { Text } = Typography;

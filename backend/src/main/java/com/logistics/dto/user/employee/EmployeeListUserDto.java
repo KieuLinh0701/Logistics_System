@@ -19,4 +19,5 @@ public class EmployeeListUserDto {
         private String email;
         private String phoneNumber;
         private LocalDateTime updatedAt;
+        private Boolean isActive;
 }

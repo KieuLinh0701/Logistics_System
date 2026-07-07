@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {Segmented, Table, Tag} from "antd";
+import {Segmented, Table} from "antd";
 import type {UserTopProductItem} from "../../../../types/dashboard";
 
 interface Props {
@@ -64,11 +64,11 @@ const TopProductTable: React.FC<Props> = ({
                 width: 120,
                 align: "center",
                 render: (total: number) => (
-                  <Tag
-                    className={showReturned ? "returned-tag" : "sold-tag"}
+                  <span
+                    className={showReturned ? "custom-table-content-error" : "custom-table-content-strong"}
                   >
                     {total.toLocaleString()}
-                  </Tag>
+                  </span>
                 ),
               },
             ]}

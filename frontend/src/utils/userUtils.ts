@@ -16,7 +16,7 @@ export const translateUserFilterSort = (value: string): string => {
 
 export const USER_ACTIVE = [
     'ACTIVE',
-    'ACTIVE',
+    'INACTIVE',
 ] as const;
 
 export const translateUserActive = (value: string): string => {

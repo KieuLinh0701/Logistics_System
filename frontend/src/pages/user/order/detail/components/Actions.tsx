@@ -2,10 +2,11 @@ import React from "react";
 import {
     CheckSquareOutlined,
     CloseCircleOutlined,
-    CustomerServiceOutlined, DeleteOutlined,
-    EditOutlined, EnvironmentOutlined,
-    PlayCircleOutlined,
-    PrinterOutlined, SendOutlined
+    CustomerServiceOutlined,
+    EditOutlined,
+    EnvironmentOutlined,
+    PrinterOutlined,
+    SendOutlined
 } from "@ant-design/icons";
 
 interface Props {

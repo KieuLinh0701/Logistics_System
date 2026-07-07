@@ -1,29 +1,23 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {
-  Alert,
-  Button,
-  DatePicker,
-  Empty,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tabs,
-  Tooltip,
-  Typography,
-  message,
+    Alert,
+    Button,
+    DatePicker,
+    Empty,
+    Form,
+    Input,
+    message,
+    Modal,
+    Select,
+    Space,
+    Table,
+    Tabs,
+    Tag,
+    Tooltip,
+    Typography,
 } from "antd";
-import {
-  DollarOutlined,
-  EyeOutlined,
-  HistoryOutlined,
-  ReloadOutlined,
-  SwapOutlined,
-} from "@ant-design/icons";
-import type { ColumnsType } from "antd/es/table";
+import {DollarOutlined, EyeOutlined, HistoryOutlined, ReloadOutlined, SwapOutlined,} from "@ant-design/icons";
+import type {ColumnsType} from "antd/es/table";
 import dayjs from "dayjs";
 import orderApi from "../../../api/orderApi";
 import CODTransactionsStats from "./components/CODTransactionsStats";

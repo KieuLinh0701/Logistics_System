@@ -1,7 +1,7 @@
 import React from "react";
-import { Descriptions, Space, Table, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { DriverShipment } from "../../../../types/shipment";
+import {Descriptions, Space, Table, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import type {DriverShipment} from "../../../../types/shipment";
 
 const { Text } = Typography;
 

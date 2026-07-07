@@ -1,15 +1,6 @@
-import React, { useEffect, useState } from "react";
-import {
-  Button,
-  Form,
-  Input,
-  message,
-  Modal,
-  Select,
-  Spin,
-  Upload,
-} from "antd";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Form, Input, message, Modal, Select, Spin, Upload,} from "antd";
+import {PlusOutlined, ReloadOutlined} from "@ant-design/icons";
 import orderApi from "../../../api/orderApi";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";

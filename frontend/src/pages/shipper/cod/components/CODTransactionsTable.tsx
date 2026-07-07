@@ -1,6 +1,6 @@
 import React from "react";
-import { Table, Tag, Typography, Tooltip } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import {Table, Tooltip, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
 import dayjs from "dayjs";
 
 const { Text } = Typography;

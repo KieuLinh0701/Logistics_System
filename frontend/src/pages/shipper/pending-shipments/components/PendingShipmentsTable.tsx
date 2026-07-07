@@ -1,6 +1,6 @@
 import React from "react";
-import { Button, Popover, Progress, Table, Tag, Typography } from "antd";
-import { FileExcelOutlined, PlayCircleOutlined, ScanOutlined } from "@ant-design/icons";
+import {Button, Popover, Progress, Table, Tag, Typography} from "antd";
+import {FileExcelOutlined, PlayCircleOutlined, ScanOutlined} from "@ant-design/icons";
 
 const { Text } = Typography;
 

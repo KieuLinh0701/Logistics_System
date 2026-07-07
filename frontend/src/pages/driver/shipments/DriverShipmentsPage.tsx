@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { message, Row, Typography } from "antd";
+import React, {useEffect, useState} from "react";
+import {message, Row, Typography} from "antd";
 import shipmentApi from "../../../api/shipmentApi";
-import type { DriverShipment } from "../../../types/shipment";
+import type {DriverShipment} from "../../../types/shipment";
 import ShipmentsTable from "./components/ShipmentsTable";
 import ShipmentsToolbar from "./components/ShipmentsToolbar";
 

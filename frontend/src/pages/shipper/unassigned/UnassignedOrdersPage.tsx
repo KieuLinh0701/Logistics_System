@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { message } from "antd";
-import type { ShipperOrder } from "../../../api/orderApi";
+import React, {useEffect, useState} from "react";
+import {message} from "antd";
+import type {ShipperOrder} from "../../../api/orderApi";
 import orderApi from "../../../api/orderApi";
-import { dispatchShipperRouteRefresh } from "../delivery-route/deliveryRouteEvents";
+import {dispatchShipperRouteRefresh} from "../delivery-route/deliveryRouteEvents";
 import "../../../styles/ListPage.css";
 import "../ShipperPagesShared.css";
 import UnassignedOrdersTable from "./components/UnassignedOrdersTable";

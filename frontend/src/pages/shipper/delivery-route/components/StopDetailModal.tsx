@@ -1,6 +1,6 @@
 import React from "react";
-import { Button, Modal, Space, Tag, Typography } from "antd";
-import { EnvironmentOutlined } from "@ant-design/icons";
+import {Button, Modal, Space, Tag, Typography} from "antd";
+import {EnvironmentOutlined} from "@ant-design/icons";
 
 const { Text } = Typography;
 

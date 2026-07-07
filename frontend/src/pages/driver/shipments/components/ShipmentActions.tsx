@@ -1,7 +1,7 @@
 import React from "react";
-import { Button, Space } from "antd";
-import { PlayCircleOutlined } from "@ant-design/icons";
-import type { DriverShipment } from "../../../../types/shipment";
+import {Button, Space} from "antd";
+import {PlayCircleOutlined} from "@ant-design/icons";
+import type {DriverShipment} from "../../../../types/shipment";
 
 interface ShipmentActionsProps {
   record: DriverShipment;

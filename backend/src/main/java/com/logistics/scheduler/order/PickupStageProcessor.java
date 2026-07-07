@@ -2,7 +2,6 @@ package com.logistics.scheduler.order;
 
 import com.logistics.entity.Order;
 import com.logistics.entity.User;
-import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.OrderStatus;
 import com.logistics.enums.PickupNotificationStage;
 import com.logistics.repository.OrderRepository;

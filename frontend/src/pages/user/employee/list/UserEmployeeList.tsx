@@ -41,8 +41,8 @@ const UserEmployeeList: React.FC = () => {
         const params: any = {};
 
         if (search) params.search = search;
-        params.active = filterSort.toLowerCase();
-        params.sort = filterActive.toLowerCase();
+        params.active = filterActive.toLowerCase();
+        params.sort = filterSort.toLowerCase();
         if (page >= 1) params.page = page;
         if (dateRange) {
             params.start = dateRange[0].format("YYYY-MM-DD");
@@ -81,15 +81,13 @@ const UserEmployeeList: React.FC = () => {
     };
 
     const openEditModal = async (user: User) => {
-        fetchRoles();
-
         setUser(user);
         form.setFieldsValue({
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
             phoneNumber: user.phoneNumber,
-            roleId: user.roleId
+            roleId: null
         });
         setModalMode('edit');
         setIsModalOpen(true);

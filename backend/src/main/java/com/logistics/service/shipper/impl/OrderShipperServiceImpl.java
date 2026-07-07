@@ -1,9 +1,5 @@
 package com.logistics.service.shipper.impl;
 
-import com.logistics.service.shipper.OrderShipperService;
-import com.logistics.service.shipper.ShipmentDeliveryService;
-
-
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.dto.ai.*;
@@ -22,13 +18,13 @@ import com.logistics.service.assignment.AutoAssignService;
 import com.logistics.service.common.ConfigService;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.OrderDestinationService;
+import com.logistics.service.shipper.OrderShipperService;
+import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,16 +33,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;

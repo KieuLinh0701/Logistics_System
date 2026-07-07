@@ -1,10 +1,10 @@
 import React from "react";
-import { Button, Space, Table, Tag, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { EyeOutlined, PhoneOutlined } from "@ant-design/icons";
+import {Button, Space, Table, Tag, Typography} from "antd";
+import type {ColumnsType} from "antd/es/table";
+import {EyeOutlined, PhoneOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import type { ShipperOrder } from "../../../../api/orderApi";
-import { translateOrderCodStatus } from "../../../../utils/orderUtils";
+import type {ShipperOrder} from "../../../../api/orderApi";
+import {translateOrderCodStatus} from "../../../../utils/orderUtils";
 
 const { Text } = Typography;
 

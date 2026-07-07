@@ -42,13 +42,13 @@ public class UserMapper {
                 .toList();
     }
 
-    public static List<EmployeeListUserDto> toEmployeeListDto(List<User> users) {
+    public static List<EmployeeListUserDto> toEmployeeListDto(List<User> users, Integer shopId) {
         return users.stream()
-                .map(u -> mapToDto(u))
+                .map(u -> mapToDto(u, shopId))
                 .collect(Collectors.toList());
     }
 
-    private static EmployeeListUserDto mapToDto(User u) {
+    private static EmployeeListUserDto mapToDto(User u, Integer shopId) {
 
         Account account = u.getAccount();
 
@@ -59,7 +59,8 @@ public class UserMapper {
                 u.getFirstName(),
                 (account != null) ? account.getEmail() : null,
                 u.getPhoneNumber(),
-                u.getUpdatedAt()
+                u.getUpdatedAt(),
+                u.getCurrentShop() != null && u.getCurrentShop().getId().equals(shopId)
         );
     }
 

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Empty, Modal, Spin, Tabs, message } from "antd";
-import orderApi, { type ShipperOrder } from "../../../api/orderApi";
+import React, {useEffect, useState} from "react";
+import {Empty, message, Modal, Spin, Tabs} from "antd";
+import orderApi, {type ShipperOrder} from "../../../api/orderApi";
 import "./FailedDeliveryOrdersPage.css";
 import FailedDeliveriesTable from "./components/FailedDeliveriesTable";
 import PickedUpOrdersTable from "./components/PickedUpOrdersTable";
