@@ -22,6 +22,7 @@ const UserShippingRequests: React.FC = () => {
 
     const [requests, setRequests] = useState<ShippingRequest[] | []>([]);
     const [loading, setLoading] = useState(false)
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
 
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1);
@@ -132,7 +133,7 @@ const UserShippingRequests: React.FC = () => {
     }
 
     const handleCancelShippingRequest = async (requestId: number) => {
-        setLoading(true);
+        setLoadingConfirm(true);
         try {
             const result = await shippingRequestApi.cancelUserShippingRequest(requestId);
 
@@ -152,7 +153,7 @@ const UserShippingRequests: React.FC = () => {
             message.error(error.message || "Lỗi khi hủy yêu cầu:");
         } finally {
             setModalConfirmOpen(false);
-            setLoading(false);
+            setLoadingConfirm(false);
         }
     };
 
@@ -389,7 +390,7 @@ const UserShippingRequests: React.FC = () => {
                 open={modalConfirmOpen}
                 onOk={confirmCancelShippingRequest}
                 onCancel={() => setModalConfirmOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
         </div>
     );

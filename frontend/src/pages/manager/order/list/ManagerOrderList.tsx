@@ -35,6 +35,7 @@ const ManagerOrderList = () => {
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingConfirm, setLoadingConfirm] = useState(false);
 
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
 
@@ -339,7 +340,7 @@ const ManagerOrderList = () => {
         setModalConfirmDestinationOfficeOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await orderApi.setManagerConfirmDestinationOffice(orderId, confirmed);
 
@@ -357,7 +358,7 @@ const ManagerOrderList = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận bưu cục hiện tại là bưu cục đích!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setOrderId(null);
         }
     };
@@ -547,7 +548,7 @@ const ManagerOrderList = () => {
             return;
         }
 
-        setLoading(true);
+        setLoadingConfirm(true);
         try {
             const result = await shipmentOrderApi.saveManagerShipmentOrders(
                 selectedShipment.id,
@@ -572,7 +573,7 @@ const ManagerOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setModalConfirmOpenAddOrders(false);
             setIsShipmentModalOpen(false);
         }
@@ -589,7 +590,7 @@ const ManagerOrderList = () => {
         setConfirmModalOpen(false);
 
         try {
-            setLoading(true);
+            setLoadingConfirm(true);
 
             const result = await orderApi.confirmManagerOrder(orderId);
 
@@ -603,7 +604,7 @@ const ManagerOrderList = () => {
         } catch (err: any) {
             message.error(err.message || "Có lỗi khi xác nhận đơn hàng!");
         } finally {
-            setLoading(false);
+            setLoadingConfirm(false);
             setOrderId(null);
         }
     };
@@ -622,6 +623,7 @@ const ManagerOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.confirmBulkManagerOrders(
                 selectedOrderIds
             );
@@ -645,6 +647,7 @@ const ManagerOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setConfirmOrdersOpen(false);
         }
@@ -664,6 +667,7 @@ const ManagerOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.cancelBulkManagerOrders(
                 selectedOrderIds
             );
@@ -687,6 +691,7 @@ const ManagerOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setCancelOrdersOpen(false);
         }
@@ -706,6 +711,7 @@ const ManagerOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.returnedBulkManagerOrders(
                 selectedOrderIds
             );
@@ -729,6 +735,7 @@ const ManagerOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setReturnedOrdersOpen(false);
         }
@@ -748,6 +755,7 @@ const ManagerOrderList = () => {
             return;
         }
         try {
+            setLoadingConfirm(true);
             const result = await orderApi.atOriginOfficeBulkManagerOrders(
                 selectedOrderIds
             );
@@ -771,6 +779,7 @@ const ManagerOrderList = () => {
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");
         } finally {
+            setLoadingConfirm(false);
             setSelectedOrderIds([]);
             setAtOriginOfficeOrdersOpen(false);
         }
@@ -892,7 +901,7 @@ const ManagerOrderList = () => {
                 open={modalConfirmOpenAddOrders}
                 onOk={confirmAddOrdersInShipment}
                 onCancel={() => setModalConfirmOpenAddOrders(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -901,7 +910,7 @@ const ManagerOrderList = () => {
                 open={modalReturnedOpen}
                 onOk={confirmReturnedOrder}
                 onCancel={() => setModalReturnedOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -910,7 +919,7 @@ const ManagerOrderList = () => {
                 open={modalConfirmOpen}
                 onOk={confirmAtOriginOfficeOrder}
                 onCancel={() => setModalConfirmOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -919,16 +928,7 @@ const ManagerOrderList = () => {
                 open={confirmModalOpen}
                 onOk={confirmConfirmOrder}
                 onCancel={() => setConfirmModalOpen(false)}
-                loading={loading}
-            />
-
-            <ConfirmModal
-                title="Xác nhận đơn hàng"
-                message="Bạn có chắc muốn xác nhận đơn hàng này để bưu cục tiếp nhận và xử lý không?"
-                open={confirmModalOpen}
-                onOk={confirmConfirmOrder}
-                onCancel={() => setConfirmModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -937,14 +937,14 @@ const ManagerOrderList = () => {
                 open={modalConfirmDestinationOfficeOpen}
                 onOk={() => confirmDestinationOffice(true)}
                 onCancel={() => confirmDestinationOffice(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmCancelModal
                 open={cancelModalOpen}
                 onOk={confirmCancelOrder}
                 onCancel={() => setCancelModalOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -953,7 +953,7 @@ const ManagerOrderList = () => {
                 open={confirmOrdersOpen}
                 onOk={confirmConfirmOrders}
                 onCancel={() => setConfirmOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -962,7 +962,7 @@ const ManagerOrderList = () => {
                 open={cancelOrdersOpen}
                 onOk={confirmCancelOrders}
                 onCancel={() => setCancelOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -971,7 +971,7 @@ const ManagerOrderList = () => {
                 open={returnedOrdersOpen}
                 onOk={confirmReturnedOrders}
                 onCancel={() => setReturnedOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             <ConfirmModal
@@ -980,7 +980,7 @@ const ManagerOrderList = () => {
                 open={atOriginOfficeOrdersOpen}
                 onOk={confirmAtOriginOfficeOrders}
                 onCancel={() => setAtOriginOfficeOrdersOpen(false)}
-                loading={loading}
+                loading={loadingConfirm}
             />
 
             {bulkResult && (
