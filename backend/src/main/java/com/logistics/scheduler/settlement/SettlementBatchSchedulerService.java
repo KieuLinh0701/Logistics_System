@@ -29,8 +29,8 @@ public class SettlementBatchSchedulerService {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
 
-    // @Scheduled(cron = "0 * * * * ?")
-    @Scheduled(cron = "0 0 20 * * ?") // 20:00 mỗi ngày
+     @Scheduled(cron = "0 * * * * ?")
+//    @Scheduled(cron = "0 0 20 * * ?") // 20:00 mỗi ngày
     @Transactional
     public void createDailySettlementBatch() {
         log.info("Start creating automatic settlement batch: " + LocalDateTime.now());
@@ -43,12 +43,13 @@ public class SettlementBatchSchedulerService {
         for (UserSettlementSchedule schedule : schedulesToday) {
             User shop = schedule.getUser();
 
-            // Lấy các đơn hàng DELIVERED / RETURNED mà chưa có settlementBatch
+            // Lấy các đơn hàng DELIVERED / RETURNED / RETURN_FAILED_FINAL mà chưa có settlementBatch
             List<Order> orders = orderRepository.findByUserAndSettlementBatchIsNullAndStatusIn(
                     shop,
                     List.of(
                             OrderStatus.DELIVERED,
-                            OrderStatus.RETURNED
+                            OrderStatus.RETURNED,
+                            OrderStatus.RETURN_FAILED_FINAL
                     ));
 
             if (orders.isEmpty())
@@ -90,10 +91,10 @@ public class SettlementBatchSchedulerService {
                     continue;
 
                 BigDecimal codAmount;
-                if (order.getStatus() == OrderStatus.RETURNED &&
+                if ((order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.RETURN_FAILED_FINAL) &&
                         order.getPaymentStatus() == OrderPaymentStatus.UNPAID) {
                     codAmount = BigDecimal.valueOf(-order.getTotalFee());
-                } else if (order.getStatus() == OrderStatus.RETURNED &&
+                } else if ((order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.RETURN_FAILED_FINAL) &&
                         order.getPaymentStatus() == OrderPaymentStatus.PAID &&
                         order.getPayer() == OrderPayerType.CUSTOMER) {
                     codAmount = BigDecimal.ZERO;
@@ -155,7 +156,7 @@ public class SettlementBatchSchedulerService {
                 // Mark tất cả batch nợ cũ COMPLETED vì đã khấu trừ hết
                 for (SettlementBatch old : oldDebtBatches) {
                     old.setPaidAmount(old.getBalanceAmount().abs());
-                    old.setStatus(SettlementStatus.COMPLETED); // ------ CHỖ NÀY SAO K PHỈ LÀ KHẤU TRỪ NHỈ
+                    old.setStatus(SettlementStatus.COMPLETED);
                     batchRepository.save(old);
 
                     // Cập nhật order của batch cũ → PAID
