@@ -308,7 +308,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 return;
             }
             LocalDateTime now = LocalDateTime.now();
-            for (AiRoutePlanStop stop : stops {
+            for (AiRoutePlanStop stop : stops) {
                 boolean needStopStatusUpdate = stop.getStopStatus() != mapped
                         || (mapped == RouteStopStatus.COMPLETED && stop.getActualCompletedAt() == null);
                 if (!needStopStatusUpdate) {
