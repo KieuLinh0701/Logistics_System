@@ -62,13 +62,13 @@ public class RoleCheckFilter extends OncePerRequestFilter {
 
         request.setAttribute("currentUserId", userId);
 
-        // Notification: chỉ cần đăng nhập, không cần check permission
+        // Notification: chỉ cần đăng nhập, không cần check permissions
         if (path.equals("/api/notifications") || path.startsWith("/api/notifications/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Account: setting chỉ cần đăng nhập, không cần check permission
+        // Account: setting chỉ cần đăng nhập, không cần check permissions
         if (path.equals("/api/user/password/update") ||
                 path.equals("/api/user/email/update") ||
                 path.equals("/api/user/email/verify-otp") ||
