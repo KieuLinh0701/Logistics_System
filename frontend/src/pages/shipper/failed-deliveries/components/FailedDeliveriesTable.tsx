@@ -1,7 +1,6 @@
 import React from "react";
-import {Button, Table, Tag, Typography} from "antd";
+import {Table, Tag, Typography} from "antd";
 import type {ColumnsType} from "antd/es/table";
-import {InboxOutlined} from "@ant-design/icons";
 import {translateOrderStatus} from "../../../../utils/orderUtils";
 import type {ShipperOrder} from "../../../../api/orderApi";
 
@@ -10,15 +9,15 @@ const { Text } = Typography;
 interface FailedDeliveriesTableProps {
   orders: ShipperOrder[];
   loading: boolean;
-  onReturnToOffice: (orderId: number, trackingNumber: string) => void;
-  isReturning: boolean;
+  selectedRowKeys: React.Key[];
+  onSelectionChange: (keys: React.Key[]) => void;
 }
 
 const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
   orders,
   loading,
-  onReturnToOffice,
-  isReturning,
+  selectedRowKeys,
+  onSelectionChange,
 }) => {
   const columns: ColumnsType<ShipperOrder> = [
     {
@@ -52,23 +51,6 @@ const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
         </Tag>
       ),
     },
-    {
-      title: "Thao tác",
-      key: "action",
-      width: 150,
-      render: (_, record) => (
-        <Button
-          type="primary"
-          icon={<InboxOutlined />}
-          onClick={() => onReturnToOffice(record.id, record.trackingNumber)}
-          loading={isReturning}
-          size="small"
-          style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
-        >
-          Nộp bưu cục
-        </Button>
-      ),
-    },
   ];
 
   return (
@@ -80,6 +62,10 @@ const FailedDeliveriesTable: React.FC<FailedDeliveriesTableProps> = ({
       pagination={false}
       loading={loading}
       scroll={{ x: 900 }}
+      rowSelection={{
+        selectedRowKeys,
+        onChange: (keys) => onSelectionChange(keys),
+      }}
     />
   );
 };
