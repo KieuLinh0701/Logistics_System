@@ -1,7 +1,6 @@
 import React from "react";
-import {Button, Table, Tag, Typography} from "antd";
+import {Table, Tag, Typography} from "antd";
 import type {ColumnsType} from "antd/es/table";
-import {InboxOutlined} from "@ant-design/icons";
 import type {ShipperOrder} from "../../../../api/orderApi";
 
 const { Text } = Typography;
@@ -9,8 +8,8 @@ const { Text } = Typography;
 interface PickedUpOrdersTableProps {
   orders: ShipperOrder[];
   loading: boolean;
-  onDeliverToOrigin: (orderId: number, trackingNumber: string) => void;
-  isDelivering: boolean;
+  selectedRowKeys: React.Key[];
+  onSelectionChange: (keys: React.Key[]) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -38,8 +37,8 @@ const getStatusText = (status: string) => {
 const PickedUpOrdersTable: React.FC<PickedUpOrdersTableProps> = ({
   orders,
   loading,
-  onDeliverToOrigin,
-  isDelivering,
+  selectedRowKeys,
+  onSelectionChange,
 }) => {
   const columns: ColumnsType<ShipperOrder> = [
     {
@@ -72,25 +71,6 @@ const PickedUpOrdersTable: React.FC<PickedUpOrdersTableProps> = ({
         </Tag>
       ),
     },
-    {
-      title: "Thao tác",
-      key: "action",
-      width: 150,
-      render: (_, record) => (
-        record.status === "PICKED_UP" && (
-          <Button
-            type="primary"
-            icon={<InboxOutlined />}
-            size="small"
-            loading={isDelivering}
-            onClick={() => onDeliverToOrigin(record.id, record.trackingNumber)}
-            style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
-          >
-            Nộp bưu cục
-          </Button>
-        )
-      ),
-    },
   ];
 
   return (
@@ -102,6 +82,13 @@ const PickedUpOrdersTable: React.FC<PickedUpOrdersTableProps> = ({
       pagination={false}
       loading={loading}
       scroll={{ x: 900 }}
+      rowSelection={{
+        selectedRowKeys,
+        onChange: (keys) => onSelectionChange(keys),
+        getCheckboxProps: (record: ShipperOrder) => ({
+          disabled: record.status !== "PICKED_UP",
+        }),
+      }}
     />
   );
 };
