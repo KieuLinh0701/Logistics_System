@@ -284,25 +284,25 @@ public class ShipperAssignmentManagerServiceImpl implements ShipperAssignmentMan
         }
 
         LocalDate today = LocalDate.now();
-        LocalDate startDate = request.getStartAt().toLocalDate();
-        LocalDate endDate = request.getEndAt().toLocalDate();
+        LocalDate startDate = (request.getStartAt() != null) ? request.getStartAt().toLocalDate() : null;
+        LocalDate endDate = (request.getEndAt() != null) ? request.getEndAt().toLocalDate() : null;
 
-        if (!isStarted && request.getSelectedEmployee() != null && request.getSelectedEmployee() <= 0) {
+        if (!isStarted && request.getSelectedEmployee() <= 0) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_ID_INVALID);
         }
 
-        if (!isStarted && request.getWardCode() != null && request.getWardCode() <= 0) {
+        if (!isStarted && request.getWardCode() <= 0) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_WARD_CODE_INVALID);
         }
 
-        if (!isStarted && startDate.isBefore(today)) {
+        if (!isStarted && startDate != null && startDate.isBefore(today)) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_START_TIME_INVALID);
         }
 
-        if (!isStarted && endDate.isBefore(startDate)) {
+        if (!isStarted && startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_INVALID_TIME_RANGE);
         }
-        if (endDate.isBefore(today)) {
+        if (endDate != null && endDate.isBefore(today)) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_END_TIME_INVALID);
         }
     }
