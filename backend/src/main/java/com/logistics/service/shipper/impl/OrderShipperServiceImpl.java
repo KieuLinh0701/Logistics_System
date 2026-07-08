@@ -2855,23 +2855,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             return buildAiDeliveryRouteResponseData(employee, aiRoute);
         }
 
-        // Không còn route nào có stop pending → trả route rỗng để FE hiển thị
-        // "Không có lộ trình vận chuyển hôm nay".
-        Map<String, Object> emptyResult = new HashMap<>();
-        Map<String, Object> emptyRouteInfo = new HashMap<>();
-        emptyRouteInfo.put("source", "AI");
-        emptyRouteInfo.put("status", "no_active_route");
-        emptyRouteInfo.put("name", "Không có lộ trình đang xử lý");
-        emptyRouteInfo.put("totalStops", 0);
-        emptyRouteInfo.put("completedStops", 0);
-        emptyResult.put("routeInfo", emptyRouteInfo);
-        emptyResult.put("deliveryStops", new ArrayList<>());
-        emptyResult.put("office", new HashMap<>());
-        emptyResult.put("source", "AI");
-        return emptyResult;
-
-        // FALLBACK: Chỉ lấy orders đã assigned cho shipper (employee tạo/assigned)
-        // Không lấy AT_DEST_OFFICE vì đó là đơn chưa assigned
+        // Không còn route nào có stop pending → thử nhánh fallback cuối:
+        // lấy orders ad-hoc đang PICKING_UP/PICKED_UP/DELIVERING/READY_FOR_PICKUP
+        // của shipper (chưa được add vào shipment/AI route, vd đơn nhận lẻ).
         Specification<Order> routeSpec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -2890,6 +2876,23 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         };
 
         List<Order> routeOrders = orderRepository.findAll(routeSpec, Sort.by(Sort.Direction.ASC, "createdAt"));
+
+        // 4) Không còn orders ad-hoc nào → trả route rỗng để FE hiển thị
+        //    "Không có lộ trình vận chuyển hôm nay".
+        if (routeOrders == null || routeOrders.isEmpty()) {
+            Map<String, Object> emptyResult = new HashMap<>();
+            Map<String, Object> emptyRouteInfo = new HashMap<>();
+            emptyRouteInfo.put("source", "ORDERS");
+            emptyRouteInfo.put("status", "no_active_route");
+            emptyRouteInfo.put("name", "Không có lộ trình đang xử lý");
+            emptyRouteInfo.put("totalStops", 0);
+            emptyRouteInfo.put("completedStops", 0);
+            emptyResult.put("routeInfo", emptyRouteInfo);
+            emptyResult.put("deliveryStops", new ArrayList<>());
+            emptyResult.put("office", new HashMap<>());
+            emptyResult.put("source", "ORDERS");
+            return emptyResult;
+        }
 
         int totalCOD = routeOrders.stream().mapToInt(o -> o.getCod() != null ? o.getCod() : 0).sum();
 
@@ -2922,10 +2925,17 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         Map<String, Object> routeInfo = new HashMap<>();
         routeInfo.put("id", 1);
-        routeInfo.put("name", "Tuyến " + employee.getOffice().getId());
-        routeInfo.put("startLocation", employee.getOffice().getName());
+        routeInfo.put("source", "ORDERS");
+        routeInfo.put("name", "Tuyến " + (employee.getOffice() != null ? employee.getOffice().getId() : ""));
+        routeInfo.put("startLocation", employee.getOffice() != null ? employee.getOffice().getName() : "");
         routeInfo.put("totalStops", routeOrders.size());
-        routeInfo.put("completedStops", (int) routeOrders.stream().filter(o -> o.getStatus() == OrderStatus.DELIVERED).count());
+        // completedStops: trong nhánh này spec đã giới hạn status ở PICKING_UP/PICKED_UP/
+        // DELIVERING/READY_FOR_PICKUP (không có DELIVERED), nên đếm completed = 0.
+        // Nếu sau này bổ sung DELIVERED, dùng isOrderTerminalForAi để đếm.
+        long completedStops = routeOrders.stream()
+                .filter(o -> o.getStatus() != null && isOrderTerminalForAi(o.getStatus()))
+                .count();
+        routeInfo.put("completedStops", (int) completedStops);
         // Ước tính: ~20 phút/điểm dừng (di chuyển + giao)
         int estimatedMinutes = routeOrders.size() * 20;
         routeInfo.put("totalDistance", 0); // TODO: Tính toán khoảng cách thực tế
