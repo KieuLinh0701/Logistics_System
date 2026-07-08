@@ -63,10 +63,9 @@ public class UserPublicController {
     }
 
     @PostMapping("/email/verify-otp")
-    public ResponseEntity<?> verifyEmailUpdateOTP(@RequestBody VerifyEmailUpdateOTPRequest verifyEmailUpdateOTPRequest,
-                                                  HttpServletRequest request) {
+    public ResponseEntity<?> verifyEmailUpdateOTP(@RequestBody VerifyEmailUpdateOTPRequest verifyEmailUpdateOTPRequest) {
         Integer accountId = SecurityUtils.getAuthenticatedAccountId();
-        Integer roleId = (Integer) request.getAttribute("currentRoleId");
+        Integer roleId = SecurityUtils.getAuthenticatedUserRoleId();
 
         if (verifyEmailUpdateOTPRequest.getOtp() == null || verifyEmailUpdateOTPRequest.getNewEmail() == null) {
             throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELD);
