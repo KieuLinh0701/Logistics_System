@@ -480,17 +480,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // Đơn do USER tạo
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
 
-            // HARD GUARD: API "unassigned" chỉ trả về các đơn CHƯA được giao cho shipper nào.
-            // Tránh trùng với /shipper/route (chỉ trả đơn đã assign cho current shipper).
-            // Áp dụng cho cả 2 nhánh (normalDelivery + returnOrigin).
-            Predicate employeeNotAssigned = cb.isNull(root.get("employee"));
-
             // ========== Đơn giao thường ==========
             // AT_DEST_OFFICE: đơn đang ở bưu cục đích, chờ shipper giao
             Predicate normalDeliveryPredicate = cb.and(
                 cb.equal(root.get("toOffice").get("id"), officeId),
-                cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE),
-                employeeNotAssigned
+                cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE)
             );
 
             // ========== Đơn giao trả hàng hoàn ==========
@@ -499,7 +493,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             Predicate returnOriginPredicate = cb.and(
                 cb.equal(root.get("status"), OrderStatus.RETURN_AT_ORIGIN_OFFICE),
                 cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER),
-                employeeNotAssigned,
+                cb.isNull(root.get("employee")),
                 cb.equal(root.get("fromOffice").get("id"), officeId)
             );
 
@@ -2820,12 +2814,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .findFirst()
                 .orElse(null);
         if (inTransitShipment != null) {
-            Map<String, Object> shipmentRoute = buildShipmentRouteResponseData(employee, inTransitShipment);
-            // Nếu shipment không còn stop nào thuộc shipper hiện tại (do hard guard),
-            // builder trả null. Fall through thử các nhánh tiếp theo (AI Plan / fallback).
-            if (shipmentRoute != null) {
-                return shipmentRoute;
-            }
+            return buildShipmentRouteResponseData(employee, inTransitShipment);
         }
 
         // Sau đó PENDING (chưa start)
@@ -2834,10 +2823,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .findFirst()
                 .orElse(null);
         if (pendingShipment != null) {
-            Map<String, Object> pendingRoute = buildShipmentRouteResponseData(employee, pendingShipment);
-            if (pendingRoute != null) {
-                return pendingRoute;
-            }
+            return buildShipmentRouteResponseData(employee, pendingShipment);
         }
 
         // Fallback: AiRoutePlanRoute CONFIRMED
@@ -2856,11 +2842,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         if (aiRoute != null) {
-            Map<String, Object> aiRouteData = buildAiDeliveryRouteResponseData(employee, aiRoute);
-            // Tương tự shipment: nếu AI Plan không có stop hợp lệ (do hard guard), fall through xuống fallback.
-            if (aiRouteData != null) {
-                return aiRouteData;
-            }
+            return buildAiDeliveryRouteResponseData(employee, aiRoute);
         }
 
         // FALLBACK: Chỉ lấy orders đã assigned cho shipper (employee tạo/assigned)
@@ -2943,21 +2925,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         // Visible stops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
-        // Đồng thời:
-        //  - Loại bỏ các stop có order đã vượt qua trạng thái "cần xử lý"
-        //    theo shouldShowStopInRoute (DELIVERED, RETURNED, PICKED_UP khi stopType=PICKUP, ...).
-        //  - Loại bỏ các stop mà order KHÔNG thuộc về shipper hiện tại (employee == null
-        //    hoặc employee khác). AI Plan được load theo shipper nhưng stop con có thể
-        //    reference order của shipper khác — phải verify lại ở BE.
         List<AiRoutePlanStop> visibleStops = allStops.stream()
                 .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
-                .filter(s -> {
-                    if (s.getOrder() == null) return true;
-                    if (!isAssignedToCurrentShipper(s.getOrder(), employee)) {
-                        return false;
-                    }
-                    return shouldShowStopInRoute(s.getStopType(), s.getOrder().getStatus());
-                })
                 .toList();
 
         // totalCOD: chỉ DELIVERY stops
@@ -3061,95 +3030,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         officeMap.put("latitude", office != null ? office.getLatitude() : null);
         officeMap.put("longitude", office != null ? office.getLongitude() : null);
 
-        // HARD GUARD: tương tự buildShipmentRouteResponseData. Nếu AI Plan không còn
-        // stop nào thuộc shipper hiện tại (do hard guard employee), trả về null
-        // để caller fall through sang fallback inline (lấy thẳng từ Order).
-        if (deliveryStops.isEmpty()) {
-            return null;
-        }
-
         Map<String, Object> result = new HashMap<>();
         result.put("routeInfo", routeInfo);
         result.put("deliveryStops", deliveryStops);
         result.put("office", officeMap);
         return result;
-    }
-
-    // ============================================================
-    // SHARED ROUTE FILTER LOGIC
-    // Áp dụng cho cả buildShipmentRouteResponseData, buildAiDeliveryRouteResponseData
-    // và fallback trong getDeliveryRoute. Khi một đơn đã đi qua "điểm xử lý"
-    // thuộc stopType đó, ta phải loại nó khỏi route để tránh hiển thị lại.
-    // ============================================================
-    private static final Set<OrderStatus> TERMINAL_HIDDEN_STATUSES = Set.of(
-            OrderStatus.DELIVERED,
-            OrderStatus.CANCELLED,
-            OrderStatus.RETURNED,
-            OrderStatus.DELIVERY_FAILED_FINAL,
-            OrderStatus.PICKUP_FAILED_FINAL,
-            OrderStatus.RETURN_FAILED_FINAL
-    );
-
-    private static final Set<OrderStatus> DELIVERY_VISIBLE_STATUSES = Set.of(
-            OrderStatus.AT_DEST_OFFICE,
-            OrderStatus.DELIVERING,
-            OrderStatus.DELIVERY_RETRY
-            // DELIVERY_FAILED_FINAL bị ẩn vì đã hết lượt giao (xem TERMINAL_HIDDEN_STATUSES).
-            // Trong OrderStatus không có FAILED_DELIVERY; trạng thái retry tương ứng là DELIVERY_RETRY.
-    );
-
-    private static final Set<OrderStatus> PICKUP_VISIBLE_STATUSES = Set.of(
-            OrderStatus.READY_FOR_PICKUP,
-            OrderStatus.PICKING_UP,
-            OrderStatus.PICKUP_RETRY
-    );
-
-    private static final Set<OrderStatus> RETURN_TO_OFFICE_VISIBLE_STATUSES = Set.of(
-            OrderStatus.RETURN_AT_ORIGIN_OFFICE,
-            OrderStatus.RETURNING,
-            OrderStatus.RETURN_RETRY
-    );
-
-    /**
-     * Quyết định một stop có nên hiển thị trong route hôm nay của shipper hay không.
-     * - DELIVERY: chỉ hiển thị khi order còn ở trạng thái "cần giao".
-     * - PICKUP:   chỉ hiển thị khi order còn ở trạng thái "cần lấy".
-     *   Nếu order đã đi qua giai đoạn pickup (AT_ORIGIN_OFFICE, IN_TRANSIT, AT_DEST_OFFICE, DELIVERED, RETURNING, RETURNED, ...)
-     *   thì KHÔNG hiển thị là điểm lấy hàng nữa.
-     * - RETURN_TO_OFFICE: chỉ hiển thị khi order còn đang trên đường hoàn về bưu cục gốc.
-     * - Bất kỳ stop nào thuộc TERMINAL_HIDDEN_STATUSES đều bị ẩn.
-     */
-    private boolean shouldShowStopInRoute(RouteStopType stopType, OrderStatus os) {
-        if (os == null) {
-            return false;
-        }
-        if (TERMINAL_HIDDEN_STATUSES.contains(os)) {
-            return false;
-        }
-        RouteStopType effectiveType = stopType != null ? stopType : RouteStopType.DELIVERY;
-        return switch (effectiveType) {
-            case DELIVERY -> DELIVERY_VISIBLE_STATUSES.contains(os);
-            case PICKUP -> PICKUP_VISIBLE_STATUSES.contains(os);
-            case RETURN_TO_OFFICE -> RETURN_TO_OFFICE_VISIBLE_STATUSES.contains(os);
-        };
-    }
-
-    /**
-     * Hard guard: stop CHỈ thuộc về route của shipper hiện tại khi order đã
-     * được assign cho employee đó (employee != null && employee.id == currentUserId).
-     * Áp dụng cho cả buildShipmentRouteResponseData và buildAiDeliveryRouteResponseData
-     * để đảm bảo /shipper/route không bao giờ trả về đơn của shipper khác
-     * (đặc biệt đơn chưa assign, employee == null).
-     */
-    private boolean isAssignedToCurrentShipper(Order order, Employee currentShipper) {
-        if (order == null || currentShipper == null || currentShipper.getId() == null) {
-            return false;
-        }
-        Employee assigned = order.getEmployee();
-        if (assigned == null || assigned.getId() == null) {
-            return false;
-        }
-        return Objects.equals(assigned.getId(), currentShipper.getId());
     }
 
     private Map<String, Object> buildShipmentRouteResponseData(Employee employee, Shipment shipment) {
@@ -3203,15 +3088,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 continue;
             }
 
-            // Hard guard: stop CHỈ thuộc về route của shipper hiện tại nếu
-            // order đã được assign cho employee đó. Nếu shipment lỡ nhặt
-            // đơn của shipper khác (employee == null hoặc employee khác),
-            // ta KHÔNG tính vào totalStops/completedStops.
-            if (!isAssignedToCurrentShipper(order, employee)) {
-                totalStops--;
-                continue;
-            }
-
             String stopType = so.getStopType() != null ? so.getStopType().name() : "DELIVERY";
             boolean isPickup = "PICKUP".equalsIgnoreCase(stopType);
             boolean isReturnToOffice = "RETURN_TO_OFFICE".equalsIgnoreCase(stopType);
@@ -3220,23 +3096,40 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // Phase 1: Đếm totalStops (tất cả orders) và completedStops
             // totalStops không filter theo status - lấy tổng số stops ban đầu
 
-            // Đếm completed theo stopType (dựa trên logic shouldShowStopInRoute nghịch đảo)
-            boolean isCompleted = !shouldShowStopInRoute(so.getStopType(), os);
+            // Đếm completed theo stopType
+            boolean isCompleted = false;
+            if (isPickup) {
+                // PICKUP stop: completed khi PICKED_UP, PICKUP_FAILED_FINAL, PICKUP_RETRY, CANCELLED
+                // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này, sẽ quay lại sau
+                isCompleted = os == OrderStatus.PICKED_UP
+                        || os == OrderStatus.PICKUP_FAILED_FINAL
+                        || os == OrderStatus.PICKUP_RETRY
+                        || os == OrderStatus.CANCELLED;
+            } else if (isReturnToOffice) {
+                // RETURN_TO_OFFICE stop: completed khi AT_ORIGIN_OFFICE, RETURNED, RETURN_FAILED_FINAL, CANCELLED
+                // RETURN_FAILED_FINAL: shipper đã xử lý xong điểm giao hoàn ngoài đường, còn phải nộp bưu cục
+                isCompleted = os == OrderStatus.AT_ORIGIN_OFFICE
+                        || os == OrderStatus.RETURNED
+                        || os == OrderStatus.RETURN_FAILED_FINAL
+                        || os == OrderStatus.CANCELLED;
+            } else {
+                // DELIVERY stop: completed khi DELIVERED, DELIVERY_RETRY, DELIVERY_FAILED_FINAL, CANCELLED
+                // DELIVERY_FAILED_FINAL: shipper đã xử lý xong điểm giao ngoài đường, còn phải nộp bưu cục
+                isCompleted = os == OrderStatus.DELIVERED
+                        || os == OrderStatus.DELIVERY_RETRY
+                        || os == OrderStatus.DELIVERY_FAILED_FINAL
+                        || os == OrderStatus.CANCELLED;
+            }
 
             if (isCompleted) {
                 completedStops++;
             }
         }
 
-        // Phase 2: build deliveryStops — chỉ giữ các stop còn cần xử lý
+        // Phase 2: build deliveryStops (đã filter các stop completed)
         for (ShipmentOrder so : sortedSos) {
             Order order = so.getOrder();
             if (order == null) {
-                continue;
-            }
-
-            // Cùng hard guard: chỉ xử lý các stop thuộc về shipper hiện tại.
-            if (!isAssignedToCurrentShipper(order, employee)) {
                 continue;
             }
 
@@ -3251,37 +3144,52 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             OrderStatus os = order.getStatus();
 
-            // Phase 1: Lọc stop theo shouldShowStopInRoute (status phù hợp với stopType).
-            // Nếu stop không còn cần xử lý (đã DELIVERED, RETURNED, đã vượt qua giai đoạn pickup, ...)
-            // thì loại bỏ khỏi route ngay tại backend - frontend sẽ không thấy nữa.
-            if (!shouldShowStopInRoute(so.getStopType(), os)) {
+            // Phase pickup-status mapping:
+            //   DELIVERED => completed (filter ra khỏi route vì đã giao xong)
+            //   DELIVERY_RETRY => đã xử lý xong lần giao này -> filter ra
+            //   DELIVERY_FAILED_FINAL => giao thất bại vĩnh viễn -> filter ra
+            //   PICKED_UP => completed CHO DELIVERY, nhưng FILTER RA cho PICKUP stop
+            //   AT_ORIGIN_OFFICE => completed, nhưng FILTER RA cho RETURN_TO_OFFICE stop
+            //   DELIVERY_FAILED_FINAL / PICKUP_FAILED_FINAL / RETURN_FAILED_FINAL / CANCELLED / RETURNED => filter ra
+            String stopStatus = "pending";
+            if (os == OrderStatus.DELIVERED) {
+                // DELIVERED: đã giao thành công -> filter ra khỏi route
                 continue;
-            }
-
-            // Phase 2: Mapping trạng thái UI dựa trên status thực tế (không dựa vào pickupType)
-            String stopStatus;
-            if (isPickup) {
-                if (os == OrderStatus.PICKING_UP) {
-                    stopStatus = "in_progress";
-                } else {
-                    // READY_FOR_PICKUP, PICKUP_RETRY
-                    stopStatus = "pending";
+            } else if (os == OrderStatus.DELIVERY_RETRY) {
+                // DELIVERY_RETRY: đã xử lý xong lần giao này (thành công hoặc thất bại tạm thời)
+                // Shipper sẽ đem hàng quay lại xe và đi điểm tiếp theo -> filter ra khỏi route
+                continue;
+            } else if (os == OrderStatus.PICKED_UP) {
+                // PICKED_UP là completed cho DELIVERY stop
+                // NHƯNG filter ra cho PICKUP stop vì đã hoàn thành việc lấy hàng
+                stopStatus = "completed";
+                if (isPickup) {
+                    // Skip pickup stop đã hoàn thành
+                    continue;
                 }
-            } else if (isReturnToOffice) {
-                if (os == OrderStatus.RETURNING) {
-                    stopStatus = "in_progress";
-                } else {
-                    // RETURN_AT_ORIGIN_OFFICE, RETURN_RETRY
-                    stopStatus = "pending";
+            } else if (os == OrderStatus.AT_ORIGIN_OFFICE) {
+                // AT_ORIGIN_OFFICE là completed
+                stopStatus = "completed";
+                if (isReturnToOffice) {
+                    // Skip return stop đã hoàn thành
+                    continue;
                 }
-            } else {
-                // DELIVERY
-                if (os == OrderStatus.DELIVERING) {
-                    stopStatus = "in_progress";
-                } else {
-                    // AT_DEST_OFFICE, DELIVERY_RETRY, FAILED_DELIVERY
-                    stopStatus = "pending";
-                }
+            } else if (os == OrderStatus.DELIVERING
+                    || os == OrderStatus.PICKING_UP
+                    || os == OrderStatus.RETURNING) {
+                stopStatus = "in_progress";
+            } else if (os == OrderStatus.PICKUP_RETRY) {
+                // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này
+                // Stop phải biến mất khỏi route, đơn vẫn ở tab "Yêu cầu lấy hàng" để retry sau
+                continue;
+            } else if (os == OrderStatus.PICKUP_FAILED_FINAL
+                    || os == OrderStatus.DELIVERY_FAILED_FINAL
+                    || os == OrderStatus.RETURN_FAILED_FINAL
+                    || os == OrderStatus.CANCELLED
+                    || os == OrderStatus.RETURNED) {
+                // Filter ra các stop final - shipper đã xử lý xong tại điểm này
+                // RETURN_FAILED_FINAL / DELIVERY_FAILED_FINAL: chuyển sang "Hàng cần nộp bưu cục"
+                continue;
             }
 
             // Phase PICKUP-correctness: PICKUP stop phải dùng sender address/contact,
@@ -3387,14 +3295,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         officeMap.put("name", office != null ? office.getName() : "");
         officeMap.put("latitude", office != null ? office.getLatitude() : null);
         officeMap.put("longitude", office != null ? office.getLongitude() : null);
-
-        // HARD GUARD: nếu sau khi lọc mà không còn stop nào thuộc về shipper hiện tại,
-        // trả về null để caller fall through sang nhánh AI / fallback.
-        // Tránh trả object rỗng khiến FE hiển thị "Không có lộ trình vận chuyển hôm nay"
-        // trong khi shipper thực sự có đơn đã assign (chỉ là shipment này không chứa đơn của họ).
-        if (deliveryStops.isEmpty()) {
-            return null;
-        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("routeInfo", routeInfo);
