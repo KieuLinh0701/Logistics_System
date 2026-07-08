@@ -15,11 +15,11 @@ export const canPublicUserOrder = (value: string) => {
 };
 
 export const canCancelUserOrder = (value: string) => {
-    return ["PENDING", "TRANSIT_TO_OFFICE", "CONFIRMED", "READY_FOR_PICKUP", "URGENT_PICKUP"].includes(value)
+    return ["PENDING", "TRANSIT_TO_OFFICE", "CONFIRMED", "READY_FOR_PICKUP", "URGENT_PICKUP", "PICKUP_RETRY"].includes(value)
 };
 
 export const canPrintUserOrder = (value: string) => {
-    return !["DRAFT", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
+    return ["PENDING", "TRANSIT_TO_OFFICE", "READY_FOR_PICKUP", "CONFIRMED", "URGENT_PICKUP", "PICKUP_RETRY", "PICKING_UP"].includes(value)
 };
 
 export const canDeleteUserOrder = (value: string) => {
@@ -36,17 +36,21 @@ export const canTransitToOfficeUserOrder = (value: string) => {
 
 // Điều kiện để thao tác với order của manager
 export const canPrintManagerOrder = (value: string) => {
-    return !["DRAFT", "CANCELLED", "PICKUP_FAILED_FINAL", "DELIVERED", "RETURNED"].includes(value)
+    return [
+        "AT_ORIGIN_OFFICE",
+        "IN_TRANSIT",
+        "AT_DEST_OFFICE",
+        "DELIVERING",
+        "DELIVERY_RETRY",
+        "RETURNING",
+        "RETURN_AT_ORIGIN_OFFICE",
+        "RETURN_RETRY"
+    ].includes(value)
 };
 
 const MANAGER_CANCEL_USER_ORDER_STATUSES: readonly OrderStatus[] = [];
 
 const MANAGER_CANCEL_OFFICE_ORDER_STATUSES: readonly OrderStatus[] = [
-    "PENDING",
-    "CONFIRMED",
-    "TRANSIT_TO_OFFICE",
-    "READY_FOR_PICKUP",
-    "URGENT_PICKUP",
     "AT_ORIGIN_OFFICE",
 ];
 
