@@ -1,12 +1,12 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {Alert, Button, Drawer, message, Table, Tag, Typography,} from "antd";
 import {
-    CheckOutlined,
-    CloseOutlined,
-    HistoryOutlined,
-    NodeIndexOutlined,
-    ReloadOutlined,
-    ThunderboltOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  HistoryOutlined,
+  NodeIndexOutlined,
+  ReloadOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import aiRouteApi from "../../../api/aiRouteApi";
 import officeApi from "../../../api/officeApi";
