@@ -2820,7 +2820,12 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .findFirst()
                 .orElse(null);
         if (inTransitShipment != null) {
-            return buildShipmentRouteResponseData(employee, inTransitShipment);
+            Map<String, Object> shipmentRoute = buildShipmentRouteResponseData(employee, inTransitShipment);
+            // Nếu shipment không còn stop nào thuộc shipper hiện tại (do hard guard),
+            // builder trả null. Fall through thử các nhánh tiếp theo (AI Plan / fallback).
+            if (shipmentRoute != null) {
+                return shipmentRoute;
+            }
         }
 
         // Sau đó PENDING (chưa start)
@@ -2829,7 +2834,10 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .findFirst()
                 .orElse(null);
         if (pendingShipment != null) {
-            return buildShipmentRouteResponseData(employee, pendingShipment);
+            Map<String, Object> pendingRoute = buildShipmentRouteResponseData(employee, pendingShipment);
+            if (pendingRoute != null) {
+                return pendingRoute;
+            }
         }
 
         // Fallback: AiRoutePlanRoute CONFIRMED
@@ -2848,7 +2856,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         if (aiRoute != null) {
-            return buildAiDeliveryRouteResponseData(employee, aiRoute);
+            Map<String, Object> aiRouteData = buildAiDeliveryRouteResponseData(employee, aiRoute);
+            // Tương tự shipment: nếu AI Plan không có stop hợp lệ (do hard guard), fall through xuống fallback.
+            if (aiRouteData != null) {
+                return aiRouteData;
+            }
         }
 
         // FALLBACK: Chỉ lấy orders đã assigned cho shipper (employee tạo/assigned)
@@ -3048,6 +3060,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         officeMap.put("name", office != null ? office.getName() : "");
         officeMap.put("latitude", office != null ? office.getLatitude() : null);
         officeMap.put("longitude", office != null ? office.getLongitude() : null);
+
+        // HARD GUARD: tương tự buildShipmentRouteResponseData. Nếu AI Plan không còn
+        // stop nào thuộc shipper hiện tại (do hard guard employee), trả về null
+        // để caller fall through sang fallback inline (lấy thẳng từ Order).
+        if (deliveryStops.isEmpty()) {
+            return null;
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("routeInfo", routeInfo);
@@ -3368,6 +3387,14 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         officeMap.put("name", office != null ? office.getName() : "");
         officeMap.put("latitude", office != null ? office.getLatitude() : null);
         officeMap.put("longitude", office != null ? office.getLongitude() : null);
+
+        // HARD GUARD: nếu sau khi lọc mà không còn stop nào thuộc về shipper hiện tại,
+        // trả về null để caller fall through sang nhánh AI / fallback.
+        // Tránh trả object rỗng khiến FE hiển thị "Không có lộ trình vận chuyển hôm nay"
+        // trong khi shipper thực sự có đơn đã assign (chỉ là shipment này không chứa đơn của họ).
+        if (deliveryStops.isEmpty()) {
+            return null;
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("routeInfo", routeInfo);
