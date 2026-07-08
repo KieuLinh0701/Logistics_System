@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 from app.models.route_optimization import OrderInput, RouteStopInput, ShipperInput
 from app.services.geo_utils import (
     build_haversine_duration_matrix,
+    haversine_distance_km,
     haversine_duration_seconds,
     haversine_route_distance_km,
 )
@@ -44,15 +45,24 @@ def solve_route_for_shipper(
     end_location: dict | None = None,
     start_time: str = "08:00",
     optimization_scope: str | None = None,
-) -> tuple[list, int, float, int]:
+) -> tuple[list, int, float, int, list[int], list[float]]:
     """
     Giai VRP cho mot shipper bang OR-Tools.
     Cau truc matrix: [START(VI_TRI_HIEN_TAI), ...stops..., END(BUU_CUC)].
     RoutingIndexManager su dung explicit end node de dam bao route ket thuc tai BUU_CUC,
     chu khong phai tai START/VI_TRI_HIEN_TAI.
+
+    Returns:
+        (route_orders, total_duration_seconds, haversine_km, return_duration_seconds,
+         leg_durations_seconds, leg_distances_km)
+
+        - leg_durations_seconds: duration_seconds cho TUNG leg theo thu tu route_orders
+          (leg[0] = start -> stop[0], leg[1] = stop[0] -> stop[1], ...).
+          Day la data de tinh ETA cong don theo tung leg (khong chia deu).
+        - leg_distances_km: khoang cach Haversine tuong ung moi leg (km).
     """
     if not area_orders:
-        return [], 0, 0.0, 0
+        return [], 0, 0.0, 0, [], []
 
     num_stops = len(area_orders)
     has_end_node = end_location is not None
@@ -114,11 +124,14 @@ def solve_route_for_shipper(
     solution = routing.SolveWithParameters(search_parameters)
     if solution is None:
         logger.warning("[SOLVER] No solution found for shipper_id=%s", shipper.id)
-        return [], 0, 0.0, 0
+        return [], 0, 0.0, 0, [], []
 
     index = routing.Start(0)
     route_orders: list = []
+    leg_durations_seconds: list[int] = []  # duration_seconds cho tung leg theo thu tu route
+    leg_distances_km: list[float] = []     # khoang cach (km) cho tung leg
     total_duration_seconds = 0
+    last_visited_node_idx: int = 0         # 0 = start_location
 
     while not routing.IsEnd(index):
         next_var_value = solution.Value(routing.NextVar(index))
@@ -129,6 +142,17 @@ def solve_route_for_shipper(
 
         if 1 <= next_node <= num_stops:
             route_orders.append(area_orders[next_node - 1])
+            leg_durations_seconds.append(int(leg_cost))
+            # Tinh khoang cach Haversine tuong ung (km) giua location[last] va location[next_node]
+            from_loc = locations[last_visited_node_idx]
+            to_loc = locations[next_node]
+            leg_distances_km.append(
+                haversine_distance_km(
+                    {"lat": from_loc["lat"], "lng": from_loc["lng"]},
+                    {"lat": to_loc["lat"], "lng": to_loc["lng"]},
+                )
+            )
+            last_visited_node_idx = next_node
 
     return_duration_seconds = 0
     if has_end_node and route_orders:
@@ -142,9 +166,79 @@ def solve_route_for_shipper(
         include_return_to_office=False,
     )
 
-    return route_orders, total_duration_seconds, haversine_km, return_duration_seconds
+    return (
+        route_orders,
+        total_duration_seconds,
+        haversine_km,
+        return_duration_seconds,
+        leg_durations_seconds,
+        leg_distances_km,
+    )
 
 
+def build_leg_based_etas(
+    shipper: ShipperInput,
+    ordered_orders: list,
+    leg_durations_seconds: list[int],
+    leg_distances_km: list[float] | None = None,
+    return_to_office: bool = True,
+    return_duration_seconds: int = 0,
+) -> list[tuple[str, int, int | None, float | None]]:
+    """Tinh ETA theo cong don tung leg (KHONG chia deu).
+
+    Moi stop output:
+        (eta_time, eta_minutes_from_start, leg_duration_minutes, leg_distance_km)
+
+    Convention (theo yeu cau cu the):
+        - ETA den stop = tong leg duration tu start den stop do (KHONG cong service time)
+        - service_time khong duoc cong vao eta_minutes_from_start (tranh lam sai ETA den stop)
+    """
+    if not ordered_orders:
+        return []
+
+    if leg_distances_km is None:
+        leg_distances_km = []
+
+    etas: list[tuple[str, int, int | None, float | None]] = []
+    cumulative_leg_seconds = 0  # Chi cong leg, KHONG cong service time
+
+    for idx, order in enumerate(ordered_orders):
+        # Lay duration/distance cua leg den stop nay (neu co)
+        leg_sec = leg_durations_seconds[idx] if idx < len(leg_durations_seconds) else 0
+        leg_km = leg_distances_km[idx] if idx < len(leg_distances_km) else None
+        leg_min = max(1, (leg_sec + 59) // 60) if leg_sec > 0 else 0  # ceil
+
+        # ETA den stop = cumulative leg duration (KHONG cong service time)
+        cumulative_leg_seconds += leg_sec if leg_sec > 0 else 0
+        eta_minutes = int(cumulative_leg_seconds // 60)
+        eta_time = _format_time(shipper.start_time, eta_minutes)
+
+        etas.append((
+            eta_time,
+            eta_minutes,
+            leg_min if leg_min > 0 else None,
+            leg_km,
+        ))
+
+        # Service time KHONG cong vao cumulative_leg_seconds
+        # (tranh sai lech ETA den stop - theo yeu cau test case 4,16,23,33,38)
+
+    if return_to_office:
+        # ETA cua leg quay ve office = cumulative leg + return leg
+        total_seconds = cumulative_leg_seconds + return_duration_seconds
+        eta_minutes_return = int(total_seconds // 60)
+        etas.append((
+            _format_time(shipper.start_time, eta_minutes_return),
+            eta_minutes_return,
+            max(1, (return_duration_seconds + 59) // 60) if return_duration_seconds > 0 else None,
+            None,
+        ))
+
+    return etas
+
+
+# Backward-compat alias (deprecated - kept for any external callers).
+# KHONG su dung ham nay nua - chi de tranh break import neu co caller cu.
 def build_stop_etas(
     shipper: ShipperInput,
     ordered_orders: list,
@@ -152,6 +246,7 @@ def build_stop_etas(
     return_to_office: bool = True,
     return_duration_seconds: int = 0,
 ) -> list[tuple[str, int]]:
+
     if not ordered_orders:
         return []
 

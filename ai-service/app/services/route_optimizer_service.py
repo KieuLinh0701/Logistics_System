@@ -17,7 +17,7 @@ from app.models.route_optimization import (
 )
 from app.services.area_matcher import assign_orders_to_shippers
 from app.services.google_maps_service import GoogleMapsService
-from app.services.ortools_optimizer import build_stop_etas, solve_route_for_shipper
+from app.services.ortools_optimizer import build_leg_based_etas, solve_route_for_shipper
 
 logger = logging.getLogger(__name__)
 
@@ -80,18 +80,23 @@ class RouteOptimizerService:
             )
 
             ai_start_ms = time_module.monotonic() * 1000
-            ordered_orders, optimizer_duration_seconds, haversine_km, return_duration_seconds = (
-                solve_route_for_shipper(
-                    start_location,
-                    shipper,
-                    assigned_orders,
-                    time_limit,
-                    duration_matrix=matrix_result.duration_matrix,
-                    return_to_office=return_to_office,
-                    end_location=end_location,
-                    start_time=shipper.start_time,
-                    optimization_scope=optimization_scope,
-                )
+            (
+                ordered_orders,
+                optimizer_duration_seconds,
+                haversine_km,
+                return_duration_seconds,
+                leg_durations_seconds,
+                leg_distances_km,
+            ) = solve_route_for_shipper(
+                start_location,
+                shipper,
+                assigned_orders,
+                time_limit,
+                duration_matrix=matrix_result.duration_matrix,
+                return_to_office=return_to_office,
+                end_location=end_location,
+                start_time=shipper.start_time,
+                optimization_scope=optimization_scope,
             )
             ai_end_ms = time_module.monotonic() * 1000
 
@@ -152,17 +157,22 @@ class RouteOptimizerService:
 
             fuel_cost = real_distance_km * shipper.fuel_cost_per_km
             total_cod = sum(getattr(o, "cod_amount", 0) for o in ordered_orders)
-            etas = build_stop_etas(
+            # Tinh ETA theo cong don tung leg (KHONG chia deu).
+            # Su dung leg_durations_seconds tu cost matrix (Google Duration Matrix hoac Haversine fallback).
+            etas = build_leg_based_etas(
                 shipper,
                 ordered_orders,
-                real_duration_minutes,
+                leg_durations_seconds,
+                leg_distances_km=leg_distances_km,
                 return_to_office=return_to_office,
                 return_duration_seconds=int(return_duration_seconds),
             )
 
             stops: list[RouteStopOutput] = []
             for idx, order in enumerate(ordered_orders, start=1):
-                eta_time, eta_minutes = etas[idx - 1] if idx - 1 < len(etas) else (None, None)
+                # Tuple: (eta_time, eta_minutes_from_start, leg_duration_minutes, leg_distance_km)
+                eta_tuple = etas[idx - 1] if idx - 1 < len(etas) else (None, None, None, None)
+                eta_time, eta_minutes, leg_dur_min, leg_dist_km = eta_tuple
                 stop_type = getattr(order, "stop_type", "DELIVERY")
                 order_id_out = getattr(order, "order_id", getattr(order, "id", None))
                 stops.append(
@@ -180,17 +190,17 @@ class RouteOptimizerService:
                         stop_type=stop_type,
                         eta_time=eta_time,
                         eta_minutes_from_start=eta_minutes,
-                        leg_distance_km=getattr(order, "leg_distance_km", None),
-                        leg_duration_minutes=getattr(order, "leg_duration_minutes", None),
+                        leg_distance_km=leg_dist_km if leg_dist_km is not None else getattr(order, "leg_distance_km", None),
+                        leg_duration_minutes=leg_dur_min if leg_dur_min is not None else getattr(order, "leg_duration_minutes", None),
                         service_time_minutes=getattr(order, "service_time_minutes", None),
                     )
                 )
 
             return_to_office_stop = None
             if return_to_office:
-                return_eta_time, return_eta_minutes = None, None
+                return_eta_time, return_eta_minutes, return_leg_dur, return_leg_km = (None, None, None, None)
                 if etas and len(etas) > len(stops):
-                    return_eta_time, return_eta_minutes = etas[len(stops)]
+                    return_eta_time, return_eta_minutes, return_leg_dur, return_leg_km = etas[len(stops)]
                 office_info = self._get_office_info(request, end_location)
                 return_to_office_stop = RouteStopOutput(
                     order_id=None,
@@ -206,8 +216,8 @@ class RouteOptimizerService:
                     stop_type="RETURN_TO_OFFICE",
                     eta_time=return_eta_time,
                     eta_minutes_from_start=return_eta_minutes,
-                    leg_distance_km=return_distance_km if return_distance_km else None,
-                    leg_duration_minutes=int(return_duration_seconds) if return_duration_seconds else None,
+                    leg_distance_km=return_leg_km if return_leg_km is not None else (return_distance_km if return_distance_km else None),
+                    leg_duration_minutes=return_leg_dur if return_leg_dur is not None else (int(return_duration_seconds) if return_duration_seconds else None),
                     service_time_minutes=None,
                 )
 
