@@ -51,6 +51,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/user/password/update").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/user/email/update").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/user/email/verify-otp").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/user/profile/update").authenticated()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers(

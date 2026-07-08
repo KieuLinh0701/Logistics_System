@@ -68,6 +68,16 @@ public class RoleCheckFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Account: setting chỉ cần đăng nhập, không cần check permission
+        if (path.equals("/api/user/password/update") ||
+                path.equals("/api/user/email/update") ||
+                path.equals("/api/user/email/verify-otp") ||
+                path.equals("/api/user/profile/update")) {
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // Kiểm tra user + account tồn tại
         User user = userRepository.findByIdWithRoles(userId).orElse(null);
         if (user == null || user.getAccount() == null || user.getAccount().getAccountRoles() == null) {
