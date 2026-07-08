@@ -86,10 +86,10 @@ public interface OrderRepository
     @Query("""
                 SELECT COALESCE(SUM(
                     CASE
-                        WHEN o.status = com.logistics.enums.OrderStatus.RETURNED
+                        WHEN o.status IN (com.logistics.enums.OrderStatus.RETURNED, com.logistics.enums.OrderStatus.RETURN_FAILED_FINAL)
                              AND o.paymentStatus = com.logistics.enums.OrderPaymentStatus.UNPAID
                             THEN -o.totalFee
-                        WHEN o.status = com.logistics.enums.OrderStatus.RETURNED
+                        WHEN o.status IN (com.logistics.enums.OrderStatus.RETURNED, com.logistics.enums.OrderStatus.RETURN_FAILED_FINAL)
                              AND o.paymentStatus = com.logistics.enums.OrderPaymentStatus.PAID
                              AND o.payer = com.logistics.enums.OrderPayerType.CUSTOMER
                             THEN 0

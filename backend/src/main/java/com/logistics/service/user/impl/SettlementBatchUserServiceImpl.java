@@ -244,7 +244,7 @@ public class SettlementBatchUserServiceImpl implements SettlementBatchUserServic
         BigDecimal received = batchRepository.sumReceivedByUser(userId);
 
         BigDecimal nextSettlement = orderRepository.sumPendingCODNow(
-                userId, List.of(OrderStatus.DELIVERED, OrderStatus.RETURNED));
+                userId, List.of(OrderStatus.DELIVERED, OrderStatus.RETURNED, OrderStatus.RETURN_FAILED_FINAL));
 
         BigDecimal pendingDebt = calculatePendingDebt(userId);
 
