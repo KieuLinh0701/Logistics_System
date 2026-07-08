@@ -3599,6 +3599,22 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 applied++;
             }
 
+            // Đánh lại stopSequence cho TẤT CẢ ShipmentOrder của shipment này:
+            int nextSeq = applied + 1;
+            Map<Integer, ShipmentOrder> orderedByOrderId = orderedForEta.stream()
+                    .filter(so -> so.getOrder() != null)
+                    .collect(Collectors.toMap(so -> so.getOrder().getId(), so -> so, (a, b) -> a));
+            for (ShipmentOrder so : shipmentOrders) {
+                Order ord = so.getOrder();
+                if (ord == null) continue;
+                if (orderedByOrderId.containsKey(ord.getId())) {
+                    continue;   // đã set seq trong loop trên
+                }
+                Integer oldSeq = so.getStopSequence();
+                so.setStopSequence(nextSeq++);
+                shipmentOrderRepository.save(so);
+            }
+
             LocalDateTime baseTime = resolveBaseTime(request.getDepartureTime());
             Double startLat = hasValidLatLng(request.getCurrentLatitude(), request.getCurrentLongitude())
                     ? request.getCurrentLatitude()
@@ -3625,13 +3641,20 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     }
                 }
 
-                int legMin = so.getLegDurationMinutes() != null ? so.getLegDurationMinutes() : 5;
-                if (hasValidLatLng(fromLat, fromLng) && hasValidLatLng(stopLat, stopLng)) {
+                // Uu tien dung legDurationMinutes tu AI response (Google Matrix / OR-Tools cost matrix).
+                // Chi fallback Haversine + speed 25 km/h khi AI khong tra duration hoac <= 0.
+                Integer aiLegMin = so.getLegDurationMinutes();
+                int legMin;
+                if (aiLegMin != null && aiLegMin > 0) {
+                    legMin = aiLegMin;
+                } else if (hasValidLatLng(fromLat, fromLng) && hasValidLatLng(stopLat, stopLng)) {
                     double dKm = haversineKm(fromLat, fromLng, stopLat, stopLng);
                     int computedMin = (int) Math.round(dKm / 25.0 * 60.0);
                     if (computedMin < 1) computedMin = 1;
                     legMin = computedMin;
                     so.setLegDistanceKm(BigDecimal.valueOf(Math.round(dKm * 100.0) / 100.0));
+                } else {
+                    legMin = 5; // fallback cuoi: gia dinh 5 phut
                 }
                 so.setLegDurationMinutes(legMin);
 
@@ -3980,6 +4003,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             newRoute.setShipperEmployeeId(currentRoute.getShipperEmployeeId());
             newRoute.setShipperName(currentRoute.getShipperName());
             newRoute.setRouteSequence(currentRoute.getRouteSequence());
+            // Giữ liên kết shipmentId nếu route cũ đã gắn với shipment (tránh NULL sau re-optimize).
+            newRoute.setShipmentId(currentRoute.getShipmentId());
             newRoute.setEstimatedDistanceKm(BigDecimal.valueOf(
                     newAiRoute.getEstimatedDistanceKm() != null ? newAiRoute.getEstimatedDistanceKm() : 0.0));
             newRoute.setFuelCost(BigDecimal.valueOf(
