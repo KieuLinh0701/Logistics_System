@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -282,7 +283,9 @@ public class ShipperAssignmentManagerServiceImpl implements ShipperAssignmentMan
             throw new AppException(CommonErrorCode.MISSING_REQUIRED_FIELDS, String.join(", ", missingFields));
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = request.getStartAt().toLocalDate();
+        LocalDate endDate = request.getEndAt().toLocalDate();
 
         if (!isStarted && request.getSelectedEmployee() != null && request.getSelectedEmployee() <= 0) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_ID_INVALID);
@@ -292,19 +295,18 @@ public class ShipperAssignmentManagerServiceImpl implements ShipperAssignmentMan
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_WARD_CODE_INVALID);
         }
 
-        if (!isStarted && request.getStartAt() != null && request.getStartAt().isBefore(now)) {
+        if (!isStarted && startDate.isBefore(today)) {
             throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_START_TIME_INVALID);
         }
 
-        if (request.getEndAt() != null) {
-            if (!isStarted && request.getStartAt() != null && request.getEndAt().isBefore(request.getStartAt())) {
-                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_INVALID_TIME_RANGE);
-            }
-            if (request.getEndAt().isBefore(now)) {
-                throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_END_TIME_INVALID);
-            }
+        if (!isStarted && endDate.isBefore(startDate)) {
+            throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_INVALID_TIME_RANGE);
+        }
+        if (endDate.isBefore(today)) {
+            throw new AppException(ShipperAssignmentErrorCode.SHIPPER_ASSIGNMENT_END_TIME_INVALID);
         }
     }
+
     @Override
     @Transactional(readOnly = true)
     public ListResponse<ManagerShipperAssignmentListDto> list(
