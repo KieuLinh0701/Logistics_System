@@ -189,6 +189,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
                     if (orderDestinationService.isDestinationOffice(order, currentOffice)) {
                         order.setPendingDestinationConfirm(true);
                     }
+                    order.setEmployee(null);
                     orderRepository.save(order);
                     continue;
                 }
@@ -199,6 +200,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
                     // Ve dung bu cua goc: giu RETURNING, set pendingReturnConfirm
                     // Manager bưu cục gốc sẽ xác nhận sau
                     order.setPendingReturnConfirm(true);
+                    order.setEmployee(null);
                     orderRepository.save(order);
                     OrderHistory history = new OrderHistory();
                     history.setOrder(order);
@@ -211,6 +213,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
                 }
 
                 // RETURNING ve sai bu cua goc: van luu currentOffice da cap nhat, giu nguyen trang thai
+                order.setEmployee(null);
                 orderRepository.save(order);
             }
         }
