@@ -1,10 +1,23 @@
 import logging
+from enum import Enum
 
 from app.config.settings import Settings
-from app.models.route_optimization import OfficeLocation, OrderInput, RouteStopInput, ShipperAssignmentArea, ShipperInput
+from app.models.route_optimization import (
+    OfficeLocation,
+    OrderInput,
+    RouteStopInput,
+    ShipperAssignmentArea,
+    ShipperInput,
+)
 from app.services.geo_utils import distance_meter
 
 logger = logging.getLogger(__name__)
+
+
+class MatchType(str, Enum):
+    WARD_MATCH = "WARD_MATCH"
+    CITY_MATCH = "CITY_MATCH"
+    NO_MATCH = "NO_MATCH"
 
 
 def _to_dict(obj) -> dict:
@@ -16,21 +29,72 @@ def _to_dict(obj) -> dict:
     return {}
 
 
-def assignment_matches_order(assignment: ShipperAssignmentArea, order: OrderInput | RouteStopInput) -> bool:
-    """
-    Kiểm tra đơn hàng có thuộc khu vực được phân công hay không.
-    Ưu tiên so khớp theo phường/xã, nếu không có thì so khớp theo thành phố.
-    Hỗ trợ cả OrderInput (recipient_ward_code) và RouteStopInput (ward_code).
-    """
+def _order_ward_code(order: OrderInput | RouteStopInput) -> int | None:
     d = _to_dict(order)
-    ward = assignment.ward_code
-    if ward is not None and ward != 0:
-        return d.get("recipient_ward_code", d.get("ward_code")) == ward
-    return d.get("recipient_city_code", d.get("city_code", 0)) == assignment.city_code
+    return d.get("recipient_ward_code", d.get("ward_code"))
+
+
+def _order_city_code(order: OrderInput | RouteStopInput) -> int | None:
+    d = _to_dict(order)
+    return d.get("recipient_city_code", d.get("city_code"))
+
+
+def _order_tracking_number(order: OrderInput | RouteStopInput) -> str | None:
+    d = _to_dict(order)
+    return d.get("tracking_number")
+
+
+def classify_assignment_match(
+    assignment: ShipperAssignmentArea, order: OrderInput | RouteStopInput
+) -> MatchType:
+    """
+    Phân loại mức độ match giữa assignment và order:
+    - WARD_MATCH: assignment có ward trùng với ward của order.
+    - CITY_MATCH: assignment.city_code trùng với city_code của order
+                  (ward khác hoặc assignment không có ward).
+    - NO_MATCH:   khác cả city.
+    """
+    order_city = _order_city_code(order)
+    order_ward = _order_ward_code(order)
+
+    # 1) Ward match (chỉ khi assignment có ward hợp lệ và order cũng có ward)
+    assignment_ward = assignment.ward_code
+    if (
+        assignment_ward is not None
+        and assignment_ward != 0
+        and order_ward is not None
+        and order_ward != 0
+        and int(assignment_ward) == int(order_ward)
+    ):
+        return MatchType.WARD_MATCH
+
+    # 2) City match
+    if order_city is not None and int(assignment.city_code) == int(order_city):
+        return MatchType.CITY_MATCH
+
+    return MatchType.NO_MATCH
+
+
+def best_match_for_shipper(
+    shipper: ShipperInput, order: OrderInput | RouteStopInput
+) -> MatchType:
+    """
+    Lấy mức match tốt nhất của shipper với order dựa trên các assignments.
+    Ưu tiên: WARD_MATCH > CITY_MATCH > NO_MATCH.
+    """
+    best = MatchType.NO_MATCH
+    for a in shipper.assignments:
+        m = classify_assignment_match(a, order)
+        if m == MatchType.WARD_MATCH:
+            return MatchType.WARD_MATCH
+        if m == MatchType.CITY_MATCH:
+            best = MatchType.CITY_MATCH
+    return best
 
 
 def shipper_matches_order(shipper: ShipperInput, order: OrderInput | RouteStopInput) -> bool:
-    return any(assignment_matches_order(a, order) for a in shipper.assignments)
+    """Shipper phù hợp order nếu có ít nhất 1 assignment match ward hoặc city."""
+    return best_match_for_shipper(shipper, order) != MatchType.NO_MATCH
 
 
 def _order_point(order: OrderInput | RouteStopInput) -> dict:
@@ -101,7 +165,7 @@ def assign_orders_to_shippers(
     list[tuple[OrderInput | RouteStopInput, str]],
 ]:
     """
-    Phân công đơn cho shipper theo khu vực, sức chứa và tải trọng.
+    Phân công đơn cho shipper theo khu vực (WARD_MATCH ưu tiên CITY_MATCH), sức chứa và tải trọng.
     Trả về danh sách đã gán và danh sách chưa gán kèm lý do.
     """
     shipper_load: dict[int, list[OrderInput | RouteStopInput]] = {s.id: [] for s in shippers}
@@ -126,22 +190,65 @@ def assign_orders_to_shippers(
     depot = _office_point(office)
 
     for order in orders:
-        candidates = [s for s in shippers if shipper_matches_order(s, order)]
         order_id = _order_id(order)
-        if enable_debug_log:
-            d = _to_dict(order)
-            logger.debug(
-                "Assignment order=%s ward=%s city=%s matched_shippers=%s",
+        order_ward = _order_ward_code(order)
+        order_city = _order_city_code(order)
+        order_tracking = _order_tracking_number(order)
+
+        # Phân loại từng shipper theo matchType
+        candidate_with_match: list[tuple[ShipperInput, MatchType]] = []
+        for sp in shippers:
+            mt = best_match_for_shipper(sp, order)
+            if mt == MatchType.NO_MATCH:
+                continue
+            candidate_with_match.append((sp, mt))
+
+        if not candidate_with_match:
+            unassigned.append((order, "NO_MATCHING_AREA"))
+            logger.warning(
+                "[AREA_MATCH_NO_MATCH] order_id=%s tracking=%s order_city=%s order_ward=%s",
                 order_id,
-                d.get("recipient_ward_code", d.get("ward_code")),
-                d.get("recipient_city_code", d.get("city_code")),
+                order_tracking,
+                order_city,
+                order_ward,
+            )
+            continue
+
+        # Log từng shipper match gì
+        for sp, mt in candidate_with_match:
+            assignment_summary = ",".join(
+                f"(city={a.city_code},ward={a.ward_code})" for a in sp.assignments
+            )
+            logger.info(
+                "[AREA_MATCH] order_id=%s tracking=%s order_city=%s order_ward=%s "
+                "shipper_id=%s shipper_name=%s employee_id=%s assignments=%s match_type=%s",
+                order_id,
+                order_tracking,
+                order_city,
+                order_ward,
+                sp.id,
+                sp.name,
+                sp.employee_id,
+                assignment_summary,
+                mt.value,
+            )
+
+        # Ưu tiên WARD_MATCH trước, nếu không có WARD_MATCH thì dùng CITY_MATCH
+        ward_candidates = [sp for sp, mt in candidate_with_match if mt == MatchType.WARD_MATCH]
+        if ward_candidates:
+            candidates = ward_candidates
+            match_type_used = MatchType.WARD_MATCH
+        else:
+            candidates = [sp for sp, mt in candidate_with_match if mt == MatchType.CITY_MATCH]
+            match_type_used = MatchType.CITY_MATCH
+
+        if enable_debug_log:
+            logger.debug(
+                "Assignment order=%s match_type_used=%s candidates=%s",
+                order_id,
+                match_type_used.value,
                 len(candidates),
             )
-        if not candidates:
-            unassigned.append((order, "NO_MATCHING_AREA"))
-            if enable_debug_log:
-                logger.debug("Assignment unassigned order=%s reason=NO_MATCHING_AREA", order_id)
-            continue
 
         # Bỏ qua shipper đã vượt sức chứa đơn.
         candidates = [s for s in candidates if len(shipper_load[s.id]) < s.capacity]
@@ -217,14 +324,15 @@ def assign_orders_to_shippers(
         chosen = min(candidates, key=assignment_score)
         shipper_load[chosen.id].append(order)
 
-        if enable_debug_log:
-            selected_score = assignment_score(chosen)
-            logger.debug(
-                "Assignment selected order=%s shipper_id=%s shipper_name=%s score=%.4f",
-                order_id,
-                chosen.id,
-                chosen.name,
-                selected_score,
-            )
+        logger.info(
+            "[AREA_MATCH_SELECTED] order_id=%s tracking=%s shipper_id=%s shipper_name=%s "
+            "employee_id=%s match_type=%s",
+            order_id,
+            order_tracking,
+            chosen.id,
+            chosen.name,
+            chosen.employee_id,
+            match_type_used.value,
+        )
 
     return shipper_load, unassigned
