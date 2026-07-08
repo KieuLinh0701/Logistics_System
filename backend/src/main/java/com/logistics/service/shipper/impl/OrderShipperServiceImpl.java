@@ -2832,10 +2832,20 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         AiRoutePlanRoute aiRoute = null;
         for (AiRoutePlanRoute r : aiRoutes) {
-            long deliveryPickupStops = r.getStops().stream()
+            // Lấy tất cả stops (không cache) để tính còn visible stop không.
+            List<AiRoutePlanStop> routeStops = aiRoutePlanStopRepository
+                    .findByRouteIdOrderByStopSequenceAsc(r.getId());
+            if (routeStops == null) {
+                continue;
+            }
+            // Đếm stop cần xử lý theo Order.status (source of truth) +
+            // AiRoutePlanStop.stopStatus (fallback). Nếu route không còn stop
+            // nào cần xử lý → bỏ qua route này để tránh trả danh sách rỗng.
+            long pendingStops = routeStops.stream()
                     .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                    .filter(s -> !isOrderInTerminalAiState(s.getOrder(), s))
                     .count();
-                    if (deliveryPickupStops > 0) {
+            if (pendingStops > 0) {
                 aiRoute = r;
                 break;
             }
@@ -2844,6 +2854,21 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         if (aiRoute != null) {
             return buildAiDeliveryRouteResponseData(employee, aiRoute);
         }
+
+        // Không còn route nào có stop pending → trả route rỗng để FE hiển thị
+        // "Không có lộ trình vận chuyển hôm nay".
+        Map<String, Object> emptyResult = new HashMap<>();
+        Map<String, Object> emptyRouteInfo = new HashMap<>();
+        emptyRouteInfo.put("source", "AI");
+        emptyRouteInfo.put("status", "no_active_route");
+        emptyRouteInfo.put("name", "Không có lộ trình đang xử lý");
+        emptyRouteInfo.put("totalStops", 0);
+        emptyRouteInfo.put("completedStops", 0);
+        emptyResult.put("routeInfo", emptyRouteInfo);
+        emptyResult.put("deliveryStops", new ArrayList<>());
+        emptyResult.put("office", new HashMap<>());
+        emptyResult.put("source", "AI");
+        return emptyResult;
 
         // FALLBACK: Chỉ lấy orders đã assigned cho shipper (employee tạo/assigned)
         // Không lấy AT_DEST_OFFICE vì đó là đơn chưa assigned
@@ -2915,6 +2940,53 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         return result;
     }
 
+    /**
+     * Kiểm tra Order.status có phải là trạng thái terminal cho AI route hay
+     * không (coi như stop đã xử lý xong, không đưa vào deliveryStops).
+     *
+     * <p>So với {@code isStopHandledForRoute} trong ShipmentDeliveryServiceImpl,
+     * bản này lỏng hơn một chút cho AI context: PICKED_UP là terminal cho cả
+     * PICKUP lẫn DELIVERY leg (vì stop AI không phân biệt hai leg khi tính
+     * progress), DELIVERY_RETRY đã được coi là terminal vì shipper vẫn cần
+     * quay lại nhưng route đã được process.</p>
+     */
+    private static final Set<OrderStatus> AI_TERMINAL_ORDER_STATUSES = Set.of(
+            OrderStatus.DELIVERED,
+            OrderStatus.RETURNED,
+            OrderStatus.CANCELLED,
+            OrderStatus.DELIVERY_FAILED_FINAL,
+            OrderStatus.PICKUP_FAILED_FINAL,
+            OrderStatus.RETURN_FAILED_FINAL,
+            OrderStatus.AT_DEST_OFFICE,
+            OrderStatus.AT_ORIGIN_OFFICE,
+            OrderStatus.RETURN_AT_ORIGIN_OFFICE
+    );
+
+    private boolean isOrderTerminalForAi(OrderStatus status) {
+        return status != null && AI_TERMINAL_ORDER_STATUSES.contains(status);
+    }
+
+    /**
+     * Áp dụng logic "stop cần xử lý" cho AI route. Trả về true nếu stop NÊN
+     * bị loại khỏi danh sách (Order đã ở trạng thái terminal - stop coi như
+     * đã xong).
+     *
+     * <p>Nếu order null (stop không gắn order - ví dụ DEPOT/OFFICE), giữ lại.
+     * Nếu AiRoutePlanStop.stopStatus đã là COMPLETED/FAILED/SKIPPED mà DB
+     * cũ lệch, vẫn coi như terminal.</p>
+     */
+    private boolean isOrderInTerminalAiState(Order order, AiRoutePlanStop stop) {
+        if (order != null && isOrderTerminalForAi(order.getStatus())) {
+            return true;
+        }
+        if (stop != null && (stop.getStopStatus() == RouteStopStatus.COMPLETED
+                || stop.getStopStatus() == RouteStopStatus.FAILED
+                || stop.getStopStatus() == RouteStopStatus.SKIPPED)) {
+            return true;
+        }
+        return false;
+    }
+
     private Map<String, Object> buildAiDeliveryRouteResponseData(Employee employee, AiRoutePlanRoute aiRoute) {
         // Query directly from DB to get correct ordering
         List<AiRoutePlanStop> allStops = aiRoutePlanStopRepository.findByRouteIdOrderByStopSequenceAsc(aiRoute.getId());
@@ -2925,8 +2997,12 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         // Visible stops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
+        // QUAN TRỌNG: Source of truth khi render là Order.status (DB có thể lệch
+        // với AiRoutePlanStop.stopStatus do sync trễ). Nếu order đã ở trạng
+        // thái terminal thì coi như stop đã xử lý xong → KHÔNG đưa vào route.
         List<AiRoutePlanStop> visibleStops = allStops.stream()
                 .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                .filter(s -> !isOrderInTerminalAiState(s.getOrder(), s))
                 .toList();
 
         // totalCOD: chỉ DELIVERY stops
@@ -2980,8 +3056,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             m.put("legDurationMinutes", stop.getLegDurationMinutes());
             m.put("actualArrivedAt", stop.getActualArrivedAt());
             m.put("actualCompletedAt", stop.getActualCompletedAt());
+            // QUAN TRỌNG: Populate orderStatus cho frontend filter.
+            // Dù frontend đã có `status`, FE vẫn cần field `orderStatus` để
+            // áp dụng isStopHiddenFromRoute với TERMINAL set.
+            m.put("orderStatus", order != null && order.getStatus() != null
+                    ? order.getStatus().name() : null);
             if (order != null) {
-                m.put("status", order.getStatus() == OrderStatus.DELIVERED ? "completed" : "pending");
+                m.put("status", isOrderTerminalForAi(order.getStatus()) ? "completed" : "pending");
             } else {
                 RouteStopStatus ss = stop.getStopStatus();
                 m.put("status", ss != null ? ss.name().toLowerCase() : "pending");
@@ -2999,7 +3080,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         // totalStops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
         routeInfo.put("totalStops", visibleStops.size());
         routeInfo.put("completedStops", (int) visibleStops.stream()
-                .filter(s -> s.getStopStatus() == RouteStopStatus.COMPLETED)
+                .filter(s -> isOrderTerminalForAi(s.getOrder() != null ? s.getOrder().getStatus() : null)
+                        || s.getStopStatus() == RouteStopStatus.COMPLETED)
                 .count());
         routeInfo.put("totalDistance", aiRoute.getEstimatedDistanceKm() != null
                 ? aiRoute.getEstimatedDistanceKm().doubleValue() : 0);

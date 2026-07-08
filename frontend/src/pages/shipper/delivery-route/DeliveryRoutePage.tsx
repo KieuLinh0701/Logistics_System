@@ -102,6 +102,7 @@ interface DeliveryStop {
     serviceType: string;
     status: string;
     orderStatus?: string;
+    stopStatus?: string;
     stopSequence?: number;
     etaTime?: string;
     latitude?: number;
@@ -120,7 +121,12 @@ const isFinalDeliveryStatus = (status?: string) => {
 };
 
 const isStopHiddenFromRoute = (stop: DeliveryStop) => {
+    // Source of truth cho terminal: orderStatus do backend populate.
+    // Fallback thêm: stopStatus và status (phòng trường hợp backend cũ thiếu
+    // field orderStatus trong response AI route, hoặc stop lệch DB).
     const rawOrderStatus = (stop.orderStatus || "").toString().toUpperCase();
+    const rawStopStatus = (stop.stopStatus || "").toString().toUpperCase();
+    const rawStatus = (stop.status || "").toString().toUpperCase();
     const TERMINAL = new Set([
         "DELIVERED",
         "FAILED_DELIVERY",
@@ -132,6 +138,15 @@ const isStopHiddenFromRoute = (stop: DeliveryStop) => {
         "CANCELLED",
     ]);
     if (TERMINAL.has(rawOrderStatus)) return true;
+    // stopStatus (AiRoutePlanRoute response): COMPLETED/FAILED/SKIPPED đều coi
+    // như terminal ở góc độ hiển thị route.
+    if (rawStopStatus === "COMPLETED" || rawStopStatus === "FAILED" || rawStopStatus === "SKIPPED") {
+        return true;
+    }
+    // status do buildAiDeliveryRouteResponseData set: "completed" nghĩa là đã giao.
+    if (rawStatus === "COMPLETED") {
+        return true;
+    }
     return false;
 };
 

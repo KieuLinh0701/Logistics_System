@@ -11,6 +11,11 @@ import com.logistics.repository.*;
 import com.logistics.request.shipper.PickedUpRequest;
 import com.logistics.request.shipper.UpdateDeliveryStatusRequest;
 import com.logistics.service.common.NotificationService;
+import com.logistics.entity.AiRoutePlanRoute;
+import com.logistics.entity.AiRoutePlanStop;
+import com.logistics.enums.RouteStopStatus;
+import com.logistics.repository.AiRoutePlanRouteRepository;
+import com.logistics.repository.AiRoutePlanStopRepository;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.SecurityUtils;
@@ -34,6 +39,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
     private final OrderHistoryRepository orderHistoryRepository;
     private final EmployeeRepository employeeRepository;
     private final NotificationService notificationService;
+    private final AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
+    private final AiRoutePlanStopRepository aiRoutePlanStopRepository;
 
     private final OrderShipperService orderShipperService;
 
@@ -45,6 +52,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             OrderHistoryRepository orderHistoryRepository,
             EmployeeRepository employeeRepository,
             NotificationService notificationService,
+            AiRoutePlanRouteRepository aiRoutePlanRouteRepository,
+            AiRoutePlanStopRepository aiRoutePlanStopRepository,
             @Lazy OrderShipperService orderShipperService) {
         this.shipmentRepository = shipmentRepository;
         this.shipmentOrderRepository = shipmentOrderRepository;
@@ -52,6 +61,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         this.orderHistoryRepository = orderHistoryRepository;
         this.employeeRepository = employeeRepository;
         this.notificationService = notificationService;
+        this.aiRoutePlanRouteRepository = aiRoutePlanRouteRepository;
+        this.aiRoutePlanStopRepository = aiRoutePlanStopRepository;
         this.orderShipperService = orderShipperService;
     }
 
@@ -244,10 +255,118 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         shipment.setStatus(ShipmentStatus.COMPLETED);
         shipment.setEndTime(LocalDateTime.now());
         shipmentRepository.save(shipment);
+        // Deactivate tất cả AI route đang gắn với shipment để tránh fallback vào
+        // AI route cũ trong getDeliveryRoute() - nguyên nhân gốc khiến đơn đã
+        // giao vẫn hiển thị trên /shipper/route.
+        deactivateAiRoutesForShipment(shipment);
         List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
         for (ShipmentOrder so : shipmentOrders) {
             saveHistory(so.getOrder(), shipment, OrderHistoryActionType.CONFIRMED,
                     "Hoàn tất chuyến DELIVERY " + shipment.getCode());
+        }
+    }
+
+    /**
+     * Mapping trạng thái Order -> RouteStopStatus cho {@link AiRoutePlanStop}.
+     * - DELIVERED, RETURNED, AT_DEST_OFFICE, RETURN_AT_ORIGIN_OFFICE,
+     *   AT_ORIGIN_OFFICE, PICKED_UP (delivery leg)               => COMPLETED
+     * - DELIVERY_FAILED_FINAL, RETURN_FAILED_FINAL,
+     *   PICKUP_FAILED_FINAL, CANCELLED                           => FAILED
+     * - DELIVERY_RETRY, PICKUP_RETRY, RETURN_RETRY               => PENDING (giữ nguyên,
+     *   vì shipper sẽ quay lại xử lý stop này)
+     */
+    private RouteStopStatus mapOrderStatusToStopStatus(OrderStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case DELIVERED, AT_DEST_OFFICE, RETURNED,
+                 RETURN_AT_ORIGIN_OFFICE, AT_ORIGIN_OFFICE -> RouteStopStatus.COMPLETED;
+            case DELIVERY_FAILED_FINAL, RETURN_FAILED_FINAL,
+                 PICKUP_FAILED_FINAL, CANCELLED -> RouteStopStatus.FAILED;
+            default -> null;
+        };
+    }
+
+    /**
+     * Đồng bộ AiRoutePlanStop.stopStatus theo Order.status mới.
+     * Chỉ sync trên các stop thuộc route đang is_active=true (route còn "sống"
+     * với shipper). Helper này không bao giờ throw để tránh làm fail flow chính
+     * - lỗi chỉ được log warning.
+     */
+    private void syncAiRouteStopStatus(Order order) {
+        if (order == null || order.getId() == null) {
+            return;
+        }
+        RouteStopStatus mapped = mapOrderStatusToStopStatus(order.getStatus());
+        if (mapped == null) {
+            return;
+        }
+        try {
+            List<AiRoutePlanStop> stops = aiRoutePlanStopRepository.findActiveByOrderId(order.getId());
+            if (stops == null || stops.isEmpty()) {
+                return;
+            }
+            LocalDateTime now = LocalDateTime.now();
+            for (AiRoutePlanStop stop : stops {
+                boolean needStopStatusUpdate = stop.getStopStatus() != mapped
+                        || (mapped == RouteStopStatus.COMPLETED && stop.getActualCompletedAt() == null);
+                if (!needStopStatusUpdate) {
+                    continue;
+                }
+                stop.setStopStatus(mapped);
+                if (mapped == RouteStopStatus.COMPLETED) {
+                    stop.setActualCompletedAt(now);
+                    if (stop.getActualArrivedAt() == null) {
+                        stop.setActualArrivedAt(now);
+                    }
+                }
+                aiRoutePlanStopRepository.save(stop);
+                log.info("[AI_STOP_SYNC] orderId={} status={} -> stopId={} routeId={} stopStatus={} actualCompletedAt={}",
+                        order.getId(), order.getStatus(),
+                        stop.getId(), stop.getRoute() != null ? stop.getRoute().getId() : null,
+                        mapped, mapped == RouteStopStatus.COMPLETED ? now : null);
+            }
+        } catch (Exception ex) {
+            log.warn("[AI_STOP_SYNC_FAILED] orderId={} status={} reason={}",
+                    order.getId(), order.getStatus(), ex.getMessage());
+        }
+    }
+
+    /**
+     * Deactivate tất cả AiRoutePlanRoute còn isActive=true và đang gắn với
+     * shipment này. Chỉ set isActive=false + actualCompletedAt + reoptimizeReason
+     * để giữ lịch sử re-optimize cho manager xem sau.
+     */
+    private void deactivateAiRoutesForShipment(Shipment shipment) {
+        if (shipment == null || shipment.getId() == null) {
+            return;
+        }
+        try {
+            List<AiRoutePlanRoute> aiRoutes = aiRoutePlanRouteRepository.findActiveByShipmentId(shipment.getId());
+            if (aiRoutes == null || aiRoutes.isEmpty()) {
+                return;
+            }
+            LocalDateTime now = LocalDateTime.now();
+            for (AiRoutePlanRoute r : aiRoutes) {
+                r.setIsActive(false);
+                r.setActualCompletedAt(now);
+                if (r.getReoptimizedAt() == null) {
+                    r.setReoptimizedAt(now);
+                }
+                if (r.getReoptimizeReason() == null
+                        || !r.getReoptimizeReason().contains("SHIPMENT_COMPLETED")) {
+                    r.setReoptimizeReason(
+                            (r.getReoptimizeReason() != null ? r.getReoptimizeReason() + " | " : "")
+                                    + "SHIPMENT_COMPLETED:" + shipment.getCode());
+                }
+                aiRoutePlanRouteRepository.save(r);
+                log.info("[AI_ROUTE_DEACTIVATED] routeId={} shipmentId={} shipmentCode={}",
+                        r.getId(), shipment.getId(), shipment.getCode());
+            }
+        } catch (Exception ex) {
+            log.warn("[AI_ROUTE_DEACTIVATION_FAILED] shipmentId={} reason={}",
+                    shipment.getId(), ex.getMessage());
         }
     }
 
@@ -648,6 +767,11 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP,
                 "Shipper xác nhận đã lấy hàng (chuyến " + shipment.getCode() + ")");
+        // Sync AI stop CHỈ khi stop hiện tại là PICKUP leg (PICKED_UP là terminal
+        // cho PICKUP). Đối với DELIVERY leg, PICKED_UP không phải terminal.
+        if (stopType == RouteStopType.PICKUP) {
+            syncAiRouteStopStatus(order);
+        }
         checkAndAutoFinish(shipment);
     }
 
@@ -756,6 +880,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.DELIVERED,
                 "Giao hàng thành công (chuyến " + shipment.getCode() + ")");
+        syncAiRouteStopStatus(order);
         checkAndAutoFinish(shipment);
     }
 
@@ -805,6 +930,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.RETURNING,
                 "Tự động chuyển sang hoàn hàng trong cùng chuyến " + shipment.getCode());
+        // Sync stop tương ứng với trạng thái terminal (FAILED).
+        syncAiRouteStopStatus(order);
     }
 
     @Override
@@ -828,6 +955,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.AT_DEST_OFFICE,
                 "Trả hàng giao thất bại về bưu cục đích (chuyến " + shipment.getCode() + ")");
+        syncAiRouteStopStatus(order);
     }
 
     @Override
@@ -851,6 +979,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.RETURNING,
                 "Nộp hàng giao thất bại quá số lần về bưu cục đích, chuyển luồng hoàn hàng (chuyến " + shipment.getCode() + ")");
+        syncAiRouteStopStatus(order);
     }
 
     @Override
@@ -942,6 +1071,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
                 "Đã về bưu cục gốc khi hoàn hàng (chuyến " + shipment.getCode() + ")");
+        syncAiRouteStopStatus(order);
 
         if (order.getUser() != null) {
             String title;
@@ -980,6 +1110,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.AT_DEST_OFFICE,
                 "Nộp hàng về bưu cục gốc (chuyến " + shipment.getCode() + ")");
+        syncAiRouteStopStatus(order);
         checkAndAutoFinish(shipment);
     }
 
@@ -1015,7 +1146,9 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
 
         List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByOrderId(orderId);
         if (shipmentOrders != null && !shipmentOrders.isEmpty()) {
-            checkAndAutoFinish(shipmentOrders.get(0).getShipment());
+            Shipment linkedShipment = shipmentOrders.get(0).getShipment();
+            syncAiRouteStopStatus(order);
+            checkAndAutoFinish(linkedShipment);
         }
     }
 
@@ -1084,6 +1217,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 : "Giao trả hàng hoàn thành công";
         saveHistory(order, shipment, OrderHistoryActionType.RETURNED, note);
 
+        syncAiRouteStopStatus(order);
+
         if (order.getUser() != null) {
             notificationService.create(
                     "Đơn hàng đã được hoàn trả thành công",
@@ -1132,6 +1267,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         // Giữ nguyên employee để submitReturnFailedToOffice() có thể verify
         // Order sẽ xuất hiện ở "Hàng cần nộp bưu cục" vì listOrders gọi với status = RETURN_FAILED_FINAL
         orderRepository.save(order);
+        syncAiRouteStopStatus(order);
 
         String failReason = req != null && req.getFailReason() != null ? req.getFailReason() : "OTHER";
         String note = req != null && req.getNotes() != null ? req.getNotes() : "Giao hoàn thất bại";
