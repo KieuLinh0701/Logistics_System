@@ -28,7 +28,8 @@ public class OrderUtils {
             OrderStatus.CONFIRMED,
             OrderStatus.TRANSIT_TO_OFFICE,
             OrderStatus.READY_FOR_PICKUP,
-            OrderStatus.URGENT_PICKUP);
+            OrderStatus.URGENT_PICKUP,
+            OrderStatus.PICKUP_RETRY);
 
     public static boolean canUserCancel(OrderStatus status) {
         return USER_CANCELLABLE_STATUSES.contains(status);
@@ -51,31 +52,39 @@ public class OrderUtils {
         return STATUSES_ALLOWED_TO_DELETE.contains(status);
     }
 
-    // Những trạng thái user/manager được phép in vận đơn
-    private static final Set<OrderStatus> STATUSES_NOT_ALLOWED_TO_PRINT = Set.of(
-            OrderStatus.DRAFT,
-            OrderStatus.CANCELLED,
-            OrderStatus.PICKUP_FAILED_FINAL,
-            OrderStatus.DELIVERED,
-            OrderStatus.RETURNED);
+    // Những trạng thái user được phép in vận đơn
+    private static final Set<OrderStatus> USER_STATUSES_ALLOWED_TO_PRINT = Set.of(
+            OrderStatus.PENDING,
+            OrderStatus.TRANSIT_TO_OFFICE,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.CONFIRMED,
+            OrderStatus.URGENT_PICKUP,
+            OrderStatus.PICKUP_RETRY,
+            OrderStatus.PICKING_UP);
+
+    // Những trạng thái manager được phép in vận đơn
+    private static final Set<OrderStatus> MANAGER_STATUSES_ALLOWED_TO_PRINT = Set.of(
+            OrderStatus.AT_ORIGIN_OFFICE,
+            OrderStatus.IN_TRANSIT,
+            OrderStatus.AT_DEST_OFFICE,
+            OrderStatus.DELIVERING,
+            OrderStatus.DELIVERY_RETRY,
+            OrderStatus.RETURNING,
+            OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+            OrderStatus.RETURN_RETRY);
 
     public static boolean canUserPrint(OrderStatus status) {
-        return !STATUSES_NOT_ALLOWED_TO_PRINT.contains(status);
+        return USER_STATUSES_ALLOWED_TO_PRINT.contains(status);
     }
 
     public static boolean canManagerPrint(OrderStatus status) {
-        return !STATUSES_NOT_ALLOWED_TO_PRINT.contains(status);
+        return MANAGER_STATUSES_ALLOWED_TO_PRINT.contains(status);
     }
 
     // Những trạng thái manager được phép hủy
     private static final Set<OrderStatus> MANAGER_CANCEL_USER_ORDER_STATUSES = Set.of();
 
     private static final Set<OrderStatus> MANAGER_CANCEL_OFFICE_ORDER_STATUSES = Set.of(
-            OrderStatus.PENDING,
-            OrderStatus.CONFIRMED,
-            OrderStatus.PICKING_UP,
-            OrderStatus.READY_FOR_PICKUP,
-            OrderStatus.URGENT_PICKUP,
             OrderStatus.AT_ORIGIN_OFFICE);
 
     public static boolean canManagerCancel(
@@ -104,17 +113,6 @@ public class OrderUtils {
             return MANAGER_ALLOWED_TO_RETURNED_PICKUP_BY_COURIER_STATUSES.contains(status);
         }
         return false;
-    }
-
-    // Những trạng thái Order mà manager được phép tạo chuyến giao hàng
-    private static final Set<OrderStatus> VALID_ORDER_STATUSES_FOR_SHIPMENT_CREATION_MANAGER = Set.of(
-            OrderStatus.AT_ORIGIN_OFFICE,
-            OrderStatus.AT_DEST_OFFICE,
-            OrderStatus.RETURNING,
-            OrderStatus.IN_TRANSIT);
-
-    public static boolean canManagerCreateShipment(OrderStatus status) {
-        return VALID_ORDER_STATUSES_FOR_SHIPMENT_CREATION_MANAGER.contains(status);
     }
 
     // Những trạng thái Order mà manager được xác nhận là được người dùng bàn giao
