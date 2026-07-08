@@ -3061,8 +3061,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     private static final Set<OrderStatus> DELIVERY_VISIBLE_STATUSES = Set.of(
             OrderStatus.AT_DEST_OFFICE,
             OrderStatus.DELIVERING,
-            OrderStatus.DELIVERY_RETRY,
-            OrderStatus.FAILED_DELIVERY
+            OrderStatus.DELIVERY_RETRY
+            // DELIVERY_FAILED_FINAL bị ẩn vì đã hết lượt giao (xem TERMINAL_HIDDEN_STATUSES).
+            // Trong OrderStatus không có FAILED_DELIVERY; trạng thái retry tương ứng là DELIVERY_RETRY.
     );
 
     private static final Set<OrderStatus> PICKUP_VISIBLE_STATUSES = Set.of(
