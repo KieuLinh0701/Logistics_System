@@ -2925,8 +2925,14 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         // Visible stops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
+        // Đồng thời loại bỏ các stop có order đã vượt qua trạng thái "cần xử lý"
+        // theo shouldShowStopInRoute (DELIVERED, RETURNED, PICKED_UP khi stopType=PICKUP, ...).
         List<AiRoutePlanStop> visibleStops = allStops.stream()
                 .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
+                .filter(s -> {
+                    if (s.getOrder() == null) return true;
+                    return shouldShowStopInRoute(s.getStopType(), s.getOrder().getStatus());
+                })
                 .toList();
 
         // totalCOD: chỉ DELIVERY stops
@@ -3037,6 +3043,64 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         return result;
     }
 
+    // ============================================================
+    // SHARED ROUTE FILTER LOGIC
+    // Áp dụng cho cả buildShipmentRouteResponseData, buildAiDeliveryRouteResponseData
+    // và fallback trong getDeliveryRoute. Khi một đơn đã đi qua "điểm xử lý"
+    // thuộc stopType đó, ta phải loại nó khỏi route để tránh hiển thị lại.
+    // ============================================================
+    private static final Set<OrderStatus> TERMINAL_HIDDEN_STATUSES = Set.of(
+            OrderStatus.DELIVERED,
+            OrderStatus.CANCELLED,
+            OrderStatus.RETURNED,
+            OrderStatus.DELIVERY_FAILED_FINAL,
+            OrderStatus.PICKUP_FAILED_FINAL,
+            OrderStatus.RETURN_FAILED_FINAL
+    );
+
+    private static final Set<OrderStatus> DELIVERY_VISIBLE_STATUSES = Set.of(
+            OrderStatus.AT_DEST_OFFICE,
+            OrderStatus.DELIVERING,
+            OrderStatus.DELIVERY_RETRY,
+            OrderStatus.FAILED_DELIVERY
+    );
+
+    private static final Set<OrderStatus> PICKUP_VISIBLE_STATUSES = Set.of(
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.PICKING_UP,
+            OrderStatus.PICKUP_RETRY
+    );
+
+    private static final Set<OrderStatus> RETURN_TO_OFFICE_VISIBLE_STATUSES = Set.of(
+            OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+            OrderStatus.RETURNING,
+            OrderStatus.RETURN_RETRY
+    );
+
+    /**
+     * Quyết định một stop có nên hiển thị trong route hôm nay của shipper hay không.
+     * - DELIVERY: chỉ hiển thị khi order còn ở trạng thái "cần giao".
+     * - PICKUP:   chỉ hiển thị khi order còn ở trạng thái "cần lấy".
+     *   Nếu order đã đi qua giai đoạn pickup (AT_ORIGIN_OFFICE, IN_TRANSIT, AT_DEST_OFFICE, DELIVERED, RETURNING, RETURNED, ...)
+     *   thì KHÔNG hiển thị là điểm lấy hàng nữa.
+     * - RETURN_TO_OFFICE: chỉ hiển thị khi order còn đang trên đường hoàn về bưu cục gốc.
+     * - Bất kỳ stop nào thuộc TERMINAL_HIDDEN_STATUSES đều bị ẩn.
+     */
+    private boolean shouldShowStopInRoute(RouteStopType stopType, OrderStatus os) {
+        if (os == null) {
+            return false;
+        }
+        if (TERMINAL_HIDDEN_STATUSES.contains(os)) {
+            return false;
+        }
+        RouteStopType effectiveType = stopType != null ? stopType : RouteStopType.DELIVERY;
+        return switch (effectiveType) {
+            case DELIVERY -> DELIVERY_VISIBLE_STATUSES.contains(os);
+            case PICKUP -> PICKUP_VISIBLE_STATUSES.contains(os);
+            case RETURN_TO_OFFICE -> RETURN_TO_OFFICE_VISIBLE_STATUSES.contains(os);
+        };
+    }
+
     private Map<String, Object> buildShipmentRouteResponseData(Employee employee, Shipment shipment) {
         if (shipment == null) {
             return null;
@@ -3096,37 +3160,15 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // Phase 1: Đếm totalStops (tất cả orders) và completedStops
             // totalStops không filter theo status - lấy tổng số stops ban đầu
 
-            // Đếm completed theo stopType
-            boolean isCompleted = false;
-            if (isPickup) {
-                // PICKUP stop: completed khi PICKED_UP, PICKUP_FAILED_FINAL, PICKUP_RETRY, CANCELLED
-                // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này, sẽ quay lại sau
-                isCompleted = os == OrderStatus.PICKED_UP
-                        || os == OrderStatus.PICKUP_FAILED_FINAL
-                        || os == OrderStatus.PICKUP_RETRY
-                        || os == OrderStatus.CANCELLED;
-            } else if (isReturnToOffice) {
-                // RETURN_TO_OFFICE stop: completed khi AT_ORIGIN_OFFICE, RETURNED, RETURN_FAILED_FINAL, CANCELLED
-                // RETURN_FAILED_FINAL: shipper đã xử lý xong điểm giao hoàn ngoài đường, còn phải nộp bưu cục
-                isCompleted = os == OrderStatus.AT_ORIGIN_OFFICE
-                        || os == OrderStatus.RETURNED
-                        || os == OrderStatus.RETURN_FAILED_FINAL
-                        || os == OrderStatus.CANCELLED;
-            } else {
-                // DELIVERY stop: completed khi DELIVERED, DELIVERY_RETRY, DELIVERY_FAILED_FINAL, CANCELLED
-                // DELIVERY_FAILED_FINAL: shipper đã xử lý xong điểm giao ngoài đường, còn phải nộp bưu cục
-                isCompleted = os == OrderStatus.DELIVERED
-                        || os == OrderStatus.DELIVERY_RETRY
-                        || os == OrderStatus.DELIVERY_FAILED_FINAL
-                        || os == OrderStatus.CANCELLED;
-            }
+            // Đếm completed theo stopType (dựa trên logic shouldShowStopInRoute nghịch đảo)
+            boolean isCompleted = !shouldShowStopInRoute(so.getStopType(), os);
 
             if (isCompleted) {
                 completedStops++;
             }
         }
 
-        // Phase 2: build deliveryStops (đã filter các stop completed)
+        // Phase 2: build deliveryStops — chỉ giữ các stop còn cần xử lý
         for (ShipmentOrder so : sortedSos) {
             Order order = so.getOrder();
             if (order == null) {
@@ -3144,52 +3186,37 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             OrderStatus os = order.getStatus();
 
-            // Phase pickup-status mapping:
-            //   DELIVERED => completed (filter ra khỏi route vì đã giao xong)
-            //   DELIVERY_RETRY => đã xử lý xong lần giao này -> filter ra
-            //   DELIVERY_FAILED_FINAL => giao thất bại vĩnh viễn -> filter ra
-            //   PICKED_UP => completed CHO DELIVERY, nhưng FILTER RA cho PICKUP stop
-            //   AT_ORIGIN_OFFICE => completed, nhưng FILTER RA cho RETURN_TO_OFFICE stop
-            //   DELIVERY_FAILED_FINAL / PICKUP_FAILED_FINAL / RETURN_FAILED_FINAL / CANCELLED / RETURNED => filter ra
-            String stopStatus = "pending";
-            if (os == OrderStatus.DELIVERED) {
-                // DELIVERED: đã giao thành công -> filter ra khỏi route
+            // Phase 1: Lọc stop theo shouldShowStopInRoute (status phù hợp với stopType).
+            // Nếu stop không còn cần xử lý (đã DELIVERED, RETURNED, đã vượt qua giai đoạn pickup, ...)
+            // thì loại bỏ khỏi route ngay tại backend - frontend sẽ không thấy nữa.
+            if (!shouldShowStopInRoute(so.getStopType(), os)) {
                 continue;
-            } else if (os == OrderStatus.DELIVERY_RETRY) {
-                // DELIVERY_RETRY: đã xử lý xong lần giao này (thành công hoặc thất bại tạm thời)
-                // Shipper sẽ đem hàng quay lại xe và đi điểm tiếp theo -> filter ra khỏi route
-                continue;
-            } else if (os == OrderStatus.PICKED_UP) {
-                // PICKED_UP là completed cho DELIVERY stop
-                // NHƯNG filter ra cho PICKUP stop vì đã hoàn thành việc lấy hàng
-                stopStatus = "completed";
-                if (isPickup) {
-                    // Skip pickup stop đã hoàn thành
-                    continue;
+            }
+
+            // Phase 2: Mapping trạng thái UI dựa trên status thực tế (không dựa vào pickupType)
+            String stopStatus;
+            if (isPickup) {
+                if (os == OrderStatus.PICKING_UP) {
+                    stopStatus = "in_progress";
+                } else {
+                    // READY_FOR_PICKUP, PICKUP_RETRY
+                    stopStatus = "pending";
                 }
-            } else if (os == OrderStatus.AT_ORIGIN_OFFICE) {
-                // AT_ORIGIN_OFFICE là completed
-                stopStatus = "completed";
-                if (isReturnToOffice) {
-                    // Skip return stop đã hoàn thành
-                    continue;
+            } else if (isReturnToOffice) {
+                if (os == OrderStatus.RETURNING) {
+                    stopStatus = "in_progress";
+                } else {
+                    // RETURN_AT_ORIGIN_OFFICE, RETURN_RETRY
+                    stopStatus = "pending";
                 }
-            } else if (os == OrderStatus.DELIVERING
-                    || os == OrderStatus.PICKING_UP
-                    || os == OrderStatus.RETURNING) {
-                stopStatus = "in_progress";
-            } else if (os == OrderStatus.PICKUP_RETRY) {
-                // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này
-                // Stop phải biến mất khỏi route, đơn vẫn ở tab "Yêu cầu lấy hàng" để retry sau
-                continue;
-            } else if (os == OrderStatus.PICKUP_FAILED_FINAL
-                    || os == OrderStatus.DELIVERY_FAILED_FINAL
-                    || os == OrderStatus.RETURN_FAILED_FINAL
-                    || os == OrderStatus.CANCELLED
-                    || os == OrderStatus.RETURNED) {
-                // Filter ra các stop final - shipper đã xử lý xong tại điểm này
-                // RETURN_FAILED_FINAL / DELIVERY_FAILED_FINAL: chuyển sang "Hàng cần nộp bưu cục"
-                continue;
+            } else {
+                // DELIVERY
+                if (os == OrderStatus.DELIVERING) {
+                    stopStatus = "in_progress";
+                } else {
+                    // AT_DEST_OFFICE, DELIVERY_RETRY, FAILED_DELIVERY
+                    stopStatus = "pending";
+                }
             }
 
             // Phase PICKUP-correctness: PICKUP stop phải dùng sender address/contact,
