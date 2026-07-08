@@ -480,11 +480,17 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // Đơn do USER tạo
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
 
+            // HARD GUARD: API "unassigned" chỉ trả về các đơn CHƯA được giao cho shipper nào.
+            // Tránh trùng với /shipper/route (chỉ trả đơn đã assign cho current shipper).
+            // Áp dụng cho cả 2 nhánh (normalDelivery + returnOrigin).
+            Predicate employeeNotAssigned = cb.isNull(root.get("employee"));
+
             // ========== Đơn giao thường ==========
             // AT_DEST_OFFICE: đơn đang ở bưu cục đích, chờ shipper giao
             Predicate normalDeliveryPredicate = cb.and(
                 cb.equal(root.get("toOffice").get("id"), officeId),
-                cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE)
+                cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE),
+                employeeNotAssigned
             );
 
             // ========== Đơn giao trả hàng hoàn ==========
@@ -493,7 +499,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             Predicate returnOriginPredicate = cb.and(
                 cb.equal(root.get("status"), OrderStatus.RETURN_AT_ORIGIN_OFFICE),
                 cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER),
-                cb.isNull(root.get("employee")),
+                employeeNotAssigned,
                 cb.equal(root.get("fromOffice").get("id"), officeId)
             );
 
@@ -2925,12 +2931,19 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         // Visible stops = DELIVERY + PICKUP (không tính RETURN_TO_OFFICE)
-        // Đồng thời loại bỏ các stop có order đã vượt qua trạng thái "cần xử lý"
-        // theo shouldShowStopInRoute (DELIVERED, RETURNED, PICKED_UP khi stopType=PICKUP, ...).
+        // Đồng thời:
+        //  - Loại bỏ các stop có order đã vượt qua trạng thái "cần xử lý"
+        //    theo shouldShowStopInRoute (DELIVERED, RETURNED, PICKED_UP khi stopType=PICKUP, ...).
+        //  - Loại bỏ các stop mà order KHÔNG thuộc về shipper hiện tại (employee == null
+        //    hoặc employee khác). AI Plan được load theo shipper nhưng stop con có thể
+        //    reference order của shipper khác — phải verify lại ở BE.
         List<AiRoutePlanStop> visibleStops = allStops.stream()
                 .filter(s -> s.getStopType() != RouteStopType.RETURN_TO_OFFICE)
                 .filter(s -> {
                     if (s.getOrder() == null) return true;
+                    if (!isAssignedToCurrentShipper(s.getOrder(), employee)) {
+                        return false;
+                    }
                     return shouldShowStopInRoute(s.getStopType(), s.getOrder().getStatus());
                 })
                 .toList();
@@ -3102,6 +3115,24 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         };
     }
 
+    /**
+     * Hard guard: stop CHỈ thuộc về route của shipper hiện tại khi order đã
+     * được assign cho employee đó (employee != null && employee.id == currentUserId).
+     * Áp dụng cho cả buildShipmentRouteResponseData và buildAiDeliveryRouteResponseData
+     * để đảm bảo /shipper/route không bao giờ trả về đơn của shipper khác
+     * (đặc biệt đơn chưa assign, employee == null).
+     */
+    private boolean isAssignedToCurrentShipper(Order order, Employee currentShipper) {
+        if (order == null || currentShipper == null || currentShipper.getId() == null) {
+            return false;
+        }
+        Employee assigned = order.getEmployee();
+        if (assigned == null || assigned.getId() == null) {
+            return false;
+        }
+        return Objects.equals(assigned.getId(), currentShipper.getId());
+    }
+
     private Map<String, Object> buildShipmentRouteResponseData(Employee employee, Shipment shipment) {
         if (shipment == null) {
             return null;
@@ -3153,6 +3184,15 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 continue;
             }
 
+            // Hard guard: stop CHỈ thuộc về route của shipper hiện tại nếu
+            // order đã được assign cho employee đó. Nếu shipment lỡ nhặt
+            // đơn của shipper khác (employee == null hoặc employee khác),
+            // ta KHÔNG tính vào totalStops/completedStops.
+            if (!isAssignedToCurrentShipper(order, employee)) {
+                totalStops--;
+                continue;
+            }
+
             String stopType = so.getStopType() != null ? so.getStopType().name() : "DELIVERY";
             boolean isPickup = "PICKUP".equalsIgnoreCase(stopType);
             boolean isReturnToOffice = "RETURN_TO_OFFICE".equalsIgnoreCase(stopType);
@@ -3173,6 +3213,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         for (ShipmentOrder so : sortedSos) {
             Order order = so.getOrder();
             if (order == null) {
+                continue;
+            }
+
+            // Cùng hard guard: chỉ xử lý các stop thuộc về shipper hiện tại.
+            if (!isAssignedToCurrentShipper(order, employee)) {
                 continue;
             }
 
