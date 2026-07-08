@@ -70,6 +70,24 @@ public class SecurityUtils {
         return null;
     }
 
+    public static Integer getAuthenticatedUserRoleId() {
+        Authentication authentication = SecurityContextHolder.getContext()
+                .getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new AppException(AccountErrorCode.ACCOUNT_UNAUTHORIZED_ACCESS);
+        }
+
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        if (principal.getCurrentRole() != null) {
+            return principal.getCurrentRole().getId();
+        }
+
+        return null;
+    }
+
     public static boolean hasRole(String roleName) {
         try {
             String userRole = Objects.requireNonNull(getAuthenticatedUserRole())
