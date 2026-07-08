@@ -16,4 +16,16 @@ public interface AiRoutePlanStopRepository extends JpaRepository<AiRoutePlanStop
     Optional<Integer> findMaxStopSequenceByRouteId(@Param("routeId") Long routeId);
 
     List<AiRoutePlanStop> findByRouteIdOrderByStopSequenceAsc(Long routeId);
+
+    /**
+     * Lấy tất cả stop gắn với orderId ở những AI route đang active (và route của shipment active).
+     * Dùng để sync AiRoutePlanStop.stopStatus khi Order.status thay đổi.
+     */
+    @Query("""
+            SELECT s FROM AiRoutePlanStop s
+            JOIN FETCH s.route r
+            WHERE s.order.id = :orderId
+              AND r.isActive = true
+            """)
+    List<AiRoutePlanStop> findActiveByOrderId(@Param("orderId") Integer orderId);
 }
