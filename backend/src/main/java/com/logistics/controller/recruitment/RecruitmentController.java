@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -88,7 +89,7 @@ public class RecruitmentController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    @PostMapping("/api/job-applications")
+    @PostMapping(path = "/api/job-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Audit(
             entity = EntityType.JOB_APPLICATION,
             action = AuditLogAction.CREATE,
@@ -96,9 +97,9 @@ public class RecruitmentController {
     )
     @Operation(summary = "Ứng viên nộp hồ sơ", description = "Public user nộp hồ sơ ứng tuyển")
     public ResponseEntity<ApiResponse<JobApplicationDto>> createApplication(
-            @Valid @RequestBody CreateJobApplicationRequest request) {
+            @Valid @ModelAttribute CreateJobApplicationRequest request) {
         JobApplicationDto response = recruitmentService.createApplication(request);
-        return ResponseEntity.status(201).body(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/api/job-applications")

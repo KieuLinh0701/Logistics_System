@@ -10,6 +10,7 @@ import joblistImage from "../../../assets/images/joblist.png";
 import FooterHome from "../../../components/common/FooterHome";
 import recruitmentApi from "../../../api/recruitmentApi";
 import type {JobPosting} from "../../../types/recruitment";
+import type {RcFile} from "antd/es/upload/interface";
 
 const { Title, Paragraph } = Typography;
 
@@ -22,7 +23,7 @@ const ApplyJobPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cvFileName, setCvFileName] = useState<string>("");
+  const [cvFile, setCvFile] = useState<RcFile | null>(null);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -57,27 +58,30 @@ const ApplyJobPage: React.FC = () => {
     phone: string;
     email: string;
     address: string;
-    cvUrl: string;
     coverLetter?: string;
   }) => {
-    if (!cvFileName && !values.cvUrl) {
-      message.error("Vui lòng upload CV hoặc nhập đường dẫn CV");
+    if (!cvFile) {
+      message.error("Vui lòng upload file CV của bạn");
       return;
     }
 
     try {
       setSubmitLoading(true);
-      await recruitmentApi.createApplication({
-        fullName: values.fullName,
-        phone: values.phone,
-        email: values.email,
-        address: values.address,
-        cvUrl: values.cvUrl || `local-upload://${cvFileName}`,
-        jobPostingId: jobId,
-      });
+
+      const formData = new FormData();
+
+      formData.append("fullName", values.fullName);
+      formData.append("phone", values.phone);
+      formData.append("email", values.email);
+      formData.append("address", values.address);
+      formData.append("coverLetter", values.coverLetter || "");
+      formData.append("jobPostingId", jobId.toString());
+      formData.append("cvFile", cvFile);
+
+      await recruitmentApi.createApplication(formData);
       message.success("Nộp hồ sơ thành công");
       form.resetFields();
-      setCvFileName("");
+      setCvFile(null);
       navigate("/jobs", { replace: true });
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -184,17 +188,17 @@ const ApplyJobPage: React.FC = () => {
                 <Upload.Dragger
                   maxCount={1}
                   beforeUpload={(file) => {
-                    setCvFileName(file.name);
+                    setCvFile(file);
                     return false;
                   }}
                   onRemove={() => {
-                    setCvFileName("");
+                    setCvFile(null);
                   }}
                 >
                   <p>Kéo/thả file CV hoặc bấm để chọn file</p>
                 </Upload.Dragger>
-                {cvFileName ? (
-                  <p style={{ marginTop: 8, color: "#64748b" }}>Đã chọn: {cvFileName}</p>
+                {cvFile ? (
+                  <p style={{ marginTop: 8, color: "#64748b" }}>Đã chọn: {cvFile.name}</p>
                 ) : (
                   <p style={{ marginTop: 8, color: "#64748b" }}>* Vui lòng chọn file CV</p>
                 )}
