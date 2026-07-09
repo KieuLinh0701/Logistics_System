@@ -1406,7 +1406,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     public void retryPickup(Integer id) {
         Employee employee = getCurrentEmployee();
 
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 
         // Kiểm tra trạng thái phải là PICKUP_RETRY
@@ -1419,12 +1419,29 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             throw new AppException(OrderErrorCode.ORDER_NOT_ASSIGNED);
         }
 
+        if (order.getPickupType() != com.logistics.enums.OrderPickupType.PICKUP_BY_COURIER) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID);
+        }
+
+        Shipment shipment = findOrCreateRetryPickupShipment(employee, order);
+
+        com.logistics.request.shipper.InsertPickupShipmentRequest body = new com.logistics.request.shipper.InsertPickupShipmentRequest();
+        body.setPickupOrderId(id);
+        insertPickupIntoShipment(shipment.getId(), body);
+
         order.setStatus(OrderStatus.PICKING_UP);
         orderRepository.save(order);
         orderRepository.flush();
-        saveHistory(order, OrderHistoryActionType.PICKING_UP, "Shipper tiến hành đến lấy lại (retry pickup)");
+        saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
+                "Shipper tiến hành đến lấy lại (retry pickup) chuyến " + shipment.getCode());
         // Retry pickup: chỉ chuyển trạng thái về PICKING_UP — vehicle load KHÔNG cộng ở đây,
         // chỉ cộng khi shipper thực sự lấy lại hàng (PICKED_UP).
+
+        try {
+            assignOrderToActiveAiRoute(employee, order);
+        } catch (Exception ignored) {
+            // ignore AI route assign failure
+        }
 
         if (order.getUser() != null) {
             notificationService.create(
@@ -1436,6 +1453,35 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     "orders/tracking",
                     order.getTrackingNumber());
         }
+    }
+
+    private Shipment findOrCreateRetryPickupShipment(Employee employee, Order order) {
+        Shipment existing = shipmentRepository.findActiveDeliveryShipmentForOrder(employee.getId(), order.getId())
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+
+        List<Shipment> activeShipments = shipmentRepository.findActiveDeliveryShipmentsByEmployee(employee.getId());
+        Shipment shipment = activeShipments.stream()
+                .filter(s -> s.getStatus() == ShipmentStatus.IN_TRANSIT)
+                .findFirst()
+                .orElseGet(() -> activeShipments.stream()
+                        .filter(s -> s.getStatus() == ShipmentStatus.PENDING)
+                        .findFirst()
+                        .orElse(null));
+
+        if (shipment != null) {
+            return shipment;
+        }
+
+        Shipment newShipment = new Shipment();
+        newShipment.setType(ShipmentType.DELIVERY);
+        newShipment.setStatus(ShipmentStatus.PENDING);
+        newShipment.setEmployee(employee);
+        newShipment.setFromOffice(order.getFromOffice() != null ? order.getFromOffice() : employee.getOffice());
+        newShipment.setToOffice(order.getToOffice() != null ? order.getToOffice() : employee.getOffice());
+        return shipmentRepository.save(newShipment);
     }
 
     @Transactional
