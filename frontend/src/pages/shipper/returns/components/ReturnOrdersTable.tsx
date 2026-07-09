@@ -93,15 +93,18 @@ const ReturnOrdersTable: React.FC<ReturnOrdersTableProps> = ({
       title: "Người nhận hoàn",
       key: "recipient",
       render: (record: ShipperOrder) => {
+        const senderAddress =
+          record.senderFullAddress ||
+          record.senderAddress ||
+          "";
         const address =
-          record.recipientFullAddress ||
-          (typeof record.recipientAddress === "string"
-            ? record.recipientAddress
-            : (record.recipientAddress as any)?.fullAddress) || "";
+          typeof senderAddress === "string"
+            ? senderAddress
+            : (senderAddress as any)?.fullAddress || "";
         return (
           <Space direction="vertical" size={2}>
-            <Text strong className="shipper-table-strong">{record.recipientName}</Text>
-            <Text className="shipper-table-muted">{record.recipientPhone}</Text>
+            <Text strong className="shipper-table-strong">{record.senderName}</Text>
+            <Text className="shipper-table-muted">{record.senderPhone}</Text>
             <Text className="shipper-table-muted">{address}</Text>
           </Space>
         );

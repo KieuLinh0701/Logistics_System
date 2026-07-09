@@ -82,8 +82,9 @@ const ReturnOrdersTab = forwardRef<TabRefreshHandle, ReturnOrdersTabProps>(
         title: "Mã đơn hàng",
         dataIndex: "trackingNumber",
         key: "trackingNumber",
-        width: 140,
-        render: (text: string) => <Text strong className="table-strong">{text}</Text>,
+        width: 160,
+        minWidth: 160,
+        render: (text: string) => <span className="tracking-number-cell table-strong">{text}</span>,
       },
       {
         title: "Người gửi (Shop)",
@@ -108,15 +109,18 @@ const ReturnOrdersTab = forwardRef<TabRefreshHandle, ReturnOrdersTabProps>(
         title: "Người nhận hoàn",
         key: "recipient",
         render: (record: ShipperOrder) => {
+          const senderAddress =
+            record.senderFullAddress ||
+            record.senderAddress ||
+            "";
           const address =
-            record.recipientFullAddress ||
-            (typeof record.recipientAddress === "string"
-              ? record.recipientAddress
-              : (record.recipientAddress as any)?.fullAddress) || "";
+            typeof senderAddress === "string"
+              ? senderAddress
+              : (senderAddress as any)?.fullAddress || "";
           return (
             <Space direction="vertical" size={2}>
-              <Text strong className="table-strong">{record.recipientName}</Text>
-              <Text className="table-muted">{record.recipientPhone}</Text>
+              <Text strong className="table-strong">{record.senderName}</Text>
+              <Text className="table-muted">{record.senderPhone}</Text>
               <Text className="table-muted">{address}</Text>
             </Space>
           );

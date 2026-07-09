@@ -193,9 +193,10 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
         title: "Mã đơn hàng",
         dataIndex: "trackingNumber",
         key: "trackingNumber",
-        width: 140,
+        width: 160,
+        minWidth: 160,
         render: (text: string) => (
-          <Text strong className="table-strong">{text}</Text>
+          <span className="tracking-number-cell table-strong">{text}</span>
         ),
       },
       {
