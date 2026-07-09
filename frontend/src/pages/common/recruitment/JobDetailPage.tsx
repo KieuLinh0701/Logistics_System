@@ -80,7 +80,7 @@ const JobDetailModal: React.FC<{
             <Typography.Title level={5}>Mô tả công việc</Typography.Title>
             <Typography.Paragraph style={{ whiteSpace: "pre-wrap" }}>{job.description}</Typography.Paragraph>
 
-            { job.status !== "OPEN" && (
+            { job.status === "OPEN" && (
                 <div className="public-job-actions" style={{ marginTop: 12, display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <Button type="primary" onClick={() => (window.location.href = `/jobs/${job.id}/apply`)}>
                 Ứng tuyển ngay
