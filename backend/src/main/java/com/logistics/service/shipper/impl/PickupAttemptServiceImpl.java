@@ -16,6 +16,7 @@ import com.logistics.service.common.ConfigService;
 import com.logistics.service.common.NotificationService;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.PickupAttemptService;
+import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.service.user.ProductUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
     private final OrderProductRepository orderProductRepository;
     private final ConfigService configService;
     private final OrderShipperService orderShipperService;
+    private final ShipmentDeliveryService shipmentDeliveryService;
     private final NotificationService notificationService;
     private final ProductUserService productUserService;
     private final ShipmentOrderRepository shipmentOrderRepository;
@@ -114,6 +116,7 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
 
                 order.setStatus(OrderStatus.CANCELLED);
                 orderRepository.save(order);
+                shipmentDeliveryService.checkAndAutoFinishForOrder(orderId);
 
                 List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
                 productUserService.restoreStockFromOrder(orderProducts);
@@ -137,6 +140,7 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
             } else {
                 order.setStatus(OrderStatus.PICKUP_RETRY);
                 orderRepository.save(order);
+                shipmentDeliveryService.checkAndAutoFinishForOrder(orderId);
 
                 if (order.getUser() != null) {
                     notificationService.create(
