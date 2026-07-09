@@ -24,7 +24,7 @@ const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({ selecte
             <StatusBadge status={selected.status} />
           </Descriptions.Item>
           <Descriptions.Item label="CV URL">
-            <a className="hr-application-detail-link" href={selected.cvUrl} target="_blank" rel="noreferrer">
+            <a className="hr-application-detail-link" href={selected.cvUrl?.startsWith('http') ? selected.cvUrl : `https://${selected.cvUrl}`} target="_blank" rel="noreferrer">
               {selected.cvUrl}
             </a>
           </Descriptions.Item>
