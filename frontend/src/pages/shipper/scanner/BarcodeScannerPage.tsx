@@ -168,42 +168,7 @@ const BarcodeScannerPage: React.FC = () => {
     }
 
     try {
-      const orderResponse = await orderApi.getShipperOrders({
-        search: code,
-        page: 1,
-        limit: 1,
-      });
-
-      if (!orderResponse.orders || orderResponse.orders.length === 0) {
-        message.error(`Không tìm thấy đơn hàng với mã vận đơn: ${code}`);
-        return;
-      }
-
-      const order = orderResponse.orders[0];
-
-      // Idempotent: nếu đơn đã PICKED_UP rồi, backend vẫn trả success idempotent.
-      // Vẫn cho cập nhật status để ghi nhận pickup time nhưng không cảnh báo.
-      if (order.status === "PICKED_UP") {
-        // Bỏ cooldown cho phép scan lại (nếu là lần đầu thật sự)
-        recentScansRef.current.delete(code);
-        message.warning(
-          `Đơn hàng ${code} đã ở trạng thái "Đã lấy hàng" trước đó. Không cần quét lại.`
-        );
-        setScannedCode(code);
-        return;
-      }
-
-      if (order.status !== "READY_FOR_PICKUP") {
-        message.warning(
-          `Đơn hàng ${code} không ở trạng thái "Sẵn sàng lấy hàng". Trạng thái hiện tại: ${getStatusText(
-            order.status
-          )}`
-        );
-        return;
-      }
-
-      // Gọi API markShipperPickedUp — backend đã idempotent cho PICKED_UP
-      const pickedUpResponse = await orderApi.markShipperPickedUp(order.id);
+      const pickedUpResponse = await orderApi.markShipperPickedUpByTrackingNumber(code);
 
       // CHỈ set scannedCode khi API thành công
       setScannedCode(code);

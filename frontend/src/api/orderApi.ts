@@ -254,6 +254,19 @@ const orderApi = {
         return res.data;
     },
 
+    async markShipperPickedUpByTrackingNumber(trackingNumber: string, payload?: {
+        latitude?: number;
+        longitude?: number;
+        photoUrl?: string;
+        notes?: string
+    }) {
+        const res = await axiosClient.post<ApiResponse<any>>(
+            `/shipper/orders/tracking/${encodeURIComponent(trackingNumber)}/picked-up`,
+            payload || {}
+        );
+        return res.data;
+    },
+
     async deliverShipperToOrigin(orderId: number, payload?: {
         officeId?: number;
         latitude?: number;

@@ -51,6 +51,8 @@ public interface OrderShipperService {
 
     boolean markPickedUp(Integer id, PickedUpRequest request);
 
+    boolean markPickedUpByTrackingNumber(String trackingNumber, PickedUpRequest request);
+
     void retryPickup(Integer id);
 
     void deliverToOrigin(Integer id, DeliverOriginRequest request);

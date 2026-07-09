@@ -1369,6 +1369,39 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         return false;
     }
 
+    @Override
+    @Transactional
+    public boolean markPickedUpByTrackingNumber(String trackingNumber, PickedUpRequest request) {
+        String requestedTrackingNumber = trackingNumber != null ? trackingNumber.trim() : null;
+        if (requestedTrackingNumber == null || requestedTrackingNumber.isBlank()) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_FOUND);
+        }
+
+        Order foundOrder = orderRepository.findByTrackingNumber(requestedTrackingNumber)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (!Objects.equals(requestedTrackingNumber, foundOrder.getTrackingNumber())) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_FOUND,
+                    "Tracking number không khớp với đơn hàng được tìm thấy.");
+        }
+
+        OrderStatus oldStatus = foundOrder.getStatus();
+        boolean alreadyPickedUp = markPickedUp(foundOrder.getId(), request);
+
+        Order refreshedOrder = orderRepository.findById(foundOrder.getId())
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+        log.info(
+                "Shipper pickup scan resolved exact order: requestedTrackingNumber={}, foundOrder.trackingNumber={}, foundOrder.id={}, oldStatus={}, newStatus={}",
+                requestedTrackingNumber,
+                refreshedOrder.getTrackingNumber(),
+                refreshedOrder.getId(),
+                oldStatus,
+                refreshedOrder.getStatus()
+        );
+
+        return alreadyPickedUp;
+    }
+
     @Transactional
     public void retryPickup(Integer id) {
         Employee employee = getCurrentEmployee();
