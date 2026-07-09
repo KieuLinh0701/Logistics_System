@@ -74,7 +74,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({
                     <Input
                         className="modal-custom-input"
                         placeholder="Nhập địa chỉ email"
-                        disabled={mode === 'create'}
+                        disabled={mode === 'edit'}
                     />
                 </Form.Item>
 
