@@ -154,6 +154,12 @@
   font-weight: 600;
 }
 
+.my-orders-table .tracking-number-cell {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
 .my-orders-table .ant-pagination {
   padding: 16px 20px !important;
   border-top: 1px solid #f0f0f0;
