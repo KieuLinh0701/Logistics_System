@@ -528,11 +528,10 @@ public class RecruitmentServiceImpl implements RecruitmentService {
         }
         try {
             Map<String, Object> result = cloudinary.uploader().upload(
-                    file.getBytes(),
+                    file.getInputStream(),
                     ObjectUtils.asMap(
                             "folder", "cvs",
-                            "resource_type", "auto",
-                            "content_type", file.getContentType()
+                            "resource_type", "auto"
                     ));
             return result.get("secure_url").toString();
         } catch (Exception e) {
