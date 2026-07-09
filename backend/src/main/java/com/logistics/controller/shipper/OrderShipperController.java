@@ -303,6 +303,26 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success(message));
     }
 
+    @PostMapping("/orders/tracking/{trackingNumber}/picked-up")
+    @Audit(
+            entity = EntityType.ORDER,
+            action = AuditLogAction.UPDATE_STATUS,
+            description = AuditLogDescriptionConstant.ORDER_PICKED_UP,
+            params = {"trackingNumber"}
+    )
+    public ResponseEntity<ApiResponse<String>> markPickedUpByTrackingNumber(
+            @PathVariable String trackingNumber,
+            @RequestBody(required = false) PickedUpRequest request) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        boolean alreadyPickedUp = shipperService.markPickedUpByTrackingNumber(trackingNumber, request);
+        String message = alreadyPickedUp
+                ? "Đơn đã được lấy hàng trước đó"
+                : "Đã xác nhận lấy hàng";
+        return ResponseEntity.ok(ApiResponse.success(message));
+    }
+
     @PostMapping("/orders/{id}/retry-pickup")
     public ResponseEntity<ApiResponse<String>> retryPickup(@PathVariable Integer id) {
         if (isNotShipper()) {
