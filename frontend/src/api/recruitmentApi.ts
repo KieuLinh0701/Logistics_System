@@ -32,7 +32,7 @@ const recruitmentApi = {
     return axiosClient.delete<ApiResponse<void>>(`/jobs/${id}`);
   },
 
-  async createApplication(payload: CreateApplicationRequest) {
+  async createApplication(payload: FormData) {
     return axiosClient.post<ApiResponse<JobApplication>>("/job-applications", payload);
   },
 
