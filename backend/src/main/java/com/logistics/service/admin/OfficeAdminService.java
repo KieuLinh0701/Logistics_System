@@ -3,6 +3,7 @@ package com.logistics.service.admin;
 import com.logistics.request.admin.CreateOfficeRequest;
 import com.logistics.request.admin.UpdateOfficeRequest;
 
+import java.util.List;
 import java.util.Map;
 
 public interface OfficeAdminService {
@@ -16,4 +17,6 @@ public interface OfficeAdminService {
     void updateOffice(Integer officeId, UpdateOfficeRequest request);
 
     void deleteOffice(Integer officeId);
+
+    List<Map<String, Object>> listAllOffices(String search);
 }

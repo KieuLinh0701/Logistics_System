@@ -57,6 +57,11 @@ const officeApi = {
     return res;
   },
 
+  async listAdminAllOffices(params: { search?: string }) {
+    const res = await axiosClient.get<ApiResponse<AdminOffice[]>>("/admin/offices/all", { params });
+    return res;
+  },
+
   // Manager
   getManagerOffice: async () => {
     const res = await axiosClient.get<ApiResponse<Office>>('/manager/offices/me');
