@@ -526,15 +526,23 @@ public class RecruitmentServiceImpl implements RecruitmentService {
         if (file == null || file.isEmpty()) {
             throw new AppException(CommonErrorCode.CLOUDINARY_FILE_IS_EMPTY);
         }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.equals("application/pdf")) {
+            throw new AppException(RecruitmentErrorCode.CLOUDINARY_INVALID_CV_FORMAT);
+        }
+
         try {
             Map<String, Object> result = cloudinary.uploader().upload(
-                    file.getInputStream(),
+                    file.getBytes(),
                     ObjectUtils.asMap(
                             "folder", "cvs",
-                            "resource_type", "auto"
+                            "resource_type", "image",
+                            "format", "pdf"
                     ));
             return result.get("secure_url").toString();
         } catch (Exception e) {
+            e.printStackTrace();
             throw new AppException(CommonErrorCode.CLOUDINARY_UPLOAD_FAILED);
         }
     }
