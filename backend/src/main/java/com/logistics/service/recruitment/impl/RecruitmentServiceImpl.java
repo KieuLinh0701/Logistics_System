@@ -171,7 +171,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
             throw new AppException(RecruitmentErrorCode.RECRUITMENT_APPLICATION_EMAIL_DUPLICATED);
         }
 
-        String uploadedCvUrl = uploadCv(request.getCvUrl());
+        String uploadedCvUrl = uploadCv(request.getCvFile());
 
         JobApplication entity = new JobApplication();
         entity.setJobPosting(posting);

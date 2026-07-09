@@ -31,7 +31,7 @@ public class CreateJobApplicationRequest {
     private String address;
 
     @NotNull(message = "Vui lòng upload file CV của bạn")
-    private MultipartFile cvUrl;
+    private MultipartFile cvFile;
 
     @NotNull(message = "jobPostingId không được để trống")
     private Long jobPostingId;
