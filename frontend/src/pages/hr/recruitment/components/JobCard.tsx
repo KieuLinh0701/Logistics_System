@@ -35,7 +35,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onView, onApply }) => {
       </div>
       <div className="public-job-actions">
         <Button type="default" onClick={(e) => { e.stopPropagation(); onView(job.id); }}>Xem chi tiết</Button>
-        <Button type="primary" onClick={(e) => { e.stopPropagation(); onApply(job.id); }}>Ứng tuyển</Button>
+        <Button type="primary" disabled={job.status !== "OPEN"} onClick={(e) => { e.stopPropagation(); onApply(job.id); }}>Ứng tuyển</Button>
       </div>
     </Card>
   );
