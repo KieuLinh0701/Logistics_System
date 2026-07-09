@@ -180,6 +180,22 @@ public class OfficeAdminServiceImpl implements OfficeAdminService {
         officeRepository.delete(office);
     }
 
+    @Override
+    public List<Map<String, Object>> listAllOffices(String search) {
+        List<Office> officesList;
+
+        if (search != null && !search.trim().isEmpty()) {
+            Sort sort =  Sort.by("createdAt").descending();
+            officesList = officeRepository.findByNameContainingIgnoreCase(search, sort);
+        } else {
+            officesList = officeRepository.findAll(Sort.by("createdAt").descending());
+        }
+
+        return officesList.stream()
+                .map(this::mapOffice)
+                .collect(Collectors.toList());
+    }
+
     private Map<String, Object> mapOffice(Office office) {
         Map<String, Object> officeMap = new HashMap<>();
         officeMap.put("id", office.getId());

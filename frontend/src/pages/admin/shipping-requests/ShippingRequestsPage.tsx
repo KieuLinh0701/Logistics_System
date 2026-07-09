@@ -69,8 +69,8 @@ const ShippingRequestsPage: React.FC = () => {
 
   const fetchOffices = useCallback(async () => {
     try {
-      const res = await axiosClient.get<any>("/admin/offices");
-      const list = Array.isArray(res) ? res : res?.data?.data || res?.data || [];
+      const res = await axiosClient.get<any>("/admin/offices/all");
+      const list = Array.isArray(res?.data) ? res.data : [];
       setOffices((list || []).map((office: any) => ({ id: office.id, name: office.name })));
     } catch {
       setOffices([]);
