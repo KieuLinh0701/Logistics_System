@@ -73,7 +73,8 @@ public class ShipperPickupController {
                 shipperId,
                 status,
                 failReason,
-                request.getNote());
+                request.getNote(),
+                request.getProofImageUrl());
 
         return ResponseEntity.ok(ApiResponse.success("Ghi nhận lần lấy hàng thành công", data));
     }

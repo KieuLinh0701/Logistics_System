@@ -1,6 +1,7 @@
 package com.logistics.mapper;
 
 import com.logistics.dto.PickupAttemptDto;
+import com.logistics.dto.DeliveryAttemptDto;
 import com.logistics.dto.manager.order.ManagerOrderDetailDto;
 import com.logistics.dto.manager.order.ManagerOrderListDto;
 import com.logistics.dto.manager.shipment.ManagerShipmentDetailDto;
@@ -161,7 +162,8 @@ public class OrderMapper {
     public static ManagerOrderDetailDto toManagerOrderDetailDto(Order entity,
             List<OrderHistory> orderHistories,
             List<OrderProduct> orderProducts,
-            List<PickupAttempt> pickupAttempts) {
+            List<PickupAttempt> pickupAttempts,
+            List<DeliveryAttempt> deliveryAttempts) {
         if (entity == null) {
             return null;
         }
@@ -230,6 +232,7 @@ public class OrderMapper {
                 OrderProductMapper.toDtoList(orderProducts),
                 OrderHistoryMapper.toDtoList(orderHistories),
                 toPickupAttemptDtoList(pickupAttempts),
+                toDeliveryAttemptDtoList(deliveryAttempts),
                 entity.getEmployee() != null ? entity.getEmployee()
                         .getCode() : null,
                 entity.getUser() != null ? entity.getUser()
@@ -429,6 +432,36 @@ public class OrderMapper {
                 entity.getStatus() != null ? entity.getStatus().name() : null,
                 entity.getFailReason() != null ? entity.getFailReason().name() : null,
                 entity.getNote(),
+                entity.getProofImageUrl(),
+                entity.getAttemptedAt(),
+                shipperName);
+    }
+
+    public static List<DeliveryAttemptDto> toDeliveryAttemptDtoList(List<DeliveryAttempt> attempts) {
+        if (attempts == null || attempts.isEmpty()) {
+            return List.of();
+        }
+
+        return attempts.stream().map(OrderMapper::toDeliveryAttemptDto).collect(Collectors.toList());
+    }
+
+    public static DeliveryAttemptDto toDeliveryAttemptDto(DeliveryAttempt entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        String shipperName = null;
+        if (entity.getShipper() != null) {
+            shipperName = entity.getShipper().getFullName();
+        }
+
+        return new DeliveryAttemptDto(
+                entity.getAttemptType() != null ? entity.getAttemptType().name() : null,
+                entity.getAttemptNumber(),
+                entity.getStatus() != null ? entity.getStatus().name() : null,
+                entity.getFailReason() != null ? entity.getFailReason().name() : null,
+                entity.getNote(),
+                entity.getProofImageUrl(),
                 entity.getAttemptedAt(),
                 shipperName);
     }

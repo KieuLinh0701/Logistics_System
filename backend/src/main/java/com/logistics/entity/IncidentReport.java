@@ -32,7 +32,7 @@ public class IncidentReport {
 
     // Quan hệ với đơn hàng
     @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false, foreignKey = @ForeignKey(name = "fk_incident_order"))
+    @JoinColumn(name = "order_id", nullable = true, foreignKey = @ForeignKey(name = "fk_incident_order"))
     private Order order;
 
     // Shipper báo cáo sự cố

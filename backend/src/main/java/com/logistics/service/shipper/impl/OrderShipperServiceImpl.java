@@ -23,6 +23,10 @@ import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -165,6 +169,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         if (!allowed.contains(order.getStatus())) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_CLAIM_STATUS);
         }
+
+        validatePickupCityMatch(order, employee);
 
         // Gán employee + fromOffice
         order.setEmployee(employee);
@@ -596,7 +602,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     // và đã đánh dấu SẴN SÀNG LẤY (READY_FOR_PICKUP), chưa có shipper gán.
     public Map<String, Object> listPickupByCourierRequests(int page, int limit) {
         Employee employee = getCurrentEmployee();
-        Integer officeId = employee.getOffice().getId();
+
+        Integer shipperCityCode = resolveShipperCityCode(employee);
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -622,14 +629,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             ));
             assignedPreds.add(cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER));
 
-            // Thu hẹp theo bưu cục của shipper: nếu đơn đã có fromOffice thì lọc theo officeId,
-            // nếu fromOffice = null thì vẫn cho hiện (đơn chưa được gán bưu cục)
-            Predicate fromOfficeMatch = cb.or(
-                    cb.isNull(root.get("fromOffice")),
-                    cb.equal(root.get("fromOffice").get("id"), officeId)
-            );
-            availablePreds.add(fromOfficeMatch);
-            assignedPreds.add(fromOfficeMatch);
+            // Lọc theo city code của shipper: ưu tiên order.senderCityCode, fallback order.fromOffice.cityCode.
+            // Lưu ý: phải dùng LEFT JOIN rõ ràng cho fromOffice, nếu không Hibernate sẽ sinh INNER JOIN
+            // → các đơn có fromOffice = null bị loại ngay tại JOIN dù nhánh senderCityCode đúng.
+            Join<Order, Office> fromOfficeJoin = root.join("fromOffice", JoinType.LEFT);
+            Predicate cityMatchPredicate = buildPickupCityMatchPredicate(root, cb, fromOfficeJoin, shipperCityCode);
+            availablePreds.add(cityMatchPredicate);
+            assignedPreds.add(cityMatchPredicate);
 
             Predicate available = cb.and(availablePreds.toArray(new Predicate[0]));
             Predicate assignedToMe = cb.and(assignedPreds.toArray(new Predicate[0]));
@@ -808,6 +814,17 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     public void claimOrder(Integer id) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
+
+        // Chặn nhận đơn khi shipper đang có shipment DELIVERY IN_TRANSIT.
+        boolean hasInTransitDeliveryShipment = !shipmentRepository
+                .findActiveDeliveryShipmentsByEmployee(employee.getId())
+                .stream()
+                .filter(s -> s.getStatus() == com.logistics.enums.ShipmentStatus.IN_TRANSIT)
+                .toList()
+                .isEmpty();
+        if (hasInTransitDeliveryShipment) {
+            throw new AppException(OrderErrorCode.ORDER_IN_TRANSIT_SHIPMENT_EXISTS);
+        }
 
         Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
@@ -1767,12 +1784,44 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
-        Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
-
         IncidentReport incident = new IncidentReport();
-        incident.setOrder(order);
         incident.setShipper(shipperUser);
+
+        if (request.getOrderId() != null) {
+            Order order = orderRepository.findById(request.getOrderId())
+                    .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+            Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+
+            boolean isAssignedToMe = order.getEmployee() != null && order.getEmployee().getId() != null
+                    && Objects.equals(order.getEmployee().getId(), employee.getId());
+            boolean isDeliveryToMyOffice = order.getToOffice() != null && officeId != null
+                    && Objects.equals(order.getToOffice().getId(), officeId);
+
+            boolean canViewUnassignedPickup = false;
+            if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER
+                    && order.getEmployee() == null
+                    && (order.getStatus() == OrderStatus.READY_FOR_PICKUP || order.getStatus() == OrderStatus.URGENT_PICKUP)) {
+                Integer currentOfficeId = order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null;
+                Integer fromOfficeId = order.getFromOffice() != null ? order.getFromOffice().getId() : null;
+                boolean isPickupOfficeMatched = (currentOfficeId == null && fromOfficeId == null)
+                        || (officeId != null && (
+                            (currentOfficeId != null && Objects.equals(currentOfficeId, officeId))
+                            || (fromOfficeId != null && Objects.equals(fromOfficeId, officeId))
+                        ));
+                canViewUnassignedPickup = isPickupOfficeMatched;
+            }
+
+            boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup;
+
+            if (!allowed) {
+                throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
+            }
+
+            incident.setOrder(order);
+        } else {
+            incident.setOrder(null);
+        }
 
         if (request.getIncidentType() != null) {
             incident.setIncidentType(IncidentType.valueOf(request.getIncidentType().toUpperCase()));
@@ -1824,12 +1873,44 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Employee employee = getCurrentEmployee();
         User shipperUser = employee.getUser();
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
-
         IncidentReport incident = new IncidentReport();
-        incident.setOrder(order);
         incident.setShipper(shipperUser);
+
+        if (orderId != null) {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+            Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+
+            boolean isAssignedToMe = order.getEmployee() != null && order.getEmployee().getId() != null
+                    && Objects.equals(order.getEmployee().getId(), employee.getId());
+            boolean isDeliveryToMyOffice = order.getToOffice() != null && officeId != null
+                    && Objects.equals(order.getToOffice().getId(), officeId);
+
+            boolean canViewUnassignedPickup = false;
+            if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER
+                    && order.getEmployee() == null
+                    && (order.getStatus() == OrderStatus.READY_FOR_PICKUP || order.getStatus() == OrderStatus.URGENT_PICKUP)) {
+                Integer currentOfficeId = order.getCurrentOffice() != null ? order.getCurrentOffice().getId() : null;
+                Integer fromOfficeId = order.getFromOffice() != null ? order.getFromOffice().getId() : null;
+                boolean isPickupOfficeMatched = (currentOfficeId == null && fromOfficeId == null)
+                        || (officeId != null && (
+                            (currentOfficeId != null && Objects.equals(currentOfficeId, officeId))
+                            || (fromOfficeId != null && Objects.equals(fromOfficeId, officeId))
+                        ));
+                canViewUnassignedPickup = isPickupOfficeMatched;
+            }
+
+            boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup;
+
+            if (!allowed) {
+                throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
+            }
+
+            incident.setOrder(order);
+        } else {
+            incident.setOrder(null);
+        }
 
         if (incidentType != null) {
             try {
@@ -2381,8 +2462,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
     }
 
-    private long countFailedDeliveryAttempts(Integer orderId) {
-        return deliveryAttemptRepository.countByOrderIdAndStatus(orderId, com.logistics.enums.DeliveryAttemptStatus.FAILED);
+    private long countFailedDeliveryAttempts(Integer orderId, DeliveryAttemptType attemptType) {
+        return deliveryAttemptRepository.countByOrderIdAndStatusAndAttemptType(orderId, com.logistics.enums.DeliveryAttemptStatus.FAILED, attemptType);
     }
 
     private String buildDeliveryAttemptNote(String reason, String note, int attemptNumber, int maxAttempts) {
@@ -2473,21 +2554,26 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             orderRepository.save(order);
         }
 
-        // Lưu ảnh minh chứng giao hàng thành công
-        if (request != null && request.getProofImageUrl() != null && !request.getProofImageUrl().isBlank()) {
-            List<DeliveryAttempt> existingSuccess = deliveryAttemptRepository.findByOrderIdAndStatus(order.getId(), com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
-            if (existingSuccess.isEmpty()) {
-                DeliveryAttempt successAttempt = new DeliveryAttempt();
-                successAttempt.setOrder(order);
-                successAttempt.setShipper(shipperUser);
-                successAttempt.setAttemptNumber(1);
-                successAttempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
-                successAttempt.setNote("Giao hàng thành công");
-                successAttempt.setProofImageUrl(request.getProofImageUrl());
-                successAttempt.setAttemptedAt(LocalDateTime.now());
-                successAttempt.setUpdatedAt(LocalDateTime.now());
-                deliveryAttemptRepository.save(successAttempt);
-            }
+        // Save delivery attempt success
+        List<DeliveryAttempt> existingSuccess = deliveryAttemptRepository.findByOrderIdAndAttemptTypeAndStatus(
+                order.getId(),
+                DeliveryAttemptType.DELIVERY,
+                com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
+        if (existingSuccess.isEmpty()) {
+            long countBefore = deliveryAttemptRepository.countByOrderIdAndAttemptType(order.getId(), DeliveryAttemptType.DELIVERY);
+            int attemptNumber = (int) countBefore + 1;
+
+            DeliveryAttempt successAttempt = new DeliveryAttempt();
+            successAttempt.setOrder(order);
+            successAttempt.setShipper(shipperUser);
+            successAttempt.setAttemptType(DeliveryAttemptType.DELIVERY);
+            successAttempt.setAttemptNumber(attemptNumber);
+            successAttempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
+            successAttempt.setNote("Giao hàng thành công");
+            successAttempt.setProofImageUrl(request != null ? request.getProofImageUrl() : null);
+            successAttempt.setAttemptedAt(LocalDateTime.now());
+            successAttempt.setUpdatedAt(LocalDateTime.now());
+            deliveryAttemptRepository.save(successAttempt);
         }
 
         saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
@@ -2572,7 +2658,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             throw new AppException(OrderErrorCode.ORDER_NOT_DELIVERING);
         }
         int maxAttempts = getMaxDeliveryAttempts();
-        long failedCountBefore = countFailedDeliveryAttempts(order.getId());
+        long failedCountBefore = countFailedDeliveryAttempts(order.getId(), DeliveryAttemptType.DELIVERY);
         int attemptNumber = (int) failedCountBefore + 1;
         boolean finalFail = attemptNumber >= maxAttempts;
 
@@ -2585,6 +2671,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         DeliveryAttempt attempt = new DeliveryAttempt();
         attempt.setOrder(order);
         attempt.setShipper(shipperUser);
+        attempt.setAttemptType(DeliveryAttemptType.DELIVERY);
         attempt.setAttemptNumber(attemptNumber);
         attempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.FAILED);
         attempt.setFailReason(com.logistics.enums.DeliveryFailReason.valueOf(reason.trim().toUpperCase()));
@@ -4650,6 +4737,73 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 && !Double.isNaN(lat) && !Double.isNaN(lng)
                 && lat >= -90 && lat <= 90
                 && lng >= -180 && lng <= 180;
+    }
+
+    /**
+     * Lấy city code của shipper từ bưu cục mà shipper đang hoạt động.
+     */
+    private Integer resolveShipperCityCode(Employee employee) {
+        if (employee == null || employee.getOffice() == null) {
+            return null;
+        }
+        return employee.getOffice().getCityCode();
+    }
+
+    /**
+     * Lấy city code của địa điểm lấy hàng.
+     * Ưu tiên order.senderCityCode, fallback order.fromOffice.cityCode.
+     */
+    private Integer resolvePickupCityCode(Order order) {
+        if (order == null) {
+            return null;
+        }
+        if (order.getSenderCityCode() != null) {
+            return order.getSenderCityCode();
+        }
+        if (order.getFromOffice() != null && order.getFromOffice().getCityCode() != null) {
+            return order.getFromOffice().getCityCode();
+        }
+        return null;
+    }
+
+    /**
+     * Predicate so khớp city code cho Specification:
+     * - Lấy city code của đơn pickup (ưu tiên senderCityCode, fallback fromOffice.cityCode).
+     * - So khớp với shipperCityCode.
+     */
+    private Predicate buildPickupCityMatchPredicate(Root<Order> root, CriteriaBuilder cb, Join<Order, Office> fromOfficeJoin, Integer shipperCityCode) {
+        if (shipperCityCode == null) {
+            return cb.disjunction();
+        }
+
+        // Ưu tiên: khớp theo order.senderCityCode
+        Predicate senderCityMatch =
+                cb.equal(root.get("senderCityCode"), shipperCityCode);
+
+        // Fallback: khi senderCityCode null mới dùng fromOffice.cityCode (LEFT JOIN đã tạo ở caller)
+        Predicate fallbackFromOfficeMatch = cb.and(
+                cb.isNull(root.get("senderCityCode")),
+                cb.equal(fromOfficeJoin.get("cityCode"), shipperCityCode)
+        );
+
+        return cb.or(senderCityMatch, fallbackFromOfficeMatch);
+    }
+
+    /**
+     * Validate rằng shipper có cùng city code với đơn pickup khi API claim được gọi trực tiếp.
+     */
+    private void validatePickupCityMatch(Order order, Employee employee) {
+        Integer shipperCityCode = resolveShipperCityCode(employee);
+        Integer pickupCityCode = resolvePickupCityCode(order);
+
+        if (shipperCityCode == null || pickupCityCode == null) {
+            throw new AppException(CommonErrorCode.FORBIDDEN,
+                    "Đơn pickup nằm ngoài khu vực thành phố hoạt động của shipper");
+        }
+        if (!Objects.equals(shipperCityCode, pickupCityCode)) {
+            throw new AppException(CommonErrorCode.FORBIDDEN,
+                    "Đơn pickup nằm ngoài khu vực thành phố hoạt động của shipper");
+        }
     }
 }
 

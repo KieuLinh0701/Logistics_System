@@ -66,14 +66,14 @@ const IncidentTable: React.FC<Props> = ({
       align: "center",
       render: (_, record) => {
         const trackingNumber = record?.order?.trackingNumber;
-        if (!trackingNumber) return <Tag color="default">N/A</Tag>;
+        if (!trackingNumber) return <Tag color="default">Không liên quan đơn hàng</Tag>;
         return (
           <Tooltip title="Click để xem chi tiết đơn hàng">
             <span
               className="navigate-link-default"
-              onClick={() => navigate(`/orders/tracking/${record.order.trackingNumber}`)}
+              onClick={() => navigate(`/orders/tracking/${trackingNumber}`)}
             >
-              {record.order.trackingNumber}
+              {trackingNumber}
             </span>
           </Tooltip>
         );

@@ -139,14 +139,11 @@ const IncidentReportPage: React.FC = () => {
       setLoading(true);
 
       const orderIdToSend = values.orderId;
-      if (!orderIdToSend) {
-        message.error("Vui lòng chọn đơn hàng");
-        setLoading(false);
-        return;
-      }
 
       const fd = new FormData();
-      fd.append("orderId", String(orderIdToSend));
+      if (orderIdToSend) {
+        fd.append("orderId", String(orderIdToSend));
+      }
       if (values.incidentType) fd.append("incidentType", values.incidentType);
       fd.append("title", values.title);
       if (values.description) fd.append("description", values.description);
@@ -237,12 +234,11 @@ const IncidentReportPage: React.FC = () => {
         <Form form={form} layout="vertical" onFinish={handleSubmitReport}>
           <Form.Item
             name="orderId"
-            label="Đơn hàng"
-            rules={[{ required: true, message: "Vui lòng chọn đơn hàng" }]}
+            label="Đơn hàng liên quan"
           >
             <Select
               showSearch
-              placeholder="Chọn hoặc tìm đơn hàng"
+              placeholder="Chọn đơn hàng nếu sự cố có liên quan"
               filterOption={filterOrderOptions}
               notFoundContent={orderLoading ? <Spin size="small" /> : "Không tìm thấy đơn hàng"}
               loading={orderLoading}
@@ -257,11 +253,20 @@ const IncidentReportPage: React.FC = () => {
             rules={[{ required: true, message: "Vui lòng chọn loại sự cố" }]}
           >
             <Select placeholder="Chọn loại sự cố">
-              <Option value="RECIPIENT_NOT_AVAILABLE">Người nhận không có mặt</Option>
-              <Option value="WRONG_ADDRESS">Sai địa chỉ</Option>
-              <Option value="PACKAGE_DAMAGED">Hàng hóa bị hỏng</Option>
-              <Option value="RECIPIENT_REFUSED">Người nhận từ chối</Option>
-              <Option value="SECURITY_ISSUE">Vấn đề an ninh</Option>
+              <Option value="DAMAGED_PARCEL">Hàng hóa bị hư hỏng</Option>
+              <Option value="LOST_PARCEL">Hàng hóa bị thất lạc</Option>
+              <Option value="COD_DISPUTE">Tranh chấp COD</Option>
+              <Option value="CUSTOMER_CONFLICT">Tranh chấp với khách hàng</Option>
+              <Option value="SAFETY_INCIDENT">Sự cố an toàn</Option>
+              <Option value="VEHICLE_BREAKDOWN">Phương tiện hư hỏng</Option>
+              <Option value="TRAFFIC_ACCIDENT">Tai nạn giao thông</Option>
+              <Option value="SYSTEM_ERROR">Lỗi hệ thống</Option>
+              <Option value="BARCODE_SCAN_ERROR">Lỗi quét mã vận đơn</Option>
+              <Option value="WRONG_ORDER_ASSIGNMENT">Phân công sai đơn hàng</Option>
+              <Option value="OFFICE_OPERATION_ISSUE">Sự cố tại bưu cục</Option>
+              <Option value="DELIVERY_EXCEPTION">Sự cố giao hàng bất thường</Option>
+              <Option value="PICKUP_EXCEPTION">Sự cố lấy hàng bất thường</Option>
+              <Option value="RETURN_EXCEPTION">Sự cố hoàn hàng</Option>
               <Option value="OTHER">Khác</Option>
             </Select>
           </Form.Item>

@@ -41,8 +41,9 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
     private final NotificationService notificationService;
     private final AiRoutePlanRouteRepository aiRoutePlanRouteRepository;
     private final AiRoutePlanStopRepository aiRoutePlanStopRepository;
-
     private final OrderShipperService orderShipperService;
+    private final PickupAttemptRepository pickupAttemptRepository;
+    private final DeliveryAttemptRepository deliveryAttemptRepository;
 
     @Autowired
     public ShipmentDeliveryServiceImpl(
@@ -54,7 +55,9 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             NotificationService notificationService,
             AiRoutePlanRouteRepository aiRoutePlanRouteRepository,
             AiRoutePlanStopRepository aiRoutePlanStopRepository,
-            @Lazy OrderShipperService orderShipperService) {
+            @Lazy OrderShipperService orderShipperService,
+            PickupAttemptRepository pickupAttemptRepository,
+            DeliveryAttemptRepository deliveryAttemptRepository) {
         this.shipmentRepository = shipmentRepository;
         this.shipmentOrderRepository = shipmentOrderRepository;
         this.orderRepository = orderRepository;
@@ -64,6 +67,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         this.aiRoutePlanRouteRepository = aiRoutePlanRouteRepository;
         this.aiRoutePlanStopRepository = aiRoutePlanStopRepository;
         this.orderShipperService = orderShipperService;
+        this.pickupAttemptRepository = pickupAttemptRepository;
+        this.deliveryAttemptRepository = deliveryAttemptRepository;
     }
 
     private Employee getCurrentEmployee() {
@@ -765,6 +770,23 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             order.setPickupProofImageUrl(req.getPhotoUrl());
         }
         orderRepository.save(order);
+
+        // Save pickup attempt success
+        Integer nextAttempt = 1;
+        List<PickupAttempt> recent = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(orderId);
+        if (recent != null && !recent.isEmpty() && recent.get(0).getAttemptNumber() != null) {
+            nextAttempt = recent.get(0).getAttemptNumber() + 1;
+        }
+
+        PickupAttempt attempt = new PickupAttempt();
+        attempt.setOrder(order);
+        attempt.setShipper(employee.getUser());
+        attempt.setAttemptNumber(nextAttempt);
+        attempt.setStatus(PickupAttemptStatus.SUCCESS);
+        attempt.setProofImageUrl(req != null ? req.getPhotoUrl() : null);
+        attempt.setAttemptedAt(LocalDateTime.now());
+        pickupAttemptRepository.save(attempt);
+
         saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP,
                 "Shipper xác nhận đã lấy hàng (chuyến " + shipment.getCode() + ")");
         // Sync AI stop CHỈ khi stop hiện tại là PICKUP leg (PICKED_UP là terminal
@@ -1200,17 +1222,29 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
 
         order.setStatus(OrderStatus.RETURNED);
         order.setReturnedAt(LocalDateTime.now());
-
-        if (proofImageUrl != null && !proofImageUrl.isBlank()) {
-            try {
-                java.lang.reflect.Field field = order.getClass().getDeclaredField("proofImageUrl");
-                field.setAccessible(true);
-                field.set(order, proofImageUrl);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-            }
-        }
-
         orderRepository.save(order);
+
+        // Save return delivery attempt success
+        List<DeliveryAttempt> existingSuccess = deliveryAttemptRepository.findByOrderIdAndAttemptTypeAndStatus(
+                order.getId(),
+                DeliveryAttemptType.RETURN_DELIVERY,
+                com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
+        if (existingSuccess.isEmpty()) {
+            long countBefore = deliveryAttemptRepository.countByOrderIdAndAttemptType(order.getId(), DeliveryAttemptType.RETURN_DELIVERY);
+            int attemptNumber = (int) countBefore + 1;
+
+            DeliveryAttempt successAttempt = new DeliveryAttempt();
+            successAttempt.setOrder(order);
+            successAttempt.setShipper(employee.getUser());
+            successAttempt.setAttemptNumber(attemptNumber);
+            successAttempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.SUCCESS);
+            successAttempt.setAttemptType(DeliveryAttemptType.RETURN_DELIVERY);
+            successAttempt.setNote("Giao trả hàng hoàn thành công");
+            successAttempt.setProofImageUrl(proofImageUrl);
+            successAttempt.setAttemptedAt(LocalDateTime.now());
+            successAttempt.setUpdatedAt(LocalDateTime.now());
+            deliveryAttemptRepository.save(successAttempt);
+        }
 
         String note = shipment != null
                 ? "Giao trả hàng hoàn thành công (chuyến " + shipment.getCode() + ")"
@@ -1269,8 +1303,26 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         orderRepository.save(order);
         syncAiRouteStopStatus(order);
 
+        long countBefore = deliveryAttemptRepository.countByOrderIdAndAttemptType(order.getId(), DeliveryAttemptType.RETURN_DELIVERY);
+        int attemptNumber = (int) countBefore + 1;
+
         String failReason = req != null && req.getFailReason() != null ? req.getFailReason() : "OTHER";
         String note = req != null && req.getNotes() != null ? req.getNotes() : "Giao hoàn thất bại";
+        String proofImageUrl = req != null ? req.getProofImageUrl() : null;
+
+        DeliveryAttempt attempt = new DeliveryAttempt();
+        attempt.setOrder(order);
+        attempt.setShipper(employee.getUser());
+        attempt.setAttemptNumber(attemptNumber);
+        attempt.setStatus(com.logistics.enums.DeliveryAttemptStatus.FAILED);
+        attempt.setAttemptType(DeliveryAttemptType.RETURN_DELIVERY);
+        attempt.setFailReason(com.logistics.enums.DeliveryFailReason.valueOf(failReason.trim().toUpperCase()));
+        attempt.setNote(note);
+        attempt.setProofImageUrl(proofImageUrl);
+        attempt.setAttemptedAt(LocalDateTime.now());
+        attempt.setUpdatedAt(LocalDateTime.now());
+        deliveryAttemptRepository.save(attempt);
+
         saveHistory(order, shipment, OrderHistoryActionType.RETURN_FAILED_FINAL,
                 note + " (Lý do: " + failReason + ", chuyến " + shipment.getCode() + ")");
 

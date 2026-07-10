@@ -7,5 +7,5 @@ import java.util.Map;
 
 public interface PickupAttemptService {
 
-    Map<String, Object> recordPickupAttempt(Integer orderId, Integer shipperId, PickupAttemptStatus status, PickupFailReason failReason, String note);
+    Map<String, Object> recordPickupAttempt(Integer orderId, Integer shipperId, PickupAttemptStatus status, PickupFailReason failReason, String note, String proofImageUrl);
 }

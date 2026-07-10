@@ -2,6 +2,7 @@ package com.logistics.entity;
 
 import com.logistics.enums.DeliveryAttemptStatus;
 import com.logistics.enums.DeliveryFailReason;
+import com.logistics.enums.DeliveryAttemptType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,6 +32,10 @@ public class DeliveryAttempt {
     @ManyToOne
     @JoinColumn(name = "shipper_id", nullable = false)
     private User shipper;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attempt_type", length = 30, nullable = false)
+    private DeliveryAttemptType attemptType;
 
     @Column(nullable = false)
     private Integer attemptNumber;

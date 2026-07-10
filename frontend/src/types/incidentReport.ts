@@ -4,7 +4,7 @@ import type {Order} from "./orderHistory";
 export interface Incident {
     id: number;
     code: string;
-    order: Order;
+    order?: Order | null;
     shipper: User;
     incidentType: string;
     title: string;

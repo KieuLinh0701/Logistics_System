@@ -191,6 +191,11 @@ const SideNav: React.FC = () => {
                         label: "Báo cáo sự cố",
                         path: "/orders/incidents",
                     },
+                    {
+                        key: "/orders/attempt-history",
+                        label: "Lịch sử xử lý đơn",
+                        path: "/orders/attempt-history",
+                    },
                 ],
             },
             {

@@ -6,5 +6,10 @@ public enum DeliveryFailReason {
     WRONG_ADDRESS,
     RECIPIENT_REFUSED,
     RESCHEDULE_REQUESTED,
-    OTHER
+    OTHER,
+    // Return delivery fail reasons
+    SENDER_NOT_AVAILABLE,
+    SENDER_REFUSED,
+    RETURN_ADDRESS_INVALID,
+    RETURN_RESCHEDULE_REQUESTED
 }

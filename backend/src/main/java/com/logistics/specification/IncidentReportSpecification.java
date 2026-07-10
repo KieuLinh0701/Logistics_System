@@ -51,7 +51,7 @@ public class IncidentReportSpecification {
             String likePattern = "%" + keyword.toLowerCase() + "%";
 
             // Join với đơn hàng
-            var orderJoin = root.join("recipientaddress", JoinType.LEFT);
+            var orderJoin = root.join("order", JoinType.LEFT);
 
             // Join shipper và handler
             var shipperJoin = root.join("shipper", JoinType.LEFT);

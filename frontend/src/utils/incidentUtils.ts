@@ -24,14 +24,39 @@ export const translateIncidentStatus = (value: string): string => {
   }
 };
 
-export const INCIDENT_TYPES = ['RECIPIENT_NOT_AVAILABLE', 'WRONG_ADDRESS', 'PACKAGE_DAMAGED', 'RECIPIENT_REFUSED', 'SECURITY_ISSUE', 'OTHER'] as const;
+export const INCIDENT_TYPES = [
+  'DAMAGED_PARCEL',
+  'LOST_PARCEL',
+  'COD_DISPUTE',
+  'CUSTOMER_CONFLICT',
+  'SAFETY_INCIDENT',
+  'VEHICLE_BREAKDOWN',
+  'TRAFFIC_ACCIDENT',
+  'SYSTEM_ERROR',
+  'BARCODE_SCAN_ERROR',
+  'WRONG_ORDER_ASSIGNMENT',
+  'OFFICE_OPERATION_ISSUE',
+  'DELIVERY_EXCEPTION',
+  'PICKUP_EXCEPTION',
+  'RETURN_EXCEPTION',
+  'OTHER'
+] as const;
 export const translateIncidentType = (value: string): string => {
   switch (value) {
-    case 'RECIPIENT_NOT_AVAILABLE': return 'Người nhận không có mặt';
-    case 'WRONG_ADDRESS': return 'Sai địa chỉ';
-    case 'PACKAGE_DAMAGED': return 'Hàng bị hỏng';
-    case 'RECIPIENT_REFUSED': return 'Người nhận từ chối';
-    case 'SECURITY_ISSUE': return 'Vấn đề an ninh';
+    case 'DAMAGED_PARCEL': return 'Hàng hóa bị hư hỏng';
+    case 'LOST_PARCEL': return 'Hàng hóa bị thất lạc';
+    case 'COD_DISPUTE': return 'Tranh chấp COD';
+    case 'CUSTOMER_CONFLICT': return 'Tranh chấp với khách hàng';
+    case 'SAFETY_INCIDENT': return 'Sự cố an toàn';
+    case 'VEHICLE_BREAKDOWN': return 'Phương tiện hư hỏng';
+    case 'TRAFFIC_ACCIDENT': return 'Tai nạn giao thông';
+    case 'SYSTEM_ERROR': return 'Lỗi hệ thống';
+    case 'BARCODE_SCAN_ERROR': return 'Lỗi quét mã vận đơn';
+    case 'WRONG_ORDER_ASSIGNMENT': return 'Phân công sai đơn hàng';
+    case 'OFFICE_OPERATION_ISSUE': return 'Sự cố tại bưu cục';
+    case 'DELIVERY_EXCEPTION': return 'Sự cố giao hàng bất thường';
+    case 'PICKUP_EXCEPTION': return 'Sự cố lấy hàng bất thường';
+    case 'RETURN_EXCEPTION': return 'Sự cố hoàn hàng';
     case 'OTHER': return 'Khác';
     default: return value;
   }

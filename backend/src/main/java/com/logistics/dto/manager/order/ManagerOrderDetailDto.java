@@ -73,6 +73,7 @@ public class ManagerOrderDetailDto {
     private List<OrderProductDto> orderProducts;
     private List<OrderHistoryDto> orderHistories;
     private List<PickupAttemptDto> pickupAttempts;
+    private List<DeliveryAttemptDto> deliveryAttempts;
     private String employeeCode;
     private String userCode;
     private String codStatus;

@@ -48,7 +48,8 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
             Integer shipperId,
             PickupAttemptStatus status,
             PickupFailReason failReason,
-            String note) {
+            String note,
+            String proofImageUrl) {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
@@ -82,6 +83,7 @@ public class PickupAttemptServiceImpl implements PickupAttemptService {
         attempt.setStatus(status);
         attempt.setFailReason(status == PickupAttemptStatus.SUCCESS ? null : failReason);
         attempt.setNote(note);
+        attempt.setProofImageUrl(proofImageUrl);
         attempt.setAttemptedAt(LocalDateTime.now());
         pickupAttemptRepository.save(attempt);
 

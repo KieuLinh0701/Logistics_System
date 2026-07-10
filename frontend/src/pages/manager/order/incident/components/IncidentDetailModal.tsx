@@ -31,7 +31,7 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
   const hasImages = images.length > 0;
 
   const handleViewOrder = () => {
-    if (incident.order.trackingNumber) {
+    if (incident.order?.trackingNumber) {
       onViewOrderDetail?.(incident.order.trackingNumber);
     }
   };
@@ -75,8 +75,8 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
       className="modal-hide-scrollbar"
     >
       <Descriptions bordered column={1} size="middle">
-        {incident.order?.trackingNumber && (
-          <Descriptions.Item label="Mã đơn hàng">
+        <Descriptions.Item label="Mã đơn hàng">
+          {incident.order?.trackingNumber ? (
             <div onClick={handleViewOrder}>
               <Tooltip title="Click để xem chi tiết đơn hàng">
                 <span className="navigate-link-default">
@@ -84,8 +84,10 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
                 </span>
               </Tooltip>
             </div>
-          </Descriptions.Item>
-        )}
+          ) : (
+            <Text className="text-muted">Không liên quan đơn hàng</Text>
+          )}
+        </Descriptions.Item>
 
         <Descriptions.Item label="Tiêu đề"><span className="custom-table-content-strong">{incident.title}</span></Descriptions.Item>
         <Descriptions.Item label="Loại sự cố">{translateIncidentType(incident.incidentType)}</Descriptions.Item>
