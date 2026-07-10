@@ -50,11 +50,20 @@ public class IncidentReportUtils {
     public static String translateIncidentType(IncidentType value) {
         if (value == null) return "";
         return switch (value) {
-            case RECIPIENT_NOT_AVAILABLE -> "Người nhận không có mặt";
-            case WRONG_ADDRESS -> "Sai địa chỉ";
-            case PACKAGE_DAMAGED -> "Hàng bị hỏng";
-            case RECIPIENT_REFUSED -> "Người nhận từ chối";
-            case SECURITY_ISSUE -> "Vấn đề an ninh";
+            case DAMAGED_PARCEL -> "Hàng hóa bị hư hỏng";
+            case LOST_PARCEL -> "Hàng hóa bị thất lạc";
+            case COD_DISPUTE -> "Tranh chấp COD";
+            case CUSTOMER_CONFLICT -> "Tranh chấp với khách hàng";
+            case SAFETY_INCIDENT -> "Sự cố an toàn";
+            case VEHICLE_BREAKDOWN -> "Phương tiện hư hỏng";
+            case TRAFFIC_ACCIDENT -> "Tai nạn giao thông";
+            case SYSTEM_ERROR -> "Lỗi hệ thống";
+            case BARCODE_SCAN_ERROR -> "Lỗi quét mã vận đơn";
+            case WRONG_ORDER_ASSIGNMENT -> "Phân công sai đơn hàng";
+            case OFFICE_OPERATION_ISSUE -> "Sự cố tại bưu cục";
+            case DELIVERY_EXCEPTION -> "Sự cố giao hàng bất thường";
+            case PICKUP_EXCEPTION -> "Sự cố lấy hàng bất thường";
+            case RETURN_EXCEPTION -> "Sự cố hoàn hàng";
             case OTHER -> "Khác";
             default -> value.name();
         };

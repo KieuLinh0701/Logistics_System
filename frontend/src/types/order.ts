@@ -47,9 +47,21 @@ export interface AdminOrder {
     status: string;
     failReason?: string | null;
     note?: string | null;
+    proofImageUrl?: string | null;
     attemptedAt: string;
     shipperName?: string | null;
   }
+
+export interface DeliveryAttempt {
+    attemptType: string;
+    attemptNumber: number;
+    status: string;
+    failReason?: string | null;
+    note?: string | null;
+    proofImageUrl?: string | null;
+    attemptedAt: string;
+    shipperName?: string | null;
+}
 
 export interface Order {
     id: number;
@@ -110,6 +122,7 @@ export interface Order {
     orderProducts: OrderProduct[];
     orderHistories: OrderHistory[];
     pickupAttempts?: PickupAttempt[];
+    deliveryAttempts?: DeliveryAttempt[];
     maxPickupAttempts?: number;
     employeeCode: string;
     userCode: string;

@@ -24,7 +24,9 @@ import {
     type OrderPickupType,
     type OrderStatus,
     translatePickupAttemptStatus,
-    translatePickupFailReason
+    translatePickupFailReason,
+    translateDeliveryFailReason,
+    translateDeliveryAttemptType
 } from "../../../../utils/orderUtils";
 import OfficeInfo from "./components/OfficeInfo";
 import ConfirmModal from "../../../common/ConfirmModal";
@@ -317,12 +319,74 @@ const UserOrderDetail: React.FC = () => {
                                         {attempt.attemptedAt ? new Date(attempt.attemptedAt).toLocaleString("vi-VN") : ""}
                                         {attempt.shipperName ? ` - ${attempt.shipperName}` : ""}
                                     </div>
+                                    {attempt.proofImageUrl && (
+                                        <div style={{ marginTop: 8 }}>
+                                            <span style={{ fontSize: 13, color: "#666", marginRight: 8 }}>Ảnh minh chứng:</span>
+                                            <div style={{ marginTop: 4 }}>
+                                                <img
+                                                    src={attempt.proofImageUrl}
+                                                    alt="Ảnh minh chứng"
+                                                    style={{ maxWidth: 200, maxHeight: 150, borderRadius: 8, cursor: "pointer", border: "1px solid #e5e7eb" }}
+                                                    onClick={() => {
+                                                        window.open(attempt.proofImageUrl!, "_blank");
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ),
                         }))}
                     />
                 </div>
             )}
+
+            {order.deliveryAttempts && order.deliveryAttempts.length !== 0 && (
+                <div className="order-detail-card">
+                    <Title level={5} className="order-detail-card-title order-detail-card-title-main">
+                        Lịch sử giao hàng
+                    </Title>
+                    <Timeline
+                        items={order.deliveryAttempts.map((attempt) => ({
+                            color: attempt.status === "SUCCESS" ? "green" : "red",
+                            children: (
+                                <div>
+                                    <div>
+                                        <strong>{translateDeliveryAttemptType(attempt.attemptType)}</strong>
+                                    </div>
+                                    <div>
+                                        Lần thử #{attempt.attemptNumber} - {translatePickupAttemptStatus(attempt.status)}
+                                    </div>
+                                    <div>
+                                        {attempt.failReason ? translateDeliveryFailReason(attempt.failReason) : ""}
+                                        {attempt.note ? ` - ${attempt.note}` : ""}
+                                    </div>
+                                    <div>
+                                        {attempt.attemptedAt ? new Date(attempt.attemptedAt).toLocaleString("vi-VN") : ""}
+                                        {attempt.shipperName ? ` - ${attempt.shipperName}` : ""}
+                                    </div>
+                                    {attempt.proofImageUrl && (
+                                        <div style={{ marginTop: 8 }}>
+                                            <span style={{ fontSize: 13, color: "#666", marginRight: 8 }}>Ảnh minh chứng:</span>
+                                            <div style={{ marginTop: 4 }}>
+                                                <img
+                                                    src={attempt.proofImageUrl}
+                                                    alt="Ảnh minh chứng"
+                                                    style={{ maxWidth: 200, maxHeight: 150, borderRadius: 8, cursor: "pointer", border: "1px solid #e5e7eb" }}
+                                                    onClick={() => {
+                                                        window.open(attempt.proofImageUrl!, "_blank");
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ),
+                        }))}
+                    />
+                </div>
+            )}
+
             <OrderPayment order={order}/>
             <OrderActions
                 canEdit={canEdit}

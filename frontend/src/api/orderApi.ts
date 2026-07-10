@@ -312,7 +312,7 @@ const orderApi = {
         return res.data;
     },
 
-    async recordPickupAttempt(orderId: number, payload: { status: string; failReason?: string; note?: string }) {
+    async recordPickupAttempt(orderId: number, payload: { status: string; failReason?: string; note?: string; proofImageUrl?: string }) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/pickup-attempt`, payload);
         return res.data;
     },

@@ -65,11 +65,20 @@ const getStatusText = (status: string) => {
 
 const getIncidentTypeText = (incidentType: string) => {
   switch (incidentType?.toUpperCase()) {
-    case "RECIPIENT_NOT_AVAILABLE": return "Người nhận không có mặt";
-    case "WRONG_ADDRESS": return "Sai địa chỉ";
-    case "PACKAGE_DAMAGED": return "Hàng hóa bị hỏng";
-    case "RECIPIENT_REFUSED": return "Người nhận từ chối";
-    case "SECURITY_ISSUE": return "Vấn đề an ninh";
+    case "DAMAGED_PARCEL": return "Hàng hóa bị hư hỏng";
+    case "LOST_PARCEL": return "Hàng hóa bị thất lạc";
+    case "COD_DISPUTE": return "Tranh chấp COD";
+    case "CUSTOMER_CONFLICT": return "Tranh chấp với khách hàng";
+    case "SAFETY_INCIDENT": return "Sự cố an toàn";
+    case "VEHICLE_BREAKDOWN": return "Phương tiện hư hỏng";
+    case "TRAFFIC_ACCIDENT": return "Tai nạn giao thông";
+    case "SYSTEM_ERROR": return "Lỗi hệ thống";
+    case "BARCODE_SCAN_ERROR": return "Lỗi quét mã vận đơn";
+    case "WRONG_ORDER_ASSIGNMENT": return "Phân công sai đơn hàng";
+    case "OFFICE_OPERATION_ISSUE": return "Sự cố tại bưu cục";
+    case "DELIVERY_EXCEPTION": return "Sự cố giao hàng bất thường";
+    case "PICKUP_EXCEPTION": return "Sự cố lấy hàng bất thường";
+    case "RETURN_EXCEPTION": return "Sự cố hoàn hàng";
     case "OTHER": return "Khác";
     default: return incidentType;
   }
@@ -139,7 +148,7 @@ const IncidentReportsTable: React.FC<IncidentReportsTableProps> = ({ reports, lo
       width: 140,
       render: (text: string) => (
         <Text strong className="shipper-table-strong" style={{ fontSize: "13px" }}>
-          {text || "—"}
+          {text || "Không liên quan đơn hàng"}
         </Text>
       ),
     },

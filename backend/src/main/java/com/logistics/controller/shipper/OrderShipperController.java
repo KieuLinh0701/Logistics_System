@@ -261,7 +261,7 @@ public class OrderShipperController {
             params = {"orderId"}
     )
     public ResponseEntity<ApiResponse<Map<String, Object>>> createIncident(
-            @RequestParam Integer orderId,
+            @RequestParam(required = false) Integer orderId,
             @RequestParam(required = false) String incidentType,
             @RequestParam String title,
             @RequestParam(required = false) String description,

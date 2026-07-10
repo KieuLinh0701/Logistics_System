@@ -87,25 +87,6 @@ const ReturnOrdersTab = forwardRef<TabRefreshHandle, ReturnOrdersTabProps>(
         render: (text: string) => <span className="tracking-number-cell table-strong">{text}</span>,
       },
       {
-        title: "Người gửi (Shop)",
-        key: "sender",
-        render: (record: ShipperOrder) => {
-          const senderName = (record as any).senderName || "";
-          const senderPhone = (record as any).senderPhone || "";
-          const senderAddress = (record as any).senderAddress || "";
-          const fullAddress = typeof senderAddress === "string"
-            ? senderAddress
-            : (senderAddress as any)?.fullAddress || "";
-          return (
-            <Space direction="vertical" size={2}>
-              <Text strong className="table-strong">{senderName}</Text>
-              <Text className="table-muted">{senderPhone}</Text>
-              <Text className="table-muted">{fullAddress}</Text>
-            </Space>
-          );
-        },
-      },
-      {
         title: "Người nhận hoàn",
         key: "recipient",
         render: (record: ShipperOrder) => {

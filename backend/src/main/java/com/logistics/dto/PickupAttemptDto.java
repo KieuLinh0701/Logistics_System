@@ -16,6 +16,7 @@ public class PickupAttemptDto {
     private String status;
     private String failReason;
     private String note;
+    private String proofImageUrl;
     private LocalDateTime attemptedAt;
     private String shipperName;
 }

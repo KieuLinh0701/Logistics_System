@@ -229,7 +229,7 @@ public class IncidentReportManagerServiceImpl implements IncidentReportManagerSe
                 row.createCell(4).setCellValue(ir.getTitle() != null ? ir.getTitle() : "");
                 row.createCell(5).setCellValue(
                         ir.getOrder() != null && ir.getOrder().getTrackingNumber() != null
-                                ? ir.getOrder().getTrackingNumber() : "N/A");
+                                ? ir.getOrder().getTrackingNumber() : "Không liên quan đơn hàng");
                 row.createCell(6).setCellValue(ir.getCreatedAt() != null ? ir.getCreatedAt().format(dtf) : "");
                 row.createCell(7).setCellValue(ir.getUpdatedAt() != null ? ir.getUpdatedAt().format(dtf) : "N/A");
                 row.createCell(8).setCellValue(ir.getHandledAt() != null ? ir.getHandledAt().format(dtf) : "N/A");

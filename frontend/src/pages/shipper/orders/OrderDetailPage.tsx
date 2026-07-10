@@ -72,6 +72,8 @@ const ShipperOrderDetail: React.FC = () => {
   const [returnDeliveryProofImagePreview, setReturnDeliveryProofImagePreview] = useState<string | null>(null);
   const [returnFailedModal, setReturnFailedModal] = useState(false);
   const [returnFailedForm] = Form.useForm();
+  const [returnFailedProofImageFile, setReturnFailedProofImageFile] = useState<File | null>(null);
+  const [returnFailedProofImagePreview, setReturnFailedProofImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [deliveryForm] = Form.useForm();
   const [codForm] = Form.useForm();
@@ -357,6 +359,8 @@ const ShipperOrderDetail: React.FC = () => {
 
   const handleOpenReturnFailedModal = () => {
     returnFailedForm.resetFields();
+    setReturnFailedProofImageFile(null);
+    setReturnFailedProofImagePreview(null);
     setReturnFailedModal(true);
   };
 
@@ -364,12 +368,16 @@ const ShipperOrderDetail: React.FC = () => {
     if (!order) return;
     try {
       setLoading(true);
+      const proofImageUrl = await uploadProofImageIfSelected(returnFailedProofImageFile);
       await orderApi.markReturnFailedFinal(order.id, {
         failReason: values.failReason,
         notes: values.note,
+        proofImageUrl: proofImageUrl || undefined,
       });
       message.success("Đã ghi nhận giao hoàn thất bại");
       setReturnFailedModal(false);
+      setReturnFailedProofImageFile(null);
+      setReturnFailedProofImagePreview(null);
       returnFailedForm.resetFields();
       fetchOrderDetail();
       dispatchShipperRouteRefresh();
@@ -445,14 +453,19 @@ const ShipperOrderDetail: React.FC = () => {
     }
   };
 
-  const handleSubmitPickupFailed = async (values: { failReason: string; note?: string }) => {
+  const handleSubmitPickupFailed = async (values: { failReason: string; note?: string; file?: File | null }) => {
     if (!order) return;
     try {
       setLoading(true);
+      let proofImageUrl: string | undefined;
+      if (values.file) {
+        proofImageUrl = await uploadProofImageIfSelected(values.file);
+      }
       await orderApi.recordPickupAttempt(order.id, {
         status: "FAILED",
         failReason: values.failReason,
         note: values.note,
+        proofImageUrl: proofImageUrl || undefined,
       });
       message.success("Đã ghi nhận lấy hàng thất bại");
       setPickupFailedModalOpen(false);
@@ -541,6 +554,11 @@ const ShipperOrderDetail: React.FC = () => {
   const attachReturnDeliveryProofImage = async (file: File) => {
     setReturnDeliveryProofImageFile(file);
     setReturnDeliveryProofImagePreview(await readFilePreview(file));
+  };
+
+  const attachReturnFailedProofImage = async (file: File) => {
+    setReturnFailedProofImageFile(file);
+    setReturnFailedProofImagePreview(await readFilePreview(file));
   };
 
   const removePickedUpImage = () => {
@@ -1277,33 +1295,44 @@ const ShipperOrderDetail: React.FC = () => {
             handleSubmitFailedDelivery(values);
           }}
         >
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          <Alert
+            message="Giao hàng không thành công"
+            description="Đơn hàng sẽ được đánh dấu là giao thất bại và chuyển sang quy trình xử lý tiếp theo."
+            type="error"
+            showIcon
+            style={{
+              marginBottom: 24,
+              backgroundColor: "#fff2f0",
+              borderColor: "#ffccc7",
+            }}
+          />
+          <div style={{ marginBottom: 24 }}>
             {renderImagePicker({
               file: deliveryProofImageFile,
               preview: deliveryProofImagePreview,
               onChange: attachDeliveryProofImage,
               onRemove: removeDeliveryProofImage,
-              label: "Ảnh minh chứng giao thất bại",
+              label: "Ảnh minh chứng giao thất bại (tuỳ chọn)",
             })}
-            <Form.Item
-              name="reason"
-              label="Lý do thất bại"
-              rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
-            >
-              <Select placeholder="Chọn lý do thất bại">
-                <Select.Option value="Khách không có mặt">Khách không có mặt</Select.Option>
-                <Select.Option value="Không liên lạc được">Không liên lạc được</Select.Option>
-                <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
-                <Select.Option value="Khách từ chối nhận">Khách từ chối nhận</Select.Option>
-                <Select.Option value="Khách hẹn giao lại">Khách hẹn giao lại</Select.Option>
-                <Select.Option value="Khác">Khác</Select.Option>
-              </Select>
-            </Form.Item>
+          </div>
+          <Form.Item
+            name="reason"
+            label="Lý do thất bại"
+            rules={[{ required: true, message: "Vui lòng chọn lý do thất bại" }]}
+          >
+            <Select placeholder="Chọn lý do thất bại">
+              <Select.Option value="Khách không có mặt">Khách không có mặt</Select.Option>
+              <Select.Option value="Không liên lạc được">Không liên lạc được</Select.Option>
+              <Select.Option value="Sai địa chỉ">Sai địa chỉ</Select.Option>
+              <Select.Option value="Khách từ chối nhận">Khách từ chối nhận</Select.Option>
+              <Select.Option value="Khách hẹn giao lại">Khách hẹn giao lại</Select.Option>
+              <Select.Option value="Khác">Khác</Select.Option>
+            </Select>
+          </Form.Item>
 
-            <Form.Item name="detail" label="Chi tiết (nếu có)">
-              <Input.TextArea rows={3} placeholder="Mô tả chi tiết lý do (tuỳ chọn)" />
-            </Form.Item>
-          </Space>
+          <Form.Item name="detail" label="Chi tiết (nếu có)">
+            <Input.TextArea rows={3} placeholder="Mô tả chi tiết lý do (tuỳ chọn)" />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -1485,6 +1514,8 @@ const ShipperOrderDetail: React.FC = () => {
         onCancel={() => {
           setReturnFailedModal(false);
           returnFailedForm.resetFields();
+          setReturnFailedProofImageFile(null);
+          setReturnFailedProofImagePreview(null);
         }}
         footer={null}
         width={680}
@@ -1505,15 +1536,28 @@ const ShipperOrderDetail: React.FC = () => {
               borderColor: "#ffccc7",
             }}
           />
+          <div style={{ marginBottom: 24 }}>
+            {renderImagePicker({
+              file: returnFailedProofImageFile,
+              preview: returnFailedProofImagePreview,
+              onChange: attachReturnFailedProofImage,
+              onRemove: () => {
+                setReturnFailedProofImageFile(null);
+                setReturnFailedProofImagePreview(null);
+              },
+              label: "Ảnh minh chứng giao hoàn thất bại (tuỳ chọn)",
+            })}
+          </div>
           <Form.Item
             name="failReason"
             label="Lý do"
             rules={[{ required: true, message: "Vui lòng chọn lý do" }]}
           >
             <Select placeholder="Chọn lý do giao hoàn thất bại">
-              <Select.Option value="RECIPIENT_NOT_AVAILABLE">Không liên lạc được</Select.Option>
-              <Select.Option value="WRONG_ADDRESS">Sai địa chỉ</Select.Option>
-              <Select.Option value="RECIPIENT_REFUSED">Khách từ chối nhận</Select.Option>
+              <Select.Option value="SENDER_NOT_AVAILABLE">Không liên lạc được người gửi</Select.Option>
+              <Select.Option value="SENDER_REFUSED">Người gửi từ chối nhận lại</Select.Option>
+              <Select.Option value="RETURN_ADDRESS_INVALID">Sai địa chỉ hoàn trả</Select.Option>
+              <Select.Option value="RETURN_RESCHEDULE_REQUESTED">Người gửi hẹn giao lại sau</Select.Option>
               <Select.Option value="OTHER">Khác</Select.Option>
             </Select>
           </Form.Item>
@@ -1531,6 +1575,8 @@ const ShipperOrderDetail: React.FC = () => {
               <Button onClick={() => {
                 setReturnFailedModal(false);
                 returnFailedForm.resetFields();
+                setReturnFailedProofImageFile(null);
+                setReturnFailedProofImagePreview(null);
               }}>
                 Hủy
               </Button>

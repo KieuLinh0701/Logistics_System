@@ -357,3 +357,41 @@ export const translatePaymentSubmissionStatus = (value: string): string => {
             return value;
     }
 };
+
+export const translateDeliveryFailReason = (value: string): string => {
+    switch (value) {
+        case 'RECIPIENT_NOT_AVAILABLE':
+            return 'Người nhận không có mặt';
+        case 'NO_RESPONSE':
+            return 'Không liên lạc được';
+        case 'WRONG_ADDRESS':
+            return 'Sai địa chỉ';
+        case 'RECIPIENT_REFUSED':
+            return 'Người nhận từ chối';
+        case 'RESCHEDULE_REQUESTED':
+            return 'Hẹn giao lại';
+        case 'SENDER_NOT_AVAILABLE':
+            return 'Người gửi không có mặt';
+        case 'SENDER_REFUSED':
+            return 'Người gửi từ chối nhận lại';
+        case 'RETURN_ADDRESS_INVALID':
+            return 'Sai địa chỉ hoàn trả';
+        case 'RETURN_RESCHEDULE_REQUESTED':
+            return 'Người gửi hẹn giao lại sau';
+        case 'OTHER':
+            return 'Khác';
+        default:
+            return value;
+    }
+};
+
+export const translateDeliveryAttemptType = (value: string): string => {
+    switch (value) {
+        case 'DELIVERY':
+            return 'Giao cho người nhận';
+        case 'RETURN_DELIVERY':
+            return 'Giao hoàn cho người gửi';
+        default:
+            return value;
+    }
+};

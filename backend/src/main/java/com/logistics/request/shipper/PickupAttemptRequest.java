@@ -7,4 +7,5 @@ public class PickupAttemptRequest {
     private String status;
     private String failReason;
     private String note;
+    private String proofImageUrl;
 }
