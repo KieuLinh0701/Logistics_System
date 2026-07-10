@@ -815,6 +815,17 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
+        // Chặn nhận đơn khi shipper đang có shipment DELIVERY IN_TRANSIT.
+        boolean hasInTransitDeliveryShipment = !shipmentRepository
+                .findActiveDeliveryShipmentsByEmployee(employee.getId())
+                .stream()
+                .filter(s -> s.getStatus() == com.logistics.enums.ShipmentStatus.IN_TRANSIT)
+                .toList()
+                .isEmpty();
+        if (hasInTransitDeliveryShipment) {
+            throw new AppException(OrderErrorCode.ORDER_IN_TRANSIT_SHIPMENT_EXISTS);
+        }
+
         Order order = orderRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
 

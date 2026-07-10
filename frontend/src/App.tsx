@@ -43,6 +43,7 @@ import ManagerShipperAssign from "./pages/manager/employee/assign/ManagerShipper
 import ManagerShipments from "./pages/manager/shipment/ManagerShipments";
 import ManagerShipperAssignmentHistory from "./pages/manager/employee/history-assign/ManagerShipperAssignmentHistories";
 import ManagerIncidentReports from "./pages/manager/order/incident/ManagerIncidentReports";
+import ManagerAttemptHistory from "./pages/manager/order/attempt-history/ManagerAttemptHistory";
 import UserOrderDetail from "./pages/user/order/detail/UserOrderDetail";
 import ManagerAuditLogsByEmployee from "./pages/manager/employee/audit-logs/ManagerAuditLogsByEmployee.tsx";
 import ManagerAiRouteOptimization from "./pages/manager/ai-route/ManagerAiRouteOptimization";
@@ -251,6 +252,8 @@ const App: React.FC = () => {
                             allowedPermissionGroups={["group_manager"]}><ManagerShipperAssignmentHistory/></PrivateRoute>}/>
                         <Route path="/orders/incidents" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><ManagerIncidentReports/></PrivateRoute>}/>
+                        <Route path="/orders/attempt-history" element={<PrivateRoute
+                            allowedPermissionGroups={["group_manager"]}><ManagerAttemptHistory/></PrivateRoute>}/>
                         <Route path="/leaves" element={<PrivateRoute
                             allowedPermissionGroups={["group_manager"]}><LeaveManagementPage/></PrivateRoute>}/>
                         <Route path="/manager/internal-chat" element={<PrivateRoute

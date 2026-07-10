@@ -42,7 +42,22 @@ const UnassignedOrdersPage: React.FC = () => {
       dispatchShipperRouteRefresh();
       fetchUnassigned(page, limit);
     } catch (err: any) {
-      message.error(err?.message || "Lỗi khi nhận đơn");
+      const serverMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message;
+
+      if (
+        typeof serverMessage === "string" &&
+        serverMessage.includes("đang thực hiện một chuyến giao hàng")
+      ) {
+        message.warning(
+          "Bạn đang thực hiện một chuyến giao hàng. Vui lòng kết thúc chuyến hiện tại trước khi nhận thêm đơn tại bưu cục."
+        );
+        return;
+      }
+
+      message.error(serverMessage || "Lỗi khi nhận đơn");
     }
   };
 
