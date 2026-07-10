@@ -21,10 +21,11 @@ public interface DeliveryAttemptRepository extends JpaRepository<DeliveryAttempt
     List<DeliveryAttempt> findByOrderIdAndAttemptTypeOrderByAttemptNumberDesc(Integer orderId, DeliveryAttemptType attemptType);
     List<DeliveryAttempt> findByOrderIdAndAttemptTypeAndStatus(Integer orderId, DeliveryAttemptType attemptType, DeliveryAttemptStatus status);
 
-    @Query("SELECT da FROM DeliveryAttempt da " +
+    @Query("SELECT DISTINCT da FROM DeliveryAttempt da " +
             "JOIN FETCH da.order o " +
             "JOIN FETCH da.shipper s " +
-            "WHERE (o.fromOffice.id = :officeId OR o.currentOffice.id = :officeId) " +
+            "JOIN s.employees e " +
+            "WHERE e.office.id = :officeId " +
             "AND (:from IS NULL OR da.attemptedAt >= :from) " +
             "AND (:to IS NULL OR da.attemptedAt <= :to) " +
             "ORDER BY da.attemptedAt DESC")
