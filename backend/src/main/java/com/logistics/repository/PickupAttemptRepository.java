@@ -13,10 +13,11 @@ public interface PickupAttemptRepository extends JpaRepository<PickupAttempt, Lo
     long countByOrderIdAndStatus(Integer orderId, PickupAttemptStatus status);
     List<PickupAttempt> findByOrderIdOrderByAttemptedAtDesc(Integer orderId);
 
-    @Query("SELECT pa FROM PickupAttempt pa " +
+    @Query("SELECT DISTINCT pa FROM PickupAttempt pa " +
             "JOIN FETCH pa.order o " +
             "JOIN FETCH pa.shipper s " +
-            "WHERE (o.fromOffice.id = :officeId OR o.currentOffice.id = :officeId) " +
+            "JOIN s.employees e " +
+            "WHERE e.office.id = :officeId " +
             "AND (:from IS NULL OR pa.attemptedAt >= :from) " +
             "AND (:to IS NULL OR pa.attemptedAt <= :to) " +
             "ORDER BY pa.attemptedAt DESC")
