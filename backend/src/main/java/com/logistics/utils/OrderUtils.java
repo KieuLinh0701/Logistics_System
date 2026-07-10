@@ -170,6 +170,8 @@ public class OrderUtils {
 
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn trả";
+            case RETURN_READY_FOR_PICKUP -> "Sẵn sàng lấy hàng hoàn";
+            case RETURN_PICKED_UP -> "Đã lấy hàng hoàn lên xe";
             case RETURN_AT_ORIGIN_OFFICE -> "Đã hoàn về bưu cục xuất phát";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";

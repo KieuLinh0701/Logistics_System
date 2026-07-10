@@ -40,6 +40,10 @@ const getStatusColor = (status: string) => {
       return "error";
     case "RETURNING":
       return "warning";
+    case "RETURN_READY_FOR_PICKUP":
+      return "gold";
+    case "RETURN_PICKED_UP":
+      return "cyan";
     case "RETURNED":
       return "gold";
     default:
@@ -56,6 +60,8 @@ const getStatusText = (status: string) => {
     case "FAILED_DELIVERY": return "Giao thất bại";
     case "RETURNING": return "Đang hoàn trả";
     case "RETURN_AT_ORIGIN_OFFICE": return "Đã hoàn về bưu cục gốc";
+    case "RETURN_READY_FOR_PICKUP": return "Sẵn sàng lấy hàng hoàn";
+    case "RETURN_PICKED_UP": return "Đã lấy hàng hoàn lên xe";
     case "RETURN_RETRY": return "Hoàn lại";
     case "RETURN_FAILED_FINAL": return "Hoàn thất bại";
     case "RETURNED": return "Đã hoàn";

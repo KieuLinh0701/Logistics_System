@@ -144,6 +144,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     || status == OrderStatus.RETURN_FAILED_FINAL
                     || status == OrderStatus.AT_ORIGIN_OFFICE
                     || status == OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                    || status == OrderStatus.RETURN_READY_FOR_PICKUP
+                    || status == OrderStatus.RETURN_PICKED_UP
                     || status == OrderStatus.CANCELLED;
         }
         // DELIVERY: completed = đã xử lý xong điểm giao (thành công hoặc thất bại tạm thời)
@@ -286,7 +288,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         }
         return switch (status) {
             case DELIVERED, AT_DEST_OFFICE, RETURNED,
-                 RETURN_AT_ORIGIN_OFFICE, AT_ORIGIN_OFFICE -> RouteStopStatus.COMPLETED;
+                 RETURN_AT_ORIGIN_OFFICE, RETURN_READY_FOR_PICKUP,
+                 RETURN_PICKED_UP, AT_ORIGIN_OFFICE -> RouteStopStatus.COMPLETED;
             case DELIVERY_FAILED_FINAL, RETURN_FAILED_FINAL,
                  PICKUP_FAILED_FINAL, CANCELLED -> RouteStopStatus.FAILED;
             default -> null;
@@ -421,7 +424,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 valid = order.getStatus() == OrderStatus.PICKING_UP
                         || order.getStatus() == OrderStatus.READY_FOR_PICKUP;
             } else if (stopType == RouteStopType.RETURN_TO_OFFICE) {
-                valid = true;
+                valid = order.getStatus() == OrderStatus.RETURN_PICKED_UP
+                        || order.getStatus() == OrderStatus.RETURNING;
             } else {
                 valid = order.getStatus() == OrderStatus.PICKED_UP;
             }
@@ -446,6 +450,10 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 saveHistory(order, shipment, OrderHistoryActionType.DELIVERING,
                         "Shipper bắt đầu chuyến giao hàng (chuyến " + shipment.getCode() + ")");
             } else if (so.getStopType() == RouteStopType.RETURN_TO_OFFICE) {
+                if (order.getStatus() != OrderStatus.RETURNING) {
+                    order.setStatus(OrderStatus.RETURNING);
+                    orderRepository.save(order);
+                }
                 saveHistory(order, shipment, OrderHistoryActionType.RETURNING,
                         "Shipper bắt đầu chuyến giao trả hàng hoàn (chuyến " + shipment.getCode() + ")");
             } else {
@@ -737,6 +745,26 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     break;
                 }
             }
+        }
+
+        if (stopType == RouteStopType.RETURN_TO_OFFICE) {
+            if (order.getStatus() == OrderStatus.RETURN_PICKED_UP) {
+                return;
+            }
+            if (order.getStatus() != OrderStatus.RETURN_READY_FOR_PICKUP) {
+                throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                        "Đơn hoàn chưa ở trạng thái RETURN_READY_FOR_PICKUP, không thể quét QR.");
+            }
+            order.setStatus(OrderStatus.RETURN_PICKED_UP);
+            if (req != null && req.getPhotoUrl() != null && !req.getPhotoUrl().isBlank()) {
+                order.setPickupProofImageUrl(req.getPhotoUrl());
+            }
+            orderRepository.save(order);
+
+            saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP,
+                    "Shipper xác nhận đã nhận đơn hoàn lên xe (chuyến " + shipment.getCode() + ")");
+            checkAndAutoFinish(shipment);
+            return;
         }
 
         OrderStatus current = order.getStatus();
@@ -1435,20 +1463,30 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         int totalOrders = (shipmentOrders != null) ? shipmentOrders.size() : 0;
 
         if (totalOrders > 0) {
-            // Chỉ tính DELIVERY stops cho logic QR scan và start validation
+            long requiredStopCount = shipmentOrders.stream()
+                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY
+                            || so.getStopType() == RouteStopType.RETURN_TO_OFFICE)
+                    .count();
             long deliveryStopCount = shipmentOrders.stream()
                     .filter(so -> so.getStopType() == RouteStopType.DELIVERY)
                     .count();
             long scannedCount = shipmentOrders.stream()
-                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY)
-                    .filter(so -> so.getOrder() != null && so.getOrder().getStatus() == OrderStatus.PICKED_UP)
+                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY
+                            || so.getStopType() == RouteStopType.RETURN_TO_OFFICE)
+                    .filter(so -> {
+                        OrderStatus os = so.getOrder() != null ? so.getOrder().getStatus() : null;
+                        if (so.getStopType() == RouteStopType.RETURN_TO_OFFICE) {
+                            return os == OrderStatus.RETURN_PICKED_UP
+                                    || os == OrderStatus.RETURNING;
+                        }
+                        return os == OrderStatus.PICKED_UP;
+                    })
                     .count();
-            // isReadyToStart: nếu không có delivery stop nào thì luôn ready (pickup-only shipment)
-            boolean readyToStart = deliveryStopCount == 0 || scannedCount == deliveryStopCount;
+            boolean readyToStart = requiredStopCount == 0 || scannedCount == requiredStopCount;
 
             builder.totalOrders(totalOrders);
-            builder.orderCount((int) deliveryStopCount);
-            builder.totalCount((int) deliveryStopCount);
+            builder.orderCount((int) requiredStopCount);
+            builder.totalCount((int) requiredStopCount);
             builder.scannedCount((int) scannedCount);
             builder.isReadyToStart(readyToStart);
         } else {

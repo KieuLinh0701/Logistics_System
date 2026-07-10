@@ -76,7 +76,7 @@ public interface OrderRepository
             +
             "SUM(CASE WHEN o.status = 'DELIVERING' THEN 1 ELSE 0 END), " +
             "SUM(CASE WHEN o.status = 'DELIVERED' THEN 1 ELSE 0 END), " +
-            "SUM(CASE WHEN o.status = 'RETURNING' THEN 1 ELSE 0 END), " +
+            "SUM(CASE WHEN o.status IN ('RETURNING','RETURN_READY_FOR_PICKUP','RETURN_PICKED_UP') THEN 1 ELSE 0 END), " +
             "SUM(CASE WHEN o.status IN ('RETURNED', 'CANCELLED') THEN 1 ELSE 0 END)) " +
             "FROM Order o WHERE o.user.id = :userId")
     UserOrderStatsDTO getUserOrderStats(@Param("userId") Integer userId);
@@ -163,7 +163,7 @@ public interface OrderRepository
                     SUM(CASE WHEN o.status = 'DELIVERING' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END), 
                     SUM(CASE WHEN o.status = 'DELIVERED' AND o.toOffice.id = :officeId THEN 1 ELSE 0 END), 
                     SUM(CASE WHEN o.status = 'RETURNED' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END), 
-                    SUM(CASE WHEN o.status = 'RETURNING' AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END) 
+                    SUM(CASE WHEN o.status IN ('RETURNING','RETURN_READY_FOR_PICKUP','RETURN_PICKED_UP') AND o.fromOffice.id = :officeId THEN 1 ELSE 0 END) 
                 )
                 FROM Order o
                 WHERE o.fromOffice.id = :officeId OR o.toOffice.id = :officeId

@@ -23,6 +23,10 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case "RETURN_AT_ORIGIN_OFFICE":
       return "warning";
+    case "RETURN_READY_FOR_PICKUP":
+      return "gold";
+    case "RETURN_PICKED_UP":
+      return "cyan";
     case "RETURNING":
       return "processing";
     case "RETURN_RETRY":
@@ -40,6 +44,10 @@ const getStatusText = (status: string) => {
   switch (status) {
     case "RETURN_AT_ORIGIN_OFFICE":
       return "Chờ nhận hoàn trả";
+    case "RETURN_READY_FOR_PICKUP":
+      return "Sẵn sàng lấy hàng hoàn";
+    case "RETURN_PICKED_UP":
+      return "Đã lấy hàng hoàn lên xe";
     case "RETURNING":
       return "Đang hoàn trả";
     case "RETURN_RETRY":

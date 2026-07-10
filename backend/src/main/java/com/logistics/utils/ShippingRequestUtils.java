@@ -105,7 +105,9 @@ public class ShippingRequestUtils {
                         OrderStatus.IN_TRANSIT,
                         OrderStatus.AT_DEST_OFFICE,
                         OrderStatus.DELIVERING,
-                        OrderStatus.RETURNING).contains(orderStatus)) {
+                        OrderStatus.RETURNING,
+                        OrderStatus.RETURN_READY_FOR_PICKUP,
+                        OrderStatus.RETURN_PICKED_UP).contains(orderStatus)) {
                     return toOffice;
                 }
                 break;
@@ -119,7 +121,9 @@ public class ShippingRequestUtils {
                 if (EnumSet.of(
                         OrderStatus.AT_DEST_OFFICE,
                         OrderStatus.DELIVERING,
-                        OrderStatus.RETURNING).contains(orderStatus)) {
+                        OrderStatus.RETURNING,
+                        OrderStatus.RETURN_READY_FOR_PICKUP,
+                        OrderStatus.RETURN_PICKED_UP).contains(orderStatus)) {
                     return toOffice;
                 }
                 break;

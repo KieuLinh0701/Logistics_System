@@ -428,6 +428,8 @@ public class ShipmentOrderManagerServiceImpl implements ShipmentOrderManagerServ
         Set<OrderStatus> returnStatuses = Set.of(
                 OrderStatus.RETURNING,
                 OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+                OrderStatus.RETURN_READY_FOR_PICKUP,
+                OrderStatus.RETURN_PICKED_UP,
                 OrderStatus.RETURN_RETRY,
                 OrderStatus.RETURNED
         );

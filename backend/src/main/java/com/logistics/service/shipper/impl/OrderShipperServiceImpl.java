@@ -546,6 +546,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // Chỉ hiển thị các status hoàn trả
             predicates.add(root.get("status").in(
                 OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+                OrderStatus.RETURN_READY_FOR_PICKUP,
+                OrderStatus.RETURN_PICKED_UP,
                 OrderStatus.RETURNING,
                 OrderStatus.RETURN_RETRY
             ));
@@ -882,8 +884,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 }
             }
 
-            // Gán shipper và chuyển status sang RETURNING - shipper đã nhận đơn giao trả
-            order.setStatus(OrderStatus.RETURNING);
+            order.setStatus(OrderStatus.RETURN_READY_FOR_PICKUP);
             order.setEmployee(employee);
             orderRepository.save(order);
 
@@ -1093,9 +1094,12 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             return;
         }
         if (newStatus == OrderStatus.DELIVERING) {
-            if (order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
+            if (order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                    || order.getStatus() == OrderStatus.RETURN_READY_FOR_PICKUP
+                    || order.getStatus() == OrderStatus.RETURN_PICKED_UP
+                    || order.getStatus() == OrderStatus.RETURNING) {
                 throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
-                        "Không thể bắt đầu giao hàng: đơn đang ở trạng thái hoàn về bưu cục gốc. Vui lòng sử dụng chức năng giao trả hàng hoàn.");
+                        "Không thể bắt đầu giao hàng: đơn đang ở trạng thái hoàn. Vui lòng sử dụng chức năng giao trả hàng hoàn.");
             }
             // Theo rule mới: PICKED_UP -> DELIVERING, validate trong service
             shipmentDeliveryService.startDelivery(id);
@@ -1675,6 +1679,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     OrderStatus.AT_DEST_OFFICE,
                     OrderStatus.DELIVERY_FAILED_FINAL,
                     OrderStatus.RETURNING,
+                    OrderStatus.RETURN_READY_FOR_PICKUP,
+                    OrderStatus.RETURN_PICKED_UP,
                     OrderStatus.RETURNED
             ));
             predicates.add(cb.equal(root.get("employee").get("id"), employee.getId()));
@@ -3135,7 +3141,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             OrderStatus.RETURN_FAILED_FINAL,
             OrderStatus.AT_DEST_OFFICE,
             OrderStatus.AT_ORIGIN_OFFICE,
-            OrderStatus.RETURN_AT_ORIGIN_OFFICE
+            OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+            OrderStatus.RETURN_READY_FOR_PICKUP,
+            OrderStatus.RETURN_PICKED_UP
     );
 
     private boolean isOrderTerminalForAi(OrderStatus status) {
@@ -3436,6 +3444,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     || os == OrderStatus.PICKING_UP
                     || os == OrderStatus.RETURNING) {
                 stopStatus = "in_progress";
+            } else if (os == OrderStatus.RETURN_READY_FOR_PICKUP
+                    || os == OrderStatus.RETURN_PICKED_UP) {
+                stopStatus = "loaded";
             } else if (os == OrderStatus.PICKUP_RETRY) {
                 // PICKUP_RETRY: shipper đã xử lý xong lần lấy hàng này
                 // Stop phải biến mất khỏi route, đơn vẫn ở tab "Yêu cầu lấy hàng" để retry sau
@@ -3621,7 +3632,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     OrderStatus.CANCELLED,
                     OrderStatus.RETURNED,
                     OrderStatus.AT_ORIGIN_OFFICE,
-                    OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                    OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+                    OrderStatus.RETURN_READY_FOR_PICKUP,
+                    OrderStatus.RETURN_PICKED_UP
             );
 
             List<ShipmentOrder> eligible = new ArrayList<>();

@@ -44,6 +44,8 @@ export const canPrintManagerOrder = (value: string) => {
         "DELIVERY_RETRY",
         "RETURNING",
         "RETURN_AT_ORIGIN_OFFICE",
+        "RETURN_READY_FOR_PICKUP",
+        "RETURN_PICKED_UP",
         "RETURN_RETRY"
     ].includes(value)
 };
@@ -172,6 +174,8 @@ export const ORDER_STATUS = [
     'CANCELLED',
     'RETURNING',
     'RETURN_AT_ORIGIN_OFFICE',
+    'RETURN_READY_FOR_PICKUP',
+    'RETURN_PICKED_UP',
     'RETURN_RETRY',
     'RETURN_FAILED_FINAL',
     'RETURNED',
@@ -223,6 +227,10 @@ export const translateOrderStatus = (value: string): string => {
             return 'Đang hoàn trả';
         case 'RETURN_AT_ORIGIN_OFFICE':
             return 'Đã hoàn về bưu cục gốc';
+        case 'RETURN_READY_FOR_PICKUP':
+            return 'Sẵn sàng lấy hàng hoàn';
+        case 'RETURN_PICKED_UP':
+            return 'Đã lấy hàng hoàn lên xe';
         case 'RETURN_RETRY':
             return 'Hoàn lại';
         case 'RETURN_FAILED_FINAL':
