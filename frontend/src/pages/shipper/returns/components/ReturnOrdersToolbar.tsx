@@ -41,6 +41,8 @@ const ReturnOrdersToolbar: React.FC<ReturnOrdersToolbarProps> = ({
           onChange={onStatusChange}
         >
           <Option value="RETURN_AT_ORIGIN_OFFICE">Chờ nhận hoàn trả</Option>
+          <Option value="RETURN_READY_FOR_PICKUP">Sẵn sàng lấy hàng hoàn</Option>
+          <Option value="RETURN_PICKED_UP">Đã lấy hàng hoàn lên xe</Option>
           <Option value="RETURNING">Đang hoàn trả</Option>
           <Option value="RETURN_RETRY">Hoàn lại</Option>
         </Select>

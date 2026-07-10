@@ -331,6 +331,8 @@ export default function ShippingRequests() {
     DELIVERED: { label: "Đã giao", color: "green" },
     CANCELLED: { label: "Đã huỷ", color: "red" },
     RETURNED: { label: "Đã hoàn", color: "red" },
+    RETURN_READY_FOR_PICKUP: { label: "Sẵn sàng lấy hàng hoàn", color: "gold" },
+    RETURN_PICKED_UP: { label: "Đã lấy hàng hoàn lên xe", color: "cyan" },
   };
 
   const columns = [

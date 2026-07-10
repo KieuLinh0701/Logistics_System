@@ -127,8 +127,17 @@ public class FinancialAdminController {
         byte[] data = service.exportBatches(page, limit, search, status, shipperId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-        String fileName = "batches_export.xlsx";
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+        String fileName = com.logistics.utils.ExcelExportHelper.buildFileName(
+                "bao_cao_phien_doi_soat", java.time.LocalDate.now(), java.time.LocalDate.now());
+        String encodedFileName;
+        try {
+            encodedFileName = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+        } catch (Exception ex) {
+            encodedFileName = fileName;
+        }
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);
         return ResponseEntity.ok().headers(headers).body(data);
     }
 
@@ -146,8 +155,17 @@ public class FinancialAdminController {
         byte[] data = service.exportSubmissions(status, search);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-        String fileName = "submissions_export.xlsx";
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+        String fileName = com.logistics.utils.ExcelExportHelper.buildFileName(
+                "bao_cao_phieu_doi_soat", java.time.LocalDate.now(), java.time.LocalDate.now());
+        String encodedFileName;
+        try {
+            encodedFileName = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+        } catch (Exception ex) {
+            encodedFileName = fileName;
+        }
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);
         return ResponseEntity.ok().headers(headers).body(data);
     }
 }

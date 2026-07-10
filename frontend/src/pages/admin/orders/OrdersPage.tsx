@@ -27,6 +27,11 @@ const statusOptions = [
   { label: "Giao thất bại", value: "FAILED_DELIVERY" },
   { label: "Đã giao", value: "DELIVERED" },
   { label: "Đã hủy", value: "CANCELLED" },
+  { label: "Đang hoàn trả", value: "RETURNING" },
+  { label: "Sẵn sàng lấy hàng hoàn", value: "RETURN_READY_FOR_PICKUP" },
+  { label: "Đã lấy hàng hoàn lên xe", value: "RETURN_PICKED_UP" },
+  { label: "Đã hoàn về bưu cục gốc", value: "RETURN_AT_ORIGIN_OFFICE" },
+  { label: "Đã hoàn trả", value: "RETURNED" },
 ];
 
 const OrdersPage: React.FC = () => {

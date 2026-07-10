@@ -238,6 +238,8 @@ public class SupportAssistantServiceImpl implements SupportAssistantService {
             case DELIVERY_FAILED_FINAL -> "Giao thất bại cuối cùng";
             case CANCELLED -> "Đã hủy";
             case RETURNING -> "Đang hoàn hàng";
+            case RETURN_READY_FOR_PICKUP -> "Sẵn sàng lấy hàng hoàn";
+            case RETURN_PICKED_UP -> "Đã lấy hàng hoàn lên xe";
             case RETURN_RETRY -> "Hoàn hàng lại";
             case RETURN_FAILED_FINAL -> "Hoàn hàng thất bại cuối cùng";
             case RETURNED -> "Đã hoàn hàng";

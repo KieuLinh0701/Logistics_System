@@ -25,6 +25,8 @@ const getStatusColor = (status: string) => {
     case "CONFIRMED": return "blue";
     case "AT_DEST_OFFICE":
     case "RETURN_AT_ORIGIN_OFFICE": return "orange";
+    case "RETURN_READY_FOR_PICKUP": return "gold";
+    case "RETURN_PICKED_UP": return "cyan";
     case "READY_FOR_PICKUP": return "blue";
     case "PICKED_UP": return "orange";
     case "DELIVERING": return "processing";
@@ -40,6 +42,8 @@ const getStatusText = (status: string) => {
     case "CONFIRMED": return "Đã xác nhận";
     case "AT_DEST_OFFICE": return "Đã đến bưu cục";
     case "RETURN_AT_ORIGIN_OFFICE": return "Đã hoàn về bưu cục gốc";
+    case "RETURN_READY_FOR_PICKUP": return "Sẵn sàng lấy hàng hoàn";
+    case "RETURN_PICKED_UP": return "Đã lấy hàng hoàn lên xe";
     case "READY_FOR_PICKUP": return "Sẵn sàng lấy hàng";
     case "PICKED_UP": return "Đã lấy hàng";
     case "DELIVERING": return "Đang giao hàng";

@@ -21,12 +21,11 @@ import com.logistics.response.ListResponse;
 import com.logistics.response.Pagination;
 import com.logistics.service.admin.UserAdminService;
 import com.logistics.specification.AuditLogSpecification;
+import com.logistics.utils.ExcelExportHelper;
 import com.logistics.utils.PasswordUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFColor;
-import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,8 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -295,55 +294,48 @@ public class UserAdminServiceImpl implements UserAdminService {
         List<AuditLog> logs = auditLogRepository.findAll(spec, Sort.by("createdAt").descending());
 
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Audit Logs");
+            Sheet sheet = workbook.createSheet("Báo cáo nhật ký người dùng");
 
-            XSSFCellStyle headerStyle = (XSSFCellStyle) workbook.createCellStyle();
-            XSSFFont font = (XSSFFont) workbook.createFont();
-            font.setBold(true);
-            font.setColor(new XSSFColor(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, null));
-            headerStyle.setFont(font);
-            headerStyle.setAlignment(HorizontalAlignment.CENTER);
-            headerStyle.setFillForegroundColor(
-                    new XSSFColor(new byte[]{(byte) 0x1C, (byte) 0x3D, (byte) 0x90}, null));
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-
-            String[] headers = {
+            List<String> headers = Arrays.asList(
                     "Thời gian",
                     "Đối tượng",
-                    "Mã ĐT",
+                    "Mã đối tượng",
                     "Hành động",
                     "Mô tả",
-                    "Trạng thái"};
+                    "Trạng thái");
 
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
-            }
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo lịch sử hoạt động của người dùng",
+                    java.time.LocalDate.now(), java.time.LocalDate.now(), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
 
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle dateTimeStyle = ExcelExportHelper.createDateStyle(workbook);
+            dateTimeStyle.setDataFormat(workbook.createDataFormat().getFormat("HH:mm:ss dd/MM/yyyy"));
 
-            int rowIdx = 1;
             for (AuditLog log : logs) {
                 Row row = sheet.createRow(rowIdx++);
 
-                row.createCell(0).setCellValue(log.getCreatedAt() != null ? log.getCreatedAt().format(dtf) : "");
-                row.createCell(1).setCellValue(translateEntityType(log.getEntity()));
-                row.createCell(2).setCellValue(log.getId() != null ? log.getId().toString() : "");
-                row.createCell(3).setCellValue(translateAuditLogAction(log.getAction()));
-                row.createCell(4).setCellValue(log.getDescription() != null ? log.getDescription() : "");
-                row.createCell(5).setCellValue(translateAuditLogStatus(log.getStatus()));
+                org.apache.poi.ss.usermodel.Cell dateCell = row.createCell(0);
+                if (log.getCreatedAt() != null) {
+                    dateCell.setCellValue(log.getCreatedAt());
+                    dateCell.setCellStyle(dateTimeStyle);
+                } else {
+                    dateCell.setBlank();
+                }
+
+                ExcelExportHelper.writeTextCell(row, 1, translateEntityType(log.getEntity()), textStyle);
+                ExcelExportHelper.writeTextCell(row, 2, log.getId() != null ? log.getId().toString() : "", textStyle);
+                ExcelExportHelper.writeTextCell(row, 3, translateAuditLogAction(log.getAction()), textStyle);
+                ExcelExportHelper.writeTextCell(row, 4, log.getDescription() != null ? log.getDescription() : "", textStyle);
+                ExcelExportHelper.writeTextCell(row, 5, translateAuditLogStatus(log.getStatus()), textStyle);
             }
 
-            for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
+
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                workbook.write(out);
+                return out.toByteArray();
             }
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            workbook.write(out);
-            return out.toByteArray();
-
         } catch (Exception e) {
             throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR, e);
         }

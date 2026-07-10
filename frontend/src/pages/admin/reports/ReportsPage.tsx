@@ -605,28 +605,23 @@ export default function ReportsPage() {
                 style={{ height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                 onClick={async () => {
                   try {
-                    let blob;
-                    let filename;
                     const start = range[0].format('YYYY-MM-DD');
                     const end = range[1].format('YYYY-MM-DD');
+                    let result: { blob: Blob; fileName: string } | undefined;
                     if (activeTab === 'overview') {
-                      blob = await reportApi.exportOverview(start, end);
-                      filename = `overview_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.xlsx`;
+                      result = await reportApi.exportOverview(start, end);
                     } else if (activeTab === 'office') {
-                      blob = await reportApi.exportOfficesDetailed(start, end);
-                      filename = `offices_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.xlsx`;
+                      result = await reportApi.exportOfficesDetailed(start, end);
                     } else if (activeTab === 'hr') {
-                      blob = await reportApi.exportShippers(start, end);
-                      filename = `shippers_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.xlsx`;
+                      result = await reportApi.exportShippers(start, end);
                     } else if (activeTab === 'finance') {
-                      blob = await reportApi.exportFinance(start, end);
-                      filename = `finance_${range[0].format('YYYYMMDD')}_${range[1].format('YYYYMMDD')}.xlsx`;
+                      result = await reportApi.exportFinance(start, end);
                     }
-                    if (blob) {
-                      const url = URL.createObjectURL(blob);
+                    if (result) {
+                      const url = URL.createObjectURL(result.blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = filename || 'report.xlsx';
+                      a.download = result.fileName || 'Bao_cao.xlsx';
                       document.body.appendChild(a);
                       a.click();
                       a.remove();

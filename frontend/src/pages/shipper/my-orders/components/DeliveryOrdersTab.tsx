@@ -41,6 +41,8 @@ const DeliveryOrdersTab = forwardRef<TabRefreshHandle, DeliveryOrdersTabProps>(
           "DELIVERY_RETRY",
           "DELIVERY_FAILED_FINAL",
           "RETURN_AT_ORIGIN_OFFICE",
+          "RETURN_READY_FOR_PICKUP",
+          "RETURN_PICKED_UP",
           "RETURNING",
           "RETURN_RETRY",
           "RETURNED",
@@ -82,6 +84,8 @@ const DeliveryOrdersTab = forwardRef<TabRefreshHandle, DeliveryOrdersTabProps>(
         case "RETURNING":
         case "RETURN_RETRY":
         case "RETURN_AT_ORIGIN_OFFICE": return "warning";
+        case "RETURN_READY_FOR_PICKUP":
+        case "RETURN_PICKED_UP": return "gold";
         default: return "default";
       }
     };
@@ -99,6 +103,8 @@ const DeliveryOrdersTab = forwardRef<TabRefreshHandle, DeliveryOrdersTabProps>(
         case "RETURNED": return "Đã hoàn";
         case "RETURNING": return "Đang hoàn trả";
         case "RETURN_AT_ORIGIN_OFFICE": return "Đã hoàn về bưu cục gốc";
+        case "RETURN_READY_FOR_PICKUP": return "Sẵn sàng lấy hàng hoàn";
+        case "RETURN_PICKED_UP": return "Đã lấy hàng hoàn lên xe";
         case "RETURN_RETRY": return "Hoàn lại";
         case "RETURN_FAILED_FINAL": return "Hoàn thất bại";
         default: return s;

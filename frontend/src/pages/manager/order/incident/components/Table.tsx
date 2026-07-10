@@ -1,5 +1,5 @@
 import React from "react";
-import {Button, Dropdown, Table, Tag, Tooltip} from "antd";
+import {Button, Dropdown, Table, Tooltip} from "antd";
 import {DownOutlined} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import type {ColumnsType} from "antd/es/table";
@@ -61,12 +61,12 @@ const IncidentTable: React.FC<Props> = ({
     { title: "Trạng thái", dataIndex: "status", key: "status", align: "center", render: (_, record) => translateIncidentStatus(record.status) },
     { title: "Tiêu đề", dataIndex: "title", key: "title", align: "center" },
     {
-      title: "Mã đơn hàng",
+      title: "Mã vận đơn",
       key: "trackingNumber",
       align: "center",
       render: (_, record) => {
         const trackingNumber = record?.order?.trackingNumber;
-        if (!trackingNumber) return <Tag color="default">Không liên quan đơn hàng</Tag>;
+        if (!trackingNumber) return <span className="text-muted">—</span>;
         return (
           <Tooltip title="Click để xem chi tiết đơn hàng">
             <span

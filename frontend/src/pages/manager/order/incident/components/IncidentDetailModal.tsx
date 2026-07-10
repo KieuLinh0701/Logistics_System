@@ -75,7 +75,7 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
       className="modal-hide-scrollbar"
     >
       <Descriptions bordered column={1} size="middle">
-        <Descriptions.Item label="Mã đơn hàng">
+        <Descriptions.Item label="Mã vận đơn">
           {incident.order?.trackingNumber ? (
             <div onClick={handleViewOrder}>
               <Tooltip title="Click để xem chi tiết đơn hàng">
@@ -85,7 +85,7 @@ const IncidentDetailModalUser: React.FC<Props> = ({ incident, visible, onClose, 
               </Tooltip>
             </div>
           ) : (
-            <Text className="text-muted">Không liên quan đơn hàng</Text>
+            <span className="text-muted">—</span>
           )}
         </Descriptions.Item>
 

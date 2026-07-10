@@ -139,7 +139,7 @@ public class DashboardUserServiceImpl implements DashboardUserService {
 
             List<UserTopProductItemDto> topReturned = orderProductRepository.findTopReturnedProducts(
                     shopId,
-                    List.of(OrderStatus.RETURNING, OrderStatus.RETURNED),
+                    List.of(OrderStatus.RETURNING, OrderStatus.RETURN_READY_FOR_PICKUP, OrderStatus.RETURN_PICKED_UP, OrderStatus.RETURNED),
                     startDate,
                     endDate);
 

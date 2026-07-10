@@ -15,6 +15,7 @@ public class ShipmentOrderUtils {
             OrderStatus.AT_DEST_OFFICE,
             OrderStatus.DELIVERY_RETRY,
             OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+            OrderStatus.RETURN_READY_FOR_PICKUP,
             OrderStatus.RETURN_RETRY,
             OrderStatus.RETURNING);
 
@@ -28,6 +29,7 @@ public class ShipmentOrderUtils {
             OrderStatus.CONFIRMED,
             OrderStatus.PICKUP_RETRY,
             OrderStatus.RETURN_AT_ORIGIN_OFFICE,
+            OrderStatus.RETURN_READY_FOR_PICKUP,
             OrderStatus.RETURN_RETRY
     );
 

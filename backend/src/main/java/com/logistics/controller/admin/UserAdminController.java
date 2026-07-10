@@ -153,14 +153,16 @@ public class UserAdminController {
 
         byte[] data = userAdminService.export(id, auditLogSearchRequest);
 
-        String fileName = "UTE Logistics_Báo cáo lịch sử hoạt động của người dùng.xlsx";
+        String fileName = com.logistics.utils.ExcelExportHelper.buildFileName(
+                "bao_cao_lich_su_hoat_dong_nguoi_dung",
+                java.time.LocalDate.now(), java.time.LocalDate.now());
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
                 .replaceAll("\\+", "%20");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.add(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename*=UTF-8''" + encodedFileName);
+                "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName);
 
         return ResponseEntity.ok()
                 .headers(headers)

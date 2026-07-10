@@ -133,6 +133,8 @@ const BarcodeScannerPage: React.FC = () => {
       FAILED_DELIVERY: "Giao hàng thất bại",
       RETURNED: "Đã hoàn trả",
       RETURNING: "Đang hoàn trả",
+      RETURN_READY_FOR_PICKUP: "Sẵn sàng lấy hàng hoàn",
+      RETURN_PICKED_UP: "Đã lấy hàng hoàn lên xe",
       RETURN_AT_ORIGIN_OFFICE: "Đã hoàn về bưu cục gốc",
       RETURN_RETRY: "Hoàn lại",
       RETURN_FAILED_FINAL: "Hoàn thất bại",
@@ -218,7 +220,7 @@ const BarcodeScannerPage: React.FC = () => {
             <ScanOutlined style={{fontSize: 48, color: "#1890ff", marginBottom: 16}}/>
             <Title level={2}>Quét mã vận đơn</Title>
             <Text type="secondary">
-              Quét mã vạch trên phiếu vận đơn để tự động cập nhật trạng thái "Đã lấy hàng"
+              Quét mã vạch trên phiếu vận đơn để xác nhận lấy hàng (đơn giao) hoặc xác nhận đơn hoàn đã lên xe (đơn hoàn về bưu cục gốc)
             </Text>
           </div>
 
@@ -359,7 +361,10 @@ const BarcodeScannerPage: React.FC = () => {
               <li>Hướng mã vạch vào khung hình (nếu dùng camera)</li>
               <li>Hệ thống sẽ tự động cập nhật trạng thái đơn hàng sau khi quét thành công</li>
               <li>
-                Chỉ các đơn hàng ở trạng thái <strong>"Sẵn sàng lấy hàng"</strong> mới được cập nhật
+                Đơn giao ở trạng thái <strong>"Sẵn sàng lấy hàng"</strong> sẽ chuyển sang <strong>"Đã lấy hàng"</strong>
+              </li>
+              <li>
+                Đơn hoàn ở trạng thái <strong>"Sẵn sàng lấy hàng hoàn"</strong> sẽ chuyển sang <strong>"Đã lấy hàng hoàn lên xe"</strong>
               </li>
               <li>
                 Sau khi quét thành công, vui lòng đợi vài giây trước khi quét mã tiếp theo

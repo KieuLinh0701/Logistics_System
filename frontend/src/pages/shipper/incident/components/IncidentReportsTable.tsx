@@ -142,15 +142,18 @@ const IncidentReportsTable: React.FC<IncidentReportsTableProps> = ({ reports, lo
 
   const columns: ColumnsType<IncidentReport> = [
     {
-      title: "Mã đơn hàng",
+      title: "Mã vận đơn",
       dataIndex: "trackingNumber",
       key: "trackingNumber",
       width: 140,
-      render: (text: string) => (
-        <Text strong className="shipper-table-strong" style={{ fontSize: "13px" }}>
-          {text || "Không liên quan đơn hàng"}
-        </Text>
-      ),
+      render: (text: string) =>
+        text ? (
+          <Text strong className="shipper-table-strong" style={{ fontSize: "13px" }}>
+            {text}
+          </Text>
+        ) : (
+          <span className="text-muted">—</span>
+        ),
     },
     {
       title: "Tiêu đề",

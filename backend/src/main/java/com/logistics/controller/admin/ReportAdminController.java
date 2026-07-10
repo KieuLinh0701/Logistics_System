@@ -3,13 +3,18 @@ package com.logistics.controller.admin;
 import com.logistics.dto.admin.*;
 import com.logistics.response.ApiResponse;
 import com.logistics.service.admin.ReportAdminService;
+import com.logistics.utils.ExcelExportHelper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
@@ -202,10 +207,7 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportOperationsXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=operations_report.xlsx")
-                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_van_hanh", s, e));
     }
 
         @GetMapping("/overview/export")
@@ -215,10 +217,7 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportOverviewXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=overview_report.xlsx")
-            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_tong_quan", s, e));
         }
 
         @GetMapping("/offices/export")
@@ -228,10 +227,7 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportOfficesDetailedXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=offices_detailed_report.xlsx")
-            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_chi_tiet_buu_cuc", s, e));
         }
 
         @GetMapping("/shippers/export")
@@ -241,10 +237,7 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportShippersDetailedXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=shippers_detailed_report.xlsx")
-            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_chi_tiet_shipper", s, e));
         }
 
         @GetMapping("/finance/export")
@@ -254,10 +247,7 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportFinanceXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-            .header("Content-Disposition", "attachment; filename=finance_report.xlsx")
-            .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_tai_chinh", s, e));
         }
 
     @GetMapping("/office")
@@ -295,10 +285,7 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportOfficeXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=office_report.xlsx")
-                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_theo_buu_cuc", s, e));
     }
 
     @GetMapping("/shop/export")
@@ -308,9 +295,22 @@ public class ReportAdminController {
         LocalDate s = start == null ? LocalDate.now().minusDays(30) : start;
         LocalDate e = end == null ? LocalDate.now() : end;
         byte[] data = reportService.exportShopXlsx(s.atStartOfDay(), e.atTime(LocalTime.MAX));
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=shop_report.xlsx")
-                .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                .body(data);
+        return buildExcelResponse(data, ExcelExportHelper.buildFileName("bao_cao_theo_cua_hang", s, e));
+    }
+
+    private ResponseEntity<byte[]> buildExcelResponse(byte[] data, String fileName) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        String encoded;
+        try {
+            encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+        } catch (Exception ex) {
+            encoded = fileName;
+        }
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encoded);
+        return ResponseEntity.ok().headers(headers).body(data);
     }
 }
