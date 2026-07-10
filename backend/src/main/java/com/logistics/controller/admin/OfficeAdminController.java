@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -100,5 +101,16 @@ public class OfficeAdminController {
 
         officeAdminService.deleteOffice(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa bưu cục thành công"));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> listAllOffices(
+            @RequestParam(required = false) String search) {
+
+        if (isNotAdmin()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(officeAdminService.listAllOffices(search)));
     }
 }

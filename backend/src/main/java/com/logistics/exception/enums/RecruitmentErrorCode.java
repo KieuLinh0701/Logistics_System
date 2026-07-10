@@ -31,9 +31,8 @@ public enum RecruitmentErrorCode implements BaseErrorCode {
     RECRUITMENT_PERMISSION_DENIED_OFFICE_ACCESS(HttpStatus.FORBIDDEN, "Chỉ được xem hồ sơ thuộc bưu cục của bạn"),
     RECRUITMENT_UNAUTHORIZED_ROLE(HttpStatus.UNAUTHORIZED, "Không xác định được role hiện tại"),
 
-    // User/Account Errors
-    SYSTEM_ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy role hệ thống"),
-    PHONE_NUMBER_USED_BY_OTHER(HttpStatus.CONFLICT, "Số điện thoại đã được sử dụng"),
+    CLOUDINARY_INVALID_CV_FORMAT(HttpStatus.BAD_REQUEST, "File CV không hợp lệ. Vui lòng upload file PDF")
+
     ;
 
     private final HttpStatus httpStatus;

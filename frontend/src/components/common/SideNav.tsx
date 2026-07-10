@@ -501,7 +501,7 @@ const SideNav: React.FC = () => {
             },
             {
                 key: "/driver/shipments",
-                label: "Quản lý chuyến vận chuyển",
+                label: "Quản lý chuyến hàng",
                 path: "/driver/shipments",
                 icon: <TruckOutlined/>,
             },

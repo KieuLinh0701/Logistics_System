@@ -28,7 +28,7 @@ public enum CommonErrorCode implements BaseErrorCode {
     // Cloudinary
     CLOUDINARY_FOLDER_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "Cloudinary folder not found for key: %s"),
     CLOUDINARY_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Upload ảnh thất bại"),
-    CLOUDINARY_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Cloudinary delete failed"),
+    CLOUDINARY_FILE_IS_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "File upload trống"),
     ;
 
     private final HttpStatus httpStatus;

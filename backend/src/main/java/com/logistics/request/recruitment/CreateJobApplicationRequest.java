@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -29,9 +30,8 @@ public class CreateJobApplicationRequest {
     @Size(max = 255, message = "Địa chỉ không vượt quá 255 ký tự")
     private String address;
 
-    @NotBlank(message = "CV URL không được để trống")
-    @Size(max = 500, message = "CV URL không vượt quá 500 ký tự")
-    private String cvUrl;
+    @NotNull(message = "Vui lòng upload file CV của bạn")
+    private MultipartFile cvFile;
 
     @NotNull(message = "jobPostingId không được để trống")
     private Long jobPostingId;

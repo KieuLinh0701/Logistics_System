@@ -3,11 +3,13 @@ package com.logistics.repository;
 import com.logistics.entity.Office;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,6 +25,8 @@ public interface OfficeRepository extends JpaRepository<Office, Integer>, JpaSpe
     boolean existsByPhoneNumber(String phoneNumber);
 
     Page<Office> findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(String name, String code, Pageable pageable);
+
+    List<Office> findByNameContainingIgnoreCase(String name, Sort sort);
 
     @Query("SELECT o.cityCode FROM Office o WHERE o.id = :id")
     Integer findCityCodeById(int id);

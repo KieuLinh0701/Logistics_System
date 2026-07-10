@@ -1,5 +1,7 @@
 package com.logistics.service.recruitment.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.logistics.dto.recruitment.JobApplicationDto;
 import com.logistics.dto.recruitment.JobPostingDto;
 import com.logistics.entity.*;
@@ -27,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,6 +49,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final Cloudinary cloudinary;
 
     @Override
     public JobPostingDto createJob(CreateJobPostingRequest request) {
@@ -154,6 +158,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     }
 
     @Override
+    @Transactional
     public JobApplicationDto createApplication(CreateJobApplicationRequest request) {
         JobPosting posting = findJobPosting(request.getJobPostingId());
         if (posting.getStatus() != JobPostingStatus.OPEN) {
@@ -166,13 +171,15 @@ public class RecruitmentServiceImpl implements RecruitmentService {
             throw new AppException(RecruitmentErrorCode.RECRUITMENT_APPLICATION_EMAIL_DUPLICATED);
         }
 
+        String uploadedCvUrl = uploadCv(request.getCvFile());
+
         JobApplication entity = new JobApplication();
         entity.setJobPosting(posting);
         entity.setFullName(request.getFullName().trim());
         entity.setPhone(request.getPhone().trim());
         entity.setEmail(request.getEmail().trim().toLowerCase(Locale.ROOT));
         entity.setAddress(request.getAddress().trim());
-        entity.setCvUrl(request.getCvUrl().trim());
+        entity.setCvUrl(uploadedCvUrl);
         entity.setStatus(JobApplicationStatus.PENDING);
 
         JobApplication saved = jobApplicationRepository.save(entity);
@@ -513,5 +520,30 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     }
 
     private record NameParts(String firstName, String lastName) {
+    }
+
+    private String uploadCv(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new AppException(CommonErrorCode.CLOUDINARY_FILE_IS_EMPTY);
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.equals("application/pdf")) {
+            throw new AppException(RecruitmentErrorCode.CLOUDINARY_INVALID_CV_FORMAT);
+        }
+
+        try {
+            Map<String, Object> result = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "cvs",
+                            "resource_type", "image",
+                            "format", "pdf"
+                    ));
+            return result.get("secure_url").toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AppException(CommonErrorCode.CLOUDINARY_UPLOAD_FAILED);
+        }
     }
 }
