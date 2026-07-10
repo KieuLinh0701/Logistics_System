@@ -40,7 +40,7 @@ const SearchFilters: React.FC<Props> = ({
       <Row gutter={16} className="search-filters-row">
         <Col span={24}>
           <div className="list-page-actions">
-            <Tooltip title={searchText || "Tìm theo mã sự cố, mã đơn hàng, tiêu đề/mô tả sự cố, tên/SĐT người gửi, tên/SĐT người xử lý"}>
+            <Tooltip title={searchText || "Tìm theo mã sự cố, mã vận đơn, tiêu đề/mô tả sự cố, tên/SĐT người gửi, tên/SĐT người xử lý"}>
               <Input
                 className="search-input"
                 placeholder="Tìm kiếm..."

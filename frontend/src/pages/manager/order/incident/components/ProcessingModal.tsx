@@ -130,7 +130,7 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
       <Form form={form} layout="vertical">
 
         <Descriptions bordered column={1} size="middle">
-          <Descriptions.Item label="Mã đơn hàng">
+          <Descriptions.Item label="Mã vận đơn">
             {data.order?.trackingNumber ? (
               <Tooltip title="Click để xem chi tiết đơn hàng">
                 <span
@@ -141,7 +141,7 @@ const ProcessingModal: React.FC<ProcessingModalProps> = ({
                 </span>
               </Tooltip>
             ) : (
-              <Text className="text-muted">Không liên quan đơn hàng</Text>
+              <span className="text-muted">—</span>
             )}
           </Descriptions.Item>
 

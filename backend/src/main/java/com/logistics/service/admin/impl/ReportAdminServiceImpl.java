@@ -5,10 +5,12 @@ import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.repository.ReportRepository;
 import com.logistics.service.admin.ReportAdminService;
+import com.logistics.utils.ExcelExportHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -98,7 +100,7 @@ public class ReportAdminServiceImpl implements ReportAdminService {
                     : 0.0;
             BigDecimal codHeld = nzBigDecimal(totalCodCollected).subtract(nzBigDecimal(codTransferred));
 
-            AdminOverviewDto dto = new AdminOverviewDto(
+            return new AdminOverviewDto(
                 totalOffices,
                 totalEmployees,
                 totalShippers,
@@ -113,8 +115,6 @@ public class ReportAdminServiceImpl implements ReportAdminService {
                 codTransferred,
                 codHeld
             );
-
-            return dto;
         } catch (Exception ex) {
             log.error("[REPORT] getOverview ERROR start={} end={}", start, end, ex);
             throw ex;
@@ -152,18 +152,29 @@ public class ReportAdminServiceImpl implements ReportAdminService {
         }
     }
 
+    /* ============================================================
+     *  EXPORT EXCEL — đồng nhất theo ExcelExportHelper
+     * ============================================================ */
+
     @Override
     public byte[] exportOperationsXlsx(LocalDateTime start, LocalDateTime end) {
         List<Object[]> rows = reportRepo.orderOperationSummary(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Operations");
-            String[] headers = new String[] {"Ngày", "Tổng đơn", "Giao thành công", "Thất bại", "Trả về", "Tỉ lệ thành công (%)"};
-            Row h = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) h.createCell(i).setCellValue(headers[i]);
+            Sheet sheet = workbook.createSheet("Báo cáo vận hành");
 
-            int rIdx = 1;
+            List<String> headers = Arrays.asList(
+                    "Ngày", "Tổng đơn", "Giao thành công", "Thất bại", "Trả về", "Tỉ lệ thành công (%)");
+
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo vận hành theo ngày",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
+
+            XSSFCellStyle integerStyle = ExcelExportHelper.createIntegerStyle(workbook);
+            XSSFCellStyle percentStyle = ExcelExportHelper.createPercentStyle(workbook);
+            XSSFCellStyle dateStyle = ExcelExportHelper.createDateStyle(workbook);
+
             for (Object[] r : rows) {
-                Row row = sheet.createRow(rIdx++);
+                Row row = sheet.createRow(rowIdx++);
                 LocalDate d = ReportRepository.toLocalDate(r[0]);
                 long totalOrders = ReportRepository.safeLong(r[1]);
                 long delivered = ReportRepository.safeLong(r[2]);
@@ -173,15 +184,25 @@ public class ReportAdminServiceImpl implements ReportAdminService {
                 long returnCount = returning + returned;
                 double successRate = totalOrders > 0 ? ((double) delivered / (double) totalOrders) * 100.0 : 0.0;
 
-                row.createCell(0).setCellValue(d != null ? d.toString() : "");
+                if (d != null) {
+                    row.createCell(0).setCellValue(d);
+                    row.getCell(0).setCellStyle(dateStyle);
+                } else {
+                    row.createCell(0).setBlank();
+                }
                 row.createCell(1).setCellValue(totalOrders);
+                row.getCell(1).setCellStyle(integerStyle);
                 row.createCell(2).setCellValue(delivered);
+                row.getCell(2).setCellStyle(integerStyle);
                 row.createCell(3).setCellValue(failed);
+                row.getCell(3).setCellStyle(integerStyle);
                 row.createCell(4).setCellValue(returnCount);
+                row.getCell(4).setCellStyle(integerStyle);
                 row.createCell(5).setCellValue(Math.round(successRate * 100.0) / 100.0);
+                row.getCell(5).setCellStyle(percentStyle);
             }
 
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
@@ -195,20 +216,27 @@ public class ReportAdminServiceImpl implements ReportAdminService {
     public byte[] exportOfficeXlsx(LocalDateTime start, LocalDateTime end) {
         List<AdminOfficeReportDto> rows = reportRepo.reportByOffice(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Offices");
-            String[] headers = new String[] {"OfficeId", "OfficeName", "TotalOrders"};
-            Row h = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) h.createCell(i).setCellValue(headers[i]);
+            Sheet sheet = workbook.createSheet("Báo cáo theo bưu cục");
 
-            int rIdx = 1;
+            List<String> headers = Arrays.asList("Mã bưu cục", "Tên bưu cục", "Tổng đơn");
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo tổng hợp theo bưu cục",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
+
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle integerStyle = ExcelExportHelper.createIntegerStyle(workbook);
+
             for (AdminOfficeReportDto r : rows) {
-                Row row = sheet.createRow(rIdx++);
+                Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(r.getOfficeId() == null ? "" : r.getOfficeId().toString());
+                row.getCell(0).setCellStyle(textStyle);
                 row.createCell(1).setCellValue(r.getOfficeName() == null ? "" : r.getOfficeName());
-                row.createCell(2).setCellValue(r.getTotalOrders() == null ? 0.0 : r.getTotalOrders().doubleValue());
+                row.getCell(1).setCellStyle(textStyle);
+                row.createCell(2).setCellValue(r.getTotalOrders() == null ? 0L : r.getTotalOrders());
+                row.getCell(2).setCellStyle(integerStyle);
             }
 
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
@@ -222,22 +250,34 @@ public class ReportAdminServiceImpl implements ReportAdminService {
     public byte[] exportShopXlsx(LocalDateTime start, LocalDateTime end) {
         List<AdminShopReportDto> rows = reportRepo.reportByShop(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Shops");
-            String[] headers = new String[] {"ShopId", "ShopName", "OrdersCount", "TotalOrderValue", "TotalShippingFee"};
-            Row h = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) h.createCell(i).setCellValue(headers[i]);
+            Sheet sheet = workbook.createSheet("Báo cáo theo cửa hàng");
 
-            int rIdx = 1;
+            List<String> headers = Arrays.asList(
+                    "Mã cửa hàng", "Tên cửa hàng", "Số đơn", "Tổng giá trị đơn (VND)", "Tổng phí vận chuyển (VND)");
+
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo tổng hợp theo cửa hàng",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
+
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle integerStyle = ExcelExportHelper.createIntegerStyle(workbook);
+            XSSFCellStyle currencyStyle = ExcelExportHelper.createCurrencyStyle(workbook);
+
             for (AdminShopReportDto r : rows) {
-                Row row = sheet.createRow(rIdx++);
+                Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(r.getShopId() == null ? "" : r.getShopId().toString());
+                row.getCell(0).setCellStyle(textStyle);
                 row.createCell(1).setCellValue(r.getShopName() == null ? "" : r.getShopName());
-                row.createCell(2).setCellValue(r.getOrdersCount() == null ? 0.0 : r.getOrdersCount().doubleValue());
+                row.getCell(1).setCellStyle(textStyle);
+                row.createCell(2).setCellValue(r.getOrdersCount() == null ? 0L : r.getOrdersCount());
+                row.getCell(2).setCellStyle(integerStyle);
                 row.createCell(3).setCellValue(r.getTotalOrderValue() == null ? 0.0 : r.getTotalOrderValue().doubleValue());
+                row.getCell(3).setCellStyle(currencyStyle);
                 row.createCell(4).setCellValue(r.getTotalShippingFee() == null ? 0.0 : r.getTotalShippingFee().doubleValue());
+                row.getCell(4).setCellStyle(currencyStyle);
             }
 
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
@@ -251,44 +291,33 @@ public class ReportAdminServiceImpl implements ReportAdminService {
     public byte[] exportOverviewXlsx(LocalDateTime start, LocalDateTime end) {
         AdminOverviewDto dto = getOverview(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Overview");
-            int rIdx = 0;
-            Row title = sheet.createRow(rIdx++);
-            title.createCell(0).setCellValue("Báo cáo tổng quan");
-            Row rangeRow = sheet.createRow(rIdx++);
-            rangeRow.createCell(0).setCellValue("Từ ngày");
-            rangeRow.createCell(1).setCellValue(start.toLocalDate().toString());
-            rangeRow.createCell(2).setCellValue("Đến ngày");
-            rangeRow.createCell(3).setCellValue(end.toLocalDate().toString());
+            Sheet sheet = workbook.createSheet("Báo cáo tổng quan");
 
-            Row h = sheet.createRow(rIdx++);
-            String[] headers = new String[] {"Key", "Value"};
-            for (int i = 0; i < headers.length; i++) h.createCell(i).setCellValue(headers[i]);
+            List<String> headers = Arrays.asList("Chỉ tiêu", "Giá trị");
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo tổng quan hệ thống",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
 
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("Total Offices", dto.getTotalOffices());
-            map.put("Total Employees", dto.getTotalEmployees());
-            map.put("Total Shippers", dto.getTotalShippers());
-            map.put("Total Orders", dto.getTotalOrders());
-            map.put("Delivered", dto.getDelivered());
-            map.put("Failed", dto.getFailed());
-            map.put("Returned", dto.getReturnedOrders());
-            map.put("Success Rate (%)", dto.getSuccessRate());
-            map.put("Shipping Revenue (VND)", dto.getShippingRevenue());
-            map.put("Total COD Collected (VND)", dto.getTotalCodCollected());
-            map.put("COD Transferred To Shop (VND)", dto.getCodTransferred());
-            map.put("COD Held (VND)", dto.getCodHeld());
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle integerStyle = ExcelExportHelper.createIntegerStyle(workbook);
+            XSSFCellStyle currencyStyle = ExcelExportHelper.createCurrencyStyle(workbook);
+            XSSFCellStyle percentStyle = ExcelExportHelper.createPercentStyle(workbook);
 
-            for (Map.Entry<String, Object> e : map.entrySet()) {
-                Row row = sheet.createRow(rIdx++);
-                row.createCell(0).setCellValue(e.getKey());
-                Object v = e.getValue();
-                if (v instanceof BigDecimal) row.createCell(1).setCellValue(((BigDecimal) v).doubleValue());
-                else if (v instanceof Number) row.createCell(1).setCellValue(((Number) v).doubleValue());
-                else row.createCell(1).setCellValue(v == null ? "" : v.toString());
-            }
+            addOverviewRow(sheet, rowIdx++, "Tổng số bưu cục", dto.getTotalOffices(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Tổng số nhân viên", dto.getTotalEmployees(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Tổng số shipper", dto.getTotalShippers(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Tổng đơn hàng", dto.getTotalOrders(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Giao thành công", dto.getDelivered(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Thất bại", dto.getFailed(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Trả về", dto.getReturnedOrders(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Đang xử lý", dto.getInProgress(), integerStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Tỉ lệ thành công (%)", dto.getSuccessRate(), percentStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Doanh thu vận chuyển (VND)", dto.getShippingRevenue(), currencyStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "Tổng COD thu hộ (VND)", dto.getTotalCodCollected(), currencyStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "COD đã chuyển shop (VND)", dto.getCodTransferred(), currencyStyle, textStyle);
+            addOverviewRow(sheet, rowIdx++, "COD công ty đang giữ (VND)", dto.getCodHeld(), currencyStyle, textStyle);
 
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
@@ -298,35 +327,92 @@ public class ReportAdminServiceImpl implements ReportAdminService {
         }
     }
 
+    private static void addOverviewRow(Sheet sheet, int rowIdx, String label, Object value,
+                                       XSSFCellStyle valueStyle, XSSFCellStyle textStyle) {
+        Row row = sheet.createRow(rowIdx);
+        row.createCell(0).setCellValue(label);
+        row.getCell(0).setCellStyle(textStyle);
+
+        CellRef cellRef = CellRef.of(row, 1, value, valueStyle);
+        cellRef.write();
+    }
+
+    private static class CellRef {
+        private final Row row;
+        private final int col;
+        private final Object value;
+        private final XSSFCellStyle style;
+
+        private CellRef(Row row, int col, Object value, XSSFCellStyle style) {
+            this.row = row;
+            this.col = col;
+            this.value = value;
+            this.style = style;
+        }
+
+        static CellRef of(Row row, int col, Object value, XSSFCellStyle style) {
+            return new CellRef(row, col, value, style);
+        }
+
+        void write() {
+            org.apache.poi.ss.usermodel.Cell cell = row.createCell(col);
+            if (value == null) {
+                cell.setBlank();
+            } else if (value instanceof BigDecimal bd) {
+                cell.setCellValue(bd.doubleValue());
+            } else if (value instanceof Number n) {
+                cell.setCellValue(n.doubleValue());
+            } else {
+                cell.setCellValue(value.toString());
+            }
+            if (style != null) {
+                cell.setCellStyle(style);
+            }
+        }
+    }
+
     @Override
     public byte[] exportOfficesDetailedXlsx(LocalDateTime start, LocalDateTime end) {
         List<Map<String, Object>> rows = getOfficeReportDetailed(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Offices Detailed");
-            String[] headers = new String[] {"OfficeId","OfficeName","TotalOrders","Delivered","Failed","Returned","InProgress","SuccessRate(%)","ShippingRevenue(VND)","TotalCodCollected(VND)","CodSubmittedToCompany(VND)","TotalEmployees","TotalShippers"};
-            Row h = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) h.createCell(i).setCellValue(headers[i]);
-            int rIdx = 1;
+            Sheet sheet = workbook.createSheet("Báo cáo chi tiết bưu cục");
+
+            List<String> headers = Arrays.asList(
+                    "Mã bưu cục", "Tên bưu cục",
+                    "Tổng đơn", "Giao thành công", "Thất bại", "Trả về", "Đang xử lý",
+                    "Tỉ lệ thành công (%)",
+                    "Doanh thu vận chuyển (VND)",
+                    "Tổng COD thu hộ (VND)",
+                    "COD nộp công ty (VND)",
+                    "Tổng nhân viên", "Tổng shipper");
+
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo chi tiết bưu cục",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
+
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle integerStyle = ExcelExportHelper.createIntegerStyle(workbook);
+            XSSFCellStyle percentStyle = ExcelExportHelper.createPercentStyle(workbook);
+            XSSFCellStyle currencyStyle = ExcelExportHelper.createCurrencyStyle(workbook);
+
             for (Map<String, Object> r : rows) {
-                Row row = sheet.createRow(rIdx++);
-                row.createCell(0).setCellValue(r.get("officeId") == null ? "" : r.get("officeId").toString());
-                row.createCell(1).setCellValue(r.get("officeName") == null ? "" : r.get("officeName").toString());
-                row.createCell(2).setCellValue(((Number) (r.get("totalOrders") == null ? 0 : r.get("totalOrders"))).doubleValue());
-                row.createCell(3).setCellValue(((Number) (r.get("delivered") == null ? 0 : r.get("delivered"))).doubleValue());
-                row.createCell(4).setCellValue(((Number) (r.get("failed") == null ? 0 : r.get("failed"))).doubleValue());
-                row.createCell(5).setCellValue(((Number) (r.get("returnedOrders") == null ? 0 : r.get("returnedOrders"))).doubleValue());
-                row.createCell(6).setCellValue(((Number) (r.get("inProgress") == null ? 0 : r.get("inProgress"))).doubleValue());
-                row.createCell(7).setCellValue(((Number) (r.get("successRate") == null ? 0 : r.get("successRate"))).doubleValue());
-                BigDecimal sr = (BigDecimal) r.getOrDefault("shippingRevenue", BigDecimal.ZERO);
-                BigDecimal tc = (BigDecimal) r.getOrDefault("totalCodCollected", BigDecimal.ZERO);
-                BigDecimal sub = (BigDecimal) r.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO);
-                row.createCell(8).setCellValue(sr.doubleValue());
-                row.createCell(9).setCellValue(tc.doubleValue());
-                row.createCell(10).setCellValue(sub.doubleValue());
-                row.createCell(11).setCellValue(((Number) (r.get("totalEmployees") == null ? 0 : r.get("totalEmployees"))).doubleValue());
-                row.createCell(12).setCellValue(((Number) (r.get("totalShippers") == null ? 0 : r.get("totalShippers"))).doubleValue());
+                Row row = sheet.createRow(rowIdx++);
+                ExcelExportHelper.writeTextCell(row, 0, r.get("officeId") == null ? "" : r.get("officeId").toString(), textStyle);
+                ExcelExportHelper.writeTextCell(row, 1, r.get("officeName") == null ? "" : r.get("officeName").toString(), textStyle);
+                ExcelExportHelper.writeIntegerCell(row, 2, asLong(r.get("totalOrders")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 3, asLong(r.get("delivered")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 4, asLong(r.get("failed")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 5, asLong(r.get("returnedOrders")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 6, asLong(r.get("inProgress")), integerStyle);
+                writePercent(row, 7, r.get("successRate"), percentStyle);
+                writeCurrency(row, 8, (BigDecimal) r.getOrDefault("shippingRevenue", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 9, (BigDecimal) r.getOrDefault("totalCodCollected", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 10, (BigDecimal) r.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO), currencyStyle);
+                ExcelExportHelper.writeIntegerCell(row, 11, asLong(r.get("totalEmployees")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 12, asLong(r.get("totalShippers")), integerStyle);
             }
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
@@ -340,31 +426,41 @@ public class ReportAdminServiceImpl implements ReportAdminService {
     public byte[] exportShippersDetailedXlsx(LocalDateTime start, LocalDateTime end) {
         List<Map<String, Object>> rows = getShipperReportDetailed(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Shippers Detailed");
-            String[] headers = new String[] {"ShipperId","ShipperName","Phone","BranchName","TotalOrders","Delivered","Failed","Returned","InProgress","SuccessRate(%)","CodCollected(VND)","CodSubmittedToCompany(VND)","CodHeldByShipper(VND)"};
-            Row h = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) h.createCell(i).setCellValue(headers[i]);
-            int rIdx = 1;
+            Sheet sheet = workbook.createSheet("Báo cáo chi tiết shipper");
+
+            List<String> headers = Arrays.asList(
+                    "Mã shipper", "Tên shipper", "Số điện thoại", "Tên bưu cục",
+                    "Tổng đơn", "Giao thành công", "Thất bại", "Trả về", "Đang xử lý",
+                    "Tỉ lệ thành công (%)",
+                    "COD đã thu (VND)", "COD đã nộp công ty (VND)", "COD shipper đang giữ (VND)");
+
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo chi tiết shipper",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), headers.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, headers);
+
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle integerStyle = ExcelExportHelper.createIntegerStyle(workbook);
+            XSSFCellStyle percentStyle = ExcelExportHelper.createPercentStyle(workbook);
+            XSSFCellStyle currencyStyle = ExcelExportHelper.createCurrencyStyle(workbook);
+
             for (Map<String, Object> r : rows) {
-                Row row = sheet.createRow(rIdx++);
-                row.createCell(0).setCellValue(r.get("shipperId") == null ? "" : r.get("shipperId").toString());
-                row.createCell(1).setCellValue(r.get("shipperName") == null ? "" : r.get("shipperName").toString());
-                row.createCell(2).setCellValue(r.get("phone") == null ? "" : r.get("phone").toString());
-                row.createCell(3).setCellValue(r.get("branchName") == null ? "" : r.get("branchName").toString());
-                row.createCell(4).setCellValue(((Number) (r.get("totalOrders") == null ? 0 : r.get("totalOrders"))).doubleValue());
-                row.createCell(5).setCellValue(((Number) (r.get("delivered") == null ? 0 : r.get("delivered"))).doubleValue());
-                row.createCell(6).setCellValue(((Number) (r.get("failed") == null ? 0 : r.get("failed"))).doubleValue());
-                row.createCell(7).setCellValue(((Number) (r.get("returnedOrders") == null ? 0 : r.get("returnedOrders"))).doubleValue());
-                row.createCell(8).setCellValue(((Number) (r.get("inProgress") == null ? 0 : r.get("inProgress"))).doubleValue());
-                row.createCell(9).setCellValue(((Number) (r.get("successRate") == null ? 0 : r.get("successRate"))).doubleValue());
-                BigDecimal cc = (BigDecimal) r.getOrDefault("codCollected", BigDecimal.ZERO);
-                BigDecimal cs = (BigDecimal) r.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO);
-                BigDecimal ch = (BigDecimal) r.getOrDefault("codHeldByShipper", BigDecimal.ZERO);
-                row.createCell(10).setCellValue(cc.doubleValue());
-                row.createCell(11).setCellValue(cs.doubleValue());
-                row.createCell(12).setCellValue(ch.doubleValue());
+                Row row = sheet.createRow(rowIdx++);
+                ExcelExportHelper.writeTextCell(row, 0, r.get("shipperId") == null ? "" : r.get("shipperId").toString(), textStyle);
+                ExcelExportHelper.writeTextCell(row, 1, r.get("shipperName") == null ? "" : r.get("shipperName").toString(), textStyle);
+                ExcelExportHelper.writeTextCell(row, 2, r.get("phone") == null ? "" : r.get("phone").toString(), textStyle);
+                ExcelExportHelper.writeTextCell(row, 3, r.get("branchName") == null ? "" : r.get("branchName").toString(), textStyle);
+                ExcelExportHelper.writeIntegerCell(row, 4, asLong(r.get("totalOrders")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 5, asLong(r.get("delivered")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 6, asLong(r.get("failed")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 7, asLong(r.get("returnedOrders")), integerStyle);
+                ExcelExportHelper.writeIntegerCell(row, 8, asLong(r.get("inProgress")), integerStyle);
+                writePercent(row, 9, r.get("successRate"), percentStyle);
+                writeCurrency(row, 10, (BigDecimal) r.getOrDefault("codCollected", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 11, (BigDecimal) r.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 12, (BigDecimal) r.getOrDefault("codHeldByShipper", BigDecimal.ZERO), currencyStyle);
             }
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+
+            ExcelExportHelper.autoSizeAllColumns(sheet, headers.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
@@ -379,56 +475,129 @@ public class ReportAdminServiceImpl implements ReportAdminService {
     public byte[] exportFinanceXlsx(LocalDateTime start, LocalDateTime end) {
         Map<String, Object> report = getFinanceReport(start, end);
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Finance");
-            int rIdx = 0;
-            Row title = sheet.createRow(rIdx++);
-            title.createCell(0).setCellValue("Báo cáo tài chính");
-            Row rangeRow = sheet.createRow(rIdx++);
-            rangeRow.createCell(0).setCellValue("Từ ngày");
-            rangeRow.createCell(1).setCellValue(start.toLocalDate().toString());
-            rangeRow.createCell(2).setCellValue("Đến ngày");
-            rangeRow.createCell(3).setCellValue(end.toLocalDate().toString());
+            Sheet sheet = workbook.createSheet("Báo cáo tài chính");
 
-            Row h = sheet.createRow(rIdx++);
-            h.createCell(0).setCellValue("Key"); h.createCell(1).setCellValue("Value");
+            // Sheet 1: Tổng quan tài chính (không còn định dạng key/value thô)
+            List<String> summaryHeaders = Arrays.asList("Chỉ tiêu", "Giá trị");
+            ExcelExportHelper.writeTitleAndPeriod(sheet, "Báo cáo tài chính",
+                    ExcelExportHelper.toLocalDate(start), ExcelExportHelper.toLocalDate(end), summaryHeaders.size() - 1);
+            int rowIdx = ExcelExportHelper.writeHeaderRow(sheet, 2, summaryHeaders);
+
+            XSSFCellStyle textStyle = ExcelExportHelper.createTextStyle(workbook);
+            XSSFCellStyle currencyStyle = ExcelExportHelper.createCurrencyStyle(workbook);
+
             Map<String, Object> codSummary = (Map<String, Object>) report.getOrDefault("codSummary", new HashMap<>());
-            Map<String, Object> summary = new LinkedHashMap<>();
-            summary.put("Total Shipping Revenue (VND)", report.getOrDefault("shippingRevenue", BigDecimal.ZERO));
-            summary.put("Total COD Collected (VND)", codSummary.getOrDefault("totalCodCollected", BigDecimal.ZERO));
-            summary.put("COD Submitted To Company (VND)", codSummary.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO));
-            summary.put("COD Transferred To Shop (VND)", codSummary.getOrDefault("codTransferredToShop", BigDecimal.ZERO));
-            summary.put("COD Held By Company (VND)", codSummary.getOrDefault("codHeldByCompany", BigDecimal.ZERO));
+            BigDecimal shippingRevenue = bigDecimalOf(report.get("shippingRevenue"));
+            BigDecimal totalCodCollected = bigDecimalOf(codSummary.get("totalCodCollected"));
+            BigDecimal codSubmittedToCompany = bigDecimalOf(codSummary.get("codSubmittedToCompany"));
+            BigDecimal codTransferredToShop = bigDecimalOf(codSummary.get("codTransferredToShop"));
+            BigDecimal codHeldByCompany = bigDecimalOf(codSummary.get("codHeldByCompany"));
 
-            for (Map.Entry<String, Object> e : summary.entrySet()) {
-                Row row = sheet.createRow(rIdx++);
-                row.createCell(0).setCellValue(e.getKey());
-                Object v = e.getValue();
-                if (v instanceof BigDecimal) row.createCell(1).setCellValue(((BigDecimal) v).doubleValue());
-                else row.createCell(1).setCellValue(v == null ? "" : v.toString());
-            }
+            writeKeyValueRow(sheet, rowIdx++, "Tổng doanh thu vận chuyển (VND)", shippingRevenue, textStyle, currencyStyle);
+            writeKeyValueRow(sheet, rowIdx++, "Tổng COD thu hộ (VND)", totalCodCollected, textStyle, currencyStyle);
+            writeKeyValueRow(sheet, rowIdx++, "COD đã nộp công ty (VND)", codSubmittedToCompany, textStyle, currencyStyle);
+            writeKeyValueRow(sheet, rowIdx++, "COD đã chuyển về shop (VND)", codTransferredToShop, textStyle, currencyStyle);
+            writeKeyValueRow(sheet, rowIdx++, "COD công ty đang giữ (VND)", codHeldByCompany, textStyle, currencyStyle);
 
-            rIdx++;
-            Row cdh = sheet.createRow(rIdx++);
-            String[] dayHeaders = new String[] {"Date","ShippingRevenue","CODCollected","CODSubmittedToCompany","CODTransferredToShop","CODHeldByCompany"};
-            for (int i = 0; i < dayHeaders.length; i++) cdh.createCell(i).setCellValue(dayHeaders[i]);
+            rowIdx++; // dòng trống
+
+            // Sheet 1 phần dưới: Bảng theo ngày
+            List<String> dayHeaders = Arrays.asList(
+                    "Ngày",
+                    "Doanh thu vận chuyển (VND)",
+                    "COD thu hộ (VND)",
+                    "COD nộp công ty (VND)",
+                    "COD chuyển shop (VND)",
+                    "COD công ty đang giữ (VND)");
+            rowIdx = ExcelExportHelper.writeHeaderRow(sheet, rowIdx, dayHeaders);
+
+            XSSFCellStyle dateStyle = ExcelExportHelper.createDateStyle(workbook);
+            XSSFCellStyle integerDayStyle = ExcelExportHelper.createIntegerStyle(workbook);
+
             List<Map<String, Object>> codByDay = (List<Map<String, Object>>) report.getOrDefault("codByDay", Collections.emptyList());
             for (Map<String, Object> d : codByDay) {
-                Row row = sheet.createRow(rIdx++);
-                row.createCell(0).setCellValue(d.getOrDefault("date", "").toString());
-                row.createCell(1).setCellValue(((BigDecimal) d.getOrDefault("shippingRevenue", BigDecimal.ZERO)).doubleValue());
-                row.createCell(2).setCellValue(((BigDecimal) d.getOrDefault("codCollected", BigDecimal.ZERO)).doubleValue());
-                row.createCell(3).setCellValue(((BigDecimal) d.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO)).doubleValue());
-                row.createCell(4).setCellValue(((BigDecimal) d.getOrDefault("codTransferredToShop", BigDecimal.ZERO)).doubleValue());
-                row.createCell(5).setCellValue(((BigDecimal) d.getOrDefault("codHeldByCompany", BigDecimal.ZERO)).doubleValue());
+                Row row = sheet.createRow(rowIdx++);
+                LocalDate dateVal = ReportRepository.toLocalDate(d.get("date"));
+                if (dateVal != null) {
+                    row.createCell(0).setCellValue(dateVal);
+                    row.getCell(0).setCellStyle(dateStyle);
+                } else {
+                    row.createCell(0).setBlank();
+                }
+                writeCurrency(row, 1, (BigDecimal) d.getOrDefault("shippingRevenue", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 2, (BigDecimal) d.getOrDefault("codCollected", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 3, (BigDecimal) d.getOrDefault("codSubmittedToCompany", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 4, (BigDecimal) d.getOrDefault("codTransferredToShop", BigDecimal.ZERO), currencyStyle);
+                writeCurrency(row, 5, (BigDecimal) d.getOrDefault("codHeldByCompany", BigDecimal.ZERO), currencyStyle);
             }
 
-            for (int i = 0; i < dayHeaders.length; i++) sheet.autoSizeColumn(i);
+            ExcelExportHelper.autoSizeAllColumns(sheet, dayHeaders.size());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
                 return out.toByteArray();
             }
         } catch (Exception e) {
             throw new AppException(CommonErrorCode.EXPORT_EXCEL_ERROR);
+        }
+    }
+
+    private static Long asLong(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(v.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static BigDecimal bigDecimalOf(Object v) {
+        if (v == null) return BigDecimal.ZERO;
+        if (v instanceof BigDecimal bd) return bd;
+        if (v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try {
+            return new BigDecimal(v.toString());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private static void writePercent(Row row, int col, Object value, XSSFCellStyle style) {
+        org.apache.poi.ss.usermodel.Cell cell = row.createCell(col);
+        if (value instanceof Number n) {
+            cell.setCellValue(n.doubleValue());
+        } else if (value != null) {
+            try {
+                cell.setCellValue(Double.parseDouble(value.toString()));
+            } catch (NumberFormatException ignored) {
+                cell.setCellValue(0);
+            }
+        }
+        if (style != null) cell.setCellStyle(style);
+    }
+
+    private static void writeCurrency(Row row, int col, BigDecimal value, XSSFCellStyle style) {
+        org.apache.poi.ss.usermodel.Cell cell = row.createCell(col);
+        if (value != null) {
+            cell.setCellValue(value.doubleValue());
+        }
+        if (style != null) cell.setCellStyle(style);
+    }
+
+    private static void writeKeyValueRow(Sheet sheet, int rowIdx, String label, BigDecimal value,
+                                         XSSFCellStyle textStyle, XSSFCellStyle valueStyle) {
+        Row row = sheet.createRow(rowIdx);
+        org.apache.poi.ss.usermodel.Cell labelCell = row.createCell(0);
+        labelCell.setCellValue(label);
+        labelCell.setCellStyle(textStyle);
+        if (value != null) {
+            org.apache.poi.ss.usermodel.Cell valCell = row.createCell(1);
+            valCell.setCellValue(value.doubleValue());
+            valCell.setCellStyle(valueStyle);
+        } else {
+            org.apache.poi.ss.usermodel.Cell valCell = row.createCell(1);
+            valCell.setBlank();
+            valCell.setCellStyle(valueStyle);
         }
     }
 
