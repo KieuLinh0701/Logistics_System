@@ -18,6 +18,7 @@ import com.logistics.repository.AiRoutePlanRouteRepository;
 import com.logistics.repository.AiRoutePlanStopRepository;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
+import com.logistics.service.shipper.ShipperVehicleWorkloadService;
 import com.logistics.utils.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
     private final OrderShipperService orderShipperService;
     private final PickupAttemptRepository pickupAttemptRepository;
     private final DeliveryAttemptRepository deliveryAttemptRepository;
+    private final ShipperVehicleWorkloadService vehicleWorkloadService;
 
     @Autowired
     public ShipmentDeliveryServiceImpl(
@@ -57,7 +59,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             AiRoutePlanStopRepository aiRoutePlanStopRepository,
             @Lazy OrderShipperService orderShipperService,
             PickupAttemptRepository pickupAttemptRepository,
-            DeliveryAttemptRepository deliveryAttemptRepository) {
+            DeliveryAttemptRepository deliveryAttemptRepository,
+            ShipperVehicleWorkloadService vehicleWorkloadService) {
         this.shipmentRepository = shipmentRepository;
         this.shipmentOrderRepository = shipmentOrderRepository;
         this.orderRepository = orderRepository;
@@ -69,6 +72,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         this.orderShipperService = orderShipperService;
         this.pickupAttemptRepository = pickupAttemptRepository;
         this.deliveryAttemptRepository = deliveryAttemptRepository;
+        this.vehicleWorkloadService = vehicleWorkloadService;
     }
 
     private Employee getCurrentEmployee() {
@@ -1251,6 +1255,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         order.setStatus(OrderStatus.RETURNED);
         order.setReturnedAt(LocalDateTime.now());
         orderRepository.save(order);
+
+        vehicleWorkloadService.removeLoaded(order, employee);
 
         // Save return delivery attempt success
         List<DeliveryAttempt> existingSuccess = deliveryAttemptRepository.findByOrderIdAndAttemptTypeAndStatus(

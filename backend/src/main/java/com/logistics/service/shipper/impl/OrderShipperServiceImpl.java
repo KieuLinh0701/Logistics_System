@@ -20,6 +20,7 @@ import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.OrderDestinationService;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
+import com.logistics.service.shipper.ShipperVehicleWorkloadService;
 import com.logistics.utils.OrderUtils;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
@@ -29,6 +30,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -76,6 +78,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     private final ShipmentRepository shipmentRepository;
     private final ShipmentOrderRepository shipmentOrderRepository;
     private final ShipmentDeliveryService shipmentDeliveryService;
+    private final ShipperVehicleWorkloadService vehicleWorkloadService;
 
     private static final long MAX_PROOF_IMAGE_SIZE = 5 * 1024 * 1024;
     private static final String PROOF_IMAGE_FOLDER = "shipper_proofs";
@@ -200,6 +203,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 });
     }
 
+    private int nextStopSequence(Integer shipmentId) {
+        Integer maxSeq = shipmentOrderRepository.findMaxStopSequenceByShipmentId(shipmentId);
+        return (maxSeq != null ? maxSeq : 0) + 1;
+    }
+
     private BigDecimal normalizeWeight(BigDecimal value) {
         if (value == null || value.compareTo(BigDecimal.ZERO) < 0) {
             return BigDecimal.ZERO;
@@ -240,18 +248,18 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             return;
         }
 
-        // Idempotent guard: chỉ áp dụng khi status thực sự thay đổi
         if (oldStatus != null && oldStatus == newStatus) {
             return;
         }
 
-        ShipperVehicle vehicle = getOrCreateVehicle(employee);
-        int currentOrdersBefore = vehicle.getCurrentOrders() != null ? vehicle.getCurrentOrders() : 0;
-        BigDecimal currentWeightBefore = normalizeWeight(vehicle.getCurrentWeightKg());
-        BigDecimal orderWeightKg = normalizeWeight(order.getWeight());
+        if (newStatus == OrderStatus.RETURN_FAILED_FINAL) {
+            return;
+        }
 
-        int currentOrders = currentOrdersBefore;
-        BigDecimal currentWeightKg = currentWeightBefore;
+        ShipperVehicle vehicle = getOrCreateVehicle(employee);
+        int currentOrders = vehicle.getCurrentOrders() != null ? vehicle.getCurrentOrders() : 0;
+        BigDecimal currentWeightKg = normalizeWeight(vehicle.getCurrentWeightKg());
+        BigDecimal orderWeightKg = normalizeWeight(order.getWeight());
 
         switch (newStatus) {
             case PICKED_UP -> {
@@ -261,11 +269,16 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             case DELIVERED -> {
                 currentOrders = Math.max(0, currentOrders - 1);
                 currentWeightKg = currentWeightKg.subtract(orderWeightKg);
+                if (currentWeightKg.compareTo(BigDecimal.ZERO) < 0) {
+                    currentWeightKg = BigDecimal.ZERO;
+                }
             }
-            case RETURNED, DELIVERY_FAILED_FINAL, PICKUP_FAILED_FINAL,
-                 RETURN_FAILED_FINAL, CANCELLED -> {
+            case RETURNED, DELIVERY_FAILED_FINAL, PICKUP_FAILED_FINAL, CANCELLED -> {
                 currentOrders = Math.max(0, currentOrders - 1);
                 currentWeightKg = currentWeightKg.subtract(orderWeightKg);
+                if (currentWeightKg.compareTo(BigDecimal.ZERO) < 0) {
+                    currentWeightKg = BigDecimal.ZERO;
+                }
             }
             default -> {
                 return;
@@ -872,6 +885,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
                 // Thêm order vào shipment_orders nếu chưa có
                 if (!shipmentOrderRepository.existsByShipmentIdAndOrderId(activeShipment.getId(), id)) {
+                    int nextSeq = nextStopSequence(activeShipment.getId());
                     ShipmentOrder so = new ShipmentOrder();
                     ShipmentOrderId soId = new ShipmentOrderId();
                     soId.setShipmentId(activeShipment.getId());
@@ -880,6 +894,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                     so.setShipment(activeShipment);
                     so.setOrder(order);
                     so.setStopType(RouteStopType.RETURN_TO_OFFICE); // Đơn hoàn trả dùng RETURN_TO_OFFICE
+                    so.setStopSequence(nextSeq);
                     shipmentOrderRepository.save(so);
                 }
             }
@@ -914,6 +929,20 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             com.logistics.entity.Shipment activeShipment = shipmentRepository
                     .findActiveDeliveryShipmentForOrder(employee.getId(), id).orElse(null);
+            if (activeShipment != null
+                    && !shipmentOrderRepository.existsByShipmentIdAndOrderId(activeShipment.getId(), id)) {
+                int nextSeq = nextStopSequence(activeShipment.getId());
+                ShipmentOrder so = new ShipmentOrder();
+                ShipmentOrderId soId = new ShipmentOrderId();
+                soId.setShipmentId(activeShipment.getId());
+                soId.setOrderId(id);
+                so.setId(soId);
+                so.setShipment(activeShipment);
+                so.setOrder(order);
+                so.setStopType(RouteStopType.PICKUP);
+                so.setStopSequence(nextSeq);
+                shipmentOrderRepository.save(so);
+            }
             saveHistory(order, activeShipment, OrderHistoryActionType.PICKING_UP,
                     "Shipper nhận đơn lấy hàng");
 
@@ -950,6 +979,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
             // Thêm order vào shipment_orders nếu chưa có
             if (!shipmentOrderRepository.existsByShipmentIdAndOrderId(activeShipment.getId(), id)) {
+                int nextSeq = nextStopSequence(activeShipment.getId());
                 ShipmentOrder so = new ShipmentOrder();
                 ShipmentOrderId soId = new ShipmentOrderId();
                 soId.setShipmentId(activeShipment.getId());
@@ -958,6 +988,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 so.setShipment(activeShipment);
                 so.setOrder(order);
                 so.setStopType(RouteStopType.DELIVERY);
+                so.setStopSequence(nextSeq);
                 shipmentOrderRepository.save(so);
             }
         }
@@ -1008,6 +1039,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 order.setStatus(OrderStatus.CONFIRMED);
             } else {
                 order.setStatus(OrderStatus.AT_DEST_OFFICE);
+            }
+        }
+
+        List<ShipmentOrder> sos = shipmentOrderRepository.findByOrderId(id);
+        if (sos != null) {
+            for (ShipmentOrder so : sos) {
+                shipmentOrderRepository.delete(so);
             }
         }
 
@@ -1085,7 +1123,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         // SHIPMENT-CENTERED: ủy quyền cho ShipmentDeliveryService khi có thể
         if (newStatus == OrderStatus.DELIVERED) {
             shipmentDeliveryService.markDelivered(id, request);
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
+            order = orderRepository.findById(id).orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+            vehicleWorkloadService.removeLoaded(order, employee);
             if (order.getUser() != null) {
                 notificationService.create("Giao hàng thành công",
                         String.format("Đơn %s đã được giao thành công.", order.getTrackingNumber()),
@@ -1101,20 +1140,15 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
                         "Không thể bắt đầu giao hàng: đơn đang ở trạng thái hoàn. Vui lòng sử dụng chức năng giao trả hàng hoàn.");
             }
-            // Theo rule mới: PICKED_UP -> DELIVERING, validate trong service
             shipmentDeliveryService.startDelivery(id);
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERING);
             return;
         }
         if (newStatus == OrderStatus.DELIVERY_RETRY) {
             shipmentDeliveryService.markDeliveryFailed(id, request);
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_RETRY);
             return;
         }
         if (request.getStatus() != null && request.getStatus().equalsIgnoreCase("DELIVERY_FAILED_FINAL")) {
             shipmentDeliveryService.markDeliveryFailedFinal(id, request);
-            // vehicle workload: chuyển từ DELIVERING -> DELIVERY_FAILED_FINAL
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_FAILED_FINAL);
             if (order.getUser() != null) {
                 notificationService.create("Giao hàng không thành công",
                         String.format("Đơn %s giao không thành công sau nhiều lần thử.", order.getTrackingNumber()),
@@ -1129,7 +1163,15 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             order.setNotes(request.getNotes());
         }
         orderRepository.save(order);
-        applyVehicleWorkloadByStatus(order, employee, newStatus);
+        if (newStatus == OrderStatus.DELIVERED) {
+            vehicleWorkloadService.removeLoaded(order, employee);
+        } else if (newStatus == OrderStatus.RETURNED
+                || newStatus == OrderStatus.DELIVERY_FAILED_FINAL
+                || newStatus == OrderStatus.PICKUP_FAILED_FINAL) {
+            vehicleWorkloadService.removeLoaded(order, employee);
+        } else {
+            applyVehicleWorkloadByStatus(order, employee, newStatus);
+        }
 
         String statusMessage = switch (newStatus) {
             case DELIVERING -> "Đã bắt đầu giao hàng";
@@ -1270,7 +1312,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             order.setStatus(OrderStatus.PICKED_UP);
             orderRepository.save(order);
             saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper đã lấy hàng thành công");
-            applyVehicleWorkloadByStatus(order, employee, orderStatusBefore, OrderStatus.PICKED_UP);
+            vehicleWorkloadService.addLoaded(order, employee);
 
             if (order.getUser() != null) {
                 notificationService.create(
@@ -1288,10 +1330,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         // 4. Xử lý shipment DELIVERY IN_TRANSIT → ủy quyền cho ShipmentDeliveryService
         if (inTransitShipment != null) {
             shipmentDeliveryService.markPickedUp(id, request);
-            // refresh + apply workload (idempotent nhờ oldStatus guard)
             order = orderRepository.findById(id)
                     .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
-            applyVehicleWorkloadByStatus(order, employee, orderStatusBefore, OrderStatus.PICKED_UP);
+            vehicleWorkloadService.addLoaded(order, employee);
             if (order.getUser() != null) {
                 notificationService.create(
                         "Đã lấy hàng thành công",
@@ -1308,10 +1349,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         // 4d. Xử lý shipment DELIVERY PENDING → ủy quyền cho ShipmentDeliveryService
         if (pendingShipment != null) {
             shipmentDeliveryService.markPickedUp(id, request);
-            // refresh + apply workload (idempotent nhờ oldStatus guard)
             order = orderRepository.findById(id)
                     .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
-            applyVehicleWorkloadByStatus(order, employee, orderStatusBefore, OrderStatus.PICKED_UP);
+            vehicleWorkloadService.addLoaded(order, employee);
             if (order.getUser() != null) {
                 notificationService.create(
                         "Đã lấy hàng thành công",
@@ -1374,8 +1414,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         // Lưu history không có shipment (standalone)
         saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper đã lấy hàng thành công");
 
-        // Cộng vehicle load (idempotent nhờ oldStatus guard)
-        applyVehicleWorkloadByStatus(order, employee, orderStatusBefore, OrderStatus.PICKED_UP);
+        vehicleWorkloadService.addLoaded(order, employee);
 
         if (order.getUser() != null) {
             notificationService.create(
@@ -1528,6 +1567,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         shipmentDeliveryService.deliverToOrigin(id);
         order = orderRepository.findById(id).orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        vehicleWorkloadService.removeLoaded(order, employee);
 
         // Nếu request chỉ định officeId thì dùng office đó
         // (đã làm phía trên)
@@ -2488,7 +2529,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         order.setStatus(OrderStatus.DELIVERED);
         order.setDeliveredAt(LocalDateTime.now());
         orderRepository.save(order);
-        applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERED);
+        vehicleWorkloadService.removeLoaded(order, employee);
 
         // Tinh expected values
         int expectedCod = (order.getCod() != null) ? order.getCod() : 0;
@@ -2737,14 +2778,14 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         if (order.getStatus() == OrderStatus.DELIVERY_RETRY) {
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_RETRY);
             shipmentDeliveryService.returnFailedToDestOffice(id);
+            vehicleWorkloadService.removeLoaded(order, employee);
         } else if (order.getStatus() == OrderStatus.DELIVERY_FAILED_FINAL) {
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.DELIVERY_FAILED_FINAL);
             shipmentDeliveryService.returnFailedFinalToDestOffice(id);
+            vehicleWorkloadService.removeLoaded(order, employee);
         } else if (order.getStatus() == OrderStatus.RETURN_FAILED_FINAL) {
-            applyVehicleWorkloadByStatus(order, employee, OrderStatus.RETURN_FAILED_FINAL);
             shipmentDeliveryService.submitReturnFailedToOffice(id);
+            vehicleWorkloadService.removeLoaded(order, employee);
         }
         shipmentDeliveryService.checkAndAutoFinishForOrder(id);
     }
