@@ -7,10 +7,9 @@ import {Tooltip} from "antd";
 interface OfficeInfoProps {
     fromOffice?: Office;
     toOffice?: Office;
-    currentOffice?: Office;
 }
 
-const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice, currentOffice }) => {
+const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice }) => {
     const [fromAddress, setFromAddress] = useState<string>("");
     const [toAddress, setToAddress] = useState<string>("");
     const [currentAddress, setCurrentAddress] = useState<string>("");
@@ -33,10 +32,7 @@ const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice, currentOf
         if (toOffice) {
             formatAddress(toOffice.detail, toOffice.wardCode, toOffice.cityCode).then(setToAddress);
         }
-        if (currentOffice) {
-            formatAddress(currentOffice.detail, currentOffice.wardCode, currentOffice.cityCode).then(setCurrentAddress);
-        }
-    }, [fromOffice, toOffice, currentOffice]);
+    }, [fromOffice, toOffice]);
 
     const openMap = (office?: Office) => {
         if (office?.latitude && office?.longitude) {
@@ -104,24 +100,6 @@ const OfficeInfo: React.FC<OfficeInfoProps> = ({ fromOffice, toOffice, currentOf
                         )}
                     </div>
                 }
-
-                {/* Cột bưu cục hiện tại */}
-                <div className="order-detail-card-column">
-                    <Title level={5} className="order-detail-card-title order-detail-card-title-sub">
-                        Bưu cục hiện tại
-                    </Title>
-                    {currentOffice
-                        ? (
-                            <>
-                                {renderField("Tên:", currentOffice.name)}
-                                {renderField("Địa chỉ:", currentAddress, !!(currentOffice.latitude && currentOffice.longitude), currentOffice)}
-                                {renderField("Email:", currentOffice.email)}
-                                {renderField("Điện thoại:", currentOffice.phoneNumber)}
-                            </>
-                        )
-                        : renderField("Tên:", "Chưa xác định")
-                    }
-                </div>
             </div>
         </div>
     );

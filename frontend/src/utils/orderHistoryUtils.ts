@@ -10,7 +10,7 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
     case "READY_FOR_PICKUP":
       return "Đơn hàng đã sẵn sàng để shipper đến lấy";
     case "TRANSIT_TO_OFFICE":
-      return "Đơn hàng đang được chuyển về bưu cục";
+      return "Đơn hàng đang được chuyển về bưu cục gốc";
     case "CONFIRMED":
       return "Đơn hàng đã được xác nhận";
     case "URGENT_PICKUP":
@@ -43,6 +43,8 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return `Đơn hàng đã được hoàn trả thành công`;
     case "CANCELLED":
       return `Đơn hàng đã bị hủy`;
+    case "AT_DEST_OFFICE":
+      return `Đơn hàng đã đến bưu cục đích`;
     default:
       return `Cập nhật trạng thái đơn hàng`;
   }

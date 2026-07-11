@@ -739,12 +739,14 @@ const orderApi = {
         return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-destination-bulk`, param);
     },
 
-    async confirmReturnArrival(orderId: number) {
-        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${orderId}/confirm-return-arrival`);
+    async confirmReturnArrival(orderId: number, confirmed: boolean) {
+        return await axiosClient.patch<ApiResponse<void>>(`/manager/orders/${orderId}/confirm-return-arrival`,
+            { confirmed }
+        );
     },
 
-    async confirmReturnArrivals(orderIds: number[]) {
-        const param = { orderIds };
+    async confirmReturnArrivals(orderIds: number[], confirmed: boolean) {
+        const param = { orderIds, confirmed };
         return await axiosClient.patch<BulkResponse<string>>(`/manager/orders/confirm-return-arrival-bulk`, param);
     },
 

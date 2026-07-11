@@ -1,9 +1,9 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Button, Col, Input, message, Row, Space, Table, Tag, Tooltip} from "antd";
+import {Button, Col, Dropdown, Input, message, Row, Space, Table, Tag, Tooltip} from "antd";
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
-    DeleteOutlined,
+    DeleteOutlined, DownOutlined,
     FileExcelOutlined,
     PlayCircleOutlined,
     PlusOutlined,
@@ -63,6 +63,7 @@ const ManagerShipmentOrders: React.FC = () => {
     const [orderId, setOrderId] = useState<number | null>(null);
     const latestRequestRef = useRef(0);
     const selectAllRequestRef = useRef(0);
+    const [modalConfirmReturnOfficeOpen, setModalConfirmReturnOfficeOpen] = useState(false);
 
     const updateURL = () => {
         const params: any = {};
@@ -202,88 +203,76 @@ const ManagerShipmentOrders: React.FC = () => {
     };
 
     const confirmDestinationOrders = async (confirmed: boolean) => {
-        // Use bulkConfirmOrderIds if set, otherwise use selectedOrderIds
-        const orderIdsToConfirm = bulkConfirmOrderIds.length > 0 ? bulkConfirmOrderIds : selectedOrderIds;
-
-        if (!orderIdsToConfirm.length) {
+        if (!selectedOrderIds.length) {
             message.error("Bạn chưa chọn hoặc chưa có đơn hàng nào cần xác nhận");
-            setModalConfirmDestinationOfficeOpen(false);
             return;
         }
 
-        setModalConfirmDestinationOfficeOpen(false);
-        setLoadingConfirm(true);
-
         try {
-            // Filter orders by confirmation type
-            const destinationIds = orderIdsToConfirm.filter(
-                id => orders.find(o => o.id === id)?.pendingDestinationConfirm
-            );
-            const returnIds = orderIdsToConfirm.filter(
-                id => orders.find(o => o.id === id)?.pendingReturnConfirm
+            setLoadingConfirm(true);
+            const result = await orderApi.saveManagerConfirmDestinationOrdersInShipment(
+                selectedOrderIds,
+                confirmed
             );
 
-            const allResults: Array<{ name: string; success: boolean; message: string }> = [];
-            let hasError = false;
+            const hasDetails = result.results && result.results.length > 0;
 
-            // Call destination confirm API if there are destination orders
-            if (destinationIds.length > 0) {
-                const result = await orderApi.saveManagerConfirmDestinationOrdersInShipment(
-                    destinationIds,
-                    confirmed
-                );
-
-                if (result.results) {
-                    result.results.forEach((r: any) => {
-                        allResults.push({
-                            name: r.result || r.name || '',
-                            success: r.success,
-                            message: r.message
-                        });
-                        if (!r.success) hasError = true;
-                    });
-                }
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
             }
 
-            // Call return arrival confirm API if there are return orders
-            if (returnIds.length > 0) {
-                const result = await orderApi.confirmReturnArrivals(returnIds);
-
-                if (result.results) {
-                    result.results.forEach((r: any) => {
-                        allResults.push({
-                            name: r.result || r.name || '',
-                            success: r.success,
-                            message: r.message
-                        });
-                        if (!r.success) hasError = true;
-                    });
-                }
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể xác nhận");
             }
-
-            setTitle("Kết quả xác nhận");
-            setBulkResult({
-                success: !hasError,
-                message: hasError ? "Một số đơn hàng không thể xác nhận" : "Tất cả đơn hàng đã được xác nhận",
-                totalImported: allResults.filter(r => r.success).length,
-                totalFailed: allResults.filter(r => !r.success).length,
-                results: allResults.map(r => ({
-                    name: r.name,
-                    success: r.success,
-                    message: r.message,
-                    result: r.name as any
-                }))
-            } as BulkResponse<ManagerOrderShipment>);
-            setBulkModalOpen(true);
-
-            message.success(hasError ? "Một số đơn hàng không thể xác nhận" : "Cập nhật thành công");
-            selectAllRequestRef.current++;
-            setSelectedOrderIds([]);
-            setBulkConfirmOrderIds([]);
         } catch (error: any) {
-            message.error(error.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
+            message.error(error.message || "Cập nhật thất bại");
         } finally {
             setLoadingConfirm(false);
+            setSelectedOrderIds([]);
+            setModalConfirmDestinationOfficeOpen(false);
+        }
+    };
+
+    const confirmReturnAtOriginOrders = async (confirmed: boolean) => {
+        if (!selectedOrderIds.length) {
+            message.error("Bạn chưa chọn hoặc chưa có đơn hàng nào cần xác nhận");
+            return;
+        }
+
+        try {
+            setLoadingConfirm(true);
+            const result = await orderApi.confirmReturnArrivals(
+                selectedOrderIds,
+                confirmed
+            );
+
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
+            if (result.success) {
+                message.success(result.message || "Cập nhật thành công");
+                selectAllRequestRef.current++;
+                setSelectedOrderIds([]);
+                fetchOrders(page);
+            } else {
+                message.error(result.message || "Một số đơn hàng không thể xác nhận");
+            }
+        } catch (error: any) {
+            message.error(error.message || "Cập nhật thất bại");
+        } finally {
+            setLoadingConfirm(false);
+            setSelectedOrderIds([]);
+            setModalConfirmDestinationOfficeOpen(false);
         }
     };
 
@@ -375,7 +364,7 @@ const ManagerShipmentOrders: React.FC = () => {
         }
     };
 
-    const handleConfirmReturnArrival = async () => {
+    const handleConfirmReturnArrival = async (confirmed: boolean) => {
         if (!orderId) {
             message.error("Không tìm thấy đơn hàng cần xác nhận");
             return;
@@ -386,7 +375,7 @@ const ManagerShipmentOrders: React.FC = () => {
         try {
             setLoadingConfirm(true);
 
-            const result = await orderApi.confirmReturnArrival(orderId);
+            const result = await orderApi.confirmReturnArrival(orderId, confirmed);
 
             if (result.success) {
                 message.success("Đã xác nhận đơn hoàn đã về bưu cục gốc thành công.");
@@ -676,28 +665,33 @@ const ManagerShipmentOrders: React.FC = () => {
                                         )}
 
                                         {canConfirmDestinationOrdersManagerShipment(shipmentStatus) && (
-                                            <Tooltip title="Xác nhận các đơn trong chuyến đã đến bưu cục.">
-                                                <Button
-                                                    onClick={() => {
-                                                        // Calculate confirmable order IDs from current orders (no API call)
-                                                        const confirmableIds = orders
-                                                            .filter(o => o.pendingDestinationConfirm || o.pendingReturnConfirm)
-                                                            .map(o => o.id);
-
-                                                        if (confirmableIds.length === 0) {
-                                                            message.warning("Không có đơn nào cần xác nhận");
-                                                            return;
-                                                        }
-
-                                                        setBulkConfirmOrderIds(confirmableIds);
-                                                        setModalConfirmDestinationOfficeOpen(true);
-                                                    }}
-                                                    className="modal-ok-button"
-                                                    icon={<PlayCircleOutlined/>}
-                                                >
-                                                    Xác nhận các đơn hàng đã đến bưu cục đích
-                                                </Button>
-                                            </Tooltip>
+                                            <Dropdown
+                                                menu={{
+                                                    items: [
+                                                        {
+                                                            key: 'destination',
+                                                            label: 'Xác nhận đơn đã đến bưu cục đích',
+                                                            onClick: () => {
+                                                                setModalConfirmDestinationOfficeOpen(true);
+                                                            },
+                                                        },
+                                                        {
+                                                            key: 'return',
+                                                            label: 'Xác nhận đơn hoàn về bưu cục gốc',
+                                                            onClick: () => {
+                                                                setModalConfirmReturnOfficeOpen(true);
+                                                            },
+                                                        },
+                                                    ],
+                                                }}
+                                                trigger={['click']}
+                                            >
+                                                <Tooltip title="Xác nhận các đơn trong chuyến đã đến bưu cục.">
+                                                    <Button className="modal-ok-button" icon={<PlayCircleOutlined />}>
+                                                        Xác nhận đơn hàng <DownOutlined />
+                                                    </Button>
+                                                </Tooltip>
+                                            </Dropdown>
                                         )}
 
                                         <Button
@@ -766,11 +760,20 @@ const ManagerShipmentOrders: React.FC = () => {
             </div>
 
             <ConfirmModal
-                title="Xác nhận đơn đã đến bưu cục"
-                message="Xác nhận các đơn đã đến bưu cục tương ứng trong chuyến?"
-                open={modalConfirmDestinationOfficeOpen}
+                title="Xác nhận đơn đã đến bưu cục đích"
+                message="Xác nhận các đơn đã đến bưu cục đích?"
+                open={modalConfirmDestinationOpen}
                 onOk={() => confirmDestinationOrders(true)}
                 onCancel={() => confirmDestinationOrders(false)}
+                loading={loadingConfirm}
+            />
+
+            <ConfirmModal
+                title="Xác nhận đơn đã hoàn về bưu cục gốc"
+                message="Xác nhận các đơn đã hoàn về bưu cục gốc?"
+                open={modalConfirmReturnOfficeOpen}
+                onOk={() => confirmReturnAtOriginOrders(true)}
+                onCancel={() => confirmReturnAtOriginOrders(false)}
                 loading={loadingConfirm}
             />
 
@@ -787,8 +790,8 @@ const ManagerShipmentOrders: React.FC = () => {
                 title="Xác nhận đơn hoàn đã về bưu cục gốc"
                 message="Xác nhận đơn hoàn này đã về bưu cục gốc?"
                 open={modalConfirmReturnArrivalOpen}
-                onOk={handleConfirmReturnArrival}
-                onCancel={() => setModalConfirmReturnArrivalOpen(false)}
+                onOk={() => handleConfirmReturnArrival(true)}
+                onCancel={() => handleConfirmReturnArrival(false)}
                 loading={loadingConfirm}
             />
         </div>

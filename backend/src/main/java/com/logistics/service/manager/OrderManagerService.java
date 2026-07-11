@@ -49,6 +49,6 @@ public interface OrderManagerService {
             UserUrgentOrderSearchRequest request);
     boolean hasTransitPermission(Order order, Office office);
     
-    void confirmReturnArrival(Integer userId, Integer orderId);
-    BulkResponse<String> confirmReturnArrivals(Integer userId, List<Integer> orderIds);
+    void confirmReturnArrival(Integer userId, Integer orderId, boolean isConfirmed);
+    BulkResponse<String> confirmReturnArrivals(Integer userId, List<Integer> orderIds, boolean isConfirmed);
 }
