@@ -15,7 +15,6 @@ public class UserSpecification {
         return (root, query, cb) -> cb.conjunction();
     }
 
-
     public static Specification<User> fetchAccount() {
         return (root, query, cb) -> {
             if (query.getResultType() != Long.class && query.getResultType() != long.class) {
