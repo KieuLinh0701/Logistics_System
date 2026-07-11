@@ -1121,7 +1121,12 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         }
 
         order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
-        order.setCurrentOffice(shipment.getFromOffice());
+       
+        if (order.getFromOffice() != null) {
+            order.setCurrentOffice(order.getFromOffice());
+        } else {
+            order.setCurrentOffice(shipment.getFromOffice());
+        }
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
                 "Đã về bưu cục gốc khi hoàn hàng (chuyến " + shipment.getCode() + ")");

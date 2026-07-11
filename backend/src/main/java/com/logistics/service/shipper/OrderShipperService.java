@@ -23,7 +23,7 @@ public interface OrderShipperService {
 
     Map<String, Object> listOrders(int page, int limit, String status, String search);
 
-    Map<String, Object> listUnassignedOrders(int page, int limit);
+    Map<String, Object> listUnassignedOrders(int page, int limit, Double latitude, Double longitude);
 
     Map<String, Object> listReturnOrders(int page, int limit, String status, String search);
 

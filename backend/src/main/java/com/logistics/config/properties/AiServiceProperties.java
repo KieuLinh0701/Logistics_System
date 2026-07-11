@@ -17,4 +17,8 @@ public class AiServiceProperties {
     private double defaultSpeedKmh = 25.0;
     private double defaultFuelCostPerKm = 3000.0;
     private String defaultStartTime = "08:00";
+
+    private int recommendConnectTimeoutMs = 2000;
+    private int recommendReadTimeoutMs = 4000;
+    private int recommendationCacheTtlSeconds = 45;
 }

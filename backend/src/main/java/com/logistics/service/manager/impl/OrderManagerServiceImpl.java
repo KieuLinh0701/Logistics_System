@@ -1384,7 +1384,7 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         orderHistoryUserService.save(
                 order,
                 null,
-                null,
+                userOffice,
                 null,
                 OrderHistoryActionType.RETURNED,
                 null);
@@ -1611,7 +1611,7 @@ public class OrderManagerServiceImpl implements OrderManagerService {
 
                 order.setStatus(OrderStatus.CONFIRMED);
                 repository.save(order);
-                orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.CONFIRMED, null);
+                orderHistoryUserService.save(order, null, userOffice, null, OrderHistoryActionType.CONFIRMED, null);
 
                 if (order.getUser() != null) {
                     notificationService.create(
@@ -1809,7 +1809,7 @@ public class OrderManagerServiceImpl implements OrderManagerService {
                 order.setReturnedAt(LocalDateTime.now());
                 repository.save(order);
 
-                orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.RETURNED, null);
+                orderHistoryUserService.save(order, null, userOffice, null, OrderHistoryActionType.RETURNED, null);
 
                 if (order.getUser() != null) {
                     notificationService.create(
@@ -2011,18 +2011,9 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         if (isConfirmed) {
             order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
             order.setPendingReturnConfirm(false);
-            order.setCurrentOffice(userOffice);
+            order.setCurrentOffice(order.getFromOffice() != null ? order.getFromOffice() : userOffice);
             order.setEmployee(null);
             repository.save(order);
-
-            orderHistoryUserService.save(
-                    order,
-                    null,
-                    userOffice,
-                    null,
-                    OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
-                    "Manager xác nhận đơn hàng đã hoàn về bưu cục gốc"
-            );
 
             if (order.getUser() != null) {
                 if (order.getPickupType() == OrderPickupType.AT_OFFICE) {
@@ -2047,6 +2038,15 @@ public class OrderManagerServiceImpl implements OrderManagerService {
                     );
                 }
             }
+
+            orderHistoryUserService.save(
+                    order,
+                    null,
+                    userOffice,
+                    null,
+                    OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
+                    "Manager xác nhận đơn hàng đã hoàn về bưu cục gốc"
+            );
         } else {
             order.setPendingReturnConfirm(false);
             repository.save(order);
