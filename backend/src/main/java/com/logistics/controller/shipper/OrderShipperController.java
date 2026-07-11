@@ -15,6 +15,7 @@ import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/shipper")
 @RequiredArgsConstructor
@@ -60,13 +62,19 @@ public class OrderShipperController {
     @GetMapping("/orders-unassigned")
     public ResponseEntity<ApiResponse<Map<String, Object>>> listUnassignedOrders(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude) {
 
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(ApiResponse.success(shipperService.listUnassignedOrders(page, limit)));
+        Integer shipperId = SecurityUtils.getAuthenticatedUserId();
+
+        Map<String, Object> result = shipperService.listUnassignedOrders(page, limit, latitude, longitude);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/return-orders")

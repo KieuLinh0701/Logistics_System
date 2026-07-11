@@ -128,7 +128,7 @@ const ShipperDashboard: React.FC = () => {
       case "CONFIRMED":
         return "Đã xác nhận";
       case "AT_DEST_OFFICE":
-        return "Đã đến bưu cục";
+        return "Tại bưu cục";
       case "PICKED_UP":
         return "Đã lấy hàng";
       case "DELIVERING":

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.optimization import router as optimization_router
+from app.api.routes.recommendation import router as recommendation_router
 from app.config.settings import get_settings
 
 settings = get_settings()
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(optimization_router)
+app.include_router(recommendation_router)
 
 
 @app.get("/")

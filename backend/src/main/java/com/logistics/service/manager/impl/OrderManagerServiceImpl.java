@@ -1994,7 +1994,7 @@ public class OrderManagerServiceImpl implements OrderManagerService {
     private void applyReturnArrivalConfirm(Order order, Office userOffice) {
         order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
         order.setPendingReturnConfirm(false);
-        order.setCurrentOffice(userOffice);
+        order.setCurrentOffice(order.getFromOffice() != null ? order.getFromOffice() : userOffice);
         order.setEmployee(null);
         repository.save(order);
 

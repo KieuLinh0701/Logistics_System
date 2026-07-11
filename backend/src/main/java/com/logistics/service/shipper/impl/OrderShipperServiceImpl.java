@@ -3,6 +3,15 @@ package com.logistics.service.shipper.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.logistics.dto.ai.*;
+import com.logistics.dto.ai.AiRecommendationCandidateOrderDto;
+import com.logistics.dto.ai.AiRecommendationCurrentOrderDto;
+import com.logistics.dto.ai.AiRecommendationItemDto;
+import com.logistics.dto.ai.AiRecommendationLoadDto;
+import com.logistics.dto.ai.AiRecommendationLocationDto;
+import com.logistics.dto.ai.AiRecommendationRequestDto;
+import com.logistics.dto.ai.AiRecommendationResponseDto;
+import com.logistics.dto.ai.AiRecommendationVehicleCapacityDto;
+import com.logistics.config.properties.AiServiceProperties;
 import com.logistics.entity.*;
 import com.logistics.entity.id.ShipmentOrderId;
 import com.logistics.enums.*;
@@ -46,6 +55,7 @@ import java.math.RoundingMode;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.logistics.utils.OrderUtils.translateOrderStatus;
@@ -74,6 +84,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     private final AiRoutePlanStopRepository aiRoutePlanStopRepository;
     private final ShipperVehicleRepository shipperVehicleRepository;
     private final AiServiceClient aiServiceClient;
+    private final AiServiceProperties aiServiceProperties;
     private final OrderDestinationService orderDestinationService;
     private final ShipmentRepository shipmentRepository;
     private final ShipmentOrderRepository shipmentOrderRepository;
@@ -82,6 +93,20 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
     private static final long MAX_PROOF_IMAGE_SIZE = 5 * 1024 * 1024;
     private static final String PROOF_IMAGE_FOLDER = "shipper_proofs";
+
+    private final Map<String, CachedRecommendation> recommendationCache = new ConcurrentHashMap<>();
+
+    private static final class CachedRecommendation {
+        final long ts;
+        final Map<Integer, AiRecommendationItemDto> byOrderId;
+        CachedRecommendation(Map<Integer, AiRecommendationItemDto> byOrderId) {
+            this.ts = System.currentTimeMillis();
+            this.byOrderId = byOrderId;
+        }
+        boolean isExpired(long ttlSeconds) {
+            return ttlSeconds <= 0 || (System.currentTimeMillis() - ts) > ttlSeconds * 1000L;
+        }
+    }
 
     public String uploadProofImage(MultipartFile file) {
         validateProofImage(file);
@@ -234,11 +259,6 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         applyVehicleWorkloadByStatus(order, employee, null, newStatus);
     }
 
-    /**
-     * Overload idempotent: chỉ cộng/trừ vehicle load khi status THỰC SỰ chuyển.
-     * - Gọi với oldStatus != null → check transition (non-PICKED_UP → PICKED_UP mới cộng).
-     * - Gọi với oldStatus == null → giữ tương thích code cũ (cộng/trừ mỗi lần gọi).
-     */
     public void applyVehicleWorkloadByStatus(Order order, Employee employee, OrderStatus oldStatus, OrderStatus newStatus) {
         if (order == null || employee == null || newStatus == null) {
             log.warn("[VEHICLE_WORKLOAD_SKIP_NULL] order={} employee={} newStatus={}",
@@ -487,7 +507,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         return result;
     }
 
-    public Map<String, Object> listUnassignedOrders(int page, int limit) {
+    public Map<String, Object> listUnassignedOrders(int page, int limit,
+                                                  Double requestLatitude, Double requestLongitude) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
 
@@ -506,14 +527,18 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE)
             );
 
-            // ========== Đơn giao trả hàng hoàn ==========
-            // RETURN_AT_ORIGIN_OFFICE: đơn đã hoàn về bưu cục gốc, chờ shipper giao trả
-            // Chỉ hiển thị nếu shipper thuộc bưu cục gốc (fromOffice.id = shipper.office.id)
+            Predicate returnOfficeMatch = cb.or(
+                cb.equal(root.get("currentOffice").get("id"), officeId),
+                cb.and(
+                    cb.isNull(root.get("currentOffice")),
+                    cb.equal(root.get("fromOffice").get("id"), officeId)
+                )
+            );
             Predicate returnOriginPredicate = cb.and(
                 cb.equal(root.get("status"), OrderStatus.RETURN_AT_ORIGIN_OFFICE),
                 cb.equal(root.get("pickupType"), OrderPickupType.PICKUP_BY_COURIER),
                 cb.isNull(root.get("employee")),
-                cb.equal(root.get("fromOffice").get("id"), officeId)
+                returnOfficeMatch
             );
 
             // Kết hợp: (normalDelivery OR returnOrigin) AND createdByType = USER
@@ -523,10 +548,52 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         };
 
         Page<Order> orderPage = orderRepository.findAll(spec, pageable);
-        List<Map<String, Object>> orders = orderPage.getContent()
-                .stream()
+        List<Order> orders = orderPage.getContent();
+
+        List<Map<String, Object>> mapped = orders.stream()
                 .map(this::mapOrderDetail)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        // Vị trí hiện tại: GPS (ưu tiên) → ROUTE_LAST_POINT → OFFICE → NONE.
+        ResolvedLocation resolvedLocation = resolveRecommendationCurrentLocation(
+                employee, requestLatitude, requestLongitude);
+
+        // Cache key phải thay đổi khi vị trí thay đổi.
+        // Nếu source = GPS thì bỏ cache luôn để tránh dùng kết quả từ vị trí cũ.
+        String cacheKey;
+        if ("GPS".equals(resolvedLocation.source)) {
+            cacheKey = null;
+        } else {
+            cacheKey = "unassigned:" + employee.getId() + ":" + officeId + ":" + page + ":" + limit
+                    + ":" + resolvedLocation.cacheFingerprint;
+        }
+        log.info("[BE][Recommendation] shipperId={} locationSource={} lat={} lng={} cacheKey={}",
+                employee.getId(), resolvedLocation.source,
+                resolvedLocation.latitude, resolvedLocation.longitude, cacheKey);
+
+        try {
+            enrichOrdersWithRecommendations(mapped, employee, cacheKey, resolvedLocation);
+        } catch (Exception ex) {
+            log.warn("[UNASSIGNED_RECOMMEND_ENRICH_FAIL] shipperId={} error={}",
+                    employee.getId(), ex.getMessage());
+        }
+
+        // Sắp xếp theo score giảm dần, sau đó theo createdAt tăng dần (đơn cũ hơn lên trước
+        // khi cùng điểm).
+        mapped.sort((a, b) -> {
+            Integer sa = recommendationScoreOf(a);
+            Integer sb = recommendationScoreOf(b);
+            int cmp = Integer.compare(
+                    sb == null ? Integer.MIN_VALUE : sb,
+                    sa == null ? Integer.MIN_VALUE : sa);
+            if (cmp != 0) return cmp;
+            Object ca = a.get("createdAt");
+            Object cb = b.get("createdAt");
+            if (ca instanceof LocalDateTime && cb instanceof LocalDateTime) {
+                return ((LocalDateTime) ca).compareTo((LocalDateTime) cb);
+            }
+            return 0;
+        });
 
         Pagination pagination = new Pagination(
                 (int) orderPage.getTotalElements(),
@@ -536,10 +603,372 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         );
 
         Map<String, Object> result = new HashMap<>();
-        result.put("orders", orders);
+        result.put("orders", mapped);
         result.put("pagination", pagination);
 
         return result;
+    }
+
+    private static Integer recommendationScoreOf(Map<String, Object> order) {
+        Object v = order == null ? null : order.get("recommendationScore");
+        if (v instanceof Number) {
+            return ((Number) v).intValue();
+        }
+        return null;
+    }
+
+    private void evictRecommendationCache(Integer shipperId) {
+        if (shipperId == null) return;
+        // Cache key shape: "unassigned:<shipperId>:<officeId>:<page>:<limit>"
+        final String prefix = "unassigned:" + shipperId + ":";
+        recommendationCache.entrySet().removeIf(e -> e.getKey().startsWith(prefix));
+    }
+
+    private void enrichOrdersWithRecommendations(
+            List<Map<String, Object>> mapped,
+            Employee employee,
+            String cacheKey,
+            ResolvedLocation resolvedLocation
+    ) {
+        if (mapped == null || mapped.isEmpty()) return;
+
+        Integer officeId = employee != null && employee.getOffice() != null
+                ? employee.getOffice().getId() : null;
+
+        // 1. Cache hit?
+        int ttl = aiServiceProperties != null
+                ? aiServiceProperties.getRecommendationCacheTtlSeconds()
+                : 0;
+        CachedRecommendation cached = cacheKey != null ? recommendationCache.get(cacheKey) : null;
+        if (cached != null && !cached.isExpired(ttl) && ttl > 0) {
+            applyRecommendations(mapped, cached.byOrderId);
+            return;
+        }
+
+        // Lấy danh sách orderId đang được shipper giao (in-flight) để gửi cho AI.
+        List<Integer> inFlightOrderIds;
+        try {
+            inFlightOrderIds = shipmentOrderRepository
+                    .findOrderIdsByActiveDeliveryShipmentOfEmployee(employee.getId());
+        } catch (Exception ex) {
+            log.warn("[UNASSIGNED_RECOMMEND_INFLIGHT_FAIL] shipperId={} error={}",
+                    employee.getId(), ex.getMessage());
+            inFlightOrderIds = Collections.emptyList();
+        }
+
+        // Lấy lat/lng của các đơn đang thực hiện (chỉ những đơn có tọa độ).
+        Map<Integer, Order> inFlightOrdersById;
+        try {
+            inFlightOrdersById = orderRepository.findByIdIn(
+                    inFlightOrderIds == null ? Collections.emptyList() : inFlightOrderIds
+            ).stream().collect(Collectors.toMap(Order::getId, o -> o, (a, b) -> a));
+        } catch (Exception ex) {
+            log.warn("[UNASSIGNED_RECOMMEND_INFLIGHT_LOAD_FAIL] shipperId={} error={}",
+                    employee.getId(), ex.getMessage());
+            inFlightOrdersById = Collections.emptyMap();
+        }
+
+        // Vị trí hiện tại: đã resolve ở listUnassignedOrders (GPS → ROUTE_LAST_POINT → OFFICE → NONE).
+        AiRecommendationLocationDto location = toLocationDto(resolvedLocation);
+
+        // Tải còn lại từ ShipperVehicle (nếu có).
+        AiRecommendationVehicleCapacityDto capacity = resolveRecommendationCapacity(employee);
+
+        AiRecommendationRequestDto req = AiRecommendationRequestDto.builder()
+                .shipperId(employee.getId())
+                .currentLocation(location)
+                .currentLoad(AiRecommendationLoadDto.builder().weight(0.0).volume(0.0).build())
+                .vehicleCapacity(capacity)
+                .currentOrders(inFlightOrdersById.values().stream()
+                        .map(o -> AiRecommendationCurrentOrderDto.builder()
+                                .orderId(o.getId())
+                                .recipientWardCode(o.getRecipientWardCode())
+                                .recipientCityCode(o.getRecipientCityCode())
+                                .status(o.getStatus() != null ? o.getStatus().name() : null)
+                                .build())
+                        .collect(Collectors.toList()))
+                .candidateOrders(mapped.stream()
+                        .map(this::toCandidateDto)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()))
+                .build();
+
+        AiRecommendationResponseDto resp = aiServiceClient.recommendUnassignedOrders(req);
+
+        if (resp == null || resp.getRecommendations() == null) {
+            log.warn("[BE][Recommendation] AI response is null or has no recommendations");
+            return;
+        }
+
+        Map<Integer, AiRecommendationItemDto> byOrderId = new HashMap<>();
+        for (AiRecommendationItemDto item : resp.getRecommendations()) {
+            if (item == null || item.getOrderId() == null) continue;
+            byOrderId.put(item.getOrderId(), item);
+        }
+
+        // Cache kết quả (kể cả rỗng) trong TTL ngắn để giảm tải AI Service.
+        if (cacheKey != null) {
+            int recommendationCount = byOrderId.size();
+            if (recommendationCount > 0 || (mapped != null && mapped.isEmpty())) {
+                recommendationCache.put(cacheKey, new CachedRecommendation(byOrderId));
+            }
+        }
+
+        applyRecommendations(mapped, byOrderId);
+    }
+
+    private void applyRecommendations(
+            List<Map<String, Object>> mapped,
+            Map<Integer, AiRecommendationItemDto> byOrderId
+    ) {
+        if (byOrderId == null || byOrderId.isEmpty()) {
+            return;
+        }
+        for (Map<String, Object> m : mapped) {
+            Integer oid = m.get("id") instanceof Number ? ((Number) m.get("id")).intValue() : null;
+            if (oid == null) continue;
+            AiRecommendationItemDto item = byOrderId.get(oid);
+            if (item == null) continue;
+
+            m.put("recommendationScore", item.getScore());
+            m.put("recommendationLevel", item.getLevel());
+            m.put("recommendationReasons", item.getReasons() == null
+                    ? Collections.emptyList() : item.getReasons());
+            m.put("estimatedDistanceKm", item.getEstimatedDistanceKm());
+            m.put("estimatedDurationMinutes", item.getEstimatedDurationMinutes());
+            m.put("recommended", Boolean.TRUE.equals(item.getRecommended()));
+        }
+    }
+
+    private AiRecommendationLocationDto resolveRecommendationLocation(Employee employee) {
+        // Tương thích ngược: mặc định chỉ fallback về OFFICE.
+        ResolvedLocation r = resolveRecommendationCurrentLocation(employee, null, null);
+        return toLocationDto(r);
+    }
+
+    private ResolvedLocation resolveRecommendationCurrentLocation(
+            Employee employee,
+            Double requestLatitude,
+            Double requestLongitude
+    ) {
+        // 1) GPS từ request.
+        if (isValidCoordinate(requestLatitude, requestLongitude)) {
+            return new ResolvedLocation(
+                    "GPS",
+                    requestLatitude,
+                    requestLongitude,
+                    fingerprint(requestLatitude, requestLongitude)
+            );
+        }
+
+        // 2) Điểm cuối tuyến đang hoạt động.
+        Double[] lastStop = resolveLastActiveStop(employee);
+        if (isValidCoordinate(lastStop[0], lastStop[1])) {
+            return new ResolvedLocation(
+                    "ROUTE_LAST_POINT",
+                    lastStop[0],
+                    lastStop[1],
+                    fingerprint(lastStop[0], lastStop[1])
+            );
+        }
+
+        // 3) Tọa độ bưu cục.
+        if (employee != null && employee.getOffice() != null) {
+            BigDecimal lat = employee.getOffice().getLatitude();
+            BigDecimal lng = employee.getOffice().getLongitude();
+            if (lat != null && lng != null
+                    && isValidCoordinate(lat.doubleValue(), lng.doubleValue())) {
+                return new ResolvedLocation(
+                        "OFFICE",
+                        lat.doubleValue(),
+                        lng.doubleValue(),
+                        fingerprint(lat.doubleValue(), lng.doubleValue())
+                );
+            }
+        }
+
+        // 4) Không có dữ liệu.
+        return new ResolvedLocation("NONE", null, null, "none");
+    }
+
+    private static boolean isValidCoordinate(Double lat, Double lng) {
+        if (lat == null || lng == null) return false;
+        if (lat == 0.0 && lng == 0.0) return false;
+        if (lat < -90.0 || lat > 90.0) return false;
+        if (lng < -180.0 || lng > 180.0) return false;
+        return true;
+    }
+
+    /**
+     * Tính fingerprint tọa độ cho cache key — làm tròn 4 chữ số thập phân (~11m).
+     * Đảm bảo GPS lệch vài mét không sinh cache key mới nhưng vẫn phản ánh dịch chuyển thực tế.
+     */
+    private static String fingerprint(double lat, double lng) {
+        return String.format(Locale.ROOT, "%.4f:%.4f", lat, lng);
+    }
+
+    /**
+     * Trả về lat/lng của điểm cuối cùng trong chuyến DELIVERY đang hoạt động của shipper.
+     * Trả về [null, null] nếu không có.
+     */
+    private Double[] resolveLastActiveStop(Employee employee) {
+        if (employee == null) return new Double[]{null, null};
+        try {
+            List<Integer> inFlightIds = shipmentOrderRepository
+                    .findOrderIdsByActiveDeliveryShipmentOfEmployee(employee.getId());
+            if (inFlightIds == null || inFlightIds.isEmpty()) return new Double[]{null, null};
+            List<Order> orders = orderRepository.findByIdIn(inFlightIds);
+            if (orders == null || orders.isEmpty()) return new Double[]{null, null};
+            // Ưu tiên đơn có lat/lng hợp lệ. Lấy đơn cuối cùng trong danh sách.
+            for (int i = orders.size() - 1; i >= 0; i--) {
+                Order o = orders.get(i);
+                Double lat = o.getRecipientLatitude();
+                Double lng = o.getRecipientLongitude();
+                if (isValidCoordinate(lat, lng)) return new Double[]{lat, lng};
+            }
+        } catch (Exception ex) {
+            log.warn("[RECOMMEND_LAST_STOP_FALLBACK] shipperId={} error={}",
+                    employee.getId(), ex.getMessage());
+        }
+        return new Double[]{null, null};
+    }
+
+    private static AiRecommendationLocationDto toLocationDto(ResolvedLocation r) {
+        if (r == null || r.source == null || "NONE".equals(r.source)) return null;
+        AiRecommendationLocationDto dto = AiRecommendationLocationDto.builder()
+                .source(r.source)
+                .latitude(r.latitude)
+                .longitude(r.longitude)
+                .build();
+        if ("OFFICE".equals(r.source)) {
+            dto.setSource("OFFICE");
+        } else if ("GPS".equals(r.source)) {
+            dto.setSource("GPS");
+        } else if ("ROUTE_LAST_POINT".equals(r.source)) {
+            dto.setSource("ROUTE_LAST_POINT");
+        }
+        return dto;
+    }
+
+    /** Kết quả phân giải vị trí hiện tại. */
+    private static final class ResolvedLocation {
+        final String source;        // GPS | ROUTE_LAST_POINT | OFFICE | NONE
+        final Double latitude;
+        final Double longitude;
+        final String cacheFingerprint;
+
+        ResolvedLocation(String source, Double latitude, Double longitude, String cacheFingerprint) {
+            this.source = source;
+            this.latitude = latitude;
+            this.longitude = longitude;
+            this.cacheFingerprint = cacheFingerprint;
+        }
+    }
+
+    private AiRecommendationVehicleCapacityDto resolveRecommendationCapacity(Employee employee) {
+        if (employee == null) return AiRecommendationVehicleCapacityDto.builder().build();
+        try {
+            Optional<ShipperVehicle> v = shipperVehicleRepository.findByShipperId(employee.getId());
+            if (v.isPresent()) {
+                ShipperVehicle vehicle = v.get();
+                Double weight = vehicle.getMaxWeightKg() == null ? 0.0 : vehicle.getMaxWeightKg().doubleValue();
+                Double used = vehicle.getCurrentWeightKg() == null ? 0.0 : vehicle.getCurrentWeightKg().doubleValue();
+                Double remaining = Math.max(0.0, weight - used);
+                return AiRecommendationVehicleCapacityDto.builder()
+                        .weight(remaining)
+                        .volume(0.0)
+                        .maxOrders(vehicle.getMaxOrders() == null ? 0 : vehicle.getMaxOrders())
+                        .currentOrders(vehicle.getCurrentOrders() == null ? 0 : vehicle.getCurrentOrders())
+                        .build();
+            }
+        } catch (Exception ex) {
+            log.warn("[RECOMMEND_CAPACITY_FALLBACK] shipperId={} error={}",
+                    employee.getId(), ex.getMessage());
+        }
+        return AiRecommendationVehicleCapacityDto.builder().build();
+    }
+
+    private AiRecommendationCandidateOrderDto toCandidateDto(Map<String, Object> mappedOrder) {
+        if (mappedOrder == null) return null;
+        Object idObj = mappedOrder.get("id");
+        if (!(idObj instanceof Number)) return null;
+        Integer id = ((Number) idObj).intValue();
+
+        // Chọn điểm đến (recipient cho đơn thường, sender cho đơn hoàn).
+        String destinationType = mappedOrder.get("destinationType") == null
+                ? "RECIPIENT"
+                : mappedOrder.get("destinationType").toString();
+        Double lat;
+        Double lng;
+        Integer wardCode;
+        Integer cityCode;
+        if ("SENDER_RETURN".equals(destinationType)) {
+            lat = numberToDouble(mappedOrder.get("senderLatitude"));
+            lng = numberToDouble(mappedOrder.get("senderLongitude"));
+            wardCode = numberToInt(mappedOrder.get("senderWardCode"));
+            cityCode = numberToInt(mappedOrder.get("senderCityCode"));
+        } else {
+            lat = numberToDouble(mappedOrder.get("recipientLatitude"));
+            lng = numberToDouble(mappedOrder.get("recipientLongitude"));
+            wardCode = numberToInt(mappedOrder.get("recipientWardCode"));
+            cityCode = numberToInt(mappedOrder.get("recipientCityCode"));
+        }
+
+        Double weight = numberToDouble(mappedOrder.get("weight"));
+        Double volume = computeOrderVolumeM3(mappedOrder);
+        String status = mappedOrder.get("status") == null ? null : mappedOrder.get("status").toString();
+        boolean urgent = "URGENT_PICKUP".equals(status) || "RETURN_AT_ORIGIN_OFFICE".equals(status);
+
+        // Tọa độ (0,0) bị xem là thiếu dữ liệu trong nghiệp vụ này,
+        // đặt lại null để AI bỏ tiêu chí khoảng cách thay vì tính khoảng cách tới gốc tọa độ.
+        // Đơn hoàn thiếu tọa độ sender: vẫn ghi nhận candidate, AI sẽ bỏ tiêu chí khoảng cách.
+        if (lat != null && (lat == 0.0)) lat = null;
+        if (lng != null && (lng == 0.0)) lng = null;
+
+        if ("SENDER_RETURN".equals(destinationType) && (lat == null || lng == null)) {
+            log.warn("[RECOMMEND_CANDIDATE_RETURN_NO_SENDER_COORD] orderId={} status={}",
+                    id, status);
+        }
+
+        return AiRecommendationCandidateOrderDto.builder()
+                .orderId(id)
+                .weightKg(weight == null ? 0.0 : weight)
+                .volumeM3(volume)
+                .latitude(lat)
+                .longitude(lng)
+                .recipientWardCode(wardCode)
+                .recipientCityCode(cityCode)
+                .status(status)
+                .isUrgent(urgent)
+                .build();
+    }
+
+    private static Double computeOrderVolumeM3(Map<String, Object> m) {
+        Double l = numberToDouble(m.get("length"));
+        Double w = numberToDouble(m.get("width"));
+        Double h = numberToDouble(m.get("height"));
+        if (l == null || w == null || h == null) return 0.0;
+        if (l <= 0 || w <= 0 || h <= 0) return 0.0;
+        // length/width/height lưu theo cm → quy đổi sang m3: (l/100)*(w/100)*(h/100)
+        return (l / 100.0) * (w / 100.0) * (h / 100.0);
+    }
+
+    private static Double numberToDouble(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        if (v instanceof String) {
+            try { return Double.parseDouble((String) v); } catch (Exception ignored) { return null; }
+        }
+        return null;
+    }
+
+    private static Integer numberToInt(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).intValue();
+        if (v instanceof String) {
+            try { return Integer.parseInt((String) v); } catch (Exception ignored) { return null; }
+        }
+        return null;
     }
 
     // Lấy danh sách đơn hoàn trả của shipper
@@ -565,10 +994,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 OrderStatus.RETURN_RETRY
             ));
 
-            // Shipper thuộc bưu cục gốc (fromOffice hoặc currentOffice)
+            // Shipper thuộc bưu cục đang giữ đơn hoàn: ưu tiên currentOffice, fallback fromOffice khi currentOffice null.
             Predicate officeMatch = cb.or(
-                cb.equal(root.get("fromOffice").get("id"), officeId),
-                cb.equal(root.get("currentOffice").get("id"), officeId)
+                cb.equal(root.get("currentOffice").get("id"), officeId),
+                cb.and(
+                    cb.isNull(root.get("currentOffice")),
+                    cb.equal(root.get("fromOffice").get("id"), officeId)
+                )
             );
             predicates.add(officeMatch);
 
@@ -736,6 +1168,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         return result;
     }
 
+    
     public Map<String, Object> getOrderById(Integer id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
@@ -764,7 +1197,22 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             canViewUnassignedPickup = isPickupOfficeMatched;
         }
 
-        boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup;
+        // Trường hợp 4: Đơn hoàn trả RETURN_AT_ORIGIN_OFFICE.
+        // Ưu tiên currentOffice (bưu cục đang giữ hàng hoàn), fallback fromOffice chỉ khi currentOffice null.
+        // Đồng nhất với listUnassignedOrders.
+        Integer currentOfficeOfOrder = order.getCurrentOffice() != null
+                ? order.getCurrentOffice().getId() : null;
+        Integer fromOfficeOfOrder = order.getFromOffice() != null
+                ? order.getFromOffice().getId() : null;
+        Integer returnOperationalOfficeId = currentOfficeOfOrder != null
+                ? currentOfficeOfOrder : fromOfficeOfOrder;
+        boolean canViewReturnAtOrigin = order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                && order.getEmployee() == null
+                && officeId != null
+                && returnOperationalOfficeId != null
+                && Objects.equals(returnOperationalOfficeId, officeId);
+
+        boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup || canViewReturnAtOrigin;
 
         if (!allowed) {
             throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
@@ -799,7 +1247,18 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 ));
         boolean canViewUnassignedPickup = isUnassignedPickup && isPickupStatusAllowed && isPickupOfficeMatched;
 
-        boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup;
+        // Đơn hoàn RETURN_AT_ORIGIN_OFFICE: ưu tiên currentOffice, fallback fromOffice khi currentOffice null.
+        // Đồng nhất với listUnassignedOrders và getOrderById.
+        Integer returnOperationalOfficeId = order.getCurrentOffice() != null
+                ? order.getCurrentOffice().getId()
+                : (order.getFromOffice() != null ? order.getFromOffice().getId() : null);
+        boolean canViewReturnAtOrigin = order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE
+                && order.getEmployee() == null
+                && officeId != null
+                && returnOperationalOfficeId != null
+                && Objects.equals(returnOperationalOfficeId, officeId);
+
+        boolean allowed = isAssignedToMe || isDeliveryToMyOffice || canViewUnassignedPickup || canViewReturnAtOrigin;
 
         if (!allowed) {
             throw new AppException(OrderErrorCode.ORDER_OFFICE_MISMATCH);
@@ -829,6 +1288,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     public void claimOrder(Integer id) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
+
+        // Invalidate recommendation cache khi shipper nhận đơn (tải + đơn đang giao thay đổi)
+        evictRecommendationCache(employee.getId());
 
         // Chặn nhận đơn khi shipper đang có shipment DELIVERY IN_TRANSIT.
         boolean hasInTransitDeliveryShipment = !shipmentRepository
@@ -1013,6 +1475,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     public void unclaimOrder(Integer id) {
         Employee employee = getCurrentEmployee();
         Integer officeId = employee.getOffice().getId();
+
+        // Invalidate recommendation cache khi shipper hủy nhận đơn
+        evictRecommendationCache(employee.getId());
 
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
@@ -2109,10 +2574,37 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         map.put("senderPhone", order.getSenderPhone());
         map.put("senderAddress", senderFullAddress);
         map.put("senderFullAddress", senderFullAddress);
+        // Tọa độ + mã khu vực người gửi — dùng cho đơn hoàn hàng (RETURN_AT_ORIGIN_OFFICE).
+        map.put("senderLatitude", order.getSenderLatitude());
+        map.put("senderLongitude", order.getSenderLongitude());
+        map.put("senderWardCode", order.getSenderWardCode());
+        map.put("senderCityCode", order.getSenderCityCode());
+
         map.put("recipientName", order.getRecipientName());
         map.put("recipientPhone", order.getRecipientPhone());
         map.put("recipientAddress", recipientFullAddress);
         map.put("recipientFullAddress", recipientFullAddress);
+        // Tọa độ + mã khu vực người nhận — dùng cho AI Recommendation (xem toCandidateDto).
+        map.put("recipientLatitude", order.getRecipientLatitude());
+        map.put("recipientLongitude", order.getRecipientLongitude());
+        map.put("recipientWardCode", order.getRecipientWardCode());
+        map.put("recipientCityCode", order.getRecipientCityCode());
+
+        // Destination: đơn hoàn dùng người gửi, đơn thường dùng người nhận.
+        // Frontend render "Thông tin điểm giao" dựa trên destinationType + displayContact*.
+        String destinationType = resolveDestinationType(order);
+        map.put("destinationType", destinationType);
+        if ("SENDER_RETURN".equals(destinationType)) {
+            map.put("displayContactType", "Shop/Người gửi");
+            map.put("displayContactName", order.getSenderName());
+            map.put("displayContactPhone", order.getSenderPhone());
+            map.put("displayContactAddress", senderFullAddress);
+        } else {
+            map.put("displayContactType", "Người nhận");
+            map.put("displayContactName", order.getRecipientName());
+            map.put("displayContactPhone", order.getRecipientPhone());
+            map.put("displayContactAddress", recipientFullAddress);
+        }
         map.put("payer", order.getPayer() != null ? order.getPayer().name() : null);
         map.put("weight", order.getWeight());
         map.put("cod", order.getCod());
@@ -2677,7 +3169,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             batch.setOffice(office);
             batch = paymentSubmissionBatchRepository.save(batch);
 
-            String batchCode = "PSB" + java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + batch.getId();
+            String batchCode = "PSB" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + batch.getId();
             batch.setCode(batchCode);
             batch = paymentSubmissionBatchRepository.save(batch);
         }
@@ -2842,6 +3334,19 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             return order.getRecipientFullAddress();
         }
         return resolveAddressFromEntity(order.getRecipientAddress());
+    }
+
+    /**
+     * Xác định điểm đến của đơn hàng theo trạng thái:
+     * - RETURN_AT_ORIGIN_OFFICE: giao trả cho shop/người gửi → SENDER_RETURN.
+     * - Mặc định (AT_DEST_OFFICE, các trạng thái khác) → RECIPIENT.
+     */
+    private String resolveDestinationType(Order order) {
+        if (order == null || order.getStatus() == null) return "RECIPIENT";
+        if (order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
+            return "SENDER_RETURN";
+        }
+        return "RECIPIENT";
     }
 
     private String resolveAddressFromEntity(Address address) {
@@ -4419,7 +4924,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .toList();
 
         // Ghép: operational (đã sort) trước, RETURN_TO_OFFICE cuối
-        List<AiRoutePlanStop> ordered = new java.util.ArrayList<>(operationalStops);
+        List<AiRoutePlanStop> ordered = new ArrayList<>(operationalStops);
         ordered.addAll(returnStops);
 
         // Đánh lại sequence: operational 1..n, RETURN_TO_OFFICE n+1..
