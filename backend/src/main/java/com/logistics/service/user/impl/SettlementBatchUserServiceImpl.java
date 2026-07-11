@@ -241,7 +241,7 @@ public class SettlementBatchUserServiceImpl implements SettlementBatchUserServic
     @Transactional(readOnly = true)
     public UserRevenueStatsDTO getUserRevenueStats(Integer userId) {
 
-        BigDecimal received = batchRepository.sumReceivedByUser(userId);
+        BigDecimal received = batchRepository.sumNetBalanceByUser(userId);
 
         BigDecimal nextSettlement = orderRepository.sumPendingCODNow(
                 userId, List.of(OrderStatus.DELIVERED, OrderStatus.RETURNED, OrderStatus.RETURN_FAILED_FINAL));
@@ -251,7 +251,7 @@ public class SettlementBatchUserServiceImpl implements SettlementBatchUserServic
         String nextSettlementDate = scheduleUserService.getNextSettlementDate(userId);
 
         return new UserRevenueStatsDTO(
-                received,
+                received.compareTo(BigDecimal.ZERO) > 0 ? received : BigDecimal.ZERO,
                 nextSettlement,
                 pendingDebt,
                 nextSettlementDate);
