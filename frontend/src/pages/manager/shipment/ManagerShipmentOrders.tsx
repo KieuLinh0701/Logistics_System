@@ -687,8 +687,12 @@ const ManagerShipmentOrders: React.FC = () => {
                                                 trigger={['click']}
                                             >
                                                 <Tooltip title="Xác nhận các đơn trong chuyến đã đến bưu cục.">
-                                                    <Button className="modal-ok-button" icon={<PlayCircleOutlined />}>
-                                                        Xác nhận đơn hàng <DownOutlined />
+                                                    <Button
+                                                        className="modal-ok-button"
+                                                        icon={<PlayCircleOutlined />}
+                                                        disabled={selectedOrderIds.length === 0}
+                                                    >
+                                                        Xác nhận đơn hàng hàng loạt <DownOutlined />
                                                     </Button>
                                                 </Tooltip>
                                             </Dropdown>
