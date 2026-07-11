@@ -857,6 +857,7 @@ public class EmployeeManagerServiceImpl implements EmployeeManagerService {
         emp.setUser(user);
         emp.setAccountRole(accountRole);
         emp.setOffice(office);
+        emp.setCurrentOffice(office);
         emp.setHireDate(
                 req.getHireDate() != null
                         ? Instant.parse(req.getHireDate())
@@ -1049,7 +1050,7 @@ public class EmployeeManagerServiceImpl implements EmployeeManagerService {
             String role = type.equals(ShipmentType.DELIVERY.name()) ? "Shipper" : "Driver";
 
             Specification<Employee> spec = EmployeeSpecification.unrestrictedEmployee()
-                    .and(EmployeeSpecification.officeId(office.getId()))
+                    .and(EmployeeSpecification.currentOfficeId(office.getId()))
                     .and(EmployeeSpecification.search(search))
                     .and(EmployeeSpecification.excludeStatus(EmployeeStatus.LEAVE.name()))
                     .and(EmployeeSpecification.role(role, true));

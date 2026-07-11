@@ -18,6 +18,10 @@ public class EmployeeSpecification {
         return (root, query, cb) -> cb.equal(root.get("office").get("id"), officeId);
     }
 
+    public static Specification<Employee> currentOfficeId(Integer officeId) {
+        return (root, query, cb) -> cb.equal(root.get("currentOffice").get("id"), officeId);
+    }
+
     public static Specification<Employee> status(String value) {
         return (root, query, cb) -> {
             if (value == null || value.isEmpty()) {

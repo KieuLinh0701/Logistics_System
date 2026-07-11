@@ -165,6 +165,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
             Vehicle vehicle = shipment.getVehicle();
             if (vehicle.getStatus() == VehicleStatus.IN_USE) {
                 vehicle.setStatus(VehicleStatus.AVAILABLE);
+                vehicle.setCurrentOffice(shipment.getToOffice());
                 vehicleRepository.save(vehicle);
             }
         }
@@ -217,6 +218,9 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
                 orderRepository.save(order);
             }
         }
+
+        employee.setCurrentOffice(shipment.getToOffice());
+        employeeRepository.save(employee);
     }
 
     @Override

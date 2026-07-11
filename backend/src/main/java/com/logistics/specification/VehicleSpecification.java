@@ -15,6 +15,10 @@ public class VehicleSpecification {
         return (root, query, cb) -> cb.equal(root.get("office").get("id"), id);
     }
 
+    public static Specification<Vehicle> currentOfficeId(Integer id) {
+        return (root, query, cb) -> cb.equal(root.get("currentOffice").get("id"), id);
+    }
+
     public static Specification<Vehicle> type(String value) {
         return (root, query, cb) -> {
             if (value == null || value.isEmpty()) {
