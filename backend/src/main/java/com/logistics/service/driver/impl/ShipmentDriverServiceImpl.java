@@ -16,6 +16,7 @@ import com.logistics.service.common.NotificationService;
 import com.logistics.service.common.OrderDestinationService;
 import com.logistics.service.common.OrderOriginService;
 import com.logistics.service.driver.ShipmentDriverService;
+import com.logistics.service.user.OrderHistoryUserService;
 import com.logistics.utils.SecurityUtils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
     private final VehicleTrackingRepository vehicleTrackingRepository;
     private final EmployeeRepository employeeRepository;
     private final NotificationService notificationService;
-    private final OfficeRepository officeRepository;
+    private final OrderHistoryUserService orderHistoryUserService;
     private final OrderDestinationService orderDestinationService;
     private final OrderOriginService orderOriginService;
 
@@ -180,6 +181,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
             for (ShipmentOrder so : shipmentOrders) {
                 Order order = so.getOrder();
                 OrderStatus orderStatus = order.getStatus();
+                Office previousOffice = order.getCurrentOffice();
 
                 // Tracking vi tri: cap nhat currentOffice cho moi order trong shipment
                 // (khong phu thuoc dung/sai bu cua)
@@ -187,28 +189,51 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
 
                 // Flow 1: IN_TRANSIT -> kiem tra co phai bu cua dich khong
                 if (orderStatus == OrderStatus.IN_TRANSIT) {
-                    if (orderDestinationService.isDestinationOffice(order, currentOffice)) {
+                    boolean isDestination = orderDestinationService.isDestinationOffice(order, currentOffice);
+                    if (isDestination) {
                         order.setPendingDestinationConfirm(true);
                     }
                     order.setEmployee(null);
                     orderRepository.save(order);
+
+                    OrderHistory history = new OrderHistory();
+                    history.setOrder(order);
+                    history.setFromOffice(previousOffice);
+                    history.setToOffice(currentOffice);
+                    history.setAction(isDestination
+                            ? OrderHistoryActionType.AT_DEST_OFFICE
+                            : OrderHistoryActionType.IMPORTED);
+                    history.setNote(isDestination
+                            ? "Đơn hàng dã đến bưu cục đích, chờ manager xác nhận"
+                            : "Đơn hàng đã nhập kho");
+                    orderHistoryRepository.save(history);
                     continue;
                 }
 
                 // Flow 2: RETURNING -> kiem tra co ve dung bu cua goc khong
-                if (orderStatus == OrderStatus.RETURNING
-                        && orderOriginService.isOriginOffice(order, currentOffice)) {
+                if (orderStatus == OrderStatus.RETURNING) {
                     // Ve dung bu cua goc: giu RETURNING, set pendingReturnConfirm
                     // Manager bưu cục gốc sẽ xác nhận sau
+                    boolean isOrigin = orderOriginService.isOriginOffice(order, currentOffice);
+
                     order.setPendingReturnConfirm(true);
                     order.setEmployee(null);
                     orderRepository.save(order);
+
                     OrderHistory history = new OrderHistory();
                     history.setOrder(order);
-                    history.setFromOffice(currentOffice);
+                    history.setFromOffice(previousOffice);
                     history.setToOffice(currentOffice);
-                    history.setAction(OrderHistoryActionType.RETURNING);
-                    history.setNote("Driver hoan tat shipment, don da ve bu cua goc, cho manager xac nhan");
+
+                    if (isOrigin) {
+                        order.setPendingReturnConfirm(true);
+                        orderRepository.save(order);
+                        history.setAction(OrderHistoryActionType.RETURNING);
+                        history.setNote("Tài xế hoàn thành chuyến vận chuyển, đơn đã về bưu cục gốc, chờ manager xác nhận");
+                    } else {
+                        history.setAction(OrderHistoryActionType.RETURNING);
+                        history.setNote("Đơn đang hoàn về, chưa tới bưu cục gốc");
+                    }
                     orderHistoryRepository.save(history);
                     continue;
                 }

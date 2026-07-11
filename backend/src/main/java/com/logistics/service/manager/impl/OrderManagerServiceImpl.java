@@ -1228,6 +1228,14 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         }
 
         repository.save(order);
+
+        orderHistoryUserService.save(
+                order,
+                null,
+                null,
+                null,
+                OrderHistoryActionType.AT_DEST_OFFICE,
+                null);
     }
 
     @Override
@@ -1329,6 +1337,14 @@ public class OrderManagerServiceImpl implements OrderManagerService {
                 order.setToOffice(userOffice);
                 order.setPendingDestinationConfirm(false);
                 order.setCurrentOffice(userOffice);
+
+                orderHistoryUserService.save(
+                        order,
+                        null,
+                        null,
+                        null,
+                        OrderHistoryActionType.AT_DEST_OFFICE,
+                        null);
             } else {
                 order.setPendingDestinationConfirm(false);
             }
@@ -1929,16 +1945,16 @@ public class OrderManagerServiceImpl implements OrderManagerService {
 
     @Override
     @Transactional
-    public void confirmReturnArrival(Integer userId, Integer orderId) {
+    public void confirmReturnArrival(Integer userId, Integer orderId, boolean isConfirmed) {
         Order order = getOrderById(orderId);
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
         validateReturnArrival(order, userOffice);
-        applyReturnArrivalConfirm(order, userOffice);
+        applyReturnArrivalConfirm(order, userOffice, isConfirmed);
     }
 
     @Override
     @Transactional
-    public BulkResponse<String> confirmReturnArrivals(Integer userId, List<Integer> orderIds) {
+    public BulkResponse<String> confirmReturnArrivals(Integer userId, List<Integer> orderIds, boolean isConfirmed) {
         List<BulkResponse.BulkResult<String>> results = new ArrayList<>();
         int totalSuccess = 0, totalFailed = 0;
         Office userOffice = employeeManagerService.getManagedOfficeByUserId(userId);
@@ -1961,7 +1977,7 @@ public class OrderManagerServiceImpl implements OrderManagerService {
 
             try {
                 validateReturnArrival(order, userOffice);
-                applyReturnArrivalConfirm(order, userOffice);
+                applyReturnArrivalConfirm(order, userOffice, isConfirmed);
                 results.add(successResult(order.getTrackingNumber(), "Xác nhận thành công"));
                 totalSuccess++;
             } catch (AppException e) {
@@ -1991,44 +2007,49 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         }
     }
 
-    private void applyReturnArrivalConfirm(Order order, Office userOffice) {
-        order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
-        order.setPendingReturnConfirm(false);
-        order.setCurrentOffice(order.getFromOffice() != null ? order.getFromOffice() : userOffice);
-        order.setEmployee(null);
-        repository.save(order);
+    private void applyReturnArrivalConfirm(Order order, Office userOffice, boolean isConfirmed) {
+        if (isConfirmed) {
+            order.setStatus(OrderStatus.RETURN_AT_ORIGIN_OFFICE);
+            order.setPendingReturnConfirm(false);
+            order.setCurrentOffice(order.getFromOffice() != null ? order.getFromOffice() : userOffice);
+            order.setEmployee(null);
+            repository.save(order);
 
-        orderHistoryUserService.save(
-                order,
-                null,
-                userOffice,
-                null,
-                OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
-                "Manager xac nhan don hoan da ve bu cua goc"
-        );
-
-        if (order.getUser() != null) {
-            if (order.getPickupType() == OrderPickupType.AT_OFFICE) {
-                notificationService.create(
-                        "Đơn hàng hoàn đã về bưu cục gốc",
-                        String.format("Đơn %s đã về bưu cục gốc. Vui lòng đến bưu cục để nhận lại hàng.", order.getTrackingNumber()),
-                        "order_status",
-                        order.getUser().getId(),
-                        null,
-                        "orders/tracking",
-                        order.getTrackingNumber()
-                );
-            } else if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
-                notificationService.create(
-                        "Đơn hàng hoàn đã về bưu cục gốc",
-                        String.format("Đơn %s đã về bưu cục gốc. Chúng tôi sẽ sắp xếp giao trả đến địa chỉ của bạn.", order.getTrackingNumber()),
-                        "order_status",
-                        order.getUser().getId(),
-                        null,
-                        "orders/tracking",
-                        order.getTrackingNumber()
-                );
+            if (order.getUser() != null) {
+                if (order.getPickupType() == OrderPickupType.AT_OFFICE) {
+                    notificationService.create(
+                            "Đơn hàng hoàn đã về bưu cục gốc",
+                            String.format("Đơn %s đã về bưu cục gốc. Vui lòng đến bưu cục để nhận lại hàng.", order.getTrackingNumber()),
+                            "order_status",
+                            order.getUser().getId(),
+                            null,
+                            "orders/tracking",
+                            order.getTrackingNumber()
+                    );
+                } else if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+                    notificationService.create(
+                            "Đơn hàng hoàn đã về bưu cục gốc",
+                            String.format("Đơn %s đã về bưu cục gốc. Chúng tôi sẽ sắp xếp giao trả đến địa chỉ của bạn.", order.getTrackingNumber()),
+                            "order_status",
+                            order.getUser().getId(),
+                            null,
+                            "orders/tracking",
+                            order.getTrackingNumber()
+                    );
+                }
             }
+
+            orderHistoryUserService.save(
+                    order,
+                    null,
+                    userOffice,
+                    null,
+                    OrderHistoryActionType.RETURN_AT_ORIGIN_OFFICE,
+                    "Manager xác nhận đơn hàng đã hoàn về bưu cục gốc"
+            );
+        } else {
+            order.setPendingReturnConfirm(false);
+            repository.save(order);
         }
     }
 }

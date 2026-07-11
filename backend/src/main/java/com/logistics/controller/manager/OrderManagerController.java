@@ -234,10 +234,13 @@ public class OrderManagerController {
     )
     public ResponseEntity<ApiResponse<Void>> confirmReturnArrival(
             @PathVariable Integer id,
-            HttpServletRequest request) {
+            HttpServletRequest request,
+            @RequestBody Map<String, Object> body) {
         Integer userId = (Integer) request.getAttribute("currentUserId");
 
-        service.confirmReturnArrival(userId, id);
+        boolean isConfirmed = Boolean.TRUE.equals(body.get("confirmed"));
+
+        service.confirmReturnArrival(userId, id, isConfirmed);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
@@ -257,7 +260,9 @@ public class OrderManagerController {
                 .map(o -> ((Number) o).intValue())
                 .toList();
 
-        return ResponseEntity.ok(service.confirmReturnArrivals(userId, orderIds));
+        boolean isConfirmed = Boolean.TRUE.equals(body.get("confirmed"));
+
+        return ResponseEntity.ok(service.confirmReturnArrivals(userId, orderIds, isConfirmed));
     }
 
     @GetMapping("/export")
