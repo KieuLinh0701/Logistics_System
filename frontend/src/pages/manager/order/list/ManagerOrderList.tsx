@@ -556,19 +556,20 @@ const ManagerOrderList = () => {
                 selectedOrderIds
             );
 
+            const hasDetails = result.results && result.results.length > 0;
+
+            if (hasDetails) {
+                setBulkResult(result as any);
+                setBulkModalOpen(true);
+            }
+
             if (result.success) {
                 message.success(result.message || "Cập nhật thành công");
                 selectAllRequestRef.current++;
                 setSelectedOrderIds([]);
                 setSelectedShipment(null);
-
-                console.log("orderIds", setSelectedOrderIds);
             } else {
-                message.warning(result.message || "Một số đơn hàng không thể thêm");
-                if (result.results) {
-                    setBulkResult(result as any);
-                    setBulkModalOpen(true);
-                }
+                message.warning(result.message || "Một số đơn hàng không thể thêm vào chuyến");
             }
         } catch (error: any) {
             message.error(error.message || "Cập nhật thất bại");

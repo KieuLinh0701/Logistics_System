@@ -39,6 +39,10 @@ public class Employee {
     @JoinColumn(name = "office_id", referencedColumnName = "id", nullable = false)
     private Office office;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_office_id")
+    private Office currentOffice;
+
     // Mỗi nhân viên liên kết với 1 role cụ thể của account
     @ManyToOne
     @JoinColumn(name = "account_role_id", referencedColumnName = "id", nullable = false)

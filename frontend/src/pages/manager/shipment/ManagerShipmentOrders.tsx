@@ -695,7 +695,7 @@ const ManagerShipmentOrders: React.FC = () => {
                                                     className="modal-ok-button"
                                                     icon={<PlayCircleOutlined/>}
                                                 >
-                                                    Xác nhận tất cả đơn đến bưu cục
+                                                    Xác nhận các đơn hàng đã đến bưu cục đích
                                                 </Button>
                                             </Tooltip>
                                         )}

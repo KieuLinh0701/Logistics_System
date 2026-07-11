@@ -46,6 +46,10 @@ public class Vehicle {
     @JoinColumn(name = "office_id", nullable = false)
     private Office office;
 
+    @ManyToOne
+    @JoinColumn(name = "current_office_id", nullable = false)
+    private Office currentOffice;
+
     // Thời gian tạo và cập nhật
     @CreatedDate
     @Column(nullable = false, updatable = false)

@@ -319,12 +319,14 @@ public class RecruitmentServiceImpl implements RecruitmentService {
 
         employeeRepository.findByAccountRoleId(accountRole.getId()).ifPresentOrElse(existing -> {
             existing.setOffice(office);
+            existing.setCurrentOffice(office);
             existing.setUser(user);
             existing.setStatus(EmployeeStatus.ACTIVE);
             employeeRepository.save(existing);
         }, () -> {
             Employee employee = new Employee();
             employee.setOffice(office);
+            employee.setCurrentOffice(office);
             employee.setUser(user);
             employee.setAccountRole(accountRole);
             employee.setHireDate(LocalDateTime.now());

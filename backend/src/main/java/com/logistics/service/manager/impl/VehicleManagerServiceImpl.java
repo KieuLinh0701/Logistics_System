@@ -245,8 +245,8 @@ public class VehicleManagerServiceImpl implements VehicleManagerService {
             Office office = employeeManagerService.getManagedOfficeByUserId(userId);
 
             Specification<Vehicle> spec = VehicleSpecification.unrestrictedVehicle()
-                    .and(VehicleSpecification.officeId(office.getId()))
-                    .and(VehicleSpecification.status("AVAILABLE"));
+                    .and(VehicleSpecification.currentOfficeId(office.getId()))
+                    .and(VehicleSpecification.status(VehicleStatus.AVAILABLE.name()));
 
             List<Vehicle> vehicles = vehicleRepository.findAll(spec);
 

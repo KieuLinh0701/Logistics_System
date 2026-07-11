@@ -298,7 +298,7 @@ public class ShipmentManagerServiceImpl implements ShipmentManagerService {
             vehicle = vehicleRepository.findById(request.getVehicleId())
                     .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
 
-            if (!office.getId().equals(vehicle.getOffice().getId())) {
+            if (!office.getId().equals(vehicle.getCurrentOffice().getId())) {
                 throw new AppException(VehicleErrorCode.VEHICLE_OFFICE_MISMATCH);
             }
         }
@@ -309,7 +309,7 @@ public class ShipmentManagerServiceImpl implements ShipmentManagerService {
             employee = employeeRepository.findById(request.getEmployeeId())
                     .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
 
-            if (!office.getId().equals(employee.getOffice().getId())) {
+            if (!office.getId().equals(employee.getCurrentOffice().getId())) {
                 throw new AppException(EmployeeErrorCode.EMPLOYEE_OFFICE_MISMATCH);
             }
 
@@ -397,7 +397,7 @@ public class ShipmentManagerServiceImpl implements ShipmentManagerService {
             vehicle = vehicleRepository.findById(request.getVehicleId())
                     .orElseThrow(() -> new AppException(VehicleErrorCode.VEHICLE_NOT_FOUND));
 
-            if (!vehicle.getOffice().getId().equals(office.getId())) {
+            if (!vehicle.getCurrentOffice().getId().equals(office.getId())) {
                 throw new AppException(VehicleErrorCode.VEHICLE_OFFICE_MISMATCH);
             }
         }
@@ -409,7 +409,7 @@ public class ShipmentManagerServiceImpl implements ShipmentManagerService {
             employee = employeeRepository.findById(request.getEmployeeId())
                     .orElseThrow(() -> new AppException(EmployeeErrorCode.EMPLOYEE_NOT_FOUND));
 
-            if (!employee.getOffice().getId().equals(office.getId())) {
+            if (!employee.getCurrentOffice().getId().equals(office.getId())) {
                 throw new AppException(EmployeeErrorCode.EMPLOYEE_OFFICE_MISMATCH);
             }
 
