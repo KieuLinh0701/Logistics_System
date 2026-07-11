@@ -701,7 +701,7 @@ const ShipperOrderDetail: React.FC = () => {
       case "CONFIRMED":
         return "Đã xác nhận";
       case "AT_DEST_OFFICE":
-        return "Đã đến bưu cục";
+        return "Tại bưu cục";
       case "READY_FOR_PICKUP":
         return "Sẵn sàng lấy hàng";
       case "URGENT_PICKUP":
@@ -758,6 +758,48 @@ const ShipperOrderDetail: React.FC = () => {
     order?.recipientAddress,
     order?.recipientFullAddress
   );
+
+  const returnStatusSet = new Set([
+    "RETURN_AT_ORIGIN_OFFICE",
+    "RETURN_READY_FOR_PICKUP",
+    "RETURN_RETRY",
+  ]);
+  const isReturnStatus = returnStatusSet.has(String(order?.status || ""));
+  const deliveryDestinationType =
+    (order as any)?.destinationType === "SENDER_RETURN" || isReturnStatus
+      ? "SENDER_RETURN"
+      : "RECIPIENT";
+
+  const deliveryContactName =
+    (order as any)?.displayContactName ||
+    (deliveryDestinationType === "SENDER_RETURN"
+      ? order?.senderName
+      : order?.recipientName) ||
+    "";
+  const deliveryContactPhone =
+    (order as any)?.displayContactPhone ||
+    (deliveryDestinationType === "SENDER_RETURN"
+      ? order?.senderPhone
+      : order?.recipientPhone) ||
+    "";
+  const deliveryContactAddress =
+    (order as any)?.displayContactAddress ||
+    (deliveryDestinationType === "SENDER_RETURN"
+      ? buildAddress(
+          (order as any)?.senderAddress,
+          (order as any)?.senderFullAddress
+        )
+      : recipientAddressText) ||
+    "";
+  const deliveryContactType =
+    (order as any)?.displayContactType ||
+    (deliveryDestinationType === "SENDER_RETURN"
+      ? "Shop/Người gửi"
+      : "Người nhận");
+  const deliveryCardTitle =
+    deliveryDestinationType === "SENDER_RETURN"
+      ? "Thông tin shop/người gửi"
+      : "Thông tin người nhận";
 
   const navigateToOrders = () => {
     // Hỗ trợ cả `from` (My Orders tabs, route page) và `returnTo` (legacy)
@@ -1107,23 +1149,28 @@ const ShipperOrderDetail: React.FC = () => {
             </Card>
           )}
 
-          {/* Regular orders - show recipient info */}
+          {/* Regular orders - show recipient info; for return orders show shop/sender. */}
           {!isPickupOrder(order) && (
-            <Card title="Thông tin người nhận">
+            <Card title={deliveryCardTitle}>
               <Descriptions column={1} bordered>
+                <Descriptions.Item label="Loại">
+                  <Tag color={deliveryDestinationType === "SENDER_RETURN" ? "purple" : "blue"}>
+                    {deliveryContactType}
+                  </Tag>
+                </Descriptions.Item>
                 <Descriptions.Item label="Họ tên">
-                  <Text strong>{order.recipientName}</Text>
+                  <Text strong>{deliveryContactName || "—"}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Số điện thoại">
                   <Space>
                     <PhoneOutlined />
-                    <Text>{order.recipientPhone}</Text>
+                    <Text>{deliveryContactPhone || "—"}</Text>
                   </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="Địa chỉ">
                   <Space>
                     <EnvironmentOutlined />
-                    <Text>{recipientAddressText}</Text>
+                    <Text>{deliveryContactAddress || "—"}</Text>
                   </Space>
                 </Descriptions.Item>
               </Descriptions>

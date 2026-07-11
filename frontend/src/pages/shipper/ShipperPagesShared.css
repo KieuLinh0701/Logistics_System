@@ -88,6 +88,17 @@
   font-weight: 600;
 }
 
+.shipper-page-root .shipper-page-table .shipper-recommendation-badge {
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.shipper-page-root .shipper-page-table .shipper-recommendation-badge:hover,
+.shipper-page-root .shipper-page-table .shipper-recommendation-badge:focus-visible {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+  outline: none;
+}
+
 .shipper-page-root .shipper-cod-tabs > .ant-tabs-nav {
   margin-bottom: 16px;
 }
