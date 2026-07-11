@@ -1459,10 +1459,10 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         order.setEmployee(employee);
         orderRepository.save(order);
 
-        // READY_FOR_PICKUP = shipper đã nhận đơn, đơn đang chờ xác nhận lấy hàng lên xe.
+        // READY_FOR_PICKUP = shipper đã nhận đơn tại bưu cục đích, đơn đang chờ xác nhận đưa lên xe.
         // Đơn sẽ chuyển sang DELIVERING khi shipper quét QR / xác nhận hàng lên xe.
         saveHistory(order, activeShipment, OrderHistoryActionType.READY_FOR_PICKUP,
-                "Shipper nhận đơn giao (sẵn sàng lấy tại bưu cục)");
+                "Đơn hàng đã được phân công cho shipper và đang chờ xác nhận đưa lên xe");
 
         try {
             assignOrderToActiveAiRoute(employee, order);
@@ -1655,7 +1655,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         );
 
         switch (newStatus) {
-            case DELIVERING -> saveHistory(order, OrderHistoryActionType.DELIVERING, "Shipper bắt đầu giao hàng");
+            case DELIVERING -> saveHistory(order, OrderHistoryActionType.DELIVERING, "Shipper bắt đầu giao hàng đến người nhận");
             case DELIVERED -> saveHistory(order, OrderHistoryActionType.DELIVERED, "Shipper đã giao hàng thành công");
             case RETURNED -> saveHistory(order, OrderHistoryActionType.RETURNED, "Shipper đã trả đơn về bưu cục");
             default -> {
@@ -1876,8 +1876,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         order.setStatus(OrderStatus.PICKED_UP);
         orderRepository.save(order);
-        // Lưu history không có shipment (standalone)
-        saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper đã lấy hàng thành công");
+        // Lưu history không có shipment (standalone). Phân biệt theo pickupType của đơn:
+        // - PICKUP_BY_COURIER: shipper đã đến nhà người gửi và lấy hàng.
+        // - AT_OFFICE: shipper đã quét QR xác nhận hàng lên xe tại bưu cục đích.
+        String pickedUpNote = (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER)
+                ? "Shipper đã lấy hàng thành công"
+                : "Shipper đã xác nhận hàng lên xe";
+        saveHistory(order, OrderHistoryActionType.PICKED_UP, pickedUpNote);
 
         vehicleWorkloadService.addLoaded(order, employee);
 

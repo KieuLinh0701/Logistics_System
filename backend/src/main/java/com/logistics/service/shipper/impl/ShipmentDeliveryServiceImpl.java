@@ -819,8 +819,13 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         attempt.setAttemptedAt(LocalDateTime.now());
         pickupAttemptRepository.save(attempt);
 
-        saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP,
-                "Shipper xác nhận đã lấy hàng (chuyến " + shipment.getCode() + ")");
+        // Phân biệt mô tả lịch sử theo stopType:
+        // - PICKUP: shipper đến nhà người gửi và lấy hàng lên xe.
+        // - DELIVERY (từ bưu cục đích): shipper quét QR xác nhận hàng lên xe.
+        String pickedUpNote = (stopType == RouteStopType.PICKUP)
+                ? "Shipper đã lấy hàng thành công (chuyến " + shipment.getCode() + ")"
+                : "Shipper đã xác nhận hàng lên xe (chuyến " + shipment.getCode() + ")";
+        saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP, pickedUpNote);
         // Sync AI stop CHỈ khi stop hiện tại là PICKUP leg (PICKED_UP là terminal
         // cho PICKUP). Đối với DELIVERY leg, PICKED_UP không phải terminal.
         if (stopType == RouteStopType.PICKUP) {
@@ -850,7 +855,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         order.setStatus(OrderStatus.DELIVERING);
         orderRepository.save(order);
         saveHistory(order, shipment, OrderHistoryActionType.DELIVERING,
-                "Shipper bắt đầu giao hàng (chuyến " + shipment.getCode() + ")");
+                "Shipper bắt đầu giao hàng đến người nhận (chuyến " + shipment.getCode() + ")");
     }
 
     @Override
@@ -894,7 +899,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     order.setStatus(OrderStatus.DELIVERING);
                     orderRepository.save(order);
                     saveHistory(order, shipment, OrderHistoryActionType.DELIVERING,
-                            "Shipper bắt đầu giao hàng (bulk, chuyến " + shipment.getCode() + ")");
+                            "Shipper bắt đầu giao hàng đến người nhận (bulk, chuyến " + shipment.getCode() + ")");
                     updatedOrderIds.add(order.getId());
                     updatedCount++;
                 }
