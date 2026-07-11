@@ -22,13 +22,12 @@ public interface SettlementBatchRepository
 
     // Tổng tiền đã nhận: batch đã COMPLETED theo type SYSTEM_TO_SHOP
     @Query("""
-                SELECT COALESCE(SUM(t.amount), 0)
-                FROM SettlementTransaction t
-                WHERE t.settlementBatch.shop.id = :userId
-                  AND t.status = com.logistics.enums.SettlementTransactionStatus.SUCCESS
-                  AND t.type = com.logistics.enums.SettlementTransactionType.SYSTEM_TO_SHOP
+                SELECT COALESCE(SUM(t.balanceAmount), 0)
+                FROM SettlementBatch t
+                WHERE t.shop.id = :userId
+                  AND t.status = com.logistics.enums.SettlementStatus.COMPLETED
             """)
-    BigDecimal sumReceivedByUser(@Param("userId") Integer userId);
+    BigDecimal sumNetBalanceByUser(@Param("userId") Integer userId);
 
     // Lấy các batch PENDING sắp tới
     @Query("""
