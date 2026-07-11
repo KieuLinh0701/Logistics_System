@@ -18,14 +18,18 @@ public class UserSpecification {
 
     public static Specification<User> fetchAccount() {
         return (root, query, cb) -> {
-            root.fetch("account", JoinType.LEFT);
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                root.fetch("account", JoinType.LEFT);
+            }
             return cb.conjunction();
         };
     }
 
     public static Specification<User> fetchEmployees() {
         return (root, query, cb) -> {
-            root.fetch("employees", JoinType.LEFT);
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                root.fetch("employees", JoinType.LEFT);
+            }
             return cb.conjunction();
         };
     }
