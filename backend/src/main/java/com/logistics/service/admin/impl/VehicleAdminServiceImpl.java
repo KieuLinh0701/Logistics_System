@@ -104,6 +104,7 @@ public class VehicleAdminServiceImpl implements VehicleAdminService {
         vehicle.setStatus(VehicleStatus.valueOf(request.getStatus()));
         vehicle.setDescription(request.getDescription());
         vehicle.setOffice(office);
+        vehicle.setCurrentOffice(office);
         vehicle = vehicleRepository.save(vehicle);
     }
 
