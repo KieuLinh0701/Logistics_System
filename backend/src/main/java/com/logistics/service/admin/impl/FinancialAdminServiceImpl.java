@@ -334,7 +334,9 @@ public class FinancialAdminServiceImpl implements FinancialAdminService {
             for (PaymentSubmission s : batch.getSubmissions()) {
                 Order o = s.getOrder();
                 if (o != null) {
-                    o.setCodStatus(OrderCodStatus.TRANSFERRED);
+                    if (o.getCod() != null && o.getCod() > 0) {
+                        o.setCodStatus(OrderCodStatus.TRANSFERRED);
+                    }
                     try {
                         try {
                             Optional<Order> locked = orderRepository.findByIdForUpdate(o.getId());
