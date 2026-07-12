@@ -3,6 +3,7 @@ import {Alert, Button, Card, message, Space, Spin, Typography, Upload} from "ant
 import {CameraOutlined, FileImageOutlined, ScanOutlined, StopOutlined} from "@ant-design/icons";
 import {Html5Qrcode} from "html5-qrcode";
 import orderApi from "../../../api/orderApi";
+import shipmentApi from "../../../api/shipmentApi";
 
 const { Title, Text } = Typography;
 
@@ -18,6 +19,49 @@ const BarcodeScannerPage: React.FC = () => {
   // Cache lệnh cooldown theo trackingNumber (debounce 5s) — ngăn cùng 1 mã scan lại liên tiếp
   const recentScansRef = useRef<Map<string, number>>(new Map());
   const SCAN_DEBOUNCE_MS = 5000;
+
+  // Tìm (orderId, shipmentOrderId) trong các shipment active của shipper hiện tại
+  // theo trackingNumber. shipmentOrderId dùng cho endpoint scan DELIVERY mới.
+  const resolveShipmentOrderForTracking = async (
+    trackingNumber: string
+  ): Promise<{ shipmentId: number; orderId: number; stopType: string } | null> => {
+    try {
+      const res: any = await shipmentApi.listShipperActiveShipments();
+      const shipments = res?.data?.data || res?.data || [];
+      for (const sh of shipments) {
+        // Chỉ chấp nhận shipment DELIVERY đang PENDING hoặc IN_TRANSIT — đây là
+        // các chuyến mà shipper có thể đang quét QR lên xe (PENDING) hoặc đang
+        // giao (IN_TRANSIT). Đơn thuộc chuyến đã kết thúc không resolve.
+        const shStatus = sh?.status;
+        if (shStatus !== "PENDING" && shStatus !== "IN_TRANSIT") continue;
+        const shType = sh?.type;
+        // Chuyến DELIVERY là target chính; chuyến PICKUP vẫn resolve được (luồng
+        // markPickedUp cũ). Các loại khác bỏ qua.
+        if (shType !== undefined && shType !== null
+            && shType !== "DELIVERY" && shType !== "PICKUP") continue;
+
+        const orders = sh?.orders || sh?.shipmentOrders || [];
+        for (const so of orders) {
+          const tn =
+            so?.trackingNumber ||
+            so?.order?.trackingNumber ||
+            null;
+          if (!tn || tn.toLowerCase() !== trackingNumber.toLowerCase()) continue;
+
+          const stopType = so?.stopType || so?.order?.stopType || "DELIVERY";
+          // DTO mới trả shipmentId + orderId phẳng. Fallback nested cho tương thích.
+          const shipmentId = so?.shipmentId ?? sh?.id ?? so?.id?.shipmentId ?? null;
+          const orderId = so?.orderId ?? so?.order?.id ?? so?.id?.orderId ?? null;
+          if (shipmentId && orderId) {
+            return { shipmentId, orderId, stopType };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[SCAN] resolveShipmentOrder failed", err);
+    }
+    return null;
+  };
 
   const isCodeOnCooldown = (code: string): boolean => {
     const now = Date.now();
@@ -170,13 +214,39 @@ const BarcodeScannerPage: React.FC = () => {
     }
 
     try {
-      const pickedUpResponse = await orderApi.markShipperPickedUpByTrackingNumber(code);
+      // Resolve shipmentOrder theo tracking trong danh sách shipment active
+      // của shipper hiện tại. Bắt buộc phải resolve được — không fallback
+      // sang API cũ.
+      const resolved = await resolveShipmentOrderForTracking(code);
+      if (!resolved) {
+        message.error(
+          `Không tìm thấy đơn ${code} trong chuyến giao đang chờ bắt đầu của bạn.`
+        );
+        setScannedCode(null);
+        return;
+      }
 
-      // CHỈ set scannedCode khi API thành công
-      setScannedCode(code);
-      const apiMessage =
-        pickedUpResponse?.message ?? `Đã cập nhật đơn hàng ${code} sang trạng thái "Đã lấy hàng"`;
-      message.success(apiMessage);
+      if (resolved.stopType === "DELIVERY") {
+        // Luồng giao từ bưu cục đích: endpoint scan mới.
+        // URL dùng composite key (shipmentId, orderId) — body chỉ có trackingNumber optional.
+        const scanResponse: any = await orderApi.scanDeliveryShipmentOrder(
+          resolved.shipmentId,
+          resolved.orderId,
+          code
+        );
+        setScannedCode(code);
+        const apiMessage =
+          scanResponse?.message ?? `Đã xác nhận hàng lên xe cho mã ${code}`;
+        message.success(apiMessage);
+      } else {
+        // Luồng PICKUP / RETURN_TO_OFFICE: giữ flow cũ markPickedUp.
+        const pickedUpResponse = await orderApi.markShipperPickedUpByTrackingNumber(code);
+
+        setScannedCode(code);
+        const apiMessage =
+          pickedUpResponse?.message ?? `Đã cập nhật đơn hàng ${code} sang trạng thái "Đã lấy hàng"`;
+        message.success(apiMessage);
+      }
 
       // Tự động ẩn success box sau 3s
       setTimeout(() => {

@@ -32,6 +32,7 @@ interface DeliveryStop {
     latitude?: number;
     longitude?: number;
     stopType?: string;
+    shipmentOrderScannedAt?: string | null;
 }
 
 interface StopDetailModalProps {
@@ -84,6 +85,20 @@ const StopDetailModal: React.FC<StopDetailModalProps> = ({
         ? stop.status
         : (stop.orderStatus || stop.status);
 
+    // DELIVERY stop đã claim vào shipment PENDING nhưng shipper chưa quét QR
+    // → hiển thị "Chờ quét lên xe" thay vì raw enum AT_DEST_OFFICE.
+    const isAwaitingDeliveryScan =
+        !isPickup && !isReturn
+        && !stop.shipmentOrderScannedAt
+        && (statusKey || "").toString().toUpperCase() === "AT_DEST_OFFICE";
+    const displayedStatus = isAwaitingDeliveryScan ? "AT_DEST_OFFICE" : statusKey;
+    const displayedColor = isAwaitingDeliveryScan
+        ? "gold"
+        : getStatusColor(displayedStatus);
+    const displayedText = isAwaitingDeliveryScan
+        ? "Chờ lên xe"
+        : getStatusText(displayedStatus);
+
     return (
         <Modal
             title={title}
@@ -121,7 +136,7 @@ const StopDetailModal: React.FC<StopDetailModalProps> = ({
                 </div>
                 <div>
                     <Text strong>Trạng thái: </Text>
-                    <Tag color={getStatusColor(statusKey)}>{getStatusText(statusKey)}</Tag>
+                    <Tag color={displayedColor}>{displayedText}</Tag>
                 </div>
                 <Button
                     type="primary"

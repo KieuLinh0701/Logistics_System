@@ -17,6 +17,7 @@ import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.repository.DeliveryAttemptRepository;
+import com.logistics.repository.ShipmentOrderRepository;
 import com.logistics.request.manager.order.ManagerOrderCreateRequest;
 import com.logistics.request.user.order.UserOrderSearchRequest;
 import com.logistics.request.user.order.UserUrgentOrderSearchRequest;
@@ -94,6 +95,8 @@ public class OrderManagerServiceImpl implements OrderManagerService {
     private final PickupAttemptRepository pickupAttemptRepository;
 
     private final DeliveryAttemptRepository deliveryAttemptRepository;
+
+    private final ShipmentOrderRepository shipmentOrderRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -255,7 +258,8 @@ public class OrderManagerServiceImpl implements OrderManagerService {
         var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
         var deliveryAttempts = deliveryAttemptRepository.findByOrderIdOrderByAttemptNumberDesc(order.getId());
 
-        return OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts, deliveryAttempts);
+        return OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts, deliveryAttempts,
+                shipmentOrderRepository);
     }
 
     @Override

@@ -470,6 +470,24 @@ public class OrderShipperController {
         return ResponseEntity.ok(ApiResponse.success(shipmentDeliveryService.startDeliveryAll(id)));
     }
 
+    @PostMapping("/shipment-orders/{shipmentId}/{orderId}/scan")
+    @Audit(
+            entity = EntityType.SHIPMENT,
+            action = AuditLogAction.UPDATE,
+            description = "Shipper quét QR xác nhận hàng lên xe (DELIVERY)",
+            params = {"shipmentId", "orderId"}
+    )
+    public ResponseEntity<ApiResponse<Map<String, Object>>> scanDeliveryShipmentOrder(
+            @PathVariable Integer shipmentId,
+            @PathVariable Integer orderId,
+            @RequestParam(required = false) String trackingNumber) {
+        if (isNotShipper()) {
+            throw new AppException(CommonErrorCode.FORBIDDEN);
+        }
+        return ResponseEntity.ok(ApiResponse.success(
+                shipmentDeliveryService.scanDeliveryShipmentOrder(shipmentId, orderId, trackingNumber)));
+    }
+
     @GetMapping("/shipments/active")
     public ResponseEntity<ApiResponse<List<ShipperActiveShipmentDto>>> listActiveDeliveryShipments() {
         if (isNotShipper()) {

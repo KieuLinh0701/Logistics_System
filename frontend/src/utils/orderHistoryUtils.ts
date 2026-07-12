@@ -1,4 +1,10 @@
-import type {OrderHistory} from "../types/orderHistory";
+﻿import type {OrderHistory} from "../types/orderHistory";
+
+const isPickupByCourier = (h: OrderHistory) =>
+    h.pickupType === "PICKUP_BY_COURIER";
+
+const isReturnLeg = (h: OrderHistory) =>
+    h.stopType === "RETURN_TO_OFFICE";
 
 export const getOrderHistoryActionText = (history: OrderHistory) => {
   const fromOffice = history.fromOfficeName ?? "";
@@ -16,36 +22,56 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
     case "URGENT_PICKUP":
       return "Đơn hàng ưu tiên cần shipper đến lấy ngay";
     case "PICKING_UP":
-      return `Shipper đang đến lấy hàng từ người gửi`;
+      return isReturnLeg(history)
+          ? "Shipper bắt đầu đi nhận đơn hoàn trả"
+          : "Shipper đang đến lấy hàng từ người gửi";
     case "PICKED_UP":
-      return `Đơn hàng đã được lấy từ người gửi`;
+      if (isReturnLeg(history)) {
+          return "Shipper đã nhận đơn hoàn lên xe";
+      }
+      if (isPickupByCourier(history)) {
+          return "Shipper đã lấy hàng từ người gửi";
+      }
+      return "Shipper đã xác nhận hàng lên xe";
     case "PICKUP_FAILED_FINAL":
-      return `Lấy hàng thất bại quá số lần cho phép`;
+      return "Lấy hàng thất bại quá số lần cho phép";
     case "IMPORTED":
-      return `Đơn hàng đã nhập kho ${toOffice}`;
+      return toOffice
+          ? `Đơn hàng đã nhập kho ${toOffice}`
+          : "Đơn hàng đã nhập kho";
     case "EXPORTED":
-      return `Đơn hàng đã xuất kho ${fromOffice}`;
+      return fromOffice
+          ? `Đơn hàng đã xuất kho ${fromOffice}`
+          : "Đơn hàng đã xuất kho";
     case "DELIVERING":
-      return `Đơn hàng đang được giao đến người nhận`;
+      return isReturnLeg(history)
+          ? "Shipper đang chở đơn hoàn về bưu cục gốc"
+          : "Đơn hàng đang được giao đến người nhận";
     case "DELIVERED":
-      return `Đơn hàng đã giao thành công`;
+      return "Đơn hàng đã giao thành công";
     case "FAILED_DELIVERY":
-      return `Giao hàng không thành công`;
+      return "Giao hàng không thành công";
     case "RETURNING":
-      return `Đơn hàng đang được hoàn trả về kho`;
-    case 'RETURN_AT_ORIGIN_OFFICE':
-      return `Đơn hàng đã hoàn về tới bưu cục xuất phát`;
+      return "Đơn hàng đang được hoàn trả về kho";
+    case "RETURN_AT_ORIGIN_OFFICE":
+      return "Đơn hàng đã hoàn về tới bưu cục xuất phát";
     case "RETURN_RETRY":
-      return `Đơn hàng đang chờ hoàn trả lại`;
+      return "Đơn hàng đang chờ hoàn trả lại";
     case "RETURN_FAILED_FINAL":
-      return `Hoàn hàng thất bại cuối cùng`;
+      return "Hoàn hàng thất bại cuối cùng";
     case "RETURNED":
-      return `Đơn hàng đã được hoàn trả thành công`;
+      return "Đơn hàng đã được hoàn trả thành công";
     case "CANCELLED":
-      return `Đơn hàng đã bị hủy`;
+      return "Đơn hàng đã bị hủy";
     case "AT_DEST_OFFICE":
-      return `Đơn hàng đã đến bưu cục đích`;
+      return "Đơn hàng đã đến bưu cục đích";
+    case "ASSIGNED_TO_DELIVERY_TRIP":
+      return "Đơn hàng đã được phân công vào chuyến giao";
+    case "ORDER_LOADED_ON_VEHICLE":
+      return "Shipper đã xác nhận hàng lên xe";
+    case "DELIVERY_STARTED":
+      return "Đơn hàng bắt đầu được giao đến người nhận";
     default:
-      return `Cập nhật trạng thái đơn hàng`;
+      return "Cập nhật trạng thái đơn hàng";
   }
 };

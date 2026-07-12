@@ -161,6 +161,30 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         history.setShipment(shipment);
         history.setAction(action);
         history.setNote(note);
+
+        if (order.getPickupType() != null) {
+            history.setPickupTypeSnapshot(order.getPickupType());
+        }
+
+        if (shipment != null && order.getId() != null) {
+            try {
+                List<ShipmentOrder> shipOrders =
+                        shipmentOrderRepository.findByShipmentId(shipment.getId());
+                if (shipOrders != null) {
+                    for (ShipmentOrder so : shipOrders) {
+                        if (so.getOrder() != null
+                                && so.getOrder().getId().equals(order.getId())
+                                && so.getStopType() != null) {
+                            history.setStopTypeSnapshot(so.getStopType());
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // Snapshot stopType là best-effort — nếu fail vẫn lưu history.
+            }
+        }
+
         orderHistoryRepository.save(history);
     }
 
@@ -514,6 +538,12 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
+        // Lấy danh sách orderId đã thuộc ShipmentOrder DELIVERY của shipper
+        // để loại khỏi trang "Chưa gán". Đơn đã thêm vào shipment (kể cả chưa
+        // claim cá nhân) cũng phải bị ẩn vì đã được giao cho shipper.
+        List<Integer> shipmentOrderIds = shipmentOrderRepository
+                .findOrderIdsByActiveDeliveryShipmentOfEmployee(employee.getId());
+
         Specification<Order> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -521,10 +551,18 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             predicates.add(cb.equal(root.get("createdByType"), OrderCreatorType.USER));
 
             // ========== Đơn giao thường ==========
-            // AT_DEST_OFFICE: đơn đang ở bưu cục đích, chờ shipper giao
+            // AT_DEST_OFFICE: đơn đang ở bưu cục đích, chờ shipper giao.
+            // Sau refactor DELIVERY: claimOrder KHÔNG đổi status (vẫn giữ
+            // AT_DEST_OFFICE), chỉ set order.employee + tạo ShipmentOrder.
+            // Nên cần loại đơn đã có employee hoặc đã thuộc ShipmentOrder
+            // DELIVERY của shipper để tránh đơn đã nhận lẫn vào trang "Chưa gán".
             Predicate normalDeliveryPredicate = cb.and(
                 cb.equal(root.get("toOffice").get("id"), officeId),
-                cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE)
+                cb.equal(root.get("status"), OrderStatus.AT_DEST_OFFICE),
+                cb.isNull(root.get("employee")),
+                shipmentOrderIds == null || shipmentOrderIds.isEmpty()
+                    ? cb.conjunction()
+                    : cb.not(root.get("id").in(shipmentOrderIds))
             );
 
             Predicate returnOfficeMatch = cb.or(
@@ -835,11 +873,24 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     }
 
     /**
+     * Package-private wrappers exposed chỉ để phục vụ unit test trong cùng package.
+     * Không dùng cho code production — production code gọi trực tiếp các helper static
+     * tương ứng nội bộ trong class này.
+     */
+    static boolean isValidCoordinateStatic(Double lat, Double lng) {
+        return isValidCoordinate(lat, lng);
+    }
+
+    /**
      * Tính fingerprint tọa độ cho cache key — làm tròn 4 chữ số thập phân (~11m).
      * Đảm bảo GPS lệch vài mét không sinh cache key mới nhưng vẫn phản ánh dịch chuyển thực tế.
      */
     private static String fingerprint(double lat, double lng) {
         return String.format(Locale.ROOT, "%.4f:%.4f", lat, lng);
+    }
+
+    static String fingerprintStatic(double lat, double lng) {
+        return fingerprint(lat, lng);
     }
 
     /**
@@ -1537,7 +1588,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         // Kiểm tra xem order đã thuộc shipment DELIVERY PENDING/IN_TRANSIT của shipper chưa
         Shipment activeShipment = shipmentRepository.findActiveDeliveryShipmentForOrder(employee.getId(), id).orElse(null);
 
-        if (activeShipment == null) {
+if (activeShipment == null) {
             // Order chưa thuộc shipment nào -> tìm shipment đang mở hoặc tạo mới
             List<Shipment> openShipments = shipmentRepository.findActiveDeliveryShipmentsByEmployee(employee.getId());
             if (!openShipments.isEmpty()) {
@@ -1552,31 +1603,40 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 activeShipment.setShipmentOrders(new ArrayList<>());
                 activeShipment = shipmentRepository.save(activeShipment);
             }
-
-            // Thêm order vào shipment_orders nếu chưa có
-            if (!shipmentOrderRepository.existsByShipmentIdAndOrderId(activeShipment.getId(), id)) {
-                int nextSeq = nextStopSequence(activeShipment.getId());
-                ShipmentOrder so = new ShipmentOrder();
-                ShipmentOrderId soId = new ShipmentOrderId();
-                soId.setShipmentId(activeShipment.getId());
-                soId.setOrderId(id);
-                so.setId(soId);
-                so.setShipment(activeShipment);
-                so.setOrder(order);
-                so.setStopType(RouteStopType.DELIVERY);
-                so.setStopSequence(nextSeq);
-                shipmentOrderRepository.save(so);
-            }
         }
 
-        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        // Đánh dấu `shipmentOrderCreated` để biết có phải assignment mới hay
+        // chỉ là claim lại cho đơn đã có ShipmentOrder — chỉ ghi history
+        // ASSIGNED_TO_DELIVERY_TRIP khi assignment thực sự thay đổi.
+        boolean shipmentOrderCreated = false;
+        // Thêm order vào shipment_orders nếu chưa có.
+        if (!shipmentOrderRepository.existsByShipmentIdAndOrderId(activeShipment.getId(), id)) {
+            int nextSeq = nextStopSequence(activeShipment.getId());
+            ShipmentOrder so = new ShipmentOrder();
+            ShipmentOrderId soId = new ShipmentOrderId();
+            soId.setShipmentId(activeShipment.getId());
+            soId.setOrderId(id);
+            so.setId(soId);
+            so.setShipment(activeShipment);
+            so.setOrder(order);
+            so.setStopType(RouteStopType.DELIVERY);
+            so.setStopSequence(nextSeq);
+            shipmentOrderRepository.save(so);
+            shipmentOrderCreated = true;
+        }
+
+        // Order vẫn giữ AT_DEST_OFFICE sau khi claim. Việc scan lên xe lưu ở
+        // ShipmentOrder.scannedAt; chuyển DELIVERING chỉ xảy ra khi startShipment.
         order.setEmployee(employee);
         orderRepository.save(order);
 
-        // READY_FOR_PICKUP = shipper đã nhận đơn tại bưu cục đích, đơn đang chờ xác nhận đưa lên xe.
-        // Đơn sẽ chuyển sang DELIVERING khi shipper quét QR / xác nhận hàng lên xe.
-        saveHistory(order, activeShipment, OrderHistoryActionType.READY_FOR_PICKUP,
-                "Đơn hàng đã được phân công cho shipper và đang chờ xác nhận đưa lên xe");
+        if (shipmentOrderCreated) {
+            // Chỉ ghi lịch sử khi ShipmentOrder/assignment thực sự được tạo mới.
+            // Tránh duplicate ASSIGNED_TO_DELIVERY_TRIP khi shipper claim lại
+            // đơn đã có ShipmentOrder (idempotent re-assignment).
+            saveHistory(order, activeShipment, OrderHistoryActionType.ASSIGNED_TO_DELIVERY_TRIP,
+                    "Đơn hàng đã được phân công cho shipper và thêm vào chuyến giao");
+        }
 
         try {
             assignOrderToActiveAiRoute(employee, order);
@@ -1606,13 +1666,23 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             }
         }
 
-        if (order.getStatus() != OrderStatus.PICKED_UP && order.getStatus() != OrderStatus.READY_FOR_PICKUP && order.getStatus() != OrderStatus.PICKING_UP) {
-            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
-        }
-
-        if (order.getPickupType() != null && order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+        // Sau refactor DELIVERY: order có thể đang AT_DEST_OFFICE (chưa quét) hoặc
+        // READY_FOR_PICKUP / PICKED_UP (legacy hoặc pickup tại nhà).
+        boolean isPickup = order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER;
+        if (isPickup) {
+            if (order.getStatus() != OrderStatus.PICKED_UP
+                    && order.getStatus() != OrderStatus.READY_FOR_PICKUP
+                    && order.getStatus() != OrderStatus.PICKING_UP) {
+                throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
+            }
             order.setStatus(OrderStatus.READY_FOR_PICKUP);
         } else {
+            // DELIVERY: cho phép unclaim ở AT_DEST_OFFICE (mới) hoặc legacy.
+            if (order.getStatus() != OrderStatus.AT_DEST_OFFICE
+                    && order.getStatus() != OrderStatus.READY_FOR_PICKUP
+                    && order.getStatus() != OrderStatus.PICKED_UP) {
+                throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
+            }
             if (order.getFromOffice() != null && order.getToOffice() != null
                     && Objects.equals(order.getFromOffice().getId(), order.getToOffice().getId())) {
                 order.setStatus(OrderStatus.CONFIRMED);
@@ -1622,7 +1692,20 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         List<ShipmentOrder> sos = shipmentOrderRepository.findByOrderId(id);
-        if (sos != null) {
+        if (sos != null && !sos.isEmpty()) {
+            // Sau refactor DELIVERY: chặn unclaim nếu đơn DELIVERY đã được
+            // quét QR lên xe (ShipmentOrder.scannedAt != null). Không có
+            // nghiệp vụ unload - đơn đã scan chỉ có thể chuyển DELIVERING hoặc
+            // DELIVERY_FAILED theo flow hiện tại.
+            for (ShipmentOrder so : sos) {
+                if (so.getStopType() == RouteStopType.DELIVERY && so.isScanned()) {
+                    throw new AppException(
+                            ShipmentErrorCode.SHIPMENT_CANNOT_DELETE_ORDERS,
+                            "Đơn đã được quét QR xác nhận lên xe, không thể hủy nhận. " +
+                            "Vui lòng giao hoặc đánh dấu giao thất bại trước khi hủy."
+                    );
+                }
+            }
             for (ShipmentOrder so : sos) {
                 shipmentOrderRepository.delete(so);
             }
@@ -1969,6 +2052,14 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             order.setEmployee(employee);
         }
 
+        // Standalone pickup: chỉ áp dụng cho PICKUP_BY_COURIER (lấy hàng tại nhà).
+        // Đơn DELIVERY (AT_OFFICE) phải đi qua shipment — dùng endpoint scan
+        // /shipper/shipment-orders/{id}/scan để xác nhận lên xe.
+        if (order.getPickupType() != OrderPickupType.PICKUP_BY_COURIER) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID,
+                    "Đơn DELIVERY phải quét QR qua shipment-order, không dùng markPickedUp.");
+        }
+
         // Ghi notes / ảnh / vị trí nếu có
         if (request != null) {
             if (request.getLatitude() != null && request.getLongitude() != null) {
@@ -1990,13 +2081,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         order.setStatus(OrderStatus.PICKED_UP);
         orderRepository.save(order);
-        // Lưu history không có shipment (standalone). Phân biệt theo pickupType của đơn:
-        // - PICKUP_BY_COURIER: shipper đã đến nhà người gửi và lấy hàng.
-        // - AT_OFFICE: shipper đã quét QR xác nhận hàng lên xe tại bưu cục đích.
-        String pickedUpNote = (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER)
-                ? "Shipper đã lấy hàng thành công"
-                : "Shipper đã xác nhận hàng lên xe";
-        saveHistory(order, OrderHistoryActionType.PICKED_UP, pickedUpNote);
+        // Pickup tại nhà: shipper đã lấy hàng thành công. Chỉ áp dụng cho PICKUP_BY_COURIER.
+        saveHistory(order, OrderHistoryActionType.PICKED_UP, "Shipper đã lấy hàng từ người gửi");
 
         vehicleWorkloadService.addLoaded(order, employee);
 
@@ -3466,6 +3552,22 @@ public class OrderShipperServiceImpl implements OrderShipperService {
      * trạng thái sau (PICKING_UP, PICKUP_RETRY) bị nhận nhầm thành RECIPIENT.
      */
     private String resolveDestinationType(Order order) {
+        return resolveDestinationTypeStatic(order);
+    }
+
+    /**
+     * Xác định điểm đến của đơn hàng theo trạng thái:
+     * - PICKUP_BY_COURIER + trạng thái pickup khả dụng → PICKUP_SENDER (lấy hàng tại nhà).
+     * - RETURN_AT_ORIGIN_OFFICE → SENDER_RETURN (giao trả cho shop/người gửi).
+     * - Mặc định (AT_DEST_OFFICE, các trạng thái khác) → RECIPIENT.
+     *
+     * Thứ tự kiểm tra: PICKUP trước RETURN để tránh đơn pickup đã chuyển sang
+     * trạng thái sau (PICKING_UP, PICKUP_RETRY) bị nhận nhầm thành RECIPIENT.
+     *
+     * Package-private static để phục vụ unit test trong cùng package; logic
+     * thuần tuý (không phụ thuộc field instance) nên tách static để test dễ.
+     */
+    static String resolveDestinationTypeStatic(Order order) {
         if (order == null || order.getStatus() == null) return "RECIPIENT";
         if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
             OrderStatus st = order.getStatus();
@@ -5367,11 +5469,14 @@ public class OrderShipperServiceImpl implements OrderShipperService {
             // Mirror failure KHÔNG block pickup insert - ShipmentOrder đã là source of truth
         }
 
-        // 7. Lưu OrderHistory (audit)
+        // 7. Lưu OrderHistory (audit).
+        // Đơn pickup đã ở PICKING_UP (claim thành công trước đó) → dùng action PICKING_UP
+        // cho khớp ngữ cảnh "shipper đã claim, thêm vào chuyến", tránh hiểu nhầm với
+        // READY_FOR_PICKUP = đơn chờ shipper claim (luồng giao thường từ bưu cục).
         try {
             saveHistory(order, shipment,
-                    com.logistics.enums.OrderHistoryActionType.READY_FOR_PICKUP,
-                    "Pickup order được thêm vào chuyến DELIVERY shipmentId=" + shipmentId
+                    com.logistics.enums.OrderHistoryActionType.PICKING_UP,
+                    "Shipper nhận đơn pickup và thêm vào chuyến DELIVERY shipmentId=" + shipmentId
                             + " stopSequence=" + nextSeq);
         } catch (Exception e) {
             log.warn("Failed to save OrderHistory for pickup insert: {}", e.getMessage());

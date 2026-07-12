@@ -4,7 +4,8 @@ export type ShipperOrderLike = {
   shipmentId?: number | null;
   shipmentStatus?: string | null;
   shipmentType?: string | null;
-  stopType?: string | null; 
+  stopType?: string | null;
+  shipmentOrderScannedAt?: string | null;
 };
 
 
@@ -39,9 +40,21 @@ export const canStartPickup = (order: ShipperOrderLike): boolean =>
   isInActiveDeliveryShipment(order) &&
   ["CONFIRMED", "PICKUP_RETRY", "READY_FOR_PICKUP"].includes(order.status || "");
 
+/**
+ * Sau refactor DELIVERY: chỉ còn dùng cho luồng pickup tại nhà (PICKUP_BY_COURIER).
+ * Đơn DELIVERY dùng endpoint scan DeliveryOrder để xác nhận lên xe.
+ */
 export const canMarkPickedUp = (order: ShipperOrderLike): boolean =>
+  order.pickupType === "PICKUP_BY_COURIER" &&
   isInActiveDeliveryShipment(order) &&
   ["PICKING_UP", "READY_FOR_PICKUP", "PICKUP_RETRY"].includes(order.status || "");
+
+/**
+ * DELIVERY stop đã được quét QR lên xe hay chưa.
+ * Source of truth: ShipmentOrder.scannedAt (do backend populate).
+ */
+export const isDeliveryOrderScanned = (order: ShipperOrderLike): boolean =>
+  !!order.shipmentOrderScannedAt;
 
 export const canStartDelivery = (order: ShipperOrderLike): boolean =>
   isInActiveDeliveryShipment(order) && order.status === "PICKED_UP";

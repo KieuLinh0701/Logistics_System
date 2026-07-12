@@ -13,6 +13,7 @@ import com.logistics.repository.OrderProductRepository;
 import com.logistics.repository.OrderRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.repository.DeliveryAttemptRepository;
+import com.logistics.repository.ShipmentOrderRepository;
 import com.logistics.response.Pagination;
 import com.logistics.service.admin.OrderAdminService;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class OrderAdminServiceImpl implements OrderAdminService {
     private final OrderProductRepository orderProductRepository;
     private final PickupAttemptRepository pickupAttemptRepository;
     private final DeliveryAttemptRepository deliveryAttemptRepository;
+    private final ShipmentOrderRepository shipmentOrderRepository;
 
     @Override
     public Map<String, Object> listOrders(int page, int limit, String search, String status) {
@@ -76,7 +78,8 @@ public class OrderAdminServiceImpl implements OrderAdminService {
         var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
         var deliveryAttempts = deliveryAttemptRepository.findByOrderIdOrderByAttemptNumberDesc(order.getId());
 
-        return OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts, deliveryAttempts);
+        return OrderMapper.toManagerOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts, deliveryAttempts,
+                shipmentOrderRepository);
     }
 
     @Override

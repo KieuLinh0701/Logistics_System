@@ -8,6 +8,7 @@ import com.logistics.exception.enums.OrderErrorCode;
 import com.logistics.mapper.OrderHistoryMapper;
 import com.logistics.repository.OrderHistoryRepository;
 import com.logistics.repository.OrderRepository;
+import com.logistics.repository.ShipmentOrderRepository;
 import com.logistics.service.common.OrderPublicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class OrderPublicServiceImpl implements OrderPublicService {
 
     private final OrderRepository repository;
     private final OrderHistoryRepository historyRepository;
+    private final ShipmentOrderRepository shipmentOrderRepository;
 
     @Override
     public List<OrderHistoryDto> getOrderHistoriesByTrackingNumber(
@@ -33,6 +35,7 @@ public class OrderPublicServiceImpl implements OrderPublicService {
         List<OrderHistory> orderHistories = historyRepository
                 .findByOrderIdOrderByActionTimeDesc(order.getId());
 
-        return OrderHistoryMapper.toDtoList(orderHistories);
+        // history cũ (chưa có stop_type_snapshot).
+        return OrderHistoryMapper.toDtoList(orderHistories, shipmentOrderRepository);
     }
 }

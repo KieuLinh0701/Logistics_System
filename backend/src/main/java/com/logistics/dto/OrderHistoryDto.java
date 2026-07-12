@@ -15,6 +15,8 @@ public class OrderHistoryDto {
     private String fromOfficeName;
     private String toOfficeName;
     private String action;
-    private String note;
     private LocalDateTime actionTime;
+
+    private String pickupType;
+    private String stopType;
 }

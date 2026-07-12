@@ -44,7 +44,7 @@ public interface ShipmentOrderRepository extends JpaRepository<ShipmentOrder, Sh
             """)
     List<Shipment> findActiveShipmentsForOrder(@Param("orderId") Integer orderId);
 
-    // Trả về danh sách orderId của các đơn đang được giao (DELIVERY) bởi shipper (employeeId) với trạng thái PENDING hoặc IN_TRANSIT  
+    // Trả về danh sách orderId của các đơn đang được giao (DELIVERY) bởi shipper (employeeId) với trạng thái PENDING hoặc IN_TRANSIT
     @Query("""
                 SELECT DISTINCT so.order.id FROM ShipmentOrder so
                 WHERE so.shipment.employee.id = :employeeId
@@ -55,4 +55,10 @@ public interface ShipmentOrderRepository extends JpaRepository<ShipmentOrder, Sh
                   AND so.stopType = com.logistics.enums.RouteStopType.DELIVERY
             """)
     List<Integer> findOrderIdsByActiveDeliveryShipmentOfEmployee(@Param("employeeId") Integer employeeId);
+
+    @Query("""
+                SELECT so FROM ShipmentOrder so
+                WHERE so.shipment.id IN :shipmentIds
+            """)
+    List<ShipmentOrder> findByShipmentIdIn(@Param("shipmentIds") List<Integer> shipmentIds);
 }

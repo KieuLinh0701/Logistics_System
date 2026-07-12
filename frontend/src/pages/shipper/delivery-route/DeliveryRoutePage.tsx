@@ -108,6 +108,7 @@ interface DeliveryStop {
     latitude?: number;
     longitude?: number;
     stopType?: string;
+    shipmentOrderScannedAt?: string | null;
 }
 
 
@@ -475,9 +476,23 @@ const DeliveryRoutePage: React.FC = () => {
 
     const pickedUpStopCount = useMemo(
         () => allStops.filter((s) => {
+            const stopType = (s.stopType || "").toUpperCase();
+            if (stopType === "DELIVERY") {
+                return !!s.shipmentOrderScannedAt;
+            }
             const status = (s.orderStatus || "").toUpperCase();
             return status === "PICKED_UP" || status === "RETURN_PICKED_UP";
         }).length,
+        [allStops]
+    );
+
+    const deliveryStopCount = useMemo(
+        () => allStops.filter((s) => (s.stopType || "").toUpperCase() === "DELIVERY").length,
+        [allStops]
+    );
+
+    const scannedDeliveryStopCount = useMemo(
+        () => allStops.filter((s) => (s.stopType || "").toUpperCase() === "DELIVERY" && !!s.shipmentOrderScannedAt).length,
         [allStops]
     );
 
@@ -631,6 +646,8 @@ const DeliveryRoutePage: React.FC = () => {
             case "RETURN_READY_FOR_PICKUP":
             case "RETURN_PICKED_UP":
                 return "gold";
+            case "AT_DEST_OFFICE":
+                return "cyan";
             default:
                 return "default";
         }
@@ -656,6 +673,16 @@ const DeliveryRoutePage: React.FC = () => {
             case "FAILED":
             case "FAILED_DELIVERY":
                 return "Giao hàng thất bại";
+            case "AT_DEST_OFFICE":
+                return "Đã đến bưu cục đích";
+            case "ASSIGNED_TO_DELIVERY_TRIP":
+                return "Đã phân công vào chuyến giao";
+            case "PICKING_UP":
+                return "Đang lấy hàng";
+            case "URGENT_PICKUP":
+                return "Lấy hàng gấp";
+            case "AT_ORIGIN_OFFICE":
+                return "Đã về bưu cục gốc";
             case "RETURNED":
                 return "Đã hoàn trả";
             case "RETURNING":
@@ -670,10 +697,20 @@ const DeliveryRoutePage: React.FC = () => {
                 return "Hoàn lại";
             case "RETURN_FAILED_FINAL":
                 return "Hoàn thất bại";
+            case "DELIVERY_RETRY":
+                return "Chờ giao lại";
+            case "DELIVERY_FAILED_FINAL":
+                return "Giao thất bại cuối";
+            case "PICKUP_RETRY":
+                return "Chờ lấy lại";
+            case "PICKUP_FAILED_FINAL":
+                return "Lấy hàng thất bại";
             case "CANCELLED":
                 return "Đã hủy";
             default:
-                return status.replaceAll("_", " ");
+                // Fallback: trả text tiếng Việt có dấu thay vì raw enum. Mọi status
+                // mới phải được thêm case switch ở trên — fallback chỉ là phòng hờ.
+                return s ? s.replaceAll("_", " ").toLowerCase() : "";
         }
     };
 
@@ -769,13 +806,24 @@ const DeliveryRoutePage: React.FC = () => {
             };
         }
         const rawOrderStatus = (stop.orderStatus || "").toString().toUpperCase();
+        // DELIVERY stop đã được claim vào shipment PENDING nhưng shipper chưa quét
+        // QR lên xe → ưu tiên hiển thị "Chờ quét lên xe" thay vì enum thô
+        // AT_DEST_OFFICE. Source of truth: ShipmentOrder.scannedAt.
+        const isAwaitingScan =
+            !stop.shipmentOrderScannedAt && rawOrderStatus === "AT_DEST_OFFICE";
+        const statusBadgeText = isAwaitingScan
+            ? "Chờ lên xe"
+            : getStatusText(rawOrderStatus);
+        const statusBadgeColor = isAwaitingScan
+            ? "gold"
+            : getStatusColor(rawOrderStatus);
         return {
             contactName: stop.recipientName,
             contactPhone: stop.recipientPhone,
             contactAddress: stop.recipientAddress,
             typeBadge: <Tag color="blue">Giao hàng</Tag>,
             statusBadge: (
-                <Tag color={getStatusColor(rawOrderStatus)}>{getStatusText(rawOrderStatus)}</Tag>
+                <Tag color={statusBadgeColor}>{statusBadgeText}</Tag>
             ),
             showCod: true,
         };
@@ -912,7 +960,22 @@ const DeliveryRoutePage: React.FC = () => {
                     </Space>
                     <Space wrap>
                         {routeInfo.status === "not_started" && (
-                            <Button type="primary" className="primary-button" icon={<PlayCircleOutlined />} onClick={handleStartRoute}>
+                            <Button
+                                type="primary"
+                                className="primary-button"
+                                icon={<PlayCircleOutlined />}
+                                onClick={handleStartRoute}
+                                disabled={
+                                    deliveryStopCount > 0 &&
+                                    scannedDeliveryStopCount < deliveryStopCount
+                                }
+                                title={
+                                    deliveryStopCount > 0 &&
+                                    scannedDeliveryStopCount < deliveryStopCount
+                                        ? `Còn ${deliveryStopCount - scannedDeliveryStopCount} đơn giao chưa quét QR lên xe`
+                                        : ""
+                                }
+                            >
                                 Bắt đầu tuyến
                             </Button>
                         )}

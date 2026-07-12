@@ -903,8 +903,11 @@ const ShipperOrderDetail: React.FC = () => {
                   </Button>
                 )}
 
-                {/* Đơn giao hàng thường - không áp dụng cho đơn hoàn trả */}
-                {!isReturnOrder(order) && !isPickupOrder(order) && (getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && order.status !== "DELIVERING" && (
+                {/* Đơn giao hàng thường - không áp dụng cho đơn hoàn trả.
+                    Sau refactor DELIVERY: đơn DELIVERY không dùng nút "Đã lấy hàng"
+                    nữa. Scan QR lên xe xử lý ở BarcodeScannerPage (DeliveryRoutePage).
+                    Nút này chỉ còn ý nghĩa cho pickup tại nhà — guard theo pickupType. */}
+                {!isReturnOrder(order) && !isPickupOrder(order) && order.pickupType === "PICKUP_BY_COURIER" && (getUserRole() === "shipper" || getUserRole() === "clerk") && order.status !== "PICKED_UP" && order.status !== "DELIVERED" && order.status !== "DELIVERING" && (
                   <Button
                     type="dashed"
                     disabled={!canMarkPickedUp(order)}
@@ -918,8 +921,11 @@ const ShipperOrderDetail: React.FC = () => {
                     Đã lấy hàng
                   </Button>
                 )}
-                {/* Đơn giao hàng - Bắt đầu giao */}
-                {!isReturnOrder(order) && !isPickupOrder(order) && order.status === "PICKED_UP" && (
+                {/* Đơn giao hàng - Bắt đầu giao.
+                    Sau refactor: chỉ còn áp dụng cho đơn DELIVERY legacy đang PICKED_UP.
+                    Đơn DELIVERY mới ở AT_DEST_OFFICE, transition sang DELIVERING
+                    qua startShipment ở DeliveryRoutePage. */}
+                {!isReturnOrder(order) && !isPickupOrder(order) && order.status === "PICKED_UP" && order.pickupType === "AT_OFFICE" && (
                   <Button
                     type="primary"
                     icon={<PlayCircleOutlined />}
