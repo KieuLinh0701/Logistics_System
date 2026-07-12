@@ -131,21 +131,17 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             history.setPickupTypeSnapshot(order.getPickupType());
         }
         if (shipment != null && order.getId() != null) {
-            try {
-                List<ShipmentOrder> shipOrders =
-                        shipmentOrderRepository.findByShipmentId(shipment.getId());
-                if (shipOrders != null) {
-                    for (ShipmentOrder so : shipOrders) {
-                        if (so.getOrder() != null
-                                && so.getOrder().getId().equals(order.getId())
-                                && so.getStopType() != null) {
-                            history.setStopTypeSnapshot(so.getStopType());
-                            break;
-                        }
+            List<ShipmentOrder> shipOrders =
+                    shipmentOrderRepository.findByShipmentId(shipment.getId());
+            if (shipOrders != null) {
+                for (ShipmentOrder so : shipOrders) {
+                    if (so.getOrder() != null
+                            && so.getOrder().getId().equals(order.getId())
+                            && so.getStopType() != null) {
+                        history.setStopTypeSnapshot(so.getStopType());
+                        break;
                     }
                 }
-            } catch (Exception ignored) {
-                // Best-effort
             }
         }
 
@@ -296,7 +292,18 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         deactivateAiRoutesForShipment(shipment);
         List<ShipmentOrder> shipmentOrders = shipmentOrderRepository.findByShipmentId(shipment.getId());
         for (ShipmentOrder so : shipmentOrders) {
-            saveHistory(so.getOrder(), shipment, OrderHistoryActionType.CONFIRMED,
+            Order order = so.getOrder();
+            // Chỉ ghi history "Hoàn tất chuyến DELIVERY" cho đơn DELIVERY đã giao thành công.
+            // Đơn PICKUP_BY_COURIER đã đến bưu cục gốc (AT_ORIGIN_OFFICE) hoặc đã có
+            // history terminal riêng (PICKED_UP/PICKUP_FAILED_FINAL/RETURNED) — không
+            // được ghi thêm "Đơn hàng đã được xác nhận" gây nhầm lẫn.
+            if (so.getStopType() != RouteStopType.DELIVERY) {
+                continue;
+            }
+            if (order == null || order.getStatus() != OrderStatus.DELIVERED) {
+                continue;
+            }
+            saveHistory(order, shipment, OrderHistoryActionType.CONFIRMED,
                     "Hoàn tất chuyến DELIVERY " + shipment.getCode());
         }
     }
@@ -506,8 +513,12 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 saveHistory(order, shipment, OrderHistoryActionType.RETURNING,
                         "Shipper bắt đầu chuyến giao trả hàng hoàn (chuyến " + shipment.getCode() + ")");
             } else {
-                saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
-                        "Shipper bắt đầu chuyến lấy hàng (chuyến " + shipment.getCode() + ")");
+                if (order.getStatus() != OrderStatus.PICKING_UP) {
+                    order.setStatus(OrderStatus.PICKING_UP);
+                    orderRepository.save(order);
+                    saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
+                            "Shipper bắt đầu chuyến lấy hàng (chuyến " + shipment.getCode() + ")");
+                }
             }
         }
 
@@ -655,10 +666,11 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     "Tracking number không khớp với đơn hàng.");
         }
 
-        if (order.getPickupType() != OrderPickupType.AT_OFFICE) {
-            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID,
-                    "Đơn pickup tại nhà không dùng endpoint này.");
-        }
+        // Lưu ý: KHÔNG chặn theo pickup_type ở đây.
+        // pickup_type chỉ mô tả cách lấy hàng ban đầu (người gửi mang ra bưu cục
+        // hoặc shipper đến lấy tại nhà), không phải trạng thái hiện tại của đơn.
+        // Đơn PICKUP_BY_COURIER sau khi đi qua PICKED_UP -> AT_ORIGIN_OFFICE ->
+        // IN_TRANSIT -> AT_DEST_OFFICE vẫn phải được phép quét QR lên xe giao.
 
         // Status phải là AT_DEST_OFFICE hoặc legacy DELIVERY ready
         boolean isNew = order.getStatus() == OrderStatus.AT_DEST_OFFICE;
@@ -749,7 +761,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     orderRepository.save(order);
                 }
 
-                // insertPickupIntoShipment đã ghi OrderHistory audit (action PICKING_UP)
+                // insertPickupIntoShipment đã ghi OrderHistory audit (action PICKUP_ACCEPTED)
                 // cho sự kiện "shipper claim + thêm vào chuyến". Không ghi history thứ 2 ở đây
                 // để tránh trùng lặp cùng action trong cùng nghiệp vụ.
 
@@ -771,14 +783,6 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                         ex.getClass().getSimpleName(),
                         ex.getMessage(),
                         ex);
-                try {
-                    saveHistory(order, shipment, OrderHistoryActionType.PENDING,
-                            "Shipper đăng ký nhận đơn pickup (tạo chuyến mới thất bại: "
-                                    + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
-                } catch (Exception he) {
-                    log.warn("Failed to save new-shipment fallback history: {}", he.getMessage());
-                }
-
                 resp.put("success", true);
                 resp.put("message", "Nhận yêu cầu lấy hàng thành công. Đơn đã được thêm vào chuyến lấy hàng.");
                 resp.put("orderId", orderId);
@@ -804,7 +808,7 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 orderRepository.save(order);
             }
 
-            // insertPickupIntoShipment đã ghi OrderHistory audit (action PICKING_UP)
+            // insertPickupIntoShipment đã ghi OrderHistory audit (action PICKUP_ACCEPTED)
             // cho sự kiện "shipper claim + thêm vào chuyến đang chạy". Không ghi history thứ 2.
 
             insertResult.put("success", true);
@@ -821,14 +825,6 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     ex.getClass().getSimpleName(),
                     ex.getMessage(),
                     ex);
-            try {
-                saveHistory(order, activeShipment, OrderHistoryActionType.PENDING,
-                        "Shipper đăng ký nhận đơn pickup (chờ gom vào chuyến - auto-add failed: "
-                                + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
-            } catch (Exception he) {
-                log.warn("Failed to save fallback history: {}", he.getMessage());
-            }
-
             resp.put("success", true);
             resp.put("message", "Nhận yêu cầu lấy hàng thành công. Đơn đã được thêm vào chuyến lấy hàng.");
             resp.put("orderId", orderId);
@@ -859,16 +855,20 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         Set<OrderStatus> allowed = EnumSet.of(
                 OrderStatus.CONFIRMED,
                 OrderStatus.PICKUP_RETRY,
-                OrderStatus.READY_FOR_PICKUP
+                OrderStatus.READY_FOR_PICKUP,
+                OrderStatus.PICKING_UP
         );
         if (!allowed.contains(order.getStatus())) {
             throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS);
         }
 
+        OrderStatus oldStatus = order.getStatus();
         order.setStatus(OrderStatus.PICKING_UP);
         orderRepository.save(order);
-        saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
-                "Shipper bắt đầu đi lấy hàng trong chuyến " + shipment.getCode());
+        if (oldStatus != OrderStatus.PICKING_UP) {
+            saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
+                    "Shipper bắt đầu chuyến lấy hàng (chuyến " + shipment.getCode() + ")");
+        }
     }
 
     @Override
@@ -1337,8 +1337,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         order.setStatus(OrderStatus.AT_ORIGIN_OFFICE);
         order.setCurrentOffice(shipment.getFromOffice());
         orderRepository.save(order);
-        saveHistory(order, shipment, OrderHistoryActionType.AT_DEST_OFFICE,
-                "Nộp hàng về bưu cục gốc (chuyến " + shipment.getCode() + ")");
+        saveHistory(order, shipment, OrderHistoryActionType.AT_ORIGIN_OFFICE,
+                "Đơn hàng đã được bàn giao tại bưu cục gửi (chuyến " + shipment.getCode() + ")");
         syncAiRouteStopStatus(order);
         checkAndAutoFinish(shipment);
     }

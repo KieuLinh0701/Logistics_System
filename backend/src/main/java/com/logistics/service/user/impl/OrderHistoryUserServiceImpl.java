@@ -33,21 +33,17 @@ public class OrderHistoryUserServiceImpl implements OrderHistoryUserService {
         OrderPickupType pickupTypeSnapshot = order.getPickupType();
         RouteStopType stopTypeSnapshot = null;
         if (shipment != null && order.getId() != null) {
-            try {
-                List<ShipmentOrder> shipOrders =
-                        shipmentOrderRepository.findByShipmentId(shipment.getId());
-                if (shipOrders != null) {
-                    for (ShipmentOrder so : shipOrders) {
-                        if (so.getOrder() != null
-                                && so.getOrder().getId().equals(order.getId())
-                                && so.getStopType() != null) {
-                            stopTypeSnapshot = so.getStopType();
-                            break;
-                        }
+            List<ShipmentOrder> shipOrders =
+                    shipmentOrderRepository.findByShipmentId(shipment.getId());
+            if (shipOrders != null) {
+                for (ShipmentOrder so : shipOrders) {
+                    if (so.getOrder() != null
+                            && so.getOrder().getId().equals(order.getId())
+                            && so.getStopType() != null) {
+                        stopTypeSnapshot = so.getStopType();
+                        break;
                     }
                 }
-            } catch (Exception ignored) {
-                // Best-effort
             }
         }
 
@@ -61,8 +57,6 @@ public class OrderHistoryUserServiceImpl implements OrderHistoryUserService {
                 .pickupTypeSnapshot(pickupTypeSnapshot)
                 .stopTypeSnapshot(stopTypeSnapshot)
                 .build();
-
-        if (orderHistory == null) return;
 
         repository.save(orderHistory);
     }

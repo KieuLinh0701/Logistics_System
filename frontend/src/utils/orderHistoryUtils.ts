@@ -21,10 +21,14 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
       return "Đơn hàng đã được xác nhận";
     case "URGENT_PICKUP":
       return "Đơn hàng ưu tiên cần shipper đến lấy ngay";
+    case "PICKUP_ACCEPTED":
+      return isReturnLeg(history)
+          ? "Shipper đã nhận đơn hoàn để giao trả"
+          : "Shipper đã nhận yêu cầu lấy hàng";
     case "PICKING_UP":
       return isReturnLeg(history)
           ? "Shipper bắt đầu đi nhận đơn hoàn trả"
-          : "Shipper đang đến lấy hàng từ người gửi";
+          : "Shipper bắt đầu chuyến lấy hàng";
     case "PICKED_UP":
       if (isReturnLeg(history)) {
           return "Shipper đã nhận đơn hoàn lên xe";
@@ -64,7 +68,13 @@ export const getOrderHistoryActionText = (history: OrderHistory) => {
     case "CANCELLED":
       return "Đơn hàng đã bị hủy";
     case "AT_DEST_OFFICE":
-      return "Đơn hàng đã đến bưu cục đích";
+      return isPickupByCourier(history)
+          ? "Đơn hàng đã đến bưu cục đích (chuyển tiếp sang chuyến giao)"
+          : "Đơn hàng đã đến bưu cục đích";
+    case "AT_ORIGIN_OFFICE":
+      return isReturnLeg(history)
+          ? "Đơn hàng hoàn đã về bưu cục gốc"
+          : "Đơn hàng đã được bàn giao tại bưu cục gửi";
     case "ASSIGNED_TO_DELIVERY_TRIP":
       return "Đơn hàng đã được phân công vào chuyến giao";
     case "ORDER_LOADED_ON_VEHICLE":
