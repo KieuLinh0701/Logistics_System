@@ -53,7 +53,7 @@ public class VNPayServiceImpl implements VNPayService {
 
             vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
-            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+            Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
 
             vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
@@ -88,6 +88,11 @@ public class VNPayServiceImpl implements VNPayService {
             String secureHash = vnPayUtil.hmacSHA512(
                     config.getSecretKey(),
                     hashData.toString());
+
+            System.out.println("hashData: " + hashData);
+            System.out.println("secureHash: " + secureHash);
+            System.out.println("TmnCode: " + config.getVnp_TmnCode());
+            System.out.println("SecretKey length: " + config.getSecretKey().length());
 
             return config.getVnp_PayUrl()
                     + "?"
