@@ -241,7 +241,7 @@ public class SettlementBatchUserServiceImpl implements SettlementBatchUserServic
     @Transactional(readOnly = true)
     public UserRevenueStatsDTO getUserRevenueStats(Integer userId) {
 
-        BigDecimal received = batchRepository.sumNetBalanceByUser(userId);
+        BigDecimal received = transactionRepository.sumActualPaidAmountByUser(userId);
 
         BigDecimal nextSettlement = orderRepository.sumPendingCODNow(
                 userId, List.of(OrderStatus.DELIVERED, OrderStatus.RETURNED, OrderStatus.RETURN_FAILED_FINAL));
@@ -251,7 +251,7 @@ public class SettlementBatchUserServiceImpl implements SettlementBatchUserServic
         String nextSettlementDate = scheduleUserService.getNextSettlementDate(userId);
 
         return new UserRevenueStatsDTO(
-                received.compareTo(BigDecimal.ZERO) > 0 ? received : BigDecimal.ZERO,
+                received,
                 nextSettlement,
                 pendingDebt,
                 nextSettlementDate);
@@ -265,12 +265,9 @@ public class SettlementBatchUserServiceImpl implements SettlementBatchUserServic
         BigDecimal totalDebt = BigDecimal.ZERO;
 
         for (SettlementBatch b : batches) {
-            BigDecimal originalDebt = b.getBalanceAmount().abs();
-
-            if (b.getStatus() == SettlementStatus.PENDING
-                    || b.getStatus() == SettlementStatus.FAILED) {
-
-                totalDebt = totalDebt.add(originalDebt);
+            BigDecimal remainDebt = b.getBalanceAmount().abs().subtract(b.getPaidAmount());
+            if (remainDebt.compareTo(BigDecimal.ZERO) > 0) {
+                totalDebt = totalDebt.add(remainDebt);
             }
         }
 

@@ -20,15 +20,6 @@ public interface SettlementBatchRepository
 
     Optional<SettlementBatch> findByIdAndShop_Id(Integer id, Integer shopId);
 
-    // Tổng tiền đã nhận: batch đã COMPLETED theo type SYSTEM_TO_SHOP
-    @Query("""
-                SELECT COALESCE(SUM(t.balanceAmount), 0)
-                FROM SettlementBatch t
-                WHERE t.shop.id = :userId
-                  AND t.status = com.logistics.enums.SettlementStatus.COMPLETED
-            """)
-    BigDecimal sumNetBalanceByUser(@Param("userId") Integer userId);
-
     // Lấy các batch PENDING sắp tới
     @Query("""
                 SELECT b
@@ -50,15 +41,14 @@ public interface SettlementBatchRepository
 
     // Lấy các đối soát cần xét nợ
     @Query("""
-                SELECT b
-                FROM SettlementBatch b
-                WHERE b.shop.id = :userId
-                  AND b.balanceAmount < 0
-                  AND b.status IN (
-                    com.logistics.enums.SettlementStatus.PENDING,
-                    com.logistics.enums.SettlementStatus.FAILED
-                  )
-            """)
+    SELECT b
+    FROM SettlementBatch b
+    WHERE b.shop.id = :userId
+      AND b.status IN (
+        com.logistics.enums.SettlementStatus.PENDING,
+        com.logistics.enums.SettlementStatus.FAILED
+      )
+""")
     List<SettlementBatch> findDebtBatchesByUser(Integer userId);
 
     List<SettlementBatch> findByStatusInAndCreatedAtBefore(

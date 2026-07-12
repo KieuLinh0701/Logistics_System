@@ -120,6 +120,7 @@ public class UserAdminController {
         }
 
         var roles = roleRepository.findAll().stream()
+                .filter(r -> r.getUserOwner() == null)
                 .map(r -> {
                     java.util.Map<String, Object> m = new java.util.HashMap<>();
                     m.put("id", r.getId());
