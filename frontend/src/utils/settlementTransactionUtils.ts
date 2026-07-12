@@ -1,10 +1,12 @@
 export const SETTLEMENT_TRANSACTION_TYPES = [
   'SHOP_TO_SYSTEM',
-  'SYSTEM_TO_SHOP'] as const;
+  'SYSTEM_TO_SHOP',
+  'OFFSET'] as const;
 export const translateSettlementTransactionType = (value: string): string => {
   switch (value) {
     case 'SHOP_TO_SYSTEM': return 'Shop chuyển';
     case 'SYSTEM_TO_SHOP': return 'Hệ thống chuyển';
+    case 'OFFSET': return 'Khấu trừ';
     default: return value;
   }
 };
