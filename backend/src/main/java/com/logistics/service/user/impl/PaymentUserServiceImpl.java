@@ -132,6 +132,12 @@ public class PaymentUserServiceImpl implements PaymentUserService {
             throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_PROCESSING_ERROR);
         }
 
+        // Verify chữ ký
+        boolean isValidSignature = vnPayUtils.verifySignature(paymentCheck);
+        if (!isValidSignature) {
+            throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_INVALID_SIGNATURE);
+        }
+
         // Lấy tất cả transaction cùng lúc
         List<SettlementTransaction> transactions = transactionRepository.findAllByCodeIn(codes);
 
@@ -146,24 +152,22 @@ public class PaymentUserServiceImpl implements PaymentUserService {
             throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_NOT_FOUND, String.join(", ", missing), false);
         }
 
-        // Verify chữ ký
-        boolean isValidSignature = vnPayUtils.verifySignature(paymentCheck);
-        if (!isValidSignature) {
-            throw new AppException(SettlementTransactionErrorCode.SETTLEMENT_TRANSACTION_INVALID_SIGNATURE);
-        }
-
         boolean isSuccess = "00".equals(paymentCheck.getResponseCode());
         LocalDateTime now = LocalDateTime.now();
+        SettlementTransactionStatus newStatus = isSuccess
+                ? SettlementTransactionStatus.SUCCESS
+                : SettlementTransactionStatus.FAILED;
 
-        User shop = transactions.get(0).getSettlementBatch().getShop();
+        User shop = transactions.getFirst().getSettlementBatch().getShop();
 
         for (SettlementTransaction transaction : transactions) {
-            transaction.setStatus(isSuccess
-                    ? SettlementTransactionStatus.SUCCESS
-                    : SettlementTransactionStatus.FAILED);
-            transaction.setPaidAt(now);
-            transaction.setReferenceCode(paymentCheck.getReferenceCode());
-            transactionRepository.save(transaction);
+            int updated = transactionRepository.markProcessedIfPending(
+                    transaction.getId(), newStatus, now, paymentCheck.getReferenceCode());
+
+            if (updated == 0) {
+                // Transaction đã được xử lý bởi request khác (double callback) → bỏ qua
+                continue;
+            }
 
             SettlementBatch batch = transaction.getSettlementBatch();
 

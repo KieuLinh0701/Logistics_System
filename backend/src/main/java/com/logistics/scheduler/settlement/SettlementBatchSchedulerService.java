@@ -139,7 +139,7 @@ public class SettlementBatchSchedulerService {
 
                 transaction = new SettlementTransaction();
                 transaction.setSettlementBatch(batch);
-                transaction.setAmount(totalCOD);
+                transaction.setAmount(net);
                 transaction.setType(SettlementTransactionType.SYSTEM_TO_SHOP);
                 transaction.setStatus(SettlementTransactionStatus.SUCCESS);
                 transaction.setBankName(defaultBank.getBankName());
@@ -161,6 +161,10 @@ public class SettlementBatchSchedulerService {
 
                     // Cập nhật order của batch cũ → PAID
                     updateOrdersCompleted(old.getOrders());
+                }
+
+                if (totalOldDebt.compareTo(BigDecimal.ZERO) > 0) {
+                    createOffsetTransaction(batch, totalOldDebt);
                 }
 
                 // Cập nhật order của batch mới → PAID
@@ -191,10 +195,22 @@ public class SettlementBatchSchedulerService {
                     }
                     batchRepository.save(old);
                 }
+                BigDecimal consumed = totalCOD.subtract(remaining);
                 // Batch mới PENDING — shop còn nợ |net|
-                batch.setPaidAmount(BigDecimal.ZERO);
-                batch.setStatus(SettlementStatus.PENDING);
+                batch.setPaidAmount(consumed);
+                if (totalCOD.compareTo(BigDecimal.ZERO) > 0) {
+                    // Batch này tự nó là khoản credit, đã dùng hết để khấu trừ nợ cũ → coi như resolved
+                    batch.setStatus(SettlementStatus.COMPLETED);
+                    updateOrdersCompleted(orders);
+                } else {
+                    // Batch này tự nó là khoản nợ mới (totalCOD <= 0) → giữ PENDING cho kỳ sau
+                    batch.setStatus(SettlementStatus.PENDING);
+                }
                 batchRepository.save(batch);
+
+                if (consumed.compareTo(BigDecimal.ZERO) > 0) {
+                    createOffsetTransaction(batch, consumed);
+                }
             } else {
                 batch.setPaidAmount(totalCOD);
                 batch.setStatus(SettlementStatus.COMPLETED);
@@ -208,6 +224,10 @@ public class SettlementBatchSchedulerService {
                 }
 
                 updateOrdersCompleted(orders);
+
+                if (totalCOD.compareTo(BigDecimal.ZERO) > 0) {
+                    createOffsetTransaction(batch, totalCOD);
+                }
             }
 
             String notifMessage = net.compareTo(BigDecimal.ZERO) > 0
@@ -277,5 +297,17 @@ public class SettlementBatchSchedulerService {
                     "settlements",
                     null);
         }
+    }
+
+    private void createOffsetTransaction(SettlementBatch batch, BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) return;
+
+        SettlementTransaction offsetTx = new SettlementTransaction();
+        offsetTx.setSettlementBatch(batch);
+        offsetTx.setAmount(amount);
+        offsetTx.setType(SettlementTransactionType.OFFSET);
+        offsetTx.setStatus(SettlementTransactionStatus.SUCCESS);
+        offsetTx.setPaidAt(LocalDateTime.now());
+        transactionRepository.save(offsetTx);
     }
 }
