@@ -180,10 +180,11 @@ public class PaymentUserServiceImpl implements PaymentUserService {
                 if (remain.compareTo(BigDecimal.ZERO) <= 0) {
                     batch.setStatus(SettlementStatus.COMPLETED);
 
-                    // Cập nhật order → PAID
                     if (batch.getOrders() != null) {
                         batch.getOrders().forEach(order -> {
-                            order.setCodStatus(com.logistics.enums.OrderCodStatus.TRANSFERRED);
+                            if (order.getCod() != null && order.getCod() > 0) {
+                                order.setCodStatus(com.logistics.enums.OrderCodStatus.TRANSFERRED);
+                            }
                             if (order.getPaymentStatus() != OrderPaymentStatus.PAID) {
                                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                                 order.setPaidAt(now);

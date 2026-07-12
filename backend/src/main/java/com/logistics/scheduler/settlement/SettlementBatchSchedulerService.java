@@ -265,7 +265,9 @@ public class SettlementBatchSchedulerService {
         if (orders == null) return;
         LocalDateTime now = LocalDateTime.now();
         for (Order order : orders) {
-            order.setCodStatus(OrderCodStatus.TRANSFERRED);
+            if (order.getCod() != null && order.getCod() > 0) {
+                order.setCodStatus(OrderCodStatus.TRANSFERRED);
+            }
             if (order.getPaymentStatus() != OrderPaymentStatus.PAID) {
                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                 order.setPaidAt(now);

@@ -1,6 +1,7 @@
 package com.logistics.service.financial.impl;
 
 import com.logistics.entity.Order;
+import com.logistics.enums.OrderPayerType;
 import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.PaymentSubmissionStatus;
 import com.logistics.repository.OrderRepository;
@@ -24,13 +25,28 @@ public class FinancialValidationServiceImpl implements FinancialValidationServic
     @Override
     public boolean canMarkOrderPaid(Integer orderId) {
         if (orderId == null) return false;
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) return false;
+        if (order.getPaymentStatus() == OrderPaymentStatus.PAID) return false;
+
+        BigDecimal expectedServiceFee = computeExpectedServiceFee(order);
+        if (expectedServiceFee == null || expectedServiceFee.compareTo(BigDecimal.ZERO) <= 0) {
+            return false;
+        }
+
         BigDecimal sumActual = submissionRepository.sumActualAmountByOrderIdAndStatusIn(orderId,
             List.of(PaymentSubmissionStatus.MATCHED, PaymentSubmissionStatus.ADJUSTED));
         if (sumActual == null) sumActual = BigDecimal.ZERO;
-        BigDecimal expected = orderRepository.findById(orderId)
-            .map(o -> o.getCod() != null ? BigDecimal.valueOf(o.getCod()) : BigDecimal.ZERO)
-            .orElse(BigDecimal.ZERO);
-        return expected.compareTo(BigDecimal.ZERO) > 0 && sumActual.compareTo(expected) >= 0;
+        return sumActual.compareTo(expectedServiceFee) >= 0;
+    }
+
+    private BigDecimal computeExpectedServiceFee(Order order) {
+        if (order == null) return BigDecimal.ZERO;
+        if (order.getPayer() == OrderPayerType.CUSTOMER) {
+            Integer shippingFee = order.getShippingFee();
+            return shippingFee != null ? BigDecimal.valueOf(shippingFee) : BigDecimal.ZERO;
+        }
+        return BigDecimal.ZERO;
     }
 
     @Override
