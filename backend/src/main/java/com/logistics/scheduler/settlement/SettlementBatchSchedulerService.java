@@ -268,7 +268,8 @@ public class SettlementBatchSchedulerService {
             if (order.getCod() != null && order.getCod() > 0) {
                 order.setCodStatus(OrderCodStatus.TRANSFERRED);
             }
-            if (order.getPaymentStatus() != OrderPaymentStatus.PAID) {
+            if (order.getPayer() == OrderPayerType.CUSTOMER
+                    && order.getPaymentStatus() != OrderPaymentStatus.PAID) {
                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                 order.setPaidAt(now);
             }
