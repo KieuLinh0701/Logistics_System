@@ -766,7 +766,7 @@ const ManagerShipmentOrders: React.FC = () => {
             <ConfirmModal
                 title="Xác nhận đơn đã đến bưu cục đích"
                 message="Xác nhận các đơn đã đến bưu cục đích?"
-                open={modalConfirmDestinationOpen}
+                open={modalConfirmDestinationOfficeOpen}
                 onOk={() => confirmDestinationOrders(true)}
                 onCancel={() => confirmDestinationOrders(false)}
                 loading={loadingConfirm}
