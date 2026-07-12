@@ -3,7 +3,8 @@ import {Button, Col, Dropdown, Input, message, Row, Space, Table, Tag, Tooltip} 
 import {
     CheckCircleOutlined,
     CloseCircleOutlined,
-    DeleteOutlined, DownOutlined,
+    DeleteOutlined,
+    DownOutlined,
     FileExcelOutlined,
     PlayCircleOutlined,
     PlusOutlined,
@@ -53,7 +54,6 @@ const ManagerShipmentOrders: React.FC = () => {
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const [bulkResult, setBulkResult] = useState<BulkResponse<ManagerOrderShipment>>();
     const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
-    const [bulkConfirmOrderIds, setBulkConfirmOrderIds] = useState<number[]>([]);
 
     const [addressMap, setAddressMap] = useState<Record<string, string>>({});
     const [title, setTitle] = useState("");
@@ -219,6 +219,7 @@ const ManagerShipmentOrders: React.FC = () => {
 
             if (hasDetails) {
                 setBulkResult(result as any);
+                setTitle("Kết quả xác nhận đơn hàng đến bưu cục đích");
                 setBulkModalOpen(true);
             }
 
@@ -256,6 +257,7 @@ const ManagerShipmentOrders: React.FC = () => {
 
             if (hasDetails) {
                 setBulkResult(result as any);
+                setTitle("Kết quả xác nhận đơn hoàn hàng đã về đến bưu cục gốc");
                 setBulkModalOpen(true);
             }
 
@@ -272,7 +274,7 @@ const ManagerShipmentOrders: React.FC = () => {
         } finally {
             setLoadingConfirm(false);
             setSelectedOrderIds([]);
-            setModalConfirmDestinationOfficeOpen(false);
+            setModalConfirmReturnOfficeOpen(false);
         }
     };
 
@@ -295,6 +297,7 @@ const ManagerShipmentOrders: React.FC = () => {
                 message.warning(res.message || "Một số đơn hàng không thể thêm");
                 if (res.results) {
                     setBulkResult(res as any);
+                    setTitle("Kết quả thêm đơn hàng vào chuyến");
                     setBulkModalOpen(true);
                 }
             }
@@ -313,7 +316,6 @@ const ManagerShipmentOrders: React.FC = () => {
 
         const requestId = ++selectAllRequestRef.current;
         if (!shipmentId) return;
-        setLoading(true);
         try {
             const result = await shipmentApi.getManagerAllOrderIdsByShipmentId(Number(shipmentId), {
                 search: searchText,
@@ -328,8 +330,6 @@ const ManagerShipmentOrders: React.FC = () => {
             }
         } catch (err: any) {
             message.error(err.message || "Lỗi server khi lấy toàn bộ ID");
-        } finally {
-            setLoading(false);
         }
     };
 

@@ -1,8 +1,8 @@
 package com.logistics.entity;
 
 import com.logistics.enums.DeliveryAttemptStatus;
-import com.logistics.enums.DeliveryFailReason;
 import com.logistics.enums.DeliveryAttemptType;
+import com.logistics.enums.DeliveryFailReason;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,10 +1,6 @@
 package com.logistics.service.user.impl;
 
-import com.logistics.entity.Office;
-import com.logistics.entity.Order;
-import com.logistics.entity.OrderHistory;
-import com.logistics.entity.Shipment;
-import com.logistics.entity.ShipmentOrder;
+import com.logistics.entity.*;
 import com.logistics.enums.OrderHistoryActionType;
 import com.logistics.enums.OrderPickupType;
 import com.logistics.enums.RouteStopType;

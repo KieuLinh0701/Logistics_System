@@ -9,7 +9,6 @@ import com.logistics.entity.Order;
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.enums.OrderStatus;
-import com.logistics.enums.SettlementStatus;
 import com.logistics.exception.AppException;
 import com.logistics.exception.enums.CommonErrorCode;
 import com.logistics.exception.enums.SettlementBatchErrorCode;

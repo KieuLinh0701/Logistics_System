@@ -26,8 +26,8 @@ export const canDeleteUserOrder = (value: string) => {
     return ["DRAFT"].includes(value)
 };
 
-export const canReadyUserOrder = (value: string) => {
-    return ["PENDING"].includes(value)
+export const canReadyUserOrder = (status: string, pickupType: string) => {
+    return ["PENDING"].includes(status) && ['PICKUP_BY_COURIER'].includes(pickupType)
 };
 
 export const canTransitToOfficeUserOrder = (value: string) => {
