@@ -563,7 +563,7 @@ const ManagerShipmentOrders: React.FC = () => {
                             type="primary"
                             shape="circle"
                             size="middle"
-                            icon={<CheckCircleOutlined style={{ fontSize: '18px' }} />}
+                            icon={<CheckCircleOutlined style={{fontSize: '18px'}}/>}
                             className="primary-button-circle"
                             disabled={!canConfirm}
                             onClick={() => {
@@ -689,10 +689,10 @@ const ManagerShipmentOrders: React.FC = () => {
                                                 <Tooltip title="Xác nhận các đơn trong chuyến đã đến bưu cục.">
                                                     <Button
                                                         className="modal-ok-button"
-                                                        icon={<PlayCircleOutlined />}
+                                                        icon={<PlayCircleOutlined/>}
                                                         disabled={selectedOrderIds.length === 0}
                                                     >
-                                                        Xác nhận đơn hàng hàng loạt <DownOutlined />
+                                                        Xác nhận đơn hàng hàng loạt <DownOutlined/>
                                                     </Button>
                                                 </Tooltip>
                                             </Dropdown>
@@ -718,9 +718,11 @@ const ManagerShipmentOrders: React.FC = () => {
                     <Col>
                         <Tag className="list-page-tag">Kết quả trả về: {total} đơn hàng</Tag>
                     </Col>
-                    <Col>
-                        <span className="text-muted">Các thay đổi hiện tại chỉ là tạm thời. Nhấn Lưu để xác nhận và hoàn tất</span>
-                    </Col>
+                    {canEditOrdersManagerShipment(shipmentStatus, shipmentType) && (
+                        <Col>
+                            <span className="text-muted">Các thay đổi hiện tại chỉ là tạm thời. Nhấn Lưu để xác nhận và hoàn tất</span>
+                        </Col>
+                    )}
                 </Row>
 
                 <div className="table-container">
@@ -746,7 +748,7 @@ const ManagerShipmentOrders: React.FC = () => {
                             getCheckboxProps: (record) => ({
                                 disabled: !record.pendingDestinationConfirm && !record.pendingReturnConfirm,
                             }),
-                        }: undefined}
+                        } : undefined}
                         rowClassName={(record) =>
                             selectedOrderIds.includes(record.id) ? "selectd-checkbox-table-row-selected" : ""
                         }
