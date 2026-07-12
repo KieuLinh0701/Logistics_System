@@ -102,6 +102,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
             history.setToOffice(order.getToOffice());
             history.setShipment(shipment);
             history.setAction(OrderHistoryActionType.EXPORTED);
+            fillHistorySnapshots(order, shipment, history);
 
             if (order.getStatus() == OrderStatus.RETURNING) {
                 // Giữ nguyên RETURNING - đơn hoàn đang được trung chuyển về bưu cục gốc
@@ -206,6 +207,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
                     history.setNote(isDestination
                             ? "Đơn hàng dã đến bưu cục đích, chờ manager xác nhận"
                             : "Đơn hàng đã nhập kho");
+                    fillHistorySnapshots(order, shipment, history);
                     orderHistoryRepository.save(history);
                     continue;
                 }
@@ -234,6 +236,7 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
                         history.setAction(OrderHistoryActionType.RETURNING);
                         history.setNote("Đơn đang hoàn về, chưa tới bưu cục gốc");
                     }
+                    fillHistorySnapshots(order, shipment, history);
                     orderHistoryRepository.save(history);
                     continue;
                 }
@@ -675,5 +678,37 @@ public class ShipmentDriverServiceImpl implements ShipmentDriverService {
             builder.append("TP ").append(office.getCityCode());
         }
         return builder.toString();
+    }
+
+    /**
+     * Fill pickupType + stopType snapshot từ order/shipment vào OrderHistory.
+     * Best-effort: nếu không lookup được ShipmentOrder thì bỏ qua (để DTO
+     * fallback từ snapshot khác hoặc order.getPickupType() trong mapper).
+     */
+    private void fillHistorySnapshots(Order order, Shipment shipment, OrderHistory history) {
+        if (history == null || order == null) return;
+
+        if (order.getPickupType() != null) {
+            history.setPickupTypeSnapshot(order.getPickupType());
+        }
+
+        if (shipment != null && order.getId() != null) {
+            try {
+                List<ShipmentOrder> shipOrders =
+                        shipmentOrderRepository.findByShipmentId(shipment.getId());
+                if (shipOrders != null) {
+                    for (ShipmentOrder so : shipOrders) {
+                        if (so.getOrder() != null
+                                && so.getOrder().getId().equals(order.getId())
+                                && so.getStopType() != null) {
+                            history.setStopTypeSnapshot(so.getStopType());
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // Best-effort
+            }
+        }
     }
 }

@@ -46,6 +46,8 @@ public interface ShipmentDeliveryService {
 
     void startReturn(Integer orderId);
 
+    Map<String, Object> scanDeliveryShipmentOrder(Integer shipmentId, Integer orderId, String trackingNumber);
+
     void markReturnAtOrigin(Integer orderId);
 
     void deliverToOrigin(Integer orderId);

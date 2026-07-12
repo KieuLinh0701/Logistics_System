@@ -112,8 +112,9 @@ public class AutoAssignServiceImpl implements AutoAssignService {
         sr.setStatus(ShippingRequestStatus.PROCESSING);
         shippingRequestRepo.save(sr);
 
-        order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        orderRepository.save(order);
+        // Auto-assign đơn DELIVERY: KHÔNG đổi OrderStatus.
+        // Giữ AT_DEST_OFFICE cho tới khi startShipment.
+        // Việc "đã lên xe" được lưu ở ShipmentOrder.scannedAt.
 
         notificationService.create(
                 "Bạn được phân công giao hàng",

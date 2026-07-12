@@ -85,6 +85,8 @@ public class OrderUserServiceImpl implements OrderUserService {
 
     private final BankAccountRepository bankAccountRepository;
 
+    private final ShipmentOrderRepository shipmentOrderRepository;
+
     @Override
     @Transactional(readOnly = true)
     public ListResponse<UserOrderListDto> list(int userId, UserOrderSearchRequest request) {
@@ -544,7 +546,8 @@ public class OrderUserServiceImpl implements OrderUserService {
         List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
         var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-        return OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
+        return OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts,
+                shipmentOrderRepository);
     }
 
     @Override
@@ -560,7 +563,8 @@ public class OrderUserServiceImpl implements OrderUserService {
         List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
         var pickupAttempts = pickupAttemptRepository.findByOrderIdOrderByAttemptedAtDesc(order.getId());
 
-        return OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts);
+        return OrderMapper.toUserOrderDetailDto(order, orderHistories, orderProducts, pickupAttempts,
+                shipmentOrderRepository);
     }
 
     @Override
@@ -1925,7 +1929,10 @@ public class OrderUserServiceImpl implements OrderUserService {
         order.setPickupNotificationStage(PickupNotificationStage.NONE);
         repository.save(order);
 
-        orderHistoryUserService.save(order, null, null, null, OrderHistoryActionType.READY_FOR_PICKUP, null);
+        orderHistoryUserService.save(
+                order, null, null, null,
+                OrderHistoryActionType.READY_FOR_PICKUP,
+                "User đánh dấu sẵn sàng cho shipper đến lấy hàng tại nhà");
     }
 
     private void performTransitToOffice(Order order) {

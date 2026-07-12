@@ -7,6 +7,7 @@ import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -50,4 +51,15 @@ public class ShipmentOrder {
 
     @Column(name = "leg_duration_minutes")
     private Integer legDurationMinutes;
+
+    @Column(name = "scanned_at")
+    private LocalDateTime scannedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scanned_by_employee_id")
+    private Employee scannedByEmployee;
+
+    public boolean isScanned() {
+        return scannedAt != null;
+    }
 }

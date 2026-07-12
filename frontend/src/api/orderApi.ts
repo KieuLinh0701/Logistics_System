@@ -199,36 +199,32 @@ const orderApi = {
         latitude?: number | null;
         longitude?: number | null;
     }) {
-        try {
-            const cleanParams: Record<string, unknown> = {
-                page: params.page,
-                limit: params.limit,
-            };
-            // Chỉ gửi GPS khi hợp lệ (trong khoảng lat/lng thực tế).
-            if (
-                typeof params.latitude === "number" &&
-                typeof params.longitude === "number" &&
-                Number.isFinite(params.latitude) &&
-                Number.isFinite(params.longitude) &&
-                !(params.latitude === 0 && params.longitude === 0) &&
-                params.latitude >= -90 && params.latitude <= 90 &&
-                params.longitude >= -180 && params.longitude <= 180
-            ) {
-                cleanParams.latitude = params.latitude;
-                cleanParams.longitude = params.longitude;
-            }
-            const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders-unassigned", {
-                params: cleanParams,
-            });
-            const data = res.data || {};
-            const orders = data.orders || [];
-            return {
-                orders: orders as ShipperOrder[],
-                pagination: data.pagination || {page: 1, limit: 10, total: 0},
-            };
-        } catch (error: any) {
-            throw error;
+        const cleanParams: Record<string, unknown> = {
+            page: params.page,
+            limit: params.limit,
+        };
+        // Chỉ gửi GPS khi hợp lệ (trong khoảng lat/lng thực tế).
+        if (
+            typeof params.latitude === "number" &&
+            typeof params.longitude === "number" &&
+            Number.isFinite(params.latitude) &&
+            Number.isFinite(params.longitude) &&
+            !(params.latitude === 0 && params.longitude === 0) &&
+            params.latitude >= -90 && params.latitude <= 90 &&
+            params.longitude >= -180 && params.longitude <= 180
+        ) {
+            cleanParams.latitude = params.latitude;
+            cleanParams.longitude = params.longitude;
         }
+        const res = await axiosClient.get<ApiResponse<any>>("/shipper/orders-unassigned", {
+            params: cleanParams,
+        });
+        const data = res.data || {};
+        const orders = data.orders || [];
+        return {
+            orders: orders as ShipperOrder[],
+            pagination: data.pagination || {page: 1, limit: 10, total: 0},
+        };
     },
 
     async getShipperReturnOrders(params: { page?: number; limit?: number; status?: string; search?: string }) {
@@ -310,6 +306,15 @@ const orderApi = {
         notes?: string
     }) {
         const res = await axiosClient.post<ApiResponse<any>>(`/shipper/orders/${orderId}/deliver-origin`, payload || {});
+        return res.data;
+    },
+
+    async scanDeliveryShipmentOrder(shipmentId: number, orderId: number, trackingNumber?: string) {
+        const res = await axiosClient.post<ApiResponse<any>>(
+            `/shipper/shipment-orders/${shipmentId}/${orderId}/scan`,
+            null,
+            { params: trackingNumber ? { trackingNumber } : undefined }
+        );
         return res.data;
     },
 

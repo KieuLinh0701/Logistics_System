@@ -19,6 +19,7 @@ import com.logistics.repository.AiRoutePlanStopRepository;
 import com.logistics.service.shipper.OrderShipperService;
 import com.logistics.service.shipper.ShipmentDeliveryService;
 import com.logistics.service.shipper.ShipperVehicleWorkloadService;
+import com.logistics.utils.OrderStatusUtils;
 import com.logistics.utils.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +126,29 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         history.setShipment(shipment);
         history.setAction(action);
         history.setNote(note);
+
+        if (order.getPickupType() != null) {
+            history.setPickupTypeSnapshot(order.getPickupType());
+        }
+        if (shipment != null && order.getId() != null) {
+            try {
+                List<ShipmentOrder> shipOrders =
+                        shipmentOrderRepository.findByShipmentId(shipment.getId());
+                if (shipOrders != null) {
+                    for (ShipmentOrder so : shipOrders) {
+                        if (so.getOrder() != null
+                                && so.getOrder().getId().equals(order.getId())
+                                && so.getStopType() != null) {
+                            history.setStopTypeSnapshot(so.getStopType());
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // Best-effort
+            }
+        }
+
         orderHistoryRepository.save(history);
     }
 
@@ -417,41 +441,62 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             throw new AppException(ShipmentErrorCode.SHIPMENT_EMPTY);
         }
 
+        // Validate TRƯỚC khi đổi bất kỳ trạng thái nào.
+        // Quy tắc theo stopType:
+        // - DELIVERY: bắt buộc ShipmentOrder.scannedAt != null (đơn mới) HOẶC
+        //   OrderStatus legacy READY_FOR_PICKUP / PICKED_UP (chỉ áp dụng cho
+        //   dữ liệu cũ, không có dữ liệu quét thật).
+        // - PICKUP: không yêu cầu scannedAt (shipper phải đi tới nhà lấy hàng).
+        // - RETURN_TO_OFFICE: giữ logic cũ (RETURN_PICKED_UP hoặc RETURNING).
         List<String> invalidOrders = new ArrayList<>();
 
         for (ShipmentOrder so : shipmentOrders) {
             Order order = so.getOrder();
             RouteStopType stopType = so.getStopType();
-
             boolean valid = false;
-            if (stopType == RouteStopType.PICKUP) {
+
+            if (stopType == RouteStopType.DELIVERY) {
+                // Đơn mới: yêu cầu đã quét QR (scannedAt != null).
+                // Đơn legacy: chấp nhận READY_FOR_PICKUP/PICKED_UP của AT_OFFICE để
+                // transition sang DELIVERING mà không cần scannedAt (không fake dữ liệu).
+                if (so.isScanned()) {
+                    valid = order.getStatus() == OrderStatus.AT_DEST_OFFICE
+                            || OrderStatusUtils.isLegacyDeliveryReady(order);
+                } else if (OrderStatusUtils.isLegacyDeliveryReady(order)) {
+                    valid = true;
+                }
+            } else if (stopType == RouteStopType.PICKUP) {
                 valid = order.getStatus() == OrderStatus.PICKING_UP
                         || order.getStatus() == OrderStatus.READY_FOR_PICKUP;
             } else if (stopType == RouteStopType.RETURN_TO_OFFICE) {
                 valid = order.getStatus() == OrderStatus.RETURN_PICKED_UP
                         || order.getStatus() == OrderStatus.RETURNING;
-            } else {
-                valid = order.getStatus() == OrderStatus.PICKED_UP;
             }
 
             if (!valid) {
-                invalidOrders.add(order.getTrackingNumber() + " (" + order.getStatus().name() + ")");
+                String tracking = order.getTrackingNumber() != null ? order.getTrackingNumber() : "?";
+                invalidOrders.add(tracking + " (" + order.getStatus().name() + ")");
             }
         }
 
         if (!invalidOrders.isEmpty()) {
+            log.warn("[START_SHIPMENT_BLOCKED] shipmentId={} invalidOrders={}",
+                    shipment.getId(), invalidOrders);
             throw new AppException(
                     ShipmentErrorCode.SHIPMENT_ORDERS_NOT_SCANNED,
-                    "Không thể bắt đầu chuyến. Vẫn còn đơn hàng chưa lên xe."
+                    "Không thể bắt đầu chuyến. Còn đơn giao chưa quét QR lên xe: "
+                            + String.join(", ", invalidOrders)
             );
         }
 
         for (ShipmentOrder so : shipmentOrders) {
             Order order = so.getOrder();
             if (so.getStopType() == RouteStopType.DELIVERY) {
-                order.setStatus(OrderStatus.DELIVERING);
-                orderRepository.save(order);
-                saveHistory(order, shipment, OrderHistoryActionType.DELIVERING,
+                if (order.getStatus() != OrderStatus.DELIVERING) {
+                    order.setStatus(OrderStatus.DELIVERING);
+                    orderRepository.save(order);
+                }
+                saveHistory(order, shipment, OrderHistoryActionType.DELIVERY_STARTED,
                         "Shipper bắt đầu chuyến giao hàng (chuyến " + shipment.getCode() + ")");
             } else if (so.getStopType() == RouteStopType.RETURN_TO_OFFICE) {
                 if (order.getStatus() != OrderStatus.RETURNING) {
@@ -554,6 +599,106 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         }
     }
 
+    @Transactional
+    public Map<String, Object> scanDeliveryShipmentOrder(Integer shipmentId, Integer orderId,
+                                                         String trackingNumber) {
+        Map<String, Object> resp = new LinkedHashMap<>();
+        if (shipmentId == null || orderId == null) {
+            resp.put("success", false);
+            resp.put("message", "Thiếu shipmentId hoặc orderId");
+            return resp;
+        }
+
+        Employee employee = getCurrentEmployee();
+
+        // Load ShipmentOrder theo composite key trực tiếp từ URL path
+        ShipmentOrder shipmentOrder = shipmentOrderRepository
+                .findById(new com.logistics.entity.id.ShipmentOrderId(shipmentId, orderId))
+                .orElse(null);
+        if (shipmentOrder == null) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_ORDER_NOT_FOUND);
+        }
+
+        // Validate shipment thuộc shipper hiện tại + PENDING
+        Shipment shipment = shipmentOrder.getShipment();
+        if (shipment == null) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_FOUND);
+        }
+        if (shipment.getType() != ShipmentType.DELIVERY) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_DELIVERY);
+        }
+        if (shipment.getEmployee() == null
+                || !Objects.equals(shipment.getEmployee().getId(), employee.getId())) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_ASSIGNED,
+                    "Đơn không thuộc chuyến của bạn.");
+        }
+        if (shipment.getStatus() != ShipmentStatus.PENDING) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_NOT_PENDING,
+                    "Chỉ quét QR được khi chuyến đang PENDING.");
+        }
+
+        // Validate stopType DELIVERY
+        if (shipmentOrder.getStopType() != RouteStopType.DELIVERY) {
+            throw new AppException(ShipmentErrorCode.SHIPMENT_ORDER_NOT_IN_SHIPMENT_OF_SHIPPER,
+                    "Endpoint này chỉ dành cho stop DELIVERY (giao từ bưu cục đích).");
+        }
+
+        // Validate order + status
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new AppException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        // Cross-check trackingNumber (optional) — nếu gửi thì phải khớp
+        if (trackingNumber != null && !trackingNumber.isBlank()
+                && order.getTrackingNumber() != null
+                && !trackingNumber.trim().equalsIgnoreCase(order.getTrackingNumber().trim())) {
+            throw new AppException(OrderErrorCode.ORDER_NOT_FOUND,
+                    "Tracking number không khớp với đơn hàng.");
+        }
+
+        if (order.getPickupType() != OrderPickupType.AT_OFFICE) {
+            throw new AppException(OrderErrorCode.ORDER_PICKUP_TYPE_INVALID,
+                    "Đơn pickup tại nhà không dùng endpoint này.");
+        }
+
+        // Status phải là AT_DEST_OFFICE hoặc legacy DELIVERY ready
+        boolean isNew = order.getStatus() == OrderStatus.AT_DEST_OFFICE;
+        boolean isLegacy = OrderStatusUtils.isLegacyDeliveryReady(order);
+        if (!isNew && !isLegacy) {
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                    "Đơn không ở trạng thái phù hợp để quét QR lên xe: " + order.getStatus());
+        }
+
+        // Idempotent: đã scan rồi thì trả success
+        if (shipmentOrder.isScanned()) {
+            String tnAlready = order.getTrackingNumber() != null ? order.getTrackingNumber() : "";
+            resp.put("success", true);
+            resp.put("message", "Đã xác nhận đơn " + tnAlready + " lên xe");
+            resp.put("alreadyScanned", true);
+            resp.put("shipmentId", shipmentId);
+            resp.put("orderId", orderId);
+            resp.put("scannedAt", shipmentOrder.getScannedAt());
+            return resp;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        shipmentOrder.setScannedAt(now);
+        shipmentOrder.setScannedByEmployee(employee);
+        shipmentOrderRepository.save(shipmentOrder);
+
+        saveHistory(order, shipment, OrderHistoryActionType.ORDER_LOADED_ON_VEHICLE,
+                "Shipper quét QR xác nhận hàng lên xe (chuyến " + shipment.getCode() + ")");
+
+        resp.put("success", true);
+        String tn = order.getTrackingNumber() != null ? order.getTrackingNumber() : "";
+        resp.put("message", "Đã xác nhận đơn " + tn + " lên xe");
+        resp.put("alreadyScanned", false);
+        resp.put("shipmentId", shipmentId);
+        resp.put("orderId", orderId);
+        resp.put("scannedAt", now);
+        resp.put("scannedByEmployeeId", employee.getId());
+        return resp;
+    }
+
     private Map<String, Object> doAcceptPickupRequest(Integer orderId, Map<String, Object> resp) {
         Employee employee = getCurrentEmployee();
 
@@ -604,12 +749,9 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                     orderRepository.save(order);
                 }
 
-                try {
-                    saveHistory(order, shipment, OrderHistoryActionType.PICKING_UP,
-                            "Shipper nhận đơn pickup và tự động tạo chuyến mới " + shipment.getCode());
-                } catch (Exception he) {
-                    log.warn("Failed to save new-shipment history: {}", he.getMessage());
-                }
+                // insertPickupIntoShipment đã ghi OrderHistory audit (action PICKING_UP)
+                // cho sự kiện "shipper claim + thêm vào chuyến". Không ghi history thứ 2 ở đây
+                // để tránh trùng lặp cùng action trong cùng nghiệp vụ.
 
                 insertResult.put("success", true);
                 insertResult.put("message",
@@ -662,13 +804,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
                 orderRepository.save(order);
             }
 
-            try {
-                saveHistory(order, activeShipment, OrderHistoryActionType.PICKING_UP,
-                        "Shipper nhận đơn pickup và tự động thêm vào chuyến đang chạy "
-                                + activeShipment.getCode());
-            } catch (Exception he) {
-                log.warn("Failed to save auto-add history: {}", he.getMessage());
-            }
+            // insertPickupIntoShipment đã ghi OrderHistory audit (action PICKING_UP)
+            // cho sự kiện "shipper claim + thêm vào chuyến đang chạy". Không ghi history thứ 2.
 
             insertResult.put("success", true);
             insertResult.put("message",
@@ -781,6 +918,26 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             return;
         }
 
+        // DELIVERY stop (luồng giao từ bưu cục đích): KHÔNG set PICKED_UP nữa.
+        // Xác nhận "đã lên xe" được thực hiện qua endpoint scanDeliveryShipmentOrder.
+        // Chỉ cho phép re-scan idem: trả success sớm nếu đã scannedAt.
+        if (stopType == RouteStopType.DELIVERY) {
+            ShipmentOrder soDel = null;
+            if (sos != null) {
+                for (ShipmentOrder s : sos) {
+                    if (Objects.equals(s.getOrder().getId(), orderId)) {
+                        soDel = s;
+                        break;
+                    }
+                }
+            }
+            if (soDel != null && soDel.isScanned()) {
+                return;
+            }
+            throw new AppException(OrderErrorCode.ORDER_INVALID_ORDER_STATUS,
+                    "Đơn DELIVERY phải quét QR qua endpoint /shipper/shipment-orders/{id}/scan.");
+        }
+
         OrderStatus current = order.getStatus();
         Set<OrderStatus> allowed;
         if (stopType == RouteStopType.PICKUP) {
@@ -829,12 +986,10 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
         attempt.setAttemptedAt(LocalDateTime.now());
         pickupAttemptRepository.save(attempt);
 
-        // Phân biệt mô tả lịch sử theo stopType:
-        // - PICKUP: shipper đến nhà người gửi và lấy hàng lên xe.
-        // - DELIVERY (từ bưu cục đích): shipper quét QR xác nhận hàng lên xe.
-        String pickedUpNote = (stopType == RouteStopType.PICKUP)
-                ? "Shipper đã lấy hàng thành công (chuyến " + shipment.getCode() + ")"
-                : "Shipper đã xác nhận hàng lên xe (chuyến " + shipment.getCode() + ")";
+        // Chỉ còn dùng cho PICKUP stop (lấy hàng từ người gửi).
+        // DELIVERY stop đã được guard trả về / throw ở trên.
+        // RETURN_TO_OFFICE đã xử lý riêng.
+        String pickedUpNote = "Shipper đã lấy hàng thành công (chuyến " + shipment.getCode() + ")";
         saveHistory(order, shipment, OrderHistoryActionType.PICKED_UP, pickedUpNote);
         // Sync AI stop CHỈ khi stop hiện tại là PICKUP leg (PICKED_UP là terminal
         // cho PICKUP). Đối với DELIVERY leg, PICKED_UP không phải terminal.
@@ -1496,18 +1651,21 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             long deliveryStopCount = shipmentOrders.stream()
                     .filter(so -> so.getStopType() == RouteStopType.DELIVERY)
                     .count();
-            long scannedCount = shipmentOrders.stream()
-                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY
-                            || so.getStopType() == RouteStopType.RETURN_TO_OFFICE)
+            long scannedDeliveryCount = shipmentOrders.stream()
+                    .filter(so -> so.getStopType() == RouteStopType.DELIVERY)
+                    .filter(ShipmentOrder::isScanned)
+                    .count();
+            // Số RETURN_TO_OFFICE đã "lên xe" hiện dựa trên OrderStatus cũ
+            // (RETURN_PICKED_UP / RETURNING). Phase này giữ logic cũ cho return.
+            long scannedReturnCount = shipmentOrders.stream()
+                    .filter(so -> so.getStopType() == RouteStopType.RETURN_TO_OFFICE)
                     .filter(so -> {
                         OrderStatus os = so.getOrder() != null ? so.getOrder().getStatus() : null;
-                        if (so.getStopType() == RouteStopType.RETURN_TO_OFFICE) {
-                            return os == OrderStatus.RETURN_PICKED_UP
-                                    || os == OrderStatus.RETURNING;
-                        }
-                        return os == OrderStatus.PICKED_UP;
+                        return os == OrderStatus.RETURN_PICKED_UP
+                                || os == OrderStatus.RETURNING;
                     })
                     .count();
+            long scannedCount = scannedDeliveryCount + scannedReturnCount;
             boolean readyToStart = requiredStopCount == 0 || scannedCount == requiredStopCount;
 
             builder.totalOrders(totalOrders);
@@ -1515,6 +1673,8 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             builder.totalCount((int) requiredStopCount);
             builder.scannedCount((int) scannedCount);
             builder.isReadyToStart(readyToStart);
+            builder.scannedDeliveryStopCount((int) scannedDeliveryCount);
+            builder.totalDeliveryStopCount((int) deliveryStopCount);
         } else {
             builder.totalOrders(0);
             builder.orderCount(0);
@@ -1522,6 +1682,30 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
             builder.scannedCount(0);
             builder.isReadyToStart(true);
         }
+
+        // Map danh sách stop để frontend resolve khi quét QR.
+        // Cả DELIVERY / PICKUP / RETURN_TO_OFFICE đều có thể xuất hiện — frontend
+        // sẽ rẽ nhánh theo stopType. Trường hợp shipment chưa load shipmentOrders
+        // (chẳng hạn query khác không JOIN FETCH) thì trả về list rỗng thay vì NPE.
+        List<ShipmentOrder> stopsForDto = (shipmentOrders != null) ? shipmentOrders : List.of();
+        List<ShipperActiveShipmentDto.ShipmentOrderInfo> orderInfos = stopsForDto.stream()
+                .map(so -> {
+                    Order o = so.getOrder();
+                    Integer shipmentId = (so.getShipment() != null) ? so.getShipment().getId() : s.getId();
+                    Integer orderId = (o != null) ? o.getId()
+                            : (so.getId() != null ? so.getId().getOrderId() : null);
+                    return ShipperActiveShipmentDto.ShipmentOrderInfo.builder()
+                            .shipmentId(shipmentId)
+                            .orderId(orderId)
+                            .stopType(so.getStopType())
+                            .stopSequence(so.getStopSequence())
+                            .trackingNumber(o != null ? o.getTrackingNumber() : null)
+                            .recipientName(o != null ? o.getRecipientName() : null)
+                            .scannedAt(so.getScannedAt())
+                            .build();
+                })
+                .toList();
+        builder.orders(orderInfos);
 
         return builder.build();
     }

@@ -10,6 +10,7 @@ import com.logistics.dto.user.order.UserOrderDetailDto;
 import com.logistics.dto.user.order.UserOrderListDto;
 import com.logistics.dto.user.settlement.UserSettlementOrderDto;
 import com.logistics.entity.*;
+import com.logistics.repository.ShipmentOrderRepository;
 import com.logistics.response.manager.order.UrgentOrderResponse;
 
 import java.math.BigDecimal;
@@ -164,6 +165,16 @@ public class OrderMapper {
             List<OrderProduct> orderProducts,
             List<PickupAttempt> pickupAttempts,
             List<DeliveryAttempt> deliveryAttempts) {
+        return toManagerOrderDetailDto(entity, orderHistories, orderProducts, pickupAttempts,
+                deliveryAttempts, null);
+    }
+
+    public static ManagerOrderDetailDto toManagerOrderDetailDto(Order entity,
+            List<OrderHistory> orderHistories,
+            List<OrderProduct> orderProducts,
+            List<PickupAttempt> pickupAttempts,
+            List<DeliveryAttempt> deliveryAttempts,
+            ShipmentOrderRepository shipmentOrderRepository) {
         if (entity == null) {
             return null;
         }
@@ -230,7 +241,7 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getToOffice()),
                 OfficeMapper.toDto(entity.getCurrentOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
-                OrderHistoryMapper.toDtoList(orderHistories),
+                OrderHistoryMapper.toDtoList(orderHistories, shipmentOrderRepository),
                 toPickupAttemptDtoList(pickupAttempts),
                 toDeliveryAttemptDtoList(deliveryAttempts),
                 entity.getEmployee() != null ? entity.getEmployee()
@@ -291,6 +302,14 @@ public class OrderMapper {
             List<OrderHistory> orderHistories,
             List<OrderProduct> orderProducts,
             List<PickupAttempt> pickupAttempts) {
+        return toUserOrderDetailDto(entity, orderHistories, orderProducts, pickupAttempts, null);
+    }
+
+    public static UserOrderDetailDto toUserOrderDetailDto(Order entity,
+            List<OrderHistory> orderHistories,
+            List<OrderProduct> orderProducts,
+            List<PickupAttempt> pickupAttempts,
+            ShipmentOrderRepository shipmentOrderRepository) {
         if (entity == null) {
             return null;
         }
@@ -355,7 +374,7 @@ public class OrderMapper {
                 OfficeMapper.toDto(entity.getFromOffice()),
                 OfficeMapper.toDto(entity.getCurrentOffice()),
                 OrderProductMapper.toDtoList(orderProducts),
-                OrderHistoryMapper.toDtoList(orderHistories),
+                OrderHistoryMapper.toDtoList(orderHistories, shipmentOrderRepository),
                 toPickupAttemptDtoList(pickupAttempts),
                 OrderMapper.toUserOrderDetailDtoPromotion(entity.getPromotion()),
                 entity.getCodStatus()

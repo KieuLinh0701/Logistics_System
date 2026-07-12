@@ -1,5 +1,6 @@
 package com.logistics.dto.shipper;
 
+import com.logistics.enums.RouteStopType;
 import com.logistics.enums.ShipmentStatus;
 import com.logistics.enums.ShipmentType;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -39,10 +41,30 @@ public class ShipperActiveShipmentDto {
 
     private Integer orderCount;
 
-    // Tiến độ quét mã 
+    // Tiến độ quét mã
     private Integer totalCount;
     private Integer scannedCount;
     private Boolean isReadyToStart;
+
+    private Integer scannedDeliveryStopCount;
+
+    private Integer totalDeliveryStopCount;
+
+    private List<ShipmentOrderInfo> orders;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ShipmentOrderInfo {
+        private Integer shipmentId;
+        private Integer orderId;
+        private RouteStopType stopType;
+        private Integer stopSequence;
+        private String trackingNumber;
+        private String recipientName;
+        private LocalDateTime scannedAt;
+    }
 
     @Data
     @Builder

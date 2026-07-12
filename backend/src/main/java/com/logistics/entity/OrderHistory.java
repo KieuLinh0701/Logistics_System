@@ -1,6 +1,8 @@
 package com.logistics.entity;
 
 import com.logistics.enums.OrderHistoryActionType;
+import com.logistics.enums.OrderPickupType;
+import com.logistics.enums.RouteStopType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -49,4 +51,12 @@ public class OrderHistory {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime actionTime = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pickup_type_snapshot", length = 30)
+    private OrderPickupType pickupTypeSnapshot;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stop_type_snapshot", length = 30)
+    private RouteStopType stopTypeSnapshot;
 }

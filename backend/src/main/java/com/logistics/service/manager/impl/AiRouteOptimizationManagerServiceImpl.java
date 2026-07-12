@@ -257,10 +257,9 @@ public class AiRouteOptimizationManagerServiceImpl implements AiRouteOptimizatio
                     Order tracked = ordersToUpdate.computeIfAbsent(order.getId(), id -> order);
                     tracked.setEmployee(shipperEmployee);
                     if (stopType == RouteStopType.DELIVERY) {
-                        // Đơn giao thường: AT_DEST_OFFICE -> READY_FOR_PICKUP
-                        if (tracked.getStatus() == OrderStatus.AT_DEST_OFFICE) {
-                            tracked.setStatus(OrderStatus.READY_FOR_PICKUP);
-                        }
+                        // Đơn giao từ bưu cục đích: KHÔNG đổi OrderStatus.
+                        // Giữ AT_DEST_OFFICE cho tới khi startShipment.
+                        // Việc xác nhận "đã lên xe" được lưu ở ShipmentOrder.scannedAt.
                     } else if (stopType == RouteStopType.RETURN_TO_OFFICE) {
                         // Đơn hoàn trả: RETURN_AT_ORIGIN_OFFICE -> RETURNING (giao trả cho người gửi)
                         if (tracked.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
