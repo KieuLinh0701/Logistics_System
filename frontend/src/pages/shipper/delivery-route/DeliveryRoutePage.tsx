@@ -192,6 +192,52 @@ const hasValidCoords = (stop: DeliveryStop) =>
     !Number.isNaN(Number(stop.latitude)) &&
     !Number.isNaN(Number(stop.longitude));
 
+// Chuẩn hóa ETA backend về dạng HH:mm. Nếu là ISO datetime → lấy HH:mm phần local.
+// Nếu rỗng/không hợp lệ → trả "--:--". Đây là nguồn duy nhất dùng cho cả
+// dòng "ETA:" trong danh sách và "Dự kiến đến:" trên panel bản đồ.
+const formatStopEtaTime = (etaTime?: string | null): string => {
+    if (!etaTime) return "--:--";
+    try {
+        if (etaTime.includes("T") || etaTime.includes("-")) {
+            const d = new Date(etaTime);
+            if (Number.isNaN(d.getTime())) return "--:--";
+            return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+        }
+        const trimmed = etaTime.trim();
+        const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+        if (match) {
+            return `${pad2(Number(match[1]))}:${pad2(Number(match[2]))}`;
+        }
+        return "--:--";
+    } catch {
+        return "--:--";
+    }
+};
+
+// Khoảng cách phút từ now tới stop.etaTime (backend/AI).
+// Trả null nếu ETA không hợp lệ. Dương = còn tới ETA, âm = đã trễ.
+const getMinutesUntilEta = (etaTime?: string | null): number | null => {
+    if (!etaTime) return null;
+    try {
+        let etaDate: Date;
+        if (etaTime.includes("T") || etaTime.includes("-")) {
+            etaDate = new Date(etaTime);
+        } else {
+            const normalized = formatStopEtaTime(etaTime);
+            const [hours, minutes] = normalized.split(":").map(Number);
+            if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+            etaDate = new Date();
+            etaDate.setHours(hours, minutes, 0, 0);
+        }
+        if (Number.isNaN(etaDate.getTime())) return null;
+        return Math.round((etaDate.getTime() - Date.now()) / 60000);
+    } catch {
+        return null;
+    }
+};
+
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+
 const DeliveryRoutePage: React.FC = () => {
     const navigate = useNavigate();
     const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -203,6 +249,13 @@ const DeliveryRoutePage: React.FC = () => {
     const [realtimeDirections, setRealtimeDirections] = useState<google.maps.DirectionsResult | null>(null);
     const [directionsRenderKey, setDirectionsRenderKey] = useState(0);
     const [reOptimizing, setReOptimizing] = useState(false);
+    const [nextLegSummary, setNextLegSummary] = useState<{
+        stopId: number;
+        originKey: string;
+        distanceKm: number;
+        durationMinutes: number;
+    } | null>(null);
+    const [nextLegLoading, setNextLegLoading] = useState(false);
 
     const mapRef = useRef<google.maps.Map | null>(null);
     const mapCardRef = useRef<HTMLDivElement | null>(null);
@@ -401,6 +454,7 @@ const DeliveryRoutePage: React.FC = () => {
                 lat: Number(destination.lat.toFixed(5)),
                 lng: Number(destination.lng.toFixed(5)),
             };
+            const originKey = `${roundedOrigin.lat},${roundedOrigin.lng}`;
             const lastQuery = lastDirectionsQueryRef.current;
             if (
                 lastQuery &&
@@ -410,7 +464,7 @@ const DeliveryRoutePage: React.FC = () => {
             ) {
                 return;
             }
-            const cacheKey = `${stop.id}:${roundedOrigin.lat},${roundedOrigin.lng}->${roundedDestination.lat},${roundedDestination.lng}`;
+            const cacheKey = `${stop.id}:${originKey}->${roundedDestination.lat},${roundedDestination.lng}`;
             const cached = directionsCacheRef.current.get(cacheKey);
             if (cached) {
                 setRealtimeDirections(cached);
@@ -420,6 +474,8 @@ const DeliveryRoutePage: React.FC = () => {
             const service = new google.maps.DirectionsService();
             const requestSeq = ++directionsRequestSeqRef.current;
             setDirectionsRenderKey((k) => k + 1);
+            setNextLegSummary(null);
+            setNextLegLoading(true);
             service.route(
                 { origin, destination, travelMode: google.maps.TravelMode.DRIVING },
                 (result, status) => {
@@ -433,15 +489,36 @@ const DeliveryRoutePage: React.FC = () => {
                         lastDirectionsQueryRef.current = { stopId: stop.id, origin: roundedOrigin };
                         setRealtimeDirections(result);
                         setDirectionsRenderKey((k) => k + 1);
+                        setNextLegLoading(false);
                     } else {
                         console.warn("[DeliveryRoute] Directions API failed:", status);
                         message.warning("Không thể vẽ đường đi, vui lòng thử lại");
+                        setNextLegLoading(false);
                     }
                 }
             );
         },
         [currentPosition, isLoaded]
     );
+
+    useEffect(() => {
+        if (!realtimeDirections || !nextStop || !currentPosition) {
+            return;
+        }
+        const leg = realtimeDirections.routes?.[0]?.legs?.[0];
+        if (!leg || leg.distance == null || leg.duration == null) {
+            return;
+        }
+        const distanceKm = Math.round((leg.distance.value / 1000) * 10) / 10;
+        const durationMinutes = Math.max(1, Math.round(leg.duration.value / 60));
+        const originKey = `${Number(currentPosition.lat).toFixed(5)},${Number(currentPosition.lng).toFixed(5)}`;
+        setNextLegSummary({
+            stopId: nextStop.id,
+            originKey,
+            distanceKm,
+            durationMinutes,
+        });
+    }, [realtimeDirections, nextStop, currentPosition]);
 
     const handleStartRoute = async () => {
         if (!routeInfo) return;
@@ -734,7 +811,10 @@ const DeliveryRoutePage: React.FC = () => {
         return <Tag color="green" style={{ marginLeft: 4 }}>Cần thu COD</Tag>;
     };
 
-    // Badge Trễ ETA: chỉ hiển thị nếu etaTime đã qua giờ hiện tại
+    // Badge Trễ ETA: chỉ hiển thị nếu etaTime đã qua giờ hiện tại.
+    // ETA trong danh sách điểm và badge đều đọc trực tiếp stop.etaTime từ backend
+    // (AI service), chỉ thay đổi sau khi bấm "Tối ưu lại tuyến" và fetchRouteData
+    // nhận dữ liệu mới. nextLegSummary chỉ phục vụ panel bản đồ.
     const getEtaWarningBadge = (stop: DeliveryStop) => {
         const etaTime = stop.etaTime;
         if (!etaTime) return null;
@@ -742,19 +822,18 @@ const DeliveryRoutePage: React.FC = () => {
         try {
             const now = new Date();
 
-            // Parse etaTime
+            // Parse etaTime. ISO datetime hoặc HH:mm đều chuẩn hóa qua
+            // formatStopEtaTime để dùng chung công thức với panel bản đồ.
             let etaDate: Date;
             if (etaTime.includes('T') || etaTime.includes('-')) {
-                // ISO datetime format
                 etaDate = new Date(etaTime);
             } else {
-                // HH:mm format - ghép với ngày hôm nay
-                const [hours, minutes] = etaTime.split(':').map(Number);
+                const normalized = formatStopEtaTime(etaTime);
+                const [hours, minutes] = normalized.split(':').map(Number);
                 etaDate = new Date(now);
                 etaDate.setHours(hours, minutes, 0, 0);
             }
 
-            // So sánh: chỉ trễ khi giờ hiện tại đã qua ETA
             if (etaDate < now) {
                 return <Tag color="red" style={{ marginLeft: 4 }}>Trễ ETA</Tag>;
             }
@@ -1037,6 +1116,73 @@ const DeliveryRoutePage: React.FC = () => {
                 }
             >
                 <div style={{ width: "100%", position: "relative" }}>
+                    {(() => {
+                        const isNextStopMatch =
+                            !!nextStop &&
+                            !!nextLegSummary &&
+                            nextLegSummary.stopId === nextStop.id;
+                        const distanceKm = isNextStopMatch ? nextLegSummary?.distanceKm : null;
+                        const durationMinutes = isNextStopMatch ? nextLegSummary?.durationMinutes : null;
+                        const etaTimeText = formatStopEtaTime(nextStop?.etaTime);
+                        const minutesUntilEta = getMinutesUntilEta(nextStop?.etaTime);
+                        const remainingText =
+                            minutesUntilEta == null
+                                ? null
+                                : minutesUntilEta >= 0
+                                ? `Còn ${minutesUntilEta} phút`
+                                : `Trễ ${Math.abs(minutesUntilEta)} phút`;
+                        const showPanel = !!nextStop && (nextLegLoading || isNextStopMatch);
+                        if (!showPanel || !nextStop) return null;
+                        return (
+                            <div
+                                role="status"
+                                aria-live="polite"
+                                style={{
+                                    position: "absolute",
+                                    top: 12,
+                                    left: 12,
+                                    maxWidth: 320,
+                                    minWidth: 220,
+                                    zIndex: 1100,
+                                    background: "rgba(255,255,255,0.96)",
+                                    borderRadius: 10,
+                                    boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+                                    padding: "10px 14px",
+                                    pointerEvents: "auto",
+                                }}
+                            >
+                                <div style={{ fontSize: 12, color: "#8c8c8c", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                                    Điểm tiếp theo
+                                </div>
+                                <div style={{ fontSize: 15, fontWeight: 600, color: "#1C3D90", marginTop: 2, wordBreak: "break-all" }}>
+                                    #{nextStop.stopSequence ?? "?"} · {nextStop.trackingNumber}
+                                </div>
+                                <Divider style={{ margin: "8px 0" }} />
+                                {nextLegLoading ? (
+                                    <Space size={8}>
+                                        <Spin size="small" />
+                                        <Text type="secondary">Đang tính khoảng cách...</Text>
+                                    </Space>
+                                ) : distanceKm != null && durationMinutes != null ? (
+                                    <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                                        <Text>
+                                            <strong>{distanceKm.toFixed(1)} km</strong>
+                                            {remainingText && (
+                                                <span style={{ color: "#8c8c8c" }}> · {remainingText}</span>
+                                            )}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 13 }}>
+                                            Dự kiến đến: <strong style={{ color: "#1C3D90" }}>{etaTimeText}</strong>
+                                        </Text>
+                                    </Space>
+                                ) : (
+                                    <Text type="secondary" style={{ fontSize: 13 }}>
+                                        Chưa tính được khoảng cách và thời gian
+                                    </Text>
+                                )}
+                            </div>
+                        );
+                    })()}
                     {loadError && (
                         <Alert
                             type="error"
@@ -1213,17 +1359,17 @@ const DeliveryRoutePage: React.FC = () => {
                                             {(() => {
                                                 const d = getStopDisplayData(stop);
                                                 return (
-                                                    <>
-                                                        <Text>
-                                                            <PhoneOutlined /> {d.contactPhone} - {d.contactName}
-                                                        </Text>
-                                                        <Text type="secondary">
-                                                            <EnvironmentOutlined /> {d.contactAddress}
-                                                        </Text>
-                                                        <Text type="secondary">
-                                                            {stop.etaTime ? `ETA: ${stop.etaTime}` : "ETA: Chưa có"}
-                                                        </Text>
-                                                        {d.showCod && (stop.codAmount ?? 0) > 0 && (
+                                                <>
+                                                    <Text>
+                                                        <PhoneOutlined /> {d.contactPhone} - {d.contactName}
+                                                    </Text>
+                                                    <Text type="secondary">
+                                                        <EnvironmentOutlined /> {d.contactAddress}
+                                                    </Text>
+                                                    <Text type="secondary">
+                                                        {stop.etaTime ? `ETA: ${formatStopEtaTime(stop.etaTime)}` : "ETA: --:--"}
+                                                    </Text>
+                                                    {d.showCod && (stop.codAmount ?? 0) > 0 && (
                                                             <Text>
                                                                 <DollarOutlined /> COD thu hộ: {stop.codAmount.toLocaleString()}đ
                                                             </Text>
