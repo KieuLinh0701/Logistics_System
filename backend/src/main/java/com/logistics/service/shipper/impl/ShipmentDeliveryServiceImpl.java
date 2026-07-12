@@ -559,6 +559,16 @@ public class ShipmentDeliveryServiceImpl implements ShipmentDeliveryService {
 
         Order order = orderShipperService.quickClaimOrderForPickup(orderId, employee);
 
+        // Đơn đã được claim cho shipper hiện tại — cache recommendation pickup của
+        // shipper này phải bị huỷ để lần /pickup-requests tiếp theo không trả
+        // về đơn vừa nhận (hoặc đơn có employee=null cũ).
+        try {
+            orderShipperService.evictPickupRecommendationCache();
+        } catch (Exception ex) {
+            log.warn("[ACCEPT_PICKUP_EVICT_CACHE_FAIL] orderId={} error={}",
+                    orderId, ex.getMessage());
+        }
+
         List<Shipment> activeShipments = shipmentRepository
                 .findActiveDeliveryShipmentsByEmployee(employee.getId());
 

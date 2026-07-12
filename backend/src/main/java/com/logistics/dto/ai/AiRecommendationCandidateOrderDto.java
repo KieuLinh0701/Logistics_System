@@ -33,4 +33,7 @@ public class AiRecommendationCandidateOrderDto {
 
     @JsonProperty("is_urgent")
     private Boolean isUrgent;
+
+    @JsonProperty("destination_type")
+    private String destinationType;
 }

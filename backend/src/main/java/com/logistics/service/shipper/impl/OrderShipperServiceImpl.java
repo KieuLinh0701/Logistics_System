@@ -564,8 +564,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         if ("GPS".equals(resolvedLocation.source)) {
             cacheKey = null;
         } else {
-            cacheKey = "unassigned:" + employee.getId() + ":" + officeId + ":" + page + ":" + limit
-                    + ":" + resolvedLocation.cacheFingerprint;
+            cacheKey = "recommendation:delivery:shipper:" + employee.getId()
+                    + ":office:" + officeId
+                    + ":page:" + page
+                    + ":limit:" + limit
+                    + ":loc:" + resolvedLocation.cacheFingerprint;
         }
         log.info("[BE][Recommendation] shipperId={} locationSource={} lat={} lng={} cacheKey={}",
                 employee.getId(), resolvedLocation.source,
@@ -619,9 +622,35 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
     private void evictRecommendationCache(Integer shipperId) {
         if (shipperId == null) return;
-        // Cache key shape: "unassigned:<shipperId>:<officeId>:<page>:<limit>"
-        final String prefix = "unassigned:" + shipperId + ":";
+        // Xoá toàn bộ cache của shipper (cả delivery + pickup) — đơn giản và an toàn vì cache TTL ngắn.
+        final String prefix = "recommendation:";
+        final String shipperMarker = ":shipper:" + shipperId + ":";
+        recommendationCache.entrySet().removeIf(e ->
+                e.getKey().startsWith(prefix) && e.getKey().contains(shipperMarker));
+    }
+
+    /**
+     * Xoá cache recommendation của một loại nhiệm vụ cụ thể (DELIVERY hoặc PICKUP) cho shipper.
+     * Dùng khi muốn invalidate đúng nhóm cache mà không ảnh hưởng nhóm còn lại.
+     */
+    private void evictRecommendationCache(Integer shipperId, String taskType) {
+        if (shipperId == null || taskType == null) return;
+        final String prefix = "recommendation:" + taskType.toLowerCase() + ":shipper:" + shipperId + ":";
         recommendationCache.entrySet().removeIf(e -> e.getKey().startsWith(prefix));
+    }
+
+    @Override
+    public void evictPickupRecommendationCache() {
+        Employee employee;
+        try {
+            employee = getCurrentEmployee();
+        } catch (Exception ex) {
+            // Trong một số luồng (driver, manager gọi nhầm), không có employee hiện tại.
+            // Không cần thiết phải evict cache trong trường hợp này.
+            log.debug("[BE][PickupRecommendation] evictPickup skipped: no current employee");
+            return;
+        }
+        evictRecommendationCache(employee.getId(), "pickup");
     }
 
     private void enrichOrdersWithRecommendations(
@@ -690,6 +719,10 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .candidateOrders(mapped.stream()
                         .map(this::toCandidateDto)
                         .filter(Objects::nonNull)
+                        .peek(cd -> log.info(
+                                "[BE][PickupRecommendation] shipperId={} orderId={} destinationType={} lat={} lng={}",
+                                employee.getId(), cd.getOrderId(),
+                                cd.getDestinationType(), cd.getLatitude(), cd.getLongitude()))
                         .collect(Collectors.toList()))
                 .build();
 
@@ -703,6 +736,8 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Map<Integer, AiRecommendationItemDto> byOrderId = new HashMap<>();
         for (AiRecommendationItemDto item : resp.getRecommendations()) {
             if (item == null || item.getOrderId() == null) continue;
+            log.info("[BE][PickupRecommendation] shipperId={} orderId={} score={} level={} destinationType={}",
+                    employee.getId(), item.getOrderId(), item.getScore(), item.getLevel(), item.getDestinationType());
             byOrderId.put(item.getOrderId(), item);
         }
 
@@ -894,7 +929,11 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         if (!(idObj instanceof Number)) return null;
         Integer id = ((Number) idObj).intValue();
 
-        // Chọn điểm đến (recipient cho đơn thường, sender cho đơn hoàn).
+        // Chọn điểm đến:
+        //   - RECIPIENT (mặc định): lat/lng/ward/city của người nhận.
+        //   - SENDER_RETURN: lat/lng/ward/city của người gửi (đơn hoàn).
+        //   - PICKUP_SENDER: lat/lng/ward/city của người gửi (yêu cầu lấy hàng tại nhà).
+        // Không fallback recipient ↔ sender.
         String destinationType = mappedOrder.get("destinationType") == null
                 ? "RECIPIENT"
                 : mappedOrder.get("destinationType").toString();
@@ -902,7 +941,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         Double lng;
         Integer wardCode;
         Integer cityCode;
-        if ("SENDER_RETURN".equals(destinationType)) {
+        if ("SENDER_RETURN".equals(destinationType) || "PICKUP_SENDER".equals(destinationType)) {
             lat = numberToDouble(mappedOrder.get("senderLatitude"));
             lng = numberToDouble(mappedOrder.get("senderLongitude"));
             wardCode = numberToInt(mappedOrder.get("senderWardCode"));
@@ -921,13 +960,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
         // Tọa độ (0,0) bị xem là thiếu dữ liệu trong nghiệp vụ này,
         // đặt lại null để AI bỏ tiêu chí khoảng cách thay vì tính khoảng cách tới gốc tọa độ.
-        // Đơn hoàn thiếu tọa độ sender: vẫn ghi nhận candidate, AI sẽ bỏ tiêu chí khoảng cách.
         if (lat != null && (lat == 0.0)) lat = null;
         if (lng != null && (lng == 0.0)) lng = null;
 
-        if ("SENDER_RETURN".equals(destinationType) && (lat == null || lng == null)) {
-            log.warn("[RECOMMEND_CANDIDATE_RETURN_NO_SENDER_COORD] orderId={} status={}",
-                    id, status);
+        if (("SENDER_RETURN".equals(destinationType) || "PICKUP_SENDER".equals(destinationType))
+                && (lat == null || lng == null)) {
+            log.warn("[RECOMMEND_CANDIDATE_NO_SENDER_COORD] orderId={} destinationType={} status={}",
+                    id, destinationType, status);
         }
 
         return AiRecommendationCandidateOrderDto.builder()
@@ -940,6 +979,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 .recipientCityCode(cityCode)
                 .status(status)
                 .isUrgent(urgent)
+                .destinationType(destinationType)
                 .build();
     }
 
@@ -1047,7 +1087,9 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
     // Mới: lấy danh sách các đơn mà người dùng chọn Yêu cầu lấy hàng (PICKUP_BY_COURIER)
     // và đã đánh dấu SẴN SÀNG LẤY (READY_FOR_PICKUP), chưa có shipper gán.
-    public Map<String, Object> listPickupByCourierRequests(int page, int limit) {
+    public Map<String, Object> listPickupByCourierRequests(int page, int limit,
+                                                           Double requestLatitude,
+                                                           Double requestLongitude) {
         Employee employee = getCurrentEmployee();
 
         Integer shipperCityCode = resolveShipperCityCode(employee);
@@ -1092,10 +1134,80 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         };
 
         Page<Order> orderPage = orderRepository.findAll(spec, pageable);
-        List<Map<String, Object>> orders = orderPage.getContent()
-                .stream()
+        List<Order> orders = orderPage.getContent();
+
+        // Phân nhóm: đơn khả dụng (chưa có shipper) vs đơn đã được gán cho tôi.
+        // Recommendation chỉ áp dụng cho nhóm khả dụng.
+        List<Order> availableOrders = new ArrayList<>();
+        List<Order> assignedOrders = new ArrayList<>();
+        for (Order o : orders) {
+            if (o.getEmployee() == null) {
+                availableOrders.add(o);
+            } else {
+                assignedOrders.add(o);
+            }
+        }
+
+        List<Map<String, Object>> availableMapped = availableOrders.stream()
                 .map(this::mapOrderDetail)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
+        List<Map<String, Object>> assignedMapped = assignedOrders.stream()
+                .map(this::mapOrderDetail)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        // Enrich recommendation cho nhóm "available" nếu có.
+        if (!availableMapped.isEmpty()) {
+            Integer officeId = employee.getOffice() != null ? employee.getOffice().getId() : null;
+            ResolvedLocation resolvedLocation = resolveRecommendationCurrentLocation(
+                    employee, requestLatitude, requestLongitude);
+
+            String cacheKey;
+            if ("GPS".equals(resolvedLocation.source)) {
+                cacheKey = null;
+            } else {
+                cacheKey = "recommendation:pickup:shipper:" + employee.getId()
+                        + ":office:" + officeId
+                        + ":page:" + page
+                        + ":limit:" + limit
+                        + ":loc:" + resolvedLocation.cacheFingerprint;
+            }
+            log.info("[BE][Recommendation] pickup shipperId={} locationSource={} lat={} lng={} cacheKey={}",
+                    employee.getId(), resolvedLocation.source,
+                    resolvedLocation.latitude, resolvedLocation.longitude, cacheKey);
+
+            try {
+                enrichOrdersWithRecommendations(availableMapped, employee, cacheKey, resolvedLocation);
+            } catch (Exception ex) {
+                log.warn("[PICKUP_RECOMMEND_ENRICH_FAIL] shipperId={} error={}",
+                        employee.getId(), ex.getMessage());
+            }
+
+            // Sort theo recommendationScore giảm dần. Khi cùng điểm:
+            //   1. URGENT_PICKUP trước READY_FOR_PICKUP.
+            //   2. createdAt tăng dần (đơn cũ lên trước).
+            availableMapped.sort((a, b) -> {
+                Integer sa = recommendationScoreOf(a);
+                Integer sb = recommendationScoreOf(b);
+                int cmp = Integer.compare(
+                        sb == null ? Integer.MIN_VALUE : sb,
+                        sa == null ? Integer.MIN_VALUE : sa);
+                if (cmp != 0) return cmp;
+                boolean aUrgent = "URGENT_PICKUP".equals(a.get("status"));
+                boolean bUrgent = "URGENT_PICKUP".equals(b.get("status"));
+                if (aUrgent != bUrgent) return aUrgent ? -1 : 1;
+                Object ca = a.get("createdAt");
+                Object cb = b.get("createdAt");
+                if (ca instanceof LocalDateTime && cb instanceof LocalDateTime) {
+                    return ((LocalDateTime) ca).compareTo((LocalDateTime) cb);
+                }
+                return 0;
+            });
+        }
+
+        // Giữ nguyên thứ tự createdAt DESC cho nhóm đã nhận (không áp recommendation).
+        List<Map<String, Object>> merged = new ArrayList<>(availableMapped.size() + assignedMapped.size());
+        merged.addAll(availableMapped);
+        merged.addAll(assignedMapped);
 
         Pagination pagination = new Pagination(
                 (int) orderPage.getTotalElements(),
@@ -1105,8 +1217,10 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         );
 
         Map<String, Object> result = new HashMap<>();
-        result.put("orders", orders);
+        result.put("orders", merged);
         result.put("pagination", pagination);
+        result.put("recommendationLocationSource", orders.isEmpty() ? "NONE"
+                : resolveRecommendationCurrentLocation(employee, requestLatitude, requestLongitude).source);
 
         return result;
     }
@@ -2595,12 +2709,13 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         map.put("recipientWardCode", order.getRecipientWardCode());
         map.put("recipientCityCode", order.getRecipientCityCode());
 
-        // Destination: đơn hoàn dùng người gửi, đơn thường dùng người nhận.
+        // Destination: đơn hoàn dùng người gửi, pickup dùng người gửi, đơn thường dùng người nhận.
         // Frontend render "Thông tin điểm giao" dựa trên destinationType + displayContact*.
         String destinationType = resolveDestinationType(order);
         map.put("destinationType", destinationType);
-        if ("SENDER_RETURN".equals(destinationType)) {
-            map.put("displayContactType", "Shop/Người gửi");
+        if ("SENDER_RETURN".equals(destinationType) || "PICKUP_SENDER".equals(destinationType)) {
+            // Cùng ngữ nghĩa "điểm đến là người gửi"; chỉ khác nhãn.
+            map.put("displayContactType", "PICKUP_SENDER".equals(destinationType) ? "Người gửi" : "Shop/Người gửi");
             map.put("displayContactName", order.getSenderName());
             map.put("displayContactPhone", order.getSenderPhone());
             map.put("displayContactAddress", senderFullAddress);
@@ -3343,11 +3458,24 @@ public class OrderShipperServiceImpl implements OrderShipperService {
 
     /**
      * Xác định điểm đến của đơn hàng theo trạng thái:
-     * - RETURN_AT_ORIGIN_OFFICE: giao trả cho shop/người gửi → SENDER_RETURN.
+     * - PICKUP_BY_COURIER + trạng thái pickup khả dụng → PICKUP_SENDER (lấy hàng tại nhà).
+     * - RETURN_AT_ORIGIN_OFFICE → SENDER_RETURN (giao trả cho shop/người gửi).
      * - Mặc định (AT_DEST_OFFICE, các trạng thái khác) → RECIPIENT.
+     *
+     * Thứ tự kiểm tra: PICKUP trước RETURN để tránh đơn pickup đã chuyển sang
+     * trạng thái sau (PICKING_UP, PICKUP_RETRY) bị nhận nhầm thành RECIPIENT.
      */
     private String resolveDestinationType(Order order) {
         if (order == null || order.getStatus() == null) return "RECIPIENT";
+        if (order.getPickupType() == OrderPickupType.PICKUP_BY_COURIER) {
+            OrderStatus st = order.getStatus();
+            if (st == OrderStatus.READY_FOR_PICKUP
+                    || st == OrderStatus.URGENT_PICKUP
+                    || st == OrderStatus.PICKING_UP
+                    || st == OrderStatus.PICKUP_RETRY) {
+                return "PICKUP_SENDER";
+            }
+        }
         if (order.getStatus() == OrderStatus.RETURN_AT_ORIGIN_OFFICE) {
             return "SENDER_RETURN";
         }

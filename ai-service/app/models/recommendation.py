@@ -49,6 +49,11 @@ class RecommendationCandidateOrder(_BaseAliasModel):
     recipient_city_code: Optional[int] = Field(default=None, alias="recipientCityCode")
     status: Optional[str] = None
     is_urgent: bool = Field(default=False, alias="isUrgent")
+    # Destination semantics for this candidate.
+    # - RECIPIENT: giao thường, điểm đến là người nhận (mặc định, tương thích ngược)
+    # - SENDER_RETURN: đơn hoàn, điểm đến là shop/người gửi
+    # - PICKUP_SENDER: yêu cầu lấy hàng tại nhà, điểm đến là người gửi
+    destination_type: str = Field(default="RECIPIENT", alias="destinationType")
 
 
 class RecommendationRequest(_BaseAliasModel):

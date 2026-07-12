@@ -94,13 +94,16 @@ public class OrderShipperController {
     @GetMapping("/pickup-requests")
     public ResponseEntity<ApiResponse<Map<String, Object>>> listPickupRequests(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude) {
 
         if (isNotShipper()) {
             throw new AppException(CommonErrorCode.FORBIDDEN);
         }
 
-        return ResponseEntity.ok(ApiResponse.success(shipperService.listPickupByCourierRequests(page, limit)));
+        return ResponseEntity.ok(ApiResponse.success(
+                shipperService.listPickupByCourierRequests(page, limit, latitude, longitude)));
     }
 
     // Đơn pickup đã lấy từ khách, chờ nộp bưu cục

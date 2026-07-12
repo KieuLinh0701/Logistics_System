@@ -240,12 +240,18 @@ const orderApi = {
         };
     },
 
-    async getShipperPickupByCourierRequests(params: { page?: number; limit?: number }) {
+    async getShipperPickupByCourierRequests(params: {
+        page?: number;
+        limit?: number;
+        latitude?: number | null;
+        longitude?: number | null;
+    }) {
         const res = await axiosClient.get<ApiResponse<any>>("/shipper/pickup-requests", {params});
         const data = res.data || {};
         return {
             orders: (data.orders || []) as ShipperOrder[],
             pagination: data.pagination || {page: 1, limit: 10, total: 0},
+            recommendationLocationSource: data.recommendationLocationSource as string | undefined,
         };
     },
 
