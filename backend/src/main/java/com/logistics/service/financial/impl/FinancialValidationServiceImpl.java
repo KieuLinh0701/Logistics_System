@@ -57,7 +57,7 @@ public class FinancialValidationServiceImpl implements FinancialValidationServic
             if (order.getPaymentStatus() == OrderPaymentStatus.PAID) return false;
             Integer orderId = order.getId();
             if (orderId == null) return false;
-            if (canMarkOrderPaid(orderId)) {
+            if (canMarkOrderPaid(orderId) && order.getPayer().equals(OrderPayerType.CUSTOMER)) {
                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                 order.setPaidAt(LocalDateTime.now());
                 orderRepository.save(order);
