@@ -5,6 +5,7 @@ import com.logistics.config.properties.SettlementProperties;
 import com.logistics.entity.SettlementBatch;
 import com.logistics.entity.SettlementTransaction;
 import com.logistics.entity.User;
+import com.logistics.enums.OrderPayerType;
 import com.logistics.enums.OrderPaymentStatus;
 import com.logistics.enums.SettlementStatus;
 import com.logistics.enums.SettlementTransactionStatus;
@@ -185,7 +186,8 @@ public class PaymentUserServiceImpl implements PaymentUserService {
                             if (order.getCod() != null && order.getCod() > 0) {
                                 order.setCodStatus(com.logistics.enums.OrderCodStatus.TRANSFERRED);
                             }
-                            if (order.getPaymentStatus() != OrderPaymentStatus.PAID) {
+                            if (order.getPayer() == OrderPayerType.CUSTOMER
+                                    && order.getPaymentStatus() != OrderPaymentStatus.PAID) {
                                 order.setPaymentStatus(OrderPaymentStatus.PAID);
                                 order.setPaidAt(now);
                             }
