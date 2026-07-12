@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Descriptions, message, Table, Typography} from "antd";
+import {message, Typography} from "antd";
 
 import Header from "./components/Header";
 import OrderSenderRecipient from "./components/SenderRecipientInfo";
@@ -275,9 +275,9 @@ const UserOrderDetail: React.FC = () => {
     const canCancel = canCancelUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_CANCEL']);
     const canPrint = canPrintUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PRINT_SINGLE']);
     const canDelete = canDeleteUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_DELETE_DRAFT']);
-    const canReady = canReadyUserOrder(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
+    const canReady = canReadyUserOrder(order.status, order.pickupType) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
     const canRequets = canCreateUserShippingRequestFromOrderDetail(order.status) && hasPermissionGroup(['GROUP_USER', 'USER_SUPPORT_CREATE']);
-    const canTransitToOffice =canTransitToOfficeUserOrder(order.status) && order.pickupType === "AT_OFFICE" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_TRANSIT_TO_OFFICE']);
+    const canTransitToOffice = canTransitToOfficeUserOrder(order.status) && order.pickupType === "AT_OFFICE" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_TRANSIT_TO_OFFICE']);
 
     const productColumns = [
         {

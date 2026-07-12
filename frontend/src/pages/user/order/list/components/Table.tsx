@@ -309,7 +309,7 @@ const OrderTable: React.FC<Props> = ({
                 const canDelete = canDeleteUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_DELETE_DRAFT']);
                 const canPrint = canPrintUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PRINT_BULK']);
                 const canPublic = canPublicUserOrder(record.status) && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_PROCESS']);
-                const canReady = canReadyUserOrder(record.status) && record.pickupType === "PICKUP_BY_COURIER" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
+                const canReady = canReadyUserOrder(record.status, record.pickupType) && record.pickupType === "PICKUP_BY_COURIER" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_READY']);
                 const canTransitToOffice = canTransitToOfficeUserOrder(record.status) && record.pickupType === "AT_OFFICE" && hasPermissionGroup(['GROUP_USER', 'USER_ORDER_TRANSIT_TO_OFFICE']);
 
                 const items = [

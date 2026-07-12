@@ -1,14 +1,8 @@
 package com.logistics.service.manager.impl;
 
 import com.logistics.dto.manager.attempt.AttemptHistoryListDto;
-import com.logistics.entity.DeliveryAttempt;
-import com.logistics.entity.Office;
-import com.logistics.entity.Order;
-import com.logistics.entity.PickupAttempt;
-import com.logistics.entity.User;
-import com.logistics.enums.DeliveryAttemptStatus;
+import com.logistics.entity.*;
 import com.logistics.enums.DeliveryAttemptType;
-import com.logistics.enums.PickupAttemptStatus;
 import com.logistics.repository.DeliveryAttemptRepository;
 import com.logistics.repository.PickupAttemptRepository;
 import com.logistics.request.manager.attempt.AttemptSearchRequest;
