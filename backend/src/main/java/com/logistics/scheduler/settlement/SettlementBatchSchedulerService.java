@@ -55,14 +55,8 @@ public class SettlementBatchSchedulerService {
             if (orders.isEmpty())
                 continue;
 
-            // Tạo settlement batch
-            SettlementBatch batch = new SettlementBatch();
-            batch.setShop(shop);
-            batch.setStatus(SettlementStatus.PENDING);
-            batch.setBalanceAmount(BigDecimal.ZERO);
-            batchRepository.save(batch);
-
             BigDecimal totalCOD = BigDecimal.ZERO;
+            List<Order> attachedOrders = new java.util.ArrayList<>();
 
             for (Order order : orders) {
                 List<PaymentSubmission> submissions = order.getPaymentSubmissions();
@@ -107,13 +101,23 @@ public class SettlementBatchSchedulerService {
                 }
 
                 totalCOD = totalCOD.add(codAmount);
+                attachedOrders.add(order);
+            }
 
+            if (attachedOrders.isEmpty())
+                continue;
+
+            // Tạo settlement batch
+            SettlementBatch batch = new SettlementBatch();
+            batch.setShop(shop);
+            batch.setStatus(SettlementStatus.PENDING);
+            batch.setBalanceAmount(totalCOD);
+            batchRepository.save(batch);
+
+            for (Order order : attachedOrders) {
                 order.setSettlementBatch(batch);
                 orderRepository.save(order);
             }
-
-            batch.setBalanceAmount(totalCOD);
-            batchRepository.save(batch);
 
             // Lấy tất cả batch PENDING/FAILED cũ của shop
             List<SettlementBatch> oldDebtBatches = batchRepository.findByShopAndStatusInOrderByCreatedAtAsc(
@@ -168,7 +172,7 @@ public class SettlementBatchSchedulerService {
                 }
 
                 // Cập nhật order của batch mới → PAID
-                updateOrdersCompleted(orders);
+                updateOrdersCompleted(attachedOrders);
             } else if (net.compareTo(BigDecimal.ZERO) < 0) {
                 // Shop vẫn còn nợ sau khi khấu trừ
                 // Batch mới dùng để khấu trừ nợ cũ trước
@@ -201,7 +205,7 @@ public class SettlementBatchSchedulerService {
                 if (totalCOD.compareTo(BigDecimal.ZERO) > 0) {
                     // Batch này tự nó là khoản credit, đã dùng hết để khấu trừ nợ cũ → coi như resolved
                     batch.setStatus(SettlementStatus.COMPLETED);
-                    updateOrdersCompleted(orders);
+                    updateOrdersCompleted(attachedOrders);
                 } else {
                     // Batch này tự nó là khoản nợ mới (totalCOD <= 0) → giữ PENDING cho kỳ sau
                     batch.setStatus(SettlementStatus.PENDING);
@@ -223,7 +227,7 @@ public class SettlementBatchSchedulerService {
                     updateOrdersCompleted(old.getOrders());
                 }
 
-                updateOrdersCompleted(orders);
+                updateOrdersCompleted(attachedOrders);
 
                 if (totalCOD.compareTo(BigDecimal.ZERO) > 0) {
                     createOffsetTransaction(batch, totalCOD);

@@ -1,0 +1,2 @@
+ALTER TABLE settlement_transactions
+    MODIFY COLUMN type ENUM('SYSTEM_TO_SHOP', 'SHOP_TO_SYSTEM', 'OFFSET') NOT NULL;
