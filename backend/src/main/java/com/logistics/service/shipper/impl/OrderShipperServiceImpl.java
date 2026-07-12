@@ -156,7 +156,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
     private void saveHistory(Order order, Shipment shipment, OrderHistoryActionType action, String note) {
         OrderHistory history = new OrderHistory();
         history.setOrder(order);
-        history.setFromOffice(order.getToOffice());
+        history.setFromOffice(order.getFromOffice());
         history.setToOffice(order.getToOffice());
         history.setShipment(shipment);
         history.setAction(action);
@@ -167,21 +167,17 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         }
 
         if (shipment != null && order.getId() != null) {
-            try {
-                List<ShipmentOrder> shipOrders =
-                        shipmentOrderRepository.findByShipmentId(shipment.getId());
-                if (shipOrders != null) {
-                    for (ShipmentOrder so : shipOrders) {
-                        if (so.getOrder() != null
-                                && so.getOrder().getId().equals(order.getId())
-                                && so.getStopType() != null) {
-                            history.setStopTypeSnapshot(so.getStopType());
-                            break;
-                        }
+            List<ShipmentOrder> shipOrders =
+                    shipmentOrderRepository.findByShipmentId(shipment.getId());
+            if (shipOrders != null) {
+                for (ShipmentOrder so : shipOrders) {
+                    if (so.getOrder() != null
+                            && so.getOrder().getId().equals(order.getId())
+                            && so.getStopType() != null) {
+                        history.setStopTypeSnapshot(so.getStopType());
+                        break;
                     }
                 }
-            } catch (Exception ignored) {
-                // Snapshot stopType là best-effort — nếu fail vẫn lưu history.
             }
         }
 
@@ -1550,6 +1546,7 @@ public class OrderShipperServiceImpl implements OrderShipperService {
         boolean pickupStatus = order.getStatus() == OrderStatus.READY_FOR_PICKUP || order.getStatus() == OrderStatus.PICKUP_RETRY;
 
         if (pickupStatus) {
+            OrderStatus oldStatus = order.getStatus();
             order.setStatus(OrderStatus.PICKING_UP);
             order.setEmployee(employee);
             orderRepository.save(order);
@@ -1570,8 +1567,15 @@ public class OrderShipperServiceImpl implements OrderShipperService {
                 so.setStopSequence(nextSeq);
                 shipmentOrderRepository.save(so);
             }
-            saveHistory(order, activeShipment, OrderHistoryActionType.PICKING_UP,
-                    "Shipper nhận đơn lấy hàng");
+            // Endpoint /orders/{id}/claim với pickup leg:
+            // - PICKUP_ACCEPTED đã được service nghiệp vụ chính (insertPickupIntoShipment)
+            //   ghi cho flow /accept-pickup. Endpoint /claim xử lý pickup leg với status
+            //   READY_FOR_PICKUP/PICKUP_RETRY → chỉ ghi PICKING_UP khi status thực sự đổi
+            //   sang PICKING_UP. Tránh ghi đúp PICKUP_ACCEPTED ở 2 endpoint khác nhau.
+            if (oldStatus != OrderStatus.PICKING_UP) {
+                saveHistory(order, activeShipment, OrderHistoryActionType.PICKING_UP,
+                        "Shipper bắt đầu đi lấy hàng");
+            }
 
             try {
                 assignOrderToActiveAiRoute(employee, order);
@@ -5470,17 +5474,13 @@ if (activeShipment == null) {
         }
 
         // 7. Lưu OrderHistory (audit).
-        // Đơn pickup đã ở PICKING_UP (claim thành công trước đó) → dùng action PICKING_UP
-        // cho khớp ngữ cảnh "shipper đã claim, thêm vào chuyến", tránh hiểu nhầm với
-        // READY_FOR_PICKUP = đơn chờ shipper claim (luồng giao thường từ bưu cục).
-        try {
-            saveHistory(order, shipment,
-                    com.logistics.enums.OrderHistoryActionType.PICKING_UP,
-                    "Shipper nhận đơn pickup và thêm vào chuyến DELIVERY shipmentId=" + shipmentId
-                            + " stopSequence=" + nextSeq);
-        } catch (Exception e) {
-            log.warn("Failed to save OrderHistory for pickup insert: {}", e.getMessage());
-        }
+        // Sự kiện shipper nhận đơn pickup và thêm vào chuyến DELIVERY → action PICKUP_ACCEPTED
+        // để phân biệt với PICKING_UP (chỉ ghi khi shipper thực sự bắt đầu chuyến qua
+        // endpoint /start-pickup).
+        saveHistory(order, shipment,
+                com.logistics.enums.OrderHistoryActionType.PICKUP_ACCEPTED,
+                "Shipper đã nhận yêu cầu lấy hàng (chuyến DELIVERY shipmentId=" + shipmentId
+                        + " stopSequence=" + nextSeq + ")");
 
 
         return Map.of(

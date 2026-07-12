@@ -84,6 +84,7 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
     const searchRef = useRef(search);
     searchRef.current = search;
     const mountedRef = useRef(true);
+    const acceptingRef = useRef<Set<number>>(new Set());
 
     const fetchList = useCallback(async () => {
       setLoading(true);
@@ -201,8 +202,12 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
     };
 
     async function accept(id: number) {
-      if (acceptingIds.has(id)) return;
+      // Guard đồng bộ bằng ref — chặn click nhanh 2 lần (state React cập nhật
+      // bất đồng bộ, acceptingIds.has(id) có thể chưa phản ánh kịp).
+      if (acceptingRef.current.has(id)) return;
+      acceptingRef.current.add(id);
       try {
+        if (acceptingIds.has(id)) return;
         const rec: any = list.find((r) => r.id === id);
         if (!rec) return;
 
@@ -244,6 +249,7 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
           message.error(e?.response?.data?.message || e?.message || "Lỗi khi nhận yêu cầu");
         });
       } finally {
+        acceptingRef.current.delete(id);
         setAcceptingIds((prev) => {
           const next = new Set(prev);
           next.delete(id);

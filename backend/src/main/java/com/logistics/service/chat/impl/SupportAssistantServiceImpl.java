@@ -283,12 +283,14 @@ public class SupportAssistantServiceImpl implements SupportAssistantService {
             case READY_FOR_PICKUP -> "Sẵn sàng lấy hàng";
             case URGENT_PICKUP -> "Ưu tiên lấy hàng";
             case CONFIRMED -> "Đã xác nhận";
+            case PICKUP_ACCEPTED -> "Shipper đã nhận yêu cầu lấy hàng";
             case PICKING_UP -> "Đang lấy hàng";
             case PICKED_UP -> "Đã lấy hàng";
             case PICKUP_FAILED_FINAL -> "Lấy hàng thất bại cuối cùng";
             case IMPORTED -> "Đã nhập hàng";
             case EXPORTED -> "Đã xuất hàng";
             case AT_DEST_OFFICE -> "Tại bưu cục đích";
+            case AT_ORIGIN_OFFICE -> "Tại bưu cục gốc";
             case DELIVERING -> "Đang giao hàng";
             case DELIVERED -> "Đã giao thành công";
             case DELIVERY_RETRY -> "Chờ giao lại";
