@@ -1,14 +1,23 @@
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from "react";
-import {Button, Space, Table, Tag, Typography} from "antd";
-import {EyeOutlined} from "@ant-design/icons";
+import {Alert, Button, Space, Table, Tag, Tooltip, Typography} from "antd";
+import {EyeOutlined, StarFilled, WarningOutlined} from "@ant-design/icons";
 import {useNavigate} from "react-router-dom";
 import {connectWebSocket, disconnectWebSocket} from "../../../../socket/socket";
 import {getUserId} from "../../../../utils/authUtils";
 import orderApi from "../../../../api/orderApi";
 import {dispatchShipperRouteRefresh} from "../../delivery-route/deliveryRouteEvents";
+import {getCurrentPositionOnce, type CurrentPosition} from "../../../../utils/geolocation";
+import UnassignedRecommendationModal from "../../unassigned/components/UnassignedRecommendationModal";
 import type {TabRefreshHandle} from "../MyOrdersPage";
 
 const { Text } = Typography;
+
+type RecommendationLevel =
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW"
+  | "NOT_RECOMMENDED"
+  | "OVER_CAPACITY";
 
 interface PickupRequestsTabProps {
   search?: string;
@@ -29,6 +38,36 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   RETURN_PICKED_UP: { label: "Đã lấy hàng hoàn lên xe", color: "cyan" },
 };
 
+const levelLabel = (level?: RecommendationLevel | string): string => {
+  switch (level) {
+    case "HIGH": return "Rất phù hợp";
+    case "MEDIUM": return "Phù hợp";
+    case "LOW": return "Có thể nhận";
+    case "NOT_RECOMMENDED": return "Ít phù hợp";
+    case "OVER_CAPACITY": return "Vượt tải";
+    default: return "—";
+  }
+};
+
+const levelColor = (level?: RecommendationLevel | string): string => {
+  switch (level) {
+    case "HIGH": return "success";
+    case "MEDIUM": return "processing";
+    case "LOW": return "warning";
+    case "OVER_CAPACITY": return "error";
+    case "NOT_RECOMMENDED":
+    default: return "default";
+  }
+};
+
+const recommendationBadgeLabel = (
+  score: number,
+  level?: RecommendationLevel | string,
+): string => {
+  if (level === "OVER_CAPACITY") return "Vượt tải";
+  return `${levelLabel(level)} ${score}%`;
+};
+
 const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
   ({ search }, ref) => {
     const navigate = useNavigate();
@@ -36,6 +75,10 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [acceptingIds, setAcceptingIds] = useState<Set<number>>(new Set());
+    const [gps, setGps] = useState<CurrentPosition | null>(null);
+    const [locationSource, setLocationSource] = useState<string | null>(null);
+    const [recommendationError, setRecommendationError] = useState<string | null>(null);
+    const [modalOrder, setModalOrder] = useState<any | null>(null);
     const paginationRef = useRef(pagination);
     paginationRef.current = pagination;
     const searchRef = useRef(search);
@@ -45,9 +88,16 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
     const fetchList = useCallback(async () => {
       setLoading(true);
       try {
+        // Lấy GPS mỗi lần fetch (ưu tiên vị trí thực); backend tự fallback nếu null.
+        const position = await getCurrentPositionOnce(4000);
+        if (!mountedRef.current) return;
+        setGps(position);
+
         const res = await orderApi.getShipperPickupByCourierRequests({
           page: paginationRef.current.current,
           limit: paginationRef.current.pageSize,
+          latitude: position?.latitude ?? null,
+          longitude: position?.longitude ?? null,
         });
         if (!mountedRef.current) return;
         const shipperOrders = res.orders || [];
@@ -63,6 +113,8 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
           })
         );
         setPagination((p) => ({ ...p, total: res.pagination?.total || 0 }));
+        setLocationSource(res.recommendationLocationSource ?? null);
+        setRecommendationError(null);
       } catch (e) {
         console.error("Error loading shipper pickup orders:", e);
       } finally {
@@ -87,8 +139,14 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
           msg.type === "shipping_request_accepted" ||
           msg.type === "order_ready_for_pickup"
         ) {
+          // Bỏ cache cũ vì đơn có thể đã được shipper khác nhận.
           orderApi
-            .getShipperPickupByCourierRequests({ page: 1, limit: paginationRef.current.pageSize })
+            .getShipperPickupByCourierRequests({
+              page: 1,
+              limit: paginationRef.current.pageSize,
+              latitude: null,
+              longitude: null,
+            })
             .then((res) => {
               const shipperOrders = res.orders || [];
               const q = searchRef.current?.trim().toLowerCase();
@@ -119,9 +177,12 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
     }));
 
     const refreshList = async () => {
+      const position = gps;
       const res = await orderApi.getShipperPickupByCourierRequests({
         page: pagination.current,
         limit: pagination.pageSize,
+        latitude: position?.latitude ?? null,
+        longitude: position?.longitude ?? null,
       });
       const shipperOrders = res.orders || [];
       const q = search?.trim().toLowerCase();
@@ -136,6 +197,7 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
         })
       );
       setPagination((p) => ({ ...p, total: res.pagination?.total || 0 }));
+      setLocationSource(res.recommendationLocationSource ?? locationSource);
     };
 
     async function accept(id: number) {
@@ -190,13 +252,33 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
       }
     }
 
+    const locationChip = (() => {
+      if (gps) {
+        return (
+          <div className="list-page-tag" style={{marginLeft: 8}}>
+            Vị trí: GPS ({gps.latitude.toFixed(4)}, {gps.longitude.toFixed(4)})
+          </div>
+        );
+      }
+      if (locationSource && locationSource !== "NONE") {
+        const label = locationSource === "OFFICE"
+          ? "Vị trí: Bưu cục"
+          : locationSource === "ROUTE_LAST_POINT"
+            ? "Vị trí: Điểm dừng gần nhất"
+            : `Vị trí: ${locationSource}`;
+        return (
+          <div className="list-page-tag" style={{marginLeft: 8}}>{label}</div>
+        );
+      }
+      return null;
+    })();
+
     const columns = [
       {
         title: "Mã đơn hàng",
         dataIndex: "trackingNumber",
         key: "trackingNumber",
-        width: 160,
-        minWidth: 160,
+        width: 150,
         render: (text: string) => (
           <span className="tracking-number-cell table-strong">{text}</span>
         ),
@@ -205,14 +287,21 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
         title: "Thông tin người gửi",
         key: "sender",
         render: (record: any) => {
+          // Ưu tiên displayContact* nếu backend trả về (theo destinationType).
+          const name = record.displayContactName || record.senderName;
+          const phone = record.displayContactPhone || record.senderPhone;
           const address =
-            typeof record.senderAddress === "string"
+            record.displayContactAddress ||
+            (typeof record.senderAddress === "string"
               ? record.senderAddress
-              : (record.senderAddress as any)?.fullAddress ?? "";
+              : (record.senderAddress as any)?.fullAddress) ||
+            "";
+          const contactType = record.displayContactType || "Người gửi";
           return (
             <Space direction="vertical" size={2}>
-              <Text strong className="table-strong">{record.senderName}</Text>
-              <Text className="table-muted">{record.senderPhone}</Text>
+              <Text strong className="table-strong">{name}</Text>
+              <Text className="table-muted" style={{fontSize: 11}}>{contactType}</Text>
+              <Text className="table-muted">{phone}</Text>
               <Text className="table-muted">{address}</Text>
             </Space>
           );
@@ -240,6 +329,7 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
         title: "Trạng thái",
         dataIndex: "status",
         key: "status",
+        width: 130,
         render: (s: string) => {
           const meta = STATUS_MAP[s] || { label: s, color: "default" };
           return (
@@ -250,8 +340,62 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
         },
       },
       {
+        title: "Mức phù hợp",
+        key: "recommendation",
+        width: 200,
+        render: (record: any) => {
+          const score = record.recommendationScore;
+          const level = record.recommendationLevel as RecommendationLevel | undefined;
+          const reasons: string[] | undefined = record.recommendationReasons;
+
+          if (
+            score == null ||
+            level == null ||
+            !Array.isArray(reasons) ||
+            reasons.length === 0
+          ) {
+            return (
+              <Typography.Text type="secondary" className="table-muted">
+                —
+              </Typography.Text>
+            );
+          }
+
+          const isOverCapacity = level === "OVER_CAPACITY";
+          const tooltipTitle = isOverCapacity
+            ? "Đơn vượt tải trọng còn lại của phương tiện — bấm để xem chi tiết"
+            : `Mức phù hợp ${score}% (${levelLabel(level)}) — bấm để xem chi tiết`;
+
+          return (
+            <Tooltip title={tooltipTitle}>
+              <Tag
+                color={levelColor(level)}
+                icon={isOverCapacity ? <WarningOutlined /> : <StarFilled />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setModalOrder(record);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setModalOrder(record);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Xem chi tiết mức phù hợp ${score}%`}
+                style={{cursor: "pointer", fontWeight: 600, margin: 0, userSelect: "none"}}
+              >
+                {recommendationBadgeLabel(score, level)}
+              </Tag>
+            </Tooltip>
+          );
+        },
+      },
+      {
         title: "Thao tác",
         key: "action",
+        width: 200,
         render: (record: any) => {
           const isAccepting = acceptingIds.has(record.id);
           const canAccept = record.status === "READY_FOR_PICKUP" || record.status === "URGENT_PICKUP";
@@ -283,7 +427,19 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
 
     return (
       <div className="my-orders-tab-wrapper">
-        <div className="my-orders-results">Kết quả: {list.length} yêu cầu</div>
+        <div style={{display: "flex", alignItems: "center", marginBottom: 12}}>
+          <div className="my-orders-results">Kết quả: {list.length} yêu cầu</div>
+          {locationChip}
+        </div>
+        {recommendationError ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{marginBottom: 12}}
+            message="Hệ thống đánh giá tạm thời không khả dụng"
+            description="Danh sách đơn vẫn hiển thị bình thường. Vui lòng bấm 'Làm mới' để thử lại sau."
+          />
+        ) : null}
         <Table
           rowKey="id"
           loading={loading}
@@ -297,8 +453,13 @@ const PickupRequestsTab = forwardRef<TabRefreshHandle, PickupRequestsTabProps>(
               setPagination((p) => ({ ...p, current: page, pageSize: pageSize || 10 }));
             },
           }}
-          scroll={{ x: 960 }}
+          scroll={{ x: 1080 }}
           className="my-orders-table"
+        />
+        <UnassignedRecommendationModal
+          open={modalOrder !== null}
+          order={modalOrder}
+          onClose={() => setModalOrder(null)}
         />
       </div>
     );

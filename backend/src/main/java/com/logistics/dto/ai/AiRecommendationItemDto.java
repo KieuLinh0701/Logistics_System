@@ -37,4 +37,8 @@ public class AiRecommendationItemDto {
     private Integer estimatedDurationMinutes;
 
     private Boolean recommended;
+
+    @JsonProperty("destination_type")
+    @JsonAlias("destinationType")
+    private String destinationType;
 }

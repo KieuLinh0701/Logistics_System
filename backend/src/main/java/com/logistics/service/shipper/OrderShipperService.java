@@ -27,7 +27,7 @@ public interface OrderShipperService {
 
     Map<String, Object> listReturnOrders(int page, int limit, String status, String search);
 
-    Map<String, Object> listPickupByCourierRequests(int page, int limit);
+    Map<String, Object> listPickupByCourierRequests(int page, int limit, Double latitude, Double longitude);
 
     Map<String, Object> listPickedUpByCustomerOrders(int page, int limit, String search);
 
@@ -74,6 +74,8 @@ public interface OrderShipperService {
     void returnFailedToOffice(Integer id);
 
     Map<String, Object> getDeliveryRoute();
+
+    void evictPickupRecommendationCache();
 
     void startRoute(Integer routeId);
 

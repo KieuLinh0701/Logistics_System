@@ -168,27 +168,41 @@ def _build_reasons(
     location_source: str,
     distance_evaluated: bool,
 ) -> List[str]:
+    dest = (candidate.destination_type or "RECIPIENT").upper()
+    if dest == "PICKUP_SENDER":
+        distance_label = "Khoảng cách đến điểm lấy hàng"
+        no_coord_label = "Không có tọa độ người gửi/điểm lấy hàng"
+        eta_label_prefix = "Thời gian dự kiến đến người gửi"
+    elif dest == "SENDER_RETURN":
+        distance_label = "Khoảng cách đến shop/người gửi"
+        no_coord_label = "Không có tọa độ shop/người gửi"
+        eta_label_prefix = "Thời gian dự kiến đến shop/người gửi"
+    else:
+        distance_label = "Khoảng cách đến người nhận"
+        no_coord_label = "Không có tọa độ người nhận"
+        eta_label_prefix = "Thời gian dự kiến đến người nhận"
+
     reasons: List[str] = []
     if is_over_capacity:
         reasons.append("Vượt tải trọng còn lại")
 
     if not distance_evaluated:
-        # Không tính khoảng cách → KHÔNG in lý do dạng "cách X km".
-        reasons.append("Không có tọa độ người nhận để ước lượng khoảng cách")
+        # Không tính được khoảng cách → dùng nhãn theo ngữ cảnh.
+        reasons.append(no_coord_label)
     else:
         assert distance_km is not None
         if distance_km <= NEAR_DISTANCE_KM:
-            reasons.append("Gần vị trí hiện tại")
+            reasons.append(f"{distance_label}: gần vị trí hiện tại")
         elif distance_km <= FAR_DISTANCE_KM:
-            reasons.append(f"Cách vị trí hiện tại {_format_distance_km(distance_km)} km")
+            reasons.append(f"{distance_label}: {_format_distance_km(distance_km)} km")
         else:
-            reasons.append(f"Cách vị trí hiện tại {_format_distance_km(distance_km)} km (hơi xa)")
+            reasons.append(f"{distance_label}: {_format_distance_km(distance_km)} km (hơi xa)")
 
     if distance_evaluated and eta_minutes > 0:
         if eta_minutes <= 8:
-            reasons.append(f"Thời gian dự kiến ngắn ({eta_minutes} phút)")
+            reasons.append(f"{eta_label_prefix}: {eta_minutes} phút")
         else:
-            reasons.append(f"Thời gian dự kiến {eta_minutes} phút")
+            reasons.append(f"{eta_label_prefix}: {eta_minutes} phút")
 
     if in_flight_count > 0 and area_count > 0:
         reasons.append(f"Cùng khu vực với {area_count} đơn đang thực hiện")
@@ -305,9 +319,10 @@ def score_candidates(
         )
 
         logger.info(
-            "[AI][Recommendation] scored order_id=%s score=%s level=%s recommended=%s "
+            "[AI][Recommendation] scored order_id=%s destination_type=%s score=%s level=%s recommended=%s "
             "distance_km=%s duration_min=%s distance_evaluated=%s reasons=%s",
             cand.order_id,
+            cand.destination_type,
             score,
             level,
             recommended,

@@ -48,8 +48,9 @@ async def recommend_orders(
 
     for candidate in validated.candidate_orders or []:
         logger.info(
-            "[AI][Recommendation] candidate order_id=%s lat=%s lng=%s city_id=%s ward_id=%s weight=%s volume=%s urgent=%s",
+            "[AI][Recommendation] candidate order_id=%s destination_type=%s lat=%s lng=%s city_id=%s ward_id=%s weight=%s volume=%s urgent=%s",
             candidate.order_id,
+            candidate.destination_type,
             candidate.latitude,
             candidate.longitude,
             candidate.recipient_city_code,
