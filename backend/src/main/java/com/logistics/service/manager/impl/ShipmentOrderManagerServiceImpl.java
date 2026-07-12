@@ -286,7 +286,20 @@ public class ShipmentOrderManagerServiceImpl implements ShipmentOrderManagerServ
                 throw new AppException(ShipmentErrorCode.SHIPMENT_CANNOT_DELETE_ORDERS);
             }
             if (removedOrderIds != null && !removedOrderIds.isEmpty()) {
-                shipment.getShipmentOrders().removeIf(so -> removedOrderIds.contains(so.getOrder().getId()));
+                List<Order> ordersToUnassign = new ArrayList<>();
+                for (ShipmentOrder so : shipment.getShipmentOrders()) {
+                    if (removedOrderIds.contains(so.getOrder().getId())) {
+                        ordersToUnassign.add(so.getOrder());
+                    }
+                }
+                shipment.getShipmentOrders()
+                        .removeIf(so -> removedOrderIds.contains(so.getOrder().getId()));
+                for (Order order : ordersToUnassign) {
+                    order.setEmployee(null);
+                }
+                if (!ordersToUnassign.isEmpty()) {
+                    orderRepository.saveAll(ordersToUnassign);
+                }
             }
 
             if (addedOrderIds != null && !addedOrderIds.isEmpty() && !canManagerAddOrderForShipment(shipment.getStatus())) {
